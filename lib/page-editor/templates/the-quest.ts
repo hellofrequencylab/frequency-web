@@ -97,9 +97,9 @@ export const data: Data = {
         id: 'tq-ranks-grid', eyebrow: '', title: '', titleAccent: '', style: 'number', columns: '2',
         items: [
           { icon: 'Star', image: '', title: 'Ghost · Just arrived', body: 'You found the room. Nobody knows your name yet, and that’s exactly where everyone starts.', href: '' },
-          { icon: 'Compass', image: '', title: 'Runner · Showing up', body: 'You keep coming back. The same faces start to expect you, and the standing time becomes yours.', href: '' },
-          { icon: 'Sparkles', image: '', title: 'Operative · Known by name', body: 'You’re a regular now. You notice the newcomer in the corner, and you’re the one who says hello.', href: '' },
-          { icon: 'Shield', image: '', title: 'Agent · Holding the door', body: 'You carry a Circle. You bring people in, smooth the rough edges, and keep the standing time alive.', href: '' },
+          { icon: 'Compass', image: '', title: 'Echo · Showing up', body: 'You keep coming back. The same faces start to expect you, and the standing time becomes yours.', href: '' },
+          { icon: 'Sparkles', image: '', title: 'Signal · Known by name', body: 'You’re a regular now. You notice the newcomer in the corner, and you’re the one who says hello.', href: '' },
+          { icon: 'Shield', image: '', title: 'Beacon · Holding the door', body: 'You carry a Circle. You bring people in, smooth the rough edges, and keep the standing time alive.', href: '' },
           { icon: 'Users', image: '', title: 'Conduit · Seeding the next', body: 'When your Circle fills, you seed the next one. You connect rooms that didn’t know each other.', href: '' },
           { icon: 'Sun', image: '', title: 'Luminary · Missed by many', body: 'A whole neighborhood is warmer because you kept showing up. The community would feel your absence.', href: '' },
         ],

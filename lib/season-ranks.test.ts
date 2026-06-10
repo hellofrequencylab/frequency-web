@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { RANK_ORDER, rankIndex, higherRank, rankForZaps } from './season-ranks'
 
 describe('rank ordering', () => {
-  it('orders ascending: ghost < runner < operative < agent < conduit < luminary', () => {
-    expect(RANK_ORDER).toEqual(['ghost', 'runner', 'operative', 'agent', 'conduit', 'luminary'])
+  it('orders ascending: ghost < echo < signal < beacon < conduit < luminary', () => {
+    expect(RANK_ORDER).toEqual(['ghost', 'echo', 'signal', 'beacon', 'conduit', 'luminary'])
     expect(rankIndex('ghost')).toBe(0)
     expect(rankIndex('luminary')).toBe(5)
-    expect(rankIndex('agent')).toBeGreaterThan(rankIndex('operative'))
+    expect(rankIndex('beacon')).toBeGreaterThan(rankIndex('signal'))
   })
 
   it('treats unknown/null as ghost (the floor)', () => {
@@ -18,8 +18,8 @@ describe('rank ordering', () => {
 
 describe('higherRank (the lifetime-peak rule)', () => {
   it('returns the higher of two ranks, regardless of order', () => {
-    expect(higherRank('runner', 'agent')).toBe('agent')
-    expect(higherRank('agent', 'runner')).toBe('agent')
+    expect(higherRank('echo', 'beacon')).toBe('beacon')
+    expect(higherRank('beacon', 'echo')).toBe('beacon')
     expect(higherRank('ghost', 'ghost')).toBe('ghost')
     expect(higherRank('luminary', 'conduit')).toBe('luminary')
   })
@@ -34,8 +34,8 @@ describe('rankForZaps thresholds', () => {
   it('maps zap totals to the earned rank', () => {
     expect(rankForZaps(0)).toBe('ghost')
     expect(rankForZaps(99)).toBe('ghost')
-    expect(rankForZaps(100)).toBe('runner')
-    expect(rankForZaps(750)).toBe('agent')
+    expect(rankForZaps(100)).toBe('echo')
+    expect(rankForZaps(750)).toBe('beacon')
     expect(rankForZaps(3000)).toBe('luminary')
   })
 })

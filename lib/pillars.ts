@@ -1,7 +1,8 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMemberPractices } from '@/lib/practices'
 
-// The 4 Pillars are the `domains` table (Mind · Body · Spirit · Expression) — the
+// The 4 Pillars are the `pillars` table (Mind · Body · Spirit · Expression) — the
 // organizing axis for practices (practices.domain_id) and, next, the open Journeys
 // library (backlog §Q1). Surfaced product-wide as "Channels"; here we read them as
 // the typed pillar set so callers don't re-query the taxonomy ad hoc.
@@ -15,16 +16,16 @@ export interface Pillar {
   slug: PillarSlug
   name: string
   description: string | null
-  /** Per-pillar accent color token/value (domains.accent). */
+  /** Per-pillar accent color token/value (pillars.accent). */
   accent: string | null
   order: number
 }
 
 /** The four pillars in display order. Small + static — cheap to read per request. */
 export async function getPillars(): Promise<Pillar[]> {
-  const admin = createAdminClient()
+  const admin = createAdminClient() as unknown as SupabaseClient
   const { data } = await admin
-    .from('domains')
+    .from('pillars')
     .select('id, slug, name, description, accent, display_order')
     .eq('is_active', true)
     .order('display_order')

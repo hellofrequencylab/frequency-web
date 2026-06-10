@@ -61,19 +61,19 @@ const RANKS: { icon: IconType; name: string; tag: string; body: string }[] = [
   },
   {
     icon: Footprints,
-    name: 'Runner',
+    name: 'Echo',
     tag: 'Showing up',
     body: 'You keep coming back. The same faces start to expect you, and the standing time becomes yours.',
   },
   {
     icon: Eye,
-    name: 'Operative',
+    name: 'Signal',
     tag: 'Known by name',
     body: 'You’re a regular now. You notice the newcomer in the corner, and you’re the one who says hello.',
   },
   {
     icon: Radio,
-    name: 'Agent',
+    name: 'Beacon',
     tag: 'Holding the door',
     body: 'You carry a Circle. You bring people in, smooth the rough edges, and keep the standing time alive.',
   },

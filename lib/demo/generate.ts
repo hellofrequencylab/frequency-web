@@ -26,14 +26,14 @@ const LAST = [
 ]
 
 // Rank bands (ghost -> luminary economy values). Added members skew new (mostly
-// ghost/runner) — they are joining a year-old community, not founding it.
+// ghost/echo) — they are joining a year-old community, not founding it.
 const BANDS: Record<string, { z: [number, number]; lz: [number, number]; g: [number, number]; s: [number, number]; a: [number, number] }> = {
   ghost:     { z: [5, 95],     lz: [20, 300],    g: [5, 60],     s: [0, 3],   a: [1, 4] },
-  runner:    { z: [100, 290],  lz: [300, 800],   g: [50, 150],   s: [2, 8],   a: [4, 7] },
-  operative: { z: [300, 740],  lz: [800, 2000],  g: [150, 400],  s: [5, 14],  a: [7, 11] },
+  echo:      { z: [100, 290],  lz: [300, 800],   g: [50, 150],   s: [2, 8],   a: [4, 7] },
+  signal:    { z: [300, 740],  lz: [800, 2000],  g: [150, 400],  s: [5, 14],  a: [7, 11] },
   conduit:   { z: [1500, 2100],lz: [4000, 7000], g: [800, 1400], s: [16, 30], a: [16, 22] },
 }
-const NEW_MEMBER_RANKS = ['ghost', 'ghost', 'ghost', 'runner', 'runner', 'operative'] as const
+const NEW_MEMBER_RANKS = ['ghost', 'ghost', 'ghost', 'echo', 'echo', 'signal'] as const
 
 const BIOS = [
   'New to the circle and already hooked.', 'Here for the people as much as the practice.',
@@ -246,8 +246,8 @@ export async function addDemoCircle(input: {
 
   const size = Math.max(6, Math.min(input.size ?? 14, 49))
   // crew x2, then members
-  await seedMember(d, circleId, 'operative', 'crew', practiceId, [], geo.label)
-  await seedMember(d, circleId, 'operative', 'crew', practiceId, [], geo.label)
+  await seedMember(d, circleId, 'signal', 'crew', practiceId, [], geo.label)
+  await seedMember(d, circleId, 'signal', 'crew', practiceId, [], geo.label)
   const { data: posts } = await d.from('posts').select('id').eq('scope_id', circleId).eq('is_demo', true)
   const postIds = (posts as { id: string }[] | null ?? []).map((p) => p.id)
   for (let i = 0; i < size - 3; i++) {

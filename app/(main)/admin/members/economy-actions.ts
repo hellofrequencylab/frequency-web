@@ -1,27 +1,30 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { logAdminAction } from '@/lib/admin/audit'
-import { atLeastRole } from '@/lib/core/roles'
+import { isJanitor } from '@/lib/core/roles'
 import type { Database } from '@/lib/database.types'
 
-// Shared auth guard — janitor-only for manual economy adjustments.
+// Shared auth guard — janitor-only for manual economy adjustments. Crown-jewel gate:
+// the STAFF axis (web_role janitor, ADR-208), read via the untyped cast (column not
+// yet in the generated types).
 async function requireJanitor(): Promise<{ id: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not signed in')
   const admin = createAdminClient()
-  const { data: profile } = await admin
+  const { data: profile } = await (admin as unknown as SupabaseClient)
     .from('profiles')
-    .select('id, community_role')
+    .select('id, web_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
-  if (!profile || !atLeastRole(profile.community_role as import('@/lib/core/roles').CommunityRole, 'janitor')) {
+  if (!profile || !isJanitor(profile.web_role)) {
     throw new Error('Janitor only')
   }
-  return { id: profile.id }
+  return { id: profile.id as string }
 }
 
 const MAX_GRANT = 100_000

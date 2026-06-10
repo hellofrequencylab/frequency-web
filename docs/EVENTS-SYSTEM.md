@@ -68,7 +68,7 @@ Legend: ✅ exists, reuse as-is · 🔧 exists, extend · 🆕 genuinely new · 
 | 5.4 | 3-touch reminder cadence | ✅🔧 | `event-reminders` cron already fires **T-24h / T-2h** (idempotent, prefs-gated, email+push). Add the **confirmation** (on RSVP) + **~1-week** touch to complete the research-backed 3-touch sequence. | `app/api/cron/event-reminders/route.ts` |
 | 5 (SMS) | Twilio + A2P 10DLC + TCPA | 🆕 | **The one truly new subsystem.** Not in COMMS-STRATEGY (locked channels are email/inapp/push). Highest legal risk — see §5. | none yet |
 | 6 | Zaps / Gems for events | ✅⚠️ | Mostly built and correct (RSVP→gems, attend→zaps, host→zaps+streak). Correct the brainstorm's single-currency framing and **rank names** (see §3). | `events/actions.ts`, `lib/{zaps,gems}.ts` |
-| 6.2 | Circle Field (collective) | 🆕 | New. Roll up members' event Zaps to a circle standing; `resonance_public` flag default false. Reuse existing circle-momentum metrics; **make the shared goal explicit** (research: collective works only when the goal + teammates are visible). | `circle_momentum` metrics, `memberships` |
+| 6.2 | Circle Current (collective) | 🆕 | New (was "Circle Field" — renamed to canon, NAMING.md/ADR-208). Roll up members' event Zaps to a circle standing; `resonance_public` flag default false. Reuse existing circle-momentum metrics; **make the shared goal explicit** (research: collective works only when the goal + teammates are visible). | `circle_momentum` metrics, `memberships` |
 | 6.3 | Gentle streaks | ✅ | Streak infra exists (`streaks`, `lib/streak.ts`, attendance/hosting streaks). Keep "breaking costs nothing." | `lib/streak.ts` |
 | 7 | Refunds / cancellation / waitlist | 🆕 | Real gaps on top of existing ticketing. Cancellation→bulk-refund→free capacity→promote waitlist. | `lib/billing/*`, Stripe MCP |
 | 8 | UX (Partiful feel) | 🔧 | Events already built on the **Page Framework** — see §6. Compose the kit; don't hand-roll. | `components/templates/*` |
@@ -78,10 +78,11 @@ Legend: ✅ exists, reuse as-is · 🔧 exists, extend · 🆕 genuinely new · 
 
 ## 3. Other corrections (smaller, but they'll bite)
 
-- **Rank ladder names are wrong.** Brainstorm says *Crew → Deshi → Sempai → Sensei → Sifu →
-  Bodhisattva*. The live ladder (`season_rank_enum`, `lib/season-ranks.ts`) is
-  **ghost → runner → operative → agent → conduit → luminary**, thresholds owned by the
-  `after_zap_transaction` trigger, 13-week seasonal reset via `reset_season()`. Use the real names.
+- **Rank ladder names are wrong.** The brainstorm's martial-arts ladder is **retired** — do not
+  reintroduce it (NAMING.md §Retired). The live, canon ladder (`season_rank_enum`,
+  `lib/season-ranks.ts`) is **ghost → echo → signal → beacon → conduit → luminary** (renamed
+  2026 — see docs/NAMING.md; migration `20260613000030`), thresholds owned by
+  the `after_zap_transaction` trigger, 13-week seasonal reset via `reset_season()`. Use the canon names.
 - **`user_id` → `profile_id`.** Everything keys on `profiles(id)`; `auth.uid()` maps via
   `profiles.auth_user_id`. The brainstorm's column names and RLS predicates assume the wrong shape.
 - **"Standalone events" is a real scope change.** Today events are **circle-scoped only**
@@ -124,7 +125,7 @@ counsel — rules shifted through 2024–2025.)
 - **Avoid competitive public leaderboards** (negative feedback to the lower-ranked → harmful for
   vulnerable users) and **loss-aversion streaks** (consensus harm to neurodivergent/trauma
   populations; never monetize streak-saves). Our streaks already "cost nothing to break" — keep it.
-- **Collective > competitive** *only when the shared goal + teammates are explicit*. So Circle Field
+- **Collective > competitive** *only when the shared goal + teammates are explicit*. So Circle Current
   must show "**our** circle logged N this week," not an inter-circle ranking. The `resonance_public`
   default-false design is right.
 
@@ -214,9 +215,9 @@ layout.
 - 🔧 Complete the reminder cadence: add **confirmation (on RSVP)** + **~1-week** touch to the live
   T-24h/T-2h cron; keep 24h sacred.
 - 🆕 **Auto add-to-calendar on RSVP** (one-tap ICS) — highest-ROI attendance lever.
-- 🆕 Circle Field roll-up + `resonance_public` (default false), shared-goal framing.
+- 🆕 Circle Current roll-up + `resonance_public` (default false), shared-goal framing.
 - **Accept:** member RSVPs and lands a calendar commitment; warm-proof block shows real, never-low
-  counts; verified check-in awards Zaps once; circle events accrue Field visible only to the circle.
+  counts; verified check-in awards Zaps once; circle events accrue Circle Current visible only to the circle.
 
 ### P0.5 — SMS compliance (start day one, parallel, long lead)
 - 🆕 Begin A2P 10DLC brand + campaign registration (1–3 wk). Confirm legal entity + EIN (also gates
@@ -286,7 +287,7 @@ lowest-risk wins are **auto-calendar-on-RSVP**, **completing the 3-touch cadence
   "waitlist" badges only when genuine.
 - ✅ **Create flow** (`new/event-form.tsx`): capacity/visibility/category/energy fields on the kit +
   DAWN token cleanup.
-- ⏳ **Next:** Circle Field roll-up + public-opt-in; ticket tiers/PWYC + refunds/cancellation;
+- ⏳ **Next:** Circle Current roll-up + public-opt-in; ticket tiers/PWYC + refunds/cancellation;
   event embeddings + "For You" matching + AI blurbs; SMS channel (A2P 10DLC/TCPA).
 
 > **Carried-over cleanup debt:** the events Index still awaits its queries inline (PAGE-FRAMEWORK §5
@@ -294,11 +295,12 @@ lowest-risk wins are **auto-calendar-on-RSVP**, **completing the 3-touch cadence
 > capacity logic stays centralized in `lib/events/capacity.ts`).
 
 ### 2026-06-09 — Wave 2 (shipped on this branch)
-- ✅ **Circle Field** (collective gamification): `circle_field_transactions` ledger + a trigger that
-  owns `circles.current_season_field` (mirrors the zaps ledger), `reset_season()` extended to zero
+- ✅ **Circle Current** (collective gamification; shipped as "Circle Field," renamed to canon by
+  migration `20260613000040` — NAMING.md/ADR-208): `circle_current_transactions` ledger + a trigger
+  that owns `circles.season_current` (mirrors the zaps ledger), `reset_season()` extended to zero
   it, awarded on verified check-in for circle-scoped events, surfaced as a collaborative
   ("our circle") standing gated by `circles.resonance_public`. Never ranks circles against each
-  other. (`20260610000000_circle_field.sql`, `lib/events/circle-field.ts`.)
+  other. (Original migration `20260610000000_circle_field.sql`; `lib/events/circle-field.ts`.)
 - ✅ **Ticket tiers + PWYC** (`20260610010000_event_ticket_types.sql`, `lib/billing/tickets.ts`):
   tiers with `pricing_mode` (fixed/free/pwyc/sliding_scale/donation), server-side floor enforcement,
   per-tier inventory (`sold`/`quantity`, never oversells), `member_only`. **Backward-compatible** —

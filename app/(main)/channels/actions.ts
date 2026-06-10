@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
@@ -199,22 +200,22 @@ export async function createTopicalChannel(formData: FormData): Promise<void> {
 
   if (existing) throw new Error('A channel with that name already exists.')
 
-  // Only accept a domain the host actually picked from the live list, so an
-  // assignment can never point at a stale or non-existent Channel.
-  let resolvedDomainId: string | null = null
+  // Only accept a pillar the host actually picked from the live list, so an
+  // assignment can never point at a stale or non-existent Pillar.
+  let resolvedPillarId: string | null = null
   if (domainId) {
-    const { data: domain } = await admin
-      .from('domains')
+    const { data: pillar } = await (admin as unknown as SupabaseClient)
+      .from('pillars')
       .select('id')
       .eq('id', domainId)
       .eq('is_active', true)
       .maybeSingle()
-    resolvedDomainId = domain?.id ?? null
+    resolvedPillarId = pillar?.id ?? null
   }
 
-  const { data: created, error } = await admin
+  const { data: created, error } = await (admin as unknown as SupabaseClient)
     .from('topical_channels')
-    .insert({ name, slug, category, description, domain_id: resolvedDomainId, is_active: true })
+    .insert({ name, slug, category, description, pillar_id: resolvedPillarId, is_active: true })
     .select('id, slug')
     .single()
 

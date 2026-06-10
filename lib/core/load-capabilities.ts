@@ -20,11 +20,16 @@ import { deriveTier } from './entitlement'
 import { isPaid } from './access-matrix'
 import { countOpenCircleTasks } from '@/lib/crew/circle-tasks'
 
+// The STAFF axis (web_role, ADR-208) rides on the caller profile alongside the
+// community role, so the SAME Viewer feeds every scope builder below — DB → auth →
+// capabilities. getCallerProfile() reads web_role through the untyped cast (the
+// generated types are stale until the migration applies).
 async function currentViewer(): Promise<Viewer> {
   const p = await getCallerProfile()
   return {
     profileId: p?.id ?? null,
     role: (p?.community_role ?? 'member') as CommunityRole,
+    webRole: p?.webRole ?? 'none',
     tier: deriveTier(p?.membershipTier),
   }
 }

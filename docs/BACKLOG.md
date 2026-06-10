@@ -304,7 +304,7 @@ tsc + eslint + 153/170 tests green and no broken refs after the rollbacks/rename
 
 Three interlocking features, assessed via parallel design agents. They chain: the
 **Wizard** builds **Journey plans**, plans are organized by the **4 Pillars** (= the
-`domains` table — Mind/Body/Spirit/Expression, with per-pillar `accent` colors), and
+`pillars` table — Mind/Body/Spirit/Expression, with per-pillar `accent` colors), and
 the graduated feed **Journey board** showcases them. Add an ADR per cluster on build.
 
 ### ✅ Shipped — Feed hero (onboarding guide → Journey board)
@@ -323,8 +323,8 @@ the graduated feed **Journey board** showcases them. Add an ADR per cluster on b
 
 ### ✅ Naming decided (ADR-087) — Journeys = open library; engine → Quests
 The member-facing **"Journeys"** is the open, free, user-built library. The gamified
-tracked engine was renamed **"Quests"** (`journey_chains → quest_chains`, `/crew/quests`,
-nav key `quests`). The `journey_*` table namespace is now free for the open library.
+tracked engine was renamed **"Quests"** (the legacy action-chain engine, since dropped — ADR-152;
+`/crew/quests`, nav key `quests`). The `journey_*` table namespace is now free for the open library.
 
 ### Q1. Open vitality library — user-built Journey plans (FREE; rides the practice loop)
 Reconciliation (ADR needed): the open library is **curation over the always-free
@@ -416,7 +416,7 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   the old `getQuestsData`/`startQuest`/`start-quest-button` deleted, the `Arc*` types dropped, and
   the sidebar "current track" repointed to the active Journey. Terminology pass: GLOSSARY /
   THE-QUEST / DATABASE updated to the hierarchy. *(Naming stable — no more renames.)*
-- [ ] **S1b · Drop the dormant `quest_*` tables** — `quest_chains`/`quest_steps`/`quest_progress`
+- [ ] **S1b · Drop the dormant `quest_*` tables** — the legacy action-chain engine's tables (dropped, ADR-152)
   are now unused by app code (engine retired in B3) but still exist. Drop them once the
   `quest_outcomes()` analytics RPC + its `/admin` outcomes surface (`lib/analytics/outcomes.ts`)
   are retired and `lib/database.types.ts` is regenerated. (S)

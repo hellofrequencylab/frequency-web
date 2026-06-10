@@ -19,7 +19,7 @@
 
 **The spine.** Every surface is one of four layers — **Awareness** (Home) · **Content**
 (Practice) · **Community** · **The Game** (The Quest) — plus a fifth role-gated
-**Operations** layer (Manage). The four life domains — **Mind · Body · Spirit ·
+**Operations** layer (Manage). The four life Pillars — **Mind · Body · Spirit ·
 Expression** — are the cross-cutting taxonomy that tags content and channels.
 
 **The member rail — five worlds:**

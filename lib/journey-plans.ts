@@ -15,7 +15,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { adoptPractice } from '@/lib/practices'
 import { resolveTier, type IntensityTier } from '@/lib/journey-tiers'
-import { currentSeasonWeek, qualifyingWeeks, DEFAULT_TARGET_WEEKS } from '@/lib/journey-arc'
+import { currentSeasonWeek, qualifyingWeeks, DEFAULT_TARGET_WEEKS } from '@/lib/journey-quest-clock'
 
 function db(): SupabaseClient {
   return createAdminClient() as unknown as SupabaseClient
@@ -61,7 +61,7 @@ export interface JourneyPlan {
   created_at: string
   updated_at: string
   published_at: string | null
-  /** Seasonal Quest this Journey is official under (null = open-library Journey). */
+  /** Quest this Journey is official under (null = open-library Journey). */
   quest_id: string | null
   /** Official season Journey (Guide/Mentor flagged). */
   official: boolean
@@ -271,7 +271,7 @@ export async function setPlanStatus(planId: string, status: PlanStatus): Promise
   await db().from('journey_plans').update({ status, ...touch() }).eq('id', planId)
 }
 
-/** Flag a plan official + link it to a Seasonal Quest. Guide/Mentor only — caller enforces. */
+/** Flag a plan official + link it to a Quest. Guide/Mentor only — caller enforces. */
 export async function setPlanOfficial(
   planId: string,
   opts: { official: boolean; questId?: string | null },
@@ -486,9 +486,9 @@ export interface JourneyProgressItem extends JourneyPlanItem {
   target: number
   /** Cadence met this week → the step counts as on track. */
   met: boolean
-  /** The intensity tier this viewer sees, resolved member→circle→item→current (ADR-198). */
+  /** The intensity tier this viewer sees, resolved member→circle→item→adept (ADR-198). */
   resolvedTier: IntensityTier
-  /** Content for the resolved tier (falls back to the 'current' tier, then null). */
+  /** Content for the resolved tier (falls back to the 'adept' tier, then null). */
   tierContent: PracticeTierContent | null
 }
 
@@ -686,7 +686,7 @@ export async function getActiveJourneyProgress(
       const resolvedTier = resolveTier(tierOverride, circleDefaultTier, it.default_tier)
       const tiers = it.practice?.tiers ?? []
       const tierContent =
-        tiers.find((t) => t.tier === resolvedTier) ?? tiers.find((t) => t.tier === 'current') ?? null
+        tiers.find((t) => t.tier === resolvedTier) ?? tiers.find((t) => t.tier === 'adept') ?? null
       return { ...it, loggedThisWeek, target, met: loggedThisWeek >= target, resolvedTier, tierContent }
     })
 

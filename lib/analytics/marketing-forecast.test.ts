@@ -63,7 +63,7 @@ describe('demandGaps', () => {
     circles: number,
     members: number,
   ): InterestDemand => ({
-    domain: 'connect',
+    pillar: 'connect',
     interest,
     interest_slug: interest.toLowerCase(),
     tune_ins,
@@ -124,7 +124,7 @@ describe('buildStrategy', () => {
       ],
       demand: [
         {
-          domain: 'connect',
+          pillar: 'connect',
           interest: 'Climbing',
           interest_slug: 'climbing',
           tune_ins: 30,

@@ -10,6 +10,7 @@
 // with "nothing happened" emails. The cron just skips those profiles.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 
 export type DigestDispatch = {
   id:           string
@@ -163,7 +164,10 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
       ? { type: topStreak.streak_type, count: topStreak.current_count }
       : null,
     rank: p.current_season_rank
-      ? { name: p.current_season_rank, zaps: p.current_season_zaps ?? 0 }
+      ? {
+          name: RANK_LABELS[p.current_season_rank as SeasonRank] ?? p.current_season_rank,
+          zaps: p.current_season_zaps ?? 0,
+        }
       : null,
   }
 }

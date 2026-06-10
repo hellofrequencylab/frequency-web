@@ -34,7 +34,7 @@ export interface GrowthForecast {
 }
 
 export interface DemandGap {
-  domain: string
+  pillar: string
   interest: string
   interest_slug: string
   tune_ins: number
@@ -162,7 +162,7 @@ export function demandGaps(demand: InterestDemand[], limit = 6): DemandGap[] {
       reason = `${demandUnits} interested across ${circles} circle${circles === 1 ? '' : 's'}`
     }
     return {
-      domain: d.domain,
+      pillar: d.pillar,
       interest: d.interest,
       interest_slug: d.interest_slug,
       tune_ins: tune,

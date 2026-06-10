@@ -1,15 +1,15 @@
-// Circle Field — collective (NOT competitive) gamification (EVENTS-SYSTEM §6.2).
+// Circle Current — collective (NOT competitive) gamification (EVENTS-SYSTEM §6.2).
 //
 // When a member checks into a circle-scoped event, we credit a small, fixed
-// amount to that circle's shared seasonal standing — "our circle gathered N
-// Field this season". This is the collaborative counterpart to the individual
+// amount to that circle's shared seasonal standing — "our circle built N
+// Current this season". This is the collaborative counterpart to the individual
 // Zaps a check-in already pays; it is deliberately NOT an inter-circle ranking,
 // and the standing is private by default (surfaced publicly only when the circle
 // opts in via circles.resonance_public). Research backing in EVENTS-SYSTEM §4.
 //
 // Model mirrors the zaps ledger (ADR-139): award = ONE append-only row in
-// circle_field_transactions; the after_circle_field_transaction trigger is the
-// single place circles.current_season_field moves. Never write the total column
+// circle_current_transactions; the after_circle_current_transaction trigger is the
+// single place circles.season_current moves. Never write the total column
 // directly. Server-only.
 //
 // The table + new column lag the generated Database types (same as lib/billing/*
@@ -19,29 +19,29 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-/** Fixed Circle Field credit per verified check-in to a circle event (per spec). */
-export const CIRCLE_FIELD_AWARD = 10
+/** Fixed Circle Current credit per verified check-in to a circle event (per spec). */
+export const CIRCLE_CURRENT_AWARD = 10
 
-/** Fixed Circle Field credit when a member completes a challenge the circle has
+/** Fixed Circle Current credit when a member completes a challenge the circle has
  *  adopted together (collaborative — see 20260611000000_circle_challenge_adoptions).
  *  A completed challenge is more effort than a single check-in, so it credits more. */
-export const CIRCLE_FIELD_CHALLENGE_AWARD = 25
+export const CIRCLE_CURRENT_CHALLENGE_AWARD = 25
 
 function db(): SupabaseClient {
   return createAdminClient() as unknown as SupabaseClient
 }
 
 /**
- * Credit Circle Field for a verified event check-in. Looks up the event; if it is
- * circle-scoped (scope_type = 'circle'), appends one circle_field_transactions row
- * crediting that circle CIRCLE_FIELD_AWARD, attributing the contribution to the
- * member who checked in. The trigger moves circles.current_season_field.
+ * Credit Circle Current for a verified event check-in. Looks up the event; if it is
+ * circle-scoped (scope_type = 'circle'), appends one circle_current_transactions row
+ * crediting that circle CIRCLE_CURRENT_AWARD, attributing the contribution to the
+ * member who checked in. The trigger moves circles.season_current.
  *
  * Best-effort and idempotency-agnostic: the caller (events check-in) already gates
  * on recordEngagementEvent for exactly-once, so this only runs on a genuine first
- * check-in. Never throws — a Field credit must never break a check-in.
+ * check-in. Never throws — a Current credit must never break a check-in.
  */
-export async function awardCircleFieldForCheckin(
+export async function awardCircleCurrentForCheckin(
   eventId: string,
   profileId: string,
 ): Promise<void> {
@@ -55,38 +55,38 @@ export async function awardCircleFieldForCheckin(
       .maybeSingle()
 
     if (lookupError || !event) return
-    // Only circle-scoped events feed a circle's Field (no-op otherwise).
+    // Only circle-scoped events feed a circle's Current (no-op otherwise).
     if (event.scope_type !== 'circle' || !event.scope_id) return
 
     const { error: insertError } = await admin
-      .from('circle_field_transactions')
+      .from('circle_current_transactions')
       .insert({
         circle_id: event.scope_id,
         event_id: event.id,
         profile_id: profileId,
-        amount: CIRCLE_FIELD_AWARD,
+        amount: CIRCLE_CURRENT_AWARD,
       })
 
-    if (insertError) console.error('[circle-field] credit failed:', insertError.message)
+    if (insertError) console.error('[circle-current] credit failed:', insertError.message)
   } catch (e) {
-    // Swallow — a Circle Field credit is never allowed to break a check-in.
-    console.error('[circle-field] unexpected error:', e)
+    // Swallow — a Circle Current credit is never allowed to break a check-in.
+    console.error('[circle-current] unexpected error:', e)
   }
 }
 
 /**
- * Credit Circle Field when `profileId` completes `challengeId`, for every circle
+ * Credit Circle Current when `profileId` completes `challengeId`, for every circle
  * they are an active member of that has ADOPTED that challenge together
  * (circle_challenge_adoptions). This is the collaborative roll-up of the existing
  * per-member challenge engine: a member finishing a shared challenge advances the
- * whole circle's Field, exactly like showing up to a circle event does.
+ * whole circle's Current, exactly like showing up to a circle event does.
  *
  * Naturally exactly-once: the caller (advanceChallenges in lib/achievements.ts)
  * only invokes this on the genuine first completion (completed_at flips once, then
- * the engine short-circuits). Best-effort and never throws — a Field credit must
+ * the engine short-circuits). Best-effort and never throws — a Current credit must
  * never break gamification processing.
  */
-export async function awardCircleFieldForChallengeCompletion(
+export async function awardCircleCurrentForChallengeCompletion(
   challengeId: string,
   profileId: string,
 ): Promise<void> {
@@ -116,35 +116,35 @@ export async function awardCircleFieldForChallengeCompletion(
     if (circleIds.length === 0) return
 
     const { error: insertError } = await admin
-      .from('circle_field_transactions')
+      .from('circle_current_transactions')
       .insert(
         circleIds.map((circle_id) => ({
           circle_id,
           event_id: null,
           profile_id: profileId,
-          amount: CIRCLE_FIELD_CHALLENGE_AWARD,
+          amount: CIRCLE_CURRENT_CHALLENGE_AWARD,
         })),
       )
 
-    if (insertError) console.error('[circle-field] challenge credit failed:', insertError.message)
+    if (insertError) console.error('[circle-current] challenge credit failed:', insertError.message)
   } catch (e) {
-    console.error('[circle-field] unexpected error (challenge):', e)
+    console.error('[circle-current] unexpected error (challenge):', e)
   }
 }
 
 /**
- * Read a circle's collective Circle Field standing for the active season. This is
- * the running total maintained by the after_circle_field_transaction trigger
- * (circles.current_season_field), not a re-aggregation of the ledger.
+ * Read a circle's collective Circle Current standing for the active season. This is
+ * the running total maintained by the after_circle_current_transaction trigger
+ * (circles.season_current), not a re-aggregation of the ledger.
  */
-export async function getCircleFieldStanding(
+export async function getCircleCurrentStanding(
   circleId: string,
-): Promise<{ seasonField: number }> {
+): Promise<{ seasonCurrent: number }> {
   const { data } = await db()
     .from('circles')
-    .select('current_season_field')
+    .select('season_current')
     .eq('id', circleId)
     .maybeSingle()
 
-  return { seasonField: (data?.current_season_field as number | null) ?? 0 }
+  return { seasonCurrent: (data?.season_current as number | null) ?? 0 }
 }

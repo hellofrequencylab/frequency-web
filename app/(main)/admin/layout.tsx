@@ -7,11 +7,11 @@ import { AdminSubNav } from './sub-nav'
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Floor for entering /admin: community host+ OR any staff role that can see at
   // least one admin group (ADR-127). Each group/page gates itself precisely.
-  const { role, staffRole } = await requireAdminFloor()
+  const { role, webRole, staffRole } = await requireAdminFloor()
 
   return (
     <div className="-mx-6 -my-6 flex min-h-full flex-col">
-      <AdminSubNav role={role} staffRole={staffRole} />
+      <AdminSubNav role={role} webRole={webRole} staffRole={staffRole} />
       <div className="flex-1 px-6 py-6">{children}</div>
     </div>
   )

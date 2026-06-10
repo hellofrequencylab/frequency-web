@@ -11,19 +11,25 @@ describe('atLeastRole', () => {
   })
 })
 
-describe('resolveCapabilities · global', () => {
-  it('grants admin.access to host+ only', () => {
+describe('resolveCapabilities · global (admin.access rides the STAFF axis, ADR-208)', () => {
+  it('grants admin.access to web_role staff (admin/janitor), NOT the community ladder', () => {
+    // Community standing alone never opens admin now — only web_role.
     expect(can(resolveCapabilities({ profileId: 'm', role: 'member' }, { kind: 'global' }), 'admin.access')).toBe(false)
-    expect(can(resolveCapabilities({ profileId: 'h', role: 'host' }, { kind: 'global' }), 'admin.access')).toBe(true)
-    expect(can(resolveCapabilities({ profileId: 'j', role: 'janitor' }, { kind: 'global' }), 'admin.access')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'h', role: 'host' }, { kind: 'global' }), 'admin.access')).toBe(false)
+    expect(can(resolveCapabilities({ profileId: 'mn', role: 'mentor' }, { kind: 'global' }), 'admin.access')).toBe(false)
+    // Staff axis opens it — even for a community member.
+    expect(can(resolveCapabilities({ profileId: 'a', role: 'member', webRole: 'admin' }, { kind: 'global' }), 'admin.access')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'j', role: 'member', webRole: 'janitor' }, { kind: 'global' }), 'admin.access')).toBe(true)
   })
 })
 
 describe('resolveCapabilities · profile', () => {
-  it('owner or janitor can edit, others cannot', () => {
+  it('owner or STAFF janitor (web_role) can edit, others cannot', () => {
     expect(can(resolveCapabilities({ profileId: 'p1', role: 'member' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(true)
     expect(can(resolveCapabilities({ profileId: 'p2', role: 'member' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(false)
-    expect(can(resolveCapabilities({ profileId: 'j', role: 'janitor' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(true)
+    // A community 'janitor'-rung with no web_role does NOT get moderation edit now.
+    expect(can(resolveCapabilities({ profileId: 'jc', role: 'janitor' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(false)
+    expect(can(resolveCapabilities({ profileId: 'j', role: 'member', webRole: 'janitor' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(true)
   })
 })
 
@@ -36,9 +42,11 @@ describe('resolveCapabilities · circle', () => {
     expect(can(caps, 'circle.post')).toBe(true)
   })
 
-  it('platform staff (admin + janitor) manage any circle', () => {
-    expect(can(resolveCapabilities({ profileId: 'jx', role: 'janitor' }, base), 'circle.editSettings')).toBe(true)
-    expect(can(resolveCapabilities({ profileId: 'ax', role: 'admin' }, base), 'circle.editSettings')).toBe(true)
+  it('platform staff (web_role admin + janitor) manage any circle', () => {
+    expect(can(resolveCapabilities({ profileId: 'jx', role: 'member', webRole: 'janitor' }, base), 'circle.editSettings')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'ax', role: 'member', webRole: 'admin' }, base), 'circle.editSettings')).toBe(true)
+    // The deprecated community 'admin' rung no longer manages circles on its own.
+    expect(can(resolveCapabilities({ profileId: 'ac', role: 'admin' }, base), 'circle.editSettings')).toBe(false)
   })
 
   it('an active member can post but not manage', () => {
@@ -150,9 +158,9 @@ describe('resolveCapabilities · event', () => {
     expect(can(resolveCapabilities({ profileId: 'host1', role: 'member' }, base), 'event.editSettings')).toBe(true)
   })
 
-  it('platform staff (admin + janitor) can edit any event', () => {
-    expect(can(resolveCapabilities({ profileId: 'ax', role: 'admin' }, base), 'event.editSettings')).toBe(true)
-    expect(can(resolveCapabilities({ profileId: 'jx', role: 'janitor' }, base), 'event.editSettings')).toBe(true)
+  it('platform staff (web_role admin + janitor) can edit any event', () => {
+    expect(can(resolveCapabilities({ profileId: 'ax', role: 'member', webRole: 'admin' }, base), 'event.editSettings')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'jx', role: 'member', webRole: 'janitor' }, base), 'event.editSettings')).toBe(true)
   })
 
   it('whoever manages the parent scope can edit (caller-computed)', () => {

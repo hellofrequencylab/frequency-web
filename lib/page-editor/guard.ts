@@ -1,7 +1,8 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStaffMember, staffCan } from '@/lib/staff'
-import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { isStaff, isJanitor, asWebRole } from '@/lib/core/roles'
 import { canUseSurface } from '@/lib/core/viewer-hats'
 
 // Marketing-page management is gated to the `janitor` community role (the top
@@ -15,15 +16,17 @@ export async function getJanitor(): Promise<{ profileId: string } | null> {
   } = await supabase.auth.getUser()
   if (!user) return null
 
-  const admin = createAdminClient()
+  // Page management is the Executive-Admin (janitor) web_role now (ADR-208).
+  const admin = createAdminClient() as unknown as SupabaseClient
   const { data } = await admin
     .from('profiles')
-    .select('id, community_role')
+    .select('id, web_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!data || data.community_role !== 'janitor') return null
-  return { profileId: data.id as string }
+  const row = data as { id: string; web_role?: string } | null
+  if (!row || !isJanitor(asWebRole(row.web_role))) return null
+  return { profileId: row.id }
 }
 
 export async function requireJanitor(): Promise<{ profileId: string }> {
@@ -41,15 +44,14 @@ export async function canAccessGrowthStudio(): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return false
 
-  const admin = createAdminClient()
+  const admin = createAdminClient() as unknown as SupabaseClient
   const { data } = await admin
     .from('profiles')
-    .select('community_role')
+    .select('web_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  const role = ((data?.community_role as CommunityRole) ?? 'member')
-  if (atLeastRole(role, 'admin')) return true
+  if (isStaff(asWebRole((data as { web_role?: string } | null)?.web_role))) return true
 
   const staff = await getStaffMember().catch(() => null)
   if (staff && staffCan(staff.role, 'marketing', 'read')) return true

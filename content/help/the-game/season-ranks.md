@@ -3,7 +3,7 @@ title: Season ranks
 description: How zaps move you up the ranks each season.
 category: the-game
 order: 2
-updated: 2026-06-08
+updated: 2026-06-10
 audience: member
 featureKeys: [ranks]
 status: published
@@ -16,9 +16,9 @@ Ranks are your standing in the current season of **The Quest**, earned by showin
 You climb as you earn season zaps:
 
 - **Ghost**
-- **Runner**: at 100 zaps
-- **Operative**: at 300 zaps
-- **Agent**: at 750 zaps
+- **Echo**: at 100 zaps
+- **Signal**: at 300 zaps
+- **Beacon**: at 750 zaps
 - **Conduit**: at 1,500 zaps
 - **Luminary**: the top, awarded by hand for those who've truly carried their community
 

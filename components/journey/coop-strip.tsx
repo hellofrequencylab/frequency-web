@@ -1,20 +1,20 @@
 import { Users, Radio } from 'lucide-react'
 
-// The Chorus — circle-companions strip (docs/JOURNEYS.md §9.1). When other members of your
-// circles also hold this journey, you're "doing it together." A Chorus forms at ≥3 active
+// The Co-op — circle-companions strip (docs/JOURNEYS.md §9.1). When other members of your
+// circles also hold this journey, you're "doing it together." A Co-op forms at ≥3 active
 // members on the same journey; counting the viewer, that's when `circleCompanions` reaches 2.
 // This is the lightweight signal — the full shared meter is later (§9.1 Phase 2). Server
-// Component, token colors only. ("Chorus", not "Resonance" — that term is the Connection
+// Component, token colors only. ("Co-op", not "Resonance" — that term is the Connection
 // Layer's, ADR-186.)
 //
-// `circleCompanions` excludes the viewer, so the chorus size including you is companions + 1.
+// `circleCompanions` excludes the viewer, so the co-op size including you is companions + 1.
 
-const CHORUS_THRESHOLD = 3 // active members (incl. viewer) for a Chorus to form
+const COOP_THRESHOLD = 3 // active members (incl. viewer) for a Co-op to form
 
-export function ChorusStrip({ companions }: { companions: number }) {
+export function CoopStrip({ companions }: { companions: number }) {
   if (companions <= 0) return null
   const total = companions + 1 // include the viewer
-  const forming = total >= CHORUS_THRESHOLD
+  const forming = total >= COOP_THRESHOLD
 
   return (
     <section
@@ -31,11 +31,11 @@ export function ChorusStrip({ companions }: { companions: number }) {
       </span>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-text">
-          {forming ? 'Your circle is in chorus' : 'You’re not walking alone'}
+          {forming ? 'Your circle is in co-op' : 'You’re not walking alone'}
         </p>
         <p className="text-xs leading-relaxed text-muted">
           {forming
-            ? `${total} from your circles are on this journey together — a Chorus is forming.`
+            ? `${total} from your circles are on this journey together — a Co-op is forming.`
             : `${companions} ${companions === 1 ? 'person' : 'people'} from your circles ${
                 companions === 1 ? 'is' : 'are'
               } on this journey too.`}

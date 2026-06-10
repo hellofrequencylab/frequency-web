@@ -15,24 +15,40 @@
 
 import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
 import { getStaffMember } from '@/lib/staff'
 import { staffCan, staffSeesAdmin, type StaffDomain, type StaffRole, type Access } from '@/lib/core/staff-roles'
 
 export interface AdminContext {
   profileId: string
   role: CommunityRole
+  /** The caller's STAFF web_role (ADR-208), independent of the community ladder. */
+  webRole: WebRole
   /** The caller's staff/operations role (ADR-127), or null. */
   staffRole: StaffRole | null
 }
 
 /**
- * Require at least `min` community role (default 'host', the floor for /admin).
- * ADR-127: pass `opts.staff` to ALSO admit a staff/operations role that holds that
- * capability domain (write) — an ADDITIVE, fail-closed union. With no `opts.staff`
- * the gate is community-only, exactly as before (so sensitive pages that don't opt
- * in — Roles, Members, AI, Platform — stay community-janitor only). On denial the
- * viewer is redirected home, not shown a 404.
+ * Does a `min` requirement (typed as CommunityRole for call-site compat) admit the
+ * caller? TWO AXES (ADR-208): a `min` of 'admin'/'janitor' now means the STAFF axis
+ * (web_role) — 'admin' admits admin+janitor, 'janitor' admits janitor only. Any
+ * other rung ('host'/'guide'/'mentor'/'crew'/'member') is the COMMUNITY ladder, read
+ * from community_role exactly as before.
+ */
+function meetsMin(min: CommunityRole, communityRole: CommunityRole, webRole: WebRole): boolean {
+  if (min === 'janitor') return isJanitor(webRole)
+  if (min === 'admin') return isStaff(webRole)
+  return atLeastRole(communityRole, min)
+}
+
+/**
+ * Require the caller to meet `min` (default 'host', the floor for /admin). With a
+ * community rung (host/guide/mentor) this reads the trust ladder; with 'admin'/
+ * 'janitor' it reads the STAFF axis (web_role, ADR-208). ADR-127: pass `opts.staff`
+ * to ALSO admit a staff/operations role that holds that capability domain (write) —
+ * an ADDITIVE, fail-closed union. With no `opts.staff` the gate is the primary axis
+ * only (so sensitive pages that don't opt in — Roles, Members, AI, Platform — stay
+ * staff-only). On denial the viewer is redirected home, not shown a 404.
  */
 export async function requireAdmin(
   min: CommunityRole = 'host',
@@ -42,37 +58,41 @@ export async function requireAdmin(
   if (!profile) redirect('/')
   const staff = await getStaffMember().catch(() => null)
   const staffRole = staff?.role ?? null
-  const okCommunity = atLeastRole(profile.community_role, min)
+  const okPrimary = meetsMin(min, profile.community_role, profile.webRole)
   const okStaff = opts?.staff ? staffCan(staffRole, opts.staff, opts.staffLevel ?? 'write') : false
-  if (!okCommunity && !okStaff) redirect('/feed')
-  return { profileId: profile.id, role: profile.community_role, staffRole }
+  if (!okPrimary && !okStaff) redirect('/feed')
+  return { profileId: profile.id, role: profile.community_role, webRole: profile.webRole, staffRole }
 }
 
-/** The /admin entry floor: community host+ OR any staff role that can see at least
- *  one admin group. Each group/page still gates itself precisely below this. */
+/** The /admin entry floor: community host+ OR platform staff (web_role admin/
+ *  janitor) OR any team_members staff role that can see at least one admin group.
+ *  Each group/page still gates itself precisely below this. */
 export async function requireAdminFloor(): Promise<AdminContext> {
   const profile = await getCallerProfile()
   if (!profile) redirect('/')
   const staff = await getStaffMember().catch(() => null)
   const staffRole = staff?.role ?? null
-  if (!atLeastRole(profile.community_role, 'host') && !staffSeesAdmin(staffRole)) redirect('/feed')
-  return { profileId: profile.id, role: profile.community_role, staffRole }
+  const okFloor =
+    atLeastRole(profile.community_role, 'host') || isStaff(profile.webRole) || staffSeesAdmin(staffRole)
+  if (!okFloor) redirect('/feed')
+  return { profileId: profile.id, role: profile.community_role, webRole: profile.webRole, staffRole }
 }
 
 /**
- * Authorize a server ACTION (mutation): returns the (non-null) caller if the
- * community ladder grants `min` OR (ADR-127) the caller's staff role holds
- * `staffDomain` (write); throws 'Unauthorized' otherwise. The action-level twin of
- * `requireAdmin`, for the `getCallerProfile()` + `hasRole` pattern in server actions.
- * Omit `staffDomain` to keep an action community-role only (sensitive mutations).
+ * Authorize a server ACTION (mutation): returns the (non-null) caller if `min` is
+ * met — the COMMUNITY ladder for host/guide/mentor, or the STAFF axis (web_role,
+ * ADR-208) for 'admin'/'janitor' mins — OR (ADR-127) the caller's team_members staff
+ * role holds `staffDomain` (write); throws 'Unauthorized' otherwise. The action-level
+ * twin of `requireAdmin`. Omit `staffDomain` to keep an action primary-axis only
+ * (sensitive mutations).
  */
-export async function authorizeAction<T extends { community_role: CommunityRole }>(
+export async function authorizeAction<T extends { community_role: CommunityRole; webRole: WebRole }>(
   caller: T | null,
   min: CommunityRole,
   staffDomain?: StaffDomain,
 ): Promise<T> {
   if (caller) {
-    if (atLeastRole(caller.community_role, min)) return caller
+    if (meetsMin(min, caller.community_role, caller.webRole)) return caller
     if (staffDomain) {
       const staff = await getStaffMember().catch(() => null)
       if (staffCan(staff?.role ?? null, staffDomain, 'write')) return caller

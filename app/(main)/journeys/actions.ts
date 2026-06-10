@@ -276,7 +276,7 @@ function canMakeOfficial(role: string): boolean {
   return role === 'guide' || role === 'mentor'
 }
 
-/** Per-step intensity default tier (Spark/Current/Deep) → updateItem defaultTier. */
+/** Per-step intensity default tier (Initiate/Adept/Master) → updateItem defaultTier. */
 export async function setJourneyStepTier(
   planId: string,
   practiceId: string,
@@ -343,7 +343,7 @@ export async function setJourneyOfficial(
 /**
  * Lazy context for the builder's role-gated Official section, fetched on mount so
  * the editor works even before the page passes the new props. Returns whether the
- * caller may make a Journey official + the assignable Seasonal Quests. Owner-checked.
+ * caller may make a Journey official + the assignable Quests. Owner-checked.
  * The plan's current official/quest/status come from the builder's own props.
  */
 export async function loadJourneyOfficialContext(

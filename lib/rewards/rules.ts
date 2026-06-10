@@ -36,12 +36,15 @@ const num = (v: string | number | null | undefined): number => (typeof v === 'nu
 
 export const REWARD_RULES: readonly RewardRule[] = [
   {
+    // Rule key stays `seasoned_agent` (stable grant identifier — renaming it would
+    // orphan past idempotent grants); the rank it gates on is now Beacon (canon rename
+    // Agent→Beacon, docs/NAMING.md).
     key: 'seasoned_agent',
-    label: 'Seasoned — reached Agent',
-    description: 'Anyone who ever climbed to Agent or higher (locked lifetime rank). Rewards past competitive seasons.',
+    label: 'Seasoned — reached Beacon',
+    description: 'Anyone who ever climbed to Beacon or higher (locked lifetime rank). Rewards past competitive seasons.',
     reward: { kind: 'gems', amount: 200 },
     active: true,
-    match: (m) => rankIndex(m.lifetimeRank as SeasonRank) >= rankIndex('agent'),
+    match: (m) => rankIndex(m.lifetimeRank as SeasonRank) >= rankIndex('beacon'),
   },
   {
     key: 'og_beta',

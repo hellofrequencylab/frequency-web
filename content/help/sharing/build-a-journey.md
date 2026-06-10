@@ -3,7 +3,7 @@ title: Build and share a journey
 description: Turn the practices you love into a journey — a life-development track — and share it with the community.
 category: sharing
 order: 3
-updated: 2026-06-09
+updated: 2026-06-10
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -26,8 +26,8 @@ name, pick an emoji and an accent color to give it a face, and you're in.
 - **Order them.** Drag the steps into the flow you want (or use the up/down arrows on
   mobile).
 - **Tune each step.** Open a step to set how often it should happen, add a short note —
-  "first thing, before coffee" — and choose its default **depth** (Spark, Current, or
-  Deep) for people who follow it.
+  "first thing, before coffee" — and choose its default **depth** (Initiate, Adept, or
+  Master) for people who follow it.
 - **Tell the story.** Add an intro to say why this journey matters and what someone
   will get from it. A line is plenty for a simple practice; write a full guide for a
   course.

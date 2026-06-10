@@ -14,7 +14,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **Quests and Journeys are free for everyone**: a **Journey** is a set of practices you move
   through; a **Quest** is a season's official collection of Journeys. Both are free now — start
-  a seasonal Quest, and build, adopt, remix and share your own Journeys at no cost. (The Quest
+  a season's Quest, and build, adopt, remix and share your own Journeys at no cost. (The Quest
   is still the game; only the Store and your public rank badge remain Crew perks.)
 
 ### Added
@@ -27,16 +27,16 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   tickets alongside fixed prices — and **refunds** are one tap. Money goes straight to the host.
 - **A "For You" lane for events**: when we have a sense of what resonates with you, the events
   library suggests gatherings you'd vibe with — and tells you, warmly, *why*.
-- **Circle Field**: every time someone from your circle shows up to a gathering, your circle builds
-  **Field** together — a shared, collaborative measure of showing up (private to your circle unless
-  you choose to share it). It's never a competition between circles.
+- **Circle Current**: every time someone from your circle shows up to a gathering, your circle builds
+  **Circle Current** together — a shared, collaborative measure of showing up (private to your circle
+  unless you choose to share it). It's never a competition between circles.
 - **Journeys, reimagined**: pick a season-long practice track and the app shows your **next
-  step** — one tap to log it. Every practice now comes in three depths — **Spark** (5 min),
-  **Current**, and **Deep** — and your circle Host can set the right depth for your group, or
+  step** — one tap to log it. Every practice now comes in three depths — **Initiate** (5 min),
+  **Adept**, and **Master** — and your circle Host can set the right depth for your group, or
   you can choose your own. Keep your rhythm and you earn a **Full Day** bonus, a **Weekly
   Rhythm** bonus, and — at 8 of the season's 13 weeks — you complete the Journey for Gems and a
   permanent badge. When three or more of your circle are on the same Journey, you form a
-  **Chorus** and travel it together. Your profile now carries a **Frequency Signature** — a
+  **Co-op** and travel it together. Your profile now carries a **Frequency Signature** — a
   living shape of how your practice spreads across Mind, Body, Spirit, and Expression.
 - **Local Marketplace**: a no-fee place to swap, give away, lend, or find things with
   neighbors. Browse by type, sort by **Near me** to see what's closest to you, post a

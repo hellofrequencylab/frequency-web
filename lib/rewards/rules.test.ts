@@ -24,9 +24,9 @@ describe('reward rules registry', () => {
     expect(rulesMatching(base)).toHaveLength(0)
   })
 
-  it('seasoned_agent matches a locked lifetime rank of Agent or higher (past behavior)', () => {
-    expect(rulesMatching({ ...base, lifetimeRank: 'operative' }).map((r) => r.key)).not.toContain('seasoned_agent')
-    expect(rulesMatching({ ...base, lifetimeRank: 'agent' }).map((r) => r.key)).toContain('seasoned_agent')
+  it('seasoned_agent matches a locked lifetime rank of Beacon or higher (past behavior)', () => {
+    expect(rulesMatching({ ...base, lifetimeRank: 'signal' }).map((r) => r.key)).not.toContain('seasoned_agent')
+    expect(rulesMatching({ ...base, lifetimeRank: 'beacon' }).map((r) => r.key)).toContain('seasoned_agent')
     expect(rulesMatching({ ...base, lifetimeRank: 'luminary' }).map((r) => r.key)).toContain('seasoned_agent')
   })
 

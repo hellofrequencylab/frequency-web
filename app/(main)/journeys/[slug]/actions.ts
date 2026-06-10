@@ -10,10 +10,10 @@ import type { IntensityTier } from '@/lib/journey-tiers'
 // author/editor actions live in app/(main)/journeys/actions.ts (imported there, not here).
 //
 // The one mutation a *member* makes from this page is their personal intensity-tier override
-// (docs/JOURNEYS.md §5): member override → circle default → item default → 'current'. It only
+// (docs/JOURNEYS.md §5): member override → circle default → item default → 'adept'. It only
 // changes WHAT they practise, never Zap/streak math, so it's a light, self-only write.
 
-const TIERS: readonly IntensityTier[] = ['spark', 'current', 'deep']
+const TIERS: readonly IntensityTier[] = ['initiate', 'adept', 'master']
 
 /**
  * Set (or clear, with null) the signed-in member's per-Journey intensity tier. Gated to the

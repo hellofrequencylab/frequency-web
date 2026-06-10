@@ -9,11 +9,13 @@ import { StatCard } from '@/components/ui/stat-card'
 import { AdminCreateMenu } from './create-menu'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { MemberManager, type MemberItem } from './member-manager'
+import { isJanitor } from '@/lib/core/roles'
 import type { CommunityRole } from '@/lib/core/roles'
 import type { SeasonRank } from '@/lib/season-ranks'
 
 export default async function AdminPageView() {
-  const { profileId, role, staffRole } = await requireAdminFloor()
+  const { profileId, role, webRole, staffRole } = await requireAdminFloor()
+  const staffJanitor = isJanitor(webRole) // STAFF axis (ADR-208), not the community ladder
   const admin = createAdminClient()
 
   // Overview stat counts — a quick aggregate for all admin roles.
@@ -27,10 +29,9 @@ export default async function AdminPageView() {
   // North Star: verified-practice metrics off the event backbone.
   const practice = await getPracticeMetrics()
 
-  const description =
-    role === 'janitor'
-      ? 'Full platform access — every surface below.'
-      : `Scoped to your ${role} level.`
+  const description = staffJanitor
+    ? 'Full platform access — every surface below.'
+    : `Scoped to your ${role} level.`
 
   return (
     <AdminPage
@@ -61,10 +62,10 @@ export default async function AdminPageView() {
       </AdminSection>
 
       <AdminSection title="Jump to" description="Everything you can manage, grouped by area.">
-        <AdminLaunchpad role={role} staffRole={staffRole} />
+        <AdminLaunchpad role={role} webRole={webRole} staffRole={staffRole} />
       </AdminSection>
 
-      {role === 'janitor' && <JanitorPanel />}
+      {staffJanitor && <JanitorPanel />}
       {role === 'host' && <HostPanel profileId={profileId} />}
       {role === 'guide' && <GuidePanel profileId={profileId} />}
       {role === 'mentor' && <MentorPanel profileId={profileId} />}
