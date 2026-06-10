@@ -40,12 +40,12 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'The Community',
   description:
-    'You don’t need another app. You need your people. Channels, Interests, and Circles: small standing groups that grow on their own.',
+    'You don’t need another app. You need your people. Pillars, Channels, and Circles: small standing groups that grow on their own.',
   alternates: { canonical: '/the-community' },
   openGraph: {
     title: 'The Community · Frequency',
     description:
-      'Four channels, your interests, and a Circle near you. Community with a shape, leaderful and built to last.',
+      'Four Pillars, your Channels, and a Circle near you. Community with a shape, leaderful and built to last.',
     url: '/the-community',
   },
 }
@@ -116,8 +116,8 @@ function LegacyTheCommunity() {
           structure you join.
         </Lead>
         <Body>
-          Frequency gives community a shape: four channels to find your practice,
-          interests to find your people, and Circles to actually belong. No
+          Frequency gives community a shape: four Pillars to find your practice,
+          Channels to find your people, and Circles to actually belong. No
           application, no audition, two words and you&apos;re in the room.
         </Body>
       </Section>
@@ -127,17 +127,17 @@ function LegacyTheCommunity() {
         <span className="text-primary">A few people who notice.</span>
       </Statement>
 
-      {/* The four channels — the domains a whole life moves through */}
+      {/* The four Pillars — the parts a whole life moves through */}
       <Section tone="surface">
         <SectionHeading
-          eyebrow="The four channels"
-          title="A whole life has four channels."
+          eyebrow="The four Pillars"
+          title="A whole life has four Pillars."
           kicker="Mind, Body, Spirit, Expression. Start in any of them."
         />
         <p className="text-lg text-muted leading-relaxed mb-9">
-          Channels are the four domains a real life moves through. They&apos;re the
+          The Pillars are the four parts a real life moves through. They&apos;re the
           map you arrive on: pick the one that&apos;s calling you right now, and the
-          interests and Circles inside it are where you actually land.
+          Channels and Circles inside it are where you actually land.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {CHANNELS.map((c) => (
@@ -170,13 +170,13 @@ function LegacyTheCommunity() {
             n="01"
             icon={Compass}
             title="Pick what you practice"
-            text="Choose a channel, then an interest inside it: breathwork, strength, supper clubs, sound. It's the thread that ties you to people who care about the same thing."
+            text="Choose a Pillar, then a Channel inside it: breathwork, strength, supper clubs, sound. It's the thread that ties you to people who care about the same thing."
           />
           <Step
             n="02"
             icon={Users}
             title="Join a Circle"
-            text="Find your people near you. A small standing group built around your interest, with an always-on virtual space and a standing time to meet in person."
+            text="Find your people near you. A small standing group built around your Channel, with an always-on virtual space and a standing time to meet in person."
           />
           <Step
             n="03"
@@ -187,25 +187,25 @@ function LegacyTheCommunity() {
         </div>
       </Section>
 
-      {/* Interests + Circles — the core mechanic, in detail */}
+      {/* Channels + Circles — the core mechanic, in detail */}
       <ZigZag
         img="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
         alt="A Frequency Circle gathered for breathwork outdoors"
         eyebrow="Where you belong"
-        title="Interests and Circles"
+        title="Channels and Circles"
         kicker="Two words are all it takes to find your place."
         imgAspect="landscape"
         tone="surface"
       >
         <p>
-          An <strong className="text-text">interest</strong> is what you practice:
-          a topic inside a channel. Surfing, sound baths, strength, human relating.
+          A <strong className="text-text">Channel</strong> is what you practice:
+          a topic inside a Pillar. Surfing, sound baths, strength, human relating.
           It connects you to people everywhere who care about the same things you
           do.
         </p>
         <p>
           A <strong className="text-text">Circle</strong> is your people, near you.
-          A small standing group built around an interest, with an always-on
+          A small standing group built around a Channel, with an always-on
           virtual space, and a standing time to meet in person. Small enough that
           you&apos;re missed when you don&apos;t show up.
         </p>
@@ -259,7 +259,7 @@ function LegacyTheCommunity() {
           <Layer
             icon={Users}
             title="A Circle"
-            text="A handful of neighbors around one interest. The smallest unit that can hold you."
+            text="A handful of neighbors around one Channel. The smallest unit that can hold you."
           />
           <Layer
             icon={Network}

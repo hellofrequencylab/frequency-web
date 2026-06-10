@@ -14,6 +14,7 @@ import { getAnthropic } from './client'
 import { MODELS, type ModelTier } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
+import { withVoice } from './voice'
 import { coerceExtraction } from '@/lib/connections/normalize'
 import type { ExtractedContact } from '@/lib/connections/types'
 
@@ -49,7 +50,7 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
       tags: {
         type: 'array',
         items: { type: 'string' },
-        description: '3–6 short, lowercase descriptors — interests, industry, or how you might collaborate.',
+        description: '3 to 6 short, lowercase descriptors: interests, industry, or how you might collaborate.',
       },
       connectionNote: {
         type: 'string',
@@ -81,17 +82,17 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
 const SCAN_SYSTEM = `You are Vera, Frequency's assistant. A community steward photographed a business card, flyer, or poster and wants it turned into a CRM profile.
 
 Read every detail you can and call the save_contact tool. Rules:
-- You may be given several images of the SAME contact — e.g. the front and back of a business card, plus other photos. Treat them as one person and merge every detail you can read across all of them.
-- Only record what is actually present — never invent a name, email, company, or any other detail.
-- tags: 3–6 short lowercase descriptors (interests, industry, or how the steward might collaborate).
-- connectionNote: one or two warm, human sentences the steward can use to remember who this is — no fluff, no fabricated backstory.
-- photo: if a portrait/headshot of the person appears in ANY image, set found=true, imageIndex to which image it is in (0-based, in the order given), and box to the normalized bounding box (x,y top-left, w,h size — each 0..1) tightly around the face/portrait. If no image shows the person's photo, set found=false.`
+- You may be given several images of the SAME contact, e.g. the front and back of a business card, plus other photos. Treat them as one person and merge every detail you can read across all of them.
+- Only record what is actually present. Never invent a name, email, company, or any other detail.
+- tags: 3 to 6 short lowercase descriptors (interests, industry, or how the steward might collaborate).
+- connectionNote: one or two warm, human sentences the steward can use to remember who this is. No fluff, no fabricated backstory.
+- photo: if a portrait/headshot of the person appears in ANY image, set found=true, imageIndex to which image it is in (0-based, in the order given), and box to the normalized bounding box (x,y top-left, w,h size, each 0..1) tightly around the face/portrait. If no image shows the person's photo, set found=false.`
 
 const ASSIST_SYSTEM = `You are Vera, Frequency's assistant. A community steward is jotting a quick note about someone they just met, and wants it tidied into a CRM profile.
 
 Turn their free text into structured details and call the save_contact tool. Rules:
-- Only fill fields the text actually supports — do not invent contact details.
-- tags: 3–6 short lowercase descriptors drawn from what they wrote.
+- Only fill fields the text actually supports. Do not invent contact details.
+- tags: 3 to 6 short lowercase descriptors drawn from what they wrote.
 - connectionNote: a tidied one-or-two-sentence version of the connection, in a warm, human voice. Do not add facts they didn't mention.
 - There is no image, so set photo.found=false.`
 
@@ -109,7 +110,7 @@ async function runExtraction(opts: {
       model: MODELS[opts.tier],
       max_tokens: 1024,
       thinking: { type: 'disabled' },
-      system: opts.system,
+      system: withVoice(opts.system),
       tools: [EXTRACTION_TOOL],
       tool_choice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: opts.content }],
@@ -151,7 +152,7 @@ export async function scanCardImage(input: {
       type: 'text' as const,
       text:
         imgs.length > 1
-          ? `These ${imgs.length} images are different views of the SAME person/contact — e.g. the front and back of a business card, plus other photos. Combine everything you can read across all of them into ONE profile. Call save_contact.`
+          ? `These ${imgs.length} images are different views of the SAME person/contact, e.g. the front and back of a business card, plus other photos. Combine everything you can read across all of them into ONE profile. Call save_contact.`
           : 'Harvest this person’s details into a profile. Call save_contact.',
     },
   ]

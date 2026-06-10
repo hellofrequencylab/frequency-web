@@ -27,7 +27,7 @@ export const data: Data = {
     },
     {
       type: 'Statement',
-      props: { id: 'pr-stmt-beta', text: 'Free during beta. No card required — your Founder pricing locks in for launch.', accent: 'No card required', tone: 'surface', layout: L },
+      props: { id: 'pr-stmt-beta', text: 'Free during beta. No card required, and your Founder pricing locks in for launch.', accent: 'No card required', tone: 'surface', layout: L },
     },
     {
       type: 'Tiers',

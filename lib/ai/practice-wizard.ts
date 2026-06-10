@@ -11,6 +11,7 @@ import { getAnthropic } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
+import { withVoice } from './voice'
 
 export interface PracticeSuggestion {
   title: string
@@ -30,7 +31,7 @@ const TOOL: Anthropic.Tool = {
       title: { type: 'string', description: 'A short, motivating name for THEIR version (≤ 60 chars).' },
       cadence: {
         type: 'string',
-        description: "How often, in their words — e.g. 'Daily', 'Weekday mornings', '3× a week'.",
+        description: "How often, in their words, e.g. 'Daily', 'Weekday mornings', '3× a week'.",
       },
       steps: {
         type: 'array',
@@ -51,7 +52,7 @@ const SYSTEM = `You are Vera, Frequency's warm, encouraging guide. A member is c
 Rules:
 - Keep the spirit of the template, but adapt the title, cadence, and steps to the member's stated goal and realistic schedule.
 - steps: 3–5 short, concrete, doable actions in second person ("Lay your shoes by the door"). No fluff, no preamble.
-- cadence: match what they can realistically sustain — undercommit rather than over-promise.
+- cadence: match what they can realistically sustain; undercommit rather than over-promise.
 - title: a short, motivating name for their version.
 - why: one genuine sentence on why this fits them. Never invent facts about them.
 - Always call the personalize_practice tool.`
@@ -89,7 +90,7 @@ export async function personalizePractice(input: {
       model: MODELS.haiku,
       max_tokens: 700,
       thinking: { type: 'disabled' },
-      system: SYSTEM,
+      system: withVoice(SYSTEM),
       tools: [TOOL],
       tool_choice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],

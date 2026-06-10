@@ -133,7 +133,7 @@ export function NewCircleCompose({
         )}
         {needsInterest && (
           <div>
-            <label className={cmLabel}>Interest *</label>
+            <label className={cmLabel}>Channel *</label>
             <select value={interestId} onChange={e => setInterestId(e.target.value)}
               required disabled={isPending} className={cmInput}>
               <option value="">What does it practice?</option>

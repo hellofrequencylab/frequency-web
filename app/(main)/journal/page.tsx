@@ -59,7 +59,7 @@ export default async function JournalPage() {
   return (
     <FocusTemplate
       title="Your Journal"
-      description="Your record of showing up — every moment you’ve captured, newest first. This is the feed as a journal, not a scroll: proof you were here."
+      description="Your record of showing up: every moment you’ve captured, newest first. This is the feed as a journal, not a scroll: proof you were here."
     >
       {entries.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
@@ -68,7 +68,7 @@ export default async function JournalPage() {
           </span>
           <p className="text-sm font-semibold text-text">Nothing captured yet</p>
           <p className="mx-auto mt-1 max-w-xs text-sm text-muted">
-            Tap <strong className="text-text">Capture</strong> to log your first moment — a photo, a note, a hello.
+            Tap <strong className="text-text">Capture</strong> to log your first moment: a photo, a note, a hello.
           </p>
         </div>
       ) : (
@@ -109,7 +109,7 @@ export default async function JournalPage() {
             </section>
           ))}
           <p className="px-1 text-center text-xs text-subtle">
-            Your journal lives in the <Link href="/feed" className="text-primary-strong hover:underline">community’s feed</Link> too — your record is part of the story.
+            Your journal lives in the <Link href="/feed" className="text-primary-strong hover:underline">community’s feed</Link> too. Your record is part of the story.
           </p>
         </div>
       )}

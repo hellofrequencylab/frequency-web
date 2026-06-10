@@ -3,7 +3,7 @@ title: What is Frequency?
 description: The short version of what Frequency is and how it helps you find real-world community.
 category: getting-started
 order: 1
-updated: 2026-05-31
+updated: 2026-06-10
 audience: member
 featureKeys: [community, circles]
 status: published
@@ -17,10 +17,10 @@ both online and in person.
 
 Most online communities are a feed and a hope. Frequency has a shape:
 
-- An **Interest** is what you practice: movement, breathwork, holistic health,
+- A **Channel** is what you practice: movement, breathwork, holistic health,
   creativity, human relating, and more. It connects you to people everywhere who
   care about the same thing.
-- A **Circle** is your people, near you. A small group built around an Interest,
+- A **Circle** is your people, near you. A small group built around a Channel,
   with an always-on space online and usually a standing time to meet in person.
 - As Circles grow, they seed new ones nearby, and a neighborhood of Circles
   becomes a whole local community. None of it is appointed from the top.
@@ -33,7 +33,7 @@ and supporting local life. The point is the practices, the places, and the peopl
 
 ## What to do first
 
-1. Pick an Interest that fits what you want more of in your life.
+1. Pick a Channel that fits what you want more of in your life.
 2. Find a Circle near you and join it.
 3. Show up to the next gathering. That is the whole game.
 

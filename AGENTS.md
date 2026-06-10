@@ -4,6 +4,22 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+# Naming + voice — consult BEFORE writing or editing ANY copy
+
+Two locked canons govern everything a member, visitor, or operator can read (UI
+copy, notifications, practice/Journey/help pages, marketing, emails, error/empty
+states, SEO/meta, AND every word any AI feature generates — Vera, blurbs, drafts):
+
+- **[`docs/NAMING.md`](docs/NAMING.md)** — terminology. Always wins on names.
+- **[`docs/CONTENT-VOICE.md`](docs/CONTENT-VOICE.md)** — demographic, voice, and
+  SEO/AIO. The voice is "a camp counselor you actually respect": proper nouns carry
+  the magic, sentences stay plain, never narrate the reader's feelings, pass the
+  skeptic test. **No em dashes in brand copy.** Run its §10 checklist on every piece.
+
+AI-generated copy must read these too: the shared primer in
+`lib/ai/voice.ts` injects the rules into Vera and every generation path. If this
+guide and the naming canon conflict, the naming canon wins on names.
+
 # Documentation protocol (git ⇄ Notion) — follow on every change
 
 When you plan or ship anything, route the docs by audience. Full spec:

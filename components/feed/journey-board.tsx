@@ -21,7 +21,7 @@ const COLLAPSE_KEY = 'fq_journey_board_collapsed'
 // not confetti, and never a score.
 function encouragement(streak: number): string {
   if (streak <= 0) return 'A fresh page. Log one practice today and your story here begins.'
-  if (streak < 3) return 'You showed up. That’s the whole game — keep the thread going.'
+  if (streak < 3) return 'You showed up. That’s the whole game, so keep the thread going.'
   if (streak < 7) return 'A rhythm is forming. This is how it starts to feel like yours.'
   if (streak < 30) return 'You’re building something real, one day at a time.'
   return 'Steady and lit. You’ve made this a way of being, not a task.'
@@ -107,7 +107,7 @@ export function JourneyBoard({
                 )}
                 {freezeTokens > 0 && (
                   <span
-                    title={`${freezeTokens} streak freeze${freezeTokens === 1 ? '' : 's'} banked — bridges a missed day`}
+                    title={`${freezeTokens} streak freeze${freezeTokens === 1 ? '' : 's'} banked, bridges a missed day`}
                     className="inline-flex items-center gap-0.5 rounded-full bg-signal-bg/50 px-1.5 py-0.5 text-3xs font-semibold text-signal-strong"
                   >
                     <Snowflake className="h-3 w-3" />{freezeTokens}
@@ -117,7 +117,7 @@ export function JourneyBoard({
               <p className="mt-0.5 text-[13px] leading-snug text-muted">
                 {atRisk
                   ? willFreezeProtect
-                    ? 'Today’s not logged yet — a freeze has you covered, but logging keeps it clean.'
+                    ? 'Today’s not logged yet. A freeze has you covered, but logging keeps it clean.'
                     : 'Log one practice today to keep your streak alive.'
                   : encouragement(streak)}
               </p>

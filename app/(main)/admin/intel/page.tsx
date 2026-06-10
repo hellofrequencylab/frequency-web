@@ -186,11 +186,11 @@ export default async function MarketingIntelPage() {
       </AdminSection>
 
       <AdminSection
-        title="Interest demand vs supply"
+        title="Channel demand vs supply"
         description="Where tune-ins and joins outrun the circles available. The gaps are what to seed next."
       >
         <Table
-          head={['Pillar', 'Interest', 'Tune-ins', 'Circles', 'Members']}
+          head={['Pillar', 'Channel', 'Tune-ins', 'Circles', 'Members']}
           rows={intel.demand.map((d) => [d.pillar, d.interest, d.tune_ins, d.circles, d.members])}
         />
       </AdminSection>

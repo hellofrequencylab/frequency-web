@@ -3,19 +3,19 @@ title: How to join a Circle
 description: Find a local group around what you practice and start showing up.
 category: getting-started
 order: 2
-updated: 2026-05-31
+updated: 2026-06-10
 audience: member
 featureKeys: [circles, memberships]
 status: published
 ---
 
-A Circle is a small local group built around one Interest. Joining one is how you
+A Circle is a small local group built around one Channel. Joining one is how you
 go from browsing to belonging.
 
 ## Find a Circle
 
 1. Open **Circles** from the main navigation.
-2. Browse by Interest, or look for Circles near your city. In-person Circles carry
+2. Browse by Channel, or look for Circles near your city. In-person Circles carry
    a location marker so you can see what meets near you.
 3. Open a Circle to see who is in it, what they practice, and when they gather.
 

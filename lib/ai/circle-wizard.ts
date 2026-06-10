@@ -11,6 +11,7 @@ import { getAnthropic } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
+import { withVoice } from './voice'
 
 export interface CircleSuggestion {
   name: string
@@ -31,18 +32,18 @@ const TOOL: Anthropic.Tool = {
       },
       about: {
         type: 'string',
-        description: 'One or two warm, plain sentences (≤ 240 chars), second person — what they do together and that newcomers are welcome.',
+        description: 'One or two warm, plain sentences (≤ 240 chars), second person: what they do together and that newcomers are welcome.',
       },
     },
     required: ['name', 'about'],
   },
 }
 
-const SYSTEM = `You are Vera, Frequency's warm, encouraging guide. A member is starting a CIRCLE — a small local crew (up to ~50 people) who meet regularly around one shared practice. Suggest a name and a short "about" for their circle.
+const SYSTEM = `You are Vera, Frequency's warm, encouraging guide. A member is starting a CIRCLE, a small local crew (up to ~50 people) who meet regularly around one shared practice. Suggest a name and a short "about" for their circle.
 
 Rules:
 - name: short and inviting, evocative of the practice and of gathering regularly. Avoid a generic "X Group"; prefer something a person would want to join. No surrounding quotes.
-- about: one or two warm, plain sentences — what they do together and that all levels / newcomers are welcome. Second person, no hype, no emoji.
+- about: one or two warm, plain sentences on what they do together and that all levels / newcomers are welcome. Second person, no hype, no emoji.
 - Never invent a specific place, day, or any fact you weren't given.
 - Always call the suggest_circle tool.`
 
@@ -68,7 +69,7 @@ export async function suggestCircleDraft(input: {
       model: MODELS.haiku,
       max_tokens: 300,
       thinking: { type: 'disabled' },
-      system: SYSTEM,
+      system: withVoice(SYSTEM),
       tools: [TOOL],
       tool_choice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
@@ -106,7 +107,7 @@ export function fallbackCircleSuggestion(interest: string, type: 'in-person' | '
   const name = `${type === 'online' ? 'Online ' : ''}${i} Circle`
   const about =
     type === 'online'
-      ? `A crew who gather online to practice ${i.toLowerCase()} together, regularly. Newcomers welcome — you just have to show up.`
-      : `A local crew who meet regularly to practice ${i.toLowerCase()} together. Newcomers welcome — you just have to show up.`
+      ? `A crew who gather online to practice ${i.toLowerCase()} together, regularly. Newcomers welcome. You just have to show up.`
+      : `A local crew who meet regularly to practice ${i.toLowerCase()} together. Newcomers welcome. You just have to show up.`
   return { name, about }
 }

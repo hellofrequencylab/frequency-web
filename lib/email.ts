@@ -142,7 +142,7 @@ function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
 }): string {
   const who = escapeHtml(inviterName || 'A friend')
   const hey = recipientName ? `Hey ${escapeHtml(recipientName)} 👋🏼` : 'Hey 👋🏼'
-  const footer = `A one-time invite from ${who} — we won't add you to any marketing list. Not interested? <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a> and you won't hear from us again.<br>❤️ Frequency™ · ${orgContactLine()}`
+  const footer = `A one-time invite from ${who}, we won't add you to any marketing list. Not interested? <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a> and you won't hear from us again.<br>❤️ Frequency™ · ${orgContactLine()}`
   return emailShell(`
     <h1 style="${h1Style}">${hey}</h1>
     <p style="${pStyle}">
@@ -150,7 +150,7 @@ function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
       told you a little about our mission to create and connect community.
     </p>
     <p style="${pStyle}">
-      We won't send a bunch of marketing emails — but we're happy to send you Quest reminders on your
+      We won't send a bunch of marketing emails, but we're happy to send you Quest reminders on your
       Journey once you're in.
     </p>
     <p style="margin:0 0 28px;">
@@ -174,13 +174,12 @@ function scanIntroText({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
 
 Your friend ${who} invited you to join The Quest. Hopefully they told you a little about our mission to create and connect community.
 
-We won't send a bunch of marketing emails — but we're happy to send you Quest reminders on your Journey once you're in.
+We won't send a bunch of marketing emails, but we're happy to send you Quest reminders on your Journey once you're in.
 
 Join us here: ${joinUrl}
 
 ❤️ Frequency™
 
-—
 A one-time invite from ${who}; we won't add you to any marketing list. To opt out so you never hear from us: ${unsubscribeUrl}
 ${addr ? addr : `Frequency™ · ${BASE_URL}`}`
 }
@@ -280,8 +279,8 @@ export async function sendEventRsvpConfirmationEmail(params: {
   } = params
 
   const subject = status === 'going'
-    ? `✅ You're going — ${eventTitle}`
-    : `📝 You're on the waitlist — ${eventTitle}`
+    ? `✅ You're going: ${eventTitle}`
+    : `📝 You're on the waitlist: ${eventTitle}`
 
   const unsubscribeUrl = buildUnsubscribeUrl({
     baseUrl:   BASE_URL,
@@ -342,7 +341,7 @@ function eventCancelledHtml({ recipientName, eventTitle, whenAbsolute, eventUrl,
   recipientName: string; eventTitle: string; whenAbsolute: string; eventUrl: string; refunded: boolean; unsubscribeUrl: string
 }): string {
   const refundLine = refunded
-    ? `<p style="${pStyle}"><strong>You've been fully refunded.</strong> The charge for your ticket has been reversed — it can take a few business days to land back on your original payment method.</p>`
+    ? `<p style="${pStyle}"><strong>You've been fully refunded.</strong> The charge for your ticket has been reversed, it can take a few business days to land back on your original payment method.</p>`
     : ''
   return emailShell(`
     <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#b91c1c;margin:28px 0 8px;">
@@ -350,7 +349,7 @@ function eventCancelledHtml({ recipientName, eventTitle, whenAbsolute, eventUrl,
     </p>
     <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
     <p style="${pStyle}">
-      Hi ${escapeHtml(recipientName)} — we're sorry to share that this event has been cancelled
+      Hi ${escapeHtml(recipientName)}, we're sorry to share that this event has been cancelled
       and won't be going ahead.
     </p>
     <p style="${pStyle}">
@@ -371,11 +370,11 @@ function eventCancelledText({ recipientName, eventTitle, whenAbsolute, eventUrl,
   recipientName: string; eventTitle: string; whenAbsolute: string; eventUrl: string; refunded: boolean; unsubscribeUrl: string
 }): string {
   const refundLine = refunded
-    ? `\nYou've been fully refunded. The charge for your ticket has been reversed — it can take a few business days to land back on your original payment method.\n`
+    ? `\nYou've been fully refunded. The charge for your ticket has been reversed, it can take a few business days to land back on your original payment method.\n`
     : ''
   return `Event cancelled: ${eventTitle}
 
-Hi ${recipientName} — we're sorry to share that this event has been cancelled and won't be going ahead.
+Hi ${recipientName}, we're sorry to share that this event has been cancelled and won't be going ahead.
 
 When: ${whenAbsolute}
 ${refundLine}
@@ -473,7 +472,7 @@ export async function sendBetaInviteEmail(params: {
   const { to, signupUrl, displayName } = params
   await enqueueEmail({
     to,
-    subject: "You're in — welcome to the Frequency Beta",
+    subject: "You're in, welcome to the Frequency Beta",
     html: betaInviteHtml({ signupUrl, displayName: displayName ?? null }),
     text: betaInviteText({ signupUrl, displayName: displayName ?? null }),
   })
@@ -565,10 +564,10 @@ function welcomeHtml({ displayName }: { displayName: string }): string {
       <strong>A few things to explore:</strong>
     </p>
     <ul style="font-size:15px;color:#555;line-height:1.8;padding-left:20px;margin:0 0 20px;">
-      <li><a href="${BASE_URL}/circles" style="color:#4f46e5;">Circles</a> — your local group</li>
-      <li><a href="${BASE_URL}/events" style="color:#4f46e5;">Events</a> — what's on near you</li>
-      <li><a href="${BASE_URL}/broadcast" style="color:#4f46e5;">Broadcast</a> — announcements from your community</li>
-      <li><a href="${BASE_URL}/crew" style="color:#4f46e5;">Crew</a> — earn zaps for showing up</li>
+      <li><a href="${BASE_URL}/circles" style="color:#4f46e5;">Circles</a>: your local group</li>
+      <li><a href="${BASE_URL}/events" style="color:#4f46e5;">Events</a>: what's on near you</li>
+      <li><a href="${BASE_URL}/broadcast" style="color:#4f46e5;">Broadcast</a>: announcements from your community</li>
+      <li><a href="${BASE_URL}/crew" style="color:#4f46e5;">Crew</a>: earn zaps for showing up</li>
     </ul>
   `)
 }
@@ -587,7 +586,7 @@ A few things to explore:
 - Crew (earn zaps): ${BASE_URL}/crew
 
 See you out there.
-— The Frequency Team
+The Frequency Team
 `
 }
 
@@ -599,7 +598,7 @@ function inviteHtml({ inviterName, circleName, inviteUrl }: {
   return emailShell(`
     <h1 style="${h1Style}">${inviterName} invited you to join ${circleName}.</h1>
     <p style="${pStyle}">
-      You've been invited to join <strong>${circleName}</strong> on Frequency — a community platform
+      You've been invited to join <strong>${circleName}</strong> on Frequency, a community platform
       for local groups to connect, organise events, and stay in touch.
     </p>
     <a href="${inviteUrl}" style="${btnStyle}">Accept invite →</a>
@@ -685,7 +684,7 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
     <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#4f46e5;margin:28px 0 8px;">
       Your week
     </p>
-    <h1 style="${h1Style}">Hi ${recipientName} —</h1>
+    <h1 style="${h1Style}">Hi ${recipientName} , </h1>
     <p style="${pStyle}">Here's what's happening in your community this week.</p>
     ${statusHtml}
     ${dispatchesHtml}
@@ -709,7 +708,7 @@ function digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank
   rank:           { name: string | null; zaps: number } | null
   unsubscribeUrl: string
 }): string {
-  const lines: string[] = [`Hi ${recipientName} — here's your week on Frequency.\n`]
+  const lines: string[] = [`Hi ${recipientName}, here's your week on Frequency.\n`]
 
   if (rank || topStreak) {
     lines.push('YOUR STANDING')
@@ -731,7 +730,7 @@ function digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank
   if (upcomingEvents.length) {
     lines.push('THIS WEEK ON YOUR CALENDAR')
     for (const e of upcomingEvents) {
-      lines.push(`  · ${e.title} — ${formatDigestDate(e.startsAt)} ${formatDigestTime(e.startsAt)}${e.location ? ` · ${e.location}` : ''}`)
+      lines.push(`  · ${e.title}, ${formatDigestDate(e.startsAt)} ${formatDigestTime(e.startsAt)}${e.location ? ` · ${e.location}` : ''}`)
       lines.push(`    ${e.url}`)
     }
     lines.push('')
@@ -758,7 +757,7 @@ function eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute,
     </p>
     <h1 style="${h1Style}">${eventTitle}</h1>
     <p style="${pStyle}">
-      Hi ${recipientName} — your event is ${whenLabel}.
+      Hi ${recipientName}, your event is ${whenLabel}.
     </p>
     <p style="${pStyle}">
       <strong>${whenAbsolute}</strong>${location ? `<br><span style="color:#777;">${location}</span>` : ''}
@@ -777,7 +776,7 @@ function eventReminderText({ eventTitle, whenLabel, whenAbsolute, location, even
   eventTitle: string; whenLabel: string; whenAbsolute: string;
   location: string | null; eventUrl: string; lead: '24h' | '2h'; unsubscribeUrl: string
 }): string {
-  const eyebrow = lead === '24h' ? 'Reminder — tomorrow' : 'Starting soon'
+  const eyebrow = lead === '24h' ? 'Reminder: tomorrow' : 'Starting soon'
   return `${eyebrow}: ${eventTitle}
 
 Your event is ${whenLabel}.
@@ -813,8 +812,8 @@ function rsvpConfirmationHtml({
 }): string {
   const eyebrow = status === 'going' ? "You're going" : "You're on the waitlist"
   const intro = status === 'going'
-    ? `Hi ${escapeHtml(recipientName)} — you're confirmed. We'll see you there, and we'll send a reminder as it gets close.`
-    : `Hi ${escapeHtml(recipientName)} — this one's full, so you're on the waitlist. If a spot opens up we'll move you in automatically and let you know. No action needed.`
+    ? `Hi ${escapeHtml(recipientName)}, you're confirmed. We'll see you there, and we'll send a reminder as it gets close.`
+    : `Hi ${escapeHtml(recipientName)}, this one's full, so you're on the waitlist. If a spot opens up we'll move you in automatically and let you know. No action needed.`
   const hostLine = rsvpHostLine(hostName, circleName)
 
   // Add-to-calendar only for confirmed seats — pointless on a waitlist hold.
@@ -842,7 +841,7 @@ function rsvpConfirmationHtml({
     <a href="${eventUrl}" style="${btnStyle}">View event →</a>
     <hr style="${dividerStyle}">
     <p style="font-size:13px;color:#999;">
-      You're receiving this because you RSVP'd to attend. Plans change, and that's okay —
+      You're receiving this because you RSVP'd to attend. Plans change, and that's okay,
       <a href="${eventUrl}" style="color:#999;">update your RSVP</a> any time.
       <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage preferences</a>
       · <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from event reminders</a>.
@@ -861,8 +860,8 @@ function rsvpConfirmationText({
 }): string {
   const eyebrow = status === 'going' ? "You're going" : "You're on the waitlist"
   const intro = status === 'going'
-    ? `Hi ${recipientName} — you're confirmed. We'll see you there, and we'll send a reminder as it gets close.`
-    : `Hi ${recipientName} — this one's full, so you're on the waitlist. If a spot opens up we'll move you in automatically and let you know. No action needed.`
+    ? `Hi ${recipientName}, you're confirmed. We'll see you there, and we'll send a reminder as it gets close.`
+    : `Hi ${recipientName}, this one's full, so you're on the waitlist. If a spot opens up we'll move you in automatically and let you know. No action needed.`
 
   const hostPlain =
     hostName && circleName ? `Hosted by ${hostName} · ${circleName}` :
@@ -888,7 +887,7 @@ function rsvpConfirmationText({
 
   lines.push(
     '',
-    "Plans change, and that's okay — update your RSVP any time.",
+    "Plans change, and that's okay, update your RSVP any time.",
     `Manage preferences: ${BASE_URL}/settings/notifications`,
     `Unsubscribe from event reminders: ${unsubscribeUrl}`,
   )
@@ -911,7 +910,7 @@ function dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispa
     <a href="${dispatchUrl}" style="${btnStyle}">Read dispatch →</a>
     <hr style="${dividerStyle}">
     <p style="font-size:13px;color:#999;">
-      Hi ${recipientName} — this dispatch was posted to your community on Frequency.
+      Hi ${recipientName}, this dispatch was posted to your community on Frequency.
       <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage preferences</a>
       · <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from dispatches</a>.
     </p>

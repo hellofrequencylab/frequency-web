@@ -39,7 +39,7 @@ export const data: Data = {
       type: 'Text',
       props: {
         id: 'tc-premise-b',
-        body: 'You already have the apps. What you’re missing is the standing time, the handful of faces, the small group small enough that your absence leaves a hole. That’s not a feature you download. It’s a structure you join.\n\nFrequency gives community a shape: four channels to find your practice, interests to find your people, and Circles to actually belong. No application, no audition, two words and you’re in the room.',
+        body: 'You already have the apps. What you’re missing is the standing time, the handful of faces, the small group small enough that your absence leaves a hole. That’s not a feature you download. It’s a structure you join.\n\nFrequency gives community a shape: four Pillars to find your practice, Channels to find your people, and Circles to actually belong. No application, no audition, two words and you’re in the room.',
         size: 'lg', tone: 'canvas', width: 'default', align: 'left', layout: L,
       },
     },
@@ -50,8 +50,8 @@ export const data: Data = {
     {
       type: 'Heading',
       props: {
-        id: 'tc-channels-h', eyebrow: 'The four channels',
-        title: 'A whole life has four channels.', titleAccent: '',
+        id: 'tc-channels-h', eyebrow: 'The four Pillars',
+        title: 'A whole life has four Pillars.', titleAccent: '',
         kicker: 'Mind, Body, Spirit, Expression. Start in any of them.',
         size: 'default', tone: 'surface', width: 'default', align: 'left', layout: L,
       },
@@ -60,7 +60,7 @@ export const data: Data = {
       type: 'Text',
       props: {
         id: 'tc-channels-b',
-        body: 'Channels are the four domains a real life moves through. They’re the map you arrive on: pick the one that’s calling you right now, and the interests and Circles inside it are where you actually land.',
+        body: 'The Pillars are the four parts a real life moves through. They’re the map you arrive on: pick the one that’s calling you right now, and the Channels and Circles inside it are where you actually land.',
         size: 'lg', tone: 'surface', width: 'default', align: 'left', layout: L,
       },
     },
@@ -91,8 +91,8 @@ export const data: Data = {
       props: {
         id: 'tc-steps-grid', eyebrow: '', title: '', titleAccent: '', style: 'number', columns: '3',
         items: [
-          { icon: 'Compass', image: '', title: 'Pick what you practice', body: 'Choose a channel, then an interest inside it: breathwork, strength, supper clubs, sound. It’s the thread that ties you to people who care about the same thing.', href: '' },
-          { icon: 'Users', image: '', title: 'Join a Circle', body: 'Find your people near you. A small standing group built around your interest, with an always-on virtual space and a standing time to meet in person.', href: '' },
+          { icon: 'Compass', image: '', title: 'Pick what you practice', body: 'Choose a Pillar, then a Channel inside it: breathwork, strength, supper clubs, sound. It’s the thread that ties you to people who care about the same thing.', href: '' },
+          { icon: 'Users', image: '', title: 'Join a Circle', body: 'Find your people near you. A small standing group built around your Channel, with an always-on virtual space and a standing time to meet in person.', href: '' },
           { icon: 'CalendarDays', image: '', title: 'Show up', body: 'That’s the whole secret. Small enough that you’re missed when you don’t come, so showing up stops feeling like effort and starts feeling like home.', href: '' },
         ],
         tone: 'canvas', width: 'default', align: 'left', layout: L,
@@ -103,9 +103,9 @@ export const data: Data = {
       props: {
         id: 'tc-interests', image: '/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg',
         alt: 'A Frequency Circle gathered for breathwork outdoors',
-        eyebrow: 'Where you belong', title: 'Interests and Circles', titleAccent: '',
+        eyebrow: 'Where you belong', title: 'Channels and Circles', titleAccent: '',
         kicker: 'Two words are all it takes to find your place.',
-        body: 'An interest is what you practice: a topic inside a channel. Surfing, sound baths, strength, human relating. It connects you to people everywhere who care about the same things you do.\n\nA Circle is your people, near you. A small standing group built around an interest, with an always-on virtual space, and a standing time to meet in person. Small enough that you’re missed when you don’t show up.',
+        body: 'A Channel is what you practice: a topic inside a Pillar. Surfing, sound baths, strength, human relating. It connects you to people everywhere who care about the same things you do.\n\nA Circle is your people, near you. A small standing group built around a Channel, with an always-on virtual space, and a standing time to meet in person. Small enough that you’re missed when you don’t show up.',
         side: 'left', imgAspect: 'landscape', focal: 'center', ctaLabel: '', ctaHref: '',
         tone: 'surface', width: 'default', align: 'left', layout: L,
       },
@@ -123,10 +123,10 @@ export const data: Data = {
       props: {
         id: 'tc-app-grid', eyebrow: '', title: '', titleAccent: '', style: 'icon', columns: '2',
         items: [
-          { icon: 'Zap', image: '', title: 'The Feed', body: 'The pulse of your people. What’s happening near you, right now — no algorithm, no outrage, just real life.', href: '' },
+          { icon: 'Zap', image: '', title: 'The Feed', body: 'The pulse of your people. What’s happening near you, right now. No algorithm, no outrage, just real life.', href: '' },
           { icon: 'Users', image: '', title: 'Circles', body: 'Small rooms around the things you love. Where strangers near you turn into your people.', href: '' },
           { icon: 'CalendarDays', image: '', title: 'Events', body: 'Close the laptop and show up. One tap to RSVP, and now you’re expected.', href: '' },
-          { icon: 'MessageCircle', image: '', title: 'Channels', body: 'Mind, Body, Spirit, Expression — tune in and the interests and Circles inside light up.', href: '' },
+          { icon: 'MessageCircle', image: '', title: 'Channels', body: 'Pick a Pillar (Mind, Body, Spirit, Expression), tune into a Channel, and the Circles inside light up.', href: '' },
         ],
         tone: 'canvas', width: 'default', align: 'left', layout: L,
       },
@@ -159,7 +159,7 @@ export const data: Data = {
       props: {
         id: 'tc-shape-grid', eyebrow: '', title: '', titleAccent: '', style: 'icon', columns: '3',
         items: [
-          { icon: 'Users', image: '', title: 'A Circle', body: 'A handful of neighbors around one interest. The smallest unit that can hold you.', href: '' },
+          { icon: 'Users', image: '', title: 'A Circle', body: 'A handful of neighbors around one Channel. The smallest unit that can hold you.', href: '' },
           { icon: 'MapPin', image: '', title: 'A neighborhood', body: 'Circles that divide and multiply until your corner of the map is full of them.', href: '' },
           { icon: 'Leaf', image: '', title: 'A community', body: 'A whole local ecosystem: leaderful, self-sustaining, grown rather than built.', href: '' },
         ],
