@@ -22,6 +22,6 @@ export async function postWelcomeForMember(displayName: string, handle: string):
     scope_id: system.id,
     visibility: 'public',
     post_type: 'feed',
-    body: `Everyone, welcome @${handle} to the community 👋 — say hi and help ${firstName} feel at home.`,
+    body: `Everyone, welcome @${handle} to the community 👋 Say hi and help ${firstName} feel at home.`,
   })
 }

@@ -42,7 +42,7 @@ export function OnlineMembersCard({ members }: { members: OnlineMember[] }) {
     <SidebarCard title="Online now" count={members.length}>
       {members.length === 0 ? (
         <p className="text-xs leading-relaxed text-subtle">
-          No one’s online right now. Check back soon — or be the one who says hi first.
+          No one’s online right now. Check back soon, or be the one who says hi first.
         </p>
       ) : (
         <ul className="flex flex-col gap-0.5">
@@ -113,7 +113,7 @@ export function CommunityStatsCard({
           <span className="min-w-0">
             <dt className="text-xs text-subtle">Most popular place</dt>
             <dd className="truncate text-base font-bold text-text">
-              {topPlace ?? '—'}
+              {topPlace ?? '–'}
               {topPlace && topPlaceCount ? (
                 <span className="ml-1.5 text-xs font-medium text-subtle">{topPlaceCount} members</span>
               ) : null}

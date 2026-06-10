@@ -34,7 +34,7 @@ export const TRAINING: Partial<Record<CommunityRole, TrainingDef>> = {
   crew: {
     role: 'crew',
     title: 'Welcome to Crew',
-    blurb: 'You’re in. Here’s how to get the most out of the community — find your circles and start a practice.',
+    blurb: 'You’re in. Here’s how to get the most out of the community: find your circles and start a practice.',
     steps: [
       { label: 'Join a local circle', href: '/help/getting-started/join-a-circle' },
       { label: 'Adopt a practice', href: '/help/getting-started/practices' },

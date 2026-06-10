@@ -39,7 +39,7 @@ export const DEFAULT_VERA_CONFIG: VeraConfig = {
   tier: 'haiku',
   maxReplyChars: 320,
   greeting:
-    "Hey — I'm really glad you're here. I'm Vera; I look after this place and the people in it. What's alive for you today? Wherever you're starting from is the right place to start.",
+    "Hey, I'm really glad you're here. I'm Vera; I look after this place and the people in it. What's alive for you today? Wherever you're starting from is the right place to start.",
   induction: {
     oathHeading: COPY.oath.heading,
     oathBody: COPY.oath.body,

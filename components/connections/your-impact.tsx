@@ -27,7 +27,7 @@ export async function YourImpact() {
         <ImpactStat label="Activated" value={impact.activated.toLocaleString()} />
         <ImpactStat
           label="Avg. days to join"
-          value={impact.avgDaysToActivate == null ? '—' : impact.avgDaysToActivate.toLocaleString()}
+          value={impact.avgDaysToActivate == null ? '–' : impact.avgDaysToActivate.toLocaleString()}
         />
         <ImpactStat label="Became connectors" value={impact.catalysts.toLocaleString()} />
       </div>

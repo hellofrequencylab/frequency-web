@@ -449,7 +449,7 @@ export default async function CommunityPage({
                 <EmptyState
                   icon={MapPin}
                   title={`No circles near ${placeParam ?? 'you'} yet`}
-                  description="We’re just getting started here. Be the first to start a circle for this area — others are looking too."
+                  description="We’re just getting started here. Be the first to start a circle for this area. Others are looking too."
                 />
               ) : (
                 <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3">

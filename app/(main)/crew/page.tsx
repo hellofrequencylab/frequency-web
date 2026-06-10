@@ -76,7 +76,7 @@ export default async function CrewPage() {
   // North-Star action) if any are unlogged; otherwise nudge toward a gathering.
   const practicesToLog = await getPracticesToLogToday(profile.id)
   const nextAction = practicesToLog.length > 0
-    ? { title: 'Log today’s practice', desc: 'The one move that keeps your streak — and your circle — alive.', href: '/practices', label: 'Log it', Icon: Flame }
+    ? { title: 'Log today’s practice', desc: 'The one move that keeps your streak (and your circle) alive.', href: '/practices', label: 'Log it', Icon: Flame }
     : { title: 'Find your next gathering', desc: 'Showing up in person is where it gets real. See what your circles are running.', href: '/events', label: 'See events', Icon: CalendarDays }
 
   // Available GLOBAL catalogue tasks (circle_id IS NULL). Circle-scoped tasks

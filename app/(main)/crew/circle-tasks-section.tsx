@@ -129,7 +129,7 @@ export async function CircleTasksSection({
                   </span>
                 ) : (
                   <p className="mt-1 text-xs text-subtle">
-                    Open — {canClaim ? 'claim it to take this on for your circle.' : 'a Crew member can claim this.'}
+                    Open. {canClaim ? 'Claim it to take this on for your circle.' : 'A Crew member can claim this.'}
                   </p>
                 )}
               </div>

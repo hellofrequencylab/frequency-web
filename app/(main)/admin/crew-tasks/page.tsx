@@ -119,8 +119,8 @@ export default async function AdminCrewTasksPage() {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          <SidebarCard title="Quick Actions">
-            <p className="px-4 py-3 text-xs text-subtle">Tasks that require verification must be manually approved here before zaps are awarded. Repeatable tasks can be completed multiple times per season.</p>
+          <SidebarCard title="Quick actions">
+            <p className="px-4 py-3 text-xs text-subtle">Tasks that require verification must be manually approved here before Zaps are awarded. Repeatable tasks can be completed multiple times per season.</p>
           </SidebarCard>
         </div>
       </div>

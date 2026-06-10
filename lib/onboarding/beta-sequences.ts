@@ -49,7 +49,7 @@ const EARLY_ADOPTER: BetaSequence = {
   splash: {
     eyebrow: 'You found us early',
     headline: "You're not a user. You're a Founder.",
-    body: 'You came for what you saw — a place to turn the people near you into real community. It’s live, it’s raw, and the first few hundred people shape what it becomes. Be one of them.',
+    body: 'You came for what you saw: a place to turn the people near you into real community. It’s live, it’s raw, and the first few hundred people shape what it becomes. Be one of them.',
     cta: 'Claim your spot',
     image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
     imageAlt: 'A Frequency community dancing together outdoors at golden hour, arms raised',
@@ -68,7 +68,7 @@ const PERSONAL: BetaSequence = {
   splash: {
     eyebrow: 'A personal invite',
     headline: 'I built this for people like you.',
-    body: 'It’s Daniel. I’ve spent a long time quietly building Frequency — a way to turn the people near you into your actual community. It’s real now, but rough, and I want your eyes on it before anyone else’s. Come help me get it right.',
+    body: 'It’s Daniel. I’ve spent a long time quietly building Frequency, a way to turn the people near you into your actual community. It’s real now, but rough, and I want your eyes on it before anyone else’s. Come help me get it right.',
     cta: 'I’m in, Daniel',
     image: '/images/site/community-1.jpg',
     imageAlt: 'A small group of friends gathered close together, talking and laughing',
@@ -79,7 +79,7 @@ const PERSONAL: BetaSequence = {
     oath: {
       eyebrow: 'Before you come in',
       heading: 'This one’s personal.',
-      body: 'I’m not handing you a finished product — I’m handing you the keys while the paint’s still wet. Break it, tell me what’s off, help me shape it. That’s the whole deal, and it means a lot that you’re here.',
+      body: 'I’m not handing you a finished product. I’m handing you the keys while the paint’s still wet. Break it, tell me what’s off, help me shape it. That’s the whole deal, and it means a lot that you’re here.',
       cta: 'I’m in',
     },
     intro: {
@@ -89,14 +89,14 @@ const PERSONAL: BetaSequence = {
       cta: 'Let’s go',
     },
     identity: {
-      heading: 'First — who are you?',
+      heading: 'First, who are you?',
       body: 'Put your name and your face to it. The people you’ll meet in here should know it’s really you.',
     },
     place: {
       heading: 'Where are you?',
-      body: 'I’ll point you at the people closest to you — and learn what you’re hoping to find, so I can actually help.',
+      body: 'I’ll point you at the people closest to you, and learn what you’re hoping to find, so I can actually help.',
       intentLabel: 'What are you hoping to find here?',
-      intentPlaceholder: 'Say it plainly — it helps me point you at your people.',
+      intentPlaceholder: 'Say it plainly. It helps me point you at your people.',
     },
     tour: {
       eyebrow: 'Here’s what you’re shaping',
@@ -106,8 +106,8 @@ const PERSONAL: BetaSequence = {
     },
     enter: {
       eyebrow: 'Last step',
-      heading: 'Thank you — truly.',
-      body: 'One thing before you dive in: let’s find your people. Vera, your guide, already knows what you’re into — she’ll point you to a circle worth joining, then get out of your way.',
+      heading: 'Thank you. Truly.',
+      body: 'One thing before you dive in: let’s find your people. Vera, your guide, already knows what you’re into. She’ll point you to a circle worth joining, then get out of your way.',
       cta: 'Meet Vera',
     },
   },
@@ -123,7 +123,7 @@ const FOUNDING_PARTNER: BetaSequence = {
   splash: {
     eyebrow: 'Founding Partners',
     headline: 'Get in on the ground floor.',
-    body: 'Frequency is building the connective tissue for real-world local community. The builders and businesses who help shape it now become its Founding Partners — early access, a real voice in where this goes, and your name on the foundation everyone else will stand on.',
+    body: 'Frequency is building the connective tissue for real-world local community. The builders and businesses who help shape it now become its Founding Partners: early access, a real voice in where this goes, and your name on the foundation everyone else will stand on.',
     cta: 'Become a Founding Partner',
     image: '/images/site/lab-concept.jpg',
     imageAlt: 'A bright, welcoming community space designed for people to gather and build together',
@@ -140,18 +140,18 @@ const FOUNDING_PARTNER: BetaSequence = {
     intro: {
       eyebrow: 'Welcome, Founding Partner',
       heading: 'You’re not a customer. You’re a Founding Partner.',
-      body: 'The people who shape a place in its first days are the ones it’s built around. Bring your community, your craft, your business — and help lay the foundation. We’ll make sure it’s worth your name.',
+      body: 'The people who shape a place in its first days are the ones it’s built around. Bring your community, your craft, your business, and help lay the foundation. We’ll make sure it’s worth your name.',
       cta: 'Let’s go',
     },
     identity: {
-      heading: 'First — who are you?',
+      heading: 'First, who are you?',
       body: 'Your name, your face, and what you bring. This is how the community will know its Founding Partners.',
     },
     place: {
       heading: 'Where are you building?',
-      body: 'We’ll connect you with the partners and people closest to you — and learn what you’re here to build.',
+      body: 'We’ll connect you with the partners and people closest to you, and learn what you’re here to build.',
       intentLabel: 'What are you here to build?',
-      intentPlaceholder: 'Your community, your craft, your business — tell us what you’re bringing.',
+      intentPlaceholder: 'Your community, your craft, your business. Tell us what you’re bringing.',
     },
     tour: {
       eyebrow: 'The foundation you’re laying',
@@ -162,7 +162,7 @@ const FOUNDING_PARTNER: BetaSequence = {
     enter: {
       eyebrow: 'Last step',
       heading: 'Welcome aboard, Partner.',
-      body: 'One thing before you start: let’s find your people. Vera, your guide, already knows what you bring — she’ll point you toward where you can make the biggest mark, then step aside.',
+      body: 'One thing before you start: let’s find your people. Vera, your guide, already knows what you bring. She’ll point you toward where you can make the biggest mark, then step aside.',
       cta: 'Meet Vera',
     },
   },

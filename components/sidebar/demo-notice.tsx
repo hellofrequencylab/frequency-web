@@ -55,7 +55,7 @@ export async function DemoNotice() {
         <p className="text-[13px] leading-snug text-subtle">
           Anything with a{' '}
           <Zap className="inline h-3 w-3 fill-warning align-[-1px] text-warning" aria-hidden /> bolt is
-          sample content keeping the place alive while we grow — it recedes as real members join.
+          sample content keeping the place alive while we grow. It recedes as real members join.
           <span className="font-semibold text-text"> Do something real and earn ⚡.</span>
         </p>
 

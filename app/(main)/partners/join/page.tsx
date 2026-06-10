@@ -19,7 +19,7 @@ export default async function PartnerProgramsPage() {
   return (
     <IndexTemplate
       title="Partner programs"
-      description="Upgrade packages for what you do beyond membership. Claim any combination — the team verifies each before its tools go live. Billing for the money-moving programs comes at launch."
+      description="Upgrade packages for what you do beyond membership. Claim any combination. The team verifies each before its tools go live. Billing for the money-moving programs comes at launch."
     >
       <div className="grid max-w-2xl grid-cols-1 gap-3">
         {PARTNER_PERSONAS.map((p) => {

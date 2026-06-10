@@ -11,7 +11,7 @@ import { Zap } from 'lucide-react'
 export function DemoBadge({ className = '' }: { className?: string }) {
   return (
     <span
-      title="Sample content for the Beta — it recedes as real members join."
+      title="Sample content for the Beta. It recedes as real members join."
       className={`inline-flex shrink-0 items-center gap-1 rounded-full border border-warning/30 bg-warning-bg/50 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-warning ${className}`}
     >
       <Zap className="h-2.5 w-2.5 fill-warning text-warning" aria-hidden />

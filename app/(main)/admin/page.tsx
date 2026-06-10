@@ -30,7 +30,7 @@ export default async function AdminPageView() {
   const practice = await getPracticeMetrics()
 
   const description = staffJanitor
-    ? 'Full platform access — every surface below.'
+    ? 'Full platform access. Every surface below.'
     : `Scoped to your ${role} level.`
 
   return (

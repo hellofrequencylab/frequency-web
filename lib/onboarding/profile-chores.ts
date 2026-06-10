@@ -57,13 +57,13 @@ export async function getProfileChores(profileId: string): Promise<ProfileChores
     {
       key: 'city',
       label: 'Where you’re planted',
-      nudge: 'Your city — it’s how the people near you actually find you.',
+      nudge: 'Your city. It’s how the people near you actually find you.',
       href: '/settings/profile',
       done: !!(p?.city && String(p.city).trim()),
     },
     {
       key: 'post',
-      label: 'Break the seal — say something',
+      label: 'Break the seal: say something',
       nudge: 'One post. A hello, a question, anything. Lurking isn’t building.',
       href: '/feed',
       done: (postRes.count ?? 0) > 0,

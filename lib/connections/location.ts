@@ -18,7 +18,7 @@ export const BAND_LABEL: Record<ProximityBand, string> = {
 export const LOCATION_BAND_OPTIONS = [
   { value: 'hidden', label: 'Hidden', hint: 'No one sees your location at all.' },
   { value: 'city', label: 'City', hint: 'Others see only your city.' },
-  { value: 'neighborhood', label: 'Neighborhood', hint: 'Others see a fuzzed ~1-mile area — never your exact spot.' },
+  { value: 'neighborhood', label: 'Neighborhood', hint: 'Others see a fuzzed ~1-mile area, never your exact spot.' },
 ] as const
 export type LocationBand = (typeof LOCATION_BAND_OPTIONS)[number]['value']
 

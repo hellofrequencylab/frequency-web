@@ -98,16 +98,16 @@ export interface AdminDashboard {
 // The three dashboards, in display order. Community is the people-facing operating
 // work; Insights is the read-only signal + Vera tuning; Platform is the sensitive keys.
 export const ADMIN_DASHBOARDS: readonly AdminDashboard[] = [
-  { key: 'community', label: 'Community', blurb: 'Run your people and spaces — circles, the game, comms, safety, and reach.', Icon: Globe },
-  { key: 'insights', label: 'Insights', blurb: 'Read the signal and tune Vera — what’s working, what’s jamming, what to write next.', Icon: Telescope },
-  { key: 'platform', label: 'Platform', blurb: 'The roster and the sensitive keys — roles, audit, AI, demo, and public pages.', Icon: Cog },
+  { key: 'community', label: 'Community', blurb: 'Run your people and spaces. Circles, the game, comms, safety, and reach.', Icon: Globe },
+  { key: 'insights', label: 'Insights', blurb: 'Read the signal and tune Vera. What’s working, what’s jamming, what to write next.', Icon: Telescope },
+  { key: 'platform', label: 'Platform', blurb: 'The roster and the sensitive keys. Roles, audit, AI, demo, and public pages.', Icon: Cog },
 ] as const
 
 export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
     key: 'spaces',
     label: 'Spaces',
-    blurb: 'The circles, channels, and events you run — and the place tree they cluster into.',
+    blurb: 'The circles, channels, and events you run, plus the place tree they cluster into.',
     dashboard: 'community',
     links: [
       { href: '/admin', label: 'Overview', desc: 'Your dashboard at a glance.', Icon: LayoutDashboard, min: 'host', staffDomain: 'community', exact: true },
@@ -121,21 +121,21 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
     key: 'engage',
     label: 'Engage',
-    blurb: 'The game that drives members to show up — seasons, tasks, and leader training.',
+    blurb: 'The game that drives members to show up. Seasons, tasks, and leader training.',
     dashboard: 'community',
     links: [
       { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community' },
       { href: '/admin/store', label: 'Store', desc: 'Manage gem store items and catalog.', Icon: ShoppingBag, min: 'host', staffDomain: 'community' },
-      { href: '/admin/quests', label: 'Journeys', desc: 'The open journey library — Official curation.', Icon: Map, min: 'host', staffDomain: 'community' },
+      { href: '/admin/quests', label: 'Journeys', desc: 'The open Journey library. Official curation.', Icon: Map, min: 'host', staffDomain: 'community' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community' },
-      { href: '/admin/rewards', label: 'Retroactive rewards', desc: 'Reward past behavior — define a rule, grant once.', Icon: Gift, min: 'admin' },
+      { href: '/admin/rewards', label: 'Retroactive rewards', desc: 'Reward past behavior. Define a rule, grant once.', Icon: Gift, min: 'admin' },
       { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community' },
     ],
   },
   {
     key: 'comms',
     label: 'Comms',
-    blurb: 'Reach your people — broadcasts, posts, and polls.',
+    blurb: 'Reach your people. Broadcasts, posts, and polls.',
     dashboard: 'community',
     links: [
       { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community' },
@@ -144,7 +144,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
     key: 'safety',
     label: 'Safety',
-    blurb: 'Keep the community healthy — reports, moderation, and member support.',
+    blurb: 'Keep the community healthy. Reports, moderation, and member support.',
     dashboard: 'community',
     links: [
       { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community' },
@@ -154,7 +154,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
     key: 'reach',
     label: 'Reach',
-    blurb: 'How people find and enter your spaces — every QR code and its scans.',
+    blurb: 'How people find and enter your spaces. Every QR code and its scans.',
     dashboard: 'community',
     links: [
       { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr' },
@@ -170,7 +170,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor' },
       { href: '/admin/roles', label: 'Roles', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor' },
       { href: '/admin/personas', label: 'Partner verification', desc: 'Vet and verify partner persona claims.', Icon: BadgeCheck, min: 'janitor', staffDomain: 'profiles' },
-      { href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions — the security trail.', Icon: ScrollText, min: 'admin' },
+      { href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', Icon: ScrollText, min: 'admin' },
     ],
   },
   {
@@ -195,13 +195,13 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     dashboard: 'insights',
     links: [
       { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor', staffDomain: 'insights' },
-      { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected — the to-write list.', Icon: HelpCircle, min: 'janitor' },
+      { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected. The to-write list.', Icon: HelpCircle, min: 'janitor' },
     ],
   },
   {
     key: 'system',
     label: 'System',
-    blurb: 'The sensitive platform keys — AI, demo content, and public pages.',
+    blurb: 'The sensitive platform keys. AI, demo content, and public pages.',
     dashboard: 'platform',
     links: [
       { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor', staffDomain: 'platform' },

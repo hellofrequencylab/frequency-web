@@ -13,7 +13,7 @@ function needsAttention(rate: number | null, started: number): boolean {
 }
 
 function RateCell({ rate, started }: { rate: number | null; started: number }) {
-  if (rate === null) return <span className="text-subtle">—</span>
+  if (rate === null) return <span className="text-subtle">–</span>
   const flag = needsAttention(rate, started)
   return <span className={flag ? 'font-bold text-danger' : 'text-text'}>{rate}%{flag ? ' ⚠️' : ''}</span>
 }
@@ -86,7 +86,7 @@ export default async function OutcomesPage() {
                     <td className="px-4 py-2 text-right text-muted">{q.started}</td>
                     <td className="px-4 py-2 text-right text-muted">{q.completed}</td>
                     <td className="px-4 py-2 text-right"><RateCell rate={q.rate} started={q.started} /></td>
-                    <td className="px-4 py-2 text-right text-muted">{q.avgStallStep ?? '—'}</td>
+                    <td className="px-4 py-2 text-right text-muted">{q.avgStallStep ?? '–'}</td>
                   </tr>
                 ))}
               </tbody>

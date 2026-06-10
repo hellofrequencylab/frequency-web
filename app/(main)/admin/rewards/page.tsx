@@ -23,7 +23,7 @@ export default async function RewardsPage() {
       title="Retroactive rewards"
       icon={Gift}
       eyebrow="Engage"
-      description="Define a rule today; reward the behavior members already earned. Runs are idempotent — re-running never double-grants. Preview below shows what’s pending."
+      description="Define a rule today; reward the behavior members already earned. Runs are idempotent, so re-running never double-grants. Preview below shows what’s pending."
       actions={<RunRewardsButton pending={pending} />}
     >
       <div className="grid grid-cols-3 gap-3">

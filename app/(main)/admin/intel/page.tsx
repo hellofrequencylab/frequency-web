@@ -160,7 +160,7 @@ export default async function MarketingIntelPage() {
 
       <AdminSection
         title="Acquisition sources"
-        description={`How members first reached us (first-touch). ${acq.attributed} of ${acq.totalMembers} attributed — ${Math.round(acq.coverage * 100)}% coverage.`}
+        description={`How members first reached us (first-touch). ${acq.attributed} of ${acq.totalMembers} attributed (${Math.round(acq.coverage * 100)}% coverage).`}
         actions={
           <form action={runAcquisitionBackfill}>
             <button

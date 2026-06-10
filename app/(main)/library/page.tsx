@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
   title: 'Library',
-  description: "The community's best practices, programs, and journeys — created by members, approved by leadership, ranked by what's actually working.",
+  description: "The community's best practices, programs, and journeys. Created by members, approved by leadership, ranked by what's actually working.",
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2).
@@ -112,7 +112,7 @@ export default async function LibraryPage({
         <EmptyState
           icon={TrendingUp}
           title="Nothing in the Library yet"
-          description="Create a practice, propose a program, or build a journey — once a leader approves it, it shows up here, ranked."
+          description="Create a practice, propose a program, or build a journey. Once a leader approves it, it shows up here, ranked."
         />
       ) : (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

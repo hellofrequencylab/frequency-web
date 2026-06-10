@@ -48,7 +48,7 @@ export default async function NurturePage() {
     <DashboardTemplate
       eyebrow="Nurture"
       title="Persona nurture"
-      description="When a lead is captured with a persona, they're enrolled in that persona's nurture sequence — a few timed emails that warm them up. Consent-gated; every send carries an unsubscribe."
+      description="When a lead is captured with a persona, they're enrolled in that persona's nurture sequence, a few timed emails that warm them up. Consent-gated; every send carries an unsubscribe."
       stats={
         <>
           <StatCard label="Live sequences" value={liveSequences} icon={Mail} />

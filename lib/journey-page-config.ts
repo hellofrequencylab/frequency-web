@@ -147,7 +147,7 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 
 /** Editor-facing label + one-line hint + which face each widget belongs to. */
 export const WIDGET_META: Record<WidgetId, { label: string; hint: string; mode: JourneyPageMode }> = {
-  'next-step': { label: 'Next step card', hint: 'The dominant log target — the current practice. (Always on.)', mode: 'active' },
+  'next-step': { label: 'Next step card', hint: 'The dominant log target: the current practice. (Always on.)', mode: 'active' },
   'gamification': { label: 'Gamification panel', hint: 'Zaps · rank · streak · Gems at a glance. (Always on.)', mode: 'active' },
   'progress': { label: 'Season progress', hint: 'Week N of 13 and qualifying weeks toward completion.', mode: 'active' },
   'checklist': { label: 'Step checklist', hint: 'Every step with its on-track / behind state.', mode: 'active' },
@@ -155,12 +155,12 @@ export const WIDGET_META: Record<WidgetId, { label: string; hint: string; mode: 
   'companions': { label: 'Co-op companions', hint: 'Members of your circles on this Journey.', mode: 'active' },
   'practice-guide': { label: 'Practice guide', hint: 'The author’s how-to / story (markdown), read while practising.', mode: 'active' },
   'season-context': { label: 'Season context', hint: 'The season, its theme, and the current Act.', mode: 'active' },
-  'story': { label: 'The story', hint: 'The intro markdown — why this Journey exists.', mode: 'discovery' },
+  'story': { label: 'The story', hint: 'The intro markdown: why this Journey exists.', mode: 'discovery' },
   'path': { label: 'The path', hint: 'The ordered steps with cadence, note, and tier. (Always on.)', mode: 'discovery' },
   'pillar-balance': { label: 'Pillar balance', hint: 'How the path spreads across the four Pillars.', mode: 'discovery' },
   'social-proof': { label: 'Social proof', hint: 'How many people have adopted this Journey.', mode: 'discovery' },
   'reward-preview': { label: 'Reward preview', hint: 'What completing the Journey pays out (Gems + badge).', mode: 'discovery' },
-  'completion-rule': { label: 'Completion rule', hint: 'The completion bar — N qualifying weeks of 13.', mode: 'discovery' },
+  'completion-rule': { label: 'Completion rule', hint: 'The completion bar: N qualifying weeks of 13.', mode: 'discovery' },
 }
 
 /**

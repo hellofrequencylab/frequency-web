@@ -31,14 +31,14 @@ export function CoopStrip({ companions }: { companions: number }) {
       </span>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-text">
-          {forming ? 'Your circle is in co-op' : 'You’re not walking alone'}
+          {forming ? 'Your circle is in Co-op' : 'You’re not walking alone'}
         </p>
         <p className="text-xs leading-relaxed text-muted">
           {forming
-            ? `${total} from your circles are on this journey together — a Co-op is forming.`
+            ? `${total} from your circles are on this Journey together. A Co-op is forming.`
             : `${companions} ${companions === 1 ? 'person' : 'people'} from your circles ${
                 companions === 1 ? 'is' : 'are'
-              } on this journey too.`}
+              } on this Journey too.`}
         </p>
       </div>
     </section>

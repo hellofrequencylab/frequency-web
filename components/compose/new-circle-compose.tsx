@@ -148,7 +148,7 @@ export function NewCircleCompose({
               <Sparkles className="h-4 w-4 shrink-0 text-signal-strong" />
               <p className="min-w-0 text-xs leading-snug text-muted">
                 {veraFilled ? (
-                  <><span className="font-semibold text-text">Vera</span> drafted these — edit freely.</>
+                  <><span className="font-semibold text-text">Vera</span> drafted these. Edit freely.</>
                 ) : (
                   <>Stuck on a name? <span className="font-semibold text-text">Vera</span> can draft one, and an intro.</>
                 )}

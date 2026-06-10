@@ -81,7 +81,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
             )}
           </p>
           <p className="mt-1 flex items-start gap-1.5 text-xs text-subtle">
-            <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0" /> They met this person — reach out to them for an introduction.
+            <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0" /> They met this person. Reach out to them for an introduction.
           </p>
         </div>
 
@@ -102,7 +102,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
 
       <p className="mt-3 text-xs text-subtle">
         A steward chose to share this private contact with stewards in {c.city ?? 'your area'}. Their notes, email and
-        phone stay private — connect through the steward above.
+        phone stay private. Connect through the steward above.
       </p>
       </DetailTemplate>
     </div>

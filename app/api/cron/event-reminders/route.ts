@@ -265,7 +265,7 @@ async function sendWeekAheadEmail(params: {
   })
 
   // Gentle, blameless, no urgency. Warm proof only when it's a growing count.
-  const proofLine = warmProof ? `${warmProof} so far — you're in good company.` : ''
+  const proofLine = warmProof ? `${warmProof} so far. You're in good company.` : ''
   const whereLine = location ? `Where: ${location}` : ''
 
   const html = `
@@ -274,7 +274,7 @@ async function sendWeekAheadEmail(params: {
     </p>
     <h1 style="font-size:24px;font-weight:800;margin:0 0 16px;color:#111;">${eventTitle}</h1>
     <p style="font-size:16px;line-height:1.6;color:#333;margin:0 0 16px;">
-      Hi ${recipientName} — just a gentle note that we'll see you in about a week. No need to do anything now; we're looking forward to having you there.
+      Hi ${recipientName}, just a gentle note that we'll see you in about a week. No need to do anything now; we're looking forward to having you there.
     </p>
     <p style="font-size:16px;line-height:1.6;color:#333;margin:0 0 16px;">
       <strong>${whenAbsolute}</strong>${location ? `<br><span style="color:#777;">${location}</span>` : ''}
@@ -283,8 +283,8 @@ async function sendWeekAheadEmail(params: {
     <a href="${eventUrl}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;">View event →</a>
     <hr style="border:none;border-top:1px solid #eee;margin:28px 0;">
     <p style="font-size:13px;color:#999;">
-      You're receiving this because you RSVP'd to attend. Plans change, and that's okay —
-      <a href="${eventUrl}" style="color:#999;">update your RSVP</a> any time.
+      You're receiving this because you RSVP'd to attend. Plans change, and that's okay.
+      <a href="${eventUrl}" style="color:#999;">Update your RSVP</a> any time.
       <a href="${appUrl}/settings/notifications" style="color:#999;">Manage preferences</a>
       · <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from event reminders</a>.
     </p>
@@ -292,7 +292,7 @@ async function sendWeekAheadEmail(params: {
 
   const text = `A week to go: ${eventTitle}
 
-Hi ${recipientName} — just a gentle note that we'll see you in about a week. No need to do anything now; we're looking forward to having you there.
+Hi ${recipientName}, just a gentle note that we'll see you in about a week. No need to do anything now; we're looking forward to having you there.
 
 When: ${whenAbsolute}
 ${whereLine}
@@ -300,14 +300,14 @@ ${proofLine}
 
 View event: ${eventUrl}
 
-Plans change, and that's okay — update your RSVP any time.
+Plans change, and that's okay. Update your RSVP any time.
 Manage preferences: ${appUrl}/settings/notifications
 Unsubscribe from event reminders: ${unsubscribeUrl}
 `
 
   await enqueueEmail({
     to,
-    subject: `✨ A week to go — ${eventTitle}`,
+    subject: `✨ A week to go: ${eventTitle}`,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html,
     text,

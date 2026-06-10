@@ -47,7 +47,7 @@ export default async function AdminSupportPage({
       title="Support"
       icon={LifeBuoy}
       eyebrow="Studio"
-      description="Bug reports and support requests from members — triage, reply, and track them to resolution."
+      description="Bug reports and support requests from members. Triage, reply, and track them to resolution."
     >
       {/* Status filter chips */}
       <div className="flex flex-wrap gap-1.5">

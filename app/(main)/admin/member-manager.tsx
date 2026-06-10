@@ -195,7 +195,7 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                         <span>·</span>
                         <span className="capitalize text-primary-strong">{m.currentSeasonRank}</span>
                         {(m.currentSeasonZaps ?? 0) > 0 && (
-                          <span className="text-primary">{m.currentSeasonZaps} zaps</span>
+                          <span className="text-primary">{m.currentSeasonZaps} Zaps</span>
                         )}
                       </>
                     )}

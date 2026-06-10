@@ -188,7 +188,7 @@ export function Creator({ userId }: { userId: string }) {
           kind: 'warn',
           text:
             res.reason === 'ai_unavailable'
-              ? 'Vera’s scanner is off right now — fill in the details by hand below.'
+              ? 'Vera’s scanner is off right now. Fill in the details by hand below.'
               : 'Couldn’t read those images. Try sharper photos, or fill it in below.',
         })
         return
@@ -210,7 +210,7 @@ export function Creator({ userId }: { userId: string }) {
         /* photo is optional — proceed without it */
       }
       setTab('manual')
-      setMsg({ kind: 'ok', text: 'Scanned — review the details and save.' })
+      setMsg({ kind: 'ok', text: 'Scanned. Review the details and save.' })
     } catch (err) {
       setMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Something went wrong.' })
     } finally {
@@ -241,13 +241,13 @@ export function Creator({ userId }: { userId: string }) {
     if (!res.ok) {
       setMsg({
         kind: 'warn',
-        text: res.reason === 'ai_unavailable' ? 'Vera assist is off right now.' : 'Vera couldn’t parse that — add details by hand.',
+        text: res.reason === 'ai_unavailable' ? 'Vera assist is off right now.' : 'Vera couldn’t parse that. Add details by hand.',
       })
       return
     }
     setForm((p) => mergeExtraction(p, res.extraction))
     setExtraction(res.extraction)
-    setMsg({ kind: 'ok', text: 'Vera filled in what she could — review and save.' })
+    setMsg({ kind: 'ok', text: 'Vera filled in what she could. Review and save.' })
   }
 
   function addTag(raw: string) {
@@ -317,7 +317,7 @@ export function Creator({ userId }: { userId: string }) {
             <ScanText className="mx-auto h-8 w-8 text-primary-strong" />
             <p className="mt-3 text-sm font-medium text-text">Snap a card, poster, or a few photos</p>
             <p className="mt-1 text-xs text-subtle">
-              Add both sides of a card and any extra shots — Vera reads them all together, drafts a
+              Add both sides of a card and any extra shots. Vera reads them all together, drafts a
               note and tags, and cuts out a profile photo.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -399,7 +399,7 @@ export function Creator({ userId }: { userId: string }) {
                   value={assistText}
                   onChange={(e) => setAssistText(e.target.value)}
                   rows={2}
-                  placeholder="e.g. Met Sarah Kim at the Encinitas market — runs a sound-bath studio, wants to co-host a session. sarah@studio.com"
+                  placeholder="e.g. Met Sarah Kim at the Encinitas market. Runs a sound-bath studio, wants to co-host a session. sarah@studio.com"
                   className={`${input} resize-none`}
                 />
                 <button
@@ -438,7 +438,7 @@ export function Creator({ userId }: { userId: string }) {
                   Remove
                 </button>
               )}
-              <p className="text-xs text-subtle">Private — stored just for you.</p>
+              <p className="text-xs text-subtle">Private. Stored just for you.</p>
             </div>
             <input
               ref={photoRef}
@@ -501,8 +501,8 @@ export function Creator({ userId }: { userId: string }) {
           {/* Visibility */}
           <Field label="Visibility">
             <select className={input} value={form.visibility} onChange={(e) => set('visibility', e.target.value as Visibility)}>
-              <option value="private">Private — only you</option>
-              <option value="network">Network — visible to stewards</option>
+              <option value="private">Private (only you)</option>
+              <option value="network">Network (visible to stewards)</option>
             </select>
           </Field>
 
@@ -516,8 +516,8 @@ export function Creator({ userId }: { userId: string }) {
                 className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
               />
               <span className="text-muted">
-                <span className="inline-flex items-center gap-1 font-medium text-text"><Mail className="h-3.5 w-3.5" /> Send a one-time intro</span>{' '}
-                — email {form.displayName.trim() || 'them'} a personal invite from you, with a join link that credits you if they sign up. One email only; they can unsubscribe anytime.
+                <span className="inline-flex items-center gap-1 font-medium text-text"><Mail className="h-3.5 w-3.5" /> Send a one-time intro.</span>{' '}
+                We&apos;ll email {form.displayName.trim() || 'them'} a personal invite from you, with a join link that credits you if they sign up. One email only; they can unsubscribe anytime.
               </span>
             </label>
           )}

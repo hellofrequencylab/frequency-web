@@ -50,7 +50,7 @@ function OrbitCard({ member }: { member: OrbitMember }) {
         <>
           <OrbitChip orbit={member.orbit} />
           {member.orbit === 'outer' && (
-            <span className="text-subtle">You&rsquo;ve drifted — say hi</span>
+            <span className="text-subtle">You&rsquo;ve drifted. Say hi</span>
           )}
         </>
       }
@@ -64,7 +64,7 @@ function emptyFriends() {
     <EmptyState
       icon={Users}
       title="No friends yet"
-      description="Add a few people and they’ll show up here — then you can start a DM or group thread."
+      description="Add a few people and they’ll show up here. Then you can start a DM or group thread."
       action={
         <Link
           href="/people"

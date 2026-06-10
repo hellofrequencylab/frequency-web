@@ -62,7 +62,7 @@ const ACTIVE_WINDOW_MS = 30 * 60 * 1000
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
   title: 'Messages',
-  description: 'Every conversation in one place. Direct messages, and rooms — your private group chats and the open community channels.',
+  description: 'Every conversation in one place. Direct messages, and rooms (your private group chats and the open community Channels).',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2).

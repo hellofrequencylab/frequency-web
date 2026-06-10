@@ -162,7 +162,7 @@ const LEDGER_LABELS: Record<string, string> = {
   circle_activate: 'Activated a circle',
   invite_accepted: 'An invite you sent joined',
   referral_activated: 'A member you brought in showed up',
-  event_attend: 'Showed up — verified check-in',
+  event_attend: 'Showed up (verified check-in)',
   outreach_task: 'Completed an outreach task',
   crew_task: 'Completed a crew task',
   practice_logged: 'Logged a real-world practice',

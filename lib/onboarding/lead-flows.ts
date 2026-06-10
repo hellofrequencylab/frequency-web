@@ -50,7 +50,7 @@ const WELCOME: LeadFlow = {
   splash: {
     eyebrow: 'Welcome to Frequency',
     headline: 'Let’s get you to the right place.',
-    body: 'Frequency turns the people near you into real community. First, tell us who you are — we’ll show you exactly what’s in it for you.',
+    body: 'Frequency turns the people near you into real community. First, tell us who you are, and we’ll show you exactly what’s in it for you.',
     image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
     imageAlt: 'A Frequency community dancing together outdoors at golden hour, arms raised',
     prompt: 'Which sounds most like you?',
@@ -84,7 +84,7 @@ const PARTNER: LeadFlow = {
   splash: {
     eyebrow: 'For local businesses',
     headline: 'Make your place the place.',
-    body: 'Frequency sends real community through your doors — loyalty rewards, gamified foot traffic, and discovery by everyone gathering nearby.',
+    body: 'Frequency sends real community through your doors: loyalty rewards, gamified foot traffic, and discovery by everyone gathering nearby.',
     image: '/images/site/lab-concept.jpg',
     imageAlt: 'A bright, welcoming community space designed for people to gather and build together',
     prompt: 'Tell us who you are so we tailor it:',

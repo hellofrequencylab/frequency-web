@@ -259,7 +259,7 @@ export function StyleEditor({
 
       {/* Frame + CTA */}
       <label className="block">
-        <span className="block text-subtle mb-1">Frame label (optional — adds a “scan me” card)</span>
+        <span className="block text-subtle mb-1">Frame label (optional, adds a “scan me” card)</span>
         <input
           value={value.frameLabel ?? ''}
           onChange={(e) => set('frameLabel', e.target.value || null)}

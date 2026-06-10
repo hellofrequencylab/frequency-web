@@ -42,7 +42,7 @@ export default async function UpgradePage() {
     <FocusTemplate
       width="narrow"
       title="Membership"
-      description="Your access to the Frequency community — free during beta."
+      description="Your access to the Frequency community, free during beta."
     >
       {/* Beta banner */}
       <div className="rounded-2xl bg-primary-bg border border-primary-bg/50 px-5 py-4 mb-8">
@@ -121,7 +121,7 @@ export default async function UpgradePage() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold text-text">Become a Supporter</p>
               <p className="mt-0.5 text-xs leading-relaxed text-muted">
-                Chip in beyond membership to keep Frequency running — and wear the
+                Chip in beyond membership to keep Frequency running, and wear the
                 Supporter badge on your profile.
               </p>
               <div className="mt-3">

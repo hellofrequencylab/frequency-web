@@ -37,8 +37,8 @@ export function PayoutsToggle({
         <div className="min-w-0">
           <p className="text-sm font-bold text-text">Host payouts</p>
           <p className="mt-1 text-sm leading-relaxed text-muted">
-            When on, hosts can set up payouts and members can pay them — tips, paid event tickets,
-            and future store/membership sales. When off, none of those controls appear anywhere.
+            When on, hosts can set up payouts and members can pay them (tips, paid event tickets,
+            and future store/membership sales). When off, none of those controls appear anywhere.
           </p>
         </div>
         <button
@@ -65,7 +65,7 @@ export function PayoutsToggle({
           {on ? 'Payouts are ON' : 'Payouts are OFF'}
         </span>
         {on && !stripeConfigured && (
-          <span className="text-warning">· Stripe key not configured — still dormant until keys are set</span>
+          <span className="text-warning">· Stripe key not configured, still dormant until keys are set</span>
         )}
       </div>
 

@@ -10,7 +10,7 @@ const REASON_LABEL: Record<string, string> = {
   already_captured: "You've already claimed this one.",
   too_far: "You're not close enough to claim this.",
   location_required: 'Location needed to claim this.',
-  capacity_reached: 'All claimed — this one reached its limit.',
+  capacity_reached: 'All claimed. This one reached its limit.',
   expired: "This one's no longer active.",
   not_yet_valid: 'This one isn’t active yet.',
   inactive: 'This spot is inactive.',

@@ -194,7 +194,7 @@ export async function createTicketCheckout(opts: {
   const unitCents = unit.unitCents
   if (unitCents <= 0) {
     // A flat event with no price and no tier = free; nothing to charge.
-    return { error: 'This event is free — no ticket needed.' }
+    return { error: 'This event is free. No ticket needed.' }
   }
 
   // The host must be able to actually receive money.
@@ -213,7 +213,7 @@ export async function createTicketCheckout(opts: {
         price_data: {
           currency: 'usd',
           unit_amount: unitCents,
-          product_data: { name: `Ticket — ${event.title}${tierLabel}` },
+          product_data: { name: `Ticket: ${event.title}${tierLabel}` },
         },
       },
     ],

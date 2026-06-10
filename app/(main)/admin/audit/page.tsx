@@ -35,7 +35,7 @@ export default async function AdminAuditPage() {
       title="Audit log"
       icon={ScrollText}
       eyebrow="People"
-      description="A record of sensitive platform actions — who did what, to whom. Append-only; the security trail for role grants, partner verification, and more."
+      description="A record of sensitive platform actions. Who did what, to whom. Append-only; the security trail for role grants, partner verification, and more."
     >
       <AdminSection title="Recent actions">
         {rows.length === 0 ? (

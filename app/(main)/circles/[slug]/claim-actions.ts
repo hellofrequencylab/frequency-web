@@ -39,7 +39,7 @@ export async function claimCircle(
     .maybeSingle()
   if (!circle) throw new Error('Circle not found.')
   if (!(circle as { is_demo: boolean }).is_demo) {
-    throw new Error('This circle is already real — nothing to claim.')
+    throw new Error('This circle is already real. Nothing to claim.')
   }
   const slug = (circle as { slug: string }).slug
 

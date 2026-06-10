@@ -18,7 +18,7 @@ export default async function MarketReadPage() {
     <DashboardTemplate
       eyebrow="Marketing"
       title="Market read"
-      description="The operator listens to live signal, names what the market is aching for, and drafts outbound content that speaks to it — a magical connection, not an advertisement. Drafts are proposals: nothing reaches the public until you approve it."
+      description="The operator listens to live signal, names what the market is aching for, and drafts outbound content that speaks to it (a magical connection, not an advertisement). Drafts are proposals: nothing reaches the public until you approve it."
     >
       {/* ── Listen: live in-app signal ─────────────────────── */}
       <section>
@@ -62,7 +62,7 @@ export default async function MarketReadPage() {
           The synthesis + drafting are deterministic today (the same copilot-first pattern as the
           Agent console). Next: a live Claude operator drafts behind this read; low-risk drafts can
           auto-publish once the audit log earns trust (graduated autonomy), while anything public
-          always waits for a human. Member data only ever informs the <em>aggregate</em> ache — it
+          always waits for a human. Member data only ever informs the <em>aggregate</em> ache. It
           is never exposed in outbound.
         </p>
       </div>

@@ -28,7 +28,7 @@ export function MarketingCodesAdmin({ codes }: { codes: MarketingCodeAdmin[] }) 
   if (codes.length === 0) {
     return (
       <p className="py-4 text-sm text-muted">
-        No marketing codes yet — Crew members create these on their own codes page to promote a
+        No marketing codes yet. Crew members create these on their own codes page to promote a
         circle or event.
       </p>
     )

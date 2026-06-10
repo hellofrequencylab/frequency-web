@@ -142,7 +142,7 @@ function synthesize(signal: MarketSignal): PainPoint[] {
     persona: 'All three personas',
     ideas: [
       { channel: 'Social', hook: 'The opposite of lonely isn’t “a lot of friends.” It’s being missed when you’re gone.',
-        body: 'Small circles, on purpose. A place where your absence registers — and your return is noticed.' },
+        body: 'Small circles, on purpose. A place where your absence registers and your return is noticed.' },
       { channel: 'Ad', hook: 'When did anyone last text you “you ok?” just because you went quiet?',
         body: 'That’s the whole idea. A few people near you, paying attention. Come be one of them.' },
       { channel: 'Hook', hook: 'A place to be missed.', body: '' },
@@ -159,10 +159,10 @@ function synthesize(signal: MarketSignal): PainPoint[] {
       : 'Baseline: the Post-Screen Skeptic acts when it’s framed as a movement they get in on early.',
     persona: 'The Post-Screen Skeptic',
     ideas: [
-      { channel: 'Social', hook: topInterest ? `${topInterest.name} is taking root near you — in person, off the phone.` : 'Something real is taking root near you — in person, off the phone.',
+      { channel: 'Social', hook: topInterest ? `${topInterest.name} is taking root near you. In person, off the phone.` : 'Something real is taking root near you. In person, off the phone.',
         body: 'The first circles are forming now. Get in early, shape it from day one, be one of the first through the door.' },
       { channel: 'Ad', hook: 'Run clubs. Bathhouses. Breathwork. People are paying real money to get off the feed and into a body.',
-        body: 'Frequency is that — local, device-light, pay-it-forward. Be one of the founders, not a follower.' },
+        body: 'Frequency is that: local, device-light, pay-it-forward. Be one of the founders, not a follower.' },
       { channel: 'Hook', hook: 'Get in early on the room, not the app.', body: '' },
     ],
   }

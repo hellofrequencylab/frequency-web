@@ -35,7 +35,7 @@ export default async function EntryPointsPage() {
           <Megaphone className="mx-auto h-8 w-8 text-primary-strong" aria-hidden />
           <p className="mt-3 text-lg font-bold text-text">Entry points are a Crew feature</p>
           <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">
-            Crew can spin up a branded flyer with a QR code in under a minute — and earn for every
+            Crew can spin up a branded flyer with a QR code in under a minute, and earn for every
             person it brings in. Join Crew to start your own.
           </p>
           <Link
@@ -83,7 +83,7 @@ export default async function EntryPointsPage() {
     <DashboardTemplate
       eyebrow="Entry points"
       title="Bring people in"
-      description="Pick a template, fill a few details, and get a branded flyer with your QR code — download the vector or PNG. Every signup it brings in credits you."
+      description="Pick a template, fill a few details, and get a branded flyer with your QR code. Download the vector or PNG. Every signup it brings in credits you."
       stats={
         <>
           <StatCard label="Entry points" value={entries.length} icon={Megaphone} />

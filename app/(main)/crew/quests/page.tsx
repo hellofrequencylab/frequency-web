@@ -40,7 +40,7 @@ export default async function QuestsPage() {
     <IndexTemplate
       eyebrow="The Quest"
       title="Quests"
-      description="Each season's Quest gathers a set of Journeys — one per Pillar — to move through. Every Journey is a handful of practices; start any of them free, and your progress rides your daily practice log."
+      description="Each season's Quest gathers a set of Journeys (one per Pillar) to move through. Every Journey is a handful of practices; start any of them free, and your progress rides your daily practice log."
       back={{ href: '/crew', label: 'Dashboard' }}
     >
       {quests.length === 0 ? (

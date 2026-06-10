@@ -95,7 +95,7 @@ export function SubmitProgramForm() {
         <p className="text-sm font-bold text-text">Propose a program</p>
       </div>
       <p className="text-xs text-muted">A toolkit that helps people put a real-world activity together. A Host or Guide+ reviews it before it joins the Library.</p>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title — e.g. Start a neighborhood ride" className={field} />
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (e.g. Start a neighborhood ride)" className={field} />
       <input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="One-line summary" className={field} />
       <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="The how-to: steps, tips, what to bring…" className={`${field} resize-none`} />
       <div className="flex flex-wrap items-center gap-2">
@@ -110,7 +110,7 @@ export function SubmitProgramForm() {
               setError(null); setMsg(null)
               const res = await submitProgram({ title, summary, body, pillar })
               if (isError(res)) { setError(res.error); return }
-              setMsg('Submitted for review — a leader will approve it into the Library.')
+              setMsg('Submitted for review. A leader will approve it into the Library.')
               setTitle(''); setSummary(''); setBody(''); setPillar('')
               setOpen(false)
               router.refresh()

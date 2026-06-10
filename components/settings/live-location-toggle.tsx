@@ -96,14 +96,14 @@ export function LiveLocationToggle({
       {/* The safety write-up — the limitations of live data, said plainly. */}
       <div className="mt-3 rounded-xl border border-border bg-surface-elevated/50 p-3">
         <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
-          <ShieldCheck className="h-3.5 w-3.5 text-primary-strong" /> What live location does — and doesn’t — do
+          <ShieldCheck className="h-3.5 w-3.5 text-primary-strong" /> What live location does (and doesn’t) do
         </p>
         <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-muted">
-          <li>• <strong className="text-text">Still never exact.</strong> Live or not, others only ever see the band you chose under “Location precision” — a fuzzed ~1-mile area or just your city. We never share precise coordinates with anyone.</li>
-          <li>• <strong className="text-text">Only the people you allow.</strong> Your “Who can find me nearby” setting still applies — strangers, connections, or no one. Live location doesn’t widen who can see you.</li>
-          <li>• <strong className="text-text">It can go stale.</strong> Your position updates when the app captures it, not continuously — treat it as “roughly where I was,” not a live tracker.</li>
+          <li>• <strong className="text-text">Still never exact.</strong> Live or not, others only ever see the band you chose under “Location precision” (a fuzzed ~1-mile area or just your city). We never share precise coordinates with anyone.</li>
+          <li>• <strong className="text-text">Only the people you allow.</strong> Your “Who can find me nearby” setting still applies (strangers, connections, or no one). Live location doesn’t widen who can see you.</li>
+          <li>• <strong className="text-text">It can go stale.</strong> Your position updates when the app captures it, not continuously. Treat it as “roughly where I was,” not a live tracker.</li>
           <li>• <strong className="text-text">One tap off.</strong> Turn it off here, or use <strong className="text-text">Ghost mode</strong> to disappear from proximity and maps entirely, anytime.</li>
-          <li>• <strong className="text-text">Share thoughtfully.</strong> Only enable it in communities and with people you trust. Sharing where you are in real time always carries some risk — when in doubt, leave it off.</li>
+          <li>• <strong className="text-text">Share thoughtfully.</strong> Only enable it in communities and with people you trust. Sharing where you are in real time always carries some risk. When in doubt, leave it off.</li>
         </ul>
       </div>
     </section>

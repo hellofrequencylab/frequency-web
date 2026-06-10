@@ -97,8 +97,8 @@ export function QrGenerator({
             </div>
             <p className="mt-2 text-2xs text-subtle">
               {kind === 'link'
-                ? 'A retargetable /q/… short link — point it anywhere, track every scan.'
-                : 'A check-in code that runs the verified earn pipeline (zaps + practice).'}
+                ? 'A retargetable /q/… short link. Point it anywhere, track every scan.'
+                : 'A check-in code that runs the verified earn pipeline (Zaps + practice).'}
             </p>
           </div>
         </div>

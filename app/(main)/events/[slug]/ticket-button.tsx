@@ -125,7 +125,7 @@ export function TicketButton({
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
-          Get ticket — {priceLabel}
+          Get ticket · {priceLabel}
         </button>
         {error && <p className="text-sm text-danger">{error}</p>}
       </div>

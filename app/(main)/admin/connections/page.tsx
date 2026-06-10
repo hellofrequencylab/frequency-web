@@ -19,7 +19,7 @@ export default async function AdminConnectionsPage() {
       title="Connections"
       icon={Radar}
       eyebrow="Studio"
-      description="Master controls for the community connection layer — discovery, maps, and the relationship game."
+      description="Master controls for the community connection layer. Discovery, maps, and the relationship game."
     >
       <ConnectionSettingsAdmin settings={settings} />
     </AdminPage>

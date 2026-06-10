@@ -54,7 +54,7 @@ export function Campaigns({
               <Trophy className="w-4 h-4 text-primary-strong" /> Campaign challenges
             </h2>
             <p className="text-xs text-muted mt-0.5">
-              A scavenger hunt — members scan a set of codes to complete it and earn zaps. Shows on
+              A scavenger hunt. Members scan a set of codes to complete it and earn Zaps. Shows on
               their Quest challenges automatically.
             </p>
           </div>
@@ -70,7 +70,7 @@ export function Campaigns({
         </div>
         {creating &&
           (codes.length === 0 ? (
-            <p className="p-4 text-xs text-muted">Create some dynamic links first — campaigns are built from them.</p>
+            <p className="p-4 text-xs text-muted">Create some dynamic links first. Campaigns are built from them.</p>
           ) : (
             <div className="p-4">
               <CampaignForm codes={codes} onDone={() => setCreating(false)} onCancel={() => setCreating(false)} />
@@ -136,7 +136,7 @@ function CampaignRow({ campaign, codes }: { campaign: CampaignCard; codes: Campa
           Scan <span className="font-semibold text-text">{campaign.target}</span> of {campaign.codeCount} codes
         </span>
         <span className="inline-flex items-center gap-1">
-          <Zap className="w-3 h-3 text-primary" /> {campaign.rewardZaps} zaps
+          <Zap className="w-3 h-3 text-primary" /> {campaign.rewardZaps} Zaps
         </span>
         <span className="inline-flex items-center gap-1">
           <CheckCircle2 className="w-3 h-3 text-success" /> {campaign.completions} completed

@@ -50,7 +50,7 @@ export function WarmProof({
       <div className="rounded-2xl border border-border bg-surface px-4 py-3">
         <p className="text-sm font-medium text-text">Be the first to RSVP.</p>
         <p className="mt-0.5 text-xs text-subtle">
-          Your circles will see you’re going — a warm start gets others to join.
+          Your circles will see you’re going. A warm start gets others to join.
         </p>
       </div>
     )
@@ -105,7 +105,7 @@ export function WarmProof({
 
       {nearFull && typeof spotsLeft === 'number' && spotsLeft > 0 && (
         <p className="text-xs font-medium text-primary-strong">
-          Filling up — {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
+          Filling up. {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
         </p>
       )}
     </div>

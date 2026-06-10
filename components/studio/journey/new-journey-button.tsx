@@ -24,7 +24,7 @@ export function NewJourneyButton({ className }: { className?: string }) {
   const [error, setError] = useState<string | null>(null)
 
   const create = () => {
-    if (!title.trim()) { setError('Give your journey a name to begin.'); return }
+    if (!title.trim()) { setError('Give your Journey a name to begin.'); return }
     start(async () => {
       setError(null)
       const res = await createJourney({ title, summary, emoji: icon, accent })
@@ -35,10 +35,10 @@ export function NewJourneyButton({ className }: { className?: string }) {
 
   return (
     <StudioLaunchButton
-      label="New journey"
+      label="New Journey"
       icon={Plus}
       className={className}
-      eyebrow="Studio · New journey"
+      eyebrow="Studio · New Journey"
       footer={
         <StudioFooter
           left={
@@ -59,7 +59,7 @@ export function NewJourneyButton({ className }: { className?: string }) {
       }
     >
       <p className="text-sm text-muted">
-        A journey is a life-development track you share with the community — from a single daily practice to a full course. Give it a name and a face; you’ll add the practices next.
+        A Journey is a life-development track you share with the community, from a single daily practice to a full course. Give it a name and a face; you’ll add the practices next.
       </p>
 
       <div className="mt-5 flex items-start gap-3">
@@ -71,7 +71,7 @@ export function NewJourneyButton({ className }: { className?: string }) {
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') create() }}
             maxLength={120}
-            placeholder="Name your journey"
+            placeholder="Name your Journey"
             className="w-full bg-transparent text-2xl font-bold text-text outline-none placeholder:text-subtle"
           />
           <input

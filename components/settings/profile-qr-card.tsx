@@ -26,7 +26,7 @@ export function ProfileQrCard({ svg, link, codeId }: { svg: string; link: string
         <QrCode className="h-4 w-4 text-primary-strong" /> Your QR code
       </h2>
       <p className="mt-0.5 text-xs text-muted">
-        Linked to your account — print it or share it, and every scan lands on your profile.
+        Linked to your account. Print it or share it, and every scan lands on your profile.
         Downloads match this exact style &amp; colour.
       </p>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">

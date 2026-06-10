@@ -43,7 +43,7 @@ export async function GamificationPanel({ profileId }: { profileId: string }) {
       </div>
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <StatCard label="Zaps" value={zaps.toLocaleString()} icon={Zap} />
-        <StatCard label="Rank" value={rank ? (RANK_LABELS[rank] ?? rank) : '—'} icon={Trophy} />
+        <StatCard label="Rank" value={rank ? (RANK_LABELS[rank] ?? rank) : '–'} icon={Trophy} />
         <StatCard label="Streak" value={`${streak}d`} icon={Flame} />
         <StatCard label="Gems" value={gems.toLocaleString()} icon={Gem} />
       </div>

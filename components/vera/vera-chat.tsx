@@ -166,7 +166,7 @@ export function VeraChat({ opening }: { opening: VeraOpeningSeed }) {
  *  meets a member anywhere, not mid-onboarding. */
 export const COMPANION_OPENING: VeraOpeningSeed = {
   message:
-    "Hey — I'm Vera. I keep this place running, and I'm on your side. What's on your mind? I can help you find your people, sort out how something works, or just point you somewhere good.",
+    "Hey, I'm Vera. I keep this place running, and I'm on your side. What's on your mind? I can help you find your people, sort out how something works, or just point you somewhere good.",
   stage: 'greet',
-  suggestions: ['Find me a circle', 'How does this work?', "I'm new here"],
+  suggestions: ['Find me a Circle', 'How does this work?', "I'm new here"],
 }

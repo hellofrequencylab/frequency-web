@@ -49,7 +49,7 @@ export function NewPracticeButton({ className }: { className?: string }) {
       }
     >
       <p className="text-sm text-muted">
-        A practice is one thing you do — meditate, move, journal, breathe. Name it, then add the cadence, guide, and Pillar in the builder.
+        A practice is one thing you do (meditate, move, journal, breathe). Name it, then add the cadence, guide, and Pillar in the builder.
       </p>
       <div className="mt-5 flex items-start gap-3">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">

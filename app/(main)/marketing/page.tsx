@@ -45,7 +45,7 @@ const MODULES: Module[] = [
     href: '/marketing/campaigns',
     label: 'Campaigns',
     Icon: Megaphone,
-    description: 'Compose and send broadcasts — email and push — through the one spine.',
+    description: 'Compose and send broadcasts (email and push) through the one spine.',
   },
   {
     href: '/marketing/automations',

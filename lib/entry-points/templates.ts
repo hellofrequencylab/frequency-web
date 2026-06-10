@@ -37,7 +37,7 @@ export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
   event: {
     id: 'event',
     label: 'Event flyer',
-    blurb: 'A poster for a local event — scan to RSVP and join.',
+    blurb: 'A poster for a local event. Scan to RSVP and join.',
     emoji: '📅',
     destinationKind: 'lead_flow',
     defaultDestination: '/start/event',
@@ -53,7 +53,7 @@ export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
   circle: {
     id: 'circle',
     label: 'Circle invite',
-    blurb: 'Grow a circle you’re part of — scan to find your people.',
+    blurb: 'Grow a circle you’re part of. Scan to find your people.',
     emoji: '⭕',
     destinationKind: 'place',
     defaultDestination: '/start/welcome',
@@ -69,7 +69,7 @@ export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
   invite: {
     id: 'invite',
     label: 'Personal invite',
-    blurb: 'Your personal “come join me” — scan to sign up.',
+    blurb: 'Your personal “come join me”. Scan to sign up.',
     emoji: '🤝',
     destinationKind: 'lead_flow',
     defaultDestination: '/start/welcome',
@@ -85,7 +85,7 @@ export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
   waitlist: {
     id: 'waitlist',
     label: 'Waitlist / sign-ups',
-    blurb: 'Collect interest — scan to get on the list.',
+    blurb: 'Collect interest. Scan to get on the list.',
     emoji: '✉️',
     destinationKind: 'lead_flow',
     defaultDestination: '/start/welcome',
@@ -101,7 +101,7 @@ export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
   partner: {
     id: 'partner',
     label: 'Local business',
-    blurb: 'For a local spot — scan to explore partnering.',
+    blurb: 'For a local spot. Scan to explore partnering.',
     emoji: '🏪',
     destinationKind: 'lead_flow',
     defaultDestination: '/start/partner',
