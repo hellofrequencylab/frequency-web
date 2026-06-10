@@ -7,7 +7,6 @@ import { ImagePlus, X, Trash2 } from 'lucide-react'
 import { createEventPost, deleteEventPost } from '@/app/(main)/events/[slug]/social-actions'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
-import { blobPreviewSrc } from '@/lib/events/blob-preview'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
 
@@ -152,11 +151,16 @@ export function EventActivity({
 
           {imagePreview && (
             <div className="relative mt-2 inline-block">
-              {/* Local blob preview of the file being uploaded — a transient
-                  object URL the Next image optimizer can't touch, so a plain
-                  <img> is correct here. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={blobPreviewSrc(imagePreview)} alt="Upload preview" className="max-h-40 rounded-xl border border-border object-cover" />
+              {/* Local blob preview of the file being uploaded; next/image with
+                  `unoptimized` passes the object URL straight through. */}
+              <Image
+                src={imagePreview}
+                alt="Upload preview"
+                width={160}
+                height={160}
+                unoptimized
+                className="max-h-40 w-auto rounded-xl border border-border object-cover"
+              />
               <button
                 type="button"
                 onClick={clearImage}
