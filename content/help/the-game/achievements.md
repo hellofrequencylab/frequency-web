@@ -19,11 +19,11 @@ Open **The Quest** and pick the **Achievements** tab. You'll see your whole
 collection: what you've earned, what's still locked, your collection progress, and
 your lifetime Zaps and streaks alongside.
 
-## How they unlock
+## How you earn them
 
-You don't apply for achievements; they unlock **automatically** the moment you
+You don't apply for achievements; you earn them **automatically** the moment you
 qualify, and Frequency lets you know when one lands. Many also pay **Zaps** when
-they unlock, so a badge is often a bonus on top of the thing you already did.
+they land, so a badge is often a bonus on top of the thing you already did.
 
 A few examples of the kind of thing that earns one:
 
@@ -55,5 +55,5 @@ surprise is the point.
 
 Your badge count rides with you. It shows on the
 [leaderboard](/help/the-game/leaderboard) next to your Zaps and streak, and recent
-unlocks appear on your Quest dashboard. Collecting them is never required; they're
+badges appear on your Quest dashboard. Collecting them is never required; they're
 a record, not homework.
