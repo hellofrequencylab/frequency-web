@@ -682,7 +682,7 @@ export type Database = {
           },
         ]
       }
-      circle_field_transactions: {
+      circle_current_transactions: {
         Row: {
           amount: number
           circle_id: string
@@ -825,7 +825,6 @@ export type Database = {
           about: string | null
           city: string | null
           created_at: string | null
-          current_season_field: number
           default_intensity_tier: string | null
           geog: unknown
           host_id: string | null
@@ -840,6 +839,7 @@ export type Database = {
           name: string
           neighborhood: string | null
           resonance_public: boolean
+          season_current: number
           sidebar_order: Json | null
           slug: string
           status: Database["public"]["Enums"]["group_status"]
@@ -851,7 +851,6 @@ export type Database = {
           about?: string | null
           city?: string | null
           created_at?: string | null
-          current_season_field?: number
           default_intensity_tier?: string | null
           geog?: unknown
           host_id?: string | null
@@ -866,6 +865,7 @@ export type Database = {
           name: string
           neighborhood?: string | null
           resonance_public?: boolean
+          season_current?: number
           sidebar_order?: Json | null
           slug: string
           status?: Database["public"]["Enums"]["group_status"]
@@ -877,7 +877,6 @@ export type Database = {
           about?: string | null
           city?: string | null
           created_at?: string | null
-          current_season_field?: number
           default_intensity_tier?: string | null
           geog?: unknown
           host_id?: string | null
@@ -892,6 +891,7 @@ export type Database = {
           name?: string
           neighborhood?: string | null
           resonance_public?: boolean
+          season_current?: number
           sidebar_order?: Json | null
           slug?: string
           status?: Database["public"]["Enums"]["group_status"]
@@ -1261,6 +1261,9 @@ export type Database = {
       }
       crew_tasks: {
         Row: {
+          assigned_to: string | null
+          circle_id: string | null
+          claimed_at: string | null
           created_at: string | null
           id: string
           is_repeatable: boolean | null
@@ -1270,6 +1273,9 @@ export type Database = {
           zaps_value: number | null
         }
         Insert: {
+          assigned_to?: string | null
+          circle_id?: string | null
+          claimed_at?: string | null
           created_at?: string | null
           id?: string
           is_repeatable?: boolean | null
@@ -1279,6 +1285,9 @@ export type Database = {
           zaps_value?: number | null
         }
         Update: {
+          assigned_to?: string | null
+          circle_id?: string | null
+          claimed_at?: string | null
           created_at?: string | null
           id?: string
           is_repeatable?: boolean | null
@@ -1287,7 +1296,22 @@ export type Database = {
           task_type?: string
           zaps_value?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "crew_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_tasks_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_activities: {
         Row: {
@@ -1691,42 +1715,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      domains: {
-        Row: {
-          accent: string | null
-          cover_image: string | null
-          created_at: string
-          description: string | null
-          display_order: number
-          id: string
-          is_active: boolean
-          name: string
-          slug: string
-        }
-        Insert: {
-          accent?: string | null
-          cover_image?: string | null
-          created_at?: string
-          description?: string | null
-          display_order?: number
-          id?: string
-          is_active?: boolean
-          name: string
-          slug: string
-        }
-        Update: {
-          accent?: string | null
-          cover_image?: string | null
-          created_at?: string
-          description?: string | null
-          display_order?: number
-          id?: string
-          is_active?: boolean
-          name?: string
-          slug?: string
-        }
-        Relationships: []
       }
       email_events: {
         Row: {
@@ -2735,7 +2723,7 @@ export type Database = {
             foreignKeyName: "journey_plan_items_domain_id_fkey"
             columns: ["domain_id"]
             isOneToOne: false
-            referencedRelation: "domains"
+            referencedRelation: "pillars"
             referencedColumns: ["id"]
           },
           {
@@ -3840,21 +3828,30 @@ export type Database = {
       }
       page_content: {
         Row: {
+          cta_href: string | null
+          cta_label: string | null
           description: string | null
+          hero_image: string | null
           route: string
           title: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          cta_href?: string | null
+          cta_label?: string | null
           description?: string | null
+          hero_image?: string | null
           route: string
           title?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          cta_href?: string | null
+          cta_label?: string | null
           description?: string | null
+          hero_image?: string | null
           route?: string
           title?: string | null
           updated_at?: string
@@ -4075,6 +4072,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pillars: {
+        Row: {
+          accent: string | null
+          cover_image: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          accent?: string | null
+          cover_image?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          accent?: string | null
+          cover_image?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: []
       }
       platform_flag_events: {
         Row: {
@@ -4384,7 +4417,7 @@ export type Database = {
             foreignKeyName: "practice_subcategories_domain_id_fkey"
             columns: ["domain_id"]
             isOneToOne: false
-            referencedRelation: "domains"
+            referencedRelation: "pillars"
             referencedColumns: ["id"]
           },
         ]
@@ -4429,7 +4462,7 @@ export type Database = {
             foreignKeyName: "practice_tag_defs_domain_id_fkey"
             columns: ["domain_id"]
             isOneToOne: false
-            referencedRelation: "domains"
+            referencedRelation: "pillars"
             referencedColumns: ["id"]
           },
         ]
@@ -4623,7 +4656,7 @@ export type Database = {
             foreignKeyName: "practices_domain_id_fkey"
             columns: ["domain_id"]
             isOneToOne: false
-            referencedRelation: "domains"
+            referencedRelation: "pillars"
             referencedColumns: ["id"]
           },
           {
@@ -4766,6 +4799,7 @@ export type Database = {
           suspended_until: string | null
           updated_at: string | null
           vcard: Json
+          web_role: string
           website: string | null
         }
         Insert: {
@@ -4834,6 +4868,7 @@ export type Database = {
           suspended_until?: string | null
           updated_at?: string | null
           vcard?: Json
+          web_role?: string
           website?: string | null
         }
         Update: {
@@ -4902,6 +4937,7 @@ export type Database = {
           suspended_until?: string | null
           updated_at?: string | null
           vcard?: Json
+          web_role?: string
           website?: string | null
         }
         Relationships: [
@@ -6210,10 +6246,10 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number
-          domain_id: string | null
           id: string
           is_active: boolean
           name: string
+          pillar_id: string | null
           slug: string
         }
         Insert: {
@@ -6222,10 +6258,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
-          domain_id?: string | null
           id?: string
           is_active?: boolean
           name: string
+          pillar_id?: string | null
           slug: string
         }
         Update: {
@@ -6234,18 +6270,18 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
-          domain_id?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          pillar_id?: string | null
           slug?: string
         }
         Relationships: [
           {
             foreignKeyName: "topical_channels_domain_id_fkey"
-            columns: ["domain_id"]
+            columns: ["pillar_id"]
             isOneToOne: false
-            referencedRelation: "domains"
+            referencedRelation: "pillars"
             referencedColumns: ["id"]
           },
         ]
@@ -6539,7 +6575,7 @@ export type Database = {
             foreignKeyName: "practices_domain_id_fkey"
             columns: ["domain_id"]
             isOneToOne: false
-            referencedRelation: "domains"
+            referencedRelation: "pillars"
             referencedColumns: ["id"]
           },
           {
@@ -6949,6 +6985,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["community_role"]
       }
       get_my_tuned_channel_ids: { Args: never; Returns: string[] }
+      get_my_web_role: { Args: never; Returns: string }
       gettransactionid: { Args: never; Returns: unknown }
       handle_is_available: { Args: { check_handle: string }; Returns: boolean }
       interaction_surface_stats: {
@@ -7088,10 +7125,10 @@ export type Database = {
         Args: never
         Returns: {
           circles: number
-          domain: string
           interest: string
           interest_slug: string
           members: number
+          pillar: string
           tune_ins: number
         }[]
       }
@@ -8031,9 +8068,9 @@ export type Database = {
       post_visibility: "public" | "region" | "cluster" | "group"
       season_rank_enum:
         | "ghost"
-        | "runner"
-        | "operative"
-        | "agent"
+        | "echo"
+        | "signal"
+        | "beacon"
         | "conduit"
         | "luminary"
       store_category:
@@ -8207,9 +8244,9 @@ export const Constants = {
       post_visibility: ["public", "region", "cluster", "group"],
       season_rank_enum: [
         "ghost",
-        "runner",
-        "operative",
-        "agent",
+        "echo",
+        "signal",
+        "beacon",
         "conduit",
         "luminary",
       ],

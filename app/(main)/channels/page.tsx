@@ -3,6 +3,7 @@ import {
   Sparkles, Activity, Heart, MessagesSquare, Megaphone, Palette, Briefcase, Radio, Users, Circle as CircleIcon,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from './channel-toggle'
@@ -36,10 +37,10 @@ type TopicalChannel = {
   description: string | null
   cover_image: string | null
   display_order: number
-  domain_id: string | null
+  pillar_id: string | null
 }
 
-type Domain = {
+type Pillar = {
   id: string
   slug: string
   name: string
@@ -59,10 +60,10 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
   'business-support': Briefcase,
 }
 
-// Channels = the four Domains (Mind / Body / Spirit / Expression), read from the
-// `domains` table so they stay data-editable. The existing Interests/Topics
-// (topical_channels) sort underneath each Channel. Tune-in remains the per-topic
-// action; the tuned-in vs explore framing is preserved within each Channel.
+// Pillars = Mind / Body / Spirit / Expression, read from the `pillars` table so
+// they stay data-editable. The existing Interests/Topics (topical_channels) sort
+// underneath each Channel. Tune-in remains the per-topic action; the tuned-in vs
+// explore framing is preserved within each Channel.
 export default async function ChannelsPage() {
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -83,18 +84,18 @@ export default async function ChannelsPage() {
     canCreate = role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
   }
 
-  const [{ data: domainsData }, { data: channels }] = await Promise.all([
-    admin.from('domains')
+  const [{ data: pillarsData }, { data: channels }] = await Promise.all([
+    (admin as unknown as SupabaseClient).from('pillars')
       .select('id, slug, name, description, accent, cover_image, display_order')
       .eq('is_active', true)
       .order('display_order', { ascending: true }),
-    admin.from('topical_channels')
-      .select('id, name, slug, category, description, cover_image, display_order, domain_id')
+    (admin as unknown as SupabaseClient).from('topical_channels')
+      .select('id, name, slug, category, description, cover_image, display_order, pillar_id')
       .eq('is_active', true)
       .order('display_order', { ascending: true }),
   ])
 
-  const domains = (domainsData ?? []) as Domain[]
+  const domains = (pillarsData ?? []) as Pillar[]
   const channelList = (channels ?? []) as TopicalChannel[]
   const channelIds = channelList.map((c) => c.id)
 
@@ -126,7 +127,7 @@ export default async function ChannelsPage() {
   // until an admin assigns it.
   const byDomain = new Map<string, TopicalChannel[]>()
   for (const ch of channelList) {
-    const key = ch.domain_id ?? '__unsorted__'
+    const key = ch.pillar_id ?? '__unsorted__'
     const list = byDomain.get(key) ?? []
     list.push(ch)
     byDomain.set(key, list)
@@ -185,7 +186,7 @@ export default async function ChannelsPage() {
       action={
         (canCreate || (ctaLabel && ctaHref)) ? (
           <div className="flex items-center gap-2">
-            {canCreate && <NewChannelCompose domains={domains} />}
+            {canCreate && <NewChannelCompose pillars={domains} />}
             {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
             {ctaLabel && ctaHref && (
               <a
@@ -274,7 +275,7 @@ export default async function ChannelsPage() {
 function DomainSection({
   domain, topics, memberCounts, circleCounts, tunedInIds, canToggle,
 }: {
-  domain: Domain
+  domain: Pillar
   topics: TopicalChannel[]
   memberCounts: Record<string, number>
   circleCounts: Record<string, number>

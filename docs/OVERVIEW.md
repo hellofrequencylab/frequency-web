@@ -69,7 +69,7 @@ Pipeline: **SOURCE → VERIFY → LEDGER → RULES → REWARD.**
   the **spendable** currency.
 - **Zaps** = external + **in-person** (outreach, invites, in-person event hosting,
   ghost-node captures, business/NFC programs) — **seasonal XP** driving **season
-  ranks** (ghost → runner → operative → agent → conduit → luminary).
+  ranks** (ghost → echo → signal → beacon → conduit → luminary).
 - **Season rollover:** zaps **convert to gems** at season end (rank-based rate);
   trophy minted; counters reset.
 - **Store:** gems buy **digital badges/cosmetics** and **trade for physical merch**.

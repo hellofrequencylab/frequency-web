@@ -6,9 +6,9 @@ import { atLeastRole } from '@/lib/core/roles'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-// Journey-library admin actions. The quest-chain CRUD that used to live here is
-// gone with the retired engine (ADR-152 Phase B3 — quest_chains/steps/progress
-// are dropped; journey_plans is the single Journey spine).
+// Journey-library admin actions. The chain CRUD that used to live here is
+// gone with the retired engine (ADR-152 Phase B3 — the legacy action-chain
+// engine is dropped; journey_plans is the single Journey spine).
 
 // Untyped handle for tables that may be ahead of generated types.
 function ub(): SupabaseClient {

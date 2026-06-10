@@ -34,7 +34,7 @@ import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
   title: 'Practices',
-  description: 'This is where the points come from — a growing community library. Adopt or claim a practice, then log it every day to earn zaps, climb the ranks, and keep your streak alive.',
+  description: 'This is where the zaps come from — a growing community library. Adopt or claim a practice, then log it every day to earn zaps, climb the ranks, and keep your streak alive.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2);

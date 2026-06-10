@@ -1,12 +1,13 @@
-// The Arc clock (ADR-197; docs/JOURNEYS.md §3). A season is exactly 91 days = 13 × 7,
+// The quest clock (ADR-197; docs/JOURNEYS.md §3). A season is exactly 91 days = 13 × 7,
 // anchored on/near the solstice. Journey COMPLETION is derived from the practice log
 // against these fixed season-week buckets — there is no progress table.
 //
-// This is the counterpart to the rolling Rhythm clock (weeklyTargetFromCadence in
+// This is the counterpart to the rolling rhythm clock (weeklyTargetFromCadence in
 // journey-plans.ts). The two answer different questions and never fight:
 //   • Rhythm clock (rolling 7 days, today-anchored) → "am I in rhythm right now?"
-//   • Arc clock    (fixed 91-day season buckets)    → "how many weeks have I banked?"
-// Pure + framework-independent → unit-tested in journey-arc.test.ts.
+//   • Quest clock  (fixed 91-day season buckets)    → "how many weeks have I banked?"
+// Member-facing copy always says "season"/"streak" — the clock names are internal only.
+// Pure + framework-independent → unit-tested in journey-quest-clock.test.ts.
 
 export const SEASON_DAYS = 91
 export const SEASON_WEEKS = 13

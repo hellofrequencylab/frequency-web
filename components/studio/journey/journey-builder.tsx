@@ -41,7 +41,7 @@ export interface BuilderItem {
   cadence: string | null
   practiceCadence: string | null
   /** The author's default intensity tier for this step (ADR-198). Optional for
-   *  backward-compat; defaults to 'current'. */
+   *  backward-compat; defaults to 'adept'. */
   defaultTier?: IntensityTier
 }
 export interface AvailablePractice { id: string; title: string; description: string | null; domainId: string | null }
@@ -420,7 +420,7 @@ export function JourneyBuilder(props: Props) {
                   {expanded === it.practiceId && (
                     <div className="mt-2 flex flex-wrap items-end gap-2 border-t border-border pt-2.5">
                       <TierPicker
-                        value={it.defaultTier ?? 'current'}
+                        value={it.defaultTier ?? 'adept'}
                         onChange={(t) => setStepTier(it.practiceId, t)}
                       />
                       <StudioField label="Cadence">

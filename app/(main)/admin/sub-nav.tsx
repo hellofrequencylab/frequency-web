@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
-import type { CommunityRole } from '@/lib/core/roles'
+import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
 import { groupForPath, dashboardForGroup } from './sections'
 
@@ -16,9 +16,18 @@ import { groupForPath, dashboardForGroup } from './sections'
 // The row carries the wayfinding breadcrumb (Admin › Dashboard › Suite) as a
 // prefix — rooted in the suite's operator dashboard (ADR-171) so the three-
 // dashboard IA reads in the trail — and the active tab supplies the current page.
-export function AdminSubNav({ role, staffRole = null }: { role: CommunityRole; staffRole?: StaffRole | null }) {
+export function AdminSubNav({
+  role,
+  webRole = 'none',
+  staffRole = null,
+}: {
+  role: CommunityRole
+  /** STAFF axis (web_role, ADR-208) — gates the admin/janitor-min suites. */
+  webRole?: WebRole
+  staffRole?: StaffRole | null
+}) {
   const pathname = usePathname()
-  const group = groupForPath(pathname, role, staffRole)
+  const group = groupForPath(pathname, role, webRole, staffRole)
   const dashboard = dashboardForGroup(group)
 
   return (

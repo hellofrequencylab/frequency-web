@@ -13,7 +13,7 @@ import { slugify } from '@/lib/utils'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
-import { atLeastRole } from '@/lib/core/roles'
+import { atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
 import { assignTraining } from '@/lib/onboarding/training'
 import { authorizeAction } from '@/lib/admin/guard'
 import { logAdminAction } from '@/lib/admin/audit'
@@ -43,14 +43,14 @@ async function requireCommunityOps() {
 // admin+ OR a staff role holding `staffDomain` (write). This closes the cross-scope
 // hole (a host of one circle editing another) without removing legitimate operator
 // access. Returns the non-null caller, like `authorizeAction`.
-async function requireScopedManage<T extends { community_role: CommunityRole }>(
+async function requireScopedManage<T extends { community_role: CommunityRole; webRole: import('@/lib/core/roles').WebRole }>(
   caller: T | null,
   hasScopeCap: boolean,
   staffDomain: StaffDomain,
 ): Promise<T> {
   if (!caller) throw new Error('Unauthorized')
   if (hasScopeCap) return caller // manages this specific scope
-  if (atLeastRole(caller.community_role, 'admin')) return caller // platform admin/janitor — global
+  if (isStaff(caller.webRole)) return caller // platform staff (web_role admin/janitor, ADR-208) — global
   const staff = await getStaffMember().catch(() => null)
   if (staffCan(staff?.role ?? null, staffDomain, 'write')) return caller // staff operator — global
   throw new Error('Unauthorized')
@@ -65,7 +65,9 @@ export async function assignRole(profileId: string, role: CommunityRole) {
   // host could grant itself janitor by calling the action directly).
   const caller = await getCallerProfile()
   const staff = await getStaffMember().catch(() => null)
-  const isSuper = !!caller && (hasRole(caller.community_role, 'janitor') || staff?.role === 'owner')
+  // "Super" = Executive Admin on the STAFF axis (web_role janitor, ADR-208) or a
+  // team_members owner — the only granters of the top tiers.
+  const isSuper = !!caller && (isJanitor(caller.webRole) || staff?.role === 'owner')
   // Full granters (janitor / owner) OR a staff member with the 'roles' capability (admin).
   if (!caller || (!isSuper && !staffCan(staff?.role ?? null, 'roles', 'write'))) {
     throw new Error('Unauthorized')
@@ -96,7 +98,7 @@ export async function deactivateMember(profileId: string) {
 
 export async function updateMemberProfile(profileId: string, fd: FormData) {
   const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
   const admin = createAdminClient()
 
   const updates: Database['public']['Tables']['profiles']['Update'] = {}
@@ -116,7 +118,7 @@ export async function updateMemberProfile(profileId: string, fd: FormData) {
 
 export async function reactivateMember(profileId: string) {
   const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
   const admin = createAdminClient()
   const { error } = await admin.from('profiles').update({ is_active: true }).eq('id', profileId)
   if (error) throw new Error(error.message)
@@ -126,7 +128,7 @@ export async function reactivateMember(profileId: string) {
 
 export async function sendMagicLink(profileId: string) {
   const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
   const { data: profile } = await admin
@@ -152,7 +154,7 @@ export async function sendMagicLink(profileId: string) {
 
 export async function deleteUserAccount(profileId: string) {
   const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
   const { data: profile } = await admin

@@ -3,7 +3,7 @@ title: Events & RSVPs
 description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
-updated: 2026-06-09
+updated: 2026-06-10
 audience: member
 featureKeys: [events]
 status: published
@@ -42,10 +42,10 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 - Many gatherings are free — just RSVP. Some are **ticketed**, and hosts can price them however fits: a set price, **pay-what-you-can**, a **sliding scale**, or a **donation**. Pick the amount that works for you (within any minimum the host sets).
 - Payment goes **straight to the host**. If plans change, hosts can **refund** a ticket — and if a host **cancels the event, everyone who paid is refunded automatically** and emailed to let you know.
 
-## Building Field together
+## Building Current together
 
-- When you show up to a gathering **with your circle**, your circle builds **Field** together — a shared measure of your circle showing up for each other. It grows every time a member attends.
-- It's **collaborative, not a competition** — circles are never ranked against each other. A circle's Field stays private to its members unless the circle chooses to share it.
+- When you show up to a gathering **with your circle**, your circle builds **Current** together — a shared measure of your circle showing up for each other. It builds every time a member attends.
+- It's **collaborative, not a competition** — circles are never ranked against each other. A circle's Current stays private to its members unless the circle chooses to share it.
 
 ## Tips
 

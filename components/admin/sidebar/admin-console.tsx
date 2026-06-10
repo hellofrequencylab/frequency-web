@@ -22,8 +22,8 @@ import {
   Search,
   type LucideIcon,
 } from 'lucide-react'
-import { meetsAccess } from '@/lib/nav-areas'
 import type { CommunityRole } from '@/lib/community-roles'
+import { isStaff, type WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/staff'
 import { visibleLinks } from '@/app/(main)/admin/sections'
 import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
@@ -86,10 +86,13 @@ function slotForHref(href: string): string {
 
 export function AdminConsole({
   role,
+  webRole = 'none',
   staffRole,
   onNavigate,
 }: {
   role: CommunityRole | null
+  /** STAFF axis (web_role, ADR-208) — independent of the community ladder. */
+  webRole?: WebRole
   staffRole: StaffRole | null
   onNavigate: () => void
 }) {
@@ -105,7 +108,9 @@ export function AdminConsole({
     setQuery('')
   }
 
-  const isJanitor = meetsAccess('janitor', role) || staffRole != null
+  // "Janitor" affordances ride the STAFF axis now (web_role, ADR-208), not the
+  // community ladder; team_members staff still surface the Pages link too.
+  const isJanitor = isStaff(webRole) || staffRole != null
 
   const circleSlug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
   const hubSlug = pathname.match(/^\/hubs\/([^/]+)/)?.[1] ?? null
@@ -124,7 +129,7 @@ export function AdminConsole({
 
   // Bucket the role-gated admin catalog into spine categories.
   const itemsBySlot = new Map<string, Item[]>()
-  for (const l of visibleLinks(role ?? 'member', staffRole)) {
+  for (const l of visibleLinks(role ?? 'member', webRole, staffRole)) {
     const slot = slotForHref(l.href)
     const arr = itemsBySlot.get(slot) ?? []
     arr.push({ kind: 'link', label: l.label, sub: l.desc, href: l.href, Icon: l.Icon })

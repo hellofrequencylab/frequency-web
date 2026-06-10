@@ -3,7 +3,7 @@ title: Season challenges
 description: A set of season-long goals that pay bonus zaps — and the road to Luminary.
 category: the-game
 order: 6
-updated: 2026-06-09
+updated: 2026-06-10
 audience: member
 featureKeys: [challenges, gamification]
 status: published
@@ -53,4 +53,4 @@ city or an event. Scan them to fill the progress bar — each code counts once. 
 Circle hosts can **adopt a challenge for the whole circle** — the same goal, taken
 on together. Your personal progress still counts as yours, and every time someone
 in the circle finishes an adopted challenge, the circle's shared
-[Field](/help/groups/circle-field) grows. Same game, played side by side.
+[Current](/help/groups/circle-field) builds. Same game, played side by side.

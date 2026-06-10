@@ -13,7 +13,7 @@ export interface GrowthWeek {
   new_events: number
 }
 export interface InterestDemand {
-  domain: string
+  pillar: string
   interest: string
   interest_slug: string
   tune_ins: number

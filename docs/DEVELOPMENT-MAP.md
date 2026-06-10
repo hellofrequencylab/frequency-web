@@ -211,7 +211,7 @@
 > ✅). Reward currency now follows the act everywhere — online → Gems, real-life → Zaps — across base
 > actions *and* the meta-layer (achievements/challenges/quests), fixing a leak that paid zaps for online
 > milestones + an achievement double-award (ADR-139). Zaps got a real ledger (`zap_transactions`),
-> powering the Vault **"how you earned" points log**. Journeys (the gamified `quest_chains`) became
+> powering the Vault **"how you earned" Vault log**. Journeys (the legacy gamified action-chain engine, dropped ADR-152) became
 > **join-gated + Pillar-tagged** with a real `/crew/quests` browse/start surface; the **member zap-rate**
 > and the **endorsement layer** (rank shown only for Crew) landed gated/inert-in-Beta (ADR-140/141); the
 > Store gem balance now nets spend. Migrations `20260607040000`–`20260607070000` applied to prod.

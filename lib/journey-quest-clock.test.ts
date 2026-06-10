@@ -7,7 +7,7 @@ import {
   SEASON_DAYS,
   SEASON_WEEKS,
   DEFAULT_TARGET_WEEKS,
-} from '@/lib/journey-arc'
+} from '@/lib/journey-quest-clock'
 
 const START = '2026-06-21' // a solstice anchor
 

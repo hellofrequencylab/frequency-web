@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { visibleDashboards } from '@/app/(main)/admin/sections'
-import type { CommunityRole } from '@/lib/core/roles'
+import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
 
 // The Overview launchpad: every admin surface the viewer can reach, collapsed into
@@ -10,8 +10,17 @@ import type { StaffRole } from '@/lib/core/staff-roles'
 // guarantee made visible: a host sees only Community, a janitor sees all three, and
 // nothing is hidden in a route with no link.
 
-export function AdminLaunchpad({ role, staffRole = null }: { role: CommunityRole; staffRole?: StaffRole | null }) {
-  const dashboards = visibleDashboards(role, staffRole).map((d) => ({
+export function AdminLaunchpad({
+  role,
+  webRole = 'none',
+  staffRole = null,
+}: {
+  role: CommunityRole
+  /** STAFF axis (web_role, ADR-208) — gates the admin/janitor-min suites. */
+  webRole?: WebRole
+  staffRole?: StaffRole | null
+}) {
+  const dashboards = visibleDashboards(role, webRole, staffRole).map((d) => ({
     ...d,
     groups: d.groups
       // The Overview card grid is for *navigating* — drop the self-link to /admin.

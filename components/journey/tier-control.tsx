@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import type { IntensityTier } from '@/lib/journey-tiers'
 
 // Member intensity-tier control (docs/JOURNEYS.md §5). The member overrides the resolved
-// depth for THIS journey — member override → circle default → item default → 'current'.
+// depth for THIS journey — member override → circle default → item default → 'adept'.
 // Tier changes only what they practise (never Zap/streak math). "Use default" clears the
 // override (null) so it inherits the circle/item chain again. Self-only; the action re-gates.
 

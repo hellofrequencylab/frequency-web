@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Users, Compass, Sparkles } from 'lucide-react'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { MapZone, MapPreview, MapBanner, FindNearMeButton } from '@/components/circles/circles-map'
@@ -26,7 +27,7 @@ type CircleRow = CircleBase & {
   image_url: string | null
   is_demo: boolean
   topical_channel_id: string | null
-  channel: { name: string; domain_id: string | null } | null
+  channel: { name: string; pillar_id: string | null } | null
   hub: {
     id: string
     name: string
@@ -96,12 +97,12 @@ export default async function CirclesPage({
     }
   }
 
-  let circlesQuery = supabase
+  let circlesQuery = (supabase as unknown as SupabaseClient)
     .from('circles')
     .select(
       `id, name, slug, about, type, member_count, member_cap, status, created_at,
        latitude, longitude, neighborhood, image_url, is_demo, topical_channel_id,
-       channel:topical_channels!topical_channel_id ( name, domain_id ),
+       channel:topical_channels!topical_channel_id ( name, pillar_id ),
        hub:hubs!hub_id (
          id, name, slug,
          nexus:nexuses!nexus_id ( id, name, slug, outpost:outposts!outpost_id ( name ) )
@@ -119,15 +120,15 @@ export default async function CirclesPage({
     .from('topical_channels').select('id, name, category').order('name')
   const interests = (interestRows ?? []) as { id: string; name: string; category: string }[]
 
-  // Channels (Domains) drive the table-of-contents filter: group circles by the
-  // Channel their practice belongs to, so tapping one drills into that Channel.
-  const { data: domainRows } = await supabase
-    .from('domains').select('id, slug, name, display_order').eq('is_active', true)
+  // Channels (Pillars) drive the table-of-contents filter: group circles by the
+  // Pillar their practice belongs to, so tapping one drills into that Channel.
+  const { data: domainRows } = await (supabase as unknown as SupabaseClient)
+    .from('pillars').select('id, slug, name, display_order').eq('is_active', true)
     .order('display_order', { ascending: true })
   const domains = (domainRows ?? []) as { id: string; slug: string; name: string; display_order: number }[]
   const domainCount = new Map<string, number>()
   for (const c of all) {
-    const d = c.channel?.domain_id
+    const d = c.channel?.pillar_id
     if (d) domainCount.set(d, (domainCount.get(d) ?? 0) + 1)
   }
   const selectedDomain = channel ? domains.find((d) => d.slug === channel) ?? null : null
@@ -135,7 +136,7 @@ export default async function CirclesPage({
   // ── Facets ──────────────────────────────────────────────────────────────
   const qLower = (q ?? '').trim().toLowerCase()
   let filtered = all.filter((c) => {
-    if (selectedDomain && c.channel?.domain_id !== selectedDomain.id) return false
+    if (selectedDomain && c.channel?.pillar_id !== selectedDomain.id) return false
     if (type === 'in-person' && c.type !== 'in-person') return false
     if (type === 'online' && c.type !== 'online') return false
     if (interest && c.topical_channel_id !== interest) return false

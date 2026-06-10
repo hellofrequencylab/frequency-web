@@ -41,7 +41,7 @@ export function stageByKey(key: StageKey): MemberStage {
 const REGULAR_STREAK = 7
 const ESTABLISHED_STREAK = 30
 const ANCHOR_STREAK = 100
-const OPERATIVE_ZAPS = 300 // Operative rank
+const SIGNAL_ZAPS = 300 // Signal rank
 const CONDUIT_ZAPS = 1500 // Conduit rank
 
 // --- pure derivation -------------------------------------------------------
@@ -61,7 +61,7 @@ export interface ProgressSignals {
 export function deriveStage(s: ProgressSignals): StageKey {
   if (!s.activationComplete) return 'newcomer'
   if (s.streak >= ANCHOR_STREAK || s.seasonZaps >= CONDUIT_ZAPS) return 'anchor'
-  if (s.streak >= ESTABLISHED_STREAK || s.seasonZaps >= OPERATIVE_ZAPS || s.journeys >= 2) return 'established'
+  if (s.streak >= ESTABLISHED_STREAK || s.seasonZaps >= SIGNAL_ZAPS || s.journeys >= 2) return 'established'
   if (s.streak >= REGULAR_STREAK || s.journeys >= 1) return 'regular'
   return 'finding_feet'
 }
@@ -85,7 +85,7 @@ export function gatesFor(stage: StageKey, s: ProgressSignals): NextGate[] {
       return [
         { label: `Reach a ${ESTABLISHED_STREAK}-day streak`, met: s.streak >= ESTABLISHED_STREAK },
         { label: 'Follow two Journeys', met: s.journeys >= 2 },
-        { label: 'Climb to Operative rank', met: s.seasonZaps >= OPERATIVE_ZAPS },
+        { label: 'Climb to Signal rank', met: s.seasonZaps >= SIGNAL_ZAPS },
       ]
     case 'established':
       return [

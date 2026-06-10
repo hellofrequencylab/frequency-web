@@ -4,8 +4,8 @@
 // unit-tested. RPCs/circles cast (repo convention).
 //
 // Journey-completion retirement (ADR-152 Phase B3 / JOURNEYS.md §13 item 8):
-// the legacy `quest_outcomes()` RPC — which read the now-retired
-// quest_chains/steps/progress engine — is no longer called. `quests` is kept on
+// the legacy `quest_outcomes()` RPC — which read the now-retired legacy
+// action-chain engine — is no longer called. `quests` is kept on
 // the report shape (always empty) so existing consumers keep compiling and the
 // Journeys section renders its empty state. Per-Journey completion analytics for
 // the journey_plans spine (qualifying-weeks ≥ target) are derived from
@@ -69,8 +69,8 @@ export async function getOutcomeReport(): Promise<OutcomeReport> {
     rate: completionRate(Number(r.started), Number(r.completed)),
   }))
 
-  // The legacy quest_outcomes() RPC + its quest_chains/steps/progress engine are
-  // retired (ADR-152 Phase B3). No quest-chain completion data remains, so the
+  // The legacy quest_outcomes() RPC + its legacy action-chain engine are
+  // retired (ADR-152 Phase B3). No chain completion data remains, so the
   // Journeys section is intentionally empty until journey_plans-derived completion
   // analytics land. Shape preserved for consumers.
   const quests: QuestOutcome[] = []

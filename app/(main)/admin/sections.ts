@@ -49,7 +49,7 @@ import {
   CreditCard,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
 import { staffCan, type StaffDomain, type StaffRole, type Access } from '@/lib/core/staff-roles'
 
 export interface AdminLink {
@@ -58,7 +58,10 @@ export interface AdminLink {
   /** One-line purpose — shown on the Overview launchpad card. */
   desc: string
   Icon: LucideIcon
-  /** Lowest role that may use this surface. */
+  /** Lowest role that may use this surface. TWO AXES (ADR-208): a community rung
+   *  (host/guide/mentor) gates on the trust ladder; 'admin'/'janitor' gate on the
+   *  STAFF axis (web_role) — 'admin' admits admin+janitor, 'janitor' admits janitor
+   *  only. `meetsMin` below resolves which axis applies. */
   min: CommunityRole
   /** Staff capability domain (ADR-127) that ALSO unlocks this surface — fail-closed:
    *  omit it and the link stays community-role-only (sensitive pages do this). */
@@ -209,12 +212,29 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
   },
 ] as const
 
+/**
+ * Does a link's `min` admit the viewer? TWO AXES (ADR-208): 'admin'/'janitor' read
+ * the STAFF axis (web_role) — 'janitor' admits janitor only, 'admin' admits both;
+ * every other rung reads the COMMUNITY trust ladder (community_role). Mirrors
+ * `meetsMin` in lib/admin/guard.ts so nav visibility matches the page gate exactly.
+ */
+function linkMeetsMin(min: CommunityRole, role: CommunityRole, webRole: WebRole): boolean {
+  if (min === 'janitor') return isJanitor(webRole)
+  if (min === 'admin') return isStaff(webRole)
+  return atLeastRole(role, min)
+}
+
 /** The suite that owns a path — by longest matching link href (so `/admin/hubs`
  *  resolves to Spaces, `/admin/qr/stats` to Reach, etc.). Drives the suite's
  *  top-bar sub-nav tabs (layer 2) from the current URL. Falls back to the first
  *  visible suite. */
-export function groupForPath(pathname: string, role: CommunityRole, staffRole: StaffRole | null = null): AdminGroup {
-  const groups = visibleGroups(role, staffRole)
+export function groupForPath(
+  pathname: string,
+  role: CommunityRole,
+  webRole: WebRole = 'none',
+  staffRole: StaffRole | null = null,
+): AdminGroup {
+  const groups = visibleGroups(role, webRole, staffRole)
   let best: AdminGroup | null = null
   let bestLen = -1
   for (const g of groups) {
@@ -229,21 +249,32 @@ export function groupForPath(pathname: string, role: CommunityRole, staffRole: S
   return best ?? groups[0]
 }
 
-/** The groups (with only the links) a given role may see. Empty groups drop out.
- *  A link shows if the community ladder grants it OR (ADR-127) the caller's staff
- *  role holds the link's `staffDomain` (write). */
-export function visibleGroups(role: CommunityRole, staffRole: StaffRole | null = null): AdminGroup[] {
+/** The groups (with only the links) a given viewer may see. Empty groups drop out.
+ *  A link shows if its `min` axis grants it — the community ladder OR the STAFF axis
+ *  (web_role, ADR-208) — OR (ADR-127) the caller's team_members staff role holds the
+ *  link's `staffDomain` (write). */
+export function visibleGroups(
+  role: CommunityRole,
+  webRole: WebRole = 'none',
+  staffRole: StaffRole | null = null,
+): AdminGroup[] {
   return ADMIN_GROUPS.map((g) => ({
     ...g,
     links: g.links.filter(
-      (l) => atLeastRole(role, l.min) || (!!l.staffDomain && staffCan(staffRole, l.staffDomain, l.staffLevel ?? 'write')),
+      (l) =>
+        linkMeetsMin(l.min, role, webRole) ||
+        (!!l.staffDomain && staffCan(staffRole, l.staffDomain, l.staffLevel ?? 'write')),
     ),
   })).filter((g) => g.links.length > 0)
 }
 
-/** Flat list of links a role may see — handy for breadcrumb/title lookups. */
-export function visibleLinks(role: CommunityRole, staffRole: StaffRole | null = null): AdminLink[] {
-  return visibleGroups(role, staffRole).flatMap((g) => g.links)
+/** Flat list of links a viewer may see — handy for breadcrumb/title lookups. */
+export function visibleLinks(
+  role: CommunityRole,
+  webRole: WebRole = 'none',
+  staffRole: StaffRole | null = null,
+): AdminLink[] {
+  return visibleGroups(role, webRole, staffRole).flatMap((g) => g.links)
 }
 
 /** A dashboard plus the suites under it that the viewer may see. */
@@ -256,9 +287,10 @@ export interface VisibleDashboard extends AdminDashboard {
  *  suite drops out entirely (a host sees only Community; a janitor sees all three). */
 export function visibleDashboards(
   role: CommunityRole,
+  webRole: WebRole = 'none',
   staffRole: StaffRole | null = null,
 ): VisibleDashboard[] {
-  const groups = visibleGroups(role, staffRole)
+  const groups = visibleGroups(role, webRole, staffRole)
   return ADMIN_DASHBOARDS.map((d) => ({
     ...d,
     groups: groups.filter((g) => g.dashboard === d.key),

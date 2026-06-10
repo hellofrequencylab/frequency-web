@@ -5,13 +5,15 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { logAdminAction } from '@/lib/admin/audit'
-import { atLeastRole } from '@/lib/core/roles'
+import { isJanitor } from '@/lib/core/roles'
 import { addDemoMembers as genMembers, addDemoCircle as genCircle } from '@/lib/demo/generate'
 import { deletePlansByAuthors } from '@/lib/journey-plans'
 
+// Crown-jewel gate: the STAFF axis (web_role janitor, ADR-208), not the deprecated
+// community 'janitor' rung.
 async function requireJanitor() {
   const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
 }
 
 // Demo content lives across these tables (see docs/DEMO-SYSTEM.md). Purge deletes
@@ -25,7 +27,7 @@ const DEMO_TABLES = ['posts', 'events', 'practices', 'circles', 'hubs', 'profile
 // once via the gating in lib/platform-flags.ts + the feed RPCs.
 export async function setDemoMode(enabled: boolean) {
   const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -40,7 +42,7 @@ export async function setDemoMode(enabled: boolean) {
 // content is ready. Janitor-only.
 export async function purgeDemoContent() {
   const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
   const callerId = caller.id
 
   // Untyped cast: hubs.is_demo isn't in the generated types yet (cast pattern).

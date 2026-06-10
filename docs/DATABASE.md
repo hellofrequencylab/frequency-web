@@ -16,9 +16,16 @@ these tables mean.
 `outposts`, `nexuses`, `nexus_regions`, `hubs`, `circles`, `memberships`,
 `invite_links`
 
-**Channels**
-`topical_channels`, `topical_channel_memberships` (current global topical layer),
-`channels`, `channel_memberships` (legacy focus groups)
+**Pillars (game taxonomy)**
+`pillars` (Mind / Body / Spirit / Expression — renamed 2026, see docs/NAMING.md; migration
+`20260613000010`; **never** called Channels). FKs that point at it keep the column name
+`domain_id` for now (`practices.domain_id`, `journey_plan_items.domain_id`,
+`journey_plans.domain_id`, …) — those column renames are deferred to Wave 3.
+
+**Channels (topical forum)**
+`topical_channels` (FK `pillar_id`, renamed from `domain_id` in the same migration),
+`topical_channel_memberships` (current global topical layer), `channels`,
+`channel_memberships` (legacy focus groups)
 
 **Content & feed**
 `posts`, `post_reactions`, `post_mentions`
@@ -52,27 +59,32 @@ You" lane — ADR entries 2026-06)
 `gem_config`, `gem_transactions`, `zap_config`, `zap_transactions`, `store_items`,
 `store_redemptions`, `reward_grants` (idempotent claim-then-pay — ADR-168/200)
 
-**Circle Field & circle challenges (collaborative)**
-`circle_field_transactions` (append-only ledger; trigger owns `circles.current_season_field`),
-`circle_challenge_adoptions` (a circle adopts a global challenge together — ADR-201)
+**Circle Current & circle challenges (collaborative)**
+`circle_current_transactions` (append-only ledger; trigger owns `circles.season_current`
+— renamed from `circle_field_transactions` / `circles.current_season_field`, migration
+`20260613000040`), `circle_challenge_adoptions` (a circle adopts a global challenge together
+— ADR-201)
 
-> **`quests`** (ADR-152, Phase B1) is the **Seasonal Quest** container — the canonical
-> hierarchy is **The Quest → Seasonal Quest → Journeys → Practices**. A `quests` row is a
-> season's official, free collection of Journeys (`season` = `season_number`, null = evergreen).
-> Official Journeys nest under it via **`journey_plans.quest_id`** (+ `official` flag); a NULL
-> `quest_id` is a member-built Journey in the open library. Public read; service-role writes. The
-> B1 migration seeds the active season's Quest + one official Journey per Pillar (≤3 of that
-> Pillar's practices each). **Everything is free** (ADR-150/152).
+> **`quests`** (ADR-152, Phase B1) is the **Quest** (season-instance) container — canon
+> hierarchy **Quest → Journey → Practice** ([NAMING.md](NAMING.md); "Seasonal Quest" is retired
+> phrasing — a `quests` row simply **is** the season). A `quests` row is a season's official,
+> free collection of Journeys (`season` = `season_number`, null = evergreen). Official Journeys
+> nest under it via **`journey_plans.quest_id`** (+ `official` flag); a NULL `quest_id` is a
+> member-built Journey in the open library. Public read; service-role writes. The B1 migration
+> seeds the active season's Quest + one official Journey per Pillar (≤3 of that Pillar's practices
+> each). **Everything is free** (ADR-150/152).
 >
-> **`quest_chains` / `quest_steps` / `quest_progress`** — the legacy action-chain engine —
-> are **fully retired AND dropped** (ADR-152 Phase B3, migration `20260609104000`, applied
+> The **legacy action-chain engine** (dropped, ADR-152)
+> is **fully retired AND dropped** (ADR-152 Phase B3, migration `20260609104000`, applied
 > 2026-06): the tables and the `quest_outcomes()` RPC no longer exist; `/admin/quests` is the
 > Journey-Library manager. The mechanic lives on in `season_challenges`/achievements.
 
 > **Journey intensity + completion (ADR-197–200).** `practice_tiers` holds the three depths
-> (Spark/Current/Deep) per practice (RLS: as visible as the practice); tier *selection* lives on
+> (`tier ∈ initiate|adept|master`, renamed 2026 — see docs/NAMING.md; migration `20260613000020`)
+> per practice (RLS: as visible as the practice); tier *selection* lives on
 > `journey_plan_items.default_tier`, `circles.default_intensity_tier` (Host-set), and
-> `journey_plan_adoptions.tier_override` (member) — resolved member→circle→item→`current`.
+> `journey_plan_adoptions.tier_override` (member) — resolved member→circle→item→`adept`
+> (the middle-tier default; was `current`).
 > `journey_plans` gains `status` (review), `page_config` (JSONB widget layout),
 > `min_practices_per_day`, `target_weeks`, `season_locked`, `completion_gems`. Completion is
 > **derived** from `practice_logs` against the season's fixed 91-day / 13-week buckets
@@ -119,7 +131,7 @@ You" lane — ADR entries 2026-06)
 
 **Journeys**
 `journey_plans`, `journey_plan_items`, `journey_plan_adoptions`, `practice_tiers`
-(Spark/Current/Deep — ADR-197/198; spec in JOURNEYS.md)
+(Initiate/Adept/Master — ADR-197/198, rename migration `20260613000020`; spec in JOURNEYS.md)
 
 **Practices (North Star)**
 `practices`, `circle_practices`, `member_practices`, `practice_logs`,
@@ -176,7 +188,7 @@ You" lane — ADR entries 2026-06)
 `stripe_webhook_events` (replay/idempotency claim), `connection_settings` (ADR-186),
 `admin_audit_log` (crown-jewel action log), `platform_flags`, `platform_flag_events`,
 `area_permissions`, `page_content` (operator-editable headers/SEO/hero/CTA —
-ADR-180/206), `pages` + `domains` + `sequence_overrides` (page editor), `team_members`,
+ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_members`,
 `email_events`, `email_suppressions`, `notification_queue` (durable outbox),
 `profile_personas` (partner hats — P3.1), `conversation_room_migration`
 
@@ -198,7 +210,8 @@ Key design columns beyond the obvious (`display_name`, `handle`, `avatar_url`, `
 |---|---|---|
 | `auth_user_id` | `uuid` **nullable** | Supabase auth link. **Null is valid** — a café or official can exist in the directory with no login. |
 | `entity_types` | `text[]` | What kind(s) of entity this is (`member`, `vendor`, `performer`, `service`, …). A somatic healer who is also crew is **one** row with two tags — no duplicate records. |
-| `community_role` | `community_role` enum | Separate axis from `entity_types`. A performer may have no role; a mentor may also be a vendor. |
+| `community_role` | `community_role` enum | The **community trust ladder** axis (`member < crew < host < guide < mentor`), separate from `entity_types`. A performer may have no role; a mentor may also be a vendor. The enum's `admin`/`janitor` rungs are **deprecated no-ops** — staff authority now lives on `web_role` (below). |
+| `web_role` | `text` (`none`/`admin`/`janitor`) | The **operational staff axis** (Site Admin / Executive Admin) — added in migration `20260613000050`, backfilled from the old `community_role` admin/janitor rungs. The coarse gate for admin surfaces + janitor-only crown jewels; read by `get_my_web_role()`. Orthogonal to `community_role` and to `membership_tier` (billing). The fine-grained per-domain staff layer is `team_members` (ADR-127). See [NAMING.md](NAMING.md) §Roles. |
 | `meta` | `jsonb` | Type-specific data (vendor hours, performer genres, booking contact) until a type is complex enough to warrant its own table. No premature normalization. |
 | `nexus_region_id` | `uuid` FK → `nexus_regions` | **Legacy** geography link (see below). Still read by the `get_my_region_id()` RLS helper. |
 | `embedding` | `vector(384)` | Reserved for semantic search (all-MiniLM-L6-v2). Column exists; embedding-based search is **not yet built** (ROADMAP P6.25). |
@@ -219,7 +232,10 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
 
 | Enum | Values |
 |---|---|
-| `community_role` | `member`, `crew`, `host`, `guide`, `mentor`, `janitor` |
+| `community_role` | `member`, `crew`, `host`, `guide`, `mentor` (+ `admin`, `janitor` — **deprecated no-ops**, kept for enum-order stability; staff authority moved to `web_role`) |
+| `season_rank_enum` | `ghost`, `echo`, `signal`, `beacon`, `conduit`, `luminary` (renamed 2026 — see docs/NAMING.md; migration `20260613000030`; declaration order is load-bearing for `lifetime_rank`) |
+| `web_role` | `none`, `admin`, `janitor` (`text` + CHECK, not a PG enum — migration `20260613000050`) |
+| `practice_tiers.tier` | `initiate`, `adept`, `master` (`text` + CHECK; renamed 2026 — see docs/NAMING.md; migration `20260613000020`) |
 | `circle_type` | `in-person`, `online` |
 | `group_status` | `forming`, `active`, `inactive`, `archived` |
 | `channel_content_type` | `group`, `event`, `thread` |

@@ -121,9 +121,9 @@ export function Segmented<T extends string | number>({
 
 // Lucide stand-ins for the tier glyphs (⚡🌊🏔️) — keeps the Studio idiom (lucide,
 // not emoji) while labels + tooltips come from the shared TIER_META so they never drift.
-const TIER_ICON: Record<IntensityTier, LucideIcon> = { spark: Zap, current: Waves, deep: Mountain }
+const TIER_ICON: Record<IntensityTier, LucideIcon> = { initiate: Zap, adept: Waves, master: Mountain }
 
-/** The Spark/Current/Deep default-tier picker shown inside an expanded step. */
+/** The Initiate/Adept/Master default-tier picker shown inside an expanded step. */
 export function TierPicker({
   value,
   onChange,
@@ -366,7 +366,7 @@ export function OfficialSection({
           description="Marks this as part of the canonical, free seasonal program."
         />
         {official && (
-          <StudioField label="Seasonal Quest">
+          <StudioField label="Quest">
             <select
               value={questId ?? ''}
               onChange={(e) => onChange({ official: true, questId: e.target.value || null })}
@@ -383,7 +383,7 @@ export function OfficialSection({
         )}
         {official && quests.length === 0 && (
           <p className="inline-flex items-center gap-1.5 text-xs text-muted">
-            <AlertCircle className="h-3.5 w-3.5" /> No active Seasonal Quests to assign yet.
+            <AlertCircle className="h-3.5 w-3.5" /> No active Quests to assign yet.
           </p>
         )}
       </div>

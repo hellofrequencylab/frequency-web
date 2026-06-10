@@ -26,7 +26,7 @@ export const WIDGET_IDS = [
   'progress', // season-completion arc — Week N of 13 · qualifying weeks
   'checklist', // the full step checklist with on-track/behind states
   'streak', // streak + earned shields strip
-  'companions', // the Chorus / circle-companions (Resonance teaser) strip
+  'companions', // the Co-op / circle-companions (Resonance teaser) strip
   'practice-guide', // the practice guide (markdown intro), read while practising
   // Discovery-mode (visitor / not-adopted) blocks
   'story', // the Story — intro markdown ("why this journey")
@@ -151,7 +151,7 @@ export const WIDGET_META: Record<WidgetId, { label: string; hint: string; mode: 
   'progress': { label: 'Season progress', hint: 'Week N of 13 and qualifying weeks toward completion.', mode: 'active' },
   'checklist': { label: 'Step checklist', hint: 'Every step with its on-track / behind state.', mode: 'active' },
   'streak': { label: 'Streak & shields', hint: 'The daily streak and earned freeze shields.', mode: 'active' },
-  'companions': { label: 'Chorus companions', hint: 'Members of your circles on this Journey.', mode: 'active' },
+  'companions': { label: 'Co-op companions', hint: 'Members of your circles on this Journey.', mode: 'active' },
   'practice-guide': { label: 'Practice guide', hint: 'The author’s how-to / story (markdown), read while practising.', mode: 'active' },
   'story': { label: 'The story', hint: 'The intro markdown — why this Journey exists.', mode: 'discovery' },
   'path': { label: 'The path', hint: 'The ordered steps with cadence, note, and tier. (Always on.)', mode: 'discovery' },

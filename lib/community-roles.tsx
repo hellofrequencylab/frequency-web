@@ -1,27 +1,28 @@
 // Single source of truth for community-role chips.
 //
-// Each role maps to one Dawn rank colour so they all read as a family but
-// stay distinct. The progression climbs from neutral grey (Member) to
-// lavender (Janitor) — same six colours used everywhere a role chip shows
-// up so a "Host" badge never reads identical to a "Crew" or "Janitor"
-// badge anywhere in the app.
+// The COMMUNITY trust ladder (member → crew → host → guide → mentor) maps to one
+// Dawn rank colour each so they read as a family but stay distinct, climbing from
+// neutral grey (Member) to lavender plum (Mentor — the community apex, NAMING.md
+// §Roles). The operational STAFF axis (admin/janitor — now profiles.web_role,
+// ADR-208) is NOT aspirational and gets NO rank colour: it renders neutral. The
+// admin/janitor keys are retained only for legacy community_role rows on the
+// /admin/roles management surface.
 
 import type { RankKey } from '@/lib/season-ranks'
 import { rankBadgeStyle } from '@/lib/season-ranks'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
-// Ladder: stone (grey) → clay → jade → teal → indigo → rose → plum (lavender).
-// Seven distinct colours, ordered as a felt progression. Admin (rose) sits
-// just below janitor (plum).
+// Community ladder: stone (grey) → clay → jade → teal → plum (lavender, apex).
+// admin/janitor are operational web roles → neutral stone (no rank colour).
 export const ROLE_RANK: Record<CommunityRole, RankKey> = {
   member:  'stone',
   crew:    'clay',
   host:    'jade',
   guide:   'teal',
-  mentor:  'indigo',
-  admin:   'rose',
-  janitor: 'plum',
+  mentor:  'plum',
+  admin:   'stone',
+  janitor: 'stone',
 }
 
 export const ROLE_LABEL: Record<CommunityRole, string> = {

@@ -23,7 +23,7 @@ describe('deriveStage', () => {
     expect(deriveStage({ ...base, journeys: 1 })).toBe('regular')
   })
 
-  it('reaches established via 30-day streak, Operative zaps, or two Journeys', () => {
+  it('reaches established via 30-day streak, Signal zaps, or two Journeys', () => {
     expect(deriveStage({ ...base, streak: 30 })).toBe('established')
     expect(deriveStage({ ...base, seasonZaps: 300 })).toBe('established')
     expect(deriveStage({ ...base, journeys: 2 })).toBe('established')
