@@ -1983,6 +1983,81 @@ export type Database = {
           },
         ]
       }
+      event_calendar_follows: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_calendar_follows_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_cohosts: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          event_id: string
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_cohosts_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_cohosts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_cohosts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_embeddings: {
         Row: {
           embedding: string | null
@@ -2005,6 +2080,90 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: true
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_media: {
+        Row: {
+          caption: string | null
+          created_at: string
+          event_id: string
+          id: string
+          image_url: string
+          profile_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          image_url: string
+          profile_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          image_url?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_media_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_media_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_posts: {
+        Row: {
+          body: string
+          created_at: string
+          event_id: string
+          id: string
+          image_url: string | null
+          profile_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          event_id: string
+          id?: string
+          image_url?: string | null
+          profile_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          image_url?: string | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_posts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_posts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -6730,6 +6889,7 @@ export type Database = {
       am_participant: { Args: { p_conversation_id: string }; Returns: boolean }
       am_room_member: { Args: { p_room_id: string }; Returns: boolean }
       are_friends: { Args: { a: string; b: string }; Returns: boolean }
+      can_read_event: { Args: { p_event_id: string }; Returns: boolean }
       challenge_outcomes: {
         Args: never
         Returns: {
@@ -6846,7 +7006,21 @@ export type Database = {
           value: string
         }[]
       }
+      ensure_calendar_token: { Args: never; Returns: string }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      event_calendar_feed: {
+        Args: { _token: string }
+        Returns: {
+          description: string
+          ends_at: string
+          id: string
+          is_cancelled: boolean
+          location: string
+          slug: string
+          starts_at: string
+          title: string
+        }[]
+      }
       feed_for_viewer: {
         Args: {
           _lat?: number
@@ -7001,6 +7175,11 @@ export type Database = {
         }[]
       }
       is_blocked_between: { Args: { a: string; b: string }; Returns: boolean }
+      is_event_cohost: {
+        Args: { p_event_id: string; p_profile_id: string }
+        Returns: boolean
+      }
+      is_my_event: { Args: { p_event_id: string }; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
       match_help_chunks: {
         Args: {
@@ -7332,6 +7511,32 @@ export type Database = {
         }[]
       }
       public_member_count: { Args: never; Returns: number }
+      public_organizer_events: {
+        Args: { _handle: string }
+        Returns: {
+          circle_id: string
+          circle_name: string
+          city: string
+          description: string
+          ends_at: string
+          host_avatar_url: string
+          host_display_name: string
+          host_handle: string
+          host_id: string
+          id: string
+          is_past: boolean
+          slug: string
+          starts_at: string
+          title: string
+        }[]
+      }
+      public_organizer_handles: {
+        Args: { _limit?: number }
+        Returns: {
+          handle: string
+          next_starts: string
+        }[]
+      }
       public_posts: {
         Args: { _limit?: number }
         Returns: {
@@ -8261,3 +8466,4 @@ export const Constants = {
     },
   },
 } as const
+
