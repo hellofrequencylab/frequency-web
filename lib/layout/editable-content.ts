@@ -11,6 +11,10 @@
 // wire its page to resolvePageContent (+ pageContentMetadata), and the page becomes
 // editable in place.
 export const CONTENT_EDIT_ROUTES = [
+  // Home: SEO title + meta description ONLY (edited from /pages/home). The page
+  // itself is a coded experience (live counts, parallax) and stays in code — it
+  // reads resolvePageContent('/') in generateMetadata, nothing else.
+  '/',
   '/network',
   '/circles',
   '/channels',

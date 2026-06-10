@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { getCallerProfile } from '@/lib/auth'
 import { saveSequenceOverride, deleteSequenceVersion, type SequenceOverride } from '@/lib/onboarding/sequence-overrides'
-import { listSequences } from '@/lib/onboarding/beta-sequences'
+import { listSequences, DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
 
 // The full-induction sequence builder (ADR-162). Janitor-gated, like the rest of the
 // sequences surface. Saves the whole sequence override (every voiced beat), creates
@@ -29,10 +29,11 @@ export async function createSequenceVersion(formData: FormData): Promise<void> {
   if (!(await getJanitor())) return
   const audience = String(formData.get('audience') ?? '').trim() || 'New version'
   const base = slugify(audience) || 'version'
-  const codeSlugs = new Set(listSequences().map((s) => s.slug))
+  // Reserved: code sequences + the `beta-default` slug (the default flow's override).
+  const reserved = new Set([...listSequences().map((s) => s.slug), DEFAULT_SEQUENCE])
   let slug = base
   let i = 2
-  while (codeSlugs.has(slug)) slug = `${base}-${i++}`
+  while (reserved.has(slug)) slug = `${base}-${i++}`
   const me = await getCallerProfile()
   await saveSequenceOverride(slug, { audience, marketingTag: `beta_${slug.replace(/-/g, '_')}` }, me?.id ?? null)
   redirect(`/pages/sequences/${slug}/build`)
@@ -40,8 +41,9 @@ export async function createSequenceVersion(formData: FormData): Promise<void> {
 
 export async function deleteSequenceVersionAction(slug: string): Promise<void> {
   if (!(await getJanitor())) return
-  // Only DB-created versions are deletable; code sequences are immutable here.
-  if (listSequences().some((s) => s.slug === slug)) return
+  // Only DB-created versions are deletable; code sequences are immutable here, and
+  // the default flow's override is reset from /pages/splash, not deleted here.
+  if (slug === DEFAULT_SEQUENCE || listSequences().some((s) => s.slug === slug)) return
   await deleteSequenceVersion(slug)
   revalidatePath('/pages/sequences')
   redirect('/pages/sequences')

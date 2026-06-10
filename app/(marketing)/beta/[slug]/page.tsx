@@ -4,11 +4,12 @@ import { PhotoHero, Statement, Button } from '@/components/marketing/marketing-u
 import { BETA_SEQUENCES, getSequence } from '@/lib/onboarding/beta-sequences'
 import { getSplashOverride } from '@/lib/onboarding/sequence-overrides'
 
-// Per-audience beta splash. Each sequence (early-adopter / personal / founding-
-// partner) gets a shareable URL (/beta/<slug>) whose copy + CTA carry the audience
-// into the induction (?seq=), which then runs that sequence's voiced flow and tags
-// the cohort. Authored in lib/onboarding/beta-sequences.ts (the splash-page creator
-// at /pages/sequences lists + previews these).
+// Per-audience beta splash for CODE-shipped sequences: a shareable URL
+// (/beta/<slug>) whose copy + CTA carry the audience into the induction (?seq=).
+// The three launch templates retired with ADR (onboarding-splash overhaul), so
+// BETA_SEQUENCES is empty and every slug 404s — DB-built versions enter at
+// /onboarding/beta?seq=<slug> instead. The route stays so a code sequence can be
+// reintroduced without rebuilding it.
 
 export const revalidate = 3600
 

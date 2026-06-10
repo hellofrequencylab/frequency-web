@@ -1,51 +1,45 @@
 import Link from 'next/link'
-import { ArrowRight, ArrowLeft, Tag, CheckCircle2, AlertTriangle, Wand2, Plus, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Tag, CheckCircle2, AlertTriangle, Wand2, Plus, Rocket, Layers, Trash2 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
-import { listSequences } from '@/lib/onboarding/beta-sequences'
-import { listAllSequences } from '@/lib/onboarding/resolve-sequence'
-import { createSequenceVersion } from './builder-actions'
+import { listAllSequences, resolveSequence } from '@/lib/onboarding/resolve-sequence'
+import { createSequenceVersion, deleteSequenceVersionAction } from './builder-actions'
 import { getTrait } from '@/lib/traits/registry'
 import { renderQrSvg } from '@/lib/qr/render'
 import { toAbsoluteSiteUrl } from '@/lib/qr/links'
 import { SITE_URL } from '@/lib/site'
 import { EntryPointShare } from './entry-point-share'
 
-// The splash-page creator (ADR-068). Janitor-only catalog of the beta induction's
-// audience sequences — early-adopter / personal / founding-partner. Each card lets
-// you pick the INCOMING POINT (splash vs straight-to-induction) and gives a
-// shareable link + QR code for it (/beta/<slug> or /onboarding/beta?seq=<slug>),
-// which carries the audience into the induction and stamps a marketing tag so the
-// founding cohort stays segmentable forever. Copy is authored in
-// lib/onboarding/beta-sequences.ts (source of truth); a DB-backed editable layer
-// can override it later without changing this page.
+// Splash pages (ADR-068 → ADR-162): audience-targeted splash + induction flows.
+// Every flow here is a DB version built in the wizard (the three code-shipped
+// launch templates retired); each runs the full induction in its own voice at
+// /onboarding/beta?seq=<slug> and stamps a marketing tag so the cohort stays
+// segmentable forever. The DEFAULT flow (what /onboarding/beta runs with no ?seq)
+// is edited at /pages/splash, not here. Role promotion overlays are a planned
+// second category — visible below, not built yet.
 
 export const dynamic = 'force-dynamic'
 
-export default async function BetaSequencesPage() {
+export default async function SplashPagesPage() {
   await requireAdmin('janitor')
-  const sequences = listSequences()
-  const customVersions = (await listAllSequences()).filter((s) => s.source === 'custom')
+  const versions = (await listAllSequences()).filter((s) => s.source === 'custom')
 
-  // Pre-render both QR variants per sequence server-side (same renderer as every
-  // other QR surface), so the client toggle swaps them with zero round-trips.
+  // Resolve each version (copy + tag) and pre-render its induction QR server-side
+  // (same renderer as every other QR surface).
   const cards = await Promise.all(
-    sequences.map(async (seq) => {
-      const splashPath = `/beta/${seq.slug}`
-      const inductionPath = `/onboarding/beta?seq=${seq.slug}`
-      const [splashQr, inductionQr] = await Promise.all([
-        renderQrSvg(toAbsoluteSiteUrl(splashPath), 160),
-        renderQrSvg(toAbsoluteSiteUrl(inductionPath), 160),
-      ])
-      return { seq, splashPath, inductionPath, splashQr, inductionQr, tagDef: getTrait(seq.marketingTag) }
+    versions.map(async (v) => {
+      const seq = await resolveSequence(v.slug)
+      const inductionPath = `/onboarding/beta?seq=${v.slug}`
+      const inductionQr = await renderQrSvg(toAbsoluteSiteUrl(inductionPath), 160)
+      return { seq, inductionPath, inductionQr, tagDef: getTrait(seq.marketingTag) }
     }),
   )
 
   return (
     <AdminPage
-      title="Onboarding sequences"
+      title="Splash pages"
       eyebrow="Pages"
-      description="Audience-targeted splash pages that feed the founder induction. Pick an entry point, then share its link or QR. Everyone who joins through it runs that voiced flow and gets its marketing tag."
+      description="Audience-targeted splash and induction flows. Build a version for a specific audience, share its link or QR, and everyone who joins through it walks the full induction in that voice and gets its marketing tag."
       width="default"
       actions={
         <Link
@@ -56,9 +50,41 @@ export default async function BetaSequencesPage() {
         </Link>
       }
     >
+      {/* ── Categories: what lives here today, and what's coming ── */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-surface p-5">
+          <div className="flex items-center gap-2">
+            <Rocket className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+            <h2 className="text-sm font-bold text-text">Splash pages</h2>
+          </div>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted">
+            Audience-targeted splash and induction flows. The default flow at /onboarding/beta is edited in{' '}
+            <Link href="/pages/splash" className="font-semibold text-primary-strong hover:underline">
+              Beta splash
+            </Link>
+            ; versions for specific audiences live below.
+          </p>
+        </div>
+        <div
+          aria-disabled
+          className="cursor-not-allowed rounded-2xl border border-dashed border-border bg-surface/50 p-5 opacity-60"
+        >
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+            <h2 className="text-sm font-bold text-muted">Role promotion overlays</h2>
+            <span className="ml-auto shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide text-subtle">
+              Coming soon
+            </span>
+          </div>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted">
+            These will walk a member through newly unlocked areas when their role advances.
+          </p>
+        </div>
+      </div>
+
       <AdminSection
         title="Build a version"
-        description="Spin up a new version of the whole induction (every voiced beat), or jump into an existing one with the guided builder."
+        description="Spin up a new version of the whole induction (every voiced beat) for a specific audience, then edit it beat by beat in the guided builder."
       >
         <div className="rounded-2xl border border-border bg-surface p-5">
           <form action={createSequenceVersion} className="flex flex-wrap items-end gap-2">
@@ -75,57 +101,37 @@ export default async function BetaSequencesPage() {
               <Plus className="h-4 w-4" /> Create &amp; build
             </button>
           </form>
-
-          {customVersions.length > 0 && (
-            <div className="mt-4 border-t border-border pt-4">
-              <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Your versions</p>
-              <ul className="space-y-1.5">
-                {customVersions.map((v) => (
-                  <li key={v.slug} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2">
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-text">{v.audience}</span>
-                      <span className="font-mono text-2xs text-subtle">/onboarding/beta?seq={v.slug}</span>
-                    </span>
-                    <a href={`/onboarding/beta?seq=${v.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-2xs font-semibold text-muted hover:bg-surface-elevated hover:text-text">
-                      <ExternalLink className="h-3 w-3" /> Live
-                    </a>
-                    <Link href={`/pages/sequences/${v.slug}/build`} className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-2xs font-semibold text-on-primary hover:bg-primary-hover">
-                      <Wand2 className="h-3 w-3" /> Build
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       </AdminSection>
 
       <AdminSection
-        title={`${cards.length} sequences`}
-        description="Each card shows the public splash, the induction copy it drives, a shareable link + QR for the entry point you choose, and the cohort tag it stamps."
+        title={cards.length === 1 ? '1 version' : `${cards.length} versions`}
+        description="Each card shows the audience, the cohort tag it stamps, and a shareable link + QR straight into its induction."
       >
-        <div className="space-y-4">
-          {cards.map(({ seq, splashPath, inductionPath, splashQr, inductionQr, tagDef }) => {
-            return (
+        {cards.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
+            <p className="text-sm font-semibold text-text">No versions yet</p>
+            <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted">
+              Every new member currently walks the default flow. Create a version above when you want a
+              splash and induction tuned to a specific audience.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {cards.map(({ seq, inductionPath, inductionQr, tagDef }) => (
               <article key={seq.slug} className="space-y-4 rounded-2xl border border-border bg-surface p-5">
                 {/* Header: audience + the cohort tag */}
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h3 className="text-base font-bold text-text">{seq.audience}</h3>
-                    <p className="mt-0.5 font-mono text-xs text-subtle">{splashPath}</p>
+                    <p className="mt-0.5 font-mono text-xs text-subtle">{inductionPath}</p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <Link
                       href={`/pages/sequences/${seq.slug}/build`}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                     >
                       <Wand2 className="h-3 w-3" /> Build induction
-                    </Link>
-                    <Link
-                      href={`/pages/sequences/${seq.slug}/edit`}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-                    >
-                      Edit splash
                     </Link>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-1 text-xs font-semibold text-primary-strong">
                       <Tag className="h-3 w-3" />
@@ -140,33 +146,28 @@ export default async function BetaSequencesPage() {
                         <AlertTriangle className="h-3.5 w-3.5" /> Unregistered
                       </span>
                     )}
+                    <form action={deleteSequenceVersionAction.bind(null, seq.slug)}>
+                      <button
+                        type="submit"
+                        title="Delete this version"
+                        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-semibold text-muted transition-colors hover:bg-danger-bg hover:text-danger"
+                      >
+                        <Trash2 className="h-3 w-3" /> Delete
+                      </button>
+                    </form>
                   </div>
                 </div>
 
-                {/* Entry point: set the incoming point + grab its link / QR */}
+                {/* Entry point: shareable link + QR straight into the induction */}
                 <EntryPointShare
                   slug={seq.slug}
                   audience={seq.audience}
-                  splashPath={splashPath}
                   inductionPath={inductionPath}
-                  splashQr={splashQr}
                   inductionQr={inductionQr}
                   siteOrigin={SITE_URL}
                 />
 
-                {/* Splash preview — the real public copy, scaled down */}
-                <div className="rounded-xl border border-border bg-surface-elevated/50 p-5 text-center">
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-primary-strong">
-                    {seq.splash.eyebrow}
-                  </p>
-                  <p className="mt-2 text-balance text-xl font-bold leading-tight text-text">{seq.splash.headline}</p>
-                  <p className="mx-auto mt-2 max-w-lg text-pretty text-sm leading-relaxed text-muted">{seq.splash.body}</p>
-                  <span className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-on-primary">
-                    {seq.splash.cta} <ArrowRight className="h-3.5 w-3.5" />
-                  </span>
-                </div>
-
-                {/* Induction copy this sequence drives (Vera's voiced beats) */}
+                {/* The beats this version voices, at a glance */}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-border bg-surface-elevated/50 p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Oath beat</p>
@@ -179,44 +180,20 @@ export default async function BetaSequencesPage() {
                     <p className="mt-1 text-xs leading-relaxed text-muted">{seq.vera.intro.body}</p>
                   </div>
                 </div>
-
-                {/* The oaths + heard-about options */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-subtle">The oaths</p>
-                    <ul className="mt-1.5 space-y-1">
-                      {seq.oaths.map((o) => (
-                        <li key={o.id} className="text-sm text-text">
-                          <span className="text-success">✅</span> {o.label}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-subtle">“How did you hear?” options</p>
-                    <ul className="mt-1.5 flex flex-wrap gap-1.5">
-                      {seq.heardAbout.map((h) => (
-                        <li key={h} className="rounded-full bg-surface-elevated px-2.5 py-1 text-xs text-muted">
-                          {h}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
               </article>
-            )
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </AdminSection>
 
       <AdminSection title="How it works">
         <ol className="space-y-2 rounded-2xl border border-border bg-surface p-5 text-sm text-muted">
-          <li><span className="font-semibold text-text">1. Pick the entry point, then share.</span> Per sequence, choose the <span className="font-semibold text-text">incoming point</span>: the public splash (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">/beta/&lt;slug&gt;</code>) or straight into the induction (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">/onboarding/beta?seq=&lt;slug&gt;</code>). Then copy its link or download the QR (PNG/SVG) for a video description, a DM, a partner email, or printed signage.</li>
-          <li><span className="font-semibold text-text">2. They run the matching flow.</span> The CTA carries the audience into the induction (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">?seq=</code>), which speaks in that sequence’s voice. A cookie keeps it through sign-in.</li>
-          <li><span className="font-semibold text-text">3. The cohort is tagged.</span> On completion the member is stamped with the sequence’s marketing tag, so you can segment the founding cohort by entry path forever. See <Link href="/admin/segments" className="text-primary-strong hover:underline">Segments</Link>.</li>
+          <li><span className="font-semibold text-text">1. Build a version, then share its link.</span> Each version gets a link + QR (PNG/SVG) into its induction (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">/onboarding/beta?seq=&lt;slug&gt;</code>) for a video description, a DM, a partner email, or printed signage.</li>
+          <li><span className="font-semibold text-text">2. They run the matching flow.</span> The link carries the audience into the induction (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">?seq=</code>), which speaks in that version&rsquo;s voice. A cookie keeps it through sign-in.</li>
+          <li><span className="font-semibold text-text">3. The cohort is tagged.</span> On completion the member is stamped with the version&rsquo;s marketing tag, so you can segment the founding cohort by entry path forever. See <Link href="/admin/segments" className="text-primary-strong hover:underline">Segments</Link>.</li>
         </ol>
         <p className="text-xs text-subtle">
-          Links + QRs encode the canonical site URL (<code className="font-mono">{SITE_URL.replace(/^https?:\/\//, '')}</code>), so they’re safe to print and share before launch. For codes with scan analytics or a swappable destination, use the <Link href="/admin/qr" className="text-primary-strong hover:underline">QR Studio</Link> instead. Copy lives in <code className="font-mono">lib/onboarding/beta-sequences.ts</code> (source of truth); editing it in-app is the next step. For now, sequences ship in code and are reviewed in PRs.
+          Links + QRs encode the canonical site URL (<code className="font-mono">{SITE_URL.replace(/^https?:\/\//, '')}</code>), so they&rsquo;re safe to print and share before launch. For codes with scan analytics or a swappable destination, use the <Link href="/admin/qr" className="text-primary-strong hover:underline">QR Studio</Link> instead. The default flow&rsquo;s copy is edited in <Link href="/pages/splash" className="text-primary-strong hover:underline">Beta splash</Link>; a tag only stamps if it&rsquo;s registered in <code className="font-mono">lib/traits/registry.ts</code>.
         </p>
       </AdminSection>
     </AdminPage>

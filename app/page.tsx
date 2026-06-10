@@ -24,21 +24,29 @@ import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
 import { getInitials, relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
+import { resolvePageContent } from '@/lib/page-content'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { communityHref } from '@/lib/community-href'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import type { LiveData, LiveEvent } from '@/components/marketing/blocks'
 
-export const metadata: Metadata = {
-  title: { absolute: `${SITE_NAME} · ${SITE_TAGLINE}` },
-  description: SITE_DESCRIPTION,
-  alternates: { canonical: '/' },
-  openGraph: {
+// SEO title + description are operator-editable through the ADR-180 page-content
+// system (edited at /pages/home; the coded strings below are the fallback). The
+// page BODY stays a coded experience — see the EDITABLE_PAGES note below.
+export async function generateMetadata(): Promise<Metadata> {
+  const { title, description } = await resolvePageContent('/', {
     title: `${SITE_NAME} · ${SITE_TAGLINE}`,
-    description: `We're rebuilding the third place: a real room you can walk into, sauna, cold plunge, warm light, and the people who notice when you're gone. Find your circle anywhere; the first Lab is taking root in ${FOUNDING_PLACE}. Free during the beta.`,
-    url: '/',
-  },
+    description: SITE_DESCRIPTION,
+  })
+  return {
+    // `absolute` opts out of the root "%s · Frequency" template (the home title
+    // already carries the brand).
+    title: { absolute: title },
+    description,
+    alternates: { canonical: '/' },
+    openGraph: { title, description, url: '/' },
+  }
 }
 
 type PostPreviewRow = {

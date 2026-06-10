@@ -51,6 +51,9 @@ type Props = {
    *  Welcome-beat picker; defaults to Visitor. Carried in a cookie so completion can
    *  stamp meta.persona + the persona tag, and branches the tour reel. */
   persona?: PersonaId
+  /** Open the flow at a specific beat (0–5). Used by the /pages/splash editor to
+   *  preview the REAL component one beat at a time; the flow logic is untouched. */
+  initialBeat?: number
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
@@ -73,7 +76,23 @@ function ArrowRight() {
   )
 }
 
-export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona }: Props) {
+// Beat headings come from the (operator-editable) copy. A word wrapped in
+// *asterisks* renders in the brand accent — the same convention as the splash
+// "statement" line — so the default "You're a *Founder.*" keeps its highlight
+// and edited headings can carry one too.
+function accent(text: string): React.ReactNode {
+  const parts = text.split(/(\*[^*]+\*)/g)
+  if (parts.length === 1) return text
+  return parts.map((part, i) =>
+    part.startsWith('*') && part.endsWith('*') && part.length > 2 ? (
+      <span key={i} className="text-primary">{part.slice(1, -1)}</span>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  )
+}
+
+export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0 }: Props) {
   // Operator-tunable copy (defaults to the beta-script copy) — shadows the imports so
   // every existing VERA./BETA_OATHS/HEARD_ABOUT reference picks up the overrides.
   const VERA = copy?.vera ?? DEFAULT_VERA
@@ -99,7 +118,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     document.cookie = `fq_persona=${encodeURIComponent(persona)}; path=/; max-age=2592000; samesite=lax`
   }, [preview, persona])
 
-  const [beat, setBeat] = useState(0)
+  const [beat, setBeat] = useState(() => Math.min(Math.max(initialBeat, 0), BEAT_COUNT - 1))
   const [previewDone, setPreviewDone] = useState(false)
   // Move focus to the top of each beat as it mounts so keyboard + screen-reader
   // users land on the new content rather than being stranded where the old
@@ -430,10 +449,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {beat === 0 && (
               <div className="mx-auto max-w-5xl">
                 <p className={eyebrow}>{VERA.oath.eyebrow}</p>
-                <h1 className={`mt-3 text-6xl sm:text-7xl ${heading}`}>
-                  This isn&rsquo;t a product.
-                  <br />
-                  It&rsquo;s a promise.
+                <h1 className={`mx-auto mt-3 max-w-4xl text-balance text-6xl sm:text-7xl ${heading}`}>
+                  {accent(VERA.oath.heading)}
                 </h1>
                 <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-muted">{VERA.oath.body}</p>
 
@@ -465,10 +482,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {beat === 1 && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.intro.eyebrow}</p>
-                <h1 className={`mt-3 text-6xl sm:text-7xl ${heading}`}>
-                  You&rsquo;re not a user.
-                  <br />
-                  You&rsquo;re a <span className="text-primary">Founder.</span>
+                <h1 className={`mx-auto mt-3 max-w-3xl text-balance text-6xl sm:text-7xl ${heading}`}>
+                  {accent(VERA.intro.heading)}
                 </h1>
                 <p className="mx-auto mt-4 max-w-2xl text-xl leading-relaxed text-muted">{VERA.intro.body}</p>
 
@@ -508,7 +523,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {beat === 2 && (
               <div className="mx-auto max-w-5xl">
                 <p className={eyebrow}>{VERA.tour.eyebrow}</p>
-                <h1 className={`mt-3 text-4xl sm:text-5xl ${heading}`}>{VERA.tour.heading}</h1>
+                <h1 className={`mt-3 text-balance text-4xl sm:text-5xl ${heading}`}>{accent(VERA.tour.heading)}</h1>
 
                 <div className="mt-6 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
                   {/* desktop mockup, left */}
@@ -553,7 +568,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {/* ── Beat 3: Identity ── */}
             {beat === 3 && (
               <div className="mx-auto max-w-4xl">
-                <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.identity.heading}</h1>
+                <h1 className={`text-balance text-5xl sm:text-6xl ${heading}`}>{accent(VERA.identity.heading)}</h1>
 
                 <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* left: form card */}
@@ -657,7 +672,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {/* ── Beat 4: Place + intent ── */}
             {beat === 4 && (
               <div className="mx-auto max-w-4xl">
-                <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.place.heading}</h1>
+                <h1 className={`text-balance text-5xl sm:text-6xl ${heading}`}>{accent(VERA.place.heading)}</h1>
 
                 <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
@@ -747,7 +762,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {beat === 5 && !deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-                <h1 className={`mt-3 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
+                <h1 className={`mt-3 text-balance text-5xl sm:text-6xl ${heading}`}>{accent(VERA.enter.heading)}</h1>
 
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card with blank slots */}
@@ -781,7 +796,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             {beat === 5 && deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-                <h1 className={`mt-3 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
+                <h1 className={`mt-3 text-balance text-5xl sm:text-6xl ${heading}`}>{accent(VERA.enter.heading)}</h1>
 
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card — everything they just built */}
