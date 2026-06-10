@@ -20,7 +20,8 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { recordStreakActivity, processGamificationEvent } from '@/lib/achievements'
 import { scaledPostReward } from './poster-quality'
-import type { DomainSlug, ExtractedEvent } from './types'
+import { isValidClaim } from './claim-trust'
+import type { DomainSlug, ExtractedEvent, EventDetails } from './types'
 
 const db = () => createAdminClient() as unknown as SupabaseClient
 
@@ -28,7 +29,7 @@ const COLS =
   'id, title, description, location, starts_at, ends_at, slug, status, source, ' +
   'host_id, posted_by_profile_id, poster_path, domain_id, scope_id, scope_type, ' +
   'visibility, price_cents, claim_token, claimed_at, published_at, organizer_name, ' +
-  'organizer_contact, removed_at, removed_reason, is_cancelled, created_at'
+  'organizer_contact, removed_at, removed_reason, is_cancelled, created_at, details'
 
 const emptyToNull = (v: string | null | undefined): string | null => {
   const s = (v ?? '').trim()
@@ -61,6 +62,8 @@ export interface EventDraft {
   removedAt: string | null
   removedReason: string | null
   createdAt: string | null
+  /** The rich, flexible poster harvest (JSONB). {} when none. */
+  details: EventDetails
 }
 
 function mapDraft(r: Record<string, unknown>): EventDraft {
@@ -90,6 +93,7 @@ function mapDraft(r: Record<string, unknown>): EventDraft {
     removedAt: (r.removed_at as string) ?? null,
     removedReason: (r.removed_reason as string) ?? null,
     createdAt: (r.created_at as string) ?? null,
+    details: (r.details && typeof r.details === 'object' ? (r.details as EventDetails) : {}),
   }
 }
 
@@ -154,6 +158,8 @@ export interface DraftInput {
   organizerContact?: string
   domain?: DomainSlug | null
   posterPath?: string | null
+  /** The rich, flexible poster harvest. Persisted as the events.details JSONB. */
+  details?: EventDetails | null
 }
 
 /** Build a DraftInput from an AI extraction, for convenience at the call site. */
@@ -169,6 +175,7 @@ export function draftInputFromExtraction(e: ExtractedEvent, posterPath?: string 
     organizerContact: e.organizerContact,
     domain: e.domain,
     posterPath: posterPath ?? null,
+    details: e.details,
   }
 }
 
@@ -204,6 +211,7 @@ export async function createEventDraft(
       price_cents: input.priceCents ?? null,
       organizer_name: emptyToNull(input.organizerName),
       organizer_contact: emptyToNull(input.organizerContact),
+      details: input.details ?? {},
       slug: await mintSlug(title, input.startsAt ?? null),
     })
     .select('id')
@@ -245,6 +253,7 @@ export interface DraftPatch {
   organizerName?: string | null
   organizerContact?: string | null
   domain?: DomainSlug | null
+  details?: EventDetails | null
 }
 
 /** Patch a draft the poster owns. Only DRAFT rows are editable here. */
@@ -263,6 +272,7 @@ export async function updateEventDraft(
   if (patch.organizerName !== undefined) u.organizer_name = emptyToNull(patch.organizerName)
   if (patch.organizerContact !== undefined) u.organizer_contact = emptyToNull(patch.organizerContact)
   if (patch.domain !== undefined) u.domain_id = await resolveDomainId(patch.domain)
+  if (patch.details !== undefined) u.details = patch.details ?? {}
   if (Object.keys(u).length === 0) return true
 
   const { error } = await db()
@@ -424,8 +434,25 @@ export async function claimEvent(
       .then(() => {}, () => {})
   }
 
-  // Reward the POSTER (not the claimer), exactly-once on event_claim_bonus:<id>.
-  if (posterId) {
+  // Anti-claim-farming: a claim ALWAYS transfers ownership (done above), but it
+  // only pays the poster a bonus and counts toward quality when it passes the
+  // trust gate. Self-claims, reciprocal rings, and fresh sockpuppets pay nothing.
+  let claimValid = false
+  let claimReason: string | null = 'no_poster'
+  try {
+    const trust = await isValidClaim(posterId, claimerProfileId)
+    claimValid = trust.valid
+    claimReason = trust.reason
+  } catch {
+    // If the trust read fails we cannot prove the claim is honest, so withhold
+    // the bonus rather than risk paying a farmed claim.
+    claimValid = false
+    claimReason = 'trust_check_failed'
+  }
+
+  // Reward the POSTER (not the claimer), exactly-once on event_claim_bonus:<id>,
+  // ONLY for a valid claim.
+  if (posterId && claimValid) {
     try {
       const { recorded } = await recordEngagementEvent({
         idempotencyKey: `event_claim_bonus:${eventId}`,
@@ -440,13 +467,15 @@ export async function claimEvent(
     }
   }
 
-  // Log the claim itself on the ledger (separate key from the bonus).
+  // Log the claim itself on the ledger (separate key from the bonus). Record
+  // whether it was a VALID claim so the quality math can count only honest
+  // claims toward the engaged/claimed signals.
   await recordEngagementEvent({
     idempotencyKey: `event_claimed:${eventId}`,
     source: 'web',
     eventType: 'event.claimed',
     actorProfileId: claimerProfileId,
-    context: { eventId, slug, kind: 'event_claim' },
+    context: { eventId, slug, kind: 'event_claim', valid: claimValid, reason: claimReason, claimerProfileId },
   }).catch(() => {})
 
   return { slug }
