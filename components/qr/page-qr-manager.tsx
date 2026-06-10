@@ -57,8 +57,9 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
 
   return (
     <div className="grid gap-x-8 gap-y-5 lg:grid-cols-3">
-      {/* LEFT 2/3 — the creator */}
-      <div className="space-y-4 lg:col-span-2">
+      {/* LEFT 2/3 — the creator (min-w-0 so the column can shrink on phones
+          instead of widening the Settings panel) */}
+      <div className="min-w-0 space-y-4 lg:col-span-2">
         <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
           <Palette className="h-3.5 w-3.5" /> Design a QR for this page
         </p>
@@ -113,7 +114,7 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
       </div>
 
       {/* RIGHT 1/3 — share + scan activity, aligned to the title row */}
-      <div className="space-y-5">
+      <div className="min-w-0 space-y-5">
         <div className="space-y-2">
           <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
             <Link2 className="h-3.5 w-3.5" /> Share code
