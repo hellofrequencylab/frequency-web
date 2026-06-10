@@ -44,16 +44,19 @@ The model is settled (ADR-152) and the briefs re-confirm it. Player-facing vocab
 |---|---|---|---|
 | **The Quest** | The year-round game. The brand. | — (no table) | ✅ |
 | **Season** | 13 weeks, one per solstice/equinox. Name, theme, Act arc. | `seasons` | ✅ |
-| **Seasonal Quest** | A season's official, free container of Journeys. | `quests` (`lib/quests.ts`) | ✅ |
-| **Journey** | A themed set of 4–5 practices in one Domain, moved through over a season. | `journey_plans` + `journey_plan_items` + `journey_plan_adoptions` | ⚠️ extend |
-| **Practice** | The atomic thing you do + log. The North-Star act. | `practices`, `practice_logs` | ⚠️ extend (tiers) |
+| **Quest** | A season's 13-week instance + its official, free container of Journeys. *("Seasonal Quest" is retired phrasing — see [NAMING.md](NAMING.md).)* | `quests` (`lib/quests.ts`) | ✅ |
+| **Journey** | A themed set of 4–5 practices in one Pillar, moved through over a season. | `journey_plans` + `journey_plan_items` + `journey_plan_adoptions` | ⚠️ extend |
+| **Practice** | The atomic real-world act you do + log. The North-Star act. | `practices`, `practice_logs` | ⚠️ extend (tiers) |
 | **Challenge** | Season-wide social objectives *beside* Journeys. | `season_challenges`, `challenge_progress` | ✅ |
+
+> **Naming canon:** the hierarchy is **Quest → Journey → Practice** ([NAMING.md](NAMING.md),
+> ADR-208). "Season" is the calendar fact; a **Quest** is the season instance in schema/code.
 
 **Spine decision (locked).** `journey_plans` is the **single** Journey spine. Official seasonal
 Journeys are `journey_plans` rows with `official = true` + `quest_id` set. The legacy
-`quest_chains/steps/progress` engine is already retired in code (ADR-152 Phase B3); this spec
-**finishes** the retirement — drop the dormant tables and the `quest_outcomes()` RPC (§13, §16).
-There is no second Journey system.
+`quest_chains/steps/progress` engine is **fully retired and dropped** (ADR-152 Phase B3, migration
+`20260609104000`) — the tables and the `quest_outcomes()` RPC no longer exist. There is no second
+Journey system.
 
 ---
 
@@ -63,15 +66,16 @@ The hardest design problem: a 13-week season aligned to a solstice does **not** 
 calendar week boundary, which breaks naïve weekly counting. **Solved by running two clocks**,
 because "week" is being asked to do two incompatible jobs. Split them and the problem vanishes.
 
-### Clock 1 — the Rhythm clock (rolling · personal · always-on)
+### Clock 1 — the rhythm clock (rolling · personal · always-on)
 Powers: cadence targets, the daily streak, the weekly-rhythm bonus. A **rolling 7-day window
 anchored to *today*.** It never references the season boundary, so none of the "standard weekly
 stuff" has to align to 13. This is exactly what `getActiveJourneyProgress()` already does — kept
-untouched.
+untouched. *(Internal-only name — the UI says "streak"; [NAMING.md](NAMING.md) §Internal-only timers.)*
 
-### Clock 2 — the Arc clock (fixed · seasonal)
+### Clock 2 — the quest clock (fixed · seasonal)
 Powers: the 8-of-13 completion track and the narrative Acts. **Season-relative week buckets**
-anchored to the season start, not the calendar:
+anchored to the season start, not the calendar. *(Internal-only name — the UI says "season,"
+never "quest clock"; see [NAMING.md](NAMING.md) §Internal-only timers.)*
 
 ```
 Season Week N  =  days [ start + 7·(N−1) ,  start + 7·N )
@@ -100,7 +104,7 @@ because the buckets are fully determined the moment the season drops.
 | Act | Weeks | Beat |
 |---|---|---|
 | **Act 1 — Open** | 1–4 | Establish the practice. Onboarding pressure → get to Day 7. |
-| **Act 2 — Deepen** | 5–9 | Mid-season. Deep tier unlocks, twist/variable rewards. |
+| **Act 2 — Deepen** | 5–9 | Mid-season. Master tier unlocks, twist/variable rewards. |
 | **Act 3 — Land** | 10–13 | Bring it home. Completion pushes, season-close ceremony. |
 
 ---
@@ -111,12 +115,12 @@ because the buckets are fully determined the moment the season drops.
 via `adoptPractice`; the adoption is recorded in `journey_plan_adoptions`. **No separate
 tracker** — progress is derived from `practice_logs` (ADR-144).
 
-**Per-step weekly progress** (Rhythm clock): for each step, count distinct days logged in the
+**Per-step weekly progress** (rhythm clock): for each step, count distinct days logged in the
 rolling 7-day window. A step is **on track** when that count ≥ its weekly target
 (`weeklyTargetFromCadence`: Daily=7, A-few-times=3, Weekly=1). The **current step** = the first
 not-yet-on-track step, in order. *(All canonical, unchanged.)*
 
-**Season completion** (Arc clock — net-new): a **qualifying day** = a day with ≥
+**Season completion** (quest clock — net-new): a **qualifying day** = a day with ≥
 `min_practices_per_day` logs (default 1). A **qualifying week** = a season-week bucket with ≥1
 qualifying day. **Complete the Journey when qualifying weeks ≥ `target_weeks` (default 8) of the
 13.** Forgiving by design: 5 hard weeks won't end you.
@@ -137,29 +141,33 @@ still finish — they forfeit only the season-trophy facet, not the badge.
 
 ---
 
-## 5. Intensity tiers — the differentiator (Spark / Current / Deep)
+## 5. Practice depth tiers — the differentiator (Initiate / Adept / Master)
+
+> **Canon ([NAMING.md](NAMING.md), ADR-208):** the depth tiers are **Initiate / Adept / Master**,
+> default **Adept** (the middle tier — exactly the old default's behavior). The retired
+> Spark/Current/Deep names were renamed in schema by migration `20260613000020`.
 
 **The mechanic no app has.** Every practice ships **three versions**. Same practice, same Zap,
 same streak — different depth of what you actually do in the world.
 
 | Tier | Form | Example — *Morning Stillness* |
 |---|---|---|
-| **Spark** ⚡ | Minimum viable. 5–10 min. The worst-day version. | 5 min before screens, eyes closed, no agenda. |
-| **Current** 🌊 | Standard. 15–30 min. The default display. | 15 min sitting, phone in another room, before coffee. |
-| **Deep** 🏔️ | Full expression. 30+ min, or needs facilitation/buildup. | 30 min extended sit with breath work, before any device. |
+| **Initiate** | Minimum viable. 5–10 min. The worst-day version. | 5 min before screens, eyes closed, no agenda. |
+| **Adept** | Standard. 15–30 min. The default display. | 15 min sitting, phone in another room, before coffee. |
+| **Master** | Full expression. 30+ min, or needs facilitation/buildup. | 30 min extended sit with breath work, before any device. |
 
 **The circle adjustment** — the whole story. A circle **Host sets the default tier** for the
-group: a beginner circle runs Spark, a seasoned circle runs Deep. A human who knows the room,
+group: a beginner circle runs Initiate, a seasoned circle runs Master. A human who knows the room,
 not an algorithm. Members can **individually override**. **Tier never affects Zap reward or
 streak math** — only the practice content.
 
 ### Schema (net-new)
 - **Tier content lives on the practice** (authored once, reused everywhere):
-  `practice_tiers (practice_id, tier ['spark'|'current'|'deep'], title, body, est_minutes,
-  UNIQUE(practice_id, tier))`. Missing tier falls back to `practices.description` as "Current".
+  `practice_tiers (practice_id, tier ['initiate'|'adept'|'master'], title, body, est_minutes,
+  UNIQUE(practice_id, tier))`. Missing tier falls back to `practices.description` as "Adept".
 - **Tier selection** resolves in order: **member override → circle default → item default →
-  `'current'`**:
-  - `journey_plan_items.default_tier` (item default; default `'current'`).
+  `'adept'`**:
+  - `journey_plan_items.default_tier` (item default; default `'adept'`).
   - `circles.default_intensity_tier` (Host-set; nullable).
   - `journey_plan_adoptions.tier_override` (per-member, per-Journey; nullable).
 
@@ -231,25 +239,30 @@ The briefs are the floor. These three are the ceiling, chosen because they explo
 already have (circles, hosts, memberships, domains, `reward_grants`, `is_secret`) for maximum
 novelty at low cost.
 
-### 9.1 Resonance — circle co-op completion (the headline)
+### 9.1 Co-op — circle co-op completion (the headline)
+> **Canon ([NAMING.md](NAMING.md), ADR-199/ADR-208):** this mechanic is **Co-op**. It is **not**
+> "Resonance" — Resonance is the Connection-Layer tie-strength concept (ADR-186), a separate thing.
+> The earlier draft naming here is retired.
+
 A **raid for self-development.** When **≥3 active members of a circle** hold an active adoption of
-the **same Journey**, the circle forms a **Resonance** — a shared progress meter visible to all of
+the **same Journey**, the circle forms a **Co-op** — a shared progress meter visible to all of
 them. Mechanics:
-- **Weekly resonance bonus:** in any season-week where ≥3 members hit rhythm, every resonant
-  member gets a circle bonus (Zaps), keyed `resonance:<circle>:<plan>:<season>:<bucket>`.
-- **Shared trophy:** when the Resonance completes the Journey together, mint a **circle trophy**
+- **Weekly co-op bonus:** in any season-week where ≥3 members hit rhythm, every co-op
+  member gets a circle bonus (Zaps), keyed `coop:<circle>:<plan>:<season>:<bucket>`.
+- **Shared trophy:** when the Co-op completes the Journey together, mint a **circle trophy**
   + bonus Gems for each member.
 - **Detection is derived** (memberships ⨝ adoptions); grants are idempotent via `reward_grants`.
-  An optional `circle_resonances` row tracks formation for display (Phase 2).
+  An optional `circle_coops` row tracks formation for display (Phase 2).
 - Turns solo habit into a team objective and directly drives the **Circle Journey Alignment**
   metric (>40%). No habit app has co-op completion.
 
 ### 9.2 The Frequency Signature
 A personal, **evolving visual identity** derived from a member's Mind/Body/Spirit/Expression
 balance across their practice logs — a four-axis "constellation" that changes shape as they
-practise across Domains. Becomes the **profile centerpiece** and a **season-trophy facet**. Makes
-"balance across Domains" a *visible identity*, pulling members toward the **>2 Domains by Week 4**
-target. **Fully derived** (`practice_logs ⨝ practices.domain_id`) — no schema.
+practise across Pillars. Becomes the **profile centerpiece** and a **season-trophy facet**. Makes
+"balance across Pillars" a *visible identity*, pulling members toward the **>2 Pillars by Week 4**
+target. **Fully derived** (`practice_logs ⨝ practices.domain_id` — the FK column keeps its
+`domain_id` name until the Wave-3 rename) — no schema.
 
 ### 9.3 Variable & secret rewards
 Surprise the player. **Secret achievements** (already supported) that no one knew were possible;
@@ -267,14 +280,14 @@ the Fortnite reference) and the **live reward track** visible from day one.*
 (not adopted / visitor) and **Active** (adopted) modes. `/crew/journey` stays as the
 **all-my-journeys aggregator** (every active adoption at a glance).
 
-**Discovery mode:** emoji + accent band, title, Domain·Season·Author, premise, Pillar balance
+**Discovery mode:** emoji + accent band, title, Pillar·Season·Author, premise, Pillar balance
 meter, social proof ("47 on this journey"), Adopt / Remix / Preview, the Story (markdown), The
 Path (ordered steps), reward preview (30 Gems), completion rule (8 of 13).
 
 **Active mode:** gamification panel (Zaps · rank · streak · Gems), Journey progress (Week N of
 13 · qualifying-weeks toward 8 · % toward completion), the **Next Step card** (the dominant
 element — practice, time, days-this-week, one big **Log** tap target), the full step checklist
-with on-track states, the Resonance/circle-companions strip, streak + shields, the practice
+with on-track states, the Co-op/circle-companions strip, streak + shields, the practice
 guide (markdown).
 
 **Widget system (`page_config`).** The Journey page composes toggleable, reorderable content
@@ -283,7 +296,7 @@ author configures which blocks show, order, and per-widget settings; this lives 
 `journey_plans.page_config JSONB` (ordered array of `{id, enabled, settings}`). A sensible
 default is hardcoded in `lib/journey-plans.ts` and applied when `page_config` is null. Available
 widgets: progress tracker · next-step card · checklist · pillar balance · streak · gamification
-panel · reward preview · circle companions · **Resonance** · leaderboard (scope: circle/nexus/
+panel · reward preview · circle companions · **Co-op** · leaderboard (scope: circle/nexus/
 global) · season context · practice guide · related journeys · community activity.
 
 **Mobile:** single vertical scroll; compact gamification strip; full-width Next Step card on top;
@@ -301,7 +314,7 @@ cadence/note), pillar meter, visibility radios + publish celebration. **Net-new 
 
 | Section | Adds |
 |---|---|
-| **Path — per step** | Intensity **default tier** (Spark/Current/Deep), required-vs-optional toggle, log type. |
+| **Path — per step** | **Default depth tier** (Initiate/Adept/Master), required-vs-optional toggle, log type. |
 | **Completion rules** | `min_practices_per_day` (1/2/3), `target_weeks` (6/8/10/13), `season_locked`. |
 | **Rewards** | `completion_gems` (10–100, default 30); per-practice Zap override (Mentor/Admin only). |
 | **Page layout** | The `page_config` widget toggles + drag-reorder (mirrors the rail framework). |
@@ -338,23 +351,24 @@ kill the motivation to publish.
 `quests`, `seasons`, `practices` (incl. `domain_id`, `cadence`, `reward_zaps`), `practice_logs`,
 `season_challenges`/`challenge_progress`, `achievements`/`user_achievements`, `streaks`
 (`freeze_tokens`), `season_trophies`, `reward_grants`, full Zap/Gem ledgers + triggers, `circles`/
-`memberships`, `domains`.
+`memberships`, `pillars` (renamed from `domains`, migration `20260613000010`).
 
 **Net-new migrations:**
-1. `practice_tiers` — Spark/Current/Deep content per practice.
-2. `journey_plan_items.default_tier`.
+1. `practice_tiers` — Initiate/Adept/Master content per practice (tier text renamed from
+   spark/current/deep in migration `20260613000020`).
+2. `journey_plan_items.default_tier` (default `'adept'`).
 3. `circles.default_intensity_tier`.
 4. `journey_plan_adoptions.tier_override`.
 5. `journey_plans`: add `status`, `page_config JSONB`, `min_practices_per_day`, `target_weeks`,
    `season_locked`, `completion_gems`.
 6. `seasons`: ensure `starts_at` set + 91-day `ends_at` convention.
-7. *(Phase 2)* `circle_resonances` — co-op formation/trophy record.
-8. **Finish ADR-152 Phase B3:** drop dormant `quest_chains/steps/progress` + retire
-   `quest_outcomes()` RPC + regen `database.types.ts`. *(Coordinate — touches analytics.)*
+7. *(Phase 2)* `circle_coops` — co-op formation/trophy record.
+8. **Done (ADR-152 Phase B3):** `quest_chains/steps/progress` + the `quest_outcomes()` RPC
+   are dropped (migration `20260609104000`); `database.types.ts` regenerated.
 
 **Code:** surface the existing-but-unread columns (`quest_id`, `official`, `status`,
 `page_config`, completion fields) in `PLAN_COLS` + the `JourneyPlan` interface in
-`lib/journey-plans.ts`; extend `getActiveJourneyProgress()` for the Arc clock + tiers.
+`lib/journey-plans.ts`; extend `getActiveJourneyProgress()` for the quest clock + tiers.
 
 ---
 
@@ -371,9 +385,9 @@ Every mechanic exists to move this. We do **not** optimise time-in-app, posts, o
 | Practice log freq | avg logs/member/week | 4+ |
 | Full-day rate | 4+-log days ÷ any-log days | >20% |
 | 14-day streak rate | streak≥14 ÷ WAM | >25% |
-| **Circle Journey alignment** | circles w/ ≥3 on same Journey ÷ active circles | **>40%** (the community signal / Resonance) |
+| **Circle Journey alignment** | circles w/ ≥3 on same Journey ÷ active circles | **>40%** (the community signal / Co-op) |
 | Official Journey coverage | members w/ ≥1 official adopted ÷ active | >70% |
-| Pillar balance / member | distinct Domains across active Journeys | >2 by Week 4 |
+| Pillar balance / member | distinct Pillars across active Journeys | >2 by Week 4 |
 | Season trophy rate | trophies minted ÷ members who logged once | >60% |
 | Luminary rate | Luminary promos ÷ active/season | <3% |
 | Season-over-season retention | active in N **and** N+1 | >50% |
@@ -386,12 +400,12 @@ Sequenced so a playable, addicting loop lands first; "everything in the briefs" 
 
 | Phase | Ships | Why first |
 |---|---|---|
-| **P0 — Schema + engine** | Migrations 1–6; surface columns; extend `getActiveJourneyProgress` (Arc clock, tiers); `resolveTier`. Unit tests. | Foundation everything reads from. |
+| **P0 — Schema + engine** | Migrations 1–6; surface columns; extend `getActiveJourneyProgress` (quest clock, tiers); `resolveTier`. Unit tests. | Foundation everything reads from. |
 | **P1 — The loop feels good** | Fire Full Day / Rhythm / Completion (idempotent); celebration surfaces (toast, full-screen completion, perfect-week); Next Step card + swipe-to-log + circular arc. | The dopamine loop is the product. |
 | **P2 — Intensity tiers** | `practice_tiers` content; circle Host default-tier control; member override; tier display on the page + editor. | The differentiator, end-to-end. |
 | **P3 — Active page + widgets** | `/journeys/[slug]` Active mode; `page_config` widget system + editor "Page layout" section; defaults. | The full briefed page. |
-| **P4 — Official program + review** | `status` workflow; official flag + `quest_id` linkage; seed the 4 Domain Journeys for the active season; finish quest_chains retirement (mig 8). | Season-1 official content. |
-| **P5 — Signature bets** | Resonance (co-op) · Frequency Signature · variable/secret rewards · season-drop moment. | Go-big, on top of a proven loop. |
+| **P4 — Official program + review** | `status` workflow; official flag + `quest_id` linkage; seed the 4 Pillar Journeys (one per Pillar) for the active season. *(quest_chains retirement already done — mig `20260609104000`.)* | Season-1 official content. |
+| **P5 — Signature bets** | Co-op · Frequency Signature · variable/secret rewards · season-drop moment. | Go-big, on top of a proven loop. |
 | **P6 — Notifications** | Daily next-step prompt at local morning (timezone-aware): "[Journey]: [Practice]. [time]." | Fogg prompt — Ability already high. |
 
 ---
@@ -407,17 +421,20 @@ applied** (another agent is live; `DECISIONS.md` is an append file). Apply on th
   the premium-Journey framing is dead.
 - **`DATABASE.md`** — document migrations 1–6 once written.
 - **`DEVELOPMENT-MAP.md`** — add the P0–P6 build items.
-- **`GLOSSARY.md`** — add: intensity tier (Spark/Current/Deep), Resonance, Frequency Signature,
+- **`GLOSSARY.md`** — add: depth tier (Initiate/Adept/Master), Co-op, Frequency Signature,
   season-week bucket, qualifying week.
-- **`content/help/the-game/`** — member articles for tiers, completion, Resonance (P2/P5).
-- **`DECISIONS.md`** — append (provisional numbers; assigned at append time):
-  - **ADR-196** — `journey_plans` is the single Journey spine; finish `quest_chains` retirement.
-  - **ADR-197** — Two-clock time model: rolling Rhythm window + fixed 91-day Arc buckets;
-    completion = 8 of 13, derived from `practice_logs` (no progress schema).
-  - **ADR-198** — Intensity tiers: content on `practice_tiers`; selection resolves
-    member→circle→item→current; tier never affects Zap/streak math.
-  - **ADR-199** — Resonance: derived circle co-op completion; idempotent grants via
-    `reward_grants`; optional `circle_resonances` for display.
+- **`content/help/the-game/`** — member articles for tiers, completion, Co-op (P2/P5).
+- **`DECISIONS.md`** — these ADRs are now **appended** (read them verbatim in their era;
+  naming superseded by ADR-208). Canon names, for reference:
+  - **ADR-196** — `journey_plans` is the single Journey spine; `quest_chains` retirement (now done).
+  - **ADR-197** — Two-clock time model: rolling **rhythm clock** + fixed 91-day **quest clock**
+    buckets; completion = 8 of 13, derived from `practice_logs` (no progress schema).
+  - **ADR-198** — Depth tiers: content on `practice_tiers`; selection resolves
+    member→circle→item→`adept`; tier never affects Zap/streak math. *(Tier names Initiate/Adept/
+    Master per ADR-208; the ADR-198 entry itself reads in its era.)*
+  - **ADR-199** — **Co-op**: derived circle co-op completion; idempotent grants via
+    `reward_grants`; optional `circle_coops` for display. *(Coined as "Chorus"; renamed Co-op by
+    ADR-208. Not "Resonance" — that's the Connection Layer.)*
   - **ADR-200** — Reward firing: Full Day / Weekly Rhythm / Journey completion, each keyed in
     `reward_grants`; currency per ADR-139.
 </content>

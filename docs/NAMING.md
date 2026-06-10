@@ -80,6 +80,20 @@ Static/Tuned/Locked/Live (status set) · The Drop · Arc/Arcs/quest_chains · Bo
 Field Days / "the Field" / Circle Field · Chorus · Domains (game taxonomy) ·
 Depth/Range/Altitude · deshi/sempai/sensei · "points"
 
+## Documented exceptions (allowed hits — proper nouns / persisted identifiers)
+
+These contain a retired *word* but are NOT the retired *term*; intentionally kept, and the
+Phase-6 zero-hits grep carves them out:
+
+- **"Hundred Days Deep"** — the 100-day practice-streak badge proper name (seeded to prod,
+  migration `20260612030000`). "Deep" is plain English here (depth of devotion), not the
+  retired Spark/Current/**Deep** tier. ⚠️ Owner decision: keep, or rename the badge (needs a
+  copy choice + data migration).
+- **Persisted identifiers** kept to avoid data harm: the `'field'` circle-rail key in saved
+  `sidebar_order`, and the `journey.chorus:` reward-grant idempotency prefix — renaming
+  either orphans saved prefs / re-fires grants (commented in code).
+- **Historical migration filenames** (e.g. `20260610000000_circle_field.sql`) — immutable.
+
 ## Collision guards (why no blind replace)
 
 - **"current"**: retired as a tier; alive in **Circle Current** and in time-sense

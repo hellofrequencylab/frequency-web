@@ -49,8 +49,8 @@ hard-partitioned between them:
 
 **Three separated rails:** the **community graph** (shared, money-blind) · the
 **game/reward ledger** (shared, money-blind) · the **financial ledger** (hard-partitioned
-by entity — dollars never commingle). *Points are not money; points are entity-blind,
-every dollar is entity-tagged.*
+by entity — dollars never commingle). *Zaps and Gems are not money; the game/reward
+ledger is entity-blind, every dollar is entity-tagged.*
 
 ### The growth flywheel (a measurable product surface, not a slogan)
 Online community forms → people meet in person (gamified: check in, do your practice, tag
@@ -92,12 +92,14 @@ Relating, Activism, Creative, Business Support.** Each holds virtual discussion 
 cap and scarcity cues. In-person is the high-intent path and the engine of geographic
 spread.
 
-> ⚠️ **Naming in flux (so you don't trip):** docs are mid-rename on a few terms. Lead with
-> these current/canonical ones: **The Quest** = the game; **Zaps/Gems** = the currencies;
-> **Circle** & **Interest/Channel** = the member words. Internally there's an unresolved
-> tension between "Channels" vs "Interests" for the topic level, and between
-> "Arc/Journey/Quest" for the multi-step engine. For marketing copy, treat **Circle,
-> Interest, The Quest, Zaps, Gems** as the safe vocabulary.
+> ✅ **Naming is locked (ADR-208 / `docs/NAMING.md` is the source of truth):** **The Quest**
+> = the game; a **Quest** = one season; the engine hierarchy is **Quest → Journey → Practice**
+> (the old "Arc" tension is resolved — it's the Journey/quest-clock). **Zaps/Gems** = the
+> currencies (never "points"); ranks are **Ghost → Echo → Signal → Beacon → Conduit →
+> Luminary**; depth tiers are **Initiate / Adept / Master**. **Circle** is the member word;
+> **Channels** = the topical forum (verb "tune in"); **Pillars** = Mind/Body/Spirit/Expression.
+> *(One item still open per the canon: the member-facing wording for the topic level —
+> "Channel" vs "Interest" — is not yet settled; don't standardize it in copy until it is.)*
 
 ### Navigation — the member's "worlds"
 The current canonical rail organizes around six worlds, nav computed from the member's
@@ -213,7 +215,7 @@ REWARD**, with server-authoritative verification (the client is never trusted).
 | **Spendable?** | Yes — buys badges/cosmetics, trades for physical merch | No — it's XP; converts to gems at season end |
 
 ### Season rank ladder
-**ghost → runner → operative → agent → conduit → luminary** (driven by seasonal zaps;
+**ghost → echo → signal → beacon → conduit → luminary** (driven by seasonal zaps;
 thresholds ~100 / 300 / 750 / 1500; *luminary* is a manual, challenge-gated honor). At
 season end, a rank-based share of zaps **converts to gems**, a **trophy is minted**, and
 counters reset (so a long-time player keeps loot + status, never an unfair permanent lead).
