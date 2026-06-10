@@ -13,6 +13,7 @@ import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { rememberFacts } from '@/lib/ai/memory'
 import { postWelcomeForMember } from '@/lib/onboarding/welcome'
+import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { track } from '@/lib/analytics/track'
 import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/lib/onboarding/beta-script'
 import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
@@ -212,6 +213,10 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (prof?.id) {
+    // Every account gets its QR code the moment it has a handle (owner directive).
+    // Fire-and-forget: a provisioning hiccup never blocks onboarding — the invite
+    // and /codes surfaces lazily re-provision as the fallback.
+    ensureMemberCodes(prof.id as string, handle).catch((e) => console.error('[member-codes]', e))
     const interestList = interests.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 10)
     await rememberFacts(prof.id, {
       interests: interestList,

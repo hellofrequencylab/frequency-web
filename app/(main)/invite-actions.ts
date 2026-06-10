@@ -17,6 +17,10 @@ export async function getInviteLink(): Promise<{ url: string; codeId: string } |
 
   const codes = await ensureMemberCodes(profileId, me.handle as string)
   const code = codes[0]
-  if (!code) return { error: 'Could not generate your invite link.' }
+  if (!code) {
+    // ensureMemberCodes already logs the DB error; this marks WHO it failed for.
+    console.error('[invite] ensureMemberCodes returned no codes for profile', profileId)
+    return { error: 'Could not generate your invite link.' }
+  }
   return { url: shortLinkUrl(code.slug), codeId: code.id }
 }
