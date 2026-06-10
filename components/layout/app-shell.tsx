@@ -55,7 +55,7 @@ import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
-import { railFor } from '@/lib/layout/page-chrome'
+import { railFor, leftRailFor } from '@/lib/layout/page-chrome'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
 
@@ -1220,6 +1220,12 @@ export default function AppShell({
   // workspaces that read best full-width). To reframe a route, edit page-chrome.ts.
   const showSidebar = !!sidebar && railFor(pathname) === 'global'
 
+  // The global MEMBER left rail is swapped out on workspace routes (today: /admin/*),
+  // which mount their OWN left nav in their layout (the admin sidebar). Suppressing
+  // the member rail here is what prevents a double left rail. Governed declaratively
+  // by page-chrome.ts (leftRailFor) — the shell never path-sniffs.
+  const showLeftRail = leftRailFor(pathname) === 'global'
+
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
     else if (theme === 'dark') setTheme('light')
@@ -1391,12 +1397,14 @@ export default function AppShell({
                 menu's bottom always sits against that box while the content
                 column scrolls past. A menu taller than the window scrolls
                 INTERNALLY instead of riding the page. */}
-            <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-border bg-surface/80 backdrop-blur-sm">
-              {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
-              <nav className="sticky top-14 max-h-[calc(100vh-3.5rem-8rem)] self-start overflow-y-auto px-3 py-3 space-y-0.5">
-                <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} />
-              </nav>
-            </aside>
+            {showLeftRail && (
+              <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-border bg-surface/80 backdrop-blur-sm">
+                {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
+                <nav className="sticky top-14 max-h-[calc(100vh-3.5rem-8rem)] self-start overflow-y-auto px-3 py-3 space-y-0.5">
+                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} />
+                </nav>
+              </aside>
+            )}
 
             {/* Center column — an ambient dispatch ticker pinned on top, then the
                 page content. Navigation lives entirely in the single left rail
@@ -1431,11 +1439,14 @@ export default function AppShell({
 
         {/* Pinned bottom-left footer — the Upgrade tab + profile card stay fixed to
             the viewport while the nav above scrolls with the page. Desktop only;
-            matches the left rail's width + chrome. */}
-        <div className="hidden md:flex fixed bottom-0 left-0 z-20 w-52 flex-col border-r border-t border-border bg-surface/95 backdrop-blur-sm">
-          {!hideAppNav && role === 'member' && <UpgradeCrew />}
-          <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
-        </div>
+            matches the left rail's width + chrome. Suppressed on workspace routes
+            (/admin/*) where the admin sidebar owns the left column. */}
+        {showLeftRail && (
+          <div className="hidden md:flex fixed bottom-0 left-0 z-20 w-52 flex-col border-r border-t border-border bg-surface/95 backdrop-blur-sm">
+            {!hideAppNav && role === 'member' && <UpgradeCrew />}
+            <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
+          </div>
+        )}
       </div>
       </DockRevealProvider>
 
