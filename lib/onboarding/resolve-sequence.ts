@@ -1,12 +1,13 @@
 import { getSequence, listSequences, DEFAULT_SEQUENCE, type BetaSequence } from './beta-sequences'
 import { getSequenceOverride, listSequenceVersions, type SequenceOverride } from './sequence-overrides'
+import { getVeraConfig } from '@/lib/ai/vera/config'
 import type { VeraCopy } from './beta-script'
 
-// Resolve onboarding sequences from BOTH sources (ADR-162): the code-first sequences
-// (beta-sequences.ts) and the DB layer (sequence_overrides — owner edits + brand-new
-// versions built in the wizard). Server-only (reads the admin client). The induction
-// page + the builder go through here so a version renders the real /onboarding/beta
-// flow with its own copy.
+// Resolve onboarding sequences from BOTH sources (ADR-162): the code base
+// (beta-sequences.ts — now just the reserved `beta-default` VERA flow) and the DB
+// layer (sequence_overrides — owner edits + versions built in the wizard).
+// Server-only (reads the admin client). The induction page, the /pages/splash
+// editor, and the builder all go through here so what they render is what's live.
 
 /** A blank version cloned from the default sequence — the wizard's starting point. */
 export function blankSequence(slug: string, audience = 'New version'): BetaSequence {
@@ -39,13 +40,36 @@ function apply(base: BetaSequence, o: SequenceOverride): BetaSequence {
   }
 }
 
-/** A fully-merged sequence for a slug — code base (or a blank clone for a brand-new
- *  slug) with the DB override applied on top. */
+/** The DEFAULT flow, fully merged, exactly as /onboarding/beta renders it with no
+ *  ?seq: coded VERA copy → legacy /admin/vera induction tweaks (vera_config) → the
+ *  `beta-default` override (the /pages/splash editor). The editor's saved copy wins;
+ *  the vera_config layer stays underneath so older operator edits keep applying
+ *  until the new editor writes over them. */
+export async function resolveDefaultSequence(): Promise<BetaSequence> {
+  const base = getSequence(DEFAULT_SEQUENCE)
+  const ind = (await getVeraConfig()).induction
+  const withConfig: BetaSequence = {
+    ...base,
+    vera: mergeVera(base.vera, {
+      oath: { ...base.vera.oath, heading: ind.oathHeading, body: ind.oathBody },
+      intro: { ...base.vera.intro, heading: ind.introHeading, body: ind.introBody },
+    }),
+    oaths: base.oaths.map((o, i) => ({ id: o.id, label: ind.oathLabels[i] || o.label })),
+    heardAbout: ind.heardAbout.length ? ind.heardAbout : base.heardAbout,
+  }
+  const o = await getSequenceOverride(DEFAULT_SEQUENCE)
+  return o ? apply(withConfig, o) : withConfig
+}
+
+/** A fully-merged sequence for a slug — the base VERA flow for null/blank/
+ *  `beta-default`, a code sequence if one exists, or a blank clone for a DB-created
+ *  version — with the slug's DB override applied on top. */
 export async function resolveSequence(slug: string | null | undefined): Promise<BetaSequence> {
-  const s = (slug ?? '').trim()
+  const s = (slug ?? '').trim() || DEFAULT_SEQUENCE
+  if (s === DEFAULT_SEQUENCE) return resolveDefaultSequence()
   const codeExists = listSequences().some((x) => x.slug === s)
-  const base = codeExists ? getSequence(s) : blankSequence(s || DEFAULT_SEQUENCE)
-  const o = s ? await getSequenceOverride(s) : null
+  const base = codeExists ? getSequence(s) : blankSequence(s)
+  const o = await getSequenceOverride(s)
   return o ? apply(base, o) : base
 }
 
@@ -55,13 +79,15 @@ export interface SequenceSummary {
   source: 'code' | 'custom'
 }
 
-/** Every sequence to list in the builder: the code sequences plus DB-created versions. */
+/** Every sequence to list in the builder: code sequences (none today) plus
+ *  DB-created versions. The reserved `beta-default` row is the default flow's
+ *  override, not a version — it's managed at /pages/splash and excluded here. */
 export async function listAllSequences(): Promise<SequenceSummary[]> {
   const code: SequenceSummary[] = listSequences().map((s) => ({ slug: s.slug, audience: s.audience, source: 'code' }))
-  const codeSlugs = new Set(code.map((c) => c.slug))
+  const reserved = new Set([...code.map((c) => c.slug), DEFAULT_SEQUENCE])
   const versions = await listSequenceVersions()
   const custom: SequenceSummary[] = versions
-    .filter((v) => !codeSlugs.has(v.slug))
+    .filter((v) => !reserved.has(v.slug))
     .map((v) => ({ slug: v.slug, audience: v.audience ?? v.slug, source: 'custom' }))
   return [...code, ...custom]
 }

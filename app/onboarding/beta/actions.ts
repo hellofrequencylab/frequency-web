@@ -15,7 +15,7 @@ import { rememberFacts } from '@/lib/ai/memory'
 import { postWelcomeForMember } from '@/lib/onboarding/welcome'
 import { track } from '@/lib/analytics/track'
 import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/lib/onboarding/beta-script'
-import { getSequence } from '@/lib/onboarding/beta-sequences'
+import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { personaTag, isPersonaId } from '@/lib/onboarding/personas'
 import { assignTag } from '@/lib/traits/tags'
 import { resolveAcquisition, stampAcquisitionTag } from '@/lib/attribution/server'
@@ -30,11 +30,13 @@ async function readBetaSequenceSlug(): Promise<string | null> {
   }
 }
 
-/** Stamp the cohort's marketing tag on the member (best-effort; never blocks). */
+/** Stamp the cohort's marketing tag on the member (best-effort; never blocks).
+ *  Resolves through the DB layer so versions built in the wizard stamp THEIR tag,
+ *  not the default's. */
 async function tagBetaCohort(profileId: string, seqSlug: string | null): Promise<void> {
   if (!seqSlug) return
   try {
-    await assignTag(profileId, getSequence(seqSlug).marketingTag)
+    await assignTag(profileId, (await resolveSequence(seqSlug)).marketingTag)
   } catch {
     /* tagging is best-effort */
   }

@@ -20,7 +20,7 @@ const GROUPS: { title: string; items: { label: string; desc: string; href: strin
     title: 'Pages & onboarding',
     items: [
       { label: 'Landing pages', desc: 'Build & publish your public pages (block editor)', href: '/pages', icon: LayoutTemplate },
-      { label: 'Onboarding sequences', desc: 'Audience-targeted splash + induction copy', href: '/pages/sequences', icon: DoorOpen },
+      { label: 'Splash pages', desc: 'Audience-targeted splash + induction flows', href: '/pages/sequences', icon: DoorOpen },
     ],
   },
   {
