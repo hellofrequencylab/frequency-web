@@ -53,3 +53,20 @@ export function coopKey(
 export function coopBonusQualifies(membersInRhythm: number): boolean {
   return membersInRhythm >= COOP_MIN_MEMBERS
 }
+
+/** The weekly Co-op bonus (Zaps) every member earns when the group keeps rhythm together. */
+export const COOP_WEEKLY_ZAPS = 30
+
+/** The shared completion trophy (Gems) every member earns when the Co-op finishes together. */
+export const COOP_COMPLETE_GEMS = 20
+
+/** Idempotency key for the shared completion trophy — once per circle/plan/season. (Distinct
+ *  from the weekly `coopKey`, whose `journey.chorus:` prefix is a kept persisted key.) */
+export function coopCompletionKey(circleId: string, planId: string, season: number | string): string {
+  return `journey.coop.complete:${circleId}:${planId}:${season}`
+}
+
+/** The shared completion trophy fires once ≥ COOP_MIN_MEMBERS have completed the Journey. */
+export function coopCompleteQualifies(membersCompleted: number): boolean {
+  return membersCompleted >= COOP_MIN_MEMBERS
+}
