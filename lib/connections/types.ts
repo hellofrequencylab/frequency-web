@@ -55,6 +55,8 @@ export interface NetworkContact {
   website: string | null
   socials: ContactSocials
   avatarPath: string | null
+  /** The member profile this contact has been merged with (null = not linked). */
+  linkedProfileId: string | null
   createdAt: string | null
   updatedAt: string | null
 }
