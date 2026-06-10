@@ -592,7 +592,9 @@ export async function getActiveJourneyProgress(
     )
   }
 
-  // The viewer's circle default tier (only when a circle context is supplied).
+  // The viewer's circle default tier. With an explicit circle context, use that circle; else use
+  // the first of the member's active circles that has a Host-set default (the calibration applies
+  // on the member's own Journey page, where no circleId is passed).
   let circleDefaultTier: IntensityTier | null = null
   if (opts.circleId) {
     const { data: c } = await client
@@ -602,6 +604,19 @@ export async function getActiveJourneyProgress(
       .maybeSingle()
     circleDefaultTier =
       (c as { default_intensity_tier: IntensityTier | null } | null)?.default_intensity_tier ?? null
+  } else {
+    const { data: cs } = await client
+      .from('memberships')
+      .select('circle:circles(default_intensity_tier)')
+      .eq('profile_id', profileId)
+      .eq('status', 'active')
+    for (const m of (cs ?? []) as unknown as { circle: { default_intensity_tier: IntensityTier | null } | null }[]) {
+      const t = m.circle?.default_intensity_tier
+      if (t) {
+        circleDefaultTier = t
+        break
+      }
+    }
   }
 
   // One log read powers both clocks: the widest window we need is the earliest plan anchor,
