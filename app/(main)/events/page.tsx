@@ -151,7 +151,7 @@ export default async function EventsPage({
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role, home_geocell_lat, home_geocell_lng')
+      .select('id, community_role, membership_tier, home_geocell_lat, home_geocell_lng')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
@@ -160,8 +160,11 @@ export default async function EventsPage({
       if (profile.home_geocell_lat != null && profile.home_geocell_lng != null) {
         myGeocell = { lat: Number(profile.home_geocell_lat), lng: Number(profile.home_geocell_lng) }
       }
-      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')
-      isHost = ['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')
+      // Event composing = paid (Crew/Supporter TIER) or a steward — PB.1/ADR-207.
+      isCrew =
+        ['crew', 'supporter'].includes((profile as { membership_tier?: string | null }).membership_tier ?? '') ||
+        ['host', 'guide', 'mentor', 'admin', 'janitor'].includes(profile.community_role ?? '')
+      isHost = ['host', 'guide', 'mentor', 'admin', 'janitor'].includes(profile.community_role ?? '')
 
       const { data: memberships } = await admin
         .from('memberships')

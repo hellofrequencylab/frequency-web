@@ -191,7 +191,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     blurb: 'Tune the AI guide and see what she could not answer.',
     dashboard: 'insights',
     links: [
-      { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor' },
+      { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor', staffDomain: 'insights' },
       { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected — the to-write list.', Icon: HelpCircle, min: 'janitor' },
     ],
   },
@@ -201,7 +201,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     blurb: 'The sensitive platform keys — AI, demo content, and public pages.',
     dashboard: 'platform',
     links: [
-      { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor' },
+      { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor', staffDomain: 'platform' },
       { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor' },
       { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor' },
       { href: '/pages', label: 'Pages', desc: 'Edit public pages and content blocks.', Icon: FileText, min: 'janitor' },

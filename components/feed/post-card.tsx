@@ -37,6 +37,9 @@ export type FeedPost = {
     handle: string
     avatar_url: string | null
     community_role: CommunityRole
+    /** Entitlement tier (returned by the feed RPCs since 20260612060000) — any
+     *  public flair/endorsement keys off THIS, not the role (PB.1i / ADR-141). */
+    membership_tier?: string | null
   }
   reactions: Array<{
     id: string
@@ -68,6 +71,8 @@ export interface RawPost {
     handle: string
     avatar_url: string | null
     community_role: string
+    /** Present on rows from the feed RPCs (20260612060000+); absent on older selects. */
+    membership_tier?: string | null
   }
   reactions: Array<{
     id: string

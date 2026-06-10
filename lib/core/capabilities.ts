@@ -175,3 +175,66 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
 export function can(caps: ReadonlySet<Capability>, cap: Capability): boolean {
   return caps.has(cap)
 }
+
+// ─── Capability GAPS — why is a capability absent? (PB.1g) ─────────────────────
+//
+// Additive companion to `resolveCapabilities` (whose signature and behavior are
+// untouched): for capabilities the viewer does NOT hold in a scope, report the
+// actionable reason — the upsell layer renders "join this circle" / "upgrade to
+// unlock" / "host a circle to unlock" from it.
+
+export type CapabilityGapReason = 'needs-membership' | 'needs-paid-tier' | 'needs-role'
+
+/**
+ * For each capability ABSENT from `resolveCapabilities(viewer, scope)`, the reason
+ * it's missing — probed by re-resolving along the cumulative counterfactual ladder
+ * **membership → paid tier → role** and attributing each capability to the rung at
+ * which it first appears:
+ *
+ *   • 'needs-membership' — an active membership in the scope would unlock it.
+ *   • 'needs-paid-tier'  — the paid tier (Crew/Supporter) would unlock it, assuming
+ *     membership (so a free non-member's `task.volunteer` reads 'needs-paid-tier':
+ *     the upgrade is the gate the upsell UI sells; joining is its own affordance).
+ *   • 'needs-role'       — only stewardship/staff standing unlocks it (e.g.
+ *     `circle.editSettings`, `admin.access`).
+ *
+ * Capabilities unreachable even at the top of the ladder (e.g. another member's
+ * `profile.edit` for an anonymous viewer — the real gap is signing in) get no
+ * entry. Pure and deterministic, like the resolver it wraps.
+ */
+export function capabilityGaps(
+  viewer: Viewer,
+  scope: Scope,
+): Partial<Record<Capability, CapabilityGapReason>> {
+  const have = resolveCapabilities(viewer, scope)
+  const gaps: Partial<Record<Capability, CapabilityGapReason>> = {}
+
+  const attribute = (caps: ReadonlySet<Capability>, reason: CapabilityGapReason) => {
+    for (const c of caps) {
+      if (!have.has(c) && !(c in gaps)) gaps[c] = reason
+    }
+  }
+
+  // Rung 1 — an active membership in the scope (circles are the only
+  // membership-bearing scope today).
+  let scopeAsMember = scope
+  if (scope.kind === 'circle' && scope.membership?.status !== 'active') {
+    scopeAsMember = { ...scope, membership: { status: 'active' } }
+    attribute(resolveCapabilities(viewer, scopeAsMember), 'needs-membership')
+  }
+
+  // Rung 2 — the paid tier (Crew/Supporter), on top of membership.
+  let viewerPaid = viewer
+  if (!isPaid(viewer.tier)) {
+    viewerPaid = { ...viewer, tier: 'crew' }
+    attribute(resolveCapabilities(viewerPaid, scopeAsMember), 'needs-paid-tier')
+  }
+
+  // Rung 3 — role standing (probed at the top rung: anything still missing that a
+  // janitor would hold is role-gated).
+  if (viewer.role !== 'janitor') {
+    attribute(resolveCapabilities({ ...viewerPaid, role: 'janitor' }, scopeAsMember), 'needs-role')
+  }
+
+  return gaps
+}

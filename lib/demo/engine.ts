@@ -542,7 +542,11 @@ const rand = () => Math.random
 async function insertProfile(d: SupabaseClient, p: PersonPlan, region: string | null, rng2: () => number): Promise<string | null> {
   const { data: prof } = await d.from('profiles').insert({
     auth_user_id: null, display_name: p.name, handle: p.handle,
-    community_role: p.role, nexus_region_id: region, bio: p.bio,
+    // 'crew' is the paid TIER, not a role (PB.1/ADR-207) — demo crew personas
+    // carry member role + the comped tier, like real members post-migration.
+    community_role: p.role === 'crew' ? 'member' : p.role,
+    membership_tier: p.role === 'crew' ? 'crew' : 'free',
+    nexus_region_id: region, bio: p.bio,
     avatar_url: `https://i.pravatar.cc/240?u=${p.handle}`,
     current_season_rank: p.rank, current_season_zaps: p.zaps, lifetime_zaps: p.zaps,
     lifetime_gems: p.gems, current_streak: p.streak, longest_streak: p.streak,

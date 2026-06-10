@@ -113,7 +113,9 @@ async function seedMember(
       auth_user_id: null,
       display_name: p.display_name,
       handle: p.handle,
-      community_role: role,
+      // 'crew' is the paid TIER, not a role (PB.1/ADR-207).
+      community_role: role === 'crew' ? 'member' : role,
+      membership_tier: role === 'crew' ? 'crew' : 'free',
       bio: pick(BIOS),
       avatar_url: `https://i.pravatar.cc/240?u=${p.handle}`,
       current_season_rank: p.rank,

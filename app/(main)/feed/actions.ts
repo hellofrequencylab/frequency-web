@@ -231,7 +231,7 @@ export async function fetchReplies(parentId: string) {
     .from('posts')
     .select(
       `id, body, created_at,
-       author:profiles!author_id ( id, display_name, handle, avatar_url, community_role )`
+       author:profiles!author_id ( id, display_name, handle, avatar_url, membership_tier )`
     )
     .eq('parent_id', parentId)
     .is('hidden_at', null)
@@ -241,7 +241,7 @@ export async function fetchReplies(parentId: string) {
     id: string
     body: string | null
     created_at: string
-    author: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_streak: number; achievement_count: number }
+    author: { id: string; display_name: string; handle: string; avatar_url: string | null; membership_tier: string | null; current_season_rank: string | null; current_streak: number; achievement_count: number }
   }>
 }
 
