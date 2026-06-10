@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Users } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
@@ -81,14 +81,23 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
               )}
             </div>
           </div>
-          <Link
-            href={`/events/${event.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
-          >
-            View <ExternalLink className="h-3 w-3" />
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            {/* Host tooling: the roster / waitlist / check-in / blast workspace (slice B-3). */}
+            <Link
+              href={`/events/${event.slug}/manage`}
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
+            >
+              <Users className="h-3 w-3" /> Manage guests
+            </Link>
+            <Link
+              href={`/events/${event.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
+            >
+              View <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
         </div>
       </div>
 

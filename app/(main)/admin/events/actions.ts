@@ -8,7 +8,7 @@ import { isStaff } from '@/lib/core/roles'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { authorizeAction } from '@/lib/admin/guard'
 import { slugify } from '@/lib/utils'
-import { refundTicket } from '@/lib/billing/tickets'
+import { refundAllForEvent } from '@/lib/billing/tickets'
 import { sendEventCancelledEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 
@@ -131,11 +131,6 @@ export async function cancelEvent(id: string) {
   }
 }
 
-interface CancelTicketRow {
-  id: string
-  buyer_profile_id: string | null
-}
-
 interface CancelEventMeta {
   title: string
   slug: string
@@ -175,10 +170,10 @@ async function resolveRecipient(
 
 /** Refund every paid ticket for a just-cancelled event, then notify paid attendees
  *  (refunded) and free RSVP'd attendees (cancelled). MONEY-SAFE:
- *   • refundTicket() is idempotent (already-refunded → ok) and frees inventory via
- *     recordTicketRefund — we never reimplement the Stripe unwind here.
- *   • Refunds run sequentially; one failure is logged + collected, never aborts the
- *     rest (a single bad charge can't strand the other attendees' money).
+ *   • refundAllForEvent() (lib/billing/tickets) is behind payoutsLive(), idempotent,
+ *     runs each refund sequentially (one failure logged, never aborts the rest), and
+ *     frees inventory via the Stripe unwind — we never reimplement that here. It's the
+ *     SAME helper the member-facing cancel uses, so both paths refund identically.
  *   • Email is best-effort and enqueued (durable outbox), so a mail hiccup never
  *     rolls back a refund; sends respect email_events prefs + suppression like every
  *     other transactional event email.
@@ -198,42 +193,10 @@ async function refundAndNotifyForCancelledEvent(eventId: string): Promise<void> 
   const eventUrl = `${appUrl}/events/${event.slug}`
   const whenAbsolute = formatEventWhen(event.starts_at)
 
-  // ── 1. Refund every succeeded ticket (idempotent + frees inventory) ──────────
-  // `event_tickets` isn't in the generated DB types yet → untyped-client cast
-  // (the lib/billing/* convention).
-  const { data: ticketData } = await (admin as unknown as SupabaseClient)
-    .from('event_tickets')
-    .select('id, buyer_profile_id')
-    .eq('event_id', eventId)
-    .eq('status', 'succeeded')
-  const tickets = (ticketData ?? []) as CancelTicketRow[]
-
-  const refundedBuyerIds = new Set<string>()
-  const failures: { ticketId: string; error: string }[] = []
-
-  for (const ticket of tickets) {
-    try {
-      const r = await refundTicket(ticket.id)
-      if (r.error) {
-        failures.push({ ticketId: ticket.id, error: r.error })
-        console.error('[cancelEvent] refund failed', { eventId, ticketId: ticket.id, error: r.error })
-        continue
-      }
-      if (ticket.buyer_profile_id) refundedBuyerIds.add(ticket.buyer_profile_id)
-    } catch (err) {
-      failures.push({ ticketId: ticket.id, error: String(err) })
-      console.error('[cancelEvent] refund threw', { eventId, ticketId: ticket.id, err })
-    }
-  }
-
-  if (failures.length) {
-    console.error('[cancelEvent] refund summary', {
-      eventId,
-      total: tickets.length,
-      refunded: tickets.length - failures.length,
-      failed: failures.length,
-    })
-  }
+  // ── 1. Refund every succeeded ticket (shared helper: payoutsLive-gated, idempotent,
+  //       frees inventory). Returns the distinct buyer ids we made whole. ─────────
+  const { refundedBuyerIds: refundedList } = await refundAllForEvent(eventId)
+  const refundedBuyerIds = new Set(refundedList)
 
   // ── 2. Notify refunded buyers (best-effort, never blocks/rolls back a refund) ─
   for (const buyerId of refundedBuyerIds) {

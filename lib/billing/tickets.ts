@@ -376,6 +376,70 @@ export async function refundTicket(ticketId: string): Promise<RefundResult> {
   return { ok: true }
 }
 
+export interface BulkRefundResult {
+  /** Distinct buyer profile ids whose tickets were refunded (or already refunded). */
+  refundedBuyerIds: string[]
+  /** Tickets we tried to refund. */
+  attempted: number
+  /** Tickets that failed at the processor (logged; the rest still refund). */
+  failed: number
+}
+
+/** Refund EVERY succeeded ticket for an event (host-cancel fan-out, EVENTS-SYSTEM
+ *  §7). Used when a host cancels: every buyer is made whole. MONEY-SAFE by
+ *  construction —
+ *   • Behind `payoutsLive()` (returns an empty result, NOT an error, when payouts
+ *     are off, so the no-money-yet cancel path is a clean no-op).
+ *   • Delegates each refund to `refundTicket`, which is idempotent (already-refunded
+ *     → ok) and does the real Stripe unwind (reverse_transfer + refund_application_fee)
+ *     + capacity free via the webhook/reconcile — we never reimplement that here.
+ *   • Sequential; one bad charge is logged + counted, never aborts the rest, so a
+ *     single failure can't strand the other buyers' money.
+ *
+ *  Returns the set of distinct buyer ids that were refunded so the caller can notify
+ *  them, plus attempted/failed counts for logging. Does NOT email — notification is
+ *  the caller's job (kept out of the money path on purpose). */
+export async function refundAllForEvent(eventId: string): Promise<BulkRefundResult> {
+  // Not live yet → nothing to refund. Empty (not error): the cancel still proceeds.
+  if (!(await payoutsLive())) return { refundedBuyerIds: [], attempted: 0, failed: 0 }
+
+  const { data } = await db()
+    .from('event_tickets')
+    .select('id, buyer_profile_id')
+    .eq('event_id', eventId)
+    .eq('status', 'succeeded')
+  const tickets = (data ?? []) as { id: string; buyer_profile_id: string | null }[]
+
+  const refundedBuyerIds = new Set<string>()
+  let failed = 0
+
+  for (const ticket of tickets) {
+    try {
+      const r = await refundTicket(ticket.id)
+      if (r.error) {
+        failed++
+        console.error('[tickets] refundAllForEvent: refund failed', { eventId, ticketId: ticket.id, error: r.error })
+        continue
+      }
+      if (ticket.buyer_profile_id) refundedBuyerIds.add(ticket.buyer_profile_id)
+    } catch (err) {
+      failed++
+      console.error('[tickets] refundAllForEvent: refund threw', { eventId, ticketId: ticket.id, err })
+    }
+  }
+
+  if (failed) {
+    console.error('[tickets] refundAllForEvent summary', {
+      eventId,
+      attempted: tickets.length,
+      refunded: tickets.length - failed,
+      failed,
+    })
+  }
+
+  return { refundedBuyerIds: [...refundedBuyerIds], attempted: tickets.length, failed }
+}
+
 /** Flip a refunded ticket to `refunded` and free its tier capacity (idempotent).
  *  Driven by the `charge.refunded` webhook and the inline reconcile in refundTicket.
  *  Keyed by the PaymentIntent id so it works from either source. Only flips a row

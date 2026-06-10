@@ -15,9 +15,14 @@ import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-r
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { awardCircleCurrentForCheckin } from '@/lib/events/circle-current'
 import { embedEvent } from '@/lib/events/embeddings'
-import { sendEventRsvpConfirmationEmail } from '@/lib/email'
+import { sendEventRsvpConfirmationEmail, sendEventCancelledEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
+import { refundAllForEvent } from '@/lib/billing/tickets'
+import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { isEventCohost } from '@/lib/events/cohosts'
+import { isStaff } from '@/lib/core/roles'
+import { getCallerProfile } from '@/lib/auth'
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
 const VALID_VISIBILITY = ['public', 'unlisted', 'circle_only', 'private']
@@ -453,18 +458,211 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   return { ok: true, zapsAwarded }
 }
 
-export async function cancelEvent(eventId: string) {
-  const myProfileId = await getMyProfileId()
-  if (!myProfileId) return
+// Host-marked check-in (slice B-3). The same verified-practice reward as a guest's
+// self check-in (`checkInEvent`), but HOST-authorized: a host/cohost/staff marks a
+// guest present, awarding that guest their attendance zaps + streak through the SAME
+// idempotency key the self check-in uses (`event_checkin:{eventId}:{profileId}`), so
+// a guest who self-checked-in and then got marked present (or vice versa) is never
+// double-rewarded. Server-authoritative: the event must be real, started, not
+// cancelled, the caller must be able to run it, and the target must have an RSVP.
+export async function hostCheckInGuest(eventId: string, guestProfileId: string): Promise<CheckInResult> {
+  const caller = await requireEventManager(eventId)
+  if (!caller) return { ok: false }
 
-  const supabase = await createClient()
-  await supabase
+  const admin = createAdminClient()
+  const { data: ev } = await admin
+    .from('events')
+    .select('starts_at, is_cancelled')
+    .eq('id', eventId)
+    .maybeSingle()
+  if (!ev || ev.is_cancelled || new Date(ev.starts_at) > new Date()) return { ok: false }
+
+  // The guest must actually be on the event (going/waitlist/maybe) — a host can't
+  // mint attendance for someone who never RSVP'd.
+  const { data: rsvp } = await admin
+    .from('event_rsvps')
+    .select('status')
+    .eq('event_id', eventId)
+    .eq('profile_id', guestProfileId)
+    .maybeSingle()
+  if (!rsvp || !['going', 'waitlist', 'maybe'].includes(rsvp.status as string)) return { ok: false }
+
+  // SAME idempotency key as self check-in → host-mark and self check-in collapse to
+  // exactly one rewarded attendance per (event, guest).
+  const { recorded } = await recordEngagementEvent({
+    idempotencyKey: `event_checkin:${eventId}:${guestProfileId}`,
+    source: 'web',
+    eventType: 'practice.verified',
+    actorProfileId: guestProfileId,
+    context: { eventId, kind: 'event_checkin', markedBy: caller.id, host_marked: true },
+    verifiedAt: new Date(),
+  })
+  if (!recorded) return { ok: true, alreadyCheckedIn: true }
+
+  let zapsAwarded = 0
+  try {
+    zapsAwarded = (await awardZapsForAction(guestProfileId, 'event_attend')).amount
+  } catch {
+    // never let a reward read break the check-in
+  }
+  await recordStreakActivity(guestProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+  await awardCircleCurrentForCheckin(eventId, guestProfileId).catch((e) => console.error('[circle current]', e))
+
+  revalidatePath(`/events`)
+  return { ok: true, zapsAwarded }
+}
+
+// Shared authorization for the manage surface + host actions: the caller must be
+// able to run THIS event — its host, a cohost, whoever manages its circle
+// (event.editSettings), or platform staff (web_role, ADR-208). Returns the caller
+// (for an author/markedBy stamp) or null. Re-checked server-side on every host
+// action; never trusts the client.
+export async function requireEventManager(
+  eventId: string,
+): Promise<{ id: string } | null> {
+  const caller = await getCallerProfile()
+  if (!caller) return null
+  if (isStaff(caller.webRole)) return { id: caller.id }
+  const caps = await getEventCapabilities(eventId)
+  if (caps.has('event.editSettings')) return { id: caller.id }
+  if (await isEventCohost(eventId, caller.id)) return { id: caller.id }
+  return null
+}
+
+/** Resolve a profile's email + display name (email lives on the auth user). Returns
+ *  null when there's no deliverable address. */
+async function resolveRecipient(
+  admin: ReturnType<typeof createAdminClient>,
+  profileId: string,
+): Promise<{ email: string; name: string } | null> {
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('display_name, auth_user_id')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (!profile?.auth_user_id) return null
+  const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+  if (!user?.email) return null
+  return { email: user.email, name: profile.display_name ?? 'there' }
+}
+
+// Cancel an event → refund every paid ticket → notify every RSVP'd guest. The member
+// help doc promises this; this is where it happens (mirrors the admin path in
+// app/(main)/admin/events/actions.ts, sharing the refundAllForEvent money helper).
+//
+// AUTHORIZATION: host / cohost / circle-manager / staff (requireEventManager),
+// re-verified here. The refund + notify side effects run ONLY behind that gate.
+//
+// IDEMPOTENT: the `.eq('is_cancelled', false)` + `.select()` flip means a re-run
+// (already cancelled) returns zero rows, so the refund + notify fan-out runs at most
+// once per cancellation (the email-dedupe guard). refundAllForEvent is itself
+// idempotent on the money side regardless, and is behind payoutsLive().
+export async function cancelEvent(eventId: string) {
+  const caller = await requireEventManager(eventId)
+  if (!caller) return
+
+  const admin = createAdminClient()
+
+  const { data: flipped, error } = await admin
     .from('events')
     .update({ is_cancelled: true })
     .eq('id', eventId)
-    .eq('host_id', myProfileId)
+    .eq('is_cancelled', false)
+    .select('id')
+  if (error) {
+    console.error('[cancelEvent] flip failed', error)
+    return
+  }
+  const firstCancel = (flipped ?? []).length > 0
 
   revalidatePath('/events')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+
+  // Only fan out refunds + notifications on the live → cancelled transition.
+  if (firstCancel) {
+    await refundAndNotifyForCancelledEvent(eventId)
+  }
+}
+
+interface CancelEventMeta {
+  title: string
+  slug: string
+  starts_at: string
+}
+
+/** Refund every paid ticket for a just-cancelled event, then notify paid attendees
+ *  (refunded) and free RSVP'd attendees (cancelled). MONEY-SAFE:
+ *   • refundAllForEvent() is behind payoutsLive(), is idempotent, and frees inventory
+ *     via the Stripe unwind — we never reimplement that here.
+ *   • Email is best-effort + queued (durable outbox), so a mail hiccup never rolls
+ *     back a refund; every send goes through the events-category consent gate
+ *     (shouldSend) + suppression guard, exactly like every other event email.
+ *  Invoked ONLY on the live → cancelled transition, so it never double-emails. */
+async function refundAndNotifyForCancelledEvent(eventId: string): Promise<void> {
+  const admin = createAdminClient()
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
+
+  const { data: eventData } = await admin
+    .from('events')
+    .select('title, slug, starts_at')
+    .eq('id', eventId)
+    .maybeSingle()
+  const event = eventData as CancelEventMeta | null
+  if (!event) return
+  const eventUrl = `${appUrl}/events/${event.slug}`
+  const whenAbsolute = formatEventWhen(event.starts_at)
+
+  // ── 1. Refund every succeeded ticket (idempotent + frees inventory + payoutsLive gated)
+  const { refundedBuyerIds } = await refundAllForEvent(eventId)
+  const refundedSet = new Set(refundedBuyerIds)
+
+  // ── 2. Notify refunded buyers (best-effort; never blocks/rolls back a refund). ─
+  for (const buyerId of refundedSet) {
+    try {
+      if (!(await shouldSend(buyerId, 'email', 'events'))) continue
+      const recipient = await resolveRecipient(admin, buyerId)
+      if (!recipient) continue
+      await sendEventCancelledEmail({
+        to: recipient.email,
+        recipientName: recipient.name,
+        recipientProfileId: buyerId,
+        eventTitle: event.title,
+        whenAbsolute,
+        eventUrl,
+        refunded: true,
+      })
+    } catch (err) {
+      console.error('[cancelEvent] notify (refunded) failed', { eventId, buyerId, err })
+    }
+  }
+
+  // ── 3. Notify the rest of the RSVP'd guests (no money — just "it's cancelled").
+  // Skip anyone already emailed as a refunded buyer to avoid a duplicate note.
+  const { data: rsvpData } = await admin
+    .from('event_rsvps')
+    .select('profile_id')
+    .eq('event_id', eventId)
+    .eq('status', 'going')
+  const rsvpProfileIds = ((rsvpData ?? []) as { profile_id: string }[]).map((r) => r.profile_id)
+
+  for (const profileId of rsvpProfileIds) {
+    if (refundedSet.has(profileId)) continue
+    try {
+      if (!(await shouldSend(profileId, 'email', 'events'))) continue
+      const recipient = await resolveRecipient(admin, profileId)
+      if (!recipient) continue
+      await sendEventCancelledEmail({
+        to: recipient.email,
+        recipientName: recipient.name,
+        recipientProfileId: profileId,
+        eventTitle: event.title,
+        whenAbsolute,
+        eventUrl,
+        refunded: false,
+      })
+    } catch (err) {
+      console.error('[cancelEvent] notify (rsvp) failed', { eventId, profileId, err })
+    }
+  }
 }
