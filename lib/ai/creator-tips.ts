@@ -21,13 +21,17 @@ function db(): SupabaseClient {
 }
 
 export type TipStatus = 'draft' | 'approved' | 'sent' | 'dismissed'
-export type TipContentType = 'journey' | 'practice' | 'challenge'
+export type TipContentType = 'journey' | 'practice' | 'challenge' | 'event'
+// 'tip' is a coaching nudge destined for the creator; 'flag' is an internal
+// spam/quality flag for the admin (poster observer) that is NEVER sent.
+export type TipKind = 'tip' | 'flag'
 
 export interface CreatorTip {
   id: string
   creator_id: string
   content_type: TipContentType
   content_id: string
+  kind: TipKind
   status: TipStatus
   draft_text: string
   sent_text: string | null
@@ -39,7 +43,7 @@ export interface CreatorTip {
 }
 
 const TIP_COLS =
-  'id, creator_id, content_type, content_id, status, draft_text, sent_text, evidence, ' +
+  'id, creator_id, content_type, content_id, kind, status, draft_text, sent_text, evidence, ' +
   'created_at, reviewed_by, sent_at, creator:profiles!creator_id(display_name, handle)'
 
 const FEATURE = 'creator-tips'
@@ -215,20 +219,22 @@ export async function approveTip(id: string, reviewedBy: string): Promise<void> 
 /**
  * Send an approved (or draft, when the caller approves-and-sends in one step)
  * tip: insert the notification to the creator, then mark it sent. The delivered
- * text is sent_text when set, else the (possibly edited) draft.
+ * text is sent_text when set, else the (possibly edited) draft. Flags are
+ * internal admin notes and are never sendable; use resolveFlag instead.
  */
 export async function sendTip(id: string): Promise<void> {
   const client = db()
   const { data: row } = await client
     .from('creator_tips')
-    .select('id, creator_id, content_type, content_id, status, draft_text, sent_text')
+    .select('id, creator_id, content_type, content_id, kind, status, draft_text, sent_text')
     .eq('id', id)
     .maybeSingle()
   const tip = row as Pick<
     CreatorTip,
-    'id' | 'creator_id' | 'content_type' | 'content_id' | 'status' | 'draft_text' | 'sent_text'
+    'id' | 'creator_id' | 'content_type' | 'content_id' | 'kind' | 'status' | 'draft_text' | 'sent_text'
   > | null
   if (!tip) throw new Error('Tip not found')
+  if (tip.kind === 'flag') throw new Error('Flags are internal and never go to the member. Mark it reviewed instead.')
   if (tip.status === 'sent') return // idempotent
   if (tip.status === 'dismissed') throw new Error('This tip was dismissed')
 
