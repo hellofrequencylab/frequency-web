@@ -31,6 +31,7 @@ export function BreathVisualizer({
     const tick = () => {
       const elapsed = (Date.now() - startedAt) / 1000
       const scale = ringScaleAt(pattern, elapsed)
+      const pos = breathPositionAt(pattern, elapsed)
       const g = groupRef.current
       if (g) {
         if (reduceMotion.current) {
@@ -38,12 +39,20 @@ export function BreathVisualizer({
           g.style.opacity = String(0.45 + (scale - 0.62) / (1 - 0.62) * 0.55)
         } else {
           g.style.transform = `scale(${scale})`
+          // Holds breathe in luminosity instead of size: one soft dip and
+          // return across the phase (cosine, so it lands back at full exactly
+          // as the next phase starts). Written via the ref, never React state.
+          if (pos.phase.kind === 'hold') {
+            const dip = 0.5 - Math.cos(2 * Math.PI * pos.phaseProgress) / 2
+            g.style.opacity = String(1 - 0.12 * dip)
+          } else {
+            g.style.opacity = ''
+          }
         }
       }
-      const { phase } = breathPositionAt(pattern, elapsed)
-      if (phase.label !== lastLabel) {
-        lastLabel = phase.label
-        setLabel(phase.label)
+      if (pos.phase.label !== lastLabel) {
+        lastLabel = pos.phase.label
+        setLabel(pos.phase.label)
       }
       frame = requestAnimationFrame(tick)
     }

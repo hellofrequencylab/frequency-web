@@ -4,17 +4,119 @@
 // Streak → Stats → Dispatch from Vera. The streak increment and the bonus
 // cascade are staged HERE, inside the flow (the Duolingo lesson: the state
 // change is the payoff of the session, never a badge discovered later).
-// Horizontal scroll-snap; vector art rides the existing brand motifs.
+// Horizontal scroll-snap; each panel wears its own spot scene (reveal-art).
+// P4 motion: the zap number counts up, the streak ticks N-1 → N with a pulse,
+// and a one-shot dot burst fires behind the zaps. All of it bows out under
+// prefers-reduced-motion (final values render immediately).
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Zap, Gem, Flame, Shield, Radio, ChevronRight } from 'lucide-react'
-import { FrequencyArcs, RippleRings } from '@/components/marketing/vector-art'
+import { RewardsArt, StreakArt, StatsArt, DispatchArt } from './reveal-art'
 import type { RevealPayload } from '@/lib/on-air'
 
 const fmtMin = (sec: number) => {
   const m = Math.round(sec / 60)
   return m < 1 ? '<1 min' : `${m.toLocaleString()} min`
+}
+
+// Read prefers-reduced-motion once, in a state initializer (SSR-guarded; the
+// reveal only mounts client-side after a session saves, so no hydration risk).
+function usePrefersReducedMotion(): boolean {
+  const [reduced] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+  return reduced
+}
+
+// Count 0 → target over `duration` ms, eased out. Render-pure: frames land via
+// setState from a rAF loop inside an effect. Reduced motion (or a zero target)
+// shows the final value immediately.
+function useCountUp(target: number, duration: number, reduced: boolean): number {
+  // Reduced motion (or a zero target) starts AND stays at the final value.
+  const [value, setValue] = useState(() => (reduced || target <= 0 ? target : 0))
+  useEffect(() => {
+    if (reduced || target <= 0) return
+    let frame = 0
+    let start: number | null = null
+    const tick = (now: number) => {
+      if (start === null) start = now
+      const t = Math.min(1, (now - start) / duration)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setValue(Math.round(eased * target))
+      if (t < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [target, duration, reduced])
+  return value
+}
+
+// The quiet celebration: a one-shot ring of tiny token-colored dots radiating
+// out from behind the zap number, gone in about a second. Angles and distances
+// are randomized once in a state initializer (never during render); reduced
+// motion renders nothing at all.
+type BurstDot = {
+  angle: number
+  distance: number
+  size: number
+  delay: number
+  tone: 'primary' | 'signal'
+}
+
+function makeBurstDots(): BurstDot[] {
+  const count = 10
+  return Array.from({ length: count }, (_, i) => ({
+    angle: (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.6,
+    distance: 38 + Math.random() * 26,
+    size: 3 + Math.random() * 3,
+    delay: Math.random() * 120,
+    tone: i % 3 === 0 ? ('signal' as const) : ('primary' as const),
+  }))
+}
+
+function CelebrationBurst() {
+  const reduced = usePrefersReducedMotion()
+  const [dots] = useState<BurstDot[]>(() => (reduced ? [] : makeBurstDots()))
+  const [fired, setFired] = useState(false)
+  const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    if (dots.length === 0) return
+    const fire = setTimeout(() => setFired(true), 30)
+    const settle = setTimeout(() => setDone(true), 1300)
+    return () => {
+      clearTimeout(fire)
+      clearTimeout(settle)
+    }
+  }, [dots.length])
+
+  if (dots.length === 0 || done) return null
+  return (
+    <span aria-hidden className="pointer-events-none absolute inset-0">
+      {dots.map((d, i) => (
+        <span
+          key={i}
+          className={`absolute left-1/2 top-1/2 block rounded-full ${
+            d.tone === 'signal' ? 'bg-signal' : 'bg-primary'
+          }`}
+          style={{
+            width: d.size,
+            height: d.size,
+            marginLeft: -d.size / 2,
+            marginTop: -d.size / 2,
+            opacity: fired ? 0 : 0.9,
+            transform: fired
+              ? `translate(${Math.cos(d.angle) * d.distance}px, ${Math.sin(d.angle) * d.distance}px) scale(0.4)`
+              : 'translate(0px, 0px) scale(1)',
+            transition: `transform 900ms cubic-bezier(0.16, 1, 0.3, 1) ${d.delay}ms, opacity 880ms ease-out ${d.delay}ms`,
+          }}
+        />
+      ))}
+    </span>
+  )
 }
 
 export function Reveal({ payload }: { payload: RevealPayload }) {
@@ -86,8 +188,10 @@ function Panel({ children }: { children: React.ReactNode }) {
   )
 }
 
-// ① Rewards — the zap number, then the bonus cascade.
+// ① Rewards — the zap number counts up, then the bonus cascade.
 function RewardsPanel({ payload }: { payload: RevealPayload }) {
+  const reduced = usePrefersReducedMotion()
+  const zaps = useCountUp(payload.zapsAwarded, 700, reduced)
   const [shown, setShown] = useState(0)
   useEffect(() => {
     // Stage the bonuses in one at a time — a cascade, not a dump.
@@ -98,14 +202,15 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
 
   return (
     <div className="w-full max-w-sm">
-      <FrequencyArcs className="mx-auto h-20 w-auto text-primary" />
+      <RewardsArt className="mx-auto h-24 w-auto" />
       {payload.logged ? (
         <>
           <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-subtle">
             {payload.practiceTitle} · logged
           </p>
-          <p className="mt-2 flex items-center justify-center gap-2 text-5xl font-bold tabular-nums text-text">
-            <Zap className="h-9 w-9 text-primary" strokeWidth={2.5} />+{payload.zapsAwarded}
+          <p className="relative mt-2 flex items-center justify-center gap-2 text-5xl font-bold tabular-nums text-text">
+            <CelebrationBurst />
+            <Zap className="h-9 w-9 text-primary" strokeWidth={2.5} />+{zaps}
           </p>
           {payload.welcomeBack && (
             <p className="mt-3 text-sm text-muted">Good to see you. One practice at a time.</p>
@@ -140,18 +245,44 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
   )
 }
 
-// ② Streak — the number that ticks over.
+// ② Streak — the number that ticks over: N-1 on mount, a beat, then N with a
+// small pulse. Only when this session actually logged (an "already counted"
+// sit never moved the streak, so nothing pretends to tick).
 function StreakPanel({ payload }: { payload: RevealPayload }) {
   const { streak } = payload
+  const reduced = usePrefersReducedMotion()
+  const animate = !reduced && payload.logged && streak.current > 0
+  const [ticked, setTicked] = useState(!animate)
+  const [pulse, setPulse] = useState(false)
+  useEffect(() => {
+    if (!animate) return
+    const tick = setTimeout(() => {
+      setTicked(true)
+      setPulse(true)
+    }, 400)
+    const settle = setTimeout(() => setPulse(false), 750)
+    return () => {
+      clearTimeout(tick)
+      clearTimeout(settle)
+    }
+  }, [animate])
+  const shownStreak = ticked ? streak.current : streak.current - 1
   const pct = streak.nextMilestone
     ? Math.min(100, Math.round((streak.current / streak.nextMilestone.day) * 100))
     : 100
   return (
     <div className="w-full max-w-sm">
-      <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Streak</p>
+      <StreakArt className="mx-auto h-24 w-auto" />
+      <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-subtle">Streak</p>
       <p className="mt-2 flex items-center justify-center gap-2 text-6xl font-bold tabular-nums text-text">
         <Flame className="h-10 w-10 text-primary" />
-        {streak.current}
+        <span
+          className={`inline-block transition-transform duration-300 ${
+            pulse ? 'scale-110' : 'scale-100'
+          }`}
+        >
+          {shownStreak}
+        </span>
       </p>
       <p className="mt-1 text-sm text-muted">
         {streak.current === 1 ? 'day. Every run starts here.' : `days in a row. Best ever: ${streak.longest}.`}
@@ -195,7 +326,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
   ]
   return (
     <div className="w-full max-w-sm">
-      <RippleRings className="mx-auto h-20 w-20 text-signal" />
+      <StatsArt className="mx-auto h-24 w-auto" />
       <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-subtle">Stats</p>
       <div className="mt-4 space-y-2 text-left">
         {rows.map(([k, v]) => (
@@ -228,6 +359,7 @@ function DispatchPanel({ payload }: { payload: RevealPayload }) {
 
   return (
     <div className="w-full max-w-sm">
+      <DispatchArt className="mx-auto mb-4 h-24 w-auto" />
       <div className="rounded-2xl border border-primary/50 bg-primary-bg/30 p-5 text-left shadow-sm">
         <p className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-primary-strong">
           <Radio className="h-3.5 w-3.5" /> Incoming · Dispatch from Vera

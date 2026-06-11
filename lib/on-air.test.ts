@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   BREATH_PATTERNS,
   breathPositionAt,
+  buildCustomPattern,
   cycleSeconds,
   patternBySlug,
   ringScaleAt,
@@ -21,6 +22,41 @@ describe('patterns', () => {
   it('falls back to box for unknown slugs', () => {
     expect(patternBySlug('mystery').slug).toBe('box')
     expect(patternBySlug(null).slug).toBe('box')
+  })
+})
+
+describe('buildCustomPattern', () => {
+  it('builds in → hold → out with the given seconds', () => {
+    const p = buildCustomPattern(4, 7, 8)
+    expect(p.slug).toBe('custom')
+    expect(p.name).toBe('Custom')
+    expect(p.phases.map((ph) => ph.kind)).toEqual(['in', 'hold', 'out'])
+    expect(p.phases.map((ph) => ph.seconds)).toEqual([4, 7, 8])
+    expect(cycleSeconds(p)).toBe(19)
+  })
+
+  it('clamps in and out to 3–8 and hold to 0–8', () => {
+    const low = buildCustomPattern(1, -2, 0)
+    expect(low.phases.map((ph) => ph.seconds)).toEqual([3, 3]) // hold clamps to 0 → omitted
+    expect(low.phases.map((ph) => ph.kind)).toEqual(['in', 'out'])
+    const high = buildCustomPattern(20, 99, 12)
+    expect(high.phases.map((ph) => ph.seconds)).toEqual([8, 8, 8])
+    expect(cycleSeconds(high)).toBe(24)
+  })
+
+  it('omits the hold phase entirely when hold is 0', () => {
+    const p = buildCustomPattern(5, 0, 6)
+    expect(p.phases.map((ph) => ph.kind)).toEqual(['in', 'out'])
+    expect(cycleSeconds(p)).toBe(11)
+    // the cycle walks straight from inhale to exhale
+    expect(breathPositionAt(p, 4.9).phase.kind).toBe('in')
+    expect(breathPositionAt(p, 5.1).phase.kind).toBe('out')
+  })
+
+  it('survives junk input by falling back to the floor', () => {
+    const p = buildCustomPattern(Number.NaN, Number.NaN, Number.POSITIVE_INFINITY)
+    expect(p.phases.map((ph) => ph.seconds)).toEqual([3, 8])
+    expect(p.phases.map((ph) => ph.kind)).toEqual(['in', 'out'])
   })
 })
 

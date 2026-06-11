@@ -55,6 +55,28 @@ export function patternBySlug(slug: string | null | undefined): BreathPattern {
   return BREATH_PATTERNS.find((p) => p.slug === slug) ?? BREATH_PATTERNS[0]
 }
 
+/** Custom pattern slider bounds (P3): in/out 3–8s; hold 0–8s, 0 = no hold. */
+export const CUSTOM_PHASE_MIN = 3
+export const CUSTOM_PHASE_MAX = 8
+
+/** Build the member's own pattern from per-phase seconds. Pure. In and out
+ *  clamp to 3–8; hold clamps to 0–8, and a 0 hold drops the phase entirely
+ *  (in → out, no pause at the top). */
+export function buildCustomPattern(inSec: number, holdSec: number, outSec: number): BreathPattern {
+  const clamp = (v: number, lo: number, hi: number) =>
+    Number.isNaN(v) ? lo : Math.min(hi, Math.max(lo, v))
+  const hold = clamp(holdSec, 0, CUSTOM_PHASE_MAX)
+  const phases: BreathPhase[] = [IN(clamp(inSec, CUSTOM_PHASE_MIN, CUSTOM_PHASE_MAX))]
+  if (hold > 0) phases.push(HOLD(hold))
+  phases.push(OUT(clamp(outSec, CUSTOM_PHASE_MIN, CUSTOM_PHASE_MAX)))
+  return {
+    slug: 'custom',
+    name: 'Custom',
+    blurb: 'Your counts. Set each phase to what fits.',
+    phases,
+  }
+}
+
 export function cycleSeconds(pattern: BreathPattern): number {
   return pattern.phases.reduce((s, p) => s + p.seconds, 0)
 }
@@ -108,6 +130,14 @@ export interface OnAirPrefs {
   mode: SessionMode
   pattern: string
   minutes: number
+  /** Custom pattern seconds (P3). In/out 3–8; hold 0–8 where 0 = no hold. */
+  customIn?: number
+  customHold?: number
+  customOut?: number
+  /** Soft bell on phase changes (breath) / minute marks (timer). Default off. */
+  bell?: boolean
+  /** Vibration on phase changes, where the device supports it. Default off. */
+  haptics?: boolean
 }
 
 export const DEFAULT_PREFS: OnAirPrefs = { mode: 'breath', pattern: 'box', minutes: 5 }
