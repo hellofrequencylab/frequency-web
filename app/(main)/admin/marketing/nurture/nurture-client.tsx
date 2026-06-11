@@ -7,6 +7,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { createSequence, toggleSequence, addStep, updateStep, deleteStep } from './actions'
+import { StatusChip } from '@/components/admin/status'
 
 export interface StepRowData {
   id: string
@@ -75,11 +76,7 @@ function PersonaCard({ row }: { row: PersonaRow }) {
         >
           <div className="flex items-center gap-2">
             <h3 className="truncate text-sm font-bold text-text">{row.label}</h3>
-            {seq && (
-              <span className={`rounded-full px-2 py-0.5 text-3xs font-semibold uppercase ${seq.enabled ? 'bg-success/10 text-success' : 'bg-border-strong/20 text-subtle'}`}>
-                {seq.enabled ? 'live' : 'paused'}
-              </span>
-            )}
+            {seq && <StatusChip tone={seq.enabled ? 'success' : 'neutral'} size="sm">{seq.enabled ? 'Live' : 'Paused'}</StatusChip>}
           </div>
           <p className="mt-0.5 truncate text-xs text-muted">
             {seq

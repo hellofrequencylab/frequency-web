@@ -9,11 +9,14 @@ import { Plus, Archive, ChevronRight } from 'lucide-react'
 import { listEntryTemplates } from '@/lib/entry-points/templates'
 import type { Campaign } from '@/lib/entry-points/campaigns'
 import { createCampaign, archiveCampaign } from './actions'
+import { StatusChip, type StatusTone } from '@/components/admin/status'
+import { DangerModal } from '@/components/admin/danger-modal'
+import { EmptyState } from '@/components/ui/empty-state'
 
-const STATUS_STYLE: Record<string, string> = {
-  active: 'bg-success/10 text-success',
-  draft: 'bg-border-strong/20 text-muted',
-  archived: 'bg-border-strong/20 text-subtle',
+const STATUS_TONE: Record<string, StatusTone> = {
+  active: 'success',
+  draft: 'neutral',
+  archived: 'neutral',
 }
 
 export function FunnelsManager({ campaigns }: { campaigns: Campaign[] }) {
@@ -42,9 +45,11 @@ export function FunnelsManager({ campaigns }: { campaigns: Campaign[] }) {
 
       <section className="space-y-3">
         {campaigns.length === 0 && !creating && (
-          <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-sm text-muted">
-            No campaigns yet. Create one, then add entry points to it.
-          </p>
+          <EmptyState
+            variant="first-use"
+            title="No campaigns yet."
+            description="Create one, then add entry points to it."
+          />
         )}
         {campaigns.map((c) => (
           <CampaignRow key={c.id} campaign={c} />
@@ -56,10 +61,10 @@ export function FunnelsManager({ campaigns }: { campaigns: Campaign[] }) {
 
 function CampaignRow({ campaign }: { campaign: Campaign }) {
   const [pending, start] = useTransition()
+  const [confirming, setConfirming] = useState(false)
   const router = useRouter()
 
   function archive() {
-    if (!confirm('Archive this campaign? Its entry points keep working.')) return
     start(async () => {
       await archiveCampaign(campaign.id)
       router.refresh()
@@ -71,9 +76,9 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
       <Link href={`/admin/marketing/funnels/${campaign.id}`} className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <h3 className="truncate text-sm font-bold text-text">{campaign.name}</h3>
-          <span className={`rounded-full px-2 py-0.5 text-3xs font-semibold uppercase ${STATUS_STYLE[campaign.status] ?? STATUS_STYLE.draft}`}>
-            {campaign.status}
-          </span>
+          <StatusChip tone={STATUS_TONE[campaign.status] ?? 'neutral'} size="sm">
+            <span className="capitalize">{campaign.status}</span>
+          </StatusChip>
         </div>
         <p className="mt-0.5 text-xs text-muted">
           <span className="font-semibold text-text">{campaign.entryCount}</span> entry point{campaign.entryCount === 1 ? '' : 's'} ·{' '}
@@ -82,7 +87,7 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
       </Link>
       {campaign.status !== 'archived' && (
         <button
-          onClick={archive}
+          onClick={() => setConfirming(true)}
           disabled={pending}
           className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-danger disabled:opacity-60"
         >
@@ -95,6 +100,15 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
       >
         Open <ChevronRight className="h-3 w-3" />
       </Link>
+
+      <DangerModal
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        title="Archive campaign"
+        body="The campaign moves to archived. Its entry points keep working."
+        confirmLabel="Archive campaign"
+        onConfirm={archive}
+      />
     </div>
   )
 }

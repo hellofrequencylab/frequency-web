@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { Button } from '@/components/ui/button'
+import { StatusChip, Banner, type StatusTone } from '@/components/admin/status'
+import { DangerModal } from '@/components/admin/danger-modal'
 import { updateDeal, moveDeal, deleteDeal, addActivity, toggleTask, deleteActivity } from '../../actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { formatMoney, type CrmStage, type CrmDeal, type CrmActivity } from '@/lib/crm/pipeline'
@@ -34,6 +36,7 @@ export function DealDetail({
   const router = useRouter()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   // editable fields
   const [title, setTitle] = useState(deal.title)
@@ -71,12 +74,7 @@ export function DealDetail({
     source !== (deal.source ?? '')
 
   const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
-  const statusTone =
-    deal.status === 'won'
-      ? 'bg-success-bg text-success'
-      : deal.status === 'lost'
-        ? 'bg-danger-bg/40 text-danger'
-        : 'bg-primary-bg text-primary-strong'
+  const statusTone: StatusTone = deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'info'
 
   return (
     <div className="mx-auto w-full max-w-3xl">
@@ -91,9 +89,9 @@ export function DealDetail({
           />
         }
         badges={
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${statusTone}`}>
-            {deal.status}
-          </span>
+          <StatusChip tone={statusTone}>
+            <span className="capitalize">{deal.status}</span>
+          </StatusChip>
         }
         actions={
           <>
@@ -154,7 +152,7 @@ export function DealDetail({
         }
       >
       <div className="space-y-6">
-      {error && <p className="rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>}
+      {error && <Banner tone="critical" title="That didn’t go through">{error}</Banner>}
 
       {/* Editable fields */}
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
@@ -163,7 +161,7 @@ export function DealDetail({
             Contact
             <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Who" className={field} />
             {deal.member && (
-              <Link href={`/people/${deal.member.handle}`} className="text-2xs text-primary-strong hover:underline">
+              <Link href={`/people/${deal.member.handle}`} className="text-xs text-primary-strong hover:underline">
                 Linked member · @{deal.member.handle}
               </Link>
             )}
@@ -190,7 +188,7 @@ export function DealDetail({
                 {deal.owner.avatar_url ? (
                   <Image src={deal.owner.avatar_url} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-cover" />
                 ) : (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-3xs font-semibold text-primary-strong">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong">
                     {getInitials(deal.owner.display_name)}
                   </span>
                 )}
@@ -273,15 +271,15 @@ export function DealDetail({
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
                     {a.due_at && !done && (
-                      <span className="text-2xs text-warning">due {new Date(a.due_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                      <StatusChip tone="warning" size="sm">due {new Date(a.due_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</StatusChip>
                     )}
-                    {done && <span className="text-2xs text-success">done</span>}
+                    {done && <StatusChip tone="success" size="sm">done</StatusChip>}
                   </div>
                   {a.body && <p className={`mt-0.5 whitespace-pre-wrap text-sm ${done ? 'text-subtle line-through' : 'text-text'}`}>{a.body}</p>}
-                  <p className="mt-0.5 text-2xs text-subtle">
+                  <p className="mt-0.5 text-xs text-subtle">
                     {a.author?.display_name ? `${a.author.display_name} · ` : ''}
                     {relativeTime(a.created_at)}
                   </p>
@@ -306,7 +304,7 @@ export function DealDetail({
         <button
           type="button"
           disabled={pending}
-          onClick={() => run(() => deleteDeal(deal.id), () => router.push('/admin/crm'))}
+          onClick={() => setConfirmingDelete(true)}
           className="inline-flex items-center gap-1.5 rounded-lg border border-danger px-3 py-1.5 text-sm font-semibold text-danger transition-colors hover:bg-danger-bg/30 disabled:opacity-50"
         >
           <Trash2 className="h-4 w-4" /> Delete deal
@@ -314,6 +312,15 @@ export function DealDetail({
       </div>
       </div>
       </DetailTemplate>
+
+      <DangerModal
+        open={confirmingDelete}
+        onClose={() => setConfirmingDelete(false)}
+        title="Delete deal"
+        body="This removes the deal and its activity timeline. This cannot be undone."
+        confirmLabel="Delete deal"
+        onConfirm={() => run(() => deleteDeal(deal.id), () => router.push('/admin/crm'))}
+      />
     </div>
   )
 }

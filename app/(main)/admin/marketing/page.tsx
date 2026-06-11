@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Suspense } from 'react'
 import {
   Users,
   Rocket,
@@ -6,117 +6,85 @@ import {
   Workflow,
   BarChart3,
   Sparkles,
-  ArrowRight,
-  type LucideIcon,
 } from 'lucide-react'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { getStudioCounts } from '@/lib/studio/analytics'
-import { AdminTemplate } from '@/components/templates'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
-import { SectionHeader } from '@/components/ui/section-header'
+import { AdminAreaGrid } from '@/components/admin/admin-area-grid'
+import { FreshnessNote } from '@/components/admin/freshness-note'
+import type { AdminLink } from '../sections'
 
 export const dynamic = 'force-dynamic'
 
-// Marketing overview: the entry hall to the workspace. Every tool in the
-// Growth dropdown (ADR-228) also gets a card here, so the overview is a real index
-// rather than a single Contacts link.
-type Module = {
-  href: string
-  label: string
-  Icon: LucideIcon
-  description: string
-}
-
-const MODULES: Module[] = [
-  {
-    href: '/admin/marketing/contacts',
-    label: 'Contacts',
-    Icon: Users,
-    description: 'The unified CRM record for leads, customers, and members.',
-  },
-  {
-    href: '/admin/marketing/beta',
-    label: 'Beta waitlist',
-    Icon: Rocket,
-    description: 'Everyone who raised a hand. Triage the list and send invites.',
-  },
-  {
-    href: '/admin/marketing/campaigns',
-    label: 'Campaigns',
-    Icon: Megaphone,
-    description: 'Compose and send broadcasts (email and push) through the one spine.',
-  },
-  {
-    href: '/admin/marketing/automations',
-    label: 'Automations',
-    Icon: Workflow,
-    description: 'Rules that react to the event backbone: welcomes, nudges, follow-ups.',
-  },
-  {
-    href: '/admin/marketing/analytics',
-    label: 'Analytics',
-    Icon: BarChart3,
-    description: 'How it lands. Sends, opens, and engagement read from the one backbone.',
-  },
-  {
-    href: '/admin/marketing/agent',
-    label: 'Agent',
-    Icon: Sparkles,
-    description: 'The AI operator. Ask it to draft, segment, and run the busywork.',
-  },
+// Marketing overview: the domain dashboard for the workspace (ADR-233 §3 Domain
+// Dashboard). Live KPIs on top (behind their own Suspense so the shell paints first),
+// then module entry tiles into every tool in the Growth dropdown (ADR-228).
+const MODULES: AdminLink[] = [
+  { href: '/admin/marketing/contacts', label: 'Contacts', Icon: Users, min: 'host', desc: 'The unified CRM record for leads, customers, and members.' },
+  { href: '/admin/marketing/beta', label: 'Beta waitlist', Icon: Rocket, min: 'host', desc: 'Everyone who raised a hand. Triage the list and send invites.' },
+  { href: '/admin/marketing/campaigns', label: 'Campaigns', Icon: Megaphone, min: 'host', desc: 'Compose and send broadcasts (email and push) through the one spine.' },
+  { href: '/admin/marketing/automations', label: 'Automations', Icon: Workflow, min: 'host', desc: 'Rules that react to the event backbone: welcomes, nudges, follow-ups.' },
+  { href: '/admin/marketing/analytics', label: 'Analytics', Icon: BarChart3, min: 'host', desc: 'How it lands. Sends, opens, and engagement read from the one backbone.' },
+  { href: '/admin/marketing/agent', label: 'Agent', Icon: Sparkles, min: 'host', desc: 'The AI operator. Ask it to draft, segment, and run the busywork.' },
 ]
 
 export default async function MarketingOverview() {
-  // Live KPIs at a glance — reuses the same read-models as /marketing/analytics.
+  return (
+    <AdminTemplate
+      eyebrow="Growth"
+      title="Marketing"
+      icon={Megaphone}
+      description="Your marketing workspace. Contacts, campaigns, automations, analytics, and the AI operator live here. Everything sends through the one spine and reads from the one event backbone."
+    >
+      <AdminSection
+        title="At a glance"
+        description="Live signal, read from the same models as the analytics workspace."
+        actions={<FreshnessNote at={new Date()} />}
+      >
+        <Suspense fallback={<KpiSkeleton />}>
+          <MarketingKpis />
+        </Suspense>
+      </AdminSection>
+
+      <AdminSection title="Workspace" description="Every marketing tool, one tap away.">
+        <AdminAreaGrid links={MODULES} />
+      </AdminSection>
+    </AdminTemplate>
+  )
+}
+
+async function MarketingKpis() {
   // Defensive: the dashboard should never error on a data hiccup.
   const [practice, counts] = await Promise.all([
     getPracticeMetrics().catch(() => null),
     getStudioCounts().catch(() => null),
   ])
 
-  return (
-    <AdminTemplate
-      eyebrow="Growth"
-      title="Marketing"
-      description="Your marketing workspace. Contacts, campaigns, automations, analytics, and the AI operator live here. Everything sends through the one spine and reads from the one event backbone."
-    >
-      {practice && (
-        <section className="max-w-2xl">
-          <SectionHeader
-            title="At a glance"
-            action={
-              <Link
-                href="/admin/marketing/analytics"
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline"
-              >
-                Full analytics <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            }
-          />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatCard label="Weekly Active Members" value={practice.wam.toLocaleString()} />
-            <StatCard label="Activation 7d" value={`${Math.round(practice.activationRate * 100)}%`} />
-            <StatCard label="New members 30d" value={practice.newMembers.toLocaleString()} />
-            <StatCard label="Contacts" value={(counts?.contacts ?? 0).toLocaleString()} />
-          </div>
-        </section>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
-        {MODULES.map(({ href, label, Icon, description }) => (
-          <Link
-            key={href}
-            href={href}
-            className="rounded-2xl border border-border bg-surface shadow-sm p-4 hover:border-primary-bg transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <Icon className="w-4 h-4 text-primary-strong" />
-              <h2 className="text-sm font-semibold text-text">{label}</h2>
-            </div>
-            <p className="text-xs text-muted">{description}</p>
-          </Link>
-        ))}
+  if (!practice) {
+    return (
+      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+        <StatCard label="Contacts" value={(counts?.contacts ?? 0).toLocaleString()} href="/admin/marketing/contacts" />
       </div>
-    </AdminTemplate>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+      <StatCard label="Weekly Active Members" value={practice.wam.toLocaleString()} href="/admin/marketing/analytics" />
+      <StatCard label="Activation 7d" value={`${Math.round(practice.activationRate * 100)}%`} href="/admin/marketing/analytics" />
+      <StatCard label="New members 30d" value={practice.newMembers.toLocaleString()} href="/admin/marketing/analytics" />
+      <StatCard label="Contacts" value={(counts?.contacts ?? 0).toLocaleString()} href="/admin/marketing/contacts" />
+    </div>
+  )
+}
+
+function KpiSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4" aria-hidden>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="h-24 animate-pulse rounded-2xl bg-surface-elevated/70" />
+      ))}
+    </div>
   )
 }
