@@ -94,8 +94,9 @@ on revisit**, by design.
   slides it off and closes the mode back to a refreshed setup; free-form minutes
   stepper (1–120) beside the presets; three bell voices (Soft / Low / Bowl) with
   a tap preview; an On Air radio icon in the global header (since retired by the
-  Zap button owner pass, ADR-230 — On Air's entries are the JourneyBoard,
-  practice pages, /on-air and the PWA shortcut).
+  Zap button owner pass, ADR-230 — On Air's entries are the Zap menu's
+  full-width On Air row, the JourneyBoard, practice pages, /on-air and the
+  PWA shortcut).
 
 - ~~P6 — live-screen pass (owner feedback)~~ ✅ shipped: more air in the live
   column (title down, End up); the title now reads **Mindless** under a lotus

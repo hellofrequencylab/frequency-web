@@ -1,4 +1,4 @@
-// Zap menu spot art — the six tool tiles in the welcome-art language (flat,
+// Zap menu spot art — the tool tiles + the On Air row in the welcome-art language (flat,
 // token-colored, aria-hidden little scenes; never glyphs). Same grammar as
 // components/on-air/reveal-art.tsx: rounded wash frame, simple shapes,
 // fill-*/stroke-* semantic tokens only.
