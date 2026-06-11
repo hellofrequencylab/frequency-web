@@ -1,38 +1,50 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronUp, GripVertical, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import { visibleLinks } from '@/app/(main)/admin/sections'
-import { DASH_SECTIONS, sanitizeDashOrder, type DashSectionId } from '@/app/(main)/admin/dash-sections'
+import {
+  DASH_SCOPES,
+  dashCookie,
+  sanitizeDashOrder,
+  scopeForPath,
+  type DashScope,
+} from '@/app/(main)/admin/dash-sections'
 import { setAdminDashOrder } from '@/app/(main)/admin/dash-order-actions'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
 
 // The PAGE-ADMIN dock — the BOTTOM-RIGHT corner tab, the profile card's mirror (the
 // admin layout mounts both fixed, in canvas-skinned wrappers: no solid panel). The
-// tab slides up to reveal this page's admin: quick settings links, and on the Home
-// dashboard the SORT functions — a drag-and-drop card editor that reorders the
-// dashboard sections (persisted per browser via a cookie, applied during server
-// render so the page never reflows).
+// tab slides up to reveal this page's admin: quick settings links, and on ANY dashboard
+// (Home or a domain) the SORT functions — a drag-and-drop card editor that reorders that
+// dashboard's sections (persisted per browser + per scope via a cookie, applied during
+// server render so the page never reflows).
 
 const SETTINGS_HREFS = ['/admin/roles', '/admin/ai', '/admin/audit'] as const
+
+function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null
+  const m = document.cookie.match(
+    new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'),
+  )
+  return m ? decodeURIComponent(m[1]) : null
+}
 
 export function AdminPageDock({
   role,
   webRole = 'none',
   staffRole = null,
-  initialOrder,
 }: {
   role: CommunityRole
   webRole?: WebRole
   staffRole?: StaffRole | null
-  /** Cookie-resolved section order, server-passed so the editor opens in sync. */
-  initialOrder: DashSectionId[]
 }) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const scope = scopeForPath(pathname)
   const links = visibleLinks(role, webRole, staffRole)
   const settingLinks = SETTINGS_HREFS.map((href) => links.find((l) => l.href === href)).filter(
     (l): l is NonNullable<typeof l> => !!l,
@@ -64,7 +76,7 @@ export function AdminPageDock({
               ))}
             </div>
 
-            {pathname === '/admin' && <SectionSorter initialOrder={initialOrder} />}
+            {scope && <SectionSorter scope={scope} />}
           </div>
         </div>
       </div>
@@ -92,21 +104,29 @@ export function AdminPageDock({
   )
 }
 
-// ── Sort functions — the drag-and-drop card editor for the Home sections. ──────
-// Drag a card to reorder; the order saves on drop and the dashboard re-renders in
-// the new order. Reset restores the default.
+// ── Sort functions — the drag-and-drop card editor for a dashboard's sections. ──
+// Drag a card to reorder; the order saves on drop and the dashboard re-renders in the
+// new order. Reset restores the default. Scoped to the current dashboard (Home or a
+// domain); the editor hydrates from that scope's cookie.
 
-function SectionSorter({ initialOrder }: { initialOrder: DashSectionId[] }) {
-  const [order, setOrder] = useState<DashSectionId[]>(() => sanitizeDashOrder(initialOrder))
+function SectionSorter({ scope }: { scope: DashScope }) {
+  const defs = DASH_SCOPES[scope]
+  const [order, setOrder] = useState<string[]>(() => defs.map((d) => d.id))
   const [isPending, startTransition] = useTransition()
-  const dragId = useRef<DashSectionId | null>(null)
-  const labelOf = (id: DashSectionId) => DASH_SECTIONS.find((s) => s.id === id)?.label ?? id
+  const dragId = useRef<string | null>(null)
+  const labelOf = (id: string) => defs.find((d) => d.id === id)?.label ?? id
 
-  function save(next: DashSectionId[]) {
-    startTransition(() => setAdminDashOrder(next))
+  // Sync the editor to the saved order (the page already rendered in it server-side).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOrder(sanitizeDashOrder(scope, readCookie(dashCookie(scope))))
+  }, [scope])
+
+  function save(next: string[]) {
+    startTransition(() => setAdminDashOrder(scope, next))
   }
 
-  function moveOver(overId: DashSectionId) {
+  function moveOver(overId: string) {
     const from = dragId.current
     if (!from || from === overId) return
     setOrder((cur) => {
@@ -149,7 +169,7 @@ function SectionSorter({ initialOrder }: { initialOrder: DashSectionId[] }) {
       <button
         type="button"
         onClick={() => {
-          const next = sanitizeDashOrder(null)
+          const next = defs.map((d) => d.id)
           setOrder(next)
           save(next)
         }}
