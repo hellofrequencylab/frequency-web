@@ -6412,3 +6412,15 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 - **Dashboard moved into the right drawer** — a pinned row at the top of the gamification panel ("The Quest" header), out of the account dropdown.
 - **Admin/Manage moved into the left drawer**: the mobile drawer now renders the **full `NAV_SECTIONS`** — the exact desktop-rail structure (member worlds + telescoped Manage groups) — instead of the member-only split; `MEMBER_SECTIONS`/`MANAGE_SECTIONS` are deleted and the account dropdown is purely personal (profile, friends, invite, settings, theme, sign out).
 **Consequences:** One nav structure everywhere; the account menu stops being a junk drawer; members never see admin headers (telescoping unchanged). The per-device rail-size pref is orphaned in localStorage — harmless. Lost behavior: the right menu no longer closes on feed scroll (it's modal now, like the left).
+
+
+## ADR-235: The in-app QR scanner — Check In and Ghost Node go live
+
+**Status:** Accepted · `components/scan/scanner.tsx`, `app/(main)/scan/page.tsx`, `lib/scan/resolve.ts` (+test), `lib/layout/page-chrome.ts` ('/scan' FOCUS), `components/feed/capture-launcher.tsx` (tiles live), dependency `jsqr`.
+**Context:** The Zap menu's Check In (+25⚡) and Ghost Node (+10⚡) tiles sat in the coming-soon row since ADR-230 because the app had no live camera scanner — existing "scan" flows (poster, card) are photo uploads through the OS picker. Every Frequency code already resolves through our own URLs: `/q/<slug>` (the resolver RSVPs + checks in for event codes, sets connect/referral cookies), `/n/<nodeId>` (node claim incl. partner plaques), `/people/<handle>` (connect codes).
+**Decision:**
+- **The scanner only navigates.** `resolveScannedText` (pure, 5 tests) accepts same-host URLs, the production hosts (printed codes scanned on previews), and bare paths; everything else is reported ("That code points to X — not a Frequency code") and never followed. The destinations own every flow and payout — no new economy paths, same ADR-229 invariant.
+- **Decode**: native `BarcodeDetector` where it exists (Chromium/Android, zero bundle); iOS Safari falls back to a lazily-imported **jsQR** loop over ~640px canvas frames at 300ms. Camera via `getUserMedia` environment-facing; vibrate on hit; quiet states for permission-denied and unsupported browsers (with the honest note that the OS camera works too, since codes are plain links).
+- **Surface**: `/scan` (auth-gated, FOCUS chrome) renders a full-bleed takeover in the Mindless overlay grammar — title, corner-bracket reticle, hint copy varied by `?hint=` (`checkin` / `node`), ✕ back to where you came from.
+- **The Zap menu**: Check In → `/scan?hint=checkin` ("Scan at the door"), Ghost Node → `/scan?hint=node` — both LIVE; Partners stays the last coming-soon tile (its offer surface is the next backlog item).
+**Consequences:** Every earning tile in the Zap menu except Partners is now real. The scanner is generic: future codes (gift zaps, circle joins) work with zero scanner changes because the resolver owns the semantics.

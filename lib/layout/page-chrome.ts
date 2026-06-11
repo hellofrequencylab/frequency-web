@@ -34,6 +34,7 @@ const FOCUS_PREFIXES = [
   '/upgrade', // single conversion card
   '/g/', // gift-a-zap confirm
   '/n/', // scan-landing claim
+  '/scan', // the in-app QR scanner (ADR-235) — full camera takeover
 ]
 
 // FOCUS by pattern — compose / edit surfaces that live one segment deep, plus the

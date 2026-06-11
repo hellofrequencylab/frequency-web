@@ -119,7 +119,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             />
 
             {/* The tools — Mindless leads (the daily ritual outranks the captures),
-                then the live row, then what's on the way. */}
+                then the live rows (Partners is the last holdout). */}
             <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
               <Link
                 href="/on-air"
@@ -136,8 +136,8 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               <ZapTile href="/events/scan" onClick={close} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
               <ZapTile href="/connections/new" onClick={close} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
               <ZapTile href="/codes" onClick={close} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />
-              <ZapTile soon label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub="At the door" />
-              <ZapTile soon label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
+              <ZapTile href="/scan?hint=checkin" onClick={close} label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub="Scan at the door" />
+              <ZapTile href="/scan?hint=node" onClick={close} label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
               <ZapTile soon label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
             </div>
 
