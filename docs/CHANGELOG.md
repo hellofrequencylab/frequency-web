@@ -32,8 +32,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   a plain countdown; the screen stays awake and everything else gets out of the
   way. When you finish, swipe through your payout: Zaps and bonuses landing one by
   one, your **streak ticking over**, your airtime and stats, and a **Dispatch from
-  Vera** with your next assignment. It remembers your setup, two minutes counts,
-  and ending early is never punished.
+  Vera** with your next assignment, in her own words. Every Dispatch is saved:
+  scroll back through them under **Past Dispatches**. It remembers your setup, two
+  minutes counts, and ending early is never punished.
 - **Amplitude, your lifetime number**: every Zap you ever earn feeds it, hosting-class
   acts count double, and it **never resets**. Watch it climb next to your rank
   ("Beacon · 14,200"), level up as you go, and bank permanent Awards at the big totals.
