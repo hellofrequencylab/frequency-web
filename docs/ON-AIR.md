@@ -125,5 +125,21 @@ on revisit**, by design.
   fold (even with the Custom sliders open). The page shell only hosts the
   empty "adopt a practice first" state.
 
+- ~~P9 — controls polish (owner feedback)~~ ✅ shipped: the setup breathes —
+  wider edge margins, looser section rhythm, a slightly taller CTA; the
+  lotus + MINDLESS wordmark grew into a proper masthead; the Practice row
+  hides entirely when only one practice is adopted (auto-selected, no badge);
+  modes renamed and reordered: **Meditate** (plain silent countdown, lotus
+  icon) · **Breathe** (guided rings) · **Just Log**. Help copy updated.
+
+- ~~P10 — live controls (owner feedback)~~ ✅ shipped: the live screen gains a
+  **dynamic primary button** — Pause ⇄ Start while running, **Finish** once the
+  clock lands — with a ghost **Close Session** link beneath (replaces End).
+  Finish and Close Session both log and advance to the reveal. Pausing freezes
+  the clock, cues, and rings (the visualizer takes a `paused` prop), and the
+  pause length never counts as airtime (startedAt shifts on resume). At zero
+  the end bell rings once and the screen WAITS — no auto-advance; the member
+  collects in their own time.
+
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.

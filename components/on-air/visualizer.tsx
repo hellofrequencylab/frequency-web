@@ -16,17 +16,26 @@ export function BreathVisualizer({
   pattern,
   startedAt,
   showCount = true,
+  paused = false,
 }: {
   pattern: BreathPattern
   /** ms epoch when the session started — the shared clock. */
   startedAt: number
   /** Flash the per-phase seconds count in the center of the rings. */
   showCount?: boolean
+  /** Freeze the rings mid-frame (P10 pause / after the clock hits zero). The
+   *  parent shifts startedAt on resume, so the breath picks up where it left. */
+  paused?: boolean
 }) {
   const groupRef = useRef<SVGGElement>(null)
   const [label, setLabel] = useState(pattern.phases[0]?.label ?? 'Breathe in')
   const [count, setCount] = useState<number | null>(null)
   const reduceMotion = useRef(false)
+  const pausedRef = useRef(paused)
+
+  useEffect(() => {
+    pausedRef.current = paused
+  }, [paused])
 
   useEffect(() => {
     reduceMotion.current =
@@ -37,6 +46,10 @@ export function BreathVisualizer({
     let lastLabel = ''
     let lastCount = -1
     const tick = () => {
+      if (pausedRef.current) {
+        frame = requestAnimationFrame(tick)
+        return
+      }
       const elapsed = (Date.now() - startedAt) / 1000
       const scale = ringScaleAt(pattern, elapsed)
       const pos = breathPositionAt(pattern, elapsed)
