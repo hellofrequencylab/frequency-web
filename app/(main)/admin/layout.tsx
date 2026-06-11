@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { requireAdminFloor } from '@/lib/admin/guard'
 import { AdminTopNav } from '@/components/admin/admin-top-nav'
 import { AdminLeftNav } from '@/components/admin/admin-left-nav'
+import { StickyHalf } from '@/components/admin/sticky-half'
 import { AdminInfoRail } from '@/components/admin/admin-info-rail'
 import { AdminFooter } from '@/components/admin/admin-footer'
 
@@ -26,11 +27,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <AdminTopNav role={role} webRole={webRole} staffRole={staffRole} />
 
       <div className="mx-auto flex w-full max-w-[105rem] gap-8">
-        {/* Navigation left — the active domain's areas. */}
+        {/* Navigation left — scrolls WITH the page (no inner scrollbar); once the
+            page keeps scrolling, it pins with its BOTTOM at the viewport's 1/2
+            mark (StickyHalf). Short menus pin under the bar as before. */}
         <aside className="hidden w-48 shrink-0 lg:block">
-          <div className="sticky top-[6.5rem] max-h-[calc(100vh-7.5rem)] overflow-y-auto pb-6">
+          <StickyHalf topOffsetRem={6.5} className="pb-6">
             <AdminLeftNav role={role} webRole={webRole} staffRole={staffRole} />
-          </div>
+          </StickyHalf>
         </aside>
 
         {/* The page. */}

@@ -92,7 +92,7 @@ export async function AdminInfoRail() {
         </p>
         <InfoStat label="Members" value={d.members.toLocaleString()} href="/admin/members" icon={Users} />
         <InfoStat label="Active this week" value={d.wam} href="/admin/engagement" icon={Zap} />
-        <InfoStat label="Events · next 7d" value={d.eventsAhead} href="/admin/events" icon={CalendarDays} />
+        <InfoStat label="Upcoming events" value={d.eventsAhead} href="/admin/events" icon={CalendarDays} />
         <InfoStat
           label="Open reports"
           value={d.openReports}
