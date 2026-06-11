@@ -11,7 +11,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Zap, Gem, Flame, Shield, Radio, ChevronRight } from 'lucide-react'
+import { Zap, Gem, Flame, Shield, Radio, ChevronLeft, ChevronRight } from 'lucide-react'
 import { RewardsArt, StreakArt, StatsArt, DispatchArt } from './reveal-art'
 import type { RevealPayload } from '@/lib/on-air'
 
@@ -119,22 +119,43 @@ function CelebrationBurst() {
   )
 }
 
-export function Reveal({ payload }: { payload: RevealPayload }) {
+export function Reveal({ payload, onClose }: { payload: RevealPayload; onClose?: () => void }) {
   const scroller = useRef<HTMLDivElement>(null)
   const [panel, setPanel] = useState(0)
+  const closed = useRef(false)
+
+  // Swiping past the last card lands on a ghost panel that closes the mode —
+  // the card slides off the screen and On Air is done (P5).
+  const close = () => {
+    if (closed.current) return
+    closed.current = true
+    onClose?.()
+  }
 
   const onScroll = () => {
     const el = scroller.current
-    if (el) setPanel(Math.round(el.scrollLeft / el.clientWidth))
+    if (!el) return
+    const idx = Math.round(el.scrollLeft / el.clientWidth)
+    setPanel(Math.min(idx, 3))
+    if (onClose && idx >= 4) close()
   }
 
-  const next = () => {
+  const go = (idx: number) => {
     const el = scroller.current
-    el?.scrollTo({ left: (panel + 1) * el.clientWidth, behavior: 'smooth' })
+    el?.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' })
   }
+  const next = () => {
+    if (panel >= 3) {
+      // From the last card the arrow does what the swipe does: off and out.
+      if (onClose) go(4)
+      return
+    }
+    go(panel + 1)
+  }
+  const prev = () => go(Math.max(0, panel - 1))
 
   return (
-    <div className="flex min-h-[70vh] flex-col">
+    <div className="flex min-h-full flex-1 flex-col">
       <div
         ref={scroller}
         onScroll={onScroll}
@@ -152,10 +173,24 @@ export function Reveal({ payload }: { payload: RevealPayload }) {
         <Panel>
           <DispatchPanel payload={payload} />
         </Panel>
+        {/* The ghost panel: swiping the last card off the edge closes the mode. */}
+        {onClose && (
+          <section aria-hidden className="w-full shrink-0 snap-center" />
+        )}
       </div>
 
-      {/* Dots + advance. The last panel's actions live in the panel itself. */}
-      <div className="flex items-center justify-center gap-4 py-4">
+      {/* Swipe rail: chevrons flank the dots; the right one walks the cards and,
+          from the last card, swipes it off and closes the mode. */}
+      <div className="flex items-center justify-center gap-5 py-4">
+        <button
+          type="button"
+          onClick={prev}
+          disabled={panel === 0}
+          aria-label="Previous card"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-30"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
         <div className="flex items-center gap-1.5">
           {[0, 1, 2, 3].map((i) => (
             <span
@@ -166,15 +201,14 @@ export function Reveal({ payload }: { payload: RevealPayload }) {
             />
           ))}
         </div>
-        {panel < 3 && (
-          <button
-            type="button"
-            onClick={next}
-            className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            Next <ChevronRight className="h-3 w-3" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={next}
+          aria-label={panel >= 3 ? 'Off air' : 'Next card'}
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
     </div>
   )
