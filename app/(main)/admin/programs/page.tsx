@@ -1,7 +1,9 @@
-import { Suspense } from 'react'
+import { Fragment, Suspense } from 'react'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { ArrowUpRight, Gamepad2 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
+import { dashCookie, sanitizeDashOrder } from '../dash-sections'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { DashArea, TileGrid, Tile, GraphTile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { TrendArea, WeekBars, RingGauge, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
@@ -31,6 +33,25 @@ const VOLUME_WEEKS = 8
 export default async function ProgramsDashboard() {
   const { role, webRole, staffRole } = await requireAdmin('host', { staff: 'community' })
   const links = groupLinks('programs', role, webRole, staffRole)
+  const order = sanitizeDashOrder('programs', (await cookies()).get(dashCookie('programs'))?.value)
+
+  const sections: Record<string, React.ReactNode> = {
+    catalog: (
+      <Suspense fallback={<DashSkeleton title="The catalog" />}>
+        <CatalogArea />
+      </Suspense>
+    ),
+    season: (
+      <Suspense fallback={<DashSkeleton title="Season & outcomes" />}>
+        <SeasonArea />
+      </Suspense>
+    ),
+    work: (
+      <AdminSection title="Work in Programs" description="Every surface in this domain you can manage.">
+        <AreaTiles links={links} />
+      </AdminSection>
+    ),
+  }
 
   return (
     <AdminTemplate
@@ -40,17 +61,9 @@ export default async function ProgramsDashboard() {
       width="wide"
       description="The game. Content, seasons, rewards, and the crews that run them. Start with whatever needs your attention, then dig into a surface."
     >
-      <Suspense fallback={<DashSkeleton title="The catalog" />}>
-        <CatalogArea />
-      </Suspense>
-
-      <Suspense fallback={<DashSkeleton title="Season & outcomes" />}>
-        <SeasonArea />
-      </Suspense>
-
-      <AdminSection title="Work in Programs" description="Every surface in this domain you can manage.">
-        <AreaTiles links={links} />
-      </AdminSection>
+      {order.map((id) => (
+        <Fragment key={id}>{sections[id]}</Fragment>
+      ))}
     </AdminTemplate>
   )
 }

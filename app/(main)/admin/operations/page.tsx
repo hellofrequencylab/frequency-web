@@ -1,7 +1,9 @@
-import { Suspense } from 'react'
+import { Fragment, Suspense } from 'react'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { ArrowUpRight, SlidersHorizontal, Bot, Server } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
+import { dashCookie, sanitizeDashOrder } from '../dash-sections'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { DashArea, TileGrid, Tile, GraphTile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { WeekBars, weeklyBuckets } from '@/components/admin/spark-charts'
@@ -28,6 +30,25 @@ const VOLUME_WEEKS = 8
 export default async function OperationsDashboard() {
   const { role, webRole, staffRole } = await requireAdmin('janitor', { staff: 'platform' })
   const links = groupLinks('operations', role, webRole, staffRole)
+  const order = sanitizeDashOrder('operations', (await cookies()).get(dashCookie('operations'))?.value)
+
+  const sections: Record<string, React.ReactNode> = {
+    ai: (
+      <Suspense fallback={<DashSkeleton title="AI & assistant" />}>
+        <AiArea />
+      </Suspense>
+    ),
+    platform: (
+      <Suspense fallback={<DashSkeleton title="Platform" />}>
+        <PlatformArea />
+      </Suspense>
+    ),
+    work: (
+      <AdminSection title="Work in Operations" description="Every surface in this domain you can manage.">
+        <AreaTiles links={links} />
+      </AdminSection>
+    ),
+  }
 
   return (
     <AdminTemplate
@@ -37,17 +58,9 @@ export default async function OperationsDashboard() {
       width="wide"
       description="The platform machine. AI, content infrastructure, commerce, and the system trail. Start with whatever needs your attention, then dig into a surface."
     >
-      <Suspense fallback={<DashSkeleton title="AI & assistant" />}>
-        <AiArea />
-      </Suspense>
-
-      <Suspense fallback={<DashSkeleton title="Platform" />}>
-        <PlatformArea />
-      </Suspense>
-
-      <AdminSection title="Work in Operations" description="Every surface in this domain you can manage.">
-        <AreaTiles links={links} />
-      </AdminSection>
+      {order.map((id) => (
+        <Fragment key={id}>{sections[id]}</Fragment>
+      ))}
     </AdminTemplate>
   )
 }
