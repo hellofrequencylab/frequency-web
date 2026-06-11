@@ -10,7 +10,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Radio, Wind, Timer as TimerIcon, Check, Volume2, Vibrate, Minus, Plus } from 'lucide-react'
+import { Check, Minus, Plus } from 'lucide-react'
+import { LotusIcon, BreatheIcon, DialIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import {
@@ -296,12 +297,18 @@ export function OnAirSession({
 
   // --- screens -------------------------------------------------------------------
 
-  // Done or swiped off the last card: drop the takeover, land back on a fresh
-  // setup (refresh picks up the new logged state).
+  // Done or swiped off the last card: drop the takeover and return to the
+  // screen the member came FROM (the page where they hit the Zap button or
+  // the board's radio). Direct entries (PWA shortcut, typed URL) have no app
+  // history, so they land on home instead of exiting the app.
   function closeReveal() {
     setPayload(null)
     setStage('setup')
-    router.refresh()
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back()
+    } else {
+      router.replace('/feed')
+    }
   }
 
   if (stage === 'reveal' && payload) {
@@ -316,7 +323,7 @@ export function OnAirSession({
     return (
       <Overlay>
       <CenterScreen>
-        <Radio className="h-8 w-8 animate-pulse text-primary" />
+        <OnAirIcon className="h-8 w-8 animate-pulse text-primary" />
         <p className="text-sm font-medium text-muted">Off air. Counting it up…</p>
       </CenterScreen>
       </Overlay>
@@ -345,9 +352,9 @@ export function OnAirSession({
     const ss = Math.floor(remaining % 60)
     return (
       <Overlay>
-        <div className="flex flex-1 flex-col items-center justify-between py-2">
-          <p className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-primary-strong">
-            <span className="h-3 w-3 animate-pulse rounded-full bg-primary" /> On Air
+        <div className="flex flex-1 flex-col items-center justify-between pb-10 pt-12">
+          <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
+            <LotusIcon className="h-[18px] w-[18px]" /> Mindless
           </p>
 
           <div className="flex flex-col items-center gap-5">
@@ -408,9 +415,9 @@ export function OnAirSession({
       <div>
         <Label>Mode</Label>
         <div className="mt-2 grid grid-cols-3 gap-1.5">
-          <ModeButton active={mode === 'breath'} onClick={() => setMode('breath')} icon={Wind} label="Breathe" />
-          <ModeButton active={mode === 'timer'} onClick={() => setMode('timer')} icon={TimerIcon} label="Timer" />
-          <ModeButton active={mode === 'log'} onClick={() => setMode('log')} icon={Zap} label="Just log" />
+          <ModeButton active={mode === 'breath'} onClick={() => setMode('breath')} icon={BreatheIcon} label="Breathe" />
+          <ModeButton active={mode === 'timer'} onClick={() => setMode('timer')} icon={DialIcon} label="Timer" />
+          <ModeButton active={mode === 'log'} onClick={() => setMode('log')} icon={BoltIcon} label="Just log" />
         </div>
       </div>
 
@@ -506,7 +513,7 @@ export function OnAirSession({
             <ToggleChip
               active={bell}
               onClick={() => setBell(!bell)}
-              icon={Volume2}
+              icon={BellCueIcon}
               label="Sound"
               title={
                 mode === 'breath'
@@ -517,7 +524,7 @@ export function OnAirSession({
             <ToggleChip
               active={haptics}
               onClick={() => setHaptics(!haptics)}
-              icon={Vibrate}
+              icon={VibrationIcon}
               label="Vibration"
               title="A small tap at each phase change. Not every phone supports it."
             />
@@ -559,7 +566,7 @@ export function OnAirSession({
         disabled={!practiceId}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
       >
-        <Radio className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Go on air'}
+        <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Go on air'}
       </button>
       {practicedToday >= 3 && (
         <p className="text-center text-xs text-subtle">
