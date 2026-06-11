@@ -17,7 +17,8 @@ import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
 import { CircleMembersList } from '@/components/circles/circle-members-list'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
-import { isPaidViewer } from '@/lib/core/viewer-hats'
+import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
+import { insightAffordance } from '@/lib/core/scoped-surface-ui'
 import { getCircleActivePractice, listPublicPractices } from '@/lib/practices'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { DetailTemplate } from '@/components/templates/detail-template'
@@ -189,6 +190,17 @@ export default async function CirclePage({
   const caps = await getCircleCapabilities(circle.id)
   const canManage = caps.has('circle.editSettings')
 
+  // Scoped Insight surface (P1.6 adoption, ADR-225): ask the matrix the IN-SCOPE
+  // question, so a steward who leads THIS circle by stewardship edge — even a
+  // global-member Host — gets the circle's Insight view at the matrix-granted depth
+  // (Host ⇒ limited basic view; a Guide/Mentor who leads the parent ⇒ full). Purely
+  // additive: a non-leader resolves `none` and the affordance stays hidden exactly as
+  // today. The health rail below lights for managers (capability) OR in-scope Insight.
+  const insight = insightAffordance(
+    await surfaceAccess('insight', { type: 'circle', id: circle.id }),
+  )
+  const showsHealth = canManage || insight.visible
+
   // This week's practice (host-assigned). Library only needed for the host picker.
   const [circlePractice, practiceLibrary] = await Promise.all([
     getCircleActivePractice(circle.id),
@@ -236,9 +248,9 @@ export default async function CirclePage({
     ),
   }
 
-  if (canManage && healthScore.totalZaps > 0) {
+  if (showsHealth && healthScore.totalZaps > 0) {
     railMap.health = (
-      <ModuleCard title="Circle health">
+      <ModuleCard title={insight.visible ? insight.label : 'Circle health'}>
         <div className="grid grid-cols-2 gap-2">
           <HealthStat label="Avg zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
           <HealthStat label="Total zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
