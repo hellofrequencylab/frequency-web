@@ -41,6 +41,7 @@ export async function GET(request: Request) {
       .select('id, display_name, handle, avatar_url, community_role, is_demo')
       .or(`display_name.ilike.%${safeQ}%,handle.ilike.%${safeQ}%`)
       .eq('is_active', true)
+      .eq('is_system', false) // the system voice (Vera) never surfaces in people search
       .order('display_name')
       .limit(6),
     admin

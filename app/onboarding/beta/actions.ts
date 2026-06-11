@@ -231,11 +231,11 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     await tagBetaCohort(prof.id, seqSlug)
     await tagPersona(prof.id, personaSlug)
     await stampAcquisitionTag(prof.id, acquisition)
-    // Welcome the new member with a single line from Vera (a notification, not a
-    // feed post) — once, only on first completion (`meta` was read pre-update, so it
-    // reflects the prior state). Best-effort.
+    // Welcome the new member from Vera — one quiet join line in the feed plus a
+    // personal notification (ADR-231) — once, only on first completion (`meta` was
+    // read pre-update, so it reflects the prior state). Best-effort.
     if (!(meta as { onboarding_completed?: boolean }).onboarding_completed) {
-      postWelcomeForMember(prof.id, displayName).catch(() => {})
+      postWelcomeForMember(prof.id, displayName, handle).catch(() => {})
     }
   }
 
