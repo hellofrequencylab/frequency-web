@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { X, BookOpen, Zap, ChevronRight } from 'lucide-react'
+import { observe } from '@/lib/analytics/observe'
 import { CaptureBox } from './capture-box'
 import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, MindlessArt } from './zap-menu-art'
 
@@ -20,8 +21,19 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   // Vera's live line: a static fallback renders instantly; the cheap API
   // (today's cached Dispatch, else a streak template) swaps in when it lands.
   const [veraLine, setVeraLine] = useState<string | null>(null)
+  // A live event awaits check-in → the Check In tile pulses (ADR-237).
+  const [liveCheckIn, setLiveCheckIn] = useState(false)
+  // One-time education line on the very first open (per device).
+  const [showIntro, setShowIntro] = useState(false)
 
   const close = useCallback(() => setOpen(false), [])
+  const tapTile = useCallback(
+    (tile: string) => () => {
+      observe('zap_menu.tile_tap', { tile })
+      close()
+    },
+    [close],
+  )
 
   useEffect(() => {
     if (!open || veraLine) return
@@ -29,7 +41,9 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
     fetch('/api/zap-prompt')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (on && d?.line) setVeraLine(d.line)
+        if (!on) return
+        if (d?.line) setVeraLine(d.line)
+        if (typeof d?.liveEvent === 'boolean') setLiveCheckIn(d.liveEvent)
       })
       .catch(() => {})
     return () => {
@@ -44,6 +58,15 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
       const m = (e as CustomEvent).detail?.mode as Mode | undefined
       setMode(m ?? 'post')
       setOpen(true)
+      observe('zap_menu.open')
+      try {
+        if (!localStorage.getItem('fq_zap_intro_seen')) {
+          setShowIntro(true)
+          localStorage.setItem('fq_zap_intro_seen', '1')
+        }
+      } catch {
+        // private mode: no intro persistence, no problem
+      }
     }
     window.addEventListener('open-capture', onOpen)
     return () => window.removeEventListener('open-capture', onOpen)
@@ -108,6 +131,13 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               </button>
             </div>
 
+            {showIntro && (
+              <p className="mb-3 shrink-0 rounded-xl bg-primary-bg/50 px-3 py-2 text-xs leading-relaxed text-primary-strong">
+                First time? Everything in this menu earns. Tap a tile, do the real
+                thing, and the Zaps follow.
+              </p>
+            )}
+
             {/* The prompt box — sharing stays the zero-tap action. */}
             <CaptureBox
               key={mode}
@@ -123,7 +153,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
               <Link
                 href="/on-air"
-                onClick={close}
+                onClick={tapTile('mindless')}
                 className="group col-span-3 flex items-center gap-4 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-4 shadow-sm transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
               >
                 <MindlessArt className="block h-16 shrink-0" />
@@ -143,17 +173,17 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                   <ChevronRight className="h-4 w-4" aria-hidden />
                 </span>
               </Link>
-              <ZapTile href="/events/scan" onClick={close} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
-              <ZapTile href="/connections/new" onClick={close} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
-              <ZapTile href="/codes" onClick={close} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />
-              <ZapTile href="/scan?hint=checkin" onClick={close} label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub="Scan at the door" />
-              <ZapTile href="/scan?hint=node" onClick={close} label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
-              <ZapTile href="/partners" onClick={close} label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
+              <ZapTile href="/events/scan" onClick={tapTile('event')} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
+              <ZapTile href="/connections/new" onClick={tapTile('contact')} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
+              <ZapTile href="/codes" onClick={tapTile('connect')} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />
+              <ZapTile href="/scan?hint=checkin" onClick={tapTile('checkin')} label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub={liveCheckIn ? 'Happening now' : 'Scan at the door'} alert={liveCheckIn} />
+              <ZapTile href="/scan?hint=node" onClick={tapTile('node')} label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
+              <ZapTile href="/partners" onClick={tapTile('partners')} label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
             </div>
 
             <Link
               href="/journal"
-              onClick={close}
+              onClick={tapTile('journal')}
               className="mt-4 flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your log
@@ -175,6 +205,7 @@ function ZapTile({
   zaps,
   art,
   soon = false,
+  alert = false,
 }: {
   href?: string
   onClick?: () => void
@@ -183,9 +214,15 @@ function ZapTile({
   zaps?: string
   art: React.ReactNode
   soon?: boolean
+  /** Something is happening RIGHT NOW behind this tile (ADR-237): a quiet
+   *  pulsing dot + a warmer border, never a takeover. */
+  alert?: boolean
 }) {
   const inner = (
     <>
+      {alert && (
+        <span aria-hidden className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-primary motion-safe:animate-pulse" />
+      )}
       <span className="flex h-12 w-full items-center justify-center">{art}</span>
       <span className="mt-1.5 block text-sm font-bold text-text">{label}</span>
       <span className="block text-2xs leading-snug text-subtle">{soon ? 'Soon' : sub}</span>
@@ -197,10 +234,12 @@ function ZapTile({
     </>
   )
   const cls =
-    'flex flex-col items-center rounded-2xl border p-3 text-center transition-all ' +
+    'relative flex flex-col items-center rounded-2xl border p-3 text-center transition-all ' +
     (soon
       ? 'cursor-default border-dashed border-border bg-surface/50 opacity-60'
-      : 'border-primary/30 bg-primary-bg/40 hover:border-primary/60 hover:bg-primary-bg/70 active:scale-[0.97]')
+      : alert
+        ? 'border-primary bg-primary-bg/60 hover:bg-primary-bg/80 active:scale-[0.97]'
+        : 'border-primary/30 bg-primary-bg/40 hover:border-primary/60 hover:bg-primary-bg/70 active:scale-[0.97]')
   if (soon || !href) {
     return <div className={cls}>{inner}</div>
   }

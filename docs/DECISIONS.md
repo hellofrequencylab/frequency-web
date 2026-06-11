@@ -6432,3 +6432,22 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 **Context:** The Partners tile was the last coming-soon tile (ADR-230): the directory existed, but members had no offers-first view and no unlocked state — and unlocking happens physically (a partner plaque is a `nodes` row with `partner_id`; `captureNode` inserts `partner_redemptions` and pays the node's zaps).
 **Decision:** The partners index leads with **"Offers right now"** — every active offer across active partners (expired `valid_until` filtered), each card showing the deal, the business, and the viewer's **Unlocked ✓** state (`partner_redemptions` by offer, falling back to the partner for plaque-first redemptions with null offer_id). A standing line links to **/scan?hint=partner** ("Point at the partner's plaque or code") — the page never claims anything; unlocking stays a real-world act through the existing node pipeline. The Zap menu's Partners tile goes live → /partners. With that, **every tile in the Zap menu earns**.
 **Consequences:** ADR-230's follow-up list is fully closed except polish items (tile pulses, education line, CTR analytics — next). Offer freshness is owner-managed via the existing partner admin; no schema changes.
+
+
+## ADR-237: Zap menu polish — the live pulse, the first-open line, tile analytics
+
+**Status:** Accepted · `app/api/zap-prompt/route.ts`, `components/feed/capture-launcher.tsx`.
+**Context:** The ADR-230 follow-up trio: the menu should KNOW when something is happening (a live event awaiting check-in), teach itself once, and report which tiles members actually use.
+**Decision:**
+- **Contextual pulse:** `/api/zap-prompt` (already fetched once per menu-open) now also returns `liveEvent` — the member holds a `going` RSVP on a started, non-cancelled event (no `ends_at` = live for 12h) they haven't checked into (`engagement_events` idempotency keys). The **Check In tile** then wears a quiet pulsing dot, a primary border, and "Happening now" — never a takeover.
+- **First-open education line** (per device, `fq_zap_intro_seen`): "First time? Everything in this menu earns. Tap a tile, do the real thing, and the Zaps follow." Set in the open-event handler, shown once.
+- **Tile analytics** ride the ADR-166 interaction firehose (open taxonomy, consent enforced server-side): `zap_menu.open` on open, `zap_menu.tile_tap` with `{tile}` for every tile, the Mindless row, and the journal link — CTR per tile readable from `interaction_events` with zero new infrastructure.
+**Consequences:** ADR-230's follow-up list is fully closed. Tile-level usage lands in the existing analytics tables for the admin traffic panel to surface later.
+
+
+## ADR-238: Vera's profile page — the voice gets her own layout
+
+**Status:** Accepted · `components/people/vera-profile.tsx`, `components/people/ask-vera-button.tsx`, `app/(main)/people/[handle]/page.tsx` (is_system branch).
+**Context:** ADR-231 made Vera fully visible (directory card, search, mentions), so members land on her profile — which rendered as a standard member page: streak/rank/gems stats, a friend button, a tip button, all wrong for a system voice with no login.
+**Decision:** The people page branches on `profile.is_system` immediately after the profile fetch (skipping every member-shaped query) into a dedicated **VeraProfile**: avatar + name + @handle, the Moderator chip, her bio, a "What Vera does" card list (join lines + welcome notifications · Dispatches after a sit · help-grounded answers · routing reports to humans, never AI moderation), the honesty line ("a voice, not a player: no streaks, no rank"), and ONE action — **Ask Vera**, opening the existing chat panel via the `open-vera` event. No friend/message/tip/block chrome.
+**Consequences:** Tapping Vera anywhere (join lines, directory, search) now lands somewhere true. The layout is generic over the system account, so a future renamed/rebranded voice inherits it.
