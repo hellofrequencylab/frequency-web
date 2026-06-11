@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -225,7 +226,7 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                       onClick={() => handleLuminary(m.profileId)}
                       disabled={isPending}
                       title="Promote to Luminary"
-                      className="text-xs px-2 py-1 rounded-lg border border-yellow-300 bg-warning-bg text-warning dark:text-primary font-medium hover:bg-warning-bg transition-colors disabled:opacity-50"
+                      className={buttonClasses('warningOutline', 'sm', 'bg-warning-bg dark:text-primary')}
                     >
                       → Luminary
                     </button>

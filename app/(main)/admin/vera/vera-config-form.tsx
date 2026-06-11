@@ -130,9 +130,9 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
                 </div>
                 <form action={vetoFeatured} className="shrink-0">
                   <input type="hidden" name="postId" value={post.id} />
-                  <button type="submit" className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-danger-bg hover:text-danger">
+                  <Button type="submit" variant="secondary" size="sm" className="hover:bg-danger-bg hover:text-danger">
                     Veto
-                  </button>
+                  </Button>
                 </form>
               </li>
             ))}
