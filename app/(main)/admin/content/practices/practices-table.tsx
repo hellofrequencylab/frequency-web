@@ -126,6 +126,8 @@ export function PracticesTable({ rows }: { rows: LibraryRow[] }) {
   const [flipped, setFlipped] = useState(false)
   const [pending, start] = useTransition()
   const router = useRouter()
+  // One render-stable "now" for the Added column (render must stay pure).
+  const [now] = useState(() => Date.now())
 
   const sorted = useMemo(() => {
     const out = [...rows].sort(SORTS[sortKey])
@@ -173,7 +175,7 @@ export function PracticesTable({ rows }: { rows: LibraryRow[] }) {
       <div className="divide-y divide-border/50">
         {sorted.map((p) => {
           const st = STATUS_STYLES[p.status] ?? STATUS_STYLES.approved
-          const age = Math.max(0, Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86_400_000))
+          const age = Math.max(0, Math.floor((now - new Date(p.created_at).getTime()) / 86_400_000))
           return (
             <div
               key={p.id}
