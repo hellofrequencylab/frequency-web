@@ -114,7 +114,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               scopeId={scopeId}
               visibility="public"
               defaultMode={mode}
-              placeholder="Share something on your journey…"
+              placeholder="Share something real from your day…"
             />
 
             {/* The tools — the live row, then the Mindless door, then what's on the way. */}

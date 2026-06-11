@@ -968,7 +968,7 @@ function MobileTabBar({
         <button
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode: 'post' } }))}
-          aria-label="Zap — capture a moment"
+          aria-label="Zap, capture a moment"
           className="relative flex flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-3xs font-semibold text-primary-strong"
         >
           <span className="relative -mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary shadow-pop">

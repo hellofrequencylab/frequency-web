@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
-function LeaderboardRowSkeleton({ rank }: { rank: number }) {
+function LeaderboardRowSkeleton() {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
       {/* Rank number */}
@@ -41,7 +41,7 @@ export default function LeaderboardLoading() {
       {/* Leaderboard rows */}
       <div className="space-y-2">
         {Array.from({ length: 10 }).map((_, i) => (
-          <LeaderboardRowSkeleton key={i} rank={i + 1} />
+          <LeaderboardRowSkeleton key={i} />
         ))}
       </div>
     </div>
