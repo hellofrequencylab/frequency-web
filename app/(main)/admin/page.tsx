@@ -103,14 +103,16 @@ export default async function AdminPageView() {
       // The header owns the four live numbers (F-pattern: most important, top
       // right of the title). No box — the stats sit ON the canvas, big and faded,
       // with a light lower highlight so they read engraved (debossed) into the
-      // background. Highlight color comes from the surface token, never a hex.
+      // background. Bottom-aligned with the subtitle's last line (actionsAlign),
+      // with a breathing margin off the right edge.
+      actionsAlign="end"
       actions={
-        <div className="flex gap-7 sm:gap-9">
+        <div className="flex gap-7 pr-2 sm:gap-9 sm:pr-8">
           {[
             { label: 'Members', value: (membersCount.count ?? 0).toLocaleString() },
-            { label: 'Active · 7d', value: practice.wam },
-            { label: 'Practices · 7d', value: practice.verifiedThisWeek },
-            { label: 'Events · 7d', value: upcomingCount.count ?? 0 },
+            { label: 'Active', value: practice.wam },
+            { label: 'Practices', value: practice.verifiedThisWeek },
+            { label: 'Events', value: upcomingCount.count ?? 0 },
           ].map((k) => (
             <div key={k.label}>
               <p className="whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-subtle">
@@ -157,7 +159,7 @@ export default async function AdminPageView() {
           <div className="flex items-center">
             <RingGauge
               pct={practice.activationRate}
-              label="Activation · 7d"
+              label="Activation"
               sub={`${practice.activated} of ${practice.newMembers} new members activated`}
             />
           </div>
@@ -274,7 +276,7 @@ async function VeraReadSection() {
 
       <div className="mt-5 border-t border-border/60 pt-4">
         <StatRow>
-          <StatItem value={total} label="Vera questions · 7d" href="/admin/vera" />
+          <StatItem value={total} label="Vera questions" href="/admin/vera" />
           <StatItem value={answeredRate === null ? '—' : `${answeredRate}%`} label="Answered" href="/admin/vera" />
           <StatItem
             value={deflected7d.count ?? 0}

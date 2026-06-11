@@ -17,6 +17,7 @@ export function PageHeading({
   back,
   divider = true,
   inlineActions = false,
+  actionsAlign = 'start',
 }: {
   /** Small contextual kicker above the title (date, section, status). */
   eyebrow?: React.ReactNode
@@ -32,6 +33,10 @@ export function PageHeading({
    *  Use only for compact actions (a small button/menu) that fit next to a
    *  phone-width title without crushing it. */
   inlineActions?: boolean
+  /** Vertical alignment of the actions block against the title block: 'start'
+   *  (default, top-aligned) or 'end' — bottom-aligned with the last line of the
+   *  description (dashboard header stats sit on the subtitle's baseline). */
+  actionsAlign?: 'start' | 'end'
 }) {
   return (
     <>
@@ -69,7 +74,9 @@ export function PageHeading({
             <p className="max-w-2xl text-sm leading-relaxed text-muted">{description}</p>
           )}
         </div>
-        {actions && <div className="shrink-0">{actions}</div>}
+        {actions && (
+          <div className={`shrink-0 ${actionsAlign === 'end' ? 'sm:self-end' : ''}`}>{actions}</div>
+        )}
       </div>
     </div>
     {/* The on-page "Settings" split sits on the line under the header. */}
