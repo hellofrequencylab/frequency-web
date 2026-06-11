@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users, Route, ArrowRight, Snowflake, Radio } from 'lucide-react'
+import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users, Route, ArrowRight, Snowflake } from 'lucide-react'
+import { LotusIcon } from '@/components/on-air/icons'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice } from '@/lib/practices'
@@ -218,13 +219,13 @@ export function JourneyBoard({
               <li key={practice.id} className="flex items-center justify-between gap-3">
                 <span className="min-w-0 truncate text-sm text-text">{practice.title}</span>
                 <span className="flex shrink-0 items-center gap-1.5">
-                  {/* On Air (ADR-229): time the sit instead of just tapping it logged. */}
+                  {/* Mindless (the On Air timer, ADR-229): time the sit instead of just tapping it logged. */}
                   <Link
                     href={`/on-air?practice=${practice.id}`}
                     className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-                    title="Go on air: timer + breathing"
+                    title="Tune out: timer + breathing"
                   >
-                    <Radio className="h-3.5 w-3.5" />
+                    <LotusIcon className="h-3.5 w-3.5" />
                   </Link>
                   <LogPracticeButton practiceId={practice.id} />
                 </span>

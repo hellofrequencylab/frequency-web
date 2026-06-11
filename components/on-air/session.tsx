@@ -324,7 +324,7 @@ export function OnAirSession({
       <Overlay>
       <CenterScreen>
         <OnAirIcon className="h-8 w-8 animate-pulse text-primary" />
-        <p className="text-sm font-medium text-muted">Off air. Counting it up…</p>
+        <p className="text-sm font-medium text-muted">Tuning back in. Counting it up…</p>
       </CenterScreen>
       </Overlay>
     )
@@ -566,7 +566,7 @@ export function OnAirSession({
         disabled={!practiceId}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
       >
-        <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Go on air'}
+        <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Tune out'}
       </button>
       {practicedToday >= 3 && (
         <p className="text-center text-xs text-subtle">

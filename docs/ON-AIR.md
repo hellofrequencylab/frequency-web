@@ -1,7 +1,7 @@
-# On Air — the practice timer mini-app
+# On Air — the practice timer mini-app (member-facing: **Mindless**)
 
-> Status: **P1–P4 shipped** (ADR-229; desktop intercepted-modal entry deferred — see Roadmap). Canon names: NAMING.md §The Quest ("On Air",
-> "Airtime", "Dispatch from Vera"). Member help: `content/help/the-game/on-air.md`.
+> Status: **P1–P7 shipped** (ADR-229; desktop intercepted-modal entry deferred — see Roadmap). Canon names: NAMING.md §The Quest ("On Air" =
+> internal name; member-facing the app is **Mindless**, verb **"tune out"**; "Airtime", "Dispatch from Vera"). Member help: `content/help/the-game/on-air.md`.
 
 One tap → the world goes quiet → you breathe → the game pays you in person → Vera
 hands you tomorrow's thread. A little app inside The Quest, and the intended daily
@@ -95,7 +95,7 @@ on revisit**, by design.
   stepper (1–120) beside the presets; three bell voices (Soft / Low / Bowl) with
   a tap preview; an On Air radio icon in the global header (since retired by the
   Zap button owner pass, ADR-230 — On Air's entries are the Zap menu's
-  full-width On Air row, the JourneyBoard, practice pages, /on-air and the
+  full-width Mindless row, the JourneyBoard, practice pages, /on-air and the
   PWA shortcut).
 
 - ~~P6 — live-screen pass (owner feedback)~~ ✅ shipped: more air in the live
@@ -106,6 +106,14 @@ on revisit**, by design.
   (`components/on-air/icons.tsx` — lotus, breath ring, dial, bolt, bell,
   vibration, broadcast) in the zap-menu-art language, replacing the stock
   lucide glyphs.
+
+- ~~P7 — the member-facing name~~ ✅ shipped: member surfaces say **Mindless**
+  and the verb is **"tune out"** ("tune back in" = done): setup title +
+  metadata + CTA, the Zap menu door (moved between the live and coming-soon
+  rows, lotus-on-water art), the lotus entry buttons on the JourneyBoard and
+  practice pages (Radio glyph retired there), the Dispatch archive, the saving
+  line, the reveal exit, the PWA shortcut, help and changelog. "On Air" stays
+  the internal name (this doc, routes, schema, ADRs); Airtime keeps its name.
 
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.
