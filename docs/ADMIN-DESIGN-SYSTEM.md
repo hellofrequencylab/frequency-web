@@ -77,8 +77,8 @@ Every admin surface maps to exactly one. Each composes `AdminTemplate` (the shel
    strip + entry tiles (area cards) into the domain's indexes. **Retire `DashSection`
    white cards here — use `DashArea`/`Tile`/`MiniStat`.**
 3. **Index / Table** — the workhorse (members, circles, events, content, audit…). Header
-   + instructional copy on canvas; one tile holding a `FilterBar` (URL-state) + optional
-   saved-view chips + `DataTable` + pagination. Full-width.
+   + instructional copy on canvas; a `FilterBar` (URL-state) above a `DataTable`. The page
+   reads the filter/sort/page params and orders/limits the query server-side. Full-width.
 4. **Entity Detail** — one member/circle/event/season/deal/ticket. `EntityHeader`
    context band (identity, status pills, key facts as a description list, primary
    actions) → `UnderlineTabs` for sibling views (each tab its own URL segment). Optional
@@ -112,18 +112,23 @@ the contract; keep them server-friendly (no client hooks unless interaction requ
 - `EmptyState` (`components/ui/empty-state`) — **extend to variants** (below).
 
 **Build:**
-- `DataTable<T>` — the canonical operator table. Contract:
-  `columns: ColumnDef<T>[]` where `ColumnDef = { key, header, render?(row), align?,
-  sortable?, width?, type?: 'text'|'number'|'tag'|'date'|'currency'|'boolean'|'avatar'|
-  'actions' }`; `rows: T[]`; `getRowId(row)`; `rowHref?(row)` (whole-row link);
-  `selectable?`, `bulkActions?: {label, icon, onAction(ids), tone?}[]` (promoted inline +
-  overflow); `rowActions?(row)` (revealed on hover); `sort?`/`filter?` state read from the
-  URL query (server-rendered); `stickyHeader`; `density?: 'comfortable'|'compact'`;
-  `pagination?` (Load-more/pages — not infinite scroll); `caption` (a11y); `empty:
-  EmptyState`. Selection survives sort/filter/paginate (keyed by id). Beyond ~few-thousand
-  rows, filtering/sorting move into the server query.
-- `FilterBar` — URL-as-state filter row (qualifier tokens or chips), `sort`, `density`
-  toggle, search; writes to the query string; saved-view chips persist named filter sets.
+- `DataTable<T>` — the canonical operator table. **SERVER-SAFE** (no `'use client'`/hooks):
+  a Server Component renders it directly and `render`/`rowActions`/`rowHref` run on the
+  SERVER (NEVER pass functions to a client child — that throws at request time; a cell may
+  RETURN client components like `StatusChip`). Contract: `columns: ColumnDef<T>[]` where
+  `ColumnDef = { key, header, render?(row), align?, sortable?, width?, type?:
+  'text'|'number'|'tag'|'date'|'currency'|'boolean'|'avatar'|'actions' }`; `rows: T[]`;
+  `getRowId(row)`; `rowHref?(row)` (first cell becomes the row link); `rowActions?(row)`
+  (revealed on hover, CSS); `stickyHeader`; `density?: 'comfortable'|'compact'`; `caption`
+  (a11y); `empty`; `expandedRowId`+`expandedRow(row)` (inline-edit panel). **Sort / filter /
+  paginate are server-owned:** the page reads the `?sort`/filter params and orders/limits
+  the query, then passes ready rows; `ColumnDef.sortable` is a marker (make the `header` a
+  `<Link href="?sort=key">`). Selection / bulk actions, if ever needed, live in a small
+  Client wrapper (no page uses them today). Beyond ~few-thousand rows, push the work into
+  the server query.
+- `FilterBar` — URL-as-state filter row (`{ filters, search? }`: selects + search +
+  removable chips) above a `DataTable`; writes to the query string (a Client island that
+  passes NO functions, so a Server page can render it). The page reads the params.
 - `StatusChip` — `{ tone: 'success'|'warning'|'danger'|'info'|'neutral', children }`.
   Pill, tokenized. The ONE status vocabulary (retire per-page `*_STYLES` dicts).
 - `Badge` / `DeltaBadge` — count badge; delta enum `increase|moderateIncrease|unchanged|
