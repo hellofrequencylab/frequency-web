@@ -63,12 +63,12 @@ export function StatCard({
   const inner = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-subtle">{label}</p>
-        {Icon && <Icon className={`shrink-0 text-subtle ${sm ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />}
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</p>
+        {Icon && <Icon className={`shrink-0 text-subtle ${sm ? 'h-3.5 w-3.5' : 'h-3.5 w-3.5'}`} />}
       </div>
       <p
         className={`tabular-nums text-text ${
-          sm ? 'mt-0.5 text-sm font-bold' : 'mt-0 text-lg font-bold leading-tight'
+          sm ? 'mt-0.5 text-sm font-bold' : 'mt-0.5 text-xl font-extrabold leading-none'
         }`}
       >
         {value}
@@ -83,7 +83,7 @@ export function StatCard({
     </>
   )
 
-  const cls = `block rounded-2xl ${sm ? 'px-4 py-3' : 'px-3.5 py-2'} ${
+  const cls = `block rounded-2xl ${sm ? 'px-4 py-3' : 'px-3.5 py-1.5'} ${
     bordered ? 'border border-border bg-surface shadow-sm' : 'bg-surface-elevated/60'
   }`
   return href ? (
