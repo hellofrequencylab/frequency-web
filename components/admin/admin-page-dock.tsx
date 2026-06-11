@@ -10,12 +10,12 @@ import { setAdminDashOrder } from '@/app/(main)/admin/dash-order-actions'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
 
-// The PAGE-ADMIN dock, pinned at the bottom of the admin RIGHT rail — the mirror of
-// the profile card on the left, styled for the canvas the same way (hairline above,
-// no solid panel). The tab slides up to reveal this page's admin: quick settings
-// links, and on the Home dashboard the SORT functions — a drag-and-drop card editor
-// that reorders the dashboard sections (persisted per browser via a cookie, applied
-// during server render so the page never reflows).
+// The PAGE-ADMIN dock — the BOTTOM-RIGHT corner tab, the profile card's mirror (the
+// admin layout mounts both fixed, in canvas-skinned wrappers: no solid panel). The
+// tab slides up to reveal this page's admin: quick settings links, and on the Home
+// dashboard the SORT functions — a drag-and-drop card editor that reorders the
+// dashboard sections (persisted per browser via a cookie, applied during server
+// render so the page never reflows).
 
 const SETTINGS_HREFS = ['/admin/roles', '/admin/ai', '/admin/audit'] as const
 
@@ -39,7 +39,7 @@ export function AdminPageDock({
   )
 
   return (
-    <div className="border-t border-border/70 pt-1.5">
+    <div>
       {/* The panel — revealed above the tab's pinned bottom edge. */}
       <div
         className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${

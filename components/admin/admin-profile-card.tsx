@@ -9,9 +9,9 @@ import { ROLE_LABEL, roleBadgeStyle } from '@/lib/community-roles'
 import type { CommunityRole } from '@/lib/core/roles'
 import type { ProfileIdentity } from '@/lib/types/profile'
 
-// The operator's identity card, pinned at the BOTTOM of the admin left rail — the
-// member shell's sidebar profile card brought back for the admin workspace, styled
-// for the canvas: no solid panel, just a hairline above it; rows fill on hover.
+// The operator's identity card — the member shell's sidebar profile card brought
+// back for the admin workspace as the BOTTOM-LEFT corner tab (the admin layout
+// mounts it fixed, in a canvas-skinned wrapper: no solid panel; rows fill on hover).
 // The chevron slides the quick actions open (the card grows upward off its pinned
 // bottom edge); it never opens on scroll or hover.
 
@@ -26,7 +26,7 @@ export function AdminProfileCard({
   const profileHref = `/people/${profile.handle}`
 
   return (
-    <div className="border-t border-border/70 pt-1.5">
+    <div>
       {/* Quick actions — revealed above the identity bar's pinned bottom edge. */}
       <div
         className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
