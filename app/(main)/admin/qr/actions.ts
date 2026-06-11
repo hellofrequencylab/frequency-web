@@ -27,6 +27,8 @@ export interface NodeInput {
   label: string
   zaps_value: number
   capture_rule: string
+  /** City the physical code lives in (powers city-based awards). Null = unset. */
+  city: string | null
   /** ISO datetime or '' / null for "no expiry". */
   valid_until: string | null
   /** Partner id to make this a plaque, or null for a community code. */
@@ -79,6 +81,7 @@ function clean(input: NodeInput) {
     label,
     zaps_value: zaps,
     capture_rule: input.capture_rule,
+    city: input.city?.trim() ? input.city.trim().slice(0, 80) : null,
     valid_until: input.valid_until ? input.valid_until : null,
     partner_id: input.partner_id ? input.partner_id : null,
     max_claims: maxClaims,

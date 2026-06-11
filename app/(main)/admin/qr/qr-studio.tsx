@@ -16,6 +16,8 @@ export interface StudioNode {
   zaps_value: number
   capture_rule: string
   active: boolean
+  /** City the physical code lives in (powers city-based awards). */
+  city: string | null
   valid_until: string | null
   partner_id: string | null
   /** Geofence for location-aware earning (null = none). */
@@ -50,6 +52,7 @@ const BLANK: NodeInput = {
   label: '',
   zaps_value: 10,
   capture_rule: 'once_per_user',
+  city: null,
   valid_until: null,
   partner_id: null,
   lat: null,
@@ -302,6 +305,7 @@ export function NodeForm({
           label: node.label ?? '',
           zaps_value: node.zaps_value,
           capture_rule: node.capture_rule,
+          city: node.city,
           valid_until: node.valid_until,
           partner_id: node.partner_id,
           lat: node.lat,
@@ -367,6 +371,14 @@ export function NodeForm({
             value={form.label}
             onChange={(e) => set('label', e.target.value)}
             placeholder="e.g. Tuesday meditation check-in"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+          />
+        </Field>
+        <Field label="City">
+          <input
+            value={form.city ?? ''}
+            onChange={(e) => set('city', e.target.value || null)}
+            placeholder="e.g. Encinitas"
             className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
           />
         </Field>
