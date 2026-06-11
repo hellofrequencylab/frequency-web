@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { awardZaps } from '@/lib/zaps'
 import { STREAK_MILESTONES, STREAK_FREEZE_CAP, FULL_DAYS_PER_FREEZE, streakProgress } from '@/lib/streak'
+import { postSystemLine } from '@/lib/system-line'
 
 // How far back to read logs / keep frozen-day records. A streak longer than this
 // is vanishingly rare and still displays via the cached `longest`.
@@ -223,9 +224,11 @@ export async function recordPracticeStreak(profileId: string): Promise<void> {
   // First-time milestone rewards. `current` only ever climbs by 1 per day, so
   // gating on "not yet paid" pays each checkpoint exactly once, ever.
   let banked = 0
+  let topMilestone: number | null = null
   for (const m of STREAK_MILESTONES) {
     if (current >= m.day && !paid.has(m.day)) {
       paid.add(m.day)
+      topMilestone = m.day
       if (m.zaps > 0) {
         await awardZaps(profileId, m.zaps, {
           actionType: 'streak_milestone',
@@ -234,6 +237,17 @@ export async function recordPracticeStreak(profileId: string): Promise<void> {
       }
       if (m.freeze) banked++
     }
+  }
+  // Vera marks the moment in the feed (ADR-239) — one quiet line for the
+  // highest checkpoint just crossed, same once-ever gate as the payout.
+  if (topMilestone !== null) {
+    const { data: who } = await admin
+      .from('profiles')
+      .select('handle')
+      .eq('id', profileId)
+      .maybeSingle()
+    const handle = (who as { handle: string | null } | null)?.handle
+    if (handle) await postSystemLine(`@${handle} hit a ${topMilestone} day streak 🔥`)
   }
   freezeTokens = Math.min(STREAK_FREEZE_CAP, freezeTokens + banked)
 

@@ -6453,3 +6453,11 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 **Context:** ADR-231 made Vera fully visible (directory card, search, mentions), so members land on her profile — which rendered as a standard member page: streak/rank/gems stats, a friend button, a tip button, all wrong for a system voice with no login.
 **Decision:** The people page branches on `profile.is_system` immediately after the profile fetch (skipping every member-shaped query) into a dedicated **VeraProfile**: avatar + name + @handle, the Moderator chip, her bio, a "What Vera does" card list (join lines + welcome notifications · Dispatches after a sit · help-grounded answers · routing reports to humans, never AI moderation), the honesty line ("a voice, not a player: no streaks, no rank"), and ONE action — **Ask Vera**, opening the existing chat panel via the `open-vera` event. No friend/message/tip/block chrome.
 **Consequences:** Tapping Vera anywhere (join lines, directory, search) now lands somewhere true. The layout is generic over the system account, so a future renamed/rebranded voice inherits it.
+
+
+## ADR-239: System lines become a kit — streak milestones join the feed
+
+**Status:** Accepted · `lib/system-line.ts` (the shared helper), `lib/onboarding/welcome.ts` (refactored onto it), `lib/practice-streak.ts` (milestone lines).
+**Context:** The join notices (ADR-231/232) proved the quiet centered system line; the backlog called for reusing it on other moments. The renderer (SystemLine) already handles any `system` post: centered text, linked mentions, live Zap counts.
+**Decision:** One shared **`postSystemLine(body)`** — system-account lookup + the `system` post insert, best-effort and swallowed — becomes the single door for every automated feed notice, keeping them deterministic templates (never AI compositions, per the AI-VERA guardrail). First new caller: **daily streak milestones** — when the engine pays a checkpoint (3/7/14/30/60/100/365, already gated once-ever), Vera drops "@handle hit a N day streak 🔥" for the highest checkpoint just crossed. Welcome lines now ride the same helper.
+**Consequences:** Future moments (rank-ups when they move app-side, season turns, circle launches) are one `postSystemLine` call each. Milestone lines inherit the once-ever payout gate, so reruns can't spam the feed.
