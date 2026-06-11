@@ -152,5 +152,11 @@ on revisit**, by design.
   whole reveal down and closes the mode — same `onClose` path as the ghost
   panel. Horizontal swipes keep paging; reduced motion skips the slide.
 
+- ~~P13 — armed start~~ ✅ shipped: the live screen no longer starts the clock
+  on entry — it opens ARMED (paused at zero, rings still, full time showing)
+  and the dynamic button reads **Start**; tapping it begins the sit, then the
+  P10 lifecycle takes over (Pause ⇄ Start → Finish at zero). Implemented as a
+  pause from the first millisecond, so airtime math and cues needed nothing new.
+
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.
