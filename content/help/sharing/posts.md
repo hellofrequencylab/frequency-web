@@ -13,12 +13,16 @@ Posts are how you share with your circle: a thought, a photo, a question, a head
 
 ## Posting
 
-Tap **Capture** to log a moment, then pick how:
+Tap the **Zap button** to capture a moment, then pick a style:
 
+- **Post.** Say something to your people.
 - **Photo.** Snap what you're in the middle of.
 - **Note.** A quick journal jot: what happened, what you noticed.
-- **Post.** Say something to your people.
-- **In person.** Met someone? Capture their card or poster to add them.
+- **Connect.** Met someone? Capture their card to add them, or take a fresh
+  profile pic of yourself right there.
+
+Want bold, lists, or links? Tap the little **Format** arrow under the text box
+and the writing tools unfold.
 
 Whatever you capture is shared with your circle and shows up in their feed.
 
