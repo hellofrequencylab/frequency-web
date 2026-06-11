@@ -302,35 +302,40 @@ export function AdminTopNav(props: AdminNavProps) {
 
   return (
     <div className="sticky top-14 z-30 -mx-6 -mt-6 mb-6 border-b border-border bg-surface/95 px-6 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-      {/* Desktop menubar. */}
-      <nav aria-label="Admin" className="hidden h-12 items-center gap-1 md:flex">
-        <Link
-          href={ADMIN_HOME.href}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-            pathname === '/admin'
-              ? 'bg-surface-elevated text-text'
-              : 'text-muted hover:bg-surface-elevated hover:text-text'
-          }`}
-        >
-          <HomeIcon
-            className={`h-4 w-4 shrink-0 ${pathname === '/admin' ? 'text-primary-strong' : 'text-subtle'}`}
-            aria-hidden
-          />
-          Home
-        </Link>
-        {groups.map(({ group, sections }) => (
-          <DomainMenu
-            key={group.key}
-            group={group}
-            sections={sections}
-            active={activeDomain?.key === group.key}
-          />
-        ))}
-      </nav>
+      {/* The STRIP spans full-bleed (background + border), but the menu itself
+          runs between the side columns: the same centered max-w-5xl column the
+          AdminTemplate content uses, so items line up with the page below. */}
+      <div className="mx-auto w-full max-w-5xl">
+        {/* Desktop menubar. */}
+        <nav aria-label="Admin" className="hidden h-12 items-center gap-1 md:flex">
+          <Link
+            href={ADMIN_HOME.href}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+              pathname === '/admin'
+                ? 'bg-surface-elevated text-text'
+                : 'text-muted hover:bg-surface-elevated hover:text-text'
+            }`}
+          >
+            <HomeIcon
+              className={`h-4 w-4 shrink-0 ${pathname === '/admin' ? 'text-primary-strong' : 'text-subtle'}`}
+              aria-hidden
+            />
+            Home
+          </Link>
+          {groups.map(({ group, sections }) => (
+            <DomainMenu
+              key={group.key}
+              group={group}
+              sections={sections}
+              active={activeDomain?.key === group.key}
+            />
+          ))}
+        </nav>
 
-      {/* Mobile disclosure. */}
-      <div className="py-2.5 md:hidden">
-        <MobileMenu {...props} />
+        {/* Mobile disclosure. */}
+        <div className="py-2.5 md:hidden">
+          <MobileMenu {...props} />
+        </div>
       </div>
     </div>
   )
