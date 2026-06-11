@@ -297,13 +297,17 @@
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
   font-family: var(--font-nunito, 'Nunito', sans-serif);
+  /* Site-wide "breathe + a touch larger": the rem-based Tailwind scale (font AND
+     spacing) derives from this root size, so a single gentle bump softens type and
+     opens up padding/gaps everywhere at once. ~16px → ~17px. Reversible one-liner. */
+  font-size: 106.25%;
 }
 
 body {
   background: var(--color-canvas);
   color: var(--color-text);
   font-family: var(--font-nunito, 'Nunito', sans-serif);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 h1, h2, h3, h4, h5, h6 {
