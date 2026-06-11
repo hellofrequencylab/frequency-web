@@ -58,8 +58,9 @@ export default async function ProgramsDashboard() {
 // ── The catalog: content volume, the library trend, and practice throughput. ───
 async function CatalogArea() {
   const admin = createAdminClient()
-  const since = new Date(Date.now() - GROWTH_WEEKS * WEEK).toISOString()
-  const volumeStart = new Date(Date.now() - VOLUME_WEEKS * WEEK).toISOString()
+  const nowMs = new Date().getTime()
+  const since = new Date(nowMs - GROWTH_WEEKS * WEEK).toISOString()
+  const volumeStart = new Date(nowMs - VOLUME_WEEKS * WEEK).toISOString()
   const [
     practicesC,
     journeysC,
