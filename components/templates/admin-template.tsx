@@ -29,6 +29,7 @@ export function AdminTemplate({
   eyebrow,
   description,
   actions,
+  back,
   width = 'default',
   children,
 }: {
@@ -40,12 +41,15 @@ export function AdminTemplate({
   description?: React.ReactNode
   /** Right-aligned header controls (buttons, links). */
   actions?: React.ReactNode
+  /** Back-link above the header — the single back affordance on an entity-detail page. */
+  back?: { href: string; label: string }
   width?: keyof typeof WIDTHS
   children: React.ReactNode
 }) {
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
       <PageHeading
+        back={back}
         eyebrow={eyebrow}
         title={
           Icon ? (

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Trophy, Plus, Trash2, Zap, CheckCircle2, Pencil } from 'lucide-react'
 import { createCampaign, updateCampaign, deleteCampaign, type CampaignInput } from './campaign-actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
+import { Button } from '@/components/ui/button'
 
 export interface CampaignCard {
   id: string
@@ -59,13 +60,14 @@ export function Campaigns({
             </p>
           </div>
           {!creating && (
-            <button
+            <Button
+              size="sm"
               onClick={() => setCreating(true)}
               disabled={codes.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
+              className="disabled:opacity-60"
             >
               <Plus className="w-3.5 h-3.5" /> New campaign
-            </button>
+            </Button>
           )}
         </div>
         {creating &&
@@ -313,11 +315,7 @@ function CampaignForm({
       {error && <p className="text-xs text-danger">{error}</p>}
 
       <div className="flex items-center gap-2">
-        <button
-          onClick={submit}
-          disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
-        >
+        <Button size="sm" onClick={submit} disabled={pending} className="disabled:opacity-60">
           <Trophy className="w-3.5 h-3.5" />
           {pending
             ? campaign
@@ -326,7 +324,7 @@ function CampaignForm({
             : campaign
               ? 'Save campaign'
               : 'Create campaign'}
-        </button>
+        </Button>
         <button
           onClick={onCancel}
           className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
