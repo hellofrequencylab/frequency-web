@@ -4,6 +4,7 @@ import { Dumbbell, Megaphone, Route, TrendingUp, Users2, Flame, ShieldCheck } fr
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { IndexTemplate } from '@/components/templates'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getInitials } from '@/lib/utils'
 import { getLibrary, getMyRatings, pendingReviewCount, typeLabel, hrefFor, type ContentType, type LibraryItem } from '@/lib/library'
@@ -89,21 +90,11 @@ export default async function LibraryPage({
         ) : undefined
       }
       toolbar={
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex gap-1">
-            {TYPES.map((t) => {
-              const active = (t.key === 'all' && !type) || t.key === type
-              return (
-                <Link
-                  key={t.key}
-                  href={q(t.key)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${active ? 'bg-surface-elevated text-text' : 'text-muted hover:text-text'}`}
-                >
-                  {t.label}
-                </Link>
-              )
-            })}
-          </div>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <UnderlineTabs
+            activeHref={q(type ?? 'all')}
+            tabs={TYPES.map((t) => ({ href: q(t.key), label: t.label }))}
+          />
           <SubmitProgramForm />
         </div>
       }

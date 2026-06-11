@@ -22,6 +22,7 @@ import { NewPracticeButton } from '@/components/studio/practice/new-practice-but
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { PracticeAdminMenu } from '@/components/practice/practice-admin-menu'
 import { EntityCard } from '@/components/cards/entity-card'
+import { RowCard } from '@/components/cards/row-card'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { PageContents } from '@/components/templates/page-contents'
 import { StatStrip } from '@/components/ui/page-header'
@@ -75,33 +76,32 @@ function PracticeMeta({ p }: { p: { category: string | null; cadence: string | n
   )
 }
 
+// "Your practices" rows fold onto the kit's RowCard (actions mode: the title is the
+// link; the Log/Adopt/Edit controls sit right and never nest inside an anchor).
 function MineRow({ p, byId, profileId }: { p: Practice; byId: Map<string, Pillar>; profileId: string }) {
   return (
-    <li className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/practices/${p.id}`} className="text-base font-bold text-text hover:text-primary-strong hover:underline">
-            {p.title}
-          </Link>
-          {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
-        </div>
-        {(p.summary ?? p.description) && (
-          <p className="mt-0.5 line-clamp-1 text-sm leading-relaxed text-muted">{p.summary ?? p.description}</p>
-        )}
-        <PracticeMeta p={p} />
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {p.created_by === profileId && (
-          <Link
-            href={`/practices/${p.id}/edit`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
-          >
-            <Pencil className="h-3.5 w-3.5" /> Edit
-          </Link>
-        )}
-        <LogPracticeButton practiceId={p.id} />
-        <AdoptPracticeButton practiceId={p.id} adopted />
-      </div>
+    <li>
+      <RowCard
+        href={`/practices/${p.id}`}
+        title={p.title}
+        badge={p.domain_id && byId.has(p.domain_id) ? <PillarBadge name={byId.get(p.domain_id)!.name} /> : undefined}
+        description={p.summary ?? p.description ?? undefined}
+        meta={<PracticeMeta p={p} />}
+        actions={
+          <>
+            {p.created_by === profileId && (
+              <Link
+                href={`/practices/${p.id}/edit`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Edit
+              </Link>
+            )}
+            <LogPracticeButton practiceId={p.id} />
+            <AdoptPracticeButton practiceId={p.id} adopted />
+          </>
+        }
+      />
     </li>
   )
 }
