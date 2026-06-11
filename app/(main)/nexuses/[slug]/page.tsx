@@ -7,7 +7,10 @@ import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getNexusCapabilities } from '@/lib/core/load-capabilities'
+import { surfaceAccess } from '@/lib/core/viewer-hats'
+import { showsScopedInsight } from '@/lib/core/scoped-surface-ui'
 import { updateNexusField } from '../admin-actions'
+import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -60,6 +63,14 @@ export default async function NexusPage({
 
   const caps = await getNexusCapabilities(nexus.id)
   const canManage = caps.has('nexus.manage')
+
+  // Scoped Insight surface (P1.6 adoption, ADR-225): the IN-SCOPE matrix question, so a
+  // Mentor who leads THIS nexus by stewardship edge — even a global member — gets the
+  // nexus Insight summary (a nexus confers mentor level ⇒ `full`). Additive: a non-leader
+  // resolves `none` and the section stays hidden, exactly today's behavior.
+  const showsInsight = showsScopedInsight(
+    await surfaceAccess('insight', { type: 'nexus', id: nexus.id }),
+  )
 
   const { data: rawHubs } = await admin
     .from('hubs')
@@ -136,6 +147,21 @@ export default async function NexusPage({
           </>
         }
       >
+        {/* ── Insight (scoped) — in-scope analytics for the nexus Mentor, ADR-225 ── */}
+        {showsInsight && (
+          <section className="mb-8">
+            <SectionHeader title="Insight" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <StatCard label="Members" value={totalMembers.toLocaleString()} icon={Users} />
+              <StatCard label="Hubs" value={hubs.length.toLocaleString()} />
+              <StatCard
+                label="Avg per hub"
+                value={hubs.length > 0 ? Math.round(totalMembers / hubs.length).toLocaleString() : '0'}
+              />
+            </div>
+          </section>
+        )}
+
         {/* ── Hubs ───────────────────────────────────── */}
         <section>
           <SectionHeader title="Hubs" count={hubs.length} />

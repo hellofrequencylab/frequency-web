@@ -7,7 +7,10 @@ import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getHubCapabilities } from '@/lib/core/load-capabilities'
+import { surfaceAccess } from '@/lib/core/viewer-hats'
+import { showsScopedInsight } from '@/lib/core/scoped-surface-ui'
 import { updateHubField } from '../admin-actions'
+import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { CircleBase } from '@/lib/types/circle'
@@ -65,6 +68,14 @@ export default async function HubPage({
 
   const caps = await getHubCapabilities(hub.id)
   const canManage = caps.has('hub.manage')
+
+  // Scoped Insight surface (P1.6 adoption, ADR-225): the IN-SCOPE matrix question, so a
+  // Guide who leads THIS hub by stewardship edge — even a global member — gets the hub's
+  // Insight summary (a hub confers guide level ⇒ `full`). Additive: a non-leader resolves
+  // `none` and the section stays hidden, exactly today's behavior.
+  const showsInsight = showsScopedInsight(
+    await surfaceAccess('insight', { type: 'hub', id: hub.id }),
+  )
 
   const { data: rawCircles } = await admin
     .from('circles')
@@ -131,6 +142,21 @@ export default async function HubPage({
           </>
         }
       >
+        {/* ── Insight (scoped) — in-scope analytics for the hub's Guide, ADR-225 ── */}
+        {showsInsight && (
+          <section className="mb-8">
+            <SectionHeader title="Insight" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <StatCard label="Members" value={totalMembers.toLocaleString()} icon={Users} />
+              <StatCard label="Circles" value={circles.length.toLocaleString()} />
+              <StatCard
+                label="Avg per circle"
+                value={circles.length > 0 ? Math.round(totalMembers / circles.length).toLocaleString() : '0'}
+              />
+            </div>
+          </section>
+        )}
+
         {/* ── Circles ────────────────────────────────── */}
         <section>
           <SectionHeader title="Circles" count={circles.length} />

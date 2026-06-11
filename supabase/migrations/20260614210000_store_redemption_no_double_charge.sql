@@ -1,5 +1,5 @@
 -- =============================================================================
--- Store redemption: stop the double charge (Rewards Economy v2 follow-up; ADR-220).
+-- Store redemption: stop the double charge (Rewards Economy v2 follow-up; ADR-227).
 --
 -- The original 20240121 trigger subtracted gems_spent from profiles.lifetime_gems,
 -- but the canonical wallet model (ADR-140) is: lifetime_gems is MONOTONIC and the

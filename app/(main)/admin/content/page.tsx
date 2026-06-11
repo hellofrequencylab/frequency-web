@@ -8,6 +8,7 @@ import {
   Star,
   Inbox,
   Sparkles,
+  GraduationCap,
   ArrowRight,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
@@ -66,6 +67,7 @@ export default async function AdminContentPage() {
     { href: '/admin/content/journeys', label: 'Journeys', desc: 'Review queue, official marks, features.', Icon: Map },
     { href: '/admin/content/practices', label: 'Practices', desc: 'Library curation. Visibility, templates, features.', Icon: BookOpen },
     { href: '/admin/content/challenges', label: 'Challenges', desc: 'Edit and add this season’s challenges.', Icon: Trophy },
+    { href: '/admin/content/training', label: 'Role training', desc: 'The advancement curriculum each promotion teaches.', Icon: GraduationCap },
     ...(janitor
       ? [{ href: '/admin/content/tips', label: 'Vera’s tips', desc: 'Draft tips to creators. Review and send.', Icon: Sparkles }]
       : []),

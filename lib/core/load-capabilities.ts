@@ -8,6 +8,7 @@
 // NOTE: server-only — it uses the admin client. Do not import from a client
 // component.
 
+import { cache } from 'react'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
@@ -18,20 +19,55 @@ import {
 import { type CommunityRole } from './roles'
 import { deriveTier } from './entitlement'
 import { isPaid } from './access-matrix'
+import {
+  leadsScope as edgeLeadsScope,
+  deriveCommunityLevel,
+  levelRank,
+  type CommunityLevel,
+} from './stewardship'
+import { getStewardships } from '@/lib/stewardships'
 import { countOpenCircleTasks } from '@/lib/crew/circle-tasks'
 
 // The STAFF axis (web_role, ADR-208) rides on the caller profile alongside the
 // community role, so the SAME Viewer feeds every scope builder below — DB → auth →
 // capabilities. getCallerProfile() reads web_role through the untyped cast (the
 // generated types are stale until the migration applies).
-async function currentViewer(): Promise<Viewer> {
+//
+// SCOPED stewardship (P1.6, ADR-218): the viewer also carries its `stewardships`
+// edges as a `leadsScope` predicate, so the resolver recognizes a scoped leader by
+// edge as well as by the legacy leader FK. Edges are fetched ONCE per request
+// (cache()) and OR'd with the FK match in the resolver — provably a no-op on today's
+// data (every FK was backfilled to an edge; no edge exists without an FK yet). The
+// whole viewer is memoized so the several per-scope builders below share one
+// getCallerProfile() + one getStewardships() round-trip.
+const currentViewer = cache(async (): Promise<Viewer> => {
   const p = await getCallerProfile()
+  const edges = p?.id ? await getStewardships(p.id) : []
   return {
     profileId: p?.id ?? null,
     role: (p?.community_role ?? 'member') as CommunityRole,
     webRole: p?.webRole ?? 'none',
     tier: deriveTier(p?.membershipTier),
+    leadsScope: (scopeType, scopeId) => edgeLeadsScope(edges, scopeType, scopeId),
   }
+})
+
+// The viewer's highest EDGE-contributed community level (P1.6 PR 2, ADR-221). Derived
+// from the same edges `currentViewer` reads, with NO community_role floor — this is the
+// "what do your edges alone grant" signal that ADDITIVELY widens the parent-walk gate
+// below: a viewer who holds a guide/mentor EDGE (any scope) triggers the hub/nexus walk
+// just like a global guide/mentor does. The existing FK/edge match then confirms the
+// SPECIFIC parent, so this only opens the walk for scoped-only stewards — it grants
+// nothing a global guide/mentor didn't already have, and removes nothing.
+const viewerEdgeLevel = cache(async (): Promise<CommunityLevel> => {
+  const p = await getCallerProfile()
+  const edges = p?.id ? await getStewardships(p.id) : []
+  return deriveCommunityLevel(edges) // no floor: pure edge standing
+})
+
+/** Does the viewer hold an edge at or above `level` anywhere? Additive parent-walk gate. */
+async function hasEdgeAtLeast(level: CommunityLevel): Promise<boolean> {
+  return levelRank(await viewerEdgeLevel()) >= levelRank(level)
 }
 
 /** App-level capabilities (e.g. admin.access for the Admin tab). */
@@ -66,12 +102,15 @@ export async function getCircleCapabilities(
 
   // Area-scoped leadership: a guide/mentor who leads this circle's hub (or its
   // nexus) manages it too. Host + janitor are handled by the resolver directly,
-  // so we only do these extra lookups for guide/mentor viewers.
+  // so we only do these extra lookups for guide/mentor viewers. A scoped-only
+  // guide/mentor (global member, but holding a guide/mentor EDGE) ALSO triggers the
+  // walk — the FK/edge check below still confirms the SPECIFIC parent (ADR-221,
+  // additive). (`hasEdgeAtLeast` is cached, so the extra read is free.)
   let viewerManagesParent = opts?.viewerManagesParent ?? false
   if (
     !viewerManagesParent &&
     viewer.profileId &&
-    (viewer.role === 'guide' || viewer.role === 'mentor') &&
+    (viewer.role === 'guide' || viewer.role === 'mentor' || (await hasEdgeAtLeast('guide'))) &&
     circle?.hub_id
   ) {
     const { data: hub } = await admin
@@ -79,7 +118,12 @@ export async function getCircleCapabilities(
       .select('guide_id, nexus_id')
       .eq('id', circle.hub_id)
       .maybeSingle()
-    if (hub?.guide_id === viewer.profileId) {
+    // Confirm the SPECIFIC parent by leader FK OR stewardship edge (additive — a
+    // scoped-only guide/mentor with no FK is recognized via the edge).
+    if (
+      hub?.guide_id === viewer.profileId ||
+      (viewer.leadsScope?.('hub', circle.hub_id) ?? false)
+    ) {
       viewerManagesParent = true
     } else if (hub?.nexus_id) {
       const { data: nexus } = await admin
@@ -87,7 +131,12 @@ export async function getCircleCapabilities(
         .select('mentor_id')
         .eq('id', hub.nexus_id)
         .maybeSingle()
-      if (nexus?.mentor_id === viewer.profileId) viewerManagesParent = true
+      if (
+        nexus?.mentor_id === viewer.profileId ||
+        (viewer.leadsScope?.('nexus', hub.nexus_id) ?? false)
+      ) {
+        viewerManagesParent = true
+      }
     }
   }
 
@@ -128,15 +177,27 @@ export async function getHubCapabilities(
     .eq('id', hubId)
     .maybeSingle()
 
-  // A mentor who leads the parent nexus manages this hub too.
+  // A mentor who leads the parent nexus manages this hub too. A scoped-only mentor
+  // (global member holding a mentor EDGE) also triggers the walk; the FK/edge check
+  // below confirms the SPECIFIC nexus (ADR-221, additive).
   let viewerManagesParent = opts?.viewerManagesParent ?? false
-  if (!viewerManagesParent && viewer.profileId && viewer.role === 'mentor' && hub?.nexus_id) {
+  if (
+    !viewerManagesParent &&
+    viewer.profileId &&
+    (viewer.role === 'mentor' || (await hasEdgeAtLeast('mentor'))) &&
+    hub?.nexus_id
+  ) {
     const { data: nexus } = await admin
       .from('nexuses')
       .select('mentor_id')
       .eq('id', hub.nexus_id)
       .maybeSingle()
-    if (nexus?.mentor_id === viewer.profileId) viewerManagesParent = true
+    if (
+      nexus?.mentor_id === viewer.profileId ||
+      (viewer.leadsScope?.('nexus', hub.nexus_id) ?? false)
+    ) {
+      viewerManagesParent = true
+    }
   }
 
   return resolveCapabilities(viewer, {
