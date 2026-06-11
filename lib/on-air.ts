@@ -16,6 +16,11 @@ export interface BreathPhase {
   /** Member-facing cue. Plain words, no instruction-speak. */
   label: string
   seconds: number
+  /** Optional ring-scale range for the phase, 0..1 across the MIN..MAX band.
+   *  Defaults: 'in' 0→1, 'out' 1→0. Lets stacked breaths (3X's double inhale)
+   *  grow in two steps instead of resetting between phases. */
+  fromScale?: number
+  toScale?: number
 }
 
 export interface BreathPattern {
@@ -38,10 +43,16 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     phases: [IN(4), HOLD(4), OUT(4), HOLD(4)],
   },
   {
-    slug: 'coherent',
-    name: 'Coherent',
-    blurb: 'Five and a half in, five and a half out. The long-haul rhythm.',
-    phases: [IN(5.5), OUT(5.5)],
+    // The physiological sigh, cyclic: a big inhale, a short top-up, one long
+    // exhale. The rings grow in two stacked steps (fromScale/toScale).
+    slug: '3x',
+    name: '3X',
+    blurb: 'Big breath in, sip a little more, one long letting go. The body\u2019s fastest reset.',
+    phases: [
+      { kind: 'in', label: 'Breathe in', seconds: 4, toScale: 0.82 },
+      { kind: 'in', label: 'Sip in', seconds: 1, fromScale: 0.82 },
+      { kind: 'out', label: 'Let go', seconds: 7 },
+    ],
   },
   {
     slug: '478',
@@ -111,13 +122,22 @@ export function ringScaleAt(pattern: BreathPattern, elapsed: number): number {
   const MAX = 1
   const { phase, phaseProgress } = breathPositionAt(pattern, elapsed)
   const ease = (x: number) => 0.5 - Math.cos(Math.PI * x) / 2 // cosine ease-in-out
-  if (phase.kind === 'in') return MIN + (MAX - MIN) * ease(phaseProgress)
-  if (phase.kind === 'out') return MAX - (MAX - MIN) * ease(phaseProgress)
+  const band = (x: number) => MIN + (MAX - MIN) * x
+  if (phase.kind === 'in') {
+    const from = phase.fromScale ?? 0
+    const to = phase.toScale ?? 1
+    return band(from + (to - from) * ease(phaseProgress))
+  }
+  if (phase.kind === 'out') {
+    const from = phase.fromScale ?? 1
+    const to = phase.toScale ?? 0
+    return band(from + (to - from) * ease(phaseProgress))
+  }
   // Hold: stay wherever the previous moving phase left us. A hold directly after
   // an inhale rests full; after an exhale it rests small. Find the previous phase.
   const idx = pattern.phases.indexOf(phase)
   const prev = pattern.phases[(idx - 1 + pattern.phases.length) % pattern.phases.length]
-  return prev.kind === 'out' ? MIN : MAX
+  return band(prev.toScale ?? (prev.kind === 'out' ? 0 : 1))
 }
 
 /** Session duration presets (minutes). The 2-minute floor is deliberate: a

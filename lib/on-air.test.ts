@@ -9,18 +9,19 @@ import {
 } from './on-air'
 
 const box = patternBySlug('box')
-const coherent = patternBySlug('coherent')
+const sigh = patternBySlug('3x')
 
 describe('patterns', () => {
-  it('ships box, coherent and 4-7-8 with correct cycle lengths', () => {
-    expect(BREATH_PATTERNS.map((p) => p.slug)).toEqual(['box', 'coherent', '478'])
+  it('ships box, 3X and 4-7-8 with correct cycle lengths', () => {
+    expect(BREATH_PATTERNS.map((p) => p.slug)).toEqual(['box', '3x', '478'])
     expect(cycleSeconds(box)).toBe(16)
-    expect(cycleSeconds(coherent)).toBe(11)
+    expect(cycleSeconds(sigh)).toBe(12)
     expect(cycleSeconds(patternBySlug('478'))).toBe(19)
   })
 
-  it('falls back to box for unknown slugs', () => {
+  it('falls back to box for unknown slugs (including the retired coherent)', () => {
     expect(patternBySlug('mystery').slug).toBe('box')
+    expect(patternBySlug('coherent').slug).toBe('box')
     expect(patternBySlug(null).slug).toBe('box')
   })
 })
@@ -93,10 +94,21 @@ describe('ringScaleAt', () => {
   })
 
   it('moves monotonically within a phase', () => {
-    const a = ringScaleAt(coherent, 1)
-    const b = ringScaleAt(coherent, 2)
-    const c = ringScaleAt(coherent, 4)
+    const a = ringScaleAt(box, 1)
+    const b = ringScaleAt(box, 2)
+    const c = ringScaleAt(box, 3.5)
     expect(b).toBeGreaterThan(a)
     expect(c).toBeGreaterThan(b)
+  })
+
+  it('stacks the 3X double inhale without resetting between breaths', () => {
+    // End of the big inhale meets the start of the sip exactly (no jump)...
+    const endOfFirst = ringScaleAt(sigh, 3.999)
+    const startOfSip = ringScaleAt(sigh, 4.001)
+    expect(Math.abs(endOfFirst - startOfSip)).toBeLessThan(0.01)
+    // ...the sip keeps climbing to full...
+    expect(ringScaleAt(sigh, 5)).toBeCloseTo(1)
+    // ...and the long exhale settles back to small.
+    expect(ringScaleAt(sigh, 11.999)).toBeCloseTo(0.62, 1)
   })
 })
