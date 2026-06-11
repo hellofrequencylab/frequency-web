@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, ExternalLink, KanbanSquare, User } from 'lucide-react'
+import { ExternalLink, KanbanSquare, User } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { getTicketAdmin, listAssignableAgents, ticketCountForProfile } from '@/lib/support/store'
 import { relativeTime } from '@/lib/utils'
+import { AdminTemplate } from '@/components/templates'
 import { TicketMessages } from '@/components/support/ticket-messages'
 import { TicketContext } from '@/components/support/ticket-context'
 import { AdminTicketControls } from '@/components/support/admin-ticket-controls'
@@ -28,19 +29,16 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
   ])
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5">
-      <Link href="/admin/support" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-text">
-        <ArrowLeft className="h-3.5 w-3.5" /> Support queue
-      </Link>
-
-      <header className="rounded-2xl border border-border bg-surface p-4">
-        <div className="flex items-center gap-2">
+    <AdminTemplate
+      title={ticket.subject}
+      back={{ href: '/admin/support', label: 'Support queue' }}
+      eyebrow={
+        <span className="inline-flex flex-wrap items-center gap-2">
           <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${statusChipClass(ticket.status)}`}>{STATUS_LABELS[ticket.status]}</span>
           <span className="text-2xs font-medium text-subtle">{TYPE_LABELS[ticket.type]} · #{ticket.ref} · opened {relativeTime(ticket.createdAt)}</span>
-        </div>
-        <h1 className="mt-1.5 text-lg font-bold text-text">{ticket.subject}</h1>
-      </header>
-
+        </span>
+      }
+    >
       <div className="grid gap-5 lg:grid-cols-[1fr_18rem]">
         {/* Conversation + triage */}
         <div className="space-y-5">
@@ -84,6 +82,6 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
           <TicketContext context={ticket.context} pageUrl={ticket.pageUrl} screenshotUrl={ticket.screenshotUrl} />
         </aside>
       </div>
-    </div>
+    </AdminTemplate>
   )
 }
