@@ -53,11 +53,13 @@ export default async function AdminPageView() {
     upcomingCount,
     totalProfilesRes,
   ] = await Promise.all([
-    admin.from('memberships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+    // "Members" = real (non-system) person profiles — the canonical community size
+    // (see lib/analytics/members.ts), consistent with Pulse + the rail + activation.
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_system', false),
     admin.from('circles').select('id', { count: 'exact', head: true }),
     admin.from('dispatches').select('id', { count: 'exact', head: true }),
     // Member joins inside the growth window (the chart) + the all-time base before it.
-    admin.from('profiles').select('created_at').gte('created_at', growthStart),
+    admin.from('profiles').select('created_at').gte('created_at', growthStart).eq('is_system', false),
     admin
       .from('engagement_events')
       .select('created_at')
@@ -69,7 +71,7 @@ export default async function AdminPageView() {
       .select('id', { count: 'exact', head: true })
       .gte('starts_at', now.toISOString())
       .lte('starts_at', weekAhead),
-    admin.from('profiles').select('id', { count: 'exact', head: true }),
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_system', false),
   ])
 
   // Growth series: cumulative members across the window (base = total before it).
