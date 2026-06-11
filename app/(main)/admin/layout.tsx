@@ -75,7 +75,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <aside className="hidden w-64 shrink-0 xl:block">
           <div className="sticky top-14 max-h-[calc(100vh-4.5rem)] overflow-y-auto pb-6 pt-2.5">
             <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl border border-border bg-surface" />}>
-              <AdminInfoRail />
+              <AdminInfoRail role={role} webRole={webRole} staffRole={staffRole} />
             </Suspense>
           </div>
         </aside>
