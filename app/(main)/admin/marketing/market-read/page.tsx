@@ -1,6 +1,6 @@
 import { Users, UserPlus, UserX, Activity, Sparkles } from 'lucide-react'
 import { getMarketRead, type ContentIdea, type PainPoint } from '@/lib/marketing/market-read'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 
@@ -15,7 +15,7 @@ export default async function MarketReadPage() {
   const engDelta = signal.engagementThisWeek - signal.engagementPriorWeek
 
   return (
-    <DashboardTemplate
+    <AdminTemplate
       eyebrow="Marketing"
       title="Market read"
       description="The operator listens to live signal, names what the market is aching for, and drafts outbound content that speaks to it (a magical connection, not an advertisement). Drafts are proposals: nothing reaches the public until you approve it."
@@ -66,7 +66,7 @@ export default async function MarketReadPage() {
           is never exposed in outbound.
         </p>
       </div>
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }
 

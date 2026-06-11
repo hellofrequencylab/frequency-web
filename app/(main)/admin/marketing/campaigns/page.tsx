@@ -1,6 +1,6 @@
 import { listCampaigns, listSegmentOptions } from '@/lib/studio/campaigns'
 import { CampaignComposer } from './campaign-composer'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -10,7 +10,7 @@ export default async function CampaignsPage() {
   const [campaigns, segmentOptions] = await Promise.all([listCampaigns(), listSegmentOptions()])
 
   return (
-    <DashboardTemplate
+    <AdminTemplate
       eyebrow="Marketing"
       title="Campaigns"
       description="Broadcast emails to a contact segment. Every send goes through the queue, skips unsubscribed and suppressed addresses, and includes a one-click unsubscribe."
@@ -38,6 +38,6 @@ export default async function CampaignsPage() {
           </div>
         )}
       </section>
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }

@@ -2,10 +2,8 @@
 // point and read per-variant scans / conversions / rate. In /marketing (admin/staff).
 
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ArrowLeft } from 'lucide-react'
-import { DashboardTemplate } from '@/components/templates/dashboard-template'
+import { AdminTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { listMarketingTargets } from '@/lib/qr/marketing'
@@ -35,12 +33,8 @@ export default async function VariantsPage({ params }: { params: Promise<{ codeI
   ])
 
   return (
-    <DashboardTemplate
-      eyebrow={
-        <Link href="/admin/marketing/funnels" className="inline-flex items-center gap-1 text-muted hover:text-text">
-          <ArrowLeft className="h-3 w-3" /> Funnels
-        </Link>
-      }
+    <AdminTemplate
+      back={{ href: '/admin/marketing/funnels', label: 'Funnels' }}
       title={`A/B · ${c.title}`}
       description={`Split scans of ${shortLinkUrl(c.slug).replace(/^https?:\/\//, '')} across destinations and see which converts. With no active variants, the entry point uses its default destination (the control).`}
     >
@@ -50,6 +44,6 @@ export default async function VariantsPage({ params }: { params: Promise<{ codeI
         results={results}
         destinationGroups={entryDestinationGroups(targets)}
       />
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }

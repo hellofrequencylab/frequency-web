@@ -1,7 +1,7 @@
 import { listRules, AUTOMATION_TRIGGERS } from '@/lib/automations'
 import { RuleForm } from './rule-form'
 import { toggleRule } from './actions'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -11,7 +11,7 @@ export default async function AutomationsPage() {
   const rules = await listRules()
 
   return (
-    <DashboardTemplate
+    <AdminTemplate
       eyebrow="Marketing"
       title="Automations"
       description="Rules that watch the event backbone and act. When a member triggers an event (a verified practice, a check-in, a join), the rule runs through the spine (queued, consent-checked). This is what the AI operator will later drive."
@@ -52,6 +52,6 @@ export default async function AutomationsPage() {
           </div>
         )}
       </section>
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }

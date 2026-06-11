@@ -4,10 +4,9 @@ import { Briefcase, DollarSign, Trophy, Percent, CheckSquare, Plus } from 'lucid
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { canUseSurface } from '@/lib/core/viewer-hats'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { getStages, getDeals, countOpenTasks, computeMetrics, formatMoney } from '@/lib/crm/pipeline'
-import { CrmTabs } from './crm-tabs'
 import { PipelineBoard } from './pipeline-board'
 
 export const dynamic = 'force-dynamic'
@@ -24,16 +23,23 @@ export default async function CrmPage() {
   const metrics = computeMetrics(deals, tasksDue)
 
   return (
-    <DashboardTemplate
+    <AdminTemplate
       eyebrow="CRM"
       title="Pipeline"
       description="Your sales pipeline over the unified contact book. Track opportunities from first touch to won, with tasks and analytics."
       width="wide"
+      actions={
+        // TODO(ADR-228): link-button — Button is a <button>; no styled-Link API yet.
+        <Link
+          href="/admin/crm/deals/new"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        >
+          <Plus className="h-4 w-4" aria-hidden /> New deal
+        </Link>
+      }
     >
-      <CrmTabs />
-
       {/* Analytics — pipeline KPIs */}
-      <div className="-mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard label="Open deals" value={metrics.openCount.toLocaleString()} icon={Briefcase} />
         <StatCard label="Open pipeline" value={formatMoney(metrics.openValue)} icon={DollarSign} />
         <StatCard label="Won" value={formatMoney(metrics.wonValue)} icon={Trophy} />
@@ -41,16 +47,7 @@ export default async function CrmPage() {
         <StatCard label="Tasks due" value={metrics.tasksDue.toLocaleString()} icon={CheckSquare} />
       </div>
 
-      <div className="mt-2 flex justify-end">
-        <Link
-          href="/admin/crm/deals/new"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-        >
-          <Plus className="h-4 w-4" aria-hidden /> New deal
-        </Link>
-      </div>
-
       <PipelineBoard stages={stages} deals={deals} />
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }

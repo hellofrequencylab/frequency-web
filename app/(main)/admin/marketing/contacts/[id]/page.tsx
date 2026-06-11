@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
-  ArrowLeft, User, UserCheck, Mail, QrCode, Activity, MapPin, Building2,
+  User, UserCheck, Mail, QrCode, Activity, MapPin, Building2,
   Tag, StickyNote, Briefcase, Clock, ScanLine, Sparkles, Users,
 } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
@@ -73,6 +73,7 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
 
   return (
     <DetailTemplate
+      back={{ href: '/admin/marketing/contacts', label: 'Contacts' }}
       title={name}
       subtitle={
         <span className="inline-flex items-center gap-1.5">
@@ -95,17 +96,7 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
           </span>
         </span>
       }
-      actions={
-        <>
-          <Link
-            href="/admin/marketing/contacts"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:text-text"
-          >
-            <ArrowLeft className="h-4 w-4" /> Contacts
-          </Link>
-          {!member && <InviteButton contactId={contact.id} />}
-        </>
-      }
+      actions={!member ? <InviteButton contactId={contact.id} /> : undefined}
     >
       {/* At a glance */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

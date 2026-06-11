@@ -4,15 +4,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getStaffMember, staffCan } from '@/lib/staff'
 import { isStaff, asWebRole } from '@/lib/core/roles'
-import { MarketingSubNav } from './sub-nav'
 
-// The Marketing workspace now lives UNDER the admin shell (Phase 3): the admin
-// layout supplies the persistent left sidebar + the Admin › Growth › Marketing
-// breadcrumb, and the requireAdminFloor() floor. This layout keeps Marketing's own
-// PRECISE gate (the admin floor admits a broader set of operators than should see
-// marketing, so we re-assert the 'marketing' capability here) and renders its
-// internal tab bar as an IN-PAGE horizontal sub-nav under the breadcrumb — it never
-// re-declares global chrome, so it does not fight the admin sidebar.
+// The Marketing workspace lives UNDER the admin shell: the admin layout supplies the
+// persistent top-nav + the Admin › Growth › Marketing breadcrumb and the
+// requireAdminFloor() floor. This layout's sole job is to re-assert Marketing's own
+// PRECISE capability gate — the admin floor admits a broader set of operators than
+// should see marketing, so it's load-bearing (ADR-214). Marketing's internal tabs are
+// now reachable from the Growth dropdown in the top-nav (ADR-228), so the old in-page
+// sub-nav is gone; this is a thin gate-only wrapper.
 // Access: a staff web_role, OR a team role with the 'marketing' capability
 // (Marketing / Admin / Owner write · Analyst read) — ADR-127.
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
@@ -34,17 +33,8 @@ export default async function MarketingLayout({ children }: { children: React.Re
     if (!staff || !staffCan(staff.role, 'marketing', 'read')) notFound()
   }
 
-  return (
-    // No global chrome here: the admin shell owns the sidebar + breadcrumb. We only
-    // add Marketing's own in-page tab bar above the page content.
-    <div className="flex flex-col">
-      {/* In-page horizontal tab bar — Marketing's detail nav within the Growth area. */}
-      <MarketingSubNav />
-
-      {/* Page content */}
-      <div className="pt-6">
-        {children}
-      </div>
-    </div>
-  )
+  // No chrome here: the admin shell owns the top-nav + breadcrumb, and the Growth
+  // dropdown carries Marketing's destinations (ADR-228). This wrapper only enforces
+  // the capability gate above.
+  return <>{children}</>
 }
