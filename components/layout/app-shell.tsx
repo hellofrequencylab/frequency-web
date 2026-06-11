@@ -32,7 +32,6 @@ import {
   LifeBuoy,
   Bug,
   Gift,
-  Radio,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -1334,17 +1333,7 @@ export default function AppShell({
               between Search and these actions) lines up with the right column's left
               border. Below lg (no right rail) it's a natural-width right-aligned cluster. */}
           <div className="flex items-center justify-end gap-1 sm:ml-1 sm:border-l sm:border-border sm:pl-1.5 md:gap-2 lg:ml-0 lg:w-72 lg:justify-start lg:pl-3 lg:pr-4">
-            {/* Community actions: on air · friends · messages · notifications · streak. */}
-            {/* On Air — the practice timer (ADR-229 P5): one tap into the daily sit. */}
-            <HoverTip label="On Air">
-              <Link
-                href="/on-air"
-                aria-label="On Air"
-                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
-              >
-                <Radio className="w-5 h-5" />
-              </Link>
-            </HoverTip>
+            {/* Community actions: friends · messages · notifications · daily streak. */}
             {/* Friends — all sizes (mobile reaches Messages via the button on /friends). */}
             <HoverTip label="Friends">
               <Link
