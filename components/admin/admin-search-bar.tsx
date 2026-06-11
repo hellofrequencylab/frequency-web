@@ -157,10 +157,12 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
       <button
         type="button"
         onClick={openVera}
-        className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3.5 py-2.5 text-sm font-bold text-primary-strong transition-colors hover:bg-primary/15"
+        aria-label="Ask Vera"
+        className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-2.5 text-sm font-bold text-primary-strong transition-colors hover:bg-primary/15 sm:px-3.5"
       >
         <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
-        Ask Vera
+        {/* Label collapses to an icon button on phones so the row never clips. */}
+        <span className="hidden sm:inline">Ask Vera</span>
       </button>
     </div>
   )
