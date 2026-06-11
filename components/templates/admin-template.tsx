@@ -41,7 +41,7 @@ export function AdminTemplate({
   description?: React.ReactNode
   /** Right-aligned header controls (buttons, links). */
   actions?: React.ReactNode
-  /** Back-link for a nested admin sub-page (entity detail). */
+  /** Back-link above the header — the single back affordance on an entity-detail page. */
   back?: { href: string; label: string }
   width?: keyof typeof WIDTHS
   children: React.ReactNode
@@ -49,6 +49,7 @@ export function AdminTemplate({
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
       <PageHeading
+        back={back}
         eyebrow={eyebrow}
         title={
           Icon ? (
@@ -62,7 +63,6 @@ export function AdminTemplate({
         }
         description={description}
         actions={actions}
-        back={back}
       />
       <div className="space-y-6">{children}</div>
     </div>

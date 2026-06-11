@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, Gem, Trash2, Plus, Check, X } from 'lucide-react'
 import { updateRewardConfig, createRewardConfig, deleteRewardConfig } from './reward-actions'
+import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
 
 // Local copy of the union — the server action's module ('use server') exports
@@ -282,13 +283,14 @@ function RewardTable({
       )}
 
       <div className="mt-3 flex items-center gap-3">
-        <button
+        <Button
+          size="sm"
           onClick={save}
           disabled={pending}
-          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="disabled:opacity-60"
         >
           {pending ? 'Saving…' : `Save ${label.toLowerCase()}`}
-        </button>
+        </Button>
         {status === 'saved' && <span className="text-xs text-success">Saved.</span>}
         {status !== 'idle' && status !== 'saved' && <span className="text-xs text-danger">{status}</span>}
       </div>
