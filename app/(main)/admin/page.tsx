@@ -11,6 +11,7 @@ import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { RingGauge, TrendArea, WeekBars, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
 import { DashSection, StatRow, StatItem, SeverityChip } from '@/components/admin/dash'
 import { StatusBadge } from '@/components/groups/status-badge'
+import { EmptyState } from '@/components/ui/empty-state'
 import { MemberManager, type MemberItem } from './member-manager'
 import { OPEN_STATUSES } from '@/lib/support/types'
 import { isJanitor } from '@/lib/core/roles'
@@ -38,7 +39,10 @@ export default async function AdminPageView() {
   const volumeStart = new Date(now.getTime() - VOLUME_WEEKS * WEEK).toISOString()
   const weekAhead = new Date(now.getTime() + WEEK).toISOString()
 
-  // One parallel sweep for the dashboard: counts + the time series the charts need.
+  // One CHEAP parallel sweep: counts + the time series the charts need. The
+  // heavier practice read renders behind Suspense so the shell never blocks
+  // (PAGE-FRAMEWORK §5.3, mirroring the Growth dashboard). The all-time member
+  // base is folded in here instead of a sequential second round-trip.
   const [
     membersCount,
     circlesCount,
@@ -47,7 +51,7 @@ export default async function AdminPageView() {
     practiceRows,
     eventRows,
     upcomingCount,
-    practice,
+    totalProfilesRes,
   ] = await Promise.all([
     admin.from('memberships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
     admin.from('circles').select('id', { count: 'exact', head: true }),
@@ -65,17 +69,15 @@ export default async function AdminPageView() {
       .select('id', { count: 'exact', head: true })
       .gte('starts_at', now.toISOString())
       .lte('starts_at', weekAhead),
-    getPracticeMetrics(),
+    admin.from('profiles').select('id', { count: 'exact', head: true }),
   ])
 
   // Growth series: cumulative members across the window (base = total before it).
-  const { count: totalProfiles } = await admin
-    .from('profiles')
-    .select('id', { count: 'exact', head: true })
+  const totalProfiles = totalProfilesRes.count ?? 0
   const joinDates = (joinsRes.data ?? []).map((r) => new Date(r.created_at as string))
   const weeklyJoins = weeklyBuckets(joinDates, GROWTH_WEEKS, now)
   const joinedInWindow = weeklyJoins.reduce((a, b) => a + b, 0)
-  const growthSeries = cumulative((totalProfiles ?? 0) - joinedInWindow, weeklyJoins)
+  const growthSeries = cumulative(totalProfiles - joinedInWindow, weeklyJoins)
   const joinedThisMonth = weeklyJoins.slice(-4).reduce((a, b) => a + b, 0)
 
   // Weekly volume series.
@@ -106,65 +108,29 @@ export default async function AdminPageView() {
       // background. Bottom-aligned with the subtitle's last line (actionsAlign),
       // with a breathing margin off the right edge.
       actionsAlign="end"
+      // Active + Practices need the heavier practice read, so the whole strip sits
+      // behind its own Suspense; Members + Events come from the cheap sweep above
+      // and show immediately (the two practice numbers fade in).
       actions={
-        <div className="flex gap-7 pr-2 sm:gap-9 sm:pr-8">
-          {[
-            { label: 'Members', value: (membersCount.count ?? 0).toLocaleString() },
-            { label: 'Active', value: practice.wam },
-            { label: 'Practices', value: practice.verifiedThisWeek },
-            { label: 'Events', value: upcomingCount.count ?? 0 },
-          ].map((k) => (
-            <div key={k.label}>
-              <p className="whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-subtle">
-                {k.label}
-              </p>
-              <p className="mt-1 text-3xl font-extrabold leading-none tabular-nums text-muted/80 [text-shadow:0_1px_0_var(--color-surface)]">
-                {k.value}
-              </p>
-            </div>
-          ))}
-        </div>
+        <Suspense
+          fallback={<HeaderKpis members={membersCount.count ?? 0} events={upcomingCount.count ?? 0} />}
+        >
+          <HeaderKpisLive members={membersCount.count ?? 0} events={upcomingCount.count ?? 0} />
+        </Suspense>
       }
     >
-      {/* ── Pulse: ONE compact card — trend, weekly volume, activation. ──────── */}
-      <DashSection
-        title="Pulse"
-        description="Member growth and weekly activity at a glance."
-        href="/admin/engagement"
-        hrefLabel="Engagement"
-      >
-        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
-          <PulseBlock
-            label="Member growth"
-            value={(totalProfiles ?? 0).toLocaleString()}
-            delta={joinedThisMonth > 0 ? `+${joinedThisMonth} this month` : undefined}
-            caption={`${GROWTH_WEEKS} weeks`}
-          >
-            <TrendArea points={growthSeries} height={44} />
-          </PulseBlock>
-          <PulseBlock
-            label="Verified practices / wk"
-            value={practice.verifiedThisWeek}
-            caption={`${VOLUME_WEEKS} weeks · current highlighted`}
-          >
-            <WeekBars values={practiceSeries} height={44} />
-          </PulseBlock>
-          <PulseBlock
-            label="Events / wk"
-            value={upcomingCount.count ?? 0}
-            caption={`${VOLUME_WEEKS} weeks · includes week ahead`}
-          >
-            <WeekBars values={eventSeries} height={44} />
-          </PulseBlock>
-          <div className="flex items-center">
-            <RingGauge
-              pct={practice.activationRate}
-              label="Activation"
-              sub={`${practice.activated} of ${practice.newMembers} new members activated`}
-            />
-          </div>
-        </div>
-      </DashSection>
+      {/* ── Pulse: ONE compact card — trend, weekly volume, activation. The
+          practice read renders behind Suspense; the cheap series are passed in. ── */}
+      <Suspense fallback={<DashSkeleton title="Pulse" />}>
+        <PulseSection
+          totalProfiles={totalProfiles}
+          joinedThisMonth={joinedThisMonth}
+          growthSeries={growthSeries}
+          practiceSeries={practiceSeries}
+          eventSeries={eventSeries}
+          upcomingEvents={upcomingCount.count ?? 0}
+        />
+      </Suspense>
 
       {staffJanitor && (
         <>
@@ -184,6 +150,109 @@ export default async function AdminPageView() {
       {role === 'guide' && <GuidePanel profileId={profileId} />}
       {role === 'mentor' && <MentorPanel profileId={profileId} />}
     </AdminPage>
+  )
+}
+
+// The four engraved header numbers. Members + Events come from the cheap sweep;
+// Active + Practices need the practice read, so they default to a placeholder and
+// the live variant fills them in once it resolves.
+function HeaderKpis({
+  members,
+  events,
+  active = '…',
+  practices = '…',
+}: {
+  members: number
+  events: number
+  active?: React.ReactNode
+  practices?: React.ReactNode
+}) {
+  const items = [
+    { label: 'Members', value: members.toLocaleString() },
+    { label: 'Active', value: active },
+    { label: 'Practices', value: practices },
+    { label: 'Events', value: events },
+  ]
+  return (
+    <div className="flex gap-7 pr-2 sm:gap-9 sm:pr-8">
+      {items.map((k) => (
+        <div key={k.label}>
+          <p className="whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-subtle">
+            {k.label}
+          </p>
+          <p className="mt-1 text-3xl font-extrabold leading-none tabular-nums text-muted/80 [text-shadow:0_1px_0_var(--color-surface)]">
+            {k.value}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+async function HeaderKpisLive({ members, events }: { members: number; events: number }) {
+  const practice = await getPracticeMetrics()
+  return (
+    <HeaderKpis members={members} events={events} active={practice.wam} practices={practice.verifiedThisWeek} />
+  )
+}
+
+// The Pulse card — practice read resolved here so the page shell never waits on it.
+// Cheap series (cumulative growth, weekly volume) are computed up top and passed in.
+async function PulseSection({
+  totalProfiles,
+  joinedThisMonth,
+  growthSeries,
+  practiceSeries,
+  eventSeries,
+  upcomingEvents,
+}: {
+  totalProfiles: number
+  joinedThisMonth: number
+  growthSeries: number[]
+  practiceSeries: number[]
+  eventSeries: number[]
+  upcomingEvents: number
+}) {
+  const practice = await getPracticeMetrics()
+  return (
+    <DashSection
+      title="Pulse"
+      description="Member growth and weekly activity at a glance."
+      href="/admin/engagement"
+      hrefLabel="Engagement"
+    >
+      <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+        <PulseBlock
+          label="Member growth"
+          value={totalProfiles.toLocaleString()}
+          delta={joinedThisMonth > 0 ? `+${joinedThisMonth} this month` : undefined}
+          caption={`${GROWTH_WEEKS} weeks`}
+        >
+          <TrendArea points={growthSeries} height={44} />
+        </PulseBlock>
+        <PulseBlock
+          label="Verified practices / wk"
+          value={practice.verifiedThisWeek}
+          caption={`${VOLUME_WEEKS} weeks · current highlighted`}
+        >
+          <WeekBars values={practiceSeries} height={44} />
+        </PulseBlock>
+        <PulseBlock
+          label="Events / wk"
+          value={upcomingEvents}
+          caption={`${VOLUME_WEEKS} weeks · includes week ahead`}
+        >
+          <WeekBars values={eventSeries} height={44} />
+        </PulseBlock>
+        <div className="flex items-center">
+          <RingGauge
+            pct={practice.activationRate}
+            label="Activation"
+            sub={`${practice.activated} of ${practice.newMembers} new members activated`}
+          />
+        </div>
+      </div>
+    </DashSection>
   )
 }
 
@@ -415,20 +484,17 @@ function CircleRow({
   )
 }
 
-function EmptyState({ message, cta }: { message: string; cta?: { href: string; label: string } }) {
+// The shared EmptyState's call-to-action: a primary link button. Kept local so
+// the kit primitive stays presentation-only (it takes any ReactNode `action`).
+function EmptyCta({ href, label }: { href: string; label: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-8 text-center">
-      <p className="text-sm text-muted">{message}</p>
-      {cta && (
-        <Link
-          href={cta.href}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          {cta.label}
-        </Link>
-      )}
-    </div>
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+    >
+      <Plus className="h-3.5 w-3.5" />
+      {label}
+    </Link>
   )
 }
 
@@ -467,7 +533,7 @@ function toMemberItems(rows: MembershipRow[]): MemberItem[] {
   }))
 }
 
-const MEMBERSHIP_SELECT = `id, volunteer_role, joined_at,
+const MEMBERSHIP_SELECT = `id, joined_at,
    profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
    circle:circles!circle_id ( name )`
 
@@ -560,7 +626,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
     <div className="grid gap-8 lg:grid-cols-2">
       <AdminSection title={`Your circles · ${hostCircles.length}`}>
         {hostCircles.length === 0 ? (
-          <EmptyState message="No circles yet." cta={{ href: '/admin/circles', label: 'Create a circle' }} />
+          <EmptyState title="No circles yet." action={<EmptyCta href="/admin/circles" label="Create a circle" />} />
         ) : (
           <div className="space-y-2">
             {hostCircles.map((c) => (
@@ -578,7 +644,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
 
       <AdminSection title={`Members · ${members.length}`}>
         {members.length === 0 ? (
-          <EmptyState message="No members yet. Share your circle link to get started." />
+          <EmptyState title="No members yet. Share your circle link to get started." />
         ) : (
           <MemberManager members={members} />
         )}
@@ -634,7 +700,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
             }
           >
             {hub.circles.length === 0 ? (
-              <EmptyState message="No circles in this hub yet." cta={{ href: '/admin/circles', label: 'Add a circle' }} />
+              <EmptyState title="No circles in this hub yet." action={<EmptyCta href="/admin/circles" label="Add a circle" />} />
             ) : (
               <div className="space-y-2">
                 {hub.circles.map((c) => (
@@ -653,7 +719,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
       </div>
 
       {typedHubs.length === 0 && (
-        <EmptyState message="No hubs assigned yet." cta={{ href: '/admin/hubs', label: 'Set up a hub' }} />
+        <EmptyState title="No hubs assigned yet." action={<EmptyCta href="/admin/hubs" label="Set up a hub" />} />
       )}
 
       {members.length > 0 && (
@@ -736,7 +802,7 @@ async function MentorPanel({ profileId }: { profileId: string }) {
       </div>
 
       {typedNexuses.length === 0 && (
-        <EmptyState message="No nexuses assigned yet." cta={{ href: '/admin/nexuses', label: 'Create a nexus' }} />
+        <EmptyState title="No nexuses assigned yet." action={<EmptyCta href="/admin/nexuses" label="Create a nexus" />} />
       )}
 
       {members.length > 0 && (
