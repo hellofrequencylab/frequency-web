@@ -3,7 +3,7 @@ import { QrCode, ChartNoAxesColumn } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { AdminPage } from '@/components/admin/admin-page'
+import { AdminTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { nodeUrl, shortLinkUrl } from '@/lib/qr/links'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
@@ -287,7 +287,7 @@ export default async function QrStudioPage() {
     })
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="QR Studio"
       icon={QrCode}
       eyebrow="Platform"
@@ -307,6 +307,6 @@ export default async function QrStudioPage() {
         marketingCodes={marketingCodes}
         analytics={analytics}
       />
-    </AdminPage>
+    </AdminTemplate>
   )
 }
