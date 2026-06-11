@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
 import { saveVera, refreshFeatured, vetoFeatured } from './actions'
 import type { VeraConfig, FeaturedRow } from './load-vera'
 
@@ -89,9 +90,9 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
         </section>
 
         <div className="mt-6 flex items-center gap-3">
-          <button type="submit" className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover">
+          <Button type="submit" className="shadow-sm">
             Save Vera
-          </button>
+          </Button>
           <span className="text-xs text-subtle">Changes apply to new conversations immediately.</span>
         </div>
       </form>
@@ -106,9 +107,9 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
             </p>
           </div>
           <form action={refreshFeatured}>
-            <button type="submit" className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated">
+            <Button type="submit" variant="secondary" className="shadow-sm">
               Refresh featured posts
-            </button>
+            </Button>
           </form>
         </div>
 

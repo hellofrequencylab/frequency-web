@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { Search, Zap, ArrowUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { assignRole } from '@/app/(main)/admin/actions'
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL, roleBadgeStyle } from '@/lib/community-roles'
@@ -110,16 +111,16 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
 
               <div className="flex shrink-0 items-center gap-1.5">
                 {up && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="primary"
+                    size="sm"
                     disabled={saving}
                     onClick={() => update(m.id, up)}
                     title={`Promote to ${ROLE_LABEL[up]}`}
-                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
                     {ROLE_LABEL[up]}
-                  </button>
+                  </Button>
                 )}
                 <select
                   value={m.role}

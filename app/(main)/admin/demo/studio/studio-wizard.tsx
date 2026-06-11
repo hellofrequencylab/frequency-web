@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, Eye, Sparkles, MapPin } from 'lucide-react'
 import { previewArea, seedArea } from './actions'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
+import { Button } from '@/components/ui/button'
 
 type Channel = { slug: string; name: string }
 type Preview = Awaited<ReturnType<typeof previewArea>>
@@ -198,10 +199,9 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
             <h3 className="text-sm font-bold text-text">6 · Seed it</h3>
             <p className="text-sm text-muted">Writes the area as demo content (⚡), reversible below.</p>
           </div>
-          <button type="button" disabled={pending || sel.size === 0} onClick={() => run(async () => { setResult(await seedArea(spec())); router.refresh() })}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50">
+          <Button type="button" disabled={pending || sel.size === 0} onClick={() => run(async () => { setResult(await seedArea(spec())); router.refresh() })}>
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Seed this area
-          </button>
+          </Button>
         </div>
         {result && <p className="mt-3 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">Seeded {result.guides} guide + {result.hubs} hub · {result.circles} circles · {result.members} members · {result.posts} circle posts · {result.walls} wall/feed posts · {result.friendships} friendships · {result.dispatches} dispatches · {result.events} events · {result.rsvps} RSVPs · {result.reactions} reactions · {result.practiceLogs} practice logs · {result.journeys} journeys · {result.connections} cross-circle links. The ⚡ demo notice now reflects the new totals.</p>}
       </section>
