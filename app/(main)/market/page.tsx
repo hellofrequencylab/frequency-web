@@ -1,8 +1,8 @@
-import Link from 'next/link'
 import { Store } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { listListings, LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NewListingButton } from '@/components/studio/market/new-listing-button'
 import { MarketGrid, type GridListing } from '@/components/market/market-grid'
@@ -69,21 +69,16 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
           </div>
         ) : undefined
       }
+      toolbar={
+        <UnderlineTabs
+          activeHref={activeKind ? `/market?kind=${activeKind}` : '/market'}
+          tabs={[
+            { href: '/market', label: 'All' },
+            ...LISTING_KINDS.map((k) => ({ href: `/market?kind=${k.key}`, label: k.label })),
+          ]}
+        />
+      }
     >
-      {/* Kind filter */}
-      <div className="mb-5 flex flex-wrap gap-2">
-        <Link href="/market" className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${!activeKind ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-muted hover:text-text'}`}>All</Link>
-        {LISTING_KINDS.map((k) => (
-          <Link
-            key={k.key}
-            href={`/market?kind=${k.key}`}
-            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${activeKind === k.key ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-muted hover:text-text'}`}
-          >
-            {k.label}
-          </Link>
-        ))}
-      </div>
-
       {grid.length === 0 ? (
         <EmptyState
           icon={Store}
