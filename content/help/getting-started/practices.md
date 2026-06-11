@@ -30,6 +30,10 @@ Each day you do your practice, hit **Log practice**. That:
 You can log a practice once per day. Do it for a few days in a row and the streak
 starts to pull you back, which is exactly the point.
 
+Want to actually do the practice right there, with a timer and guided breathing?
+Tap the little radio icon to go **[On Air](/help/the-game/on-air)**. Same log,
+same rewards, plus the sit itself.
+
 ## Adopt or change anytime
 
 Adopt as many practices as you like from the library, and remove any that no longer
