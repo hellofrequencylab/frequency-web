@@ -37,6 +37,7 @@ import { ConnectionsPulse } from '@/components/connections/connections-pulse'
 type Profile = ProfileIdentity & {
   id: string
   community_role: CommunityRole
+  is_system: boolean | null
   last_seen_at: string | null
   is_demo: boolean
   entity_types: string[] | null
@@ -202,9 +203,10 @@ export default async function CommunityPage({
 
   let query = admin
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role, last_seen_at, is_demo, entity_types, nexus_regions!nexus_region_id ( name )')
+    .select('id, display_name, handle, avatar_url, community_role, is_system, last_seen_at, is_demo, entity_types, nexus_regions!nexus_region_id ( name )')
     .eq('is_active', true)
-    .eq('is_system', false) // hide system accounts (e.g. @moderation) from the directory
+    // Vera (is_system) is FULLY VISIBLE here by owner decision (ADR-231 update):
+    // she gets a member card like anyone else; her chip reads Moderator.
     .order('display_name', { ascending: true })
 
   // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
@@ -520,7 +522,7 @@ export default async function CommunityPage({
                   handle={p.handle}
                   displayName={p.display_name}
                   avatarUrl={p.avatar_url}
-                  role={(p.community_role ?? 'member') as CommunityRole}
+                  role={p.is_system ? 'moderator' : ((p.community_role ?? 'member') as CommunityRole)}
                   location={p.nexus_regions?.name ?? null}
                   online={isOnline(p.last_seen_at)}
                   isDemo={p.is_demo}
