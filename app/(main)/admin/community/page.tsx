@@ -5,6 +5,7 @@ import { ArrowUpRight, Users } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { dashCookie, sanitizeDashOrder } from '../dash-sections'
+import { RelatedAreas } from '@/components/admin/related-areas'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { DashArea, TileGrid, Tile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { AttentionList, type AttentionItem } from '@/components/admin/attention-list'
@@ -60,6 +61,8 @@ export default async function CommunityDashboard() {
       {order.map((id) => (
         <Fragment key={id}>{sections[id]}</Fragment>
       ))}
+
+      <RelatedAreas current="community" role={role} webRole={webRole} staffRole={staffRole} />
     </AdminTemplate>
   )
 }
