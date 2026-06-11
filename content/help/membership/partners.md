@@ -15,10 +15,11 @@ the mission, and in return members get real, in-person perks.
 
 ## The directory
 
-Open **Partners** to browse the directory. Each card shows the business, its city,
-and what kind of place it is, with a quick tally of how many partners, cities, and
-categories are live. The directory grows as businesses join; if your city looks
-quiet, check back.
+Open **Partners** from the Zap button or the menu. The page leads with **Offers
+right now**: every live offer, who gives it, and an **Unlocked** mark on the ones
+you've already claimed in person. Below that sits the full directory; each card
+shows the business, its city, and what kind of place it is. The directory grows
+as businesses join; if your city looks quiet, check back.
 
 ## A partner's page
 
@@ -32,8 +33,9 @@ Offers are claimed **in person**, on purpose. Partners support real-world
 community, so the perk lives in the real world too:
 
 1. Show up at the partner's location.
-2. **Tap their plaque** (NFC) with your phone, or **scan their code** with your
-   camera. No special app needed.
+2. **Tap their plaque** (NFC) with your phone, or scan their code: the in-app
+   scanner is on the Partners page (or hit Check In in the Zap menu); your
+   phone's own camera works too.
 3. You claim the offer at the counter and pick up **Zaps** for showing up.
 
 See [QR codes & checking in](/help/the-game/qr-check-ins) for how scanning works in

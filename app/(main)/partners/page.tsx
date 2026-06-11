@@ -1,5 +1,12 @@
-import { MapPin, Store, Tag } from 'lucide-react'
-import { listActivePartners, type PartnerSummary } from '@/lib/partners/read'
+import Link from 'next/link'
+import { MapPin, Store, Tag, Check, ScanLine } from 'lucide-react'
+import {
+  listActivePartners,
+  listLiveOffers,
+  type PartnerSummary,
+  type LiveOffer,
+} from '@/lib/partners/read'
+import { getMyProfileId } from '@/lib/auth'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -8,12 +15,16 @@ import { EntityCard } from '@/components/cards/entity-card'
 
 export const dynamic = 'force-dynamic'
 
-// Partner directory (Phase 3 partners module). Lists aligned local businesses;
-// members find them here and unlock offers in person (NFC plaque / QR -> zaps).
-// On the shared IndexTemplate + EntityCard (REDESIGN-INAPP Phase 1). The viewer's
-// gamification stats live in the right-rail dock, so no per-page strip here.
+// Partner directory (Phase 3 partners module) + the offers-first surface behind
+// the Zap menu's Partners tile (ADR-236): live offers lead, each carrying the
+// viewer's unlocked state; the business directory follows. Unlocking stays a
+// REAL-WORLD act — walk in, scan the plaque (/scan) — this page never claims.
 export default async function PartnersPage() {
-  const partners = await listActivePartners()
+  const profileId = await getMyProfileId()
+  const [partners, offers] = await Promise.all([
+    listActivePartners(),
+    listLiveOffers(profileId),
+  ])
 
   const cities = new Set(partners.map((p) => p.city).filter(Boolean)).size
   const categories = new Set(partners.map((p) => p.category).filter(Boolean)).size
@@ -33,6 +44,25 @@ export default async function PartnersPage() {
             ]}
           />
         </div>
+      )}
+
+      {offers.length > 0 && (
+        <section className="mb-8">
+          <SectionHeader title="Offers right now" count={offers.length} />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {offers.map((o) => (
+              <OfferCard key={o.id} offer={o} />
+            ))}
+          </div>
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-subtle">
+            <ScanLine className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            Offers unlock in person: walk in and{' '}
+            <Link href="/scan?hint=partner" className="font-semibold text-primary-strong hover:underline">
+              scan the partner&rsquo;s plaque
+            </Link>
+            . Zaps ride along.
+          </p>
+        </section>
       )}
 
       <section>
@@ -83,5 +113,39 @@ function PartnerCard({ partner }: { partner: PartnerSummary }) {
         ) : undefined
       }
     />
+  )
+}
+
+// One live offer: what you get, who gives it, whether you've already unlocked it.
+function OfferCard({ offer }: { offer: LiveOffer }) {
+  const until = offer.validUntil
+    ? new Date(offer.validUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : null
+  return (
+    <Link
+      href={`/partners/${offer.partner.slug}`}
+      className="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-bold leading-snug text-text">{offer.title}</p>
+        {offer.redeemedAt ? (
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-success-bg/50 px-2 py-0.5 text-2xs font-semibold text-success">
+            <Check className="h-3 w-3" /> Unlocked
+          </span>
+        ) : until ? (
+          <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
+            Until {until}
+          </span>
+        ) : null}
+      </div>
+      {offer.description && (
+        <p className="line-clamp-2 text-xs leading-relaxed text-muted">{offer.description}</p>
+      )}
+      <p className="mt-auto flex items-center gap-1 pt-1 text-xs font-medium text-primary-strong">
+        <Store className="h-3 w-3 shrink-0" aria-hidden />
+        {offer.partner.name}
+        {offer.partner.city && <span className="font-normal text-subtle">· {offer.partner.city}</span>}
+      </p>
+    </Link>
   )
 }
