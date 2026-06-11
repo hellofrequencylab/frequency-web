@@ -1,6 +1,6 @@
 # On Air — the practice timer mini-app
 
-> Status: **P1 + P2 shipped** (ADR-229). Canon names: NAMING.md §The Quest ("On Air",
+> Status: **P1–P4 shipped** (ADR-229; desktop intercepted-modal entry deferred — see Roadmap). Canon names: NAMING.md §The Quest ("On Air",
 > "Airtime", "Dispatch from Vera"). Member help: `content/help/the-game/on-air.md`.
 
 One tap → the world goes quiet → you breathe → the game pays you in person → Vera
@@ -73,11 +73,18 @@ on revisit**, by design.
 ## Roadmap
 
 - ~~P2 — Vera live~~ ✅ shipped: AI phrasing + the Dispatch archive at `/on-air/dispatches`.
-- **P3 — the takeover:** PWA manifest shortcut ("Start practice"), desktop
-  intercepted-modal entry, interval bells + haptic phase cues, presence ("N members
-  practiced today" = count of today's logs), custom pattern slider (3–8s/phase).
-- **P4 — beauty pass:** reveal count-up/confetti animations in the arcs motif,
-  more welcome-art scenes, optional ambient.
+- ~~P3 — the takeover~~ ✅ shipped: PWA "Go On Air" manifest shortcut, interval
+  bell (Web Audio synth, opt-in) + haptic phase cues (opt-in), presence line
+  ("N members practiced today", shown at ≥3), custom pattern sliders (3–8s/phase,
+  hold may be 0). Deferred from P3: the desktop intercepted-modal entry — it
+  touches the shared (main) layout while parallel admin-chrome work is active;
+  pick it up once that settles.
+- ~~P4 — beauty pass~~ ✅ shipped: four reveal spot scenes in the welcome-art
+  language (components/on-air/reveal-art.tsx), the zap count-up (700ms ease-out),
+  the streak N−1 → N tick with pulse (skipped on "already counted" sits), a
+  one-shot celebration dot burst, and luminosity-breathing holds on the
+  visualizer. Everything bows out under prefers-reduced-motion. Optional ambient
+  audio remains unscheduled.
 
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.

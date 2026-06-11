@@ -29,8 +29,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **On Air, the practice timer**: a quiet little app inside The Quest. Pick a
   practice, go on air, and follow the breathing rings (Box, Coherent, or 4-7-8) or
-  a plain countdown; the screen stays awake and everything else gets out of the
-  way. When you finish, swipe through your payout: Zaps and bonuses landing one by
+  a plain countdown, or set your own pace with the **Custom** sliders; an optional
+  soft **bell** or **vibration** marks each phase so you can close your eyes. The
+  screen stays awake and everything else gets out of the way. When you finish, swipe through your payout: Zaps and bonuses landing one by
   one, your **streak ticking over**, your airtime and stats, and a **Dispatch from
   Vera** with your next assignment, in her own words. Every Dispatch is saved:
   scroll back through them under **Past Dispatches**. It remembers your setup, two
