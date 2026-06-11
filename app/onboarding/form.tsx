@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { completeOnboarding } from './actions'
 import { getInitials } from '@/lib/utils'
+import { WizardShell } from '@/components/templates'
 
 type Region = { id: string; name: string }
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -28,18 +29,6 @@ const HANDLE_RE = /^[a-z0-9_]+$/
 
 export default function OnboardingForm({ userId, userEmail, initialHandle, regions }: Props) {
   const [step, setStep] = useState(1)
-
-  // Move focus to the top of each step as it mounts so keyboard + screen-reader
-  // users land on the new content. Skipped on first paint (autoFocus owns it).
-  const stageRef = useRef<HTMLDivElement>(null)
-  const firstPaint = useRef(true)
-  useEffect(() => {
-    if (firstPaint.current) {
-      firstPaint.current = false
-      return
-    }
-    stageRef.current?.focus()
-  }, [step])
 
   // Step 1
   const [displayName, setDisplayName] = useState('')
@@ -201,130 +190,68 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
     )
   }
 
-  function renderProgress() {
-    return (
-      <div className="mb-9">
-        <div
-          className="flex items-center gap-1.5"
-          role="progressbar"
-          aria-valuemin={1}
-          aria-valuemax={4}
-          aria-valuenow={step}
-          aria-valuetext={`Step ${step} of 4: ${STEP_LABELS[step - 1]}`}
-        >
-          {[1, 2, 3, 4].map((s) => (
-            <span
-              key={s}
-              aria-hidden
-              className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${
-                s <= step ? 'bg-primary' : 'bg-border-strong'
-              }`}
-            />
-          ))}
-        </div>
-        <p className="mt-3 text-xs font-medium text-subtle" aria-live="polite">
-          Step {step} of 4 · <span className="text-muted">{STEP_LABELS[step - 1]}</span>
-        </p>
-      </div>
-    )
-  }
-
-  const btnPrimary =
-    'inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary shadow-sm transition-all hover:bg-primary-hover hover:shadow-md enabled:hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
-  const btnSecondary =
-    'inline-flex items-center justify-center rounded-xl border border-border-strong bg-surface px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated'
   const inputBase =
     'w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
 
   // ── Steps ─────────────────────────────────────────────────────────────────
 
+  // Per-step header + footer config — the shell renders the chrome, each step just
+  // supplies its fields. (STEP_LABELS feeds the progress cue.)
+  const stepConfig = {
+    1: {
+      title: 'Let’s set you up',
+      description: 'How should the community know you?',
+      onNext: () => setStep(2),
+      nextDisabled: !step1Valid(),
+    },
+    2: {
+      title: 'Add a face and a few words',
+      description: 'Optional, but it helps people connect.',
+      onBack: () => setStep(1),
+      onNext: advanceFromStep2,
+      nextDisabled: uploading,
+      nextBusy: uploading,
+      nextBusyLabel: 'Uploading…',
+    },
+    3: {
+      title: 'Where are you?',
+      description: 'We’ll connect you to the community nearest you.',
+      onBack: () => setStep(2),
+      onNext: () => setStep(4),
+      nextDisabled: !regionId && regions.length > 0,
+    },
+    4: {
+      title: 'Ready to join?',
+      description: 'A quick look before you step in.',
+      onBack: () => setStep(3),
+      onNext: submit,
+      nextLabel: 'Join Frequency',
+      nextBusy: submitting,
+      nextBusyLabel: 'Joining…',
+      error: submitError || undefined,
+    },
+  }[step]!
+
   return (
-    <main className="flex min-h-screen bg-marketing-canvas">
-      {/* Brand rail — warm, image-led, with a live step tracker (desktop only). */}
-      <aside className="relative hidden w-[44%] max-w-xl shrink-0 overflow-hidden lg:block">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: 'url(/images/site/community-1.jpg)' }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/85" />
-        <div className="relative flex h-full flex-col justify-between p-12 text-white">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary" />
-            <span className="font-display text-xl uppercase tracking-tight">Frequency</span>
-          </div>
-
-          <div>
-            <h2 className="font-display text-5xl uppercase leading-[0.95]">
-              Welcome
-              <br />
-              home.
-            </h2>
-            <p className="mt-5 max-w-sm leading-relaxed text-white/75">
-              You found the room. A few quick things and you&rsquo;re part of it. A real
-              place to belong, with people near you.
-            </p>
-          </div>
-
-          <ol className="space-y-2.5">
-            {STEP_LABELS.map((label, i) => {
-              const n = i + 1
-              const done = step > n
-              const current = step === n
-              return (
-                <li
-                  key={label}
-                  className={`flex items-center gap-3 text-sm transition-colors ${
-                    current ? 'text-white' : done ? 'text-white/80' : 'text-white/45'
-                  }`}
-                >
-                  <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                      done
-                        ? 'bg-primary text-on-primary'
-                        : current
-                        ? 'bg-white text-ink'
-                        : 'border border-white/30'
-                    }`}
-                  >
-                    {done ? '✓' : n}
-                  </span>
-                  {label}
-                </li>
-              )
-            })}
-          </ol>
-        </div>
-      </aside>
-
-      {/* Form column */}
-      <section className="flex flex-1 items-center justify-center px-5 py-10 sm:px-10">
-        <div className="w-full max-w-md">
-          {/* Compact brand mark for mobile (the rail is hidden there). */}
-          <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="h-7 w-7 rounded-lg bg-primary" />
-            <span className="font-display text-lg uppercase tracking-tight text-text">Frequency</span>
-          </div>
-
-          {renderProgress()}
-
-          {/* Keyed by step so each one eases in. */}
-          <div
-            key={step}
-            ref={stageRef}
-            tabIndex={-1}
-            role="group"
-            aria-label={`Step ${step} of 4: ${STEP_LABELS[step - 1]}`}
-            className="animate-[slideUp_0.35s_ease-out] outline-none"
-          >
-            {/* ── Step 1: Name + Handle ── */}
-            {step === 1 && (
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-text">Let&rsquo;s set you up</h1>
-                  <p className="mt-1.5 text-sm text-muted">How should the community know you?</p>
-                </div>
-
-                <div className="space-y-4">
+    <WizardShell
+      step={step}
+      totalSteps={4}
+      stepLabel={STEP_LABELS[step - 1]}
+      eyebrow="Welcome home"
+      title={stepConfig.title}
+      description={stepConfig.description}
+      onBack={'onBack' in stepConfig ? stepConfig.onBack : undefined}
+      onNext={stepConfig.onNext}
+      nextLabel={'nextLabel' in stepConfig ? stepConfig.nextLabel : 'Continue'}
+      nextDisabled={stepConfig.nextDisabled}
+      nextBusy={'nextBusy' in stepConfig ? stepConfig.nextBusy : false}
+      nextBusyLabel={'nextBusyLabel' in stepConfig ? stepConfig.nextBusyLabel : undefined}
+      error={'error' in stepConfig ? stepConfig.error : undefined}
+      exit={[{ href: '/', label: 'Home' }, { href: '/sign-in', label: 'Log in to account' }]}
+    >
+      {/* ── Step 1: Name + Handle ── */}
+      {step === 1 && (
+        <div className="mt-2 space-y-4">
                   <div>
                     <label htmlFor="displayName" className="mb-1.5 block text-sm font-medium text-text">
                       Display name <span className="text-danger">*</span>
@@ -395,22 +322,11 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                     </p>
                   </div>
                 </div>
+      )}
 
-                <button disabled={!step1Valid()} onClick={() => setStep(2)} className={`${btnPrimary} w-full`}>
-                  Continue
-                </button>
-              </div>
-            )}
-
-            {/* ── Step 2: Bio + Avatar ── */}
-            {step === 2 && (
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-text">Add a face and a few words</h1>
-                  <p className="mt-1.5 text-sm text-muted">Optional, but it helps people connect.</p>
-                </div>
-
-                <div className="space-y-5">
+      {/* ── Step 2: Bio + Avatar ── */}
+      {step === 2 && (
+                <div className="mt-2 space-y-5">
                   <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4">
                     {renderAvatar()}
                     <div className="flex flex-col items-start gap-1">
@@ -464,29 +380,11 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                     </p>
                   </div>
                 </div>
+      )}
 
-                <div className="flex gap-3">
-                  <button onClick={() => setStep(1)} className={`${btnSecondary} flex-1`}>
-                    Back
-                  </button>
-                  <button onClick={advanceFromStep2} disabled={uploading} className={`${btnPrimary} flex-1`}>
-                    {uploading ? 'Uploading…' : 'Continue'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── Step 3: Region ── */}
-            {step === 3 && (
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-text">Where are you?</h1>
-                  <p className="mt-1.5 text-sm text-muted">
-                    We&rsquo;ll connect you to the community nearest you.
-                  </p>
-                </div>
-
-                <div>
+      {/* ── Step 3: Region ── */}
+      {step === 3 && (
+                <div className="mt-2">
                   <label htmlFor="region" className="mb-1.5 block text-sm font-medium text-text">
                     Region <span className="text-danger">*</span>
                   </label>
@@ -510,31 +408,11 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                     </select>
                   )}
                 </div>
+      )}
 
-                <div className="flex gap-3">
-                  <button onClick={() => setStep(2)} className={`${btnSecondary} flex-1`}>
-                    Back
-                  </button>
-                  <button
-                    disabled={!regionId && regions.length > 0}
-                    onClick={() => setStep(4)}
-                    className={`${btnPrimary} flex-1`}
-                  >
-                    Continue
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── Step 4: Review ── */}
-            {step === 4 && (
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-text">Ready to join?</h1>
-                  <p className="mt-1.5 text-sm text-muted">A quick look before you step in.</p>
-                </div>
-
-                <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+      {/* ── Step 4: Review ── */}
+      {step === 4 && (
+                <div className="mt-2 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
                   <div className="flex items-center gap-4 p-5">
                     {renderAvatar('lg')}
                     <div className="min-w-0">
@@ -557,22 +435,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                     </div>
                   )}
                 </div>
-
-                {submitError && <p className="text-center text-sm text-danger">{submitError}</p>}
-
-                <div className="flex gap-3">
-                  <button onClick={() => setStep(3)} className={`${btnSecondary} flex-1`}>
-                    Back
-                  </button>
-                  <button onClick={submit} disabled={submitting} className={`${btnPrimary} flex-1`}>
-                    {submitting ? 'Joining…' : 'Join Frequency'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-    </main>
+      )}
+    </WizardShell>
   )
 }
