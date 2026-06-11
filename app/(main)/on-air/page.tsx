@@ -78,15 +78,18 @@ export default async function OnAirPage({
       ? requested
       : practices.find((p) => !p.loggedToday)?.id ?? null
 
-  return (
-    <FocusTemplate
-      eyebrow="The Quest"
-      title="Mindless"
-      description="The world can wait a few minutes. Breathe, log, collect the day."
-      width="narrow"
-      divider={false}
-    >
-      {practices.length === 0 ? (
+  // The session is a full-page takeover from the first screen (ADR-229 P8):
+  // entering Mindless means no app chrome at all. The Focus shell only hosts
+  // the empty "adopt a practice first" state.
+  if (practices.length === 0) {
+    return (
+      <FocusTemplate
+        eyebrow="The Quest"
+        title="Mindless"
+        description="The world can wait a few minutes. Breathe, log, collect the day."
+        width="narrow"
+        divider={false}
+      >
         <div className="rounded-2xl border border-border bg-surface p-6 text-center">
           <p className="text-sm font-medium text-text">Nothing on your list yet.</p>
           <p className="mt-1 text-sm text-muted">
@@ -99,14 +102,16 @@ export default async function OnAirPage({
             Browse practices
           </Link>
         </div>
-      ) : (
-        <OnAirSession
-          practices={practices}
-          defaultPracticeId={defaultPracticeId}
-          prefs={prefs}
-          practicedToday={practicedToday}
-        />
-      )}
-    </FocusTemplate>
+      </FocusTemplate>
+    )
+  }
+
+  return (
+    <OnAirSession
+      practices={practices}
+      defaultPracticeId={defaultPracticeId}
+      prefs={prefs}
+      practicedToday={practicedToday}
+    />
   )
 }

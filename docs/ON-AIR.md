@@ -115,5 +115,15 @@ on revisit**, by design.
   line, the reveal exit, the PWA shortcut, help and changelog. "On Air" stays
   the internal name (this doc, routes, schema, ADRs); Airtime keeps its name.
 
+- ~~P8 — the setup is the takeover too~~ ✅ shipped: entering Mindless is
+  chrome-free from the FIRST screen — the setup renders inside the same
+  full-viewport overlay as the sit (no app header/tab bar/edge pills), crowned
+  by the same lotus + MINDLESS wordmark (still, not pulsing, until you're in)
+  with a quiet ✕ that returns to the screen you came from. Compact one-viewport
+  layout: practices became a horizontal chip row, sections tightened, and the
+  **Tune out** button is PINNED in a sticky footer so it never sinks below the
+  fold (even with the Custom sliders open). The page shell only hosts the
+  empty "adopt a practice first" state.
+
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.
