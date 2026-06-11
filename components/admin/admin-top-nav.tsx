@@ -154,7 +154,13 @@ export function AdminTopNav(props: AdminNavProps) {
 
   return (
     <div className="sticky top-14 z-30 -mx-6 -mt-6 mb-8 border-b border-border bg-surface/95 px-6 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-      <div className="mx-auto w-full max-w-[105rem]">
+      {/* The bar spans full width (background + border), but its MENU aligns with
+          the content column: spacers below match the left + right rails (admin
+          layout), so the items start at the content block's left edge and run its
+          width — not over the rails. */}
+      <div className="mx-auto flex w-full max-w-[105rem] gap-8">
+        <div className="hidden w-48 shrink-0 lg:block" aria-hidden />
+        <div className="min-w-0 flex-1">
         {/* Desktop: plain links. */}
         <nav aria-label="Admin" className="hidden h-12 items-center gap-1 md:flex">
           <Link
@@ -198,6 +204,8 @@ export function AdminTopNav(props: AdminNavProps) {
         <div className="py-2.5 md:hidden">
           <MobileMenu {...props} />
         </div>
+        </div>
+        <div className="hidden w-64 shrink-0 xl:block" aria-hidden />
       </div>
     </div>
   )
