@@ -183,16 +183,18 @@ export async function warnMember(
 
   const admin = createAdminClient()
 
-  // Look up the system profile (one row, seeded by 20240207 migration).
+  // Look up the system profile (Vera — formerly @moderation; one is_system row).
+  // Matched by is_system, NOT the handle, so renaming the account never breaks this.
   const { data: system } = await admin
     .from('profiles')
     .select('id')
     .eq('is_system', true)
-    .eq('handle', 'moderation')
+    .eq('is_active', true)
+    .limit(1)
     .maybeSingle()
 
   if (!system) {
-    return fail('System moderation profile missing. Re-run migration 20240207.')
+    return fail('System profile missing. Re-run migration 20240207.')
   }
 
   // Reuse an existing 1:1 DM between the system profile and the member
