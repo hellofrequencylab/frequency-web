@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, RefreshCw, CheckCircle2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { reindexHelp } from './actions'
 import { isError } from '@/lib/action-result'
 
@@ -48,15 +49,15 @@ export function ReindexHelpButton({ embeddedChunks, onReindexed }: { embeddedChu
             )}
           </p>
         </div>
-        <button
+        <Button
           type="button"
           onClick={run}
           disabled={pending}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="shrink-0"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {empty ? 'Build index' : 'Reindex'}
-        </button>
+        </Button>
       </div>
       {msg && (
         <p className="mt-3 flex items-center gap-1.5 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">

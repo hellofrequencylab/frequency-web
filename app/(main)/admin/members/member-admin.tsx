@@ -8,6 +8,7 @@ import {
   UserX, UserCheck, Trash2, Loader2, Check,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import {
   assignRole, deactivateMember, reactivateMember,
   sendMagicLink, updateMemberProfile, deleteUserAccount,
@@ -273,12 +274,12 @@ function MemberRow({
                 <textarea name="bio" defaultValue={m.bio ?? ''} rows={2} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs resize-none" />
               </div>
               <div className="flex items-center gap-2">
-                <button type="submit" disabled={isPending} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-on-primary hover:bg-primary disabled:opacity-50">
+                <Button type="submit" size="sm" disabled={isPending}>
                   Save changes
-                </button>
-                <button type="button" onClick={() => setEditMode(false)} className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated">
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setEditMode(false)}>
                   Cancel
-                </button>
+                </Button>
               </div>
             </form>
           ) : null}
@@ -290,19 +291,21 @@ function MemberRow({
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 flex-wrap">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setEditMode(!editMode)}
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
             >
               <Pencil className="w-3 h-3" /> Edit profile
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={handleSendMagicLink}
               disabled={isPending}
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors disabled:opacity-50"
             >
               <Mail className="w-3 h-3" /> Send sign-in link
-            </button>
+            </Button>
             {m.is_active ? (
               <button
                 onClick={handleDeactivate}
@@ -330,19 +333,21 @@ function MemberRow({
             ) : (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-danger font-medium">Are you sure?</span>
-                <button
+                <Button
+                  variant="danger"
+                  size="sm"
                   onClick={handleDelete}
                   disabled={isPending}
-                  className="rounded-lg bg-danger px-3 py-1.5 text-xs font-medium text-white hover:bg-danger disabled:opacity-50"
                 >
                   Yes, delete
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setConfirmDelete(false)}
-                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             )}
           </div>

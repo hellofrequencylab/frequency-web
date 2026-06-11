@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Trash2, AlertTriangle, Eye, Wind, ShieldAlert, MapPin } from 'lucide-react'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
+import { Button } from '@/components/ui/button'
 import { purgeArea, runDemoDecay } from './studio/actions'
 import { deleteDemoCircles, purgeDemoContent } from './actions'
 
@@ -219,15 +220,15 @@ export function DangerZone({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold text-text">Purge ALL demo content</p>
-              <button
+              <Button
                 type="button"
+                variant="danger"
                 disabled={!armed || pending || total === 0}
                 onClick={() => run(() => purgeDemoContent().then(() => setConfirm('')), 'All demo content purged.')}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 Purge everything
-              </button>
+              </Button>
             </div>
             <p className="mt-0.5 text-sm text-muted">
               Permanently deletes all {total.toLocaleString()} demo {total === 1 ? 'row' : 'rows'} (and their reactions, memberships, and RSVPs). Use once real content has taken over.
