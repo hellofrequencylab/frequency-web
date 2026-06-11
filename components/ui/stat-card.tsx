@@ -68,14 +68,14 @@ export function StatCard({
       </div>
       <p
         className={`tabular-nums text-text ${
-          sm ? 'mt-0.5 text-sm font-bold' : 'mt-0.5 text-xl font-bold leading-none'
+          sm ? 'mt-0.5 text-sm font-bold' : 'mt-0 text-lg font-bold leading-tight'
         }`}
       >
         {value}
       </p>
-      {detail && <p className="mt-1 text-xs text-subtle">{detail}</p>}
+      {detail && <p className="mt-0.5 text-xs text-subtle">{detail}</p>}
       {delta && t && (
-        <p className={`mt-1.5 inline-flex items-center gap-1 text-xs font-medium ${t.cls}`}>
+        <p className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${t.cls}`}>
           <t.Icon className="h-3.5 w-3.5 shrink-0" />
           {delta.label}
         </p>
@@ -83,7 +83,7 @@ export function StatCard({
     </>
   )
 
-  const cls = `block rounded-2xl ${sm ? 'px-4 py-3' : 'px-4 py-2.5'} ${
+  const cls = `block rounded-2xl ${sm ? 'px-4 py-3' : 'px-3.5 py-2'} ${
     bordered ? 'border border-border bg-surface shadow-sm' : 'bg-surface-elevated/60'
   }`
   return href ? (

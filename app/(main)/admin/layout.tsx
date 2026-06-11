@@ -27,7 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       <div className="mx-auto flex w-full max-w-[105rem] gap-8">
         {/* Navigation left — the active domain's areas. */}
-        <aside className="hidden w-56 shrink-0 lg:block">
+        <aside className="hidden w-48 shrink-0 lg:block">
           <div className="sticky top-[6.5rem] max-h-[calc(100vh-7.5rem)] overflow-y-auto pb-6">
             <AdminLeftNav role={role} webRole={webRole} staffRole={staffRole} />
           </div>
