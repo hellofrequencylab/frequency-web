@@ -1,11 +1,12 @@
 import Link from 'next/link'
-import { Users, Layers, Building2, Plus, CalendarDays, Megaphone, Zap, Activity, TrendingUp } from 'lucide-react'
+import { Users, Layers, Building2, Plus, Zap, Activity } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { requireAdminFloor } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { AdminLaunchpad } from '@/components/admin/admin-launchpad'
 import { StatCard } from '@/components/ui/stat-card'
+import { ChartCard, RingGauge, TrendArea, WeekBars, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
 import { AdminCreateMenu } from './create-menu'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { MemberManager, type MemberItem } from './member-manager'
@@ -13,21 +14,78 @@ import { isJanitor } from '@/lib/core/roles'
 import type { CommunityRole } from '@/lib/core/roles'
 import type { SeasonRank } from '@/lib/season-ranks'
 
+// Admin home (ADR-228 redesign): the TOP is a real dashboard — site optics at a
+// glance (growth trend, weekly practice + event volume, activation ring) on a
+// WIDE multi-column grid that uses the full workspace, instead of the old narrow
+// single-column stack. The janitor roster/circle dumps are condensed to compact
+// side-by-side panels that LINK to their real management surfaces
+// (/admin/members, /admin/circles) — the home is for orientation, not scrolling.
+
+const WEEK = 7 * 24 * 60 * 60 * 1000
+const GROWTH_WEEKS = 12
+const VOLUME_WEEKS = 8
+
 export default async function AdminPageView() {
   const { profileId, role, webRole, staffRole } = await requireAdminFloor()
   const staffJanitor = isJanitor(webRole) // STAFF axis (ADR-208), not the community ladder
   const admin = createAdminClient()
 
-  // Overview stat counts — a quick aggregate for all admin roles.
-  const [membersCount, circlesCount, eventsCount, dispatchesCount] = await Promise.all([
+  const now = new Date()
+  const growthStart = new Date(now.getTime() - GROWTH_WEEKS * WEEK).toISOString()
+  const volumeStart = new Date(now.getTime() - VOLUME_WEEKS * WEEK).toISOString()
+  const weekAhead = new Date(now.getTime() + WEEK).toISOString()
+
+  // One parallel sweep for the dashboard: counts + the time series the charts need.
+  const [
+    membersCount,
+    circlesCount,
+    dispatchesCount,
+    joinsRes,
+    practiceRows,
+    eventRows,
+    upcomingCount,
+    practice,
+  ] = await Promise.all([
     admin.from('memberships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
     admin.from('circles').select('id', { count: 'exact', head: true }),
-    admin.from('events').select('id', { count: 'exact', head: true }),
     admin.from('dispatches').select('id', { count: 'exact', head: true }),
+    // Member joins inside the growth window (the chart) + the all-time base before it.
+    admin.from('profiles').select('created_at').gte('created_at', growthStart),
+    admin
+      .from('engagement_events')
+      .select('created_at')
+      .eq('event_type', 'practice.verified')
+      .gte('created_at', volumeStart),
+    admin.from('events').select('starts_at').gte('starts_at', volumeStart).lte('starts_at', weekAhead),
+    admin
+      .from('events')
+      .select('id', { count: 'exact', head: true })
+      .gte('starts_at', now.toISOString())
+      .lte('starts_at', weekAhead),
+    getPracticeMetrics(),
   ])
 
-  // North Star: verified-practice metrics off the event backbone.
-  const practice = await getPracticeMetrics()
+  // Growth series: cumulative members across the window (base = total before it).
+  const { count: totalProfiles } = await admin
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+  const joinDates = (joinsRes.data ?? []).map((r) => new Date(r.created_at as string))
+  const weeklyJoins = weeklyBuckets(joinDates, GROWTH_WEEKS, now)
+  const joinedInWindow = weeklyJoins.reduce((a, b) => a + b, 0)
+  const growthSeries = cumulative((totalProfiles ?? 0) - joinedInWindow, weeklyJoins)
+  const joinedThisMonth = weeklyJoins.slice(-4).reduce((a, b) => a + b, 0)
+
+  // Weekly volume series.
+  const practiceSeries = weeklyBuckets(
+    (practiceRows.data ?? []).map((r) => new Date(r.created_at as string)),
+    VOLUME_WEEKS,
+    now,
+  )
+  const eventSeries = weeklyBuckets(
+    (eventRows.data ?? []).map((r) => new Date(r.starts_at as string)),
+    VOLUME_WEEKS,
+    now,
+  )
 
   const description = staffJanitor
     ? 'Full platform access. Every surface below.'
@@ -38,26 +96,60 @@ export default async function AdminPageView() {
       title="Admin home"
       eyebrow="Overview"
       description={description}
+      width="wide"
       actions={<AdminCreateMenu role={role} />}
     >
-      <AdminSection title="At a glance">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Members" value={(membersCount.count ?? 0).toLocaleString()} icon={Users} />
-          <StatCard label="Circles" value={(circlesCount.count ?? 0).toLocaleString()} icon={Layers} />
-          <StatCard label="Events" value={(eventsCount.count ?? 0).toLocaleString()} icon={CalendarDays} />
-          <StatCard label="Broadcasts" value={(dispatchesCount.count ?? 0).toLocaleString()} icon={Megaphone} />
-        </div>
-      </AdminSection>
+      {/* ── The dashboard: site optics on one wide band ─────────────────────── */}
+      <AdminSection title="This week">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-12">
+          {/* KPI tiles — the four live numbers. */}
+          <div className="col-span-2 grid grid-cols-2 gap-3 lg:col-span-4">
+            <StatCard label="Members" value={(membersCount.count ?? 0).toLocaleString()} icon={Users} />
+            <StatCard label="Weekly active" value={practice.wam} icon={Zap} />
+            <StatCard label="Practices · 7d" value={practice.verifiedThisWeek} icon={Activity} />
+            <StatCard label="Events · next 7d" value={upcomingCount.count ?? 0} icon={Layers} />
+          </div>
 
-      <AdminSection title="North Star · Verified practice">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <StatCard label="Weekly active members" value={practice.wam} icon={Zap} />
-          <StatCard label="Practices this week" value={practice.verifiedThisWeek} icon={Activity} />
-          <StatCard
-            label={`Activation 7d (${practice.activated}/${practice.newMembers})`}
-            value={`${Math.round(practice.activationRate * 100)}%`}
-            icon={TrendingUp}
-          />
+          {/* Member growth — the trend that frames everything else. */}
+          <div className="col-span-2 lg:col-span-5">
+            <ChartCard
+              title="Member growth"
+              value={(totalProfiles ?? 0).toLocaleString()}
+              delta={joinedThisMonth > 0 ? `+${joinedThisMonth} this month` : undefined}
+              caption={`${GROWTH_WEEKS} weeks ago → now`}
+            >
+              <TrendArea points={growthSeries} />
+            </ChartCard>
+          </div>
+
+          {/* Activation — the North-Star conversion. */}
+          <div className="col-span-2 lg:col-span-3">
+            <div className="flex h-full flex-col justify-center rounded-2xl border border-border bg-surface p-4">
+              <RingGauge
+                pct={practice.activationRate}
+                label="Activation · 7d"
+                sub={`${practice.activated} of ${practice.newMembers} new members logged a verified practice within a week`}
+              />
+            </div>
+          </div>
+
+          {/* Weekly volume — the two pulses, side by side. */}
+          <div className="col-span-2 lg:col-span-6">
+            <ChartCard
+              title="Verified practices / week"
+              caption={`${VOLUME_WEEKS} weeks · current week highlighted`}
+            >
+              <WeekBars values={practiceSeries} />
+            </ChartCard>
+          </div>
+          <div className="col-span-2 lg:col-span-6">
+            <ChartCard
+              title="Events / week"
+              caption={`${VOLUME_WEEKS} weeks by start date · includes the week ahead`}
+            >
+              <WeekBars values={eventSeries} />
+            </ChartCard>
+          </div>
         </div>
       </AdminSection>
 
@@ -65,7 +157,9 @@ export default async function AdminPageView() {
         <AdminLaunchpad role={role} webRole={webRole} staffRole={staffRole} />
       </AdminSection>
 
-      {staffJanitor && <JanitorPanel />}
+      {staffJanitor && (
+        <JanitorPanel circlesCount={circlesCount.count ?? 0} broadcasts={dispatchesCount.count ?? 0} />
+      )}
       {role === 'host' && <HostPanel profileId={profileId} />}
       {role === 'guide' && <GuidePanel profileId={profileId} />}
       {role === 'mentor' && <MentorPanel profileId={profileId} />}
@@ -158,53 +252,100 @@ const MEMBERSHIP_SELECT = `id, volunteer_role, joined_at,
    profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
    circle:circles!circle_id ( name )`
 
-// ── Janitor: full platform overview ──────────────────────────────────────────
+// ── Janitor: condensed platform panels — the home ORIENTS; the full lists live
+//    on their management surfaces (/admin/circles, /admin/members). ─────────────
 
-async function JanitorPanel() {
+async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number; broadcasts: number }) {
   const admin = createAdminClient()
 
-  const [circlesRes, hubsRes, nexusesRes, membersRes] = await Promise.all([
-    admin.from('circles').select('id, name, slug, status, type, member_count, member_cap, hub:hubs!hub_id(name)').order('name'),
-    admin.from('hubs').select('id, name, slug, status').order('name'),
-    admin.from('nexuses').select('id, name, slug, status').order('name'),
-    admin.from('memberships').select(MEMBERSHIP_SELECT).eq('status', 'active').order('joined_at', { ascending: true }).limit(200),
+  const [circlesRes, hubsRes, nexusesRes, recentRes] = await Promise.all([
+    // Fullest circles first — where capacity pressure is.
+    admin
+      .from('circles')
+      .select('id, name, slug, status, member_count, member_cap, hub:hubs!hub_id(name)')
+      .order('member_count', { ascending: false })
+      .limit(6),
+    admin.from('hubs').select('id', { count: 'exact', head: true }),
+    admin.from('nexuses').select('id', { count: 'exact', head: true }),
+    // Newest joins — who just arrived.
+    admin
+      .from('memberships')
+      .select(MEMBERSHIP_SELECT)
+      .eq('status', 'active')
+      .order('joined_at', { ascending: false })
+      .limit(8),
   ])
 
-  const hubs = hubsRes.data ?? []
-  const nexuses = nexusesRes.data ?? []
-  const members = toMemberItems((membersRes.data ?? []) as unknown as MembershipRow[])
   const circles = (circlesRes.data ?? []) as unknown as Array<{
     id: string; name: string; slug: string; status: string; member_count: number; member_cap: number; hub: { name: string } | null
   }>
+  const recent = (recentRes.data ?? []) as unknown as MembershipRow[]
 
   return (
     <>
       <AdminSection title="Platform totals">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Nexuses" value={nexuses.length} icon={Building2} />
-          <StatCard label="Hubs" value={hubs.length} icon={Building2} />
-          <StatCard label="Circles" value={circles.length} icon={Layers} />
-          <StatCard label="Members" value={members.length} icon={Users} />
+          <StatCard label="Nexuses" value={nexusesRes.count ?? 0} icon={Building2} />
+          <StatCard label="Hubs" value={hubsRes.count ?? 0} icon={Building2} />
+          <StatCard label="Circles" value={circlesCount} icon={Layers} />
+          <StatCard label="Broadcasts" value={broadcasts} icon={Users} />
         </div>
       </AdminSection>
 
-      <AdminSection title="All circles">
-        <div className="space-y-2">
-          {circles.map((c) => (
-            <CircleRow
-              key={c.id}
-              href={`/circles/${c.slug}`}
-              name={c.name}
-              status={c.status}
-              meta={`${c.member_count} / ${c.member_cap}${c.hub?.name ? ` · ${c.hub.name}` : ''}`}
-            />
-          ))}
-        </div>
-      </AdminSection>
+      {/* Side-by-side panels — circles by fill | newest members. */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AdminSection
+          title="Circles by fill"
+          actions={
+            <Link href="/admin/circles" className="text-xs font-semibold text-primary-strong hover:underline">
+              View all →
+            </Link>
+          }
+        >
+          <div className="space-y-2">
+            {circles.map((c) => (
+              <CircleRow
+                key={c.id}
+                href={`/circles/${c.slug}`}
+                name={c.name}
+                status={c.status}
+                meta={`${c.member_count} / ${c.member_cap}${c.hub?.name ? ` · ${c.hub.name}` : ''}`}
+              />
+            ))}
+          </div>
+        </AdminSection>
 
-      <AdminSection title={`All members · ${members.length}`}>
-        {members.length === 0 ? <EmptyState message="No members yet." /> : <MemberManager members={members} />}
-      </AdminSection>
+        <AdminSection
+          title="Newest members"
+          actions={
+            <Link href="/admin/members" className="text-xs font-semibold text-primary-strong hover:underline">
+              Full roster →
+            </Link>
+          }
+        >
+          <div className="space-y-2">
+            {recent.map((m) => (
+              <Link
+                key={m.id}
+                href={`/people/${m.profile.handle}`}
+                className="flex items-center justify-between rounded-2xl bg-surface-elevated/60 px-4 py-3 transition-colors hover:bg-surface-elevated"
+              >
+                <div className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-text">{m.profile.display_name}</span>
+                  <p className="mt-0.5 text-xs text-subtle">
+                    @{m.profile.handle}
+                    {m.circle?.name ? ` · ${m.circle.name}` : ''}
+                  </p>
+                </div>
+                <span className="shrink-0 text-xs text-subtle">
+                  {new Date(m.joined_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </span>
+              </Link>
+            ))}
+            {recent.length === 0 && <EmptyState message="No members yet." />}
+          </div>
+        </AdminSection>
+      </div>
     </>
   )
 }
@@ -234,15 +375,8 @@ async function HostPanel({ profileId }: { profileId: string }) {
   }>
 
   return (
-    <>
-      <AdminSection title="Your community">
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Circles" value={hostCircles.length} icon={Layers} />
-          <StatCard label="Members" value={members.length} icon={Users} />
-        </div>
-      </AdminSection>
-
-      <AdminSection title="Your circles">
+    <div className="grid gap-6 lg:grid-cols-2">
+      <AdminSection title={`Your circles · ${hostCircles.length}`}>
         {hostCircles.length === 0 ? (
           <EmptyState message="No circles yet." cta={{ href: '/admin/circles', label: 'Create a circle' }} />
         ) : (
@@ -267,7 +401,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
           <MemberManager members={members} />
         )}
       </AdminSection>
-    </>
+    </div>
   )
 }
 
@@ -292,7 +426,6 @@ async function GuidePanel({ profileId }: { profileId: string }) {
   const typedHubs = (hubs ?? []) as unknown as GuideHub[]
 
   const allCircleIds = typedHubs.flatMap((h) => h.circles.map((c) => c.id))
-  const totalMembers = typedHubs.reduce((sum, h) => sum + h.circles.reduce((s, c) => s + (c.member_count ?? 0), 0), 0)
 
   const { data: rawMembers } = await admin
     .from('memberships')
@@ -305,43 +438,37 @@ async function GuidePanel({ profileId }: { profileId: string }) {
 
   return (
     <>
-      <AdminSection title="Your area">
-        <div className="grid grid-cols-3 gap-3">
-          <StatCard label="Hubs" value={typedHubs.length} icon={Building2} />
-          <StatCard label="Circles" value={allCircleIds.length} icon={Layers} />
-          <StatCard label="Members" value={totalMembers} icon={Users} />
-        </div>
-      </AdminSection>
-
-      {typedHubs.map((hub) => (
-        <AdminSection
-          key={hub.id}
-          title={hub.name}
-          actions={
-            hub.nexus && (
-              <Link href={`/nexuses/${hub.nexus.slug}`} className="text-xs text-primary-strong hover:underline">
-                {hub.nexus.name} →
-              </Link>
-            )
-          }
-        >
-          {hub.circles.length === 0 ? (
-            <EmptyState message="No circles in this hub yet." cta={{ href: '/admin/circles', label: 'Add a circle' }} />
-          ) : (
-            <div className="space-y-2">
-              {hub.circles.map((c) => (
-                <CircleRow
-                  key={c.id}
-                  href={`/circles/${c.slug}`}
-                  name={c.name}
-                  status={c.status}
-                  meta={`${c.member_count} / ${c.member_cap}${c.host ? ` · Host: ${c.host.display_name}` : ''}`}
-                />
-              ))}
-            </div>
-          )}
-        </AdminSection>
-      ))}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {typedHubs.map((hub) => (
+          <AdminSection
+            key={hub.id}
+            title={hub.name}
+            actions={
+              hub.nexus && (
+                <Link href={`/nexuses/${hub.nexus.slug}`} className="text-xs text-primary-strong hover:underline">
+                  {hub.nexus.name} →
+                </Link>
+              )
+            }
+          >
+            {hub.circles.length === 0 ? (
+              <EmptyState message="No circles in this hub yet." cta={{ href: '/admin/circles', label: 'Add a circle' }} />
+            ) : (
+              <div className="space-y-2">
+                {hub.circles.map((c) => (
+                  <CircleRow
+                    key={c.id}
+                    href={`/circles/${c.slug}`}
+                    name={c.name}
+                    status={c.status}
+                    meta={`${c.member_count} / ${c.member_cap}${c.host ? ` · Host: ${c.host.display_name}` : ''}`}
+                  />
+                ))}
+              </div>
+            )}
+          </AdminSection>
+        ))}
+      </div>
 
       {typedHubs.length === 0 && (
         <EmptyState message="No hubs assigned yet." cta={{ href: '/admin/hubs', label: 'Set up a hub' }} />
@@ -386,11 +513,6 @@ async function MentorPanel({ profileId }: { profileId: string }) {
       for (const circle of hub.circles ?? []) allCircleIds.push(circle.id)
     }
   }
-  const totalHubs = typedNexuses.flatMap((n) => n.hubs.map((h) => h.id)).length
-  const totalMembers = typedNexuses.reduce(
-    (sum, n) => sum + n.hubs.reduce((hs, h) => hs + h.circles.reduce((cs, c) => cs + (c.member_count ?? 0), 0), 0),
-    0
-  )
 
   const { data: rawMembers } = await admin
     .from('memberships')
@@ -403,40 +525,33 @@ async function MentorPanel({ profileId }: { profileId: string }) {
 
   return (
     <>
-      <AdminSection title="Your region">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Nexuses" value={typedNexuses.length} icon={Building2} />
-          <StatCard label="Hubs" value={totalHubs} icon={Building2} />
-          <StatCard label="Circles" value={allCircleIds.length} icon={Layers} />
-          <StatCard label="Members" value={totalMembers} icon={Users} />
-        </div>
-      </AdminSection>
-
-      {typedNexuses.map((nexus) => {
-        const nexusTotal = nexus.hubs.reduce((sum, h) => sum + h.circles.reduce((s, c) => s + (c.member_count ?? 0), 0), 0)
-        return (
-          <AdminSection
-            key={nexus.id}
-            title={nexus.name}
-            description={`${nexus.outpost?.name ?? ''} · ${nexusTotal} / ${nexus.member_cap} members`}
-          >
-            <div className="space-y-2">
-              {nexus.hubs.map((hub) => {
-                const hubTotal = hub.circles.reduce((s, c) => s + (c.member_count ?? 0), 0)
-                return (
-                  <CircleRow
-                    key={hub.id}
-                    href={`/hubs/${hub.slug}`}
-                    name={hub.name}
-                    status={hub.status}
-                    meta={`${hub.circles.length} circles · ${hubTotal} members${hub.guide ? ` · Guide: ${hub.guide.display_name}` : ''}`}
-                  />
-                )
-              })}
-            </div>
-          </AdminSection>
-        )
-      })}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {typedNexuses.map((nexus) => {
+          const nexusTotal = nexus.hubs.reduce((sum, h) => sum + h.circles.reduce((s, c) => s + (c.member_count ?? 0), 0), 0)
+          return (
+            <AdminSection
+              key={nexus.id}
+              title={nexus.name}
+              description={`${nexus.outpost?.name ?? ''} · ${nexusTotal} / ${nexus.member_cap} members`}
+            >
+              <div className="space-y-2">
+                {nexus.hubs.map((hub) => {
+                  const hubTotal = hub.circles.reduce((s, c) => s + (c.member_count ?? 0), 0)
+                  return (
+                    <CircleRow
+                      key={hub.id}
+                      href={`/hubs/${hub.slug}`}
+                      name={hub.name}
+                      status={hub.status}
+                      meta={`${hub.circles.length} circles · ${hubTotal} members${hub.guide ? ` · Guide: ${hub.guide.display_name}` : ''}`}
+                    />
+                  )
+                })}
+              </div>
+            </AdminSection>
+          )
+        })}
+      </div>
 
       {typedNexuses.length === 0 && (
         <EmptyState message="No nexuses assigned yet." cta={{ href: '/admin/nexuses', label: 'Create a nexus' }} />
