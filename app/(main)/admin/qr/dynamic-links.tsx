@@ -655,12 +655,9 @@ export function LinkForm({
           <Link2 className="w-3.5 h-3.5" />
           {pending ? 'Saving…' : link ? 'Save changes' : 'Create link'}
         </Button>
-        <button
-          onClick={onCancel}
-          className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
-        >
+        <Button variant="ghost" size="sm" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   )
