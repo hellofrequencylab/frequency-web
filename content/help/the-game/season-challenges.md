@@ -3,16 +3,18 @@ title: Season challenges
 description: A set of season-long goals that pay bonus Zaps, and the road to Luminary.
 category: the-game
 order: 6
-updated: 2026-06-10
+updated: 2026-06-11
 audience: member
 featureKeys: [challenges, gamification]
 status: published
 ---
 
-Each season of **The Quest** comes with a set of **challenges**: concrete goals to
+Each season of **The Quest** comes with **15 challenges**: concrete goals to
 chase over the season's 13 weeks, each paying **bonus Zaps** when you finish it.
 Think of them as the season's side quests: the ranks measure how much you show up,
-challenges reward *how* you show up.
+challenges reward *how* you show up. Finish all of the first fourteen and the
+fifteenth, **The Completionist**, completes itself, with the biggest bonus and a
+border you can't get any other way.
 
 ## Where to find them
 
@@ -32,7 +34,7 @@ remain on the road to Luminary.
 - **Bonus Zaps on completion.** The harder the challenge, the bigger the reward,
   and it lands on top of the Zaps the activity itself already earned you.
 - **Progress is seasonal.** When the season resets, challenge progress clears too,
-  and a fresh set begins. (Your Gems and lifetime rank are safe; see
+  and a fresh set begins. (Your Gems, trophies and Amplitude are safe; see
   [Season ranks](/help/the-game/season-ranks).)
 
 ## The road to Luminary

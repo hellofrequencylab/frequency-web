@@ -16,6 +16,8 @@ import { getPracticesToLogToday } from '@/lib/practices'
 import { getMemberProgress } from '@/lib/member-progress'
 import { getMemberPillarBalance } from '@/lib/pillars'
 import { StageCelebration } from '@/components/progress/stage-celebration'
+import { AmplitudeCelebration } from '@/components/progress/amplitude-celebration'
+import { getAmplitudeCelebration } from '@/lib/amplitude-celebration'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -120,6 +122,8 @@ export default async function FeedPage({
   // stage climbs (progressive disclosure, ADR-146). It also carries the activation
   // status, the streak and the Journeys, so the feed reads them all just once.
   const progress = myProfileId ? await getMemberProgress(myProfileId) : null
+  // Amplitude level-up moment (Rewards v2) — one cheap read, exactly-once banner.
+  const amplitudeMoment = myProfileId ? await getAmplitudeCelebration(myProfileId) : null
   const onboarding = progress?.onboarding ?? null
   const practiceStreak = progress?.streakState ?? null
   const stageIndex = progress?.stage.index ?? 0
@@ -179,6 +183,15 @@ export default async function FeedPage({
           stageIndex={progress.newlyUnlocked.index}
           stageLabel={progress.newlyUnlocked.label}
           tagline={progress.newlyUnlocked.tagline}
+        />
+      )}
+
+      {/* Amplitude level-up — mid-tier celebration, exactly-once (Rewards v2). */}
+      {amplitudeMoment && (
+        <AmplitudeCelebration
+          level={amplitudeMoment.level}
+          amplitude={amplitudeMoment.amplitude}
+          milestoneLabel={amplitudeMoment.milestoneLabel}
         />
       )}
 

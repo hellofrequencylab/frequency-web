@@ -3,7 +3,7 @@ title: Spending Gems in the Vault Store
 description: What Gems buy, how redeeming works, and the "how you earned" ledger.
 category: membership
 order: 2
-updated: 2026-06-10
+updated: 2026-06-11
 audience: member
 featureKeys: [vault, gems]
 status: published
@@ -16,9 +16,10 @@ one page.
 ## Your Vault, up top
 
 The top of the page is your Vault at a glance: your spendable **Gem balance**, your
-season **Zaps** and **streak**, your locked-in **lifetime rank**, anything you've
-got **equipped**, and a link to the full earning log (more on that below). What's
-free vs. member is covered in [Membership & the Vault](/help/membership/the-vault).
+season **Zaps** and **streak**, your **Amplitude** (your lifetime total; it never
+resets), anything you've got **equipped**, and a link to the full earning log (more
+on that below). What's free vs. member is covered in
+[Membership & the Vault](/help/membership/the-vault).
 
 ## What's for sale
 
@@ -35,6 +36,10 @@ free vs. member is covered in [Membership & the Vault](/help/membership/the-vaul
   profile right away, and you can own each one only once.
 - Some items are **limited stock**: the card shows how many are left, and when
   they're gone, they're gone.
+- Some items are **season exclusives**: they stop selling when the season closes,
+  and a few retire on a set date. If you want one, don't sit on it.
+- A few items ask for a rank first (the Founders' Table seat needs Conduit or
+  above). Earn the rank, then redeem.
 - Can't afford something yet? The button tells you exactly how many Gems you're
   short. No surprises.
 

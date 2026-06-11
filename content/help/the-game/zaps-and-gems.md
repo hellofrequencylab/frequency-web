@@ -3,7 +3,7 @@ title: Zaps and Gems explained
 description: The two currencies, how you earn them, and what they are for.
 category: the-game
 order: 1
-updated: 2026-06-10
+updated: 2026-06-11
 audience: member
 featureKeys: [gamification, zaps, gems]
 status: published
@@ -26,7 +26,11 @@ Roughly what things are worth (the biggest rewards live off the screen):
 - Host an in-person event: **60**
 - Someone you invited joins, or you activate a circle: **40**
 - Show up (a verified event check-in): **25**
-- Log a real-world practice: **12**
+- Log a practice: **8**, **12**, or **15**, depending on how heavy the practice is
+
+A quick cold shower and a full training session aren't the same effort, so they
+don't pay the same. Every practice has a weight: light (**8**), standard (**12**),
+or heavy (**15**).
 
 **Every practice you log earns Zaps**, whether it's tied to a circle or it's just
 your own personal practice. Practices are real-world doing, so they always count
@@ -54,9 +58,16 @@ you actually did.
 
 ## How they connect
 
-At the end of each season, a share of your Zaps converts into Gems based on the
-rank you reached. So the in-person "doing" (Zaps) turns into the durable, spendable
-reward (Gems) over time.
+At the end of each season, your Zaps convert into Gems at a flat **5 to 1**, the
+same rate for everyone. On top of that, the final rank you reached pays a one-time
+Gem bonus: Echo **10**, Signal **25**, Beacon **50**, Conduit **100**, Luminary
+**250**. So the in-person "doing" (Zaps) turns into the durable, spendable reward
+(Gems) over time, and finishing strong is worth a little extra.
+
+Your Zaps also feed **Amplitude**, your lifetime total. Season Zaps reset; Amplitude
+never does. Hosting-class acts (hosting an event, running a program, founding or
+activating a circle) count double toward it. You'll see it next to your rank, like
+"Beacon · 14,200".
 
 ## The one thing to remember
 
