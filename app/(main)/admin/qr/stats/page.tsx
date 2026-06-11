@@ -1,12 +1,16 @@
 import { ChartNoAxesColumn, MapPin, Users, Link2, Trophy, UserCircle, Megaphone, Nfc, Compass } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
+import { DataTable, type ColumnDef } from '@/components/admin/data-table'
+import { EmptyState } from '@/components/ui/empty-state'
 import { summarizeScans, summarizeLocations, type ScanRow, type ScanGeoRow } from '@/lib/qr/analytics'
 import { summarizeAcquisition, type AcquisitionRow } from '@/lib/qr/acquisition'
 import { Analytics, type AnalyticsData } from '../analytics'
 import { ScanLocator } from '../scan-locator'
+
+type AcqCodeRow = { slug: string; signups: number; scans: number; rate: number | null }
 
 export const dynamic = 'force-dynamic'
 
@@ -84,8 +88,15 @@ export default async function QrStatsPage() {
     topCodes,
   }
 
+  const acqCodeColumns: ColumnDef<AcqCodeRow>[] = [
+    { key: 'slug', header: 'Code', render: (c) => <span className="font-medium text-text">/q/{c.slug}</span> },
+    { key: 'scans', header: 'Scans', type: 'number', render: (c) => c.scans.toLocaleString() },
+    { key: 'signups', header: 'Signups', type: 'number', render: (c) => <span className="font-semibold">{c.signups.toLocaleString()}</span> },
+    { key: 'rate', header: 'Rate', type: 'number', render: (c) => (c.rate == null ? '–' : `${c.rate}%`) },
+  ]
+
   return (
-    <AdminPage
+    <AdminTemplate
       title="QR stats"
       icon={ChartNoAxesColumn}
       eyebrow="Platform"
@@ -93,12 +104,14 @@ export default async function QrStatsPage() {
       description="Every function of the QR system at a glance. Scans, where they happen, the funnel they drive, and the live code inventory."
     >
       {/* Funnel headline */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard bordered icon={MapPin} label="Total scans" value={summary.total.toLocaleString()} />
-        <StatCard bordered icon={Users} label="Unique members" value={summary.unique.toLocaleString()} />
-        <StatCard bordered icon={UserCircle} label="Referral signups" value={referralSignups.toLocaleString()} />
-        <StatCard bordered icon={Trophy} label="Zaps gifted" value={gifts.toLocaleString()} />
-      </div>
+      <AdminSection>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard bordered icon={MapPin} label="Total scans" value={summary.total.toLocaleString()} />
+          <StatCard bordered icon={Users} label="Unique members" value={summary.unique.toLocaleString()} />
+          <StatCard bordered icon={UserCircle} label="Referral signups" value={referralSignups.toLocaleString()} />
+          <StatCard bordered icon={Trophy} label="Zaps gifted" value={gifts.toLocaleString()} />
+        </div>
+      </AdminSection>
 
       {/* Locator map */}
       <AdminSection title="Where codes get scanned" description="Coarse, city-level (IP-derived). No precise location is collected.">
@@ -111,7 +124,7 @@ export default async function QrStatsPage() {
                   {l.city}
                   {l.country ? <span className="text-subtle"> · {l.country}</span> : null}
                 </span>
-                <span className="shrink-0 font-semibold text-text">{l.scans}</span>
+                <span className="shrink-0 font-semibold tabular-nums text-text">{l.scans}</span>
               </li>
             ))}
           </ul>
@@ -145,61 +158,53 @@ export default async function QrStatsPage() {
           <StatCard bordered icon={MapPin} label="QR scans" value={summary.byMedium.qr.toLocaleString()} />
         </div>
         {acquisition.total === 0 ? (
-          <p className="py-4 text-sm text-muted">
-            No attributed signups yet. They appear here once members arrive via a tagged code.
-          </p>
+          <EmptyState
+            variant="first-use"
+            icon={Compass}
+            title="No attributed signups yet"
+            description="They appear here once members arrive via a tagged code."
+          />
         ) : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <RankList title="By channel" rows={acquisition.byChannel} />
-            <RankList title="By source / campaign" rows={acquisition.bySource} />
-            <div className="lg:col-span-2 rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-              <div className="border-b border-border px-4 py-3">
-                <h3 className="text-sm font-bold text-text">Top codes (scan → signup)</h3>
-              </div>
-              {topAcqCodes.length === 0 ? (
-                <p className="p-4 text-xs text-muted">No code-attributed signups yet.</p>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-xs text-subtle">
-                      <th className="px-4 py-2 font-medium">Code</th>
-                      <th className="px-4 py-2 text-right font-medium">Scans</th>
-                      <th className="px-4 py-2 text-right font-medium">Signups</th>
-                      <th className="px-4 py-2 text-right font-medium">Rate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topAcqCodes.map((c) => (
-                      <tr key={c.slug} className="border-b border-border last:border-0">
-                        <td className="px-4 py-2 font-medium text-text">/q/{c.slug}</td>
-                        <td className="px-4 py-2 text-right text-muted">{c.scans}</td>
-                        <td className="px-4 py-2 text-right font-semibold text-text">{c.signups}</td>
-                        <td className="px-4 py-2 text-right text-muted">{c.rate == null ? '–' : `${c.rate}%`}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+            <RankTile title="By channel" rows={acquisition.byChannel} />
+            <RankTile title="By source / campaign" rows={acquisition.bySource} />
+            <div className="lg:col-span-2">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Top codes (scan → signup)</p>
+              <DataTable
+                rows={topAcqCodes}
+                getRowId={(c) => c.slug}
+                columns={acqCodeColumns}
+                caption="Top codes by scan-to-signup conversion."
+                empty={
+                  <EmptyState
+                    variant="first-use"
+                    icon={Compass}
+                    title="No code-attributed signups yet"
+                    description="Per-code conversion appears here as members sign up via a tagged code."
+                  />
+                }
+              />
             </div>
           </div>
         )}
       </AdminSection>
-    </AdminPage>
+    </AdminTemplate>
   )
 }
 
-function RankList({ title, rows }: { title: string; rows: { key: string; count: number }[] }) {
+// A ranked value → count list on a white tile (channel / source mix).
+function RankTile({ title, rows }: { title: string; rows: { key: string; count: number }[] }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-      <h3 className="text-sm font-bold text-text">{title}</h3>
+    <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</p>
       {rows.length === 0 ? (
-        <p className="mt-2 text-xs text-muted">No data yet.</p>
+        <p className="mt-2 text-sm text-muted">No data yet.</p>
       ) : (
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-3 space-y-1.5">
           {rows.slice(0, 6).map((r) => (
-            <li key={r.key} className="flex items-center justify-between text-sm">
+            <li key={r.key} className="flex items-baseline justify-between gap-3 text-sm">
               <span className="truncate text-text">{r.key}</span>
-              <span className="shrink-0 font-semibold text-text">{r.count}</span>
+              <span className="shrink-0 font-semibold tabular-nums text-text">{r.count.toLocaleString()}</span>
             </li>
           ))}
         </ul>
