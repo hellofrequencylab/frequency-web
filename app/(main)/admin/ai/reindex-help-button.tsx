@@ -37,24 +37,16 @@ export function ReindexHelpButton({ embeddedChunks, onReindexed }: { embeddedChu
   const empty = embeddedChunks === 0
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-text">Ask Vera help index</p>
-          <p className="mt-0.5 text-sm text-muted">
-            {empty ? (
-              <span className="text-danger">Empty. “Ask Vera” can’t answer until this is built. Click to index the help center.</span>
-            ) : (
-              <>{embeddedChunks.toLocaleString()} chunks embedded. Re-run after editing help articles (only changes re-embed).</>
-            )}
-          </p>
-        </div>
-        <Button
-          type="button"
-          onClick={run}
-          disabled={pending}
-          className="shrink-0"
-        >
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="min-w-0 text-sm">
+          {empty ? (
+            <span className="text-danger">Empty. &ldquo;Ask Vera&rdquo; can&rsquo;t answer until this is built.</span>
+          ) : (
+            <span className="text-muted">{embeddedChunks.toLocaleString()} chunks embedded.</span>
+          )}
+        </p>
+        <Button type="button" onClick={run} disabled={pending} className="shrink-0">
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {empty ? 'Build index' : 'Reindex'}
         </Button>
