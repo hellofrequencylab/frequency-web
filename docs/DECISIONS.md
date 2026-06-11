@@ -6413,6 +6413,8 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 - **Admin/Manage moved into the left drawer**: the mobile drawer now renders the **full `NAV_SECTIONS`** — the exact desktop-rail structure (member worlds + telescoped Manage groups) — instead of the member-only split; `MEMBER_SECTIONS`/`MANAGE_SECTIONS` are deleted and the account dropdown is purely personal (profile, friends, invite, settings, theme, sign out).
 **Consequences:** One nav structure everywhere; the account menu stops being a junk drawer; members never see admin headers (telescoping unchanged). The per-device rail-size pref is orphaned in localStorage — harmless. Lost behavior: the right menu no longer closes on feed scroll (it's modal now, like the left).
 
+**Update — owner screenshot pass:** the two controls became **edge handles** in the app's existing flush-tab language (half-pills growing out of their screen edge, bordered, inner-rounded — the same grammar as the Vera/Next-steps pills) so they read "something slides from here" in tight space; open state tints them (primary-bg left, signal right). The header gained air between the bell and the account button. The Zap arch is now a **true semicircle** (h-8 w-16, height = half width) so it hugs the button's radius instead of reading as a squared tab. The composer (everywhere): **formatting folds below the divider** — a small ˄ Format toggle in the bottom row unfolds the tools above it (full-screen compose always shows them) — and the input grew a line (rows 3, min-h-24).
+
 
 ## ADR-235: The in-app QR scanner — Check In and Ghost Node go live
 
@@ -6452,7 +6454,14 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 **Decision:** The people page branches on `profile.is_system` immediately after the profile fetch (skipping every member-shaped query) into a dedicated **VeraProfile**: avatar + name + @handle, the Moderator chip, her bio, a "What Vera does" card list (join lines + welcome notifications · Dispatches after a sit · help-grounded answers · routing reports to humans, never AI moderation), the honesty line ("a voice, not a player: no streaks, no rank"), and ONE action — **Ask Vera**, opening the existing chat panel via the `open-vera` event. No friend/message/tip/block chrome.
 **Consequences:** Tapping Vera anywhere (join lines, directory, search) now lands somewhere true. The layout is generic over the system account, so a future renamed/rebranded voice inherits it.
 
-## ADR-239: Member design system — unify the member app onto the canvas+tile standard
+## ADR-239: System lines become a kit — streak milestones join the feed
+
+**Status:** Accepted · `lib/system-line.ts` (the shared helper), `lib/onboarding/welcome.ts` (refactored onto it), `lib/practice-streak.ts` (milestone lines).
+**Context:** The join notices (ADR-231/232) proved the quiet centered system line; the backlog called for reusing it on other moments. The renderer (SystemLine) already handles any `system` post: centered text, linked mentions, live Zap counts.
+**Decision:** One shared **`postSystemLine(body)`** — system-account lookup + the `system` post insert, best-effort and swallowed — becomes the single door for every automated feed notice, keeping them deterministic templates (never AI compositions, per the AI-VERA guardrail). First new caller: **daily streak milestones** — when the engine pays a checkpoint (3/7/14/30/60/100/365, already gated once-ever), Vera drops "@handle hit a N day streak 🔥" for the highest checkpoint just crossed. Welcome lines now ride the same helper.
+**Consequences:** Future moments (rank-ups when they move app-side, season turns, circle launches) are one `postSystemLine` call each. Milestone lines inherit the once-ever payout gate, so reruns can't spam the feed.
+
+## ADR-240: Member design system — unify the member app onto the canvas+tile standard
 
 **Status:** Accepted · `docs/MEMBER-DESIGN-SYSTEM.md` (the spec), `app/(main)/**` (non-admin), the member kit. Conformance pass; phased per cluster.
 **Context:** The owner: take the refined admin canvas+tile look and apply it across the member-facing side for one uniform site, with the rule that **primary member pages feature streaks and gamified stats only** (no operator metrics). An audit of ~102 member + marketing surfaces found the system already ~85% adopted (the in-app overhaul, ADR-061/090): the five shared templates (Stream/Index/Detail/Dashboard/Focus), `EntityCard`/`PersonCard`/`StatCard`, and the gamification components (`StreakStrip`/`GamificationPanel`/`JourneyBoard`) are on-grammar. The clunkiness is the ~15% that drifted plus the absence of a codified member-specific stat law.
