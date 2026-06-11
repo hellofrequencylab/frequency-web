@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { GraduationCap, ArrowRight, Tag, ListChecks } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Banner } from '@/components/admin/status'
 import { RoleBadge, ROLE_LABEL } from '@/lib/community-roles'
 import { getAllArticles } from '@/lib/help/content'
 import { tierCurriculumViews } from '@/lib/onboarding/training-curriculum'
@@ -28,12 +29,12 @@ export default async function AdminContentTrainingPage() {
   const taggedArticles = articles.filter((a) => a.role)
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Role training"
       eyebrow="Content"
       icon={GraduationCap}
-      description="The advancement curriculum each promotion teaches. When a member is promoted up the trust ladder, this is the curated path through the help center they're walked through."
-      width="wide"
+      description="The advancement curriculum each promotion teaches. When a member is promoted up the trust ladder, this is the curated path through the help center they are walked through."
+      width="default"
     >
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -52,17 +53,17 @@ export default async function AdminContentTrainingPage() {
         title="Authoring"
         description="Two ways to shape a tier's path. Both live in git and ship with the code."
       >
-        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-muted">
-          <p>
+        <Banner tone="info" title="How to edit the curriculum">
+          <p className="mt-1">
             <span className="font-semibold text-text">Tag help articles.</span> Add{' '}
-            <code className="rounded bg-surface-elevated px-1 py-0.5 text-xs text-text">role: host</code>{' '}
-            (or crew / guide / mentor) to a help article&rsquo;s front-matter and it joins
-            that tier&rsquo;s source set below. This keeps the words where they already live.
+            <code className="rounded bg-surface px-1 py-0.5 text-xs text-text">role: host</code>{' '}
+            (or crew / guide / mentor) to a help article&apos;s front-matter and it joins
+            that tier&apos;s source set below. This keeps the words where they already live.
           </p>
           <p className="mt-2">
             <span className="font-semibold text-text">Curate the path.</span> The ordered
-            steps + reward each promotion shows come from the registry in{' '}
-            <code className="rounded bg-surface-elevated px-1 py-0.5 text-xs text-text">
+            steps and reward each promotion shows come from the registry in{' '}
+            <code className="rounded bg-surface px-1 py-0.5 text-xs text-text">
               lib/onboarding/training-curriculum.ts
             </code>
             . Edit it to add a tier or reorder steps.
@@ -71,7 +72,7 @@ export default async function AdminContentTrainingPage() {
             In-place editing of the curriculum from this screen is scoped for a follow-up;
             today this is the authoritative preview of what each promotion delivers.
           </p>
-        </div>
+        </Banner>
       </AdminSection>
 
       {tiers.map(({ role, def, taggedSteps }) => (
@@ -85,6 +86,7 @@ export default async function AdminContentTrainingPage() {
           </div>
           {!def ? (
             <EmptyState
+              variant="first-use"
               icon={GraduationCap}
               title={`No ${ROLE_LABEL[role]} curriculum yet`}
               description="Add a tier definition to the curriculum registry to give this promotion a path."
@@ -133,10 +135,12 @@ export default async function AdminContentTrainingPage() {
                   Role-tagged help articles ({taggedSteps.length})
                 </p>
                 {taggedSteps.length === 0 ? (
-                  <p className="text-xs text-muted">
-                    No articles tagged <code className="text-text">role: {role}</code> yet. Tag
-                    articles to build a tag-driven path for this tier.
-                  </p>
+                  <EmptyState
+                    variant="no-results"
+                    icon={Tag}
+                    title={`No articles tagged role: ${role} yet`}
+                    description="Tag articles in their front-matter to build a tag-driven path for this tier."
+                  />
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {taggedSteps.map((s) => (
@@ -156,6 +160,6 @@ export default async function AdminContentTrainingPage() {
           )}
         </AdminSection>
       ))}
-    </AdminPage>
+    </AdminTemplate>
   )
 }
