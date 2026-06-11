@@ -14,11 +14,12 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Camera, Upload, ScanLine, Sparkles, Loader2, X, RefreshCw, ArrowRight, AlertTriangle,
-  CalendarDays, MapPin, Lightbulb,
+  CalendarDays, MapPin, Lightbulb, Link2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { ExtractedEvent } from '@/lib/events/types'
+import type { ExtractedEvent, EventLink } from '@/lib/events/types'
 import type { DetailsMedia, EventDetailsWithMedia } from '@/lib/events/details-media'
+import { decodePosterLinks } from '@/lib/events/qr-scan'
 import { scanPoster, saveDraft, discardScan } from './actions'
 import {
   downscaleForScan, fileToImage, cropBoxToJpeg, deskewPoster, canvasToJpeg,
@@ -105,6 +106,28 @@ export function Creator({ userId }: { userId: string }) {
               : 'Could not read that poster. Try a sharper, straight-on shot.',
         })
         return
+      }
+
+      // QR codes on a poster ARE the booking link, and the vision model can't
+      // read a QR pattern. Decode them on-device from the full-res originals
+      // (sharper than the downscaled scan) and fold any booking link into the
+      // harvest, deduped against links the model already read in print.
+      try {
+        const seen = new Set((res.extraction.details.links ?? []).map((l) => l.url))
+        const found: EventLink[] = []
+        for (const f of files.slice(0, 4)) {
+          const img = await fileToImage(f)
+          for (const l of await decodePosterLinks(img)) {
+            if (seen.has(l.url)) continue
+            seen.add(l.url)
+            found.push(l)
+          }
+        }
+        if (found.length) {
+          res.extraction.details.links = [...(res.extraction.details.links ?? []), ...found].slice(0, 10)
+        }
+      } catch {
+        /* QR decode is a bonus — the scan stands without it */
       }
 
       setExtraction(res.extraction)
@@ -243,7 +266,14 @@ export function Creator({ userId }: { userId: string }) {
     }
   }
 
-  const qualityPoor = !!extraction && (!extraction.quality.legible || extraction.quality.glare || extraction.quality.skew)
+  // Only a genuinely unreadable shot blocks the flow. Glare or skew on a still-
+  // legible poster is a soft heads-up, not a wall: the deskew already squares a
+  // tilt, and mild sheen on a glossy poster reads fine. (Backed off after clear
+  // shots were getting flagged for glare.)
+  const unreadable = !!extraction && !extraction.quality.legible
+  const minorIssue =
+    !!extraction && extraction.quality.legible && (extraction.quality.glare || extraction.quality.skew)
+  const bookingLink = extraction?.details.links?.find((l) => l.kind === 'tickets' || l.kind === 'rsvp')
 
   const banner =
     msg &&
@@ -275,7 +305,7 @@ export function Creator({ userId }: { userId: string }) {
       <div className="space-y-4">
         {msg && <p className={`rounded-lg border px-3 py-2 text-sm ${banner}`}>{msg.text}</p>}
 
-        {qualityPoor && (
+        {unreadable && (
           <div className="rounded-2xl border border-primary/40 bg-primary-bg p-4">
             <p className="flex items-start gap-2 text-sm font-semibold text-primary-strong">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -315,6 +345,14 @@ export function Creator({ userId }: { userId: string }) {
           </div>
         )}
 
+        {/* Legible but glossy / slightly tilted: a gentle, non-blocking heads-up. */}
+        {minorIssue && (
+          <p className="flex items-start gap-1.5 px-1 text-xs text-subtle">
+            <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-strong" />
+            {extraction.quality.note ?? 'Readable as is. A glare-free, straight-on reshoot would sharpen it, but this works.'}
+          </p>
+        )}
+
         {/* What Vera read — a quick sanity check before the editor. */}
         <div className="rounded-2xl border border-border bg-surface-elevated/40 p-4">
           <p className="text-sm font-bold text-text">{extraction.title || 'Untitled event'}</p>
@@ -333,12 +371,18 @@ export function Creator({ userId }: { userId: string }) {
                 {extraction.location}
               </p>
             )}
+            {bookingLink && (
+              <p className="flex items-center gap-1.5 text-primary-strong">
+                <Link2 className="h-3.5 w-3.5 shrink-0" />
+                Booking link found{bookingLink.kind === 'tickets' ? ' (tickets)' : ''}
+              </p>
+            )}
             <p className="text-subtle">You can fix any detail in the next step.</p>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          {!qualityPoor ? (
+          {!unreadable ? (
             <button
               type="button"
               onClick={retake}
@@ -354,7 +398,7 @@ export function Creator({ userId }: { userId: string }) {
             onClick={buildDraft}
             className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
-            {qualityPoor ? 'Use it anyway' : 'Continue to the draft'} <ArrowRight className="h-4 w-4" />
+            {unreadable ? 'Use it anyway' : 'Continue to the draft'} <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       </div>
