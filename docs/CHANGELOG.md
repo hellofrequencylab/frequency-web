@@ -16,8 +16,34 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   through; a **Quest** is a season's official collection of Journeys. Both are free now — start
   a season's Quest, and build, adopt, remix and share your own Journeys at no cost. (The Quest
   is still the game; only the Store and your public rank badge remain Crew perks.)
+- **The economy got simpler and fairer**: season Zaps now convert to Gems at a flat
+  **5:1 for everyone**, plus a one-time Gem bonus for the rank you finish at. Practices
+  pay by **weight**: light (8), standard (12), or heavy (15) Zaps per log, so a full
+  training session is worth more than a quick check-in. Gem "tiers" are gone; Gems are
+  simply what you spend.
+- **Season 1 challenges, sharpened**: a focused set of **15 challenges** (easy through
+  legendary). Finish the first fourteen and **The Completionist** completes itself, with
+  the biggest bonus and a border you can't get any other way.
 
 ### Added
+
+- **Amplitude, your lifetime number**: every Zap you ever earn feeds it, hosting-class
+  acts count double, and it **never resets**. Watch it climb next to your rank
+  ("Beacon · 14,200"), level up as you go, and bank permanent Awards at the big totals.
+- **The Practice Shelf**: every practice you stick with builds its own record. Weekly
+  consistency checkpoints (a full 13-week cycle pays bonus Zaps and a permanent ring)
+  and lifetime depth marks at 10, 25, 50 and 100 logs, collected on your profile.
+- **Practicing together pays**: when three or more circle-mates log the same Journey on
+  the same day, everyone gets a small **Co-op Pulse** bonus.
+- **A kinder comeback**: away a week or more? Your first practice back pays a
+  **Welcome Back** bonus. No guilt, just momentum.
+- **A second way to earn streak freezes**: every five **Full Day** bonuses banks one
+  (still capped at two, still never for sale).
+- **Give an award**: once a season you can hand another member a **Strong Signal**, and
+  circle Hosts can name who **Carried the Room**. It shows on their profile with your
+  name on it.
+- **New in the Vault Store**: Season 1 exclusives (some limited-stock, some rank-gated),
+  plus rank and Journey cosmetics that are earned, never bought.
 
 - **Events that bring people together**: see **who's going** before you RSVP (faces, the count,
   and anyone from your circles), **add to your calendar in one tap** so gatherings actually

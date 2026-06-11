@@ -39,8 +39,11 @@ export interface EarningLog {
     currentStreak: number
     longestStreak: number
     rank: string | null
-    /** The locked, never-resetting peak rank (P2.6) — the durable Vault endorsement. */
+    /** The locked, never-resetting peak rank (kept for the retro rules; Amplitude
+     *  supersedes it as the member-facing lifetime layer). */
     lifetimeRank: string | null
+    /** Lifetime XP (Rewards Economy v2) — the headline lifetime number. */
+    amplitude: number
   }
 }
 
@@ -76,7 +79,7 @@ export async function getEarningLog(profileId: string, limit = 80): Promise<Earn
     supabase
       .from('profiles')
       .select(
-        'current_season_zaps, lifetime_zaps, current_season_gems, lifetime_gems, current_streak, longest_streak, current_season_rank, lifetime_rank',
+        'current_season_zaps, lifetime_zaps, current_season_gems, lifetime_gems, current_streak, longest_streak, current_season_rank, lifetime_rank, amplitude',
       )
       .eq('id', profileId)
       .maybeSingle(),
@@ -123,6 +126,7 @@ export async function getEarningLog(profileId: string, limit = 80): Promise<Earn
     longest_streak: number | null
     current_season_rank: string | null
     lifetime_rank: string | null
+    amplitude: number | null
   } | null
 
   return {
@@ -137,6 +141,7 @@ export async function getEarningLog(profileId: string, limit = 80): Promise<Earn
       longestStreak: p?.longest_streak ?? 0,
       rank: p?.current_season_rank ?? null,
       lifetimeRank: p?.lifetime_rank ?? null,
+      amplitude: Number(p?.amplitude ?? 0),
     },
   }
 }
@@ -166,10 +171,19 @@ const LEDGER_LABELS: Record<string, string> = {
   outreach_task: 'Completed an outreach task',
   crew_task: 'Completed a crew task',
   practice_logged: 'Logged a real-world practice',
+  practice_logged_light: 'Logged a real-world practice',
+  practice_logged_heavy: 'Logged a heavy practice',
+  practice_claim: 'Claimed a practice',
   node_capture: 'Captured a node out in the world',
   gift_zap: 'Received a zap',
   program_run: 'Ran a program',
   entry_point_created: 'Set up an entry point',
+  streak_milestone: 'Streak milestone',
+  journey_bonus: 'Journey bonus',
+  journey_reward: 'Journey reward',
+  co_op_pulse: 'Co-op Pulse with your circle',
+  welcome_back: 'Welcome back',
+  practice_full_cycle: 'Full Cycle — 13 weeks on one practice',
   manual: 'Adjustment',
 }
 

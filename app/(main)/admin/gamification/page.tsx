@@ -9,9 +9,11 @@ import { TIER_CONFIG, DIFFICULTY_CONFIG } from '@/lib/gamification'
 import type { AchievementTier, ChallengeDifficulty } from '@/lib/gamification'
 import type { Database } from '@/lib/database.types'
 import { AwardDialog } from './award-dialog'
+import { Suspense } from 'react'
 import { getCurrentSeason } from '@/lib/seasons'
 import { SeasonControl } from './season-control'
 import { RewardConfig, type RewardRow } from './reward-config'
+import { MetricsPanel } from './metrics-panel'
 
 // zap_config / gem_config aren't in the generated types yet (read via untyped handle).
 type ZapCfgRow = { action_type: string; zaps_amount: number; daily_cap: number | null; is_active: boolean; description: string | null }
@@ -47,7 +49,7 @@ export default async function AdminGamificationPage() {
       .order('achievement_count', { ascending: false })
       .limit(5),
     admin.from('achievements').select('id, slug, name, tier, category, zaps_reward').order('sort_order'),
-    admin.from('season_challenges').select('id, slug, name, difficulty, target, zaps_reward').order('sort_order'),
+    admin.from('season_challenges').select('id, slug, name, difficulty, target, zaps_reward').eq('is_active', true).order('sort_order'),
     admin.from('profiles').select('id, display_name, handle').eq('is_active', true).order('display_name').limit(200),
   ] as const)
 
@@ -87,6 +89,12 @@ export default async function AdminGamificationPage() {
       <SeasonControl season={currentSeason} isJanitor={isJanitor} />
 
       {isJanitor && <RewardConfig zaps={zapRewards} gems={gemRewards} />}
+
+      {/* Rewards Economy v2 health metrics (brief §10) — heavier reads, so they
+          stream in behind the fold rather than blocking the page. */}
+      <Suspense fallback={null}>
+        <MetricsPanel />
+      </Suspense>
 
       <AdminSection>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

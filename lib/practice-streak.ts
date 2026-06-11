@@ -17,7 +17,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { awardZaps } from '@/lib/zaps'
-import { STREAK_MILESTONES, STREAK_FREEZE_CAP, streakProgress } from '@/lib/streak'
+import { STREAK_MILESTONES, STREAK_FREEZE_CAP, FULL_DAYS_PER_FREEZE, streakProgress } from '@/lib/streak'
 
 // How far back to read logs / keep frozen-day records. A streak longer than this
 // is vanishingly rare and still displays via the cached `longest`.
@@ -89,6 +89,9 @@ interface StoredStreak {
   frozenDates: string[]
   milestonesPaid: number[]
   longest: number
+  /** Freezes already minted from the Full-Day path (every FULL_DAYS_PER_FREEZE
+   *  Full Day bonuses = 1 freeze credit; unapplied credits bank until below cap). */
+  fullDayFreezesApplied?: number
   current?: number
   lastDay?: string | null
   updatedAt?: string
@@ -101,6 +104,7 @@ function readStored(meta: Record<string, unknown> | null | undefined): StoredStr
     frozenDates: ps.frozenDates ?? [],
     milestonesPaid: ps.milestonesPaid ?? [],
     longest: ps.longest ?? 0,
+    fullDayFreezesApplied: ps.fullDayFreezesApplied ?? 0,
   }
 }
 
@@ -233,6 +237,26 @@ export async function recordPracticeStreak(profileId: string): Promise<void> {
   }
   freezeTokens = Math.min(STREAK_FREEZE_CAP, freezeTokens + banked)
 
+  // Second earn path (Rewards Economy v2): every FULL_DAYS_PER_FREEZE Full Day
+  // bonuses earned = 1 freeze credit. Credits already minted are tracked in
+  // fullDayFreezesApplied; unapplied credits bank until a slot opens below the
+  // cap. Freezes are never purchasable.
+  let fullDayApplied = stored.fullDayFreezesApplied ?? 0
+  try {
+    const { count } = await admin
+      .from('reward_grants')
+      .select('id', { count: 'exact', head: true })
+      .eq('profile_id', profileId)
+      .like('rule_key', 'journey.fullday:%')
+    const earnedCredits = Math.floor((count ?? 0) / FULL_DAYS_PER_FREEZE)
+    while (fullDayApplied < earnedCredits && freezeTokens < STREAK_FREEZE_CAP) {
+      freezeTokens++
+      fullDayApplied++
+    }
+  } catch {
+    // the freeze credit read is best-effort; credits stay banked for next time
+  }
+
   const prunedFrozen = [...frozen].filter((d) => dayDiff(today, d) <= WINDOW_DAYS)
 
   const nextMeta = {
@@ -242,6 +266,7 @@ export async function recordPracticeStreak(profileId: string): Promise<void> {
       frozenDates: prunedFrozen,
       milestonesPaid: [...paid].sort((a, b) => a - b),
       longest,
+      fullDayFreezesApplied: fullDayApplied,
       current,
       lastDay: today,
       updatedAt: new Date().toISOString(),

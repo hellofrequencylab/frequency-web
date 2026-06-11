@@ -11,6 +11,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
 import { surfaceAccess } from '@/lib/core/viewer-hats'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
 
 export default async function StorePage() {
   const supabase = await createClient()
@@ -25,15 +26,17 @@ export default async function StorePage() {
   // your spendable Gem balance.
   const { data: prof } = await supabase
     .from('profiles')
-    .select('current_season_zaps, current_streak, lifetime_rank')
+    .select('current_season_zaps, current_season_rank, current_streak, amplitude')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const zaps = (prof?.current_season_zaps as number | null) ?? 0
   const streak = (prof?.current_streak as number | null) ?? 0
-  // The locked, never-resetting peak (P2.6) — the durable Vault endorsement. Shown to
-  // the member on their own Vault regardless of tier; 'ghost' = not yet ranked.
-  const lifetimeRank = (prof?.lifetime_rank as SeasonRank | null) ?? null
-  const hasLifetimeRank = !!lifetimeRank && lifetimeRank !== 'ghost'
+  // Amplitude — the lifetime layer (Rewards Economy v2, supersedes the ADR-037
+  // lifetime-rank display). Shown to the member on their own Vault regardless of
+  // tier, beside the season rank: "Beacon · 14,200".
+  const seasonRank = (prof?.current_season_rank as SeasonRank | null) ?? null
+  const amplitude = Number((prof as { amplitude?: number | null } | null)?.amplitude ?? 0)
+  const hasAmplitude = amplitude > 0
   // Spending is the FULL Vault function; the matrix (access-matrix.ts) is the single
   // source of truth — today the crew-or-above proxy, the paid Member tier once P2 lands.
   // Limited access still browses everything (visible-but-locked + upgrade nudge).
@@ -64,16 +67,24 @@ export default async function StorePage() {
           </>
         }
       >
-        {/* The Vault — lifetime rank, the earning ledger, and equipped winnings. */}
+        {/* The Vault — Amplitude (the lifetime layer), the earning ledger, and
+            equipped winnings. */}
         <section>
           <SectionHeader title="Your Vault" />
           <div className="rounded-2xl border border-success/60 bg-gradient-to-br from-success-bg to-signal-bg p-5 shadow-sm">
-            {/* Lifetime rank — the locked peak that survives every season reset. */}
-            {hasLifetimeRank && (
+            {/* Amplitude — lifetime XP beside the season rank; never resets. */}
+            {hasAmplitude && (
               <div className="flex items-center justify-between rounded-xl bg-success-bg/50 px-3 py-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-signal">Lifetime rank</span>
-                <span className="rank-badge text-2xs font-bold leading-tight" style={seasonRankStyle(lifetimeRank!)}>
-                  {RANK_LABELS[lifetimeRank!]}
+                <span className="text-xs font-semibold uppercase tracking-wider text-signal">
+                  Amplitude · Level {amplitudeLevel(amplitude)}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  {seasonRank && seasonRank !== 'ghost' && (
+                    <span className="rank-badge text-2xs font-bold leading-tight" style={seasonRankStyle(seasonRank)}>
+                      {RANK_LABELS[seasonRank]}
+                    </span>
+                  )}
+                  <span className="text-2xs font-bold text-signal-strong">{formatAmplitude(amplitude)}</span>
                 </span>
               </div>
             )}
@@ -81,7 +92,7 @@ export default async function StorePage() {
             {/* How you earned — the points & streaks ledger. */}
             <Link
               href="/crew/store/ledger"
-              className={`flex items-center gap-2 rounded-xl bg-success-bg/50 px-3 py-2.5 text-signal-strong transition-colors hover:bg-success-bg ${hasLifetimeRank ? 'mt-3' : ''}`}
+              className={`flex items-center gap-2 rounded-xl bg-success-bg/50 px-3 py-2.5 text-signal-strong transition-colors hover:bg-success-bg ${hasAmplitude ? 'mt-3' : ''}`}
             >
               <Receipt className="h-4 w-4 shrink-0" />
               <span className="flex-1 text-xs font-semibold">How you earned: Zaps &amp; Gems log</span>

@@ -103,10 +103,15 @@ The contract type and helpers live in `lib/action-result.ts`.
 
 ## Cron
 
-Six endpoints under `app/api/cron/`, scheduled in `vercel.json`:
+Endpoints under `app/api/cron/`, scheduled in `vercel.json`. The originals:
 `event-reminders` (*/15m), `lifecycle-triggers` (daily), `weekly-digest`
 (Sun 14:00), `event-occurrences` (daily 02:00), `publish-scheduled`, and
-`process-queue` (*/2m, drains the outbox/notification queue).
+`process-queue` (*/2m, drains the outbox/notification queue). Later additions
+ride the same pattern — notably the Rewards Economy v2 pair (ADR-219):
+`coop-pulse` (daily 00:50 UTC — Co-op Pulse grants + Carrier Wave + Co-op
+Synchrony for the just-completed day) and `practice-streaks` (daily 01:10 UTC —
+per-practice consistency ladder, Full Cycle payouts, and the rank/journey
+cosmetic grant sweeps).
 
 All authenticate via `rejectUnauthorizedCron(req)` in `lib/cron-auth.ts`, which is
 **fail-closed**: a missing `CRON_SECRET` in production rejects every request.

@@ -5,6 +5,7 @@ import {
 import { getMyProfileId } from '@/lib/auth'
 import { getEarningLog, ledgerLabel, type LedgerEntry, type LedgerStreakType } from '@/lib/economy/ledger'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
 import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
@@ -40,9 +41,9 @@ export default async function VaultLedgerPage() {
   if (!profileId) redirect('/sign-in')
 
   const { entries, streaks, totals } = await getEarningLog(profileId)
-  // The Vault headline is the LOCKED lifetime peak (P2.6) — it survives season
-  // resets, unlike the season rank. Fall back to the season rank if unset.
-  const rank = (totals.lifetimeRank as SeasonRank | null) ?? (totals.rank as SeasonRank | null) ?? null
+  // The Vault headline is the season rank + Amplitude (the lifetime layer —
+  // Rewards Economy v2; supersedes the lifetime-rank display).
+  const rank = (totals.rank as SeasonRank | null) ?? null
   const streakBy = new Map(streaks.map((s) => [s.type, s]))
 
   // Group the merged history into day buckets, preserving newest-first order.
@@ -67,14 +68,17 @@ export default async function VaultLedgerPage() {
           <StatCard label="Gems · season" value={totals.seasonGems.toLocaleString()} icon={Gem} />
           <StatCard label="Streak" value={`${totals.currentStreak}w`} icon={Flame} />
           <StatCard
-            label="Lifetime rank"
+            label={`Amplitude · L${amplitudeLevel(totals.amplitude)}`}
             value={
-              rank ? (
-                <span className="rank-badge text-sm leading-tight" style={seasonRankStyle(rank)}>
-                  {RANK_LABELS[rank] ?? rank}
+              rank && rank !== 'ghost' ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="rank-badge text-sm leading-tight" style={seasonRankStyle(rank)}>
+                    {RANK_LABELS[rank] ?? rank}
+                  </span>
+                  <span>{formatAmplitude(totals.amplitude)}</span>
                 </span>
               ) : (
-                '–'
+                formatAmplitude(totals.amplitude)
               )
             }
             icon={Trophy}
