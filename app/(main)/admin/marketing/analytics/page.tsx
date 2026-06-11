@@ -1,6 +1,6 @@
 import { getPracticeMetrics, getPracticeRetention } from '@/lib/analytics/practice'
 import { getEmailStats, getStudioCounts } from '@/lib/studio/analytics'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -20,7 +20,7 @@ export default async function AnalyticsPage() {
   const maxWeeks = retention.reduce((m, c) => Math.max(m, c.retention.length), 0)
 
   return (
-    <DashboardTemplate
+    <AdminTemplate
       eyebrow="Marketing"
       title="Analytics"
       description="Read-models off the one event backbone + the email log."
@@ -107,6 +107,6 @@ export default async function AnalyticsPage() {
           Open/click/bounce data populates once the Resend webhook is configured.
         </p>
       </section>
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }

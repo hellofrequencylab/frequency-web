@@ -5,9 +5,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import {
-  Loader2, ChevronLeft, Trash2, Check, Save, StickyNote, Phone, Mail, Users, CheckSquare, Plus,
+  Loader2, Trash2, Check, Save, StickyNote, Phone, Mail, Users, CheckSquare, Plus,
 } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
+import { Button } from '@/components/ui/button'
 import { updateDeal, moveDeal, deleteDeal, addActivity, toggleTask, deleteActivity } from '../../actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { formatMoney, type CrmStage, type CrmDeal, type CrmActivity } from '@/lib/crm/pipeline'
@@ -79,13 +80,8 @@ export function DealDetail({
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <Link href="/admin/crm" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text">
-        <ChevronLeft className="h-4 w-4" /> Pipeline
-      </Link>
-
-      {error && <p className="mb-4 rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>}
-
       <DetailTemplate
+        back={{ href: '/admin/crm', label: 'Pipeline' }}
         title={
           <input
             value={title}
@@ -136,8 +132,9 @@ export function DealDetail({
                 Lost
               </button>
             )}
-            <button
+            <Button
               type="button"
+              size="sm"
               disabled={pending || !dirty}
               onClick={() =>
                 run(() =>
@@ -150,14 +147,15 @@ export function DealDetail({
                   }),
                 )
               }
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save
-            </button>
+            </Button>
           </>
         }
       >
       <div className="space-y-6">
+      {error && <p className="rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>}
+
       {/* Editable fields */}
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -229,8 +227,9 @@ export function DealDetail({
             className={`w-full ${field}`}
           />
           <div className="flex justify-end">
-            <button
+            <Button
               type="button"
+              size="sm"
               disabled={pending || (!actBody.trim() && actKind !== 'task')}
               onClick={() =>
                 run(
@@ -241,10 +240,9 @@ export function DealDetail({
                   },
                 )
               }
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
-            </button>
+            </Button>
           </div>
         </div>
 
