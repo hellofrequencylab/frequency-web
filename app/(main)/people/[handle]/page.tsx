@@ -31,6 +31,7 @@ import { EditableIdentity } from './editable-identity'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { SupporterBadge } from '@/components/supporter-badge'
 import { DetailTemplate } from '@/components/templates'
+import { VeraProfile } from '@/components/people/vera-profile'
 import { getMemberSignature } from '@/lib/frequency-signature-data'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
@@ -104,6 +105,19 @@ export default async function ProfilePage({
     .maybeSingle()
 
   if (!profile) notFound()
+
+  // The system voice gets her own page (ADR-238) — no member stats, no friend
+  // chrome; the branch also skips every member-shaped query below.
+  if (profile.is_system) {
+    return (
+      <VeraProfile
+        name={profile.display_name}
+        handle={profile.handle as string}
+        avatarUrl={profile.avatar_url}
+        bio={profile.bio}
+      />
+    )
+  }
 
   // header_image_url isn't in the generated types yet (new column) — read via cast.
   const { data: hdrRow } = await (admin as unknown as SupabaseClient)
