@@ -1,17 +1,15 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import {
-  Users, Layers, Building2, Plus, Zap, Activity, CalendarDays,
-  Sparkles, HelpCircle, LifeBuoy, ShieldAlert, Lightbulb, Map as MapIcon, Radar,
-  type LucideIcon,
-} from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { getDensitySignal } from '@/lib/analytics/density'
+import { getEngagementRead } from '@/lib/analytics/engagement-read'
+import { getEngagementDashboard } from '@/lib/analytics/dashboard'
 import { requireAdminFloor } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
-import { StatCard } from '@/components/ui/stat-card'
-import { ChartCard, RingGauge, TrendArea, WeekBars, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
+import { RingGauge, TrendArea, WeekBars, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
+import { DashSection, StatRow, StatItem, SeverityChip } from '@/components/admin/dash'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { MemberManager, type MemberItem } from './member-manager'
 import { OPEN_STATUSES } from '@/lib/support/types'
@@ -102,65 +100,73 @@ export default async function AdminPageView() {
       eyebrow="Dashboard"
       description={description}
       width="wide"
-      // The Create button is gone — the live "this week" pulse lives up here instead.
+      // The header owns the four live numbers (F-pattern: most important, top
+      // right of the title) — one white strip, value-first.
       actions={
-        <HeaderKpis
-          items={[
-            { label: 'Members', value: (membersCount.count ?? 0).toLocaleString(), icon: Users },
-            { label: 'Active · 7d', value: practice.wam, icon: Zap },
-            { label: 'Practices · 7d', value: practice.verifiedThisWeek, icon: Activity },
-            { label: 'Events · 7d', value: upcomingCount.count ?? 0, icon: CalendarDays },
-          ]}
-        />
+        <div className="flex divide-x divide-border/60 rounded-2xl border border-border bg-surface px-1 py-2.5 shadow-sm">
+          {[
+            { label: 'Members', value: (membersCount.count ?? 0).toLocaleString() },
+            { label: 'Active · 7d', value: practice.wam },
+            { label: 'Practices · 7d', value: practice.verifiedThisWeek },
+            { label: 'Events · 7d', value: upcomingCount.count ?? 0 },
+          ].map((k) => (
+            <div key={k.label} className="px-4">
+              <p className="text-xl font-extrabold leading-none tabular-nums text-text">{k.value}</p>
+              <p className="mt-1 whitespace-nowrap text-xs font-medium text-muted">{k.label}</p>
+            </div>
+          ))}
+        </div>
       }
     >
-      <AdminSection
-        title="Growth"
-        description="New members joining, and how many become active practitioners within their first week."
+      {/* ── Pulse: ONE compact card — trend, weekly volume, activation. ──────── */}
+      <DashSection
+        title="Pulse"
+        description="Member growth and weekly activity at a glance."
+        href="/admin/engagement"
+        hrefLabel="Engagement"
       >
-        <div className="grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <ChartCard
-              title="Member growth"
-              value={(totalProfiles ?? 0).toLocaleString()}
-              delta={joinedThisMonth > 0 ? `+${joinedThisMonth} this month` : undefined}
-              caption={`${GROWTH_WEEKS} weeks ago → now`}
-            >
-              <TrendArea points={growthSeries} />
-            </ChartCard>
-          </div>
-          <div className="lg:col-span-4">
-            <div className="flex h-full items-center rounded-2xl border border-border bg-surface px-4 py-3">
-              <RingGauge
-                pct={practice.activationRate}
-                label="Activation · 7d"
-                sub={`${practice.activated} of ${practice.newMembers} new members activated`}
-              />
-            </div>
+        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+          <PulseBlock
+            label="Member growth"
+            value={(totalProfiles ?? 0).toLocaleString()}
+            delta={joinedThisMonth > 0 ? `+${joinedThisMonth} this month` : undefined}
+            caption={`${GROWTH_WEEKS} weeks`}
+          >
+            <TrendArea points={growthSeries} height={44} />
+          </PulseBlock>
+          <PulseBlock
+            label="Verified practices / wk"
+            value={practice.verifiedThisWeek}
+            caption={`${VOLUME_WEEKS} weeks · current highlighted`}
+          >
+            <WeekBars values={practiceSeries} height={44} />
+          </PulseBlock>
+          <PulseBlock
+            label="Events / wk"
+            value={upcomingCount.count ?? 0}
+            caption={`${VOLUME_WEEKS} weeks · includes week ahead`}
+          >
+            <WeekBars values={eventSeries} height={44} />
+          </PulseBlock>
+          <div className="flex items-center">
+            <RingGauge
+              pct={practice.activationRate}
+              label="Activation · 7d"
+              sub={`${practice.activated} of ${practice.newMembers} new members activated`}
+            />
           </div>
         </div>
-      </AdminSection>
-
-      <AdminSection
-        title="Engagement"
-        description="How actively the community is practicing and gathering, week over week."
-      >
-        <div className="grid gap-4 lg:grid-cols-2">
-          <ChartCard title="Verified practices / week" caption={`${VOLUME_WEEKS} weeks · current week highlighted`}>
-            <WeekBars values={practiceSeries} />
-          </ChartCard>
-          <ChartCard title="Events / week" caption={`${VOLUME_WEEKS} weeks by start date · includes the week ahead`}>
-            <WeekBars values={eventSeries} />
-          </ChartCard>
-        </div>
-      </AdminSection>
+      </DashSection>
 
       {staffJanitor && (
         <>
-          <Suspense fallback={<SectionSkeleton title="Vera & support" />}>
-            <VeraSupportSection />
+          <Suspense fallback={<DashSkeleton title="Vera's read" />}>
+            <VeraReadSection />
           </Suspense>
-          <Suspense fallback={<SectionSkeleton title="Expansion signal" />}>
+          <Suspense fallback={<DashSkeleton title="Site traffic" />}>
+            <SiteTrafficSection />
+          </Suspense>
+          <Suspense fallback={<DashSkeleton title="Expansion signal" />}>
             <ExpansionSection />
           </Suspense>
           <JanitorPanel circlesCount={circlesCount.count ?? 0} broadcasts={dispatchesCount.count ?? 0} />
@@ -175,75 +181,167 @@ export default async function AdminPageView() {
 
 const DAY = 24 * 60 * 60 * 1000
 
-// The header pulse — soft container, pronounced numbers. Replaces the old Create
-// button in the page header (PageHeading actions slot); stacks below the title on
-// mobile.
-function HeaderKpis({
-  items,
+// One plot inside the Pulse card — label, headline value, compact plot, caption.
+// No inner border: the SECTION is the card; blocks inside divide by whitespace.
+function PulseBlock({
+  label,
+  value,
+  delta,
+  caption,
+  children,
 }: {
-  items: { label: string; value: React.ReactNode; icon: LucideIcon }[]
+  label: string
+  value: React.ReactNode
+  delta?: string
+  caption?: string
+  children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-wrap items-stretch gap-0.5 rounded-2xl bg-surface-elevated/70 p-1">
-      {items.map((k) => (
-        <div key={k.label} className="min-w-[5.5rem] rounded-xl px-3.5 py-2">
-          <span className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
-            <k.icon className="h-3 w-3 shrink-0" aria-hidden />
-            {k.label}
-          </span>
-          <span className="mt-0.5 block text-xl font-extrabold leading-none tabular-nums text-text">
-            {k.value}
-          </span>
-        </div>
-      ))}
+    <div className="min-w-0">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-2xl font-extrabold leading-none tabular-nums text-text">{value}</p>
+        {delta && <p className="text-2xs font-semibold text-success">{delta}</p>}
+      </div>
+      <p className="mt-1 text-xs font-medium text-muted">{label}</p>
+      <div className="mt-2 h-11">{children}</div>
+      {caption && <p className="mt-1 text-2xs text-subtle">{caption}</p>}
     </div>
   )
 }
 
-// Suspense fallback for the async dashboard sections — a titled row of pulsing tiles.
-function SectionSkeleton({ title }: { title: string }) {
+// Suspense fallback — a white section card with pulsing content.
+function DashSkeleton({ title }: { title: string }) {
   return (
-    <AdminSection title={title}>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-14 animate-pulse rounded-2xl bg-surface-elevated/60" />
-        ))}
+    <DashSection title={title}>
+      <div className="space-y-2.5">
+        <div className="h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
+        <div className="h-4 w-1/2 animate-pulse rounded bg-surface-elevated" />
+        <div className="h-10 animate-pulse rounded-xl bg-surface-elevated/70" />
       </div>
-    </AdminSection>
+    </DashSection>
   )
 }
 
-// ── Vera & support — AI help signal + the operator queue (janitor). ───────────
-async function VeraSupportSection() {
+// ── Vera's read — advice from the live site signal + the support queue. ───────
+async function VeraReadSection() {
   const admin = createAdminClient()
   const weekAgo = new Date(new Date().getTime() - 7 * DAY).toISOString()
 
-  const [queries7d, deflected7d, answered7d, openTickets, openReports, pendingActions] = await Promise.all([
-    admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
-    admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('deflected', true),
-    admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('answered', true),
-    admin.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', OPEN_STATUSES),
-    admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    admin.from('agent_actions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-  ])
+  const [read, queries7d, deflected7d, answered7d, openTickets, openReports, pendingActions] =
+    await Promise.all([
+      getEngagementRead(),
+      admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
+      admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('deflected', true),
+      admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('answered', true),
+      admin.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', OPEN_STATUSES),
+      admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      admin.from('agent_actions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    ])
 
   const total = queries7d.count ?? 0
-  const answeredRate = total > 0 ? Math.round(((answered7d.count ?? 0) / total) * 100) : 0
+  const answeredRate = total > 0 ? Math.round(((answered7d.count ?? 0) / total) * 100) : null
+  const top = read.insights.slice(0, 3)
 
   return (
-    <AdminSection
-      title="Vera & support"
-      description="What members asked Vera, what she couldn't answer yet (your to-write list), and the live support and moderation queue."
+    <DashSection
+      title="Vera's read"
+      description="Vera reads the live engagement signal and suggests the next move."
+      href="/admin/insights"
+      hrefLabel="Full read"
     >
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <StatCard label="Vera questions · 7d" value={total} icon={Sparkles} href="/admin/vera" />
-        <StatCard label="Answered" value={`${answeredRate}%`} icon={Sparkles} href="/admin/vera" />
-        <StatCard label="Help gaps" value={deflected7d.count ?? 0} icon={HelpCircle} href="/admin/help-gaps" />
-        <StatCard label="Open tickets" value={openTickets.count ?? 0} icon={LifeBuoy} href="/admin/support" />
-        <StatCard label="Open reports" value={openReports.count ?? 0} icon={ShieldAlert} href="/admin/moderation" />
-        <StatCard label="AI Studio · pending" value={pendingActions.count ?? 0} icon={Lightbulb} href="/admin/studio" />
+      <p className="text-sm font-medium text-text">{read.summary}</p>
+
+      {top.length > 0 && (
+        <ul className="mt-3 space-y-2.5">
+          {top.map((i) => (
+            <li key={i.id} className="flex items-start gap-2.5">
+              <SeverityChip severity={i.severity} />
+              <div className="min-w-0 text-sm leading-snug">
+                <span className="font-semibold text-text">{i.title}.</span>{' '}
+                <span className="text-muted">{i.finding}</span>{' '}
+                <span className="text-text">→ {i.recommendation}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-5 border-t border-border/60 pt-4">
+        <StatRow>
+          <StatItem value={total} label="Vera questions · 7d" href="/admin/vera" />
+          <StatItem value={answeredRate === null ? '—' : `${answeredRate}%`} label="Answered" href="/admin/vera" />
+          <StatItem
+            value={deflected7d.count ?? 0}
+            label="Help gaps"
+            delta={(deflected7d.count ?? 0) > 0 ? 'articles to write' : undefined}
+            deltaTone={(deflected7d.count ?? 0) > 0 ? 'bad' : 'neutral'}
+            href="/admin/help-gaps"
+          />
+          <StatItem
+            value={openTickets.count ?? 0}
+            label="Open tickets"
+            deltaTone={(openTickets.count ?? 0) > 0 ? 'bad' : 'neutral'}
+            href="/admin/support"
+          />
+          <StatItem
+            value={openReports.count ?? 0}
+            label="Open reports"
+            deltaTone={(openReports.count ?? 0) > 0 ? 'bad' : 'neutral'}
+            href="/admin/moderation"
+          />
+          <StatItem value={pendingActions.count ?? 0} label="Studio prompts" href="/admin/studio" />
+        </StatRow>
       </div>
-    </AdminSection>
+    </DashSection>
+  )
+}
+
+// ── Site traffic — FIRST-PARTY analytics off the event backbone (7 days). ─────
+// (Live Google Analytics needs the GA4 Data API + a service account — not
+// configured; the event backbone already records views/features first-party.)
+async function SiteTrafficSection() {
+  const dash = await getEngagementDashboard(7)
+  const views = dash.byType.find((t) => t.eventType === 'nav.page_view')
+  const features = dash.byType.find((t) => t.eventType === 'feature.used')
+
+  return (
+    <DashSection
+      title="Site traffic"
+      description="First-party analytics from the event backbone — views, visitors, and the features being used (last 7 days)."
+      href="/admin/engagement"
+      hrefLabel="Engagement"
+    >
+      <StatRow>
+        <StatItem value={(views?.events ?? 0).toLocaleString()} label="Page views" />
+        <StatItem value={views?.actors ?? 0} label="Active visitors" />
+        <StatItem value={(features?.events ?? 0).toLocaleString()} label="Feature uses" />
+      </StatRow>
+
+      <div className="mt-5 grid gap-x-8 gap-y-4 border-t border-border/60 pt-4 sm:grid-cols-2">
+        <TopList title="Top pages" items={dash.topPages.slice(0, 5)} />
+        <TopList title="Top features" items={dash.topFeatures.slice(0, 5)} />
+      </div>
+    </DashSection>
+  )
+}
+
+function TopList({ title, items }: { title: string; items: { value: string; n: number }[] }) {
+  return (
+    <div className="min-w-0">
+      <p className="mb-1.5 text-xs font-semibold text-text">{title}</p>
+      {items.length === 0 ? (
+        <p className="text-xs text-subtle">No signal yet this week.</p>
+      ) : (
+        <ul className="space-y-1">
+          {items.map((i) => (
+            <li key={i.value} className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="truncate text-muted">{i.value}</span>
+              <span className="shrink-0 font-semibold tabular-nums text-text">{i.n.toLocaleString()}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
@@ -253,24 +351,30 @@ async function ExpansionSection() {
   const top = density.ready[0] ?? density.places[0]
 
   return (
-    <AdminSection
+    <DashSection
       title="Expansion signal"
       description="Where member density is crossing the threshold that justifies opening the next Lab."
+      href="/admin/expansion"
+      hrefLabel="Expansion"
     >
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Cities tracked" value={density.totals.cities} icon={MapIcon} href="/admin/expansion" />
-        <StatCard label="Labs ready" value={density.ready.length} icon={Radar} href="/admin/expansion" />
-        <StatCard label="Listings" value={density.totals.listings.toLocaleString()} icon={Building2} href="/admin/expansion" />
-        <StatCard label="Residents" value={density.totals.residents.toLocaleString()} icon={Users} href="/admin/expansion" />
-      </div>
+      <StatRow>
+        <StatItem value={density.totals.cities} label="Cities tracked" />
+        <StatItem
+          value={density.ready.length}
+          label="Labs ready"
+          deltaTone={density.ready.length > 0 ? 'good' : 'neutral'}
+          delta={density.ready.length > 0 ? 'over threshold' : undefined}
+        />
+        <StatItem value={density.totals.listings.toLocaleString()} label="Listings" />
+        <StatItem value={density.totals.residents.toLocaleString()} label="Residents" />
+      </StatRow>
       {top && (
-        <p className="mt-3 text-sm text-muted">
-          Strongest signal:{' '}
-          <span className="font-semibold text-text">{top.city}</span> · readiness{' '}
+        <p className="mt-4 border-t border-border/60 pt-3 text-sm text-muted">
+          Strongest signal: <span className="font-semibold text-text">{top.city}</span> · readiness{' '}
           {Math.round(top.score)}/100 ({top.stage})
         </p>
       )}
-    </AdminSection>
+    </DashSection>
   )
 }
 
@@ -390,28 +494,27 @@ async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number
 
   return (
     <>
-      <AdminSection
+      <DashSection
         title="Network"
         description="The structure of the community — regions, hubs, circles, and the broadcasts that reach them."
+        href="/admin/operations"
+        hrefLabel="Operations"
       >
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatCard label="Nexuses" value={nexusesRes.count ?? 0} icon={Building2} />
-          <StatCard label="Hubs" value={hubsRes.count ?? 0} icon={Building2} />
-          <StatCard label="Circles" value={circlesCount} icon={Layers} />
-          <StatCard label="Broadcasts" value={broadcasts} icon={Users} />
-        </div>
-      </AdminSection>
+        <StatRow>
+          <StatItem value={nexusesRes.count ?? 0} label="Nexuses" href="/admin/nexuses" />
+          <StatItem value={hubsRes.count ?? 0} label="Hubs" href="/admin/hubs" />
+          <StatItem value={circlesCount} label="Circles" href="/admin/circles" />
+          <StatItem value={broadcasts} label="Broadcasts" href="/admin/dispatches" />
+        </StatRow>
+      </DashSection>
 
       {/* Side-by-side panels — circles by fill | newest members. */}
-      <div className="grid gap-8 lg:grid-cols-2">
-        <AdminSection
+      <div className="grid gap-6 lg:grid-cols-2">
+        <DashSection
           title="Circles by fill"
           description="Fullest first — where capacity pressure is building."
-          actions={
-            <Link href="/admin/circles" className="text-xs font-semibold text-primary-strong hover:underline">
-              View all →
-            </Link>
-          }
+          href="/admin/circles"
+          hrefLabel="View all"
         >
           <div className="space-y-2">
             {circles.map((c) => (
@@ -424,16 +527,13 @@ async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number
               />
             ))}
           </div>
-        </AdminSection>
+        </DashSection>
 
-        <AdminSection
+        <DashSection
           title="Newest members"
           description="The last few people to join."
-          actions={
-            <Link href="/admin/members" className="text-xs font-semibold text-primary-strong hover:underline">
-              Full roster →
-            </Link>
-          }
+          href="/admin/members"
+          hrefLabel="Full roster"
         >
           <div className="space-y-2">
             {recent.map((m) => (
@@ -456,7 +556,7 @@ async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number
             ))}
             {recent.length === 0 && <EmptyState message="No members yet." />}
           </div>
-        </AdminSection>
+        </DashSection>
       </div>
     </>
   )

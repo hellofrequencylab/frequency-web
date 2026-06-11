@@ -60,19 +60,22 @@ export function StatCard({
   const t = delta ? TREND[delta.trend ?? 'flat'] : null
   const sm = size === 'sm'
 
+  // VALUE-FIRST anatomy (dashboard redesign): the number is the loudest thing in
+  // the tile; the label sits quiet beneath in sentence case (uppercase + tracking
+  // made labels dominate and wrap — the opposite of a stat tile's job).
   const inner = (
     <>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</p>
-        {Icon && <Icon className={`shrink-0 text-subtle ${sm ? 'h-3.5 w-3.5' : 'h-3.5 w-3.5'}`} />}
+      <div className="flex items-start justify-between gap-2">
+        <p
+          className={`tabular-nums text-text ${
+            sm ? 'text-sm font-bold' : 'text-xl font-extrabold leading-none'
+          }`}
+        >
+          {value}
+        </p>
+        {Icon && <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-subtle" />}
       </div>
-      <p
-        className={`tabular-nums text-text ${
-          sm ? 'mt-0.5 text-sm font-bold' : 'mt-0.5 text-xl font-extrabold leading-none'
-        }`}
-      >
-        {value}
-      </p>
+      <p className="mt-1 text-xs font-medium text-muted">{label}</p>
       {detail && <p className="mt-0.5 text-xs text-subtle">{detail}</p>}
       {delta && t && (
         <p className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${t.cls}`}>
@@ -83,7 +86,7 @@ export function StatCard({
     </>
   )
 
-  const cls = `block rounded-2xl ${sm ? 'px-4 py-3' : 'px-3.5 py-1.5'} ${
+  const cls = `block rounded-2xl ${sm ? 'px-4 py-3' : 'px-3.5 py-2.5'} ${
     bordered ? 'border border-border bg-surface shadow-sm' : 'bg-surface-elevated/60'
   }`
   return href ? (
