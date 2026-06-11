@@ -1,10 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
-// Welcome community post (ONBOARDING beat #6): when a new member finishes the
-// induction, the system account greets them in the public feed — turning a sign-up
-// into a *greeted* member, and seeding the feed with a warm, recurring moment.
-// Best-effort; never blocks onboarding. No-op if there's no system account.
-export async function postWelcomeForMember(displayName: string, handle: string): Promise<void> {
+// Newcomer welcome (ONBOARDING beat #6): when a new member finishes induction, Vera
+// (the system account, formerly @moderation) welcomes them with a SINGLE LINE — a
+// notification, not a full public feed post. Best-effort; never blocks onboarding.
+// No-op when there's no system account.
+export async function postWelcomeForMember(memberId: string, displayName: string): Promise<void> {
   const admin = createAdminClient()
 
   const { data: system } = await admin
@@ -17,11 +17,12 @@ export async function postWelcomeForMember(displayName: string, handle: string):
   if (!system) return
 
   const firstName = displayName.trim().split(/\s+/)[0] || displayName
-  await admin.from('posts').insert({
-    author_id: system.id,
-    scope_id: system.id,
-    visibility: 'public',
-    post_type: 'feed',
-    body: `Everyone, welcome @${handle} to the community 👋 Say hi and help ${firstName} feel at home.`,
+  await admin.from('notifications').insert({
+    recipient_id: memberId,
+    actor_id: system.id,
+    type: 'welcome',
+    reference_type: 'profile',
+    reference_id: system.id,
+    body: `Welcome to Frequency, ${firstName} 👋 So glad you're here.`,
   })
 }
