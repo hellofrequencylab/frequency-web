@@ -2,18 +2,24 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Trash2, AlertTriangle, Eye, Wind, ShieldAlert, MapPin } from 'lucide-react'
+import { Loader2, Trash2, Eye, Wind, MapPin } from 'lucide-react'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { Button, buttonClasses } from '@/components/ui/button'
+import { DangerModal } from '@/components/admin/danger-modal'
+import { Banner } from '@/components/admin/status'
 import { purgeArea, runDemoDecay } from './studio/actions'
 import { deleteDemoCircles, purgeDemoContent } from './actions'
 
 type DemoCircle = { id: string; name: string; memberCount: number; channel: string | null }
 
-// Every destructive action in one place, at the bottom of the page, behind a
-// single typed-DELETE confirm that ARMS the whole zone. Non-destructive previews
-// (the decay dry-run) stay available without arming. Reordered least → most
-// severe: purge an area · delete specific circles · decay pass · purge everything.
+// Every destructive action in one place, at the bottom of the page. Each gates through
+// the kit's DangerModal (ADR-233 §5 destructive tiering): irreversible/bulk purges
+// require typing DELETE; recoverable deletes confirm with a named button (safe default).
+// Non-destructive previews (the decay dry-run) stay available without a modal. Ordered
+// least → most severe: purge an area · delete specific circles · decay pass · purge
+// everything.
+type ModalKey = 'area' | 'circles' | 'decay' | 'all' | null
+
 export function DangerZone({
   total,
   counts,
@@ -29,10 +35,7 @@ export function DangerZone({
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-
-  // One DELETE confirm arms every destructive action in the zone.
-  const [confirm, setConfirm] = useState('')
-  const armed = confirm.trim().toUpperCase() === 'DELETE'
+  const [modal, setModal] = useState<ModalKey>(null)
 
   // purge-an-area
   const [areaName, setAreaName] = useState(defaultLocation.name)
@@ -72,31 +75,12 @@ export function DangerZone({
 
   return (
     <div className="space-y-4 rounded-2xl border border-danger-bg bg-danger-bg/10 p-5">
-      {error && <p className="rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>}
-      {notice && <p className="rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">{notice}</p>}
+      {error && <Banner tone="critical" title="Something went wrong">{error}</Banner>}
+      {notice && <Banner tone="info" title="Done">{notice}</Banner>}
 
-      {/* The single arm — type DELETE to unlock everything below */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/40 bg-surface p-4">
-        <div className="flex items-start gap-2.5">
-          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
-          <div>
-            <p className="text-sm font-semibold text-text">Destructive actions</p>
-            <p className="mt-0.5 text-sm text-muted">
-              Type <span className="font-mono font-semibold text-danger">DELETE</span> to enable the actions below. These can’t be undone.
-            </p>
-          </div>
-        </div>
-        <input
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          placeholder="DELETE"
-          autoComplete="off"
-          aria-label="Type DELETE to enable destructive actions"
-          className={`w-32 rounded-lg border bg-surface px-3 py-2 text-sm font-semibold tracking-wide focus:outline-none ${
-            armed ? 'border-danger text-danger' : 'border-border text-text'
-          }`}
-        />
-      </div>
+      <p className="text-sm text-muted">
+        These actions can&rsquo;t be undone. Each one confirms before it runs.
+      </p>
 
       {/* 1 · Purge an area */}
       <div className="rounded-xl border border-border bg-surface p-4">
@@ -104,7 +88,7 @@ export function DangerZone({
           <MapPin className="h-4 w-4 text-danger" />
           <p className="text-sm font-semibold text-text">Purge an area</p>
         </div>
-        <p className="mb-3 text-sm text-muted">Deletes demo content within a radius of a point. For clearing one town once it’s gone real.</p>
+        <p className="mb-3 text-sm text-muted">Deletes demo content within a radius of a point. For clearing one town once it&rsquo;s gone real.</p>
         <LocationAutocomplete
           value={areaName}
           placeholder="Search a city or town…"
@@ -126,12 +110,7 @@ export function DangerZone({
               className="w-40 accent-danger"
             />
           </label>
-          <button
-            type="button"
-            disabled={!armed || pending}
-            onClick={() => run(async () => { await purgeArea(lat, lng, radius) }, `Purged demo content within ${radius} mi of ${areaName}.`)}
-            className={dangerBtn}
-          >
+          <button type="button" disabled={pending} onClick={() => setModal('area')} className={dangerBtn}>
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             Purge {areaName}
           </button>
@@ -145,8 +124,8 @@ export function DangerZone({
             <p className="text-sm font-semibold text-text">Delete specific circles</p>
             <button
               type="button"
-              disabled={!armed || pending || selected.size === 0}
-              onClick={() => run(() => deleteDemoCircles([...selected]).then(() => setSelected(new Set())), 'Deleted the selected circles.')}
+              disabled={pending || selected.size === 0}
+              onClick={() => setModal('circles')}
               className={dangerBtn}
             >
               <Trash2 className="h-4 w-4" />
@@ -173,7 +152,7 @@ export function DangerZone({
         </div>
       )}
 
-      {/* 3 · Decay pass (preview is always safe; Run is armed) */}
+      {/* 3 · Decay pass (preview is always safe; Run confirms) */}
       <div className="rounded-xl border border-border bg-surface p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-start gap-2">
@@ -188,17 +167,12 @@ export function DangerZone({
               type="button"
               disabled={pending}
               onClick={() => run(async () => setDecay(await runDemoDecay(true)))}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text hover:border-primary disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text hover:border-primary disabled:opacity-50 motion-reduce:transition-none"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
               Preview
             </button>
-            <button
-              type="button"
-              disabled={!armed || pending}
-              onClick={() => run(async () => { setDecay(await runDemoDecay(false)) })}
-              className={dangerBtn}
-            >
+            <button type="button" disabled={pending} onClick={() => setModal('decay')} className={dangerBtn}>
               <Wind className="h-4 w-4" />
               Run now
             </button>
@@ -215,34 +189,61 @@ export function DangerZone({
 
       {/* 4 · Purge everything */}
       <div className="rounded-xl border border-danger/50 bg-danger-bg/20 p-4">
-        <div className="flex items-start gap-2.5">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-text">Purge ALL demo content</p>
-              <Button
-                type="button"
-                variant="danger"
-                disabled={!armed || pending || total === 0}
-                onClick={() => run(() => purgeDemoContent().then(() => setConfirm('')), 'All demo content purged.')}
-              >
-                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                Purge everything
-              </Button>
-            </div>
-            <p className="mt-0.5 text-sm text-muted">
-              Permanently deletes all {total.toLocaleString()} demo {total === 1 ? 'row' : 'rows'} (and their reactions, memberships, and RSVPs). Use once real content has taken over.
-            </p>
-            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-subtle">
-              {counts.map((c) => (
-                <li key={c.label}>
-                  <span className="font-semibold tabular-nums text-text">{c.count}</span> {c.label}
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-text">Purge ALL demo content</p>
+          <Button type="button" variant="danger" disabled={pending || total === 0} onClick={() => setModal('all')}>
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Purge everything
+          </Button>
         </div>
+        <p className="mt-0.5 text-sm text-muted">
+          Permanently deletes all {total.toLocaleString()} demo {total === 1 ? 'row' : 'rows'} (and their reactions, memberships, and RSVPs). Use once real content has taken over.
+        </p>
+        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-subtle">
+          {counts.map((c) => (
+            <li key={c.label}>
+              <span className="font-semibold tabular-nums text-text">{c.count}</span> {c.label}
+            </li>
+          ))}
+        </ul>
       </div>
+
+      {/* Confirms — irreversible purges require typing DELETE; recoverable ones use a
+          named button with the safe default (per the kit's destructive tiering). */}
+      <DangerModal
+        open={modal === 'area'}
+        onClose={() => setModal(null)}
+        title={`Purge demo content near ${areaName}`}
+        body={`Permanently deletes demo content within ${radius} mi of ${areaName}. This cannot be undone.`}
+        confirmLabel={`Purge ${areaName}`}
+        requireTyping="DELETE"
+        onConfirm={() => run(async () => { await purgeArea(lat, lng, radius) }, `Purged demo content within ${radius} mi of ${areaName}.`)}
+      />
+      <DangerModal
+        open={modal === 'circles'}
+        onClose={() => setModal(null)}
+        title={`Delete ${selected.size} ${selected.size === 1 ? 'circle' : 'circles'}`}
+        body="Removes each selected circle and its posts, events, memberships, and RSVPs. This cannot be undone."
+        confirmLabel="Delete circles"
+        onConfirm={() => run(() => deleteDemoCircles([...selected]).then(() => setSelected(new Set())), 'Deleted the selected circles.')}
+      />
+      <DangerModal
+        open={modal === 'decay'}
+        onClose={() => setModal(null)}
+        title="Run the decay pass"
+        body="Purges taken-over demo circles, prunes old demo posts, and sheds demo neighbors. Preview first if you want to see what it touches."
+        confirmLabel="Run decay pass"
+        onConfirm={() => run(async () => { setDecay(await runDemoDecay(false)) })}
+      />
+      <DangerModal
+        open={modal === 'all'}
+        onClose={() => setModal(null)}
+        title="Purge ALL demo content"
+        body={`Permanently deletes all ${total.toLocaleString()} demo ${total === 1 ? 'row' : 'rows'} and their reactions, memberships, and RSVPs. This cannot be undone.`}
+        confirmLabel="Purge everything"
+        requireTyping="DELETE"
+        onConfirm={() => run(() => purgeDemoContent(), 'All demo content purged.')}
+      />
     </div>
   )
 }

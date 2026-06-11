@@ -1,6 +1,6 @@
-import { SidebarCard } from '@/components/ui/sidebar-card'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
+import { EmptyState } from '@/components/ui/empty-state'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ModerationQueue } from './moderation-queue'
 
@@ -114,31 +114,23 @@ export default async function ModerationPage() {
   })
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Moderation"
       eyebrow="Community"
-      description="Review reports submitted by community members."
+      description="Review reports submitted by community members, ranked newest first. Acting on a report resolves it; dismissed reports are hidden but not deleted."
       width="wide"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content */}
-        <div className="lg:col-span-2">
-          {reportsWithPreviews.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-8 text-center">
-              <p className="text-sm text-muted">No pending reports</p>
-            </div>
-          ) : (
-            <ModerationQueue reports={reportsWithPreviews} />
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <SidebarCard title="About Moderation">
-            <p className="px-4 py-3 text-xs text-subtle">Reports are visible to host+ roles. Acting on a report resolves it. Dismissed reports are hidden but not deleted.</p>
-          </SidebarCard>
-        </div>
-      </div>
-    </AdminPage>
+      <AdminSection>
+        {reportsWithPreviews.length === 0 ? (
+          <EmptyState
+            variant="cleared"
+            title="The queue is clear"
+            description="No reports are waiting. New member reports will appear here for review."
+          />
+        ) : (
+          <ModerationQueue reports={reportsWithPreviews} />
+        )}
+      </AdminSection>
+    </AdminTemplate>
   )
 }

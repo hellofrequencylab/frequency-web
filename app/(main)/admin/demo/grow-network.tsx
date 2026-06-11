@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Plus, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Banner } from '@/components/admin/status'
 import { addMembersToCircle, addCircle } from './actions'
 
 type DemoCircle = { id: string; name: string; memberCount: number; channel: string | null }
@@ -43,8 +44,8 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
 
   return (
     <div className="space-y-3">
-      {error && <p className="rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>}
-      {notice && <p className="rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">{notice}</p>}
+      {error && <Banner tone="critical" title="Something went wrong">{error}</Banner>}
+      {notice && <Banner tone="info" title="Done">{notice}</Banner>}
 
       <div className="grid gap-3 lg:grid-cols-2">
         {/* Add members to an existing circle */}

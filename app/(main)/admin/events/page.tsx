@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { isJanitor } from '@/lib/core/roles'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EventCompose } from '@/app/(main)/events/event-compose'
 import { getEventsAdminData } from './load-events'
 import { EventsAdminList } from './events-admin-list'
@@ -27,7 +27,7 @@ export default async function AdminEventsPage() {
   const canManage = isJanitor(webRole)
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Events"
       eyebrow="Community"
       description="Manage events across your circles, plus the events members post from town posters: claim links, handovers, and poster quality."
@@ -55,6 +55,6 @@ export default async function AdminEventsPage() {
           <PosterQualitySection />
         </Suspense>
       </AdminSection>
-    </AdminPage>
+    </AdminTemplate>
   )
 }

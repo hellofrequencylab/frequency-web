@@ -1,8 +1,9 @@
 import { Users, UserPlus, UserX, Activity, Sparkles } from 'lucide-react'
 import { getMarketRead, type ContentIdea, type PainPoint } from '@/lib/marketing/market-read'
-import { AdminTemplate } from '@/components/templates'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
-import { SectionHeader } from '@/components/ui/section-header'
+import { StatusChip, type StatusTone } from '@/components/admin/status'
+import { FreshnessNote } from '@/components/admin/freshness-note'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,9 +22,8 @@ export default async function MarketReadPage() {
       description="The operator listens to live signal, names what the market is aching for, and drafts outbound content that speaks to it (a magical connection, not an advertisement). Drafts are proposals: nothing reaches the public until you approve it."
     >
       {/* ── Listen: live in-app signal ─────────────────────── */}
-      <section>
-        <SectionHeader title="Live signal" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <AdminSection title="Live signal" actions={<FreshnessNote at={new Date()} />}>
+        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard label="Members" value={signal.totalMembers.toLocaleString()} icon={Users} />
           <StatCard label="New this week" value={signal.newThisWeek.toLocaleString()} icon={UserPlus} />
           <StatCard label="Without a circle" value={signal.newWithoutCircle.toLocaleString()} icon={UserPlus} />
@@ -41,17 +41,16 @@ export default async function MarketReadPage() {
         <p className="mt-3 text-xs text-subtle">
           Prototype: in-app behavior is live. GA acquisition + external social listening slot in here next.
         </p>
-      </section>
+      </AdminSection>
 
       {/* ── Read the ache + drafted content ────────────────── */}
-      <section>
-        <SectionHeader title="What the market is aching for" count={painPoints.length} />
+      <AdminSection title="What the market is aching for" description={`${painPoints.length} pain point${painPoints.length === 1 ? '' : 's'}.`}>
         <div className="space-y-6">
           {painPoints.map((p) => (
             <PainPointCard key={p.id} pain={p} />
           ))}
         </div>
-      </section>
+      </AdminSection>
 
       <div className="rounded-2xl bg-surface-elevated/60 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-text">
@@ -77,16 +76,10 @@ function PainPointCard({ pain }: { pain: PainPoint }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-base font-bold text-text">{pain.title}</h3>
-            <span
-              className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${
-                pain.basis === 'live' ? 'bg-success-bg text-success' : 'bg-surface-elevated text-subtle'
-              }`}
-            >
+            <StatusChip tone={pain.basis === 'live' ? 'success' : 'neutral'} size="sm">
               {pain.basis === 'live' ? 'Live signal' : 'Baseline'}
-            </span>
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-signal-bg text-signal-strong font-medium">
-              {pain.persona}
-            </span>
+            </StatusChip>
+            <StatusChip tone="info" size="sm">{pain.persona}</StatusChip>
           </div>
           <p className="mt-2 text-lg font-semibold text-text leading-snug text-balance">“{pain.ache}”</p>
           <p className="mt-2 text-sm text-muted leading-relaxed">{pain.evidence}</p>
@@ -102,17 +95,17 @@ function PainPointCard({ pain }: { pain: PainPoint }) {
   )
 }
 
-const CHANNEL_STYLE: Record<ContentIdea['channel'], string> = {
-  Social: 'bg-primary-bg text-primary-strong',
-  Ad: 'bg-signal-bg text-signal-strong',
-  Hook: 'bg-warning-bg text-warning',
+const CHANNEL_TONE: Record<ContentIdea['channel'], StatusTone> = {
+  Social: 'info',
+  Ad: 'info',
+  Hook: 'warning',
 }
 
 function IdeaCard({ idea }: { idea: ContentIdea }) {
   return (
     <div className="flex flex-col rounded-2xl bg-surface-elevated/60 p-4">
-      <span className={`self-start text-xs px-1.5 py-0.5 rounded-md font-medium ${CHANNEL_STYLE[idea.channel]}`}>
-        {idea.channel}
+      <span className="self-start">
+        <StatusChip tone={CHANNEL_TONE[idea.channel]} size="sm">{idea.channel}</StatusChip>
       </span>
       <p className="mt-2 text-sm font-semibold text-text leading-snug">{idea.hook}</p>
       {idea.body && <p className="mt-1.5 text-sm text-muted leading-relaxed">{idea.body}</p>}
