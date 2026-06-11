@@ -21,13 +21,13 @@ type Beat = 'oath' | 'intro' | 'identity' | 'place' | 'tour' | 'enter'
 const STEPS: { id: StepId; title: string; sub: string }[] = [
   { id: 'meta', title: 'Version', sub: 'Who it’s for' },
   { id: 'splash', title: 'Splash', sub: 'The entry hero' },
-  { id: 'oath', title: 'The oath', sub: 'Before they come in' },
+  { id: 'oath', title: 'Beta Promise', sub: 'Before they come in' },
   { id: 'intro', title: 'Welcome', sub: 'The intro beat' },
   { id: 'identity', title: 'Identity', sub: 'Name & face' },
   { id: 'place', title: 'Place', sub: 'Where they are' },
   { id: 'tour', title: 'The tour', sub: 'Three rooms' },
   { id: 'enter', title: 'Step in', sub: 'Meet Vera' },
-  { id: 'oaths', title: 'Oath checks', sub: 'The three promises' },
+  { id: 'oaths', title: 'Promise checks', sub: 'The three promises' },
   { id: 'heard', title: 'How they heard', sub: 'Attribution' },
   { id: 'review', title: 'Review', sub: 'Save & preview' },
 ]

@@ -62,7 +62,7 @@ const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender
 const BEAT_COUNT = 6 // 0 oath · 1 intro · 2 reel · 3 identity · 4 place · 5 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
 // live announcement so assistive tech tracks "where am I" through the sequence.
-const BEAT_LABELS = ['The oath', 'Who you are', 'A quick tour', 'Your identity', 'Your place', 'Step in']
+const BEAT_LABELS = ['Beta Promise', 'Who you are', 'A quick tour', 'Your identity', 'Your place', 'Step in']
 
 // No separator — "Daniel Tyack" → "danieltyack".
 function suggestHandle(name: string): string {
@@ -430,7 +430,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       {/* Stage: one centered column — logo, content, progress — with tight, consistent gaps. */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
         <div className="flex shrink-0 flex-col items-center">
-          <span className="text-3xs font-bold uppercase tracking-[0.4em] text-subtle">Beta</span>
+          <span className="animate-wiggle inline-block rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-[0.35em] text-on-primary shadow-sm shadow-primary/25">
+            Beta
+          </span>
           <span className="brandmark-link mt-5 block">
             <span className="brandmark h-12 aspect-[963/170] sm:h-[52px]" aria-hidden />
           </span>
@@ -444,7 +446,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
           aria-label={`Step ${beat + 1} of ${BEAT_COUNT}: ${BEAT_LABELS[beat]}`}
           className="mt-10 w-full animate-[slideUp_0.5s_ease-out] text-center outline-none"
         >
-            {/* ── Beat 0: The Oath ── */}
+            {/* ── Beat 0: The Beta Promise ── */}
             {beat === 0 && (
               <div className="mx-auto max-w-5xl">
                 <p className={eyebrow}>{VERA.oath.eyebrow}</p>

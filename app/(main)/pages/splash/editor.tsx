@@ -33,7 +33,7 @@ const BEATS: {
   {
     id: 'oath',
     beatIndex: 0,
-    title: 'The oath',
+    title: 'Beta Promise',
     sub: 'The promise they make before they come in.',
     fields: [
       { key: 'eyebrow', label: 'Eyebrow' },
