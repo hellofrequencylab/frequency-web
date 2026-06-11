@@ -17,6 +17,7 @@ import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
 import { getStaffMember } from '@/lib/staff'
+import { getCapabilityOverrides } from '@/lib/permissions'
 import { staffCan, staffSeesAdmin, type StaffDomain, type StaffRole, type Access } from '@/lib/core/staff-roles'
 
 export interface AdminContext {
@@ -59,7 +60,9 @@ export async function requireAdmin(
   const staff = await getStaffMember().catch(() => null)
   const staffRole = staff?.role ?? null
   const okPrimary = meetsMin(min, profile.community_role, profile.webRole)
-  const okStaff = opts?.staff ? staffCan(staffRole, opts.staff, opts.staffLevel ?? 'write') : false
+  // ADR-222: layer the owner-editable capability overrides on the staff-axis check.
+  const overrides = opts?.staff ? await getCapabilityOverrides() : undefined
+  const okStaff = opts?.staff ? staffCan(staffRole, opts.staff, opts.staffLevel ?? 'write', overrides) : false
   if (!okPrimary && !okStaff) redirect('/feed')
   return { profileId: profile.id, role: profile.community_role, webRole: profile.webRole, staffRole }
 }
@@ -72,8 +75,11 @@ export async function requireAdminFloor(): Promise<AdminContext> {
   if (!profile) redirect('/')
   const staff = await getStaffMember().catch(() => null)
   const staffRole = staff?.role ?? null
+  const overrides = staffRole ? await getCapabilityOverrides() : undefined
   const okFloor =
-    atLeastRole(profile.community_role, 'host') || isStaff(profile.webRole) || staffSeesAdmin(staffRole)
+    atLeastRole(profile.community_role, 'host') ||
+    isStaff(profile.webRole) ||
+    staffSeesAdmin(staffRole, overrides)
   if (!okFloor) redirect('/feed')
   return { profileId: profile.id, role: profile.community_role, webRole: profile.webRole, staffRole }
 }
@@ -95,7 +101,8 @@ export async function authorizeAction<T extends { community_role: CommunityRole;
     if (meetsMin(min, caller.community_role, caller.webRole)) return caller
     if (staffDomain) {
       const staff = await getStaffMember().catch(() => null)
-      if (staffCan(staff?.role ?? null, staffDomain, 'write')) return caller
+      const overrides = await getCapabilityOverrides().catch(() => undefined)
+      if (staffCan(staff?.role ?? null, staffDomain, 'write', overrides)) return caller
     }
   }
   throw new Error('Unauthorized')
