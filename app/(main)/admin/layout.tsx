@@ -45,7 +45,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
 
           <div className="sticky top-14 z-20 mb-6 bg-[var(--color-canvas)] py-2.5">
-            <AdminSearchBar />
+            <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
           </div>
 
           {children}
