@@ -31,7 +31,7 @@ export function CaptureBox({
   placeholder = 'What’s on your mind?',
   canAnnounce = false,
   defaultMode = 'post',
-  compactTools = false,
+  compactTools = true,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -39,7 +39,8 @@ export function CaptureBox({
   canAnnounce?: boolean
   /** Mobile/contact-forward surfaces can open straight into 'contact'. */
   defaultMode?: Mode
-  /** Fold the composer's formatting tools behind a "Format" toggle. */
+  /** Fold the composer's formatting tools behind a "Format" toggle (default —
+   *  this default must match the Composer's, or it silently overrides it). */
   compactTools?: boolean
 }) {
   const [mode, setMode] = useState<Mode>(defaultMode)
