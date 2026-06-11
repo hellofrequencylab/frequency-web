@@ -54,28 +54,25 @@ export function DashSection({
   )
 }
 
-/** A HOME-dashboard area block, printed on the canvas (no card). The area glyph +
- *  label + instructional blurb head it, an optional drill link sits on the right, a
- *  row of Quick Links into the area's surfaces sits under it, and stats + graphs fill
- *  the body. A hairline rule separates one area from the next. */
+/** A HOME-dashboard area block. The HEADER, subtext, and instructional copy are
+ *  printed on the CANVAS (no card); the body is a grid of white tiles (stats, graphs,
+ *  lists). A hairline rule separates one area from the next. The owner brief: headers
+ *  and instructional text on the canvas, everything else in white tiles. */
 export function DashArea({
   icon: Icon,
   label,
   blurb,
   href,
   hrefLabel,
-  links,
   children,
 }: {
   icon?: LucideIcon
   label: string
-  /** Instructional one-liner: what the operator does in this area. */
-  blurb?: string
+  /** Instructional copy: what this area is and what the operator does here. */
+  blurb?: React.ReactNode
   /** Drill-down to the area's own dashboard. */
   href?: string
   hrefLabel?: string
-  /** Quick links into the area's key surfaces (from the admin IA). */
-  links?: { href: string; label: string; Icon: LucideIcon }[]
   children: React.ReactNode
 }) {
   return (
@@ -86,7 +83,7 @@ export function DashArea({
             {Icon && <Icon className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />}
             {label}
           </h2>
-          {blurb && <p className="mt-1 max-w-2xl text-sm text-muted">{blurb}</p>}
+          {blurb && <p className="mt-1 max-w-3xl text-sm text-muted">{blurb}</p>}
         </div>
         {href && (
           <Link
@@ -98,57 +95,93 @@ export function DashArea({
           </Link>
         )}
       </div>
-      {links && links.length > 0 && <QuickLinks links={links} />}
-      <div className="mt-5 space-y-5">{children}</div>
+      {children}
     </section>
   )
 }
 
-/** A wrapped row of pill links into an area's surfaces. Printed on the canvas
- *  (transparent, hairline border) — never a filled card. */
-export function QuickLinks({ links }: { links: { href: string; label: string; Icon: LucideIcon }[] }) {
+/** The tile grid that fills an area body — varied white tiles, responsive. */
+export function TileGrid({ children }: { children: React.ReactNode }) {
+  return <div className="mt-5 grid grid-cols-2 gap-3.5 lg:grid-cols-3">{children}</div>
+}
+
+const SPAN = {
+  1: 'col-span-1',
+  2: 'col-span-2',
+  3: 'col-span-2 lg:col-span-3',
+} as const
+
+/** A white content tile — the only white surface in the area grammar. Optional
+ *  uppercase label + axis caption; `span` sets how many grid columns it covers (of 4
+ *  on lg, 2 on mobile). Holds graphs, stat clusters, ranked lists, narrative. */
+export function Tile({
+  label,
+  caption,
+  span = 1,
+  children,
+}: {
+  label?: string
+  caption?: string
+  span?: keyof typeof SPAN
+  children: React.ReactNode
+}) {
   return (
-    <div className="mt-3.5 flex flex-wrap gap-2">
-      {links.map((l) => (
-        <Link
-          key={l.href}
-          href={l.href}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary/40 hover:bg-surface/60 hover:text-text"
-        >
-          <l.Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-          {l.label}
-        </Link>
-      ))}
+    <div className={`flex h-full flex-col rounded-2xl border border-border bg-surface p-4 ${SPAN[span]}`}>
+      {label && <p className="text-xs font-semibold uppercase tracking-wider text-subtle">{label}</p>}
+      <div className={`${label ? 'mt-2 ' : ''}min-h-12 flex-1`}>{children}</div>
+      {caption && <p className="mt-1.5 text-2xs text-subtle">{caption}</p>}
     </div>
   )
 }
 
-/** A white graph tile for the on-canvas areas — a label, the plot, an axis caption.
- *  The ONLY white surface in the area grammar (the owner brief: graphs on white,
- *  everything else on the canvas). For richer headline-value tiles use ChartCard. */
+/** A white graph tile — label, optional headline value, the plot, an axis caption. */
 export function GraphTile({
   label,
   value,
   caption,
+  span = 1,
   children,
 }: {
   label: string
   value?: React.ReactNode
   caption?: string
+  span?: keyof typeof SPAN
   children: React.ReactNode
 }) {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4">
+    <div className={`flex h-full flex-col rounded-2xl border border-border bg-surface p-4 ${SPAN[span]}`}>
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-subtle">{label}</p>
-        {value !== undefined && (
-          <p className="text-sm font-bold tabular-nums text-text">{value}</p>
-        )}
+        {value !== undefined && <p className="text-sm font-bold tabular-nums text-text">{value}</p>}
       </div>
       <div className="mt-2 min-h-12 flex-1">{children}</div>
       {caption && <p className="mt-1.5 text-2xs text-subtle">{caption}</p>}
     </div>
   )
+}
+
+/** A compact metric for a stat-cluster tile — big value, quiet label, optional tone. */
+export function MiniStat({
+  value,
+  label,
+  tone = 'neutral',
+}: {
+  value: React.ReactNode
+  label: string
+  tone?: 'good' | 'bad' | 'neutral'
+}) {
+  const valueTone = tone === 'good' ? 'text-success' : tone === 'bad' ? 'text-danger' : 'text-text'
+  return (
+    <div className="min-w-0">
+      <p className={`text-2xl font-extrabold leading-none tabular-nums ${valueTone}`}>{value}</p>
+      <p className="mt-1 truncate text-xs font-medium text-muted">{label}</p>
+    </div>
+  )
+}
+
+/** A 2×2 (or 2×N) grid of MiniStats inside a Tile. */
+export function MiniGrid({ children }: { children: React.ReactNode }) {
+  return <div className="grid grid-cols-2 gap-x-4 gap-y-4">{children}</div>
 }
 
 /** A row of stats inside a DashSection — divided columns, not nested boxes. */
