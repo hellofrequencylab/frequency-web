@@ -1,26 +1,24 @@
 import { Suspense } from 'react'
-import {
-  UserPlus, TrendingUp, DollarSign, Radar, Contact, Users, Megaphone,
-  PieChart, Layers, Filter, Building2, Map as MapIcon, ClipboardCheck,
-} from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
-import { StatCard } from '@/components/ui/stat-card'
-import { ChartCard, TrendArea, WeekBars, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
+import { AdminPage } from '@/components/admin/admin-page'
+import { DashSection, StatRow, StatItem } from '@/components/admin/dash'
+import { TrendArea, WeekBars, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { getEngagementDashboard } from '@/lib/analytics/dashboard'
 import { getDeals, computeMetrics, countOpenTasks, formatMoney } from '@/lib/crm/pipeline'
 import { getDensitySignal } from '@/lib/analytics/density'
-import type { LucideIcon } from 'lucide-react'
 
 // Growth — "grow it." The domain dashboard for funnels, onboarding, pipeline,
-// campaigns, and the expansion signal. Rebuilt (mirrors the admin HOME redesign,
-// ADR-228): a header KPI pulse on top, then sectioned operator panels. Gate stays
-// host+ / marketing staff (sequences + insights areas keep their own page gates).
-// Cheap counts run in one parallel sweep up top; every heavy aggregate
-// (getPracticeMetrics, getEngagementDashboard, getDeals, getDensitySignal) sits
-// behind its own <Suspense> so the shell never blocks (PAGE-FRAMEWORK §5).
+// campaigns, and the expansion signal. Restyled onto the admin HOME card grammar
+// (ADR-228): a header KPI strip on top, then one WHITE DashSection card per
+// section with value-first StatRows, and inline PulseBlock plots (no nested
+// ChartCard borders). Gate stays host+ / marketing staff (sequences + insights
+// areas keep their own page gates). Cheap counts run in one parallel sweep up
+// top; every heavy aggregate (getPracticeMetrics, getEngagementDashboard,
+// getDeals, getDensitySignal) sits behind its own <Suspense> so the shell never
+// blocks (PAGE-FRAMEWORK §5).
 
 const WEEK = 7 * 24 * 60 * 60 * 1000
 const GROWTH_WEEKS = 12
@@ -66,8 +64,11 @@ export default async function GrowthDashboard() {
       icon={TrendingUp}
       width="wide"
       description="Grow it. Funnels, onboarding, pipeline, campaigns, and the expansion signal."
+      // The header owns the live numbers (F-pattern: most important, top right of
+      // the title) — one white strip, value-first. Activation needs the heavier
+      // practice read, so the strip sits behind its own Suspense.
       actions={
-        <Suspense fallback={<HeaderKpis items={kpiLoading} />}>
+        <Suspense fallback={<HeaderKpiStripSkeleton />}>
           <HeaderKpiStrip
             newMembers30d={newMembers30d}
             contacts={contactsCount.count ?? 0}
@@ -77,84 +78,87 @@ export default async function GrowthDashboard() {
       }
     >
       {/* ── Funnel & activation — new joins trend + the activation funnel. ── */}
-      <AdminSection
+      <DashSection
         title="Funnel & activation"
         description="New members joining, and how many reach the North-Star moment (a verified practice) within their first week."
+        href="/admin/engagement"
+        hrefLabel="Engagement"
       >
-        <div className="grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <ChartCard
-              title="Member growth"
-              value={totalProfiles.toLocaleString()}
-              delta={newMembers30d > 0 ? `+${newMembers30d} · 30d` : undefined}
-              caption={`${GROWTH_WEEKS} weeks ago → now`}
-            >
-              <TrendArea points={growthSeries} />
-            </ChartCard>
-          </div>
-          <div className="lg:col-span-4">
-            <Suspense fallback={<ActivationCardSkeleton />}>
-              <ActivationCard />
-            </Suspense>
-          </div>
+        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          <PulseBlock
+            label="Member growth"
+            value={totalProfiles.toLocaleString()}
+            delta={newMembers30d > 0 ? `+${newMembers30d} this month` : undefined}
+            caption={`${GROWTH_WEEKS} weeks ago → now`}
+          >
+            <TrendArea points={growthSeries} height={44} />
+          </PulseBlock>
+          <Suspense fallback={<ActivationStatSkeleton />}>
+            <ActivationStat />
+          </Suspense>
         </div>
         <Suspense fallback={<FunnelSkeleton />}>
           <ActivationFunnel />
         </Suspense>
-      </AdminSection>
+      </DashSection>
 
       {/* ── Pipeline (CRM) — deals by status, value, follow-ups. ── */}
-      <Suspense fallback={<SectionSkeleton title="Pipeline" cards={4} />}>
+      <Suspense fallback={<DashSkeleton title="Pipeline" />}>
         <PipelineSection />
       </Suspense>
 
       {/* ── Campaigns & audiences — cheap counts from the up-top sweep. ── */}
-      <AdminSection
+      <DashSection
         title="Campaigns & audiences"
         description="What's going out, who it reaches, and the nurture flows running on their own."
       >
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Campaigns" value={(campaignsCount.count ?? 0).toLocaleString()} icon={Megaphone} href="/admin/marketing" />
-          <StatCard label="Segments" value={(segmentsCount.count ?? 0).toLocaleString()} icon={PieChart} href="/admin/segments" />
-          <StatCard label="Active sequences" value={(sequencesCount.count ?? 0).toLocaleString()} icon={Layers} href="/pages/sequences" />
-          <StatCard label="Contacts" value={(contactsCount.count ?? 0).toLocaleString()} icon={Contact} href="/connections" />
-        </div>
-      </AdminSection>
+        <StatRow>
+          <StatItem value={(campaignsCount.count ?? 0).toLocaleString()} label="Campaigns" href="/admin/marketing" />
+          <StatItem value={(segmentsCount.count ?? 0).toLocaleString()} label="Segments" href="/admin/segments" />
+          <StatItem value={(sequencesCount.count ?? 0).toLocaleString()} label="Active sequences" href="/pages/sequences" />
+          <StatItem value={(contactsCount.count ?? 0).toLocaleString()} label="Contacts" href="/connections" />
+        </StatRow>
+      </DashSection>
 
       {/* ── Expansion — density readiness for the next Lab. ── */}
-      <Suspense fallback={<SectionSkeleton title="Expansion" cards={4} />}>
+      <Suspense fallback={<DashSkeleton title="Expansion" />}>
         <ExpansionSection />
       </Suspense>
     </AdminPage>
   )
 }
 
-// ── Header KPI strip — the soft pulse in the page-header actions slot. ─────────
-// (Copied inline from the admin HOME dashboard's HeaderKpis, per the redesign.)
-function HeaderKpis({ items }: { items: { label: string; value: React.ReactNode; icon: LucideIcon }[] }) {
+// ── Header KPI strip — the live numbers in the page-header actions slot. ───────
+// (Copied from the admin HOME dashboard: one bordered white strip, value-first.)
+function HeaderKpiStripFrame({
+  items,
+}: {
+  items: { label: string; value: React.ReactNode }[]
+}) {
   return (
-    <div className="flex flex-wrap items-stretch gap-0.5 rounded-2xl bg-surface-elevated/70 p-1">
+    <div className="flex divide-x divide-border/60 rounded-2xl border border-border bg-surface px-1 py-2.5 shadow-sm">
       {items.map((k) => (
-        <div key={k.label} className="min-w-[5.5rem] rounded-xl px-3.5 py-2">
-          <span className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
-            <k.icon className="h-3 w-3 shrink-0" aria-hidden />
-            {k.label}
-          </span>
-          <span className="mt-0.5 block text-xl font-extrabold leading-none tabular-nums text-text">
-            {k.value}
-          </span>
+        <div key={k.label} className="px-4">
+          <p className="text-xl font-extrabold leading-none tabular-nums text-text">{k.value}</p>
+          <p className="mt-1 whitespace-nowrap text-xs font-medium text-muted">{k.label}</p>
         </div>
       ))}
     </div>
   )
 }
 
-const kpiLoading: { label: string; value: React.ReactNode; icon: LucideIcon }[] = [
-  { label: 'New · 30d', value: '…', icon: UserPlus },
-  { label: 'Activation · 7d', value: '…', icon: TrendingUp },
-  { label: 'Contacts', value: '…', icon: Contact },
-  { label: 'Open deals', value: '…', icon: DollarSign },
-]
+function HeaderKpiStripSkeleton() {
+  return (
+    <HeaderKpiStripFrame
+      items={[
+        { label: 'New · 30d', value: '…' },
+        { label: 'Activation · 7d', value: '…' },
+        { label: 'Contacts', value: '…' },
+        { label: 'Open deals', value: '…' },
+      ]}
+    />
+  )
+}
 
 // Activation rate is the only KPI that needs the (heavier) practice read, so the
 // strip awaits getPracticeMetrics() and renders all four numbers together.
@@ -169,44 +173,78 @@ async function HeaderKpiStrip({
 }) {
   const m = await getPracticeMetrics()
   return (
-    <HeaderKpis
+    <HeaderKpiStripFrame
       items={[
-        { label: 'New · 30d', value: newMembers30d.toLocaleString(), icon: UserPlus },
-        { label: 'Activation · 7d', value: `${Math.round(m.activationRate * 100)}%`, icon: TrendingUp },
-        { label: 'Contacts', value: contacts.toLocaleString(), icon: Contact },
-        { label: 'Open deals', value: openDeals.toLocaleString(), icon: DollarSign },
+        { label: 'New · 30d', value: newMembers30d.toLocaleString() },
+        { label: 'Activation · 7d', value: `${Math.round(m.activationRate * 100)}%` },
+        { label: 'Contacts', value: contacts.toLocaleString() },
+        { label: 'Open deals', value: openDeals.toLocaleString() },
       ]}
     />
   )
 }
 
-// ── Activation card — the 7-day activation ratio, beside the growth trend. ────
-async function ActivationCard() {
+// One plot inside a DashSection — label, headline value, compact plot, caption.
+// No inner border: the SECTION is the card; blocks inside divide by whitespace.
+// (Copied from the admin HOME dashboard's PulseBlock.)
+function PulseBlock({
+  label,
+  value,
+  delta,
+  caption,
+  children,
+}: {
+  label: string
+  value: React.ReactNode
+  delta?: string
+  caption?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-2xl font-extrabold leading-none tabular-nums text-text">{value}</p>
+        {delta && <p className="text-2xs font-semibold text-success">{delta}</p>}
+      </div>
+      <p className="mt-1 text-xs font-medium text-muted">{label}</p>
+      <div className="mt-2 h-11">{children}</div>
+      {caption && <p className="mt-1 text-2xs text-subtle">{caption}</p>}
+    </div>
+  )
+}
+
+// ── Activation stat — the 7-day activation ratio, beside the growth trend. ────
+async function ActivationStat() {
   const m = await getPracticeMetrics()
   return (
-    <div className="flex h-full flex-col justify-center rounded-2xl border border-border bg-surface px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wider text-subtle">Activation · 7d</p>
-      <p className="mt-1 text-3xl font-extrabold leading-none tabular-nums text-text">
+    <div className="flex flex-col justify-center">
+      <p className="text-2xl font-extrabold leading-none tabular-nums text-text">
         {Math.round(m.activationRate * 100)}%
       </p>
-      <p className="mt-1.5 text-sm text-muted">
+      <p className="mt-1 text-xs font-medium text-muted">Activation · 7d</p>
+      <p className="mt-1.5 text-sm leading-snug text-muted">
         {m.activated.toLocaleString()} of {m.newMembers.toLocaleString()} new members reached a verified practice.
       </p>
     </div>
   )
 }
 
-function ActivationCardSkeleton() {
-  return <div className="h-full min-h-[7rem] animate-pulse rounded-2xl bg-surface-elevated/60" />
+function ActivationStatSkeleton() {
+  return <div className="min-h-[5rem] animate-pulse rounded-xl bg-surface-elevated/60" />
 }
 
 // ── Activation funnel — induction → Vera → circle → adopt → verify. ───────────
+// Stays a compact list inside the section card.
 async function ActivationFunnel() {
   const dash = await getEngagementDashboard()
   const steps = dash.activationFunnel
   const top = steps[0]?.actors ?? 0
   return (
-    <ChartCard title="Activation funnel" caption="New-member journey · last 30 days · share of the first step">
+    <div className="mt-5 border-t border-border/60 pt-4">
+      <p className="mb-2 text-xs font-semibold text-text">
+        Activation funnel{' '}
+        <span className="font-normal text-subtle">· last 30 days · share of the first step</span>
+      </p>
       <div className="space-y-2 py-1">
         {steps.map((s) => {
           const pct = top > 0 ? Math.round((s.actors / top) * 100) : 0
@@ -228,7 +266,7 @@ async function ActivationFunnel() {
           )
         })}
       </div>
-    </ChartCard>
+    </div>
   )
 }
 
@@ -245,35 +283,38 @@ async function PipelineSection() {
   )
 
   return (
-    <AdminSection
+    <DashSection
       title="Pipeline"
       description="Open deals, their value, and the follow-ups due so nothing stalls."
+      href="/admin/crm"
+      hrefLabel="CRM"
     >
-      <div className="grid gap-4 lg:grid-cols-12">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:col-span-8">
-          <StatCard label="Open deals" value={metrics.openCount.toLocaleString()} icon={ClipboardCheck} href="/admin/crm" />
-          <StatCard label="Open value" value={formatMoney(metrics.openValue)} icon={DollarSign} href="/admin/crm" />
-          <StatCard
-            label="Win rate"
-            value={metrics.winRatePct === null ? '—' : `${metrics.winRatePct}%`}
-            icon={TrendingUp}
-            href="/admin/crm"
-          />
-          <StatCard
-            label="Follow-ups due"
-            value={metrics.tasksDue.toLocaleString()}
-            icon={Filter}
-            href="/admin/crm"
-            delta={metrics.tasksDue > 0 ? { label: 'open tasks', trend: 'flat' } : undefined}
-          />
-        </div>
-        <div className="lg:col-span-4">
-          <ChartCard title="New deals / week" caption="8 weeks · current week highlighted">
-            <WeekBars values={dealSeries} />
-          </ChartCard>
-        </div>
+      <StatRow>
+        <StatItem value={metrics.openCount.toLocaleString()} label="Open deals" href="/admin/crm" />
+        <StatItem value={formatMoney(metrics.openValue)} label="Open value" href="/admin/crm" />
+        <StatItem
+          value={metrics.winRatePct === null ? '—' : `${metrics.winRatePct}%`}
+          label="Win rate"
+          href="/admin/crm"
+        />
+        <StatItem
+          value={metrics.tasksDue.toLocaleString()}
+          label="Follow-ups due"
+          delta={metrics.tasksDue > 0 ? 'open tasks' : undefined}
+          deltaTone={metrics.tasksDue > 0 ? 'bad' : 'neutral'}
+          href="/admin/crm"
+        />
+      </StatRow>
+      <div className="mt-5 border-t border-border/60 pt-4 sm:max-w-sm">
+        <PulseBlock
+          label="New deals / week"
+          value={dealSeries.reduce((a, b) => a + b, 0)}
+          caption="8 weeks · current week highlighted"
+        >
+          <WeekBars values={dealSeries} height={44} />
+        </PulseBlock>
       </div>
-    </AdminSection>
+    </DashSection>
   )
 }
 
@@ -283,40 +324,48 @@ async function ExpansionSection() {
   const top = density.ready[0] ?? density.places[0]
 
   return (
-    <AdminSection
+    <DashSection
       title="Expansion"
       description="Where local member density is crossing the threshold that justifies opening the next Lab."
+      href="/admin/expansion"
+      hrefLabel="Expansion"
     >
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Cities tracked" value={density.totals.cities.toLocaleString()} icon={MapIcon} href="/admin/expansion" />
-        <StatCard label="Labs ready" value={density.ready.length.toLocaleString()} icon={Radar} href="/admin/expansion" />
-        <StatCard label="Listings" value={density.totals.listings.toLocaleString()} icon={Building2} href="/admin/expansion" />
-        <StatCard label="Residents" value={density.totals.residents.toLocaleString()} icon={Users} href="/admin/expansion" />
-      </div>
+      <StatRow>
+        <StatItem value={density.totals.cities.toLocaleString()} label="Cities tracked" href="/admin/expansion" />
+        <StatItem
+          value={density.ready.length.toLocaleString()}
+          label="Labs ready"
+          deltaTone={density.ready.length > 0 ? 'good' : 'neutral'}
+          delta={density.ready.length > 0 ? 'over threshold' : undefined}
+          href="/admin/expansion"
+        />
+        <StatItem value={density.totals.listings.toLocaleString()} label="Listings" href="/admin/expansion" />
+        <StatItem value={density.totals.residents.toLocaleString()} label="Residents" href="/admin/expansion" />
+      </StatRow>
       {top && (
-        <p className="text-sm text-muted">
-          Strongest signal:{' '}
-          <span className="font-semibold text-text">{top.city}</span> · readiness{' '}
+        <p className="mt-4 border-t border-border/60 pt-3 text-sm text-muted">
+          Strongest signal: <span className="font-semibold text-text">{top.city}</span> · readiness{' '}
           {Math.round(top.score)}/100 ({top.stage})
         </p>
       )}
-    </AdminSection>
+    </DashSection>
   )
 }
 
-// ── Suspense fallbacks ────────────────────────────────────────────────────────
-function SectionSkeleton({ title, cards }: { title: string; cards: number }) {
+// ── Suspense fallbacks — white section cards with pulsing content. ────────────
+// (Mirrors the admin HOME dashboard's DashSkeleton.)
+function DashSkeleton({ title }: { title: string }) {
   return (
-    <AdminSection title={title}>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {Array.from({ length: cards }).map((_, i) => (
-          <div key={i} className="h-14 animate-pulse rounded-2xl bg-surface-elevated/60" />
-        ))}
+    <DashSection title={title}>
+      <div className="space-y-2.5">
+        <div className="h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
+        <div className="h-4 w-1/2 animate-pulse rounded bg-surface-elevated" />
+        <div className="h-10 animate-pulse rounded-xl bg-surface-elevated/70" />
       </div>
-    </AdminSection>
+    </DashSection>
   )
 }
 
 function FunnelSkeleton() {
-  return <div className="h-44 animate-pulse rounded-2xl bg-surface-elevated/60" />
+  return <div className="mt-5 h-44 animate-pulse rounded-xl bg-surface-elevated/60" />
 }
