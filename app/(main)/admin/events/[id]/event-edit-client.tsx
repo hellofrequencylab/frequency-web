@@ -11,6 +11,7 @@ import {
   updateTicketTier,
   setTicketTierActive,
 } from '../actions'
+import { DangerModal } from '@/components/admin/danger-modal'
 
 type EventData = {
   id: string
@@ -69,6 +70,7 @@ export function EventEditClient({ event, tiers }: { event: EventData; tiers: Tie
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isCancelPending, startCancelTransition] = useTransition()
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -85,11 +87,7 @@ export function EventEditClient({ event, tiers }: { event: EventData; tiers: Tie
     })
   }
 
-  function handleCancel() {
-    const msg = event.is_cancelled
-      ? 'Reinstate this event? Members will see it as active again.'
-      : 'Cancel this event? Members will see it as cancelled.'
-    if (!confirm(msg)) return
+  function commitCancelToggle() {
     startCancelTransition(async () => {
       try {
         if (event.is_cancelled) {
@@ -102,6 +100,16 @@ export function EventEditClient({ event, tiers }: { event: EventData; tiers: Tie
         setError(err instanceof Error ? err.message : 'Action failed.')
       }
     })
+  }
+
+  function handleCancel() {
+    // Reinstating is restorative — run it directly. Cancelling notifies members, so
+    // gate it behind the danger modal (named button, safe default).
+    if (event.is_cancelled) {
+      commitCancelToggle()
+      return
+    }
+    setConfirmCancelOpen(true)
   }
 
   return (
@@ -238,6 +246,14 @@ export function EventEditClient({ event, tiers }: { event: EventData; tiers: Tie
             {isCancelPending ? '…' : event.is_cancelled ? 'Reinstate' : 'Cancel event'}
           </button>
         </div>
+        <DangerModal
+          open={confirmCancelOpen}
+          onClose={() => setConfirmCancelOpen(false)}
+          title="Cancel this event?"
+          body="Members are notified and will see the event as cancelled. You can reinstate it afterward."
+          confirmLabel="Cancel event"
+          onConfirm={commitCancelToggle}
+        />
       </div>
 
       {/* Ticket tiers (EVENTS-SYSTEM §2.2) */}

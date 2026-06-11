@@ -7,6 +7,7 @@ import { previewArea, seedArea } from './actions'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
+import { RangeField } from '@/components/admin/range-field'
 
 type Channel = { slug: string; name: string }
 type Preview = Awaited<ReturnType<typeof previewArea>>
@@ -86,8 +87,9 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
           <p className="text-xs text-subtle">
             Centered on <b className="text-text">{areaName}</b> ({lat.toFixed(4)}, {lng.toFixed(4)})
           </p>
-          <label className="flex flex-col gap-1 text-xs text-muted">Radius: <b className="text-text">{radius} mi</b>
-            <input type="range" min={1} max={50} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="w-40 accent-primary" /></label>
+          <div className="w-40">
+            <RangeField label="Radius" value={radius} min={1} max={50} suffix=" mi" onChange={setRadius} />
+          </div>
         </div>
       </section>
 
@@ -106,18 +108,9 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
           ))}
         </div>
         <div className="space-y-3">
-          <label className="block text-xs text-muted">
-            <span className="mb-1 flex justify-between"><span>Circles</span><b className="text-text">{circles}</b></span>
-            <input type="range" min={1} max={20} value={circles} onChange={(e) => setCircles(Number(e.target.value))} className="w-full accent-primary" />
-          </label>
-          <label className="block text-xs text-muted">
-            <span className="mb-1 flex justify-between"><span>People per circle</span><b className="text-text">{membersPerCircle}</b></span>
-            <input type="range" min={6} max={40} value={membersPerCircle} onChange={(e) => setMembersPerCircle(Number(e.target.value))} className="w-full accent-primary" />
-          </label>
-          <label className="block text-xs text-muted">
-            <span className="mb-1 flex justify-between"><span>Connections (cross-circle ties)</span><b className="text-text">{connectednessPct}%</b></span>
-            <input type="range" min={0} max={70} value={connectednessPct} onChange={(e) => setConnectednessPct(Number(e.target.value))} className="w-full accent-primary" />
-          </label>
+          <RangeField label="Circles" value={circles} min={1} max={20} onChange={setCircles} />
+          <RangeField label="People per circle" value={membersPerCircle} min={6} max={40} onChange={setMembersPerCircle} />
+          <RangeField label="Connections (cross-circle ties)" value={connectednessPct} min={0} max={70} suffix="%" onChange={setConnectednessPct} />
         </div>
       </section>
 

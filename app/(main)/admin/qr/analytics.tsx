@@ -2,6 +2,8 @@
 
 import { ScanLine, Users, TrendingUp, Nfc } from 'lucide-react'
 import { StatCard } from '@/components/ui/stat-card'
+import { DataTable, type ColumnDef } from '@/components/admin/data-table'
+import { WeekBars } from '@/components/admin/spark-charts'
 
 export interface AnalyticsData {
   total: number
@@ -12,8 +14,27 @@ export interface AnalyticsData {
   topCodes: { id: string; title: string; slug: string; total: number; unique: number }[]
 }
 
+type TopCode = AnalyticsData['topCodes'][number]
+
+const TOP_CODE_COLUMNS: ColumnDef<TopCode>[] = [
+  {
+    key: 'title',
+    header: 'Code',
+    render: (c) => (
+      <div className="min-w-0">
+        <div className="truncate font-medium text-text">{c.title}</div>
+        <div className="text-xs text-subtle">/q/{c.slug}</div>
+      </div>
+    ),
+  },
+  { key: 'total', header: 'Scans', type: 'number', render: (c) => <span className="font-semibold text-text">{c.total}</span> },
+  { key: 'unique', header: 'Unique', type: 'number', render: (c) => <span className="text-muted">{c.unique}</span> },
+]
+
+// Shared by the QR Studio dashboard and /admin/qr/stats. CLIENT component, so it can
+// compose the (server-safe) DataTable directly — its render functions just run on the
+// client here. The daily-scan bar chart is the tokenized spark-chart kit (WeekBars).
 export function Analytics({ data }: { data: AnalyticsData }) {
-  const peak = Math.max(1, ...data.daily.map((d) => d.count))
   const windowTotal = data.daily.reduce((sum, d) => sum + d.count, 0)
 
   return (
@@ -25,54 +46,31 @@ export function Analytics({ data }: { data: AnalyticsData }) {
         <StatCard bordered icon={TrendingUp} label="Last 30 days" value={windowTotal.toLocaleString()} />
       </div>
 
-      <section className="rounded-2xl border border-border bg-surface shadow-sm p-4">
+      <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
         <h2 className="text-sm font-bold text-text">Scans · last 30 days</h2>
         {windowTotal === 0 ? (
-          <p className="text-xs text-muted mt-3 py-6 text-center">No scans yet in this window.</p>
+          <p className="mt-3 py-6 text-center text-xs text-muted">No scans yet in this window.</p>
         ) : (
-          <div className="mt-4 flex items-end gap-0.5 h-28" role="img" aria-label="Daily scans, last 30 days">
-            {data.daily.map((d) => (
-              <div key={d.date} className="flex-1 group relative flex items-end">
-                <div
-                  className="w-full rounded-t bg-primary/70 group-hover:bg-primary transition-colors"
-                  style={{ height: `${Math.round((d.count / peak) * 100)}%` }}
-                  title={`${d.date}: ${d.count}`}
-                />
-              </div>
-            ))}
+          <div className="mt-4 h-28" role="img" aria-label="Daily scans, last 30 days">
+            <WeekBars values={data.daily.map((d) => d.count)} height={112} />
           </div>
         )}
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
-          <h2 className="text-sm font-bold text-text">Top dynamic links</h2>
-        </div>
-        {data.topCodes.length === 0 ? (
-          <p className="text-xs text-muted p-4">No dynamic links have been scanned yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-subtle border-b border-border">
-                <th className="px-4 py-2 font-medium">Code</th>
-                <th className="px-4 py-2 font-medium text-right">Scans</th>
-                <th className="px-4 py-2 font-medium text-right">Unique</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.topCodes.map((c) => (
-                <tr key={c.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-2 min-w-0">
-                    <div className="font-medium text-text truncate">{c.title}</div>
-                    <div className="text-xs text-subtle">/q/{c.slug}</div>
-                  </td>
-                  <td className="px-4 py-2 text-right font-semibold text-text">{c.total}</td>
-                  <td className="px-4 py-2 text-right text-muted">{c.unique}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold text-text">Top dynamic links</h2>
+        <DataTable
+          rows={data.topCodes}
+          getRowId={(c) => c.id}
+          columns={TOP_CODE_COLUMNS}
+          density="compact"
+          caption="Top dynamic links by scan volume"
+          empty={
+            <div className="rounded-2xl border border-border bg-surface p-4">
+              <p className="text-xs text-muted">No dynamic links have been scanned yet.</p>
+            </div>
+          }
+        />
       </section>
     </div>
   )
