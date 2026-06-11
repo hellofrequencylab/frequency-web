@@ -27,8 +27,9 @@
   --color-border:           #E9E1D4;
   --color-border-strong:    #D8CDBB;
 
-  /* Text */
-  --color-text:             #1E1A13;
+  /* Text. Body ink is a warm charcoal with a little brown in it — softer than
+     near-black on the cream canvas, still ~10:1 contrast. */
+  --color-text:             #3D352A;
   --color-text-muted:       #6B6253;
   --color-text-subtle:      #8F8675;
 
@@ -114,7 +115,7 @@
   --color-surface-elevated:  #FAF6EC;
   --color-border:            #E9E1D4;
   --color-border-strong:     #D8CDBB;
-  --color-text:              #1E1A13;
+  --color-text:              #3D352A;
   --color-text-muted:        #6B6253;
   --color-text-subtle:       #8F8675;
   --color-primary:           #E2912F;
