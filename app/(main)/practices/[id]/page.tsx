@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Zap, Users, Flame, Pencil, Repeat, Wand2 } from 'lucide-react'
+import { Zap, Users, Flame, Pencil, Repeat, Wand2, Radio } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getRankedPractice, getPracticeMemberState } from '@/lib/practices'
 import { practiceLogZaps } from '@/lib/journey-rewards'
@@ -126,6 +126,13 @@ export default async function PracticeDetailPage({ params }: Params) {
         ) : isOwner ? (
           <>
             <LogPracticeButton practiceId={practice.id} />
+            {/* On Air (ADR-229): time the sit with the breathing visualizer. */}
+            <Link
+              href={`/on-air?practice=${practice.id}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+            >
+              <Radio className="h-3.5 w-3.5" /> On Air
+            </Link>
             <Link
               href={`/practices/${practice.id}/edit`}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
@@ -142,7 +149,17 @@ export default async function PracticeDetailPage({ params }: Params) {
           <>
             <ClaimPractice templateId={practice.id} fallback={fallback} />
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
-            {state.adopted && <LogPracticeButton practiceId={practice.id} />}
+            {state.adopted && (
+              <>
+                <LogPracticeButton practiceId={practice.id} />
+                <Link
+                  href={`/on-air?practice=${practice.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                >
+                  <Radio className="h-3.5 w-3.5" /> On Air
+                </Link>
+              </>
+            )}
           </>
         ) : (
           <>
