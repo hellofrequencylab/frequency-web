@@ -1,7 +1,6 @@
-import { SidebarCard } from '@/components/ui/sidebar-card'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { HubsClient } from './hubs-client'
 import { NewHubCompose } from '@/components/compose/new-hub-compose'
 
@@ -43,23 +42,16 @@ export default async function AdminHubsPage({ searchParams }: { searchParams: Pr
     .order('display_name')
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Hubs"
       eyebrow="Structure"
-      description="Hubs group circles within a nexus. Assign a guide to each hub."
+      description="Hubs group circles within a nexus. Each hub is contained within a nexus and groups multiple circles. Assign a guide to oversee each hub."
       actions={<NewHubCompose nexuses={nexuses ?? []} />}
-      width="default"
+      width="wide"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <HubsClient hubs={hubs} nexuses={nexuses ?? []} guides={guides ?? []} initialEditId={edit ?? null} />
-        </div>
-        <div className="space-y-4">
-          <SidebarCard title="About Hubs">
-            <p className="px-4 py-3 text-xs text-subtle">Each hub is contained within a nexus and groups multiple circles. Assign a guide to oversee the hub.</p>
-          </SidebarCard>
-        </div>
-      </div>
-    </AdminPage>
+      <AdminSection>
+        <HubsClient hubs={hubs} nexuses={nexuses ?? []} guides={guides ?? []} initialEditId={edit ?? null} />
+      </AdminSection>
+    </AdminTemplate>
   )
 }

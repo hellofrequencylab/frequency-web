@@ -4,6 +4,9 @@ import { useState, useTransition } from 'react'
 import { Pencil, Check, X } from 'lucide-react'
 import { updateHub } from '../actions'
 import { Button } from '@/components/ui/button'
+import { DataTable, type ColumnDef } from '@/components/admin/data-table'
+import { StatusChip, type StatusTone } from '@/components/admin/status'
+import { EmptyState } from '@/components/ui/empty-state'
 
 type HubRow = {
   id: string
@@ -20,14 +23,15 @@ type NexusOption = { id: string; name: string }
 type GuideOption = { id: string; display_name: string }
 
 const STATUSES = ['forming', 'active', 'paused', 'archived'] as const
-const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const lbl   = 'block text-xs font-medium text-muted mb-1'
 
-const STATUS_COLOR: Record<string, string> = {
-  forming:  'bg-signal-bg text-signal-strong',
-  active:   'bg-success-bg text-success dark:bg-success-bg',
-  paused:   'bg-warning-bg text-warning dark:bg-warning-bg dark:text-warning',
-  archived: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle',
+// The one status vocabulary (retired the local STATUS_COLOR dict, ADR-233 §4).
+const STATUS_TONE: Record<string, StatusTone> = {
+  forming: 'info',
+  active: 'success',
+  paused: 'warning',
+  archived: 'neutral',
 }
 
 function HubForm({
@@ -61,7 +65,7 @@ function HubForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg mb-4">
+    <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5">
       <div className="sm:col-span-2">
         <label className={lbl}>Hub name *</label>
         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. North County Hub" required disabled={isPending} className={input} />
@@ -90,13 +94,13 @@ function HubForm({
           {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
         </select>
       </div>
-      <div className="sm:col-span-2 flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-2 pt-1 sm:col-span-2">
         <Button type="submit" size="sm" disabled={!name.trim() || isPending}>
-          <Check className="w-3.5 h-3.5" />
+          <Check className="h-3.5 w-3.5" />
           {isPending ? 'Saving…' : initial ? 'Save changes' : 'Create hub'}
         </Button>
         <Button type="button" variant="secondary" size="sm" onClick={onCancel} disabled={isPending}>
-          <X className="w-3.5 h-3.5" />
+          <X className="h-3.5 w-3.5" />
           Cancel
         </Button>
       </div>
@@ -111,47 +115,61 @@ export function HubsClient({ hubs, nexuses, guides, initialEditId = null }: { hu
     initialEditId && hubs.some((h) => h.id === initialEditId) ? initialEditId : null,
   )
   const [isPending,  startTransition] = useTransition()
+  const editing = hubs.find((h) => h.id === editingId)
+
+  const columns: ColumnDef<HubRow>[] = [
+    {
+      key: 'name',
+      header: 'Hub',
+      render: (h) => (
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-medium text-text">{h.name}</span>
+          <StatusChip tone={STATUS_TONE[h.status] ?? 'info'} size="sm">
+            <span className="capitalize">{h.status}</span>
+          </StatusChip>
+        </span>
+      ),
+    },
+    {
+      key: 'circles',
+      header: 'Circles',
+      type: 'number',
+      render: (h) => <span className="tabular-nums">{h._circle_count}</span>,
+    },
+    { key: 'nexus', header: 'Nexus', render: (h) => h.nexus?.name ?? <span className="text-subtle">—</span> },
+    { key: 'guide', header: 'Guide', render: (h) => h.guide?.display_name ?? <span className="text-subtle">—</span> },
+  ]
 
   return (
     <div>
-      <div className="space-y-2">
-        {hubs.length === 0 && (
-          <p className="text-sm text-subtle py-6 text-center">No hubs yet.</p>
+      {editing && (
+        <HubForm
+          initial={editing}
+          nexuses={nexuses}
+          guides={guides}
+          onSave={(fd) => { startTransition(async () => { await updateHub(editing.id, fd); setEditingId(null) }) }}
+          onCancel={() => setEditingId(null)}
+          isPending={isPending}
+        />
+      )}
+      <DataTable
+        caption="Hubs"
+        rows={hubs}
+        getRowId={(h) => h.id}
+        columns={columns}
+        rowActions={(h) => (
+          <button onClick={() => setEditingId(h.id)} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
+            <Pencil className="h-3.5 w-3.5" aria-hidden />
+          </button>
         )}
-        {hubs.map(hub => (
-          <div key={hub.id}>
-            {editingId === hub.id ? (
-              <HubForm
-                initial={hub}
-                nexuses={nexuses}
-                guides={guides}
-                onSave={(fd) => { startTransition(async () => { await updateHub(hub.id, fd); setEditingId(null) }) }}
-                onCancel={() => setEditingId(null)}
-                isPending={isPending}
-              />
-            ) : (
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 group">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-text">{hub.name}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium capitalize ${STATUS_COLOR[hub.status] ?? STATUS_COLOR.forming}`}>
-                      {hub.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-subtle mt-0.5">
-                    {hub._circle_count} circle{hub._circle_count !== 1 ? 's' : ''}
-                    {hub.nexus && ` · ${hub.nexus.name}`}
-                    {hub.guide && ` · Guide: ${hub.guide.display_name}`}
-                  </p>
-                </div>
-                <button onClick={() => setEditingId(hub.id)} className="p-1.5 rounded-lg text-subtle opacity-0 group-hover:opacity-100 hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-all" aria-label="Edit">
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+        empty={
+          <EmptyState
+            variant="first-use"
+            title="No hubs yet"
+            description="Hubs group circles within a nexus. Create one and assign a guide to oversee it."
+          />
+        }
+      />
     </div>
   )
 }

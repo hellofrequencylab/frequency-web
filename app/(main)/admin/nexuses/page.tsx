@@ -1,7 +1,6 @@
-import { SidebarCard } from '@/components/ui/sidebar-card'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { NexusesClient } from './nexuses-client'
 import { NewNexusCompose } from '@/components/compose/new-nexus-compose'
 
@@ -41,23 +40,16 @@ export default async function AdminNexusesPage({ searchParams }: { searchParams:
     .order('name')
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Nexuses"
       eyebrow="Structure"
-      description="Top-level geographic groupings. Each nexus contains hubs, which contain circles."
+      description="Top-level geographic groupings. Each nexus contains hubs, which contain circles. Assign a mentor to oversee all hubs and circles within."
       actions={<NewNexusCompose outposts={outposts ?? []} />}
-      width="default"
+      width="wide"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <NexusesClient nexuses={nexuses} mentors={mentors ?? []} initialEditId={edit ?? null} />
-        </div>
-        <div className="space-y-4">
-          <SidebarCard title="About Nexuses">
-            <p className="px-4 py-3 text-xs text-subtle">Nexuses are the top-level grouping. Assign a mentor to oversee all hubs and circles within.</p>
-          </SidebarCard>
-        </div>
-      </div>
-    </AdminPage>
+      <AdminSection>
+        <NexusesClient nexuses={nexuses} mentors={mentors ?? []} initialEditId={edit ?? null} />
+      </AdminSection>
+    </AdminTemplate>
   )
 }
