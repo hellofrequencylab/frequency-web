@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ZAP_AMOUNTS, MEMBER_ZAP_RATE, type ZapAction } from './zaps'
+import { ZAP_AMOUNTS, practiceLogAction, type ZapAction } from './zaps'
 
 describe('ZAP_AMOUNTS', () => {
   it('contains all expected action keys', () => {
@@ -11,11 +11,16 @@ describe('ZAP_AMOUNTS', () => {
       'event_attend',
       'outreach_task',
       'practice_logged',
+      'practice_logged_light',
+      'practice_logged_heavy',
       'practice_claim',
       'node_capture',
       'program_run',
       'entry_point_created',
       'referral_activated',
+      'co_op_pulse',
+      'welcome_back',
+      'practice_full_cycle',
     ]
     for (const key of expected) {
       expect(ZAP_AMOUNTS).toHaveProperty(key)
@@ -38,7 +43,7 @@ describe('ZAP_AMOUNTS', () => {
     expect(ZAP_AMOUNTS.program_run).toBeGreaterThan(ZAP_AMOUNTS.outreach_task)
   })
 
-  it('specific values match the rebalance migration (ADR-104)', () => {
+  it('specific values match the rebalance migration (ADR-104) + Rewards Economy v2', () => {
     expect(ZAP_AMOUNTS.circle_start).toBe(100)
     expect(ZAP_AMOUNTS.event_host).toBe(60)
     expect(ZAP_AMOUNTS.circle_activate).toBe(40)
@@ -51,23 +56,29 @@ describe('ZAP_AMOUNTS', () => {
     expect(ZAP_AMOUNTS.practice_claim).toBe(10)
     expect(ZAP_AMOUNTS.node_capture).toBe(10)
     expect(ZAP_AMOUNTS.program_run).toBe(30)
+    expect(ZAP_AMOUNTS.practice_logged_light).toBe(8)
+    expect(ZAP_AMOUNTS.practice_logged_heavy).toBe(15)
+    expect(ZAP_AMOUNTS.co_op_pulse).toBe(3)
+    expect(ZAP_AMOUNTS.welcome_back).toBe(10)
+    expect(ZAP_AMOUNTS.practice_full_cycle).toBe(50)
   })
 })
 
-describe('MEMBER_ZAP_RATE', () => {
-  it('is between 0 (exclusive) and 1 (inclusive)', () => {
-    expect(MEMBER_ZAP_RATE).toBeGreaterThan(0)
-    expect(MEMBER_ZAP_RATE).toBeLessThanOrEqual(1)
+describe('practiceLogAction', () => {
+  it('maps weight classes to their zap actions', () => {
+    expect(practiceLogAction('light')).toBe('practice_logged_light')
+    expect(practiceLogAction('heavy')).toBe('practice_logged_heavy')
+    expect(practiceLogAction('standard')).toBe('practice_logged')
   })
 
-  it('is 0.5 (free members earn half rate per ECONOMY-AND-JOURNEYS §6)', () => {
-    expect(MEMBER_ZAP_RATE).toBe(0.5)
+  it('defaults unknown / missing weight classes to standard', () => {
+    expect(practiceLogAction(null)).toBe('practice_logged')
+    expect(practiceLogAction(undefined)).toBe('practice_logged')
+    expect(practiceLogAction('mystery')).toBe('practice_logged')
   })
 
-  it('applying the rate and flooring never goes below 1 for any ZAP_AMOUNTS value', () => {
-    for (const [action, amount] of Object.entries(ZAP_AMOUNTS)) {
-      const reduced = Math.max(1, Math.floor(amount * MEMBER_ZAP_RATE))
-      expect(reduced, `reduced amount for ${action} must be at least 1`).toBeGreaterThanOrEqual(1)
-    }
+  it('weight class payouts are ordered light < standard < heavy', () => {
+    expect(ZAP_AMOUNTS.practice_logged_light).toBeLessThan(ZAP_AMOUNTS.practice_logged)
+    expect(ZAP_AMOUNTS.practice_logged).toBeLessThan(ZAP_AMOUNTS.practice_logged_heavy)
   })
 })

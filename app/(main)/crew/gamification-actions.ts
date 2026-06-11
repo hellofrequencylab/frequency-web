@@ -94,6 +94,8 @@ export async function getChallengesData(season: number = 1) {
     admin.from('season_challenges')
       .select('*')
       .eq('season', season)
+      // Archived rows (Rewards Economy v2 re-seed) keep history, never display.
+      .eq('is_active', true)
       .order('sort_order'),
     admin.from('challenge_progress')
       .select('challenge_id, current, completed_at')

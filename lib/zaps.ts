@@ -13,29 +13,10 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
-import { BETA_MEMBERS_GET_CREW } from '@/lib/onboarding/beta-script'
-import { isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 
-// Free members climb the zap ladder at a reduced rate; Crew earn full rate
-// (ECONOMY-AND-JOURNEYS §6 — locked). Gems stay easy for everyone; only zaps are
-// throttled. In Beta everyone is Crew (BETA_MEMBERS_GET_CREW), so this is inert
-// until that flag flips off at Launch. Tunable here.
-export const MEMBER_ZAP_RATE = 0.5
-
-/** Apply the member zap-rate to a base amount. Paid (Crew, and all of Beta) earn full;
- *  a free member earns `MEMBER_ZAP_RATE` of it (floored, but never below 1 so a
- *  grant is never silently zeroed). Gated on the membership TIER, not the role; one
- *  lookup, skipped entirely in Beta. */
-async function effectiveZaps(
-  admin: ReturnType<typeof createAdminClient>,
-  profileId: string,
-  amount: number,
-): Promise<number> {
-  if (BETA_MEMBERS_GET_CREW) return amount
-  const { data } = await admin.from('profiles').select('membership_tier').eq('id', profileId).maybeSingle()
-  if (isPaid((data?.membership_tier ?? 'free') as EntitlementTier)) return amount
-  return Math.max(1, Math.floor(amount * MEMBER_ZAP_RATE))
-}
+// Rewards Economy v2: everyone earns Zaps at full rate. The free game is the
+// principle; ADR-141 visibility gating is the membership value. (The old
+// MEMBER_ZAP_RATE = 0.5 throttle was inert in Beta and is deleted, not paused.)
 
 // Fallback base zap amounts for external / in-person actions. The live, tunable
 // numbers come from the `zap_config` table (awardZapsForAction); these are only
@@ -51,7 +32,11 @@ export const ZAP_AMOUNTS = {
   invite_accepted: 40,
   event_attend: 25,
   outreach_task: 20,
+  // Practice logging pays by the practice's weight class (Rewards Economy v2);
+  // 'practice_logged' is the standard class.
   practice_logged: 12,
+  practice_logged_light: 8,
+  practice_logged_heavy: 15,
   practice_claim: 10,
   node_capture: 10,
   program_run: 30,
@@ -59,7 +44,18 @@ export const ZAP_AMOUNTS = {
   // few per member) + the activate bonus when a member you brought in shows up.
   entry_point_created: 20,
   referral_activated: 25,
+  // Rewards Economy v2 bonuses (granted idempotently via reward_grants).
+  co_op_pulse: 3,
+  welcome_back: 10,
+  practice_full_cycle: 50,
 } as const
+
+/** Zap action for a practice's weight class (the per-log payout driver). */
+export function practiceLogAction(weightClass: string | null | undefined): ZapAction {
+  if (weightClass === 'light') return 'practice_logged_light'
+  if (weightClass === 'heavy') return 'practice_logged_heavy'
+  return 'practice_logged'
+}
 
 export type ZapAction = keyof typeof ZAP_AMOUNTS
 
@@ -92,8 +88,7 @@ export async function awardZaps(
   if (!Number.isFinite(amount) || amount <= 0) return { awarded: false, amount: 0 }
 
   const admin = createAdminClient()
-  // Free members earn zaps at a reduced rate (ADR-140 / ECONOMY §6); inert in Beta.
-  const finalAmount = await effectiveZaps(admin, profileId, amount)
+  const finalAmount = Math.floor(amount)
   const { error } = await admin
     .from('zap_transactions')
     .insert({

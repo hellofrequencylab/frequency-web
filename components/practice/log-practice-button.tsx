@@ -37,7 +37,12 @@ export function LogPracticeButton({
           if (!isError(res)) {
             setDone(true)
             if (res.data.logged && res.data.zapsAwarded) {
-              showZapToast({ amount: res.data.zapsAwarded, label: 'Practice logged' })
+              // Welcome Back: the warm re-entry line — good to see you + one small
+              // next step. NEVER broken-streak shame UI on this path.
+              const label = res.data.welcomeBack
+                ? 'Good to see you. One practice at a time.'
+                : 'Practice logged'
+              showZapToast({ amount: res.data.zapsAwarded, label })
             }
           }
         })

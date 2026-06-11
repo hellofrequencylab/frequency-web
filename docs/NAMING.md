@@ -17,17 +17,31 @@
 - **Practice depth tiers: Initiate / Adept / Master** (replace Spark / Current / Deep;
   default = **Adept**, preserving the old middle-tier default). Tier never changes
   zap/streak math.
+- **Practice weight classes: light / standard / heavy** (`practices.weight_class`,
+  Rewards Economy v2) = the per-log Zap payout driver (8/12/15). A property of the
+  PRACTICE, distinct from the member's depth tier above — the two never mix.
+  Supersedes the `reward_zaps` override (deprecated column, kept for history).
+- **Amplitude** = lifetime XP: cumulative Zaps ever earned, hosting-class acts at 2×.
+  Never resets, never spent, never gates play. Levels derive from
+  `50 · L · (L+1)`; displayed beside the season rank ("Beacon · 14,200").
+  Supersedes the lifetime-rank DISPLAY (ADR-037); the `lifetime_rank` column stays
+  (retro reward rules read it). Gem tiers (New→Legend) are RETIRED.
+- **Practice Shelf** = the profile module of per-practice awards. Consistency ladder:
+  **In Motion (2w) / Groove (4w) / Deep Groove (8w) / Full Cycle (13w)**; depth
+  ladder: **10/25/50/100 Deep**. These award names are documented exceptions below.
 - **Season ranks: Ghost → Echo → Signal → Beacon → Conduit → Luminary.**
   Rename map: Runner→Echo, Operative→Signal, Agent→Beacon. Thresholds unchanged
   (0/100/300/750/1500/3000). Luminary stays double-gated.
 - **Economy:**
   - **Zaps** — earned for completing in-person Quest activity (Practices, Challenges,
-    Tasks), solo or with others.
-  - At season end, **Zaps roll into Gems** via the existing **rank-based ladder**
-    (Ghost/Echo 5:1 → Signal 4:1 → Beacon 3:1 → Conduit 2:1 → Luminary 1.5:1),
-    expressed as ONE named config (`ZAP_TO_GEM_RATES` in the economy lib).
-    **PROVISIONAL: pending economy tuning. Expected to change. Do not build logic
-    that assumes any fixed Zap:Gem relationship.**
+    Tasks), solo or with others. Everyone earns at full rate (the free game is the
+    principle; ADR-141 visibility gating is the membership value — the old
+    `MEMBER_ZAP_RATE` throttle is deleted).
+  - At season end, **Zaps roll into Gems FLAT at 5:1** (floor division) plus a
+    one-time **final-rank Gem bonus** (Echo 10 / Signal 25 / Beacon 50 /
+    Conduit 100 / Luminary 250). This is the Rewards Economy v2 tuning that
+    resolved the earlier provisional rank-based ladder (reset_season(),
+    20260614000000).
   - **Gems** — earned from online activity + the Zap rollover; spendable.
   - **Vault Store** = where Gems are spent. **The Vault** = the member treasury
     holding Gems, Zaps, and Awards (Awards = season trophies + achievements).
@@ -97,6 +111,12 @@ Phase-6 zero-hits grep carves them out:
   `sidebar_order`, and the `journey.chorus:` reward-grant idempotency prefix — renaming
   either orphans saved prefs / re-fires grants (commented in code).
 - **Historical migration filenames** (e.g. `20260610000000_circle_field.sql`) — immutable.
+- **Award proper nouns (Rewards Economy v2)** that contain a retired *word* but are not
+  the retired *term*: **Deep Groove** (8-week consistency tier) and **N Deep**
+  (10/25/50/100 depth awards) — "Deep" the tier stays retired; these are Shelf award
+  names. Likewise the day-3 streak milestone **Spark** (lib/streak.ts) and the
+  **"Sparked"** seasonal badge predate the tier retirement and stay (milestone/badge
+  names, not tiers).
 
 ## Collision guards (why no blind replace)
 

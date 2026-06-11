@@ -243,6 +243,11 @@ function isRelevantEvent(criteria: AchievementCriteria, event: GamificationEvent
     case 'season_zaps':    return event.type === 'task_complete'
     case 'rank_reached':   return event.type === 'rank_change' || event.type === 'task_complete'
     case 'task_complete':  return event.type === 'task_complete'
+    // Amplitude moves on every zap-paying act — check it wherever zaps flow.
+    case 'amplitude':
+      return event.type === 'practice_log' || event.type === 'task_complete' ||
+             event.type === 'event_attend' || event.type === 'event_host' ||
+             event.type === 'qr_scan' || event.type === 'referral'
     default:               return false
   }
 }
@@ -261,13 +266,15 @@ interface UserStats {
   streaks: Record<string, number>
   /** The DAILY practice streak (profiles.current_streak — lib/practice-streak.ts). */
   practiceStreak: number
+  /** Lifetime XP (profiles.amplitude — Rewards Economy v2). */
+  amplitude: number
 }
 
 async function getUserStats(admin: AdminClient, profileId: string): Promise<UserStats> {
   const [profile, memberships, rsvps, hostedEvents, posts, topPost, completions, streaks, inviteLinks] =
     await Promise.all([
       admin.from('profiles')
-        .select('current_season_zaps, current_season_rank, community_role, current_streak')
+        .select('current_season_zaps, current_season_rank, community_role, current_streak, amplitude')
         .eq('id', profileId)
         .maybeSingle(),
       admin.from('memberships')
@@ -311,8 +318,9 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     (sum, link) => sum + ((link as InviteLinkRow).used_count ?? 0), 0
   )
 
-  const p = profile.data as Pick<ProfileRow,
-    'current_season_zaps' | 'current_season_rank' | 'community_role' | 'current_streak'> | null
+  const p = profile.data as (Pick<ProfileRow,
+    'current_season_zaps' | 'current_season_rank' | 'community_role' | 'current_streak'> &
+    { amplitude?: number | null }) | null
   const topPostRow = topPost.data as { reply_count: number | null } | null
 
   return {
@@ -328,6 +336,7 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     communityRole: p?.community_role ?? 'member',
     streaks: streakMap,
     practiceStreak: p?.current_streak ?? 0,
+    amplitude: Number(p?.amplitude ?? 0),
   }
 }
 
@@ -369,7 +378,11 @@ function isCriteriaMet(
       return (stats.streaks[criteria.streak_type] ?? 0) >= criteria.count
     case 'practice_streak':
       return stats.practiceStreak >= criteria.count
+    case 'amplitude':
+      return stats.amplitude >= criteria.count
     default:
+      // The Quiet Ones (dawn_patrol / radio_silence / four_pillars / carrier_wave /
+      // long_range) are evaluated by lib/awards/secret.ts, never here.
       return false
   }
 }
@@ -379,9 +392,11 @@ function isCriteriaMet(
 // ---------------------------------------------------------------------------
 
 async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
+  // Archived challenge rows (is_active = false) keep history but never advance.
   const { data: challenges } = await admin
     .from('season_challenges')
     .select('id, criteria, target, valid_from, valid_until, zaps_reward')
+    .eq('is_active', true)
 
   if (!challenges?.length) return
 
@@ -472,7 +487,9 @@ function isChallengeRelevant(
       if (event.type !== 'streak_update') return false
       return criteria.streak_type === event.streakType
     case 'rank_reached':   return event.type === 'rank_change' || event.type === 'task_complete'
-    case 'all_challenges': return true
+    // The Completionist never advances per-event: checkAllChallengesComplete
+    // completes it (and pays it) when every OTHER active challenge is done.
+    case 'all_challenges': return false
     default:               return false
   }
 }
@@ -480,10 +497,13 @@ function isChallengeRelevant(
 async function checkAllChallengesComplete(admin: AdminClient, profileId: string) {
   const { data: allChallenges } = await admin
     .from('season_challenges')
-    .select('id')
-    .neq('slug', 'complete-all-challenges')
+    .select('id, slug, target, zaps_reward')
+    .eq('is_active', true)
 
   if (!allChallenges?.length) return
+  const completionist = allChallenges.find(c => c.slug === 'complete-all-challenges')
+  const others = allChallenges.filter(c => c.slug !== 'complete-all-challenges')
+  if (others.length === 0) return
 
   const { data: completed } = await admin
     .from('challenge_progress')
@@ -492,13 +512,47 @@ async function checkAllChallengesComplete(admin: AdminClient, profileId: string)
     .not('completed_at', 'is', null)
 
   const completedIds = new Set((completed ?? []).map(c => c.challenge_id))
-  const allDone = allChallenges.every(c => completedIds.has(c.id))
+  const allDone = others.every(c => completedIds.has(c.id))
+  if (!allDone) return
 
-  if (allDone) {
-    await admin
-      .from('profiles')
-      .update({ season_challenges_complete: true })
-      .eq('id', profileId)
+  await admin
+    .from('profiles')
+    .update({ season_challenges_complete: true })
+    .eq('id', profileId)
+
+  // Complete + pay the Completionist itself (250⚡ ON TOP of the 1,000⚡ purse),
+  // and grant the "Every Frequency" prismatic border (S1-exclusive cosmetic).
+  if (completionist && !completedIds.has(completionist.id)) {
+    const now = new Date().toISOString()
+    const { data: progress } = await admin
+      .from('challenge_progress')
+      .select('id, completed_at')
+      .eq('profile_id', profileId)
+      .eq('challenge_id', completionist.id)
+      .maybeSingle()
+    if (progress?.completed_at) return
+    if (progress) {
+      await admin
+        .from('challenge_progress')
+        .update({ current: completionist.target, completed_at: now })
+        .eq('id', progress.id)
+    } else {
+      await admin.from('challenge_progress').insert({
+        profile_id: profileId,
+        challenge_id: completionist.id,
+        current: completionist.target,
+        completed_at: now,
+      })
+    }
+    await grantReward(profileId, 'zaps', completionist.zaps_reward ?? 0, 'challenge_complete', {
+      challenge: completionist.id,
+    }).catch(() => {})
+    try {
+      const { grantStoreItem } = await import('@/lib/awards/cosmetics')
+      await grantStoreItem(profileId, 'every-frequency-border')
+    } catch {
+      // a cosmetic grant never breaks the challenge flow
+    }
   }
 }
 

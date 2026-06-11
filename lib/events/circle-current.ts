@@ -127,6 +127,34 @@ export async function awardCircleCurrentForChallengeCompletion(
       )
 
     if (insertError) console.error('[circle-current] challenge credit failed:', insertError.message)
+
+    // Circle Current banner (Rewards Economy v2): the first shared-challenge
+    // completion of the season banners the circle — emblem flair for every
+    // active member, season-scoped. Idempotent via circle_awards UNIQUE.
+    for (const circleId of circleIds) {
+      const { data: season } = await admin
+        .from('seasons')
+        .select('season_number')
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle()
+      const { error: awardError } = await admin.from('circle_awards').insert({
+        circle_id: circleId,
+        award_slug: 'circle_current_banner',
+        season: (season as { season_number: number } | null)?.season_number ?? null,
+      })
+      if (awardError) continue // already bannered
+
+      const { grantStoreItem } = await import('@/lib/awards/cosmetics')
+      const { data: members } = await admin
+        .from('memberships')
+        .select('profile_id')
+        .eq('circle_id', circleId)
+        .eq('status', 'active')
+      for (const m of (members ?? []) as { profile_id: string }[]) {
+        await grantStoreItem(m.profile_id, 'circle-current-banner').catch(() => {})
+      }
+    }
   } catch (e) {
     console.error('[circle-current] unexpected error (challenge):', e)
   }
