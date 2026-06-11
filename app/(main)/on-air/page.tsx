@@ -28,14 +28,18 @@ export default async function OnAirPage({
   const { practice: requested } = await searchParams
 
   const admin = createAdminClient()
-  const [mine, { data: prof }, { data: todayLogs }] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10)
+  const [mine, { data: prof }, { data: todayLogs }, { data: presenceRows }] = await Promise.all([
     getMemberPractices(profileId),
     admin.from('profiles').select('meta').eq('id', profileId).maybeSingle(),
     admin
       .from('practice_logs')
       .select('practice_id')
       .eq('profile_id', profileId)
-      .eq('logged_for', new Date().toISOString().slice(0, 10)),
+      .eq('logged_for', today),
+    // Presence: distinct members with a log today. Row-count + Set in JS —
+    // PostgREST aggregates are disabled on hosted projects.
+    admin.from('practice_logs').select('profile_id').eq('logged_for', today).limit(10000),
   ])
 
   const loggedToday = new Set(
@@ -49,12 +53,23 @@ export default async function OnAirPage({
     loggedToday: loggedToday.has(p.id),
   }))
 
+  const practicedToday = new Set(
+    ((presenceRows ?? []) as { profile_id: string | null }[])
+      .map((l) => l.profile_id)
+      .filter(Boolean) as string[],
+  ).size
+
   const meta = (prof?.meta ?? {}) as Record<string, unknown>
   const stored = (meta.onAir ?? {}) as Partial<OnAirPrefs>
   const prefs: OnAirPrefs = {
     mode: stored.mode ?? DEFAULT_PREFS.mode,
     pattern: stored.pattern ?? DEFAULT_PREFS.pattern,
     minutes: stored.minutes ?? DEFAULT_PREFS.minutes,
+    customIn: stored.customIn,
+    customHold: stored.customHold,
+    customOut: stored.customOut,
+    bell: stored.bell,
+    haptics: stored.haptics,
   }
 
   const defaultPracticeId =
@@ -88,6 +103,7 @@ export default async function OnAirPage({
           practices={practices}
           defaultPracticeId={defaultPracticeId}
           prefs={prefs}
+          practicedToday={practicedToday}
         />
       )}
     </FocusTemplate>
