@@ -123,6 +123,8 @@ export function Reveal({ payload, onClose }: { payload: RevealPayload; onClose?:
   const scroller = useRef<HTMLDivElement>(null)
   const [panel, setPanel] = useState(0)
   const closed = useRef(false)
+  const [dismissing, setDismissing] = useState(false)
+  const touchStart = useRef<{ x: number; y: number } | null>(null)
 
   // Swiping past the last card lands on a ghost panel that closes the mode —
   // the card slides off the screen and On Air is done (P5).
@@ -130,6 +132,32 @@ export function Reveal({ payload, onClose }: { payload: RevealPayload; onClose?:
     if (closed.current) return
     closed.current = true
     onClose?.()
+  }
+
+  // Pull-down to close (P12): a clearly-vertical downward drag on ANY card
+  // swipes the whole reveal down and out. Horizontal swipes keep paging.
+  const dismiss = () => {
+    if (closed.current || dismissing) return
+    setDismissing(true)
+    setTimeout(close, 260)
+  }
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    touchStart.current = { x: t.clientX, y: t.clientY }
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    const s = touchStart.current
+    if (!s || !onClose) return
+    const t = e.touches[0]
+    const dy = t.clientY - s.y
+    const dx = Math.abs(t.clientX - s.x)
+    if (dy > 80 && dy > dx * 1.5) {
+      touchStart.current = null
+      dismiss()
+    }
+  }
+  const onTouchEnd = () => {
+    touchStart.current = null
   }
 
   const onScroll = () => {
@@ -155,7 +183,14 @@ export function Reveal({ payload, onClose }: { payload: RevealPayload; onClose?:
   const prev = () => go(Math.max(0, panel - 1))
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
+    <div
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      className={`flex min-h-full flex-1 flex-col transition-[transform,opacity] duration-300 ease-in motion-reduce:transition-none ${
+        dismissing ? 'translate-y-[70vh] opacity-0' : ''
+      }`}
+    >
       <div
         ref={scroller}
         onScroll={onScroll}

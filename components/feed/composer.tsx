@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import Image from 'next/image'
-import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2 } from 'lucide-react'
+import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
@@ -56,6 +56,7 @@ export function Composer({
   topSlot,
   bottomSlot,
   forceAnnouncement,
+  compactTools = false,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -73,6 +74,9 @@ export function Composer({
   bottomSlot?: ReactNode
   /** When `bottomSlot` is set, force announcement on/off (the Dispatch feature). */
   forceAnnouncement?: boolean
+  /** Tuck the formatting cluster behind a small "Format" toggle (the Zap menu's
+   *  Capture box keeps writing front and center; tools are a tap away). */
+  compactTools?: boolean
 }) {
   const [body, setBody] = useState('')
   // Capture remounts the composer per feature (key=mode), so the Dispatch feature's
@@ -80,6 +84,7 @@ export function Composer({
   const [isAnnouncement, setIsAnnouncement] = useState(!!forceAnnouncement)
   const [isPending, startTransition] = useTransition()
   const [expanded, setExpanded] = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(!compactTools)
   const [manualHeight, setManualHeight] = useState<number | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -463,7 +468,20 @@ export function Composer({
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
 
-      {/* Formatting + media — the writing tools, cleanly clustered. */}
+      {/* Formatting + media — the writing tools, cleanly clustered. Compact mode
+          keeps them folded behind a small Format toggle (full screen always shows). */}
+      {compactTools && !toolsOpen && !expanded ? (
+        <div className="mt-2">
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setToolsOpen(true)}
+            className="inline-flex items-center gap-1 rounded-md px-1 py-1 text-2xs font-medium text-subtle transition-colors hover:text-text"
+          >
+            <ChevronDown className="h-3 w-3" /> Format
+          </button>
+        </div>
+      ) : (
       <div className="mt-2 flex items-center gap-0.5">
         <Tool onClick={() => surround('**', '**', 'bold text')} label="Bold (⌘B)" disabled={isPending}>
           <Bold className="h-4 w-4" />
@@ -491,6 +509,7 @@ export function Composer({
           </Tool>
         )}
       </div>
+      )}
 
       {/* Settings + send. */}
       <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-3">

@@ -299,3 +299,17 @@ export async function unpinPost(postId: string) {
   await admin.from('posts').update({ is_pinned: false }).eq('id', postId)
   revalidatePath('/feed')
 }
+
+/** Set your own avatar (the Zap menu's "Take a profile pic", ADR-230). The file
+ *  is already in the avatars bucket (client upload, own folder); this persists
+ *  the public URL onto the caller's own profile and nothing else. */
+export async function updateMyAvatar(avatarUrl: string): Promise<void> {
+  const profileId = await getMyProfileId()
+  if (!profileId) throw new Error('Not signed in')
+  if (!/^https:\/\//.test(avatarUrl) || avatarUrl.length > 600) throw new Error('Bad avatar URL')
+  const admin = createAdminClient()
+  const { error } = await admin.from('profiles').update({ avatar_url: avatarUrl }).eq('id', profileId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/feed')
+  revalidatePath('/people', 'layout')
+}
