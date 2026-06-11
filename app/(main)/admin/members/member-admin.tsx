@@ -307,29 +307,18 @@ function MemberRow({
               <Mail className="w-3 h-3" /> Send sign-in link
             </Button>
             {m.is_active ? (
-              <button
-                onClick={handleDeactivate}
-                disabled={isPending}
-                className="flex items-center gap-1.5 rounded-lg border border-orange-200 px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning-bg transition-colors disabled:opacity-50"
-              >
+              <Button variant="warningOutline" size="sm" onClick={handleDeactivate} disabled={isPending}>
                 <UserX className="w-3 h-3" /> Deactivate
-              </button>
+              </Button>
             ) : (
-              <button
-                onClick={handleReactivate}
-                disabled={isPending}
-                className="flex items-center gap-1.5 rounded-lg border border-success px-3 py-1.5 text-xs font-medium text-success hover:bg-success-bg dark:hover:bg-success-bg/30 transition-colors disabled:opacity-50"
-              >
+              <Button variant="successOutline" size="sm" onClick={handleReactivate} disabled={isPending}>
                 <UserCheck className="w-3 h-3" /> Reactivate
-              </button>
+              </Button>
             )}
             {!confirmDelete ? (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1.5 rounded-lg border border-danger px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-bg transition-colors"
-              >
+              <Button variant="dangerOutline" size="sm" onClick={() => setConfirmDelete(true)}>
                 <Trash2 className="w-3 h-3" /> Delete account
-              </button>
+              </Button>
             ) : (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-danger font-medium">Are you sure?</span>

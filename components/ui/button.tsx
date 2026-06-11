@@ -5,7 +5,15 @@ import { cn } from '@/lib/utils'
 // strings with drifting padding / size / feedback. One scale here (variant ×
 // size); `className` still merges for genuine one-offs (e.g. `w-full`, a shadow).
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'ghost'
+  | 'danger'
+  | 'warning'
+  | 'dangerOutline'
+  | 'warningOutline'
+  | 'successOutline'
 type ButtonSize = 'sm' | 'md'
 
 const VARIANT: Record<ButtonVariant, string> = {
@@ -13,6 +21,13 @@ const VARIANT: Record<ButtonVariant, string> = {
   secondary: 'border border-border bg-surface text-text hover:border-border-strong hover:bg-surface-elevated',
   ghost: 'text-muted hover:bg-surface-elevated hover:text-text',
   danger: 'bg-danger text-white hover:opacity-90',
+  // Solid caution action (moderation Hide/Warn) — the danger shape in the warning tone.
+  warning: 'bg-warning text-white hover:opacity-90',
+  // Outlined state-change actions (Delete account / Deactivate / Reactivate):
+  // quieter than the solid fills, tinting on hover. One scale, three tones.
+  dangerOutline: 'border border-danger text-danger hover:bg-danger-bg',
+  warningOutline: 'border border-warning/60 text-warning hover:bg-warning-bg',
+  successOutline: 'border border-success text-success hover:bg-success-bg',
 }
 
 const SIZE: Record<ButtonSize, string> = {
