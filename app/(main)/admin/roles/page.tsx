@@ -5,12 +5,21 @@ import { AdminPage } from '@/components/admin/admin-page'
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL, roleBadgeStyle } from '@/lib/community-roles'
 import { ROLE_META } from '@/lib/roles-meta'
-import { getAreaPermissions } from '@/lib/permissions'
+import { getAreaPermissions, getCapabilityOverrides } from '@/lib/permissions'
 import { NAV_AREA_DEFAULTS } from '@/lib/nav-areas'
 import { RoleManager, type RoleMember } from './role-manager'
 import { PermissionGrid } from './permission-grid'
+import { CapabilityGrid } from './capability-grid'
 import { StaffRoleManager, type StaffMemberRow } from './staff-role-manager'
-import { isStaffRole } from '@/lib/core/staff-roles'
+import {
+  isStaffRole,
+  STAFF_ROLES,
+  STAFF_DOMAINS,
+  staffDomainDefault,
+  type Access,
+  type StaffDomain,
+  type StaffRole,
+} from '@/lib/core/staff-roles'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -28,6 +37,16 @@ export default async function AdminRolesPage() {
     .limit(300)
 
   const permissions = await getAreaPermissions()
+  const capabilityOverrides = await getCapabilityOverrides()
+
+  // The ADR-127 CAPS matrix as a dense role → domain → access map (the grid's defaults).
+  const capabilityDefaults = STAFF_ROLES.reduce((acc, role) => {
+    acc[role] = STAFF_DOMAINS.reduce((row, domain) => {
+      row[domain] = staffDomainDefault(role, domain)
+      return row
+    }, {} as Record<StaffDomain, Access>)
+    return acc
+  }, {} as Record<StaffRole, Record<StaffDomain, Access>>)
 
   // Current team / operations members (ADR-127). team_members is untyped in the
   // generated types, so query through an untyped handle.
@@ -100,6 +119,8 @@ export default async function AdminRolesPage() {
       <StaffRoleManager members={teamMembers} />
 
       <PermissionGrid initial={permissions} defaults={NAV_AREA_DEFAULTS} />
+
+      <CapabilityGrid defaults={capabilityDefaults} initial={capabilityOverrides} />
     </AdminPage>
   )
 }
