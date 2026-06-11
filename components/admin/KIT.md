@@ -16,8 +16,10 @@ only; warm type; tabular numerals; AA.
 - `Banner` — `{ tone:'info'|'warning'|'critical', title, action?, dismissible? }`; `critical` ⇒ `role="alert"`.
 
 ## Tables — `@/components/admin/data-table`
-- `DataTable<T>` + `ColumnDef<T>`, `BulkAction`. Typed columns, row-as-link, hover `rowActions`, checkbox `selectable` + promoted/overflow `bulkActions`, `stickyHeader`, `density`, `caption`, `empty`. Sort writes `?sort&dir` to the URL (server owns data). Pass rows already sorted/filtered/paged by the server.
+- `DataTable<T>` + `ColumnDef<T>`, `BulkAction`. Typed columns, row-as-link (`rowHref` — omit for a static browse table), hover `rowActions`, checkbox `selectable` + promoted/overflow `bulkActions`, `stickyHeader`, `density`, `caption`, `empty`, and `expandedRowId`+`expandedRow(row)` for an inline-edit/detail panel beneath a row. Sort writes `?sort&dir` to the URL (server owns data). Pass rows already sorted/filtered/paged by the server.
+- `FilterBar` — `@/components/admin/filter-bar`. URL-as-state `{ filters:FilterDef[], search? }` (selects + search + removable chips) above a DataTable.
 - `TableSkeleton` — `@/components/admin/table-skeleton`. Suspense fallback (`rows`,`cols`).
+- `RankList` — `@/components/admin/rank-list`. Ranked value→count micro-list (`items:{value,n,href?}[]`) for a `Tile` (top pages/features/channels).
 
 ## Entity detail — Detail template
 - `EntityHeader` — `@/components/admin/entity-header`. Context band: `{ title, eyebrow?, avatar?, badges?, facts?, actions?, back? }` (facts = description list).
@@ -25,6 +27,11 @@ only; warm type; tabular numerals; AA.
 
 ## Forms & settings
 - `FormSection` — `@/components/admin/form-section`. Annotated group `{ title, description, children }` (Settings template).
+- `Toggle` — `@/components/admin/toggle`. Accessible `role="switch"` `{ checked, onChange, ariaLabel, saveState? }` with a built-in Saving…/Saved cue (imperative settings autosave).
+- Styled link-button: use the existing `Button` with `asChild` (`<Button asChild><Link …/></Button>`) or `buttonClasses(variant,size)` from `@/components/ui/button` — do NOT hand-roll `bg-primary…` on a `<Link>`.
+
+## Entity-detail tabs note
+- `UnderlineTabs` takes an optional `activeHref` to drive the active tab for query-param views (`?view=`), where pathname matching can't disambiguate.
 
 ## Destructive & async
 - `DangerModal` — `@/components/admin/danger-modal`. `{ open, onClose, title, body, confirmLabel, onConfirm, requireTyping? }`. Named button, safe default, never Enter-to-destroy. Risky-recoverable tier.
