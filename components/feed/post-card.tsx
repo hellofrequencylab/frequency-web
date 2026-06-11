@@ -7,6 +7,7 @@ import { ContextActions } from '@/components/context-actions'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { PostBody } from './post-body'
+import { SystemLine } from './system-line'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
@@ -286,29 +287,3 @@ export function PostCard({
   )
 }
 
-// One quiet line in the stream (ADR-231): Vera's system announcements ("X joined
-// the community") render like a group-chat join notice — centered chip, mentions
-// linked by name, no author chrome and no reaction row.
-function SystemLine({ body }: { body: string | null }) {
-  if (!body) return null
-  const parts = body.split(/(@[a-zA-Z0-9_]+)/g)
-  return (
-    <div className="flex justify-center py-0.5">
-      <p className="max-w-full rounded-full border border-border bg-surface/70 px-3.5 py-1.5 text-center text-xs text-muted">
-        {parts.map((part, i) =>
-          part.startsWith('@') ? (
-            <Link
-              key={i}
-              href={`/people/${part.slice(1)}`}
-              className="font-semibold text-text hover:underline"
-            >
-              {part.slice(1)}
-            </Link>
-          ) : (
-            <span key={i}>{part}</span>
-          )
-        )}
-      </p>
-    </div>
-  )
-}

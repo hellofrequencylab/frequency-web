@@ -24,13 +24,28 @@ export async function postWelcomeForMember(
     .maybeSingle()
   if (!system) return
 
-  // The line the whole feed sees.
+  // The line the whole feed sees — naming the inviter when attribution exists
+  // (profiles.referred_by_profile_id, set by the fq_ref scan flow). The renderer
+  // (SystemLine) links every mention and shows each member's live Zap count.
+  const { data: me } = await admin
+    .from('profiles')
+    .select('referred_by_profile_id')
+    .eq('id', memberId)
+    .maybeSingle()
+  const refId = (me as { referred_by_profile_id: string | null } | null)?.referred_by_profile_id
+  let inviter: string | null = null
+  if (refId) {
+    const { data: ref } = await admin.from('profiles').select('handle').eq('id', refId).maybeSingle()
+    inviter = (ref as { handle: string } | null)?.handle ?? null
+  }
   await admin.from('posts').insert({
     author_id: system.id,
     scope_id: system.id,
     visibility: 'public',
     post_type: 'system',
-    body: `@${handle} joined the community 👋`,
+    body: inviter
+      ? `@${handle} joined through @${inviter} 👋`
+      : `@${handle} joined the community 👋`,
   })
 
   // The word in the newcomer's ear.
