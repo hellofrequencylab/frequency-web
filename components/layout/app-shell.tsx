@@ -17,7 +17,6 @@ import {
   BellRing,
   SlidersHorizontal,
   UserPlus,
-  Camera,
   Users,
   X,
   Gem,
@@ -962,19 +961,31 @@ function MobileTabBar({
 
       {!hideAppNav && MOBILE_TABS.slice(0, 2).map(renderTab)}
 
-      {/* Capture — the circle sticks up above the bar; the label is bottom-aligned
-          with the other tabs (which are justify-end now). */}
+      {/* Zap — the action button (ADR-230). Member-facing it's Zap; the backend
+          stays Capture (the 'open-capture' event, the captures machinery): Zap is
+          the function that captures. The bolt reads softly ENGRAVED into the
+          raised circle: a light catch just below a darker glyph, both tokens. */}
       {!hideAppNav && (
         <button
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode: 'post' } }))}
-          aria-label="Capture a moment"
+          aria-label="Zap — capture a moment"
           className="relative flex flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-3xs font-semibold text-primary-strong"
         >
-          <span className="-mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop">
-            <Camera className="h-[22px] w-[22px]" strokeWidth={2.5} />
+          <span className="relative -mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary shadow-pop">
+            {/* the light edge the carve catches */}
+            <Zap
+              aria-hidden
+              className="absolute h-[24px] w-[24px] translate-y-[1.5px] text-on-primary/45 fill-on-primary/25"
+              strokeWidth={2}
+            />
+            {/* the engraved glyph */}
+            <Zap
+              className="relative h-[24px] w-[24px] text-primary-strong fill-primary-strong/35"
+              strokeWidth={2}
+            />
           </span>
-          <span className="leading-none">Capture</span>
+          <span className="leading-none">Zap</span>
         </button>
       )}
 
