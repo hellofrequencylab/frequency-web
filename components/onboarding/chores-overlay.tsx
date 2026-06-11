@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Sparkles, Check, X, ArrowRight, ListChecks, PartyPopper, Gem, Rocket } from 'lucide-react'
 import type { ProfileChores } from '@/lib/onboarding/profile-chores'
 import type { OnboardingStep } from '@/lib/onboarding/status'
@@ -31,6 +32,9 @@ export function ChoresOverlay({
   /** The next activation step once chores are done — drives the coach beat. */
   nextAction?: OnboardingStep | null
 }) {
+  // Admin pages drop the Next Steps tab (owner call) — the profile card owns that
+  // corner there. Member pages keep it.
+  const onAdmin = usePathname().startsWith('/admin')
   const [open, setOpen] = useState(false)
   const [claimed, setClaimed] = useState<{ amount: number } | null>(null)
   // "Don't show till tomorrow" snooze — hides BOTH the overlay and the Next Steps
@@ -122,8 +126,9 @@ export function ChoresOverlay({
   // nothing — the tab disappears. Collapsed until hover (web) / tap (mobile), then a
   // click opens the overlay; an occasional wiggle signals it's waiting.
   const hasChoresLeft = !chores.complete && left > 0
-  // Hidden while snoozed ("Don't show till tomorrow") — the tab disappears until then.
-  const showPill = !open && !snoozed && (hasChoresLeft || coach)
+  // Hidden while snoozed ("Don't show till tomorrow") — the tab disappears until
+  // then — and always hidden on /admin.
+  const showPill = !open && !snoozed && !onAdmin && (hasChoresLeft || coach)
   const pill = showPill ? (
     <EdgePill
       side="left"
