@@ -119,3 +119,25 @@ export function OnAirArt({ className = '' }: Props) {
     </span>
   )
 }
+
+// Connect — your personal code held up between two people meeting.
+export function ConnectArt({ className = '' }: Props) {
+  return (
+    <span className={className}>
+      <Frame>
+        <rect x="46" y="20" width="28" height="28" rx="5" className="fill-surface stroke-primary-strong" strokeWidth="2.5" />
+        {/* a hint of the QR, not a real one */}
+        <rect x="52" y="26" width="6" height="6" rx="1" className="fill-primary" />
+        <rect x="63" y="26" width="5" height="5" rx="1" className="fill-primary/70" />
+        <rect x="52" y="37" width="5" height="5" rx="1" className="fill-primary/70" />
+        <rect x="61" y="35" width="7" height="7" rx="1" className="fill-primary" />
+        {/* the two people it joins */}
+        <circle cx="32" cy="52" r="6" className="fill-signal" />
+        <path d="M26 64a7 7 0 0 1 12 0z" className="fill-signal" />
+        <circle cx="88" cy="52" r="6" className="fill-primary-strong" />
+        <path d="M82 64a7 7 0 0 1 12 0z" className="fill-primary-strong" />
+        <path d="M40 56h14M66 56h14" className="stroke-signal" strokeWidth="2" strokeLinecap="round" strokeDasharray="2 4" />
+      </Frame>
+    </span>
+  )
+}

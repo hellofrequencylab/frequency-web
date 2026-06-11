@@ -34,10 +34,12 @@
   Dispatch). "Going on air" = starting a session; "off air" = done. **Airtime** =
   timed practice minutes (`practice_sessions`).
 - **The Zap button** (ADR-230) = the raised center action button (the engraved ⚡)
-  and its menu of earning tools (share, Event, Contact, Partners, Check In, Ghost
-  Node, On Air). Member-facing name is **Zap**; the BACKEND keeps the Capture
-  naming (`open-capture`, `captures`, capture flows): Zap is the function that
-  captures. Menu heading: "Capture a moment."
+  and its menu of earning tools. Live row: share, Event, Contact, **Connect**
+  (your personal code, /codes). Coming-soon row: Check In, Ghost Node, Partners.
+  Member-facing name is **Zap**; the BACKEND keeps the Capture naming
+  (`open-capture`, `captures`, capture flows): Zap is the function that captures.
+  Menu heading: "Capture a moment." On Air's entries are the home JourneyBoard,
+  practice pages, /on-air and the PWA shortcut (no header icon, no menu tile).
 - **Dispatch from Vera** (ADR-229) = Vera's daily personal assignment, shown at the
   end of an On Air session (`vera_dispatches`; one per member per day, cached —
   replays never regenerate). **Collision guard:** distinct from broadcast
