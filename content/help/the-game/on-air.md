@@ -1,5 +1,5 @@
 ---
-title: On Air, the practice timer
+title: Mindless, the practice timer
 description: Time your practice with guided breathing, then collect your rewards, streak and next assignment.
 category: the-game
 order: 4
@@ -9,14 +9,15 @@ featureKeys: [practices, gamification]
 status: published
 ---
 
-**On Air** is where you do the practice, not just log it. One tap, the screen goes
-quiet, and it walks you through the sit. When you finish, the game pays you on the
-spot.
+**Mindless** is where you do the practice, not just log it. One tap, the screen
+goes quiet, and it walks you through the sit. When you finish, the game pays you
+on the spot.
 
-## Going on air
+## Tuning out
 
-Open it from your home screen (the little radio icon next to any practice) or from
-a practice page. Pick three things, and it remembers them for next time:
+Open it from the Zap button (the **Mindless** row), from your home screen (the
+little lotus next to any practice), or from a practice page. Pick three things,
+and it remembers them for next time:
 
 - **A practice** from your list.
 - **A mode.** *Breathe* gives you a guided breathing pattern with a visual to
@@ -25,9 +26,9 @@ a practice page. Pick three things, and it remembers them for next time:
 - **Minutes.** Two is enough. Five is plenty. Use the stepper for anything up to
   a hundred and twenty.
 
-While you're on air the screen stays awake and everything else gets out of the way.
-There's one button: **End**. Ending early still counts; the practice is the point,
-not the clock.
+Then hit **Tune out**. While you're tuned out the screen stays awake and
+everything else gets out of the way. There's one button: **End**. Ending early
+still counts; the practice is the point, not the clock.
 
 ## Breathing patterns
 
@@ -58,11 +59,11 @@ When the timer ends, swipe through four screens:
    practice, and your Amplitude.
 4. **Dispatch from Vera.** Your next assignment: the next step on your Journey, a
    challenge you can close out, or where to show up this week. One per day; it
-   stays saved. Find every past one under **Past Dispatches** on the On Air
+   stays saved. Find every past one under **Past Dispatches** on the Mindless
    screen.
 
 When you reach the last card, one more swipe sends it off the screen and you're
-off air.
+back where you started.
 
 Already logged that practice today? The extra sit still banks airtime, and your
 streak holds. Nothing pays twice, and nothing is lost.

@@ -204,7 +204,7 @@ export function Reveal({ payload, onClose }: { payload: RevealPayload; onClose?:
         <button
           type="button"
           onClick={next}
-          aria-label={panel >= 3 ? 'Off air' : 'Next card'}
+          aria-label={panel >= 3 ? 'Tune back in' : 'Next card'}
           className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface-elevated hover:text-text"
         >
           <ChevronRight className="h-4 w-4" />
@@ -416,7 +416,7 @@ function DispatchPanel({ payload }: { payload: RevealPayload }) {
           Past Dispatches
         </Link>
         <Link href="/feed" className="text-xs font-semibold text-subtle hover:text-text">
-          Off air, back home
+          Tune back in
         </Link>
       </div>
     </div>
