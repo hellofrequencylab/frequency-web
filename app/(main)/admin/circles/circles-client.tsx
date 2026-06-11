@@ -73,7 +73,7 @@ function CircleForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <label className={lbl}>Circle name *</label>
         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Encinitas Morning Ride" required disabled={isPending} className={input} />
@@ -173,7 +173,6 @@ export function CirclesClient({
 
   const active = circles.filter(c => c.status !== 'archived')
   const archived = circles.filter(c => c.status === 'archived')
-  const editing = active.find((c) => c.id === editingId)
 
   const columns: ColumnDef<CircleRow>[] = [
     {
@@ -201,22 +200,22 @@ export function CirclesClient({
 
   return (
     <div>
-      {editing && (
-        <CircleForm
-          initial={editing}
-          hubs={hubs}
-          hosts={hosts}
-          onSave={(fd) => handleUpdate(editing.id, fd)}
-          onCancel={() => setEditingId(null)}
-          isPending={isPending}
-        />
-      )}
-
       <DataTable
         caption="Circles"
         rows={active}
         getRowId={(c) => c.id}
         columns={columns}
+        expandedRowId={editingId ?? undefined}
+        expandedRow={(c) => (
+          <CircleForm
+            initial={c}
+            hubs={hubs}
+            hosts={hosts}
+            onSave={(fd) => handleUpdate(c.id, fd)}
+            onCancel={() => setEditingId(null)}
+            isPending={isPending}
+          />
+        )}
         rowActions={(c) => (
           <div className="flex items-center gap-1">
             <InviteLinkButton circleId={c.id} />

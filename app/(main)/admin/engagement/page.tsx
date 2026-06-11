@@ -7,9 +7,10 @@ import { DashArea, TileGrid, Tile } from '@/components/admin/dash'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { TableSkeleton } from '@/components/admin/table-skeleton'
 import { FreshnessNote } from '@/components/admin/freshness-note'
+import { RankList } from '@/components/admin/rank-list'
 import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
-import { getEngagementDashboard, type FunnelStep, type EventTypeCount, type PropCount } from '@/lib/analytics/dashboard'
+import { getEngagementDashboard, type FunnelStep, type EventTypeCount } from '@/lib/analytics/dashboard'
 
 // Janitor-only: the live engagement dashboard (ENGAGEMENT-MARKETING-ENGINE.md Phase B).
 // WAM + activation, the activation funnel (where it jams), what's happening in the
@@ -88,10 +89,10 @@ async function EngagementContent() {
       <AdminSection title="Most-used surfaces" description="The pages and features carrying the most traffic this window.">
         <div className="grid gap-3.5 lg:grid-cols-2">
           <Tile label="Top pages">
-            <RankList rows={d.topPages} empty="No page views yet." />
+            <RankList items={d.topPages} empty="No page views yet." />
           </Tile>
           <Tile label="Top features">
-            <RankList rows={d.topFeatures} empty="No feature events yet." />
+            <RankList items={d.topFeatures} empty="No feature events yet." />
           </Tile>
         </div>
       </AdminSection>
@@ -129,19 +130,6 @@ function FunnelView({ steps }: { steps: FunnelStep[] }) {
   )
 }
 
-function RankList({ rows, empty }: { rows: PropCount[]; empty: string }) {
-  if (rows.length === 0) return <p className="text-sm text-muted">{empty}</p>
-  return (
-    <ul className="space-y-1.5">
-      {rows.map((r) => (
-        <li key={r.value} className="flex items-baseline justify-between gap-3 text-sm">
-          <span className="truncate font-mono text-xs text-muted">{r.value}</span>
-          <span className="shrink-0 font-semibold tabular-nums text-text">{r.n.toLocaleString()}</span>
-        </li>
-      ))}
-    </ul>
-  )
-}
 
 function EngagementSkeleton() {
   return (

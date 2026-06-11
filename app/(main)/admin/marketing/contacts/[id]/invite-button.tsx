@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Send, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { inviteContactToJoin, type InviteToJoinResult } from './actions'
 
 const REASON_MSG: Record<string, string> = {
@@ -29,15 +30,10 @@ export function InviteButton({ contactId, disabled }: { contactId: string; disab
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={pending || disabled}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-strong disabled:opacity-60"
-      >
+      <Button type="button" onClick={onClick} disabled={pending || disabled}>
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         Invite to join
-      </button>
+      </Button>
       {msg && <span className={`text-xs ${msg.ok ? 'text-success' : 'text-muted'}`}>{msg.text}</span>}
     </div>
   )
