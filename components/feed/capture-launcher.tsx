@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { X, BookOpen, Zap, ChevronRight } from 'lucide-react'
 import { CaptureBox } from './capture-box'
-import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, OnAirArt } from './zap-menu-art'
+import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, MindlessArt } from './zap-menu-art'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
 
@@ -117,31 +117,30 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               placeholder="Share something on your journey…"
             />
 
-            {/* The tools — row one is live, row two is on the way. */}
+            {/* The tools — the live row, then the Mindless door, then what's on the way. */}
             <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
               <ZapTile href="/events/scan" onClick={close} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
               <ZapTile href="/connections/new" onClick={close} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
               <ZapTile href="/codes" onClick={close} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />
+              {/* Mindless (the On Air timer) — not a capture, a sit: its own
+                  full-width door between the rows (owner ask: the menu must
+                  always carry a path to the timer). */}
+              <Link
+                href="/on-air"
+                onClick={close}
+                className="col-span-3 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary-bg/40 p-3 transition-all hover:border-primary/60 hover:bg-primary-bg/70 active:scale-[0.99]"
+              >
+                <MindlessArt className="block h-12 shrink-0" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-text">Mindless</span>
+                  <span className="block text-2xs leading-snug text-subtle">Tune out</span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+              </Link>
               <ZapTile soon label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub="At the door" />
               <ZapTile soon label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
               <ZapTile soon label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
             </div>
-
-            {/* On Air — not a capture, a sit: the timer app gets its own
-                full-width door under the tools (owner ask: the menu must
-                always carry a path to On Air). */}
-            <Link
-              href="/on-air"
-              onClick={close}
-              className="mt-2.5 flex shrink-0 items-center gap-3 rounded-2xl border border-primary/30 bg-primary-bg/40 p-3 transition-all hover:border-primary/60 hover:bg-primary-bg/70 active:scale-[0.99]"
-            >
-              <OnAirArt className="block h-12 shrink-0" />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-bold text-text">On Air</span>
-                <span className="block text-2xs leading-snug text-subtle">Time a practice</span>
-              </span>
-              <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-            </Link>
 
             <Link
               href="/journal"

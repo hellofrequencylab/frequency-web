@@ -33,8 +33,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   with a live line from Vera reading where your streak stands. Check-ins, Ghost
   Nodes and partner rewards are on the way in the same grid. Your log lives at
   the bottom.
-- **On Air, the practice timer**: a quiet little app inside The Quest. Pick a
-  practice, go on air, and follow the breathing rings (Box, Coherent, or 4-7-8) or
+- **Mindless, the practice timer**: a quiet little app inside The Quest. Pick a
+  practice, tune out, and follow the breathing rings (Box, Coherent, or 4-7-8) or
   a plain countdown, or set your own pace with the **Custom** sliders; an optional
   soft **bell** or **vibration** marks each phase so you can close your eyes. The
   screen stays awake and everything else gets out of the way. When you finish, swipe through your payout: Zaps and bonuses landing one by

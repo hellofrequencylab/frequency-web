@@ -31,8 +31,8 @@ You can log a practice once per day. Do it for a few days in a row and the strea
 starts to pull you back, which is exactly the point.
 
 Want to actually do the practice right there, with a timer and guided breathing?
-Tap the little radio icon to go **[On Air](/help/the-game/on-air)**. Same log,
-same rewards, plus the sit itself.
+Tap the little lotus to **[tune out with Mindless](/help/the-game/on-air)**. Same
+log, same rewards, plus the sit itself.
 
 ## Adopt or change anytime
 

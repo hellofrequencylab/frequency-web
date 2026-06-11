@@ -31,20 +31,24 @@
   ladder: **10/25/50/100 Deep**. These award names are documented exceptions below.
 - **On Air** (ADR-229) = the practice timer mini-app at `/on-air`: the fullscreen
   sit (breath visualizer + timer), then the reveal (rewards → streak → stats →
-  Dispatch). "Going on air" = starting a session; "off air" = done. **Airtime** =
-  timed practice minutes (`practice_sessions`). The live-screen title reads
-  **"Mindless"** under a lotus mark, softly pulsing — the sit is a tune-out,
-  a connection in meditation, not a broadcast ("Connecting" was rejected: it
-  collides with the **Connect** tile). "On Air" stays the app's name.
+  Dispatch). INTERNAL name only (code, routes, schema, git docs). Member-facing
+  the app is **Mindless** and the verb is **"tune out"** ("tune back in" = done):
+  the setup title and CTA, the Zap menu door (subtitle "Tune out"), the lotus
+  buttons beside practices, the live-screen title (lotus mark, softly pulsing),
+  the PWA shortcut, help and changelog. "Going on air" / "off air" are retired
+  from member copy; "Connecting" was rejected (collides with the **Connect**
+  tile). **Airtime** = timed practice minutes (`practice_sessions`) — the stat
+  keeps its name.
 - **The Zap button** (ADR-230) = the raised center action button (the engraved ⚡)
   and its menu of earning tools. Live row: share, Event, Contact, **Connect**
   (your personal code, /codes). Coming-soon row: Check In, Ghost Node, Partners.
   Member-facing name is **Zap**; the BACKEND keeps the Capture naming
   (`open-capture`, `captures`, capture flows): Zap is the function that captures.
-  Menu heading: "Capture a moment." **On Air sits in the menu as its own
-  full-width row** under the grid (a door to the timer app, not a capture
-  tile); its other entries are the home JourneyBoard, practice pages, /on-air
-  and the PWA shortcut (no header icon).
+  Menu heading: "Capture a moment." **Mindless** (the On Air timer's door,
+  subtitle "Tune out", lotus art) sits in the menu as a full-width row
+  BETWEEN the live and coming-soon rows — a door to the timer app, not a
+  capture tile. On Air's other entries are the home JourneyBoard, practice
+  pages, /on-air and the PWA shortcut (no header icon).
 - **Dispatch from Vera** (ADR-229) = Vera's daily personal assignment, shown at the
   end of an On Air session (`vera_dispatches`; one per member per day, cached —
   replays never regenerate). **Collision guard:** distinct from broadcast
@@ -148,6 +152,8 @@ Phase-6 zero-hits grep carves them out:
 - **"agent"**: retired as a rank; alive in AI agents (`lib/studio/agent.ts`,
   `agent_actions`, Vera).
 - **"channels"**: forum feature only; any Pillar-as-channel framing is renamed.
+- **"tune"**: "tune in" = the Channels verb; "tune out" / "tune back in" =
+  Mindless (the On Air timer). Two dials, no collision.
 - **"co-op"**: one meaning only (shared Journey).
 - **"task"**: `crew_tasks` IS the canon Task entity — no new entity, no collision.
 - **"live"/"static"**: retired only as the old status set; alive in live-location,

@@ -33,23 +33,23 @@ export default async function DispatchesPage() {
 
   return (
     <FocusTemplate
-      eyebrow="On Air"
+      eyebrow="Mindless"
       title="Dispatches from Vera"
       description="Every assignment, saved. What she said is what stays said."
-      back={{ href: '/on-air', label: 'On Air' }}
+      back={{ href: '/on-air', label: 'Mindless' }}
       width="narrow"
     >
       {dispatches.length === 0 ? (
         <EmptyState
           icon={Radio}
           title="No Dispatches yet"
-          description="Finish a session On Air and Vera sends your first assignment."
+          description="Tune out once and Vera sends your first assignment."
           action={
             <Link
               href="/on-air"
               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
             >
-              Go on air
+              Tune out
             </Link>
           }
         />
