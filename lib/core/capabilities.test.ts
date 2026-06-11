@@ -171,3 +171,60 @@ describe('resolveCapabilities · event', () => {
     expect(can(resolveCapabilities({ profileId: 'x', role: 'member' }, base), 'event.editSettings')).toBe(false)
   })
 })
+
+describe('resolveCapabilities · scoped stewardship edges (P1.6, ADR-218→220)', () => {
+  // A leadsScope predicate over a set of (scopeType:scopeId) the viewer holds.
+  const edgesOn = (...keys: string[]) =>
+    (scopeType: string, scopeId: string) => keys.includes(`${scopeType}:${scopeId}`)
+
+  it('an edge host manages a circle even with NO host_id FK match', () => {
+    const caps = resolveCapabilities(
+      { profileId: 'e1', role: 'member', leadsScope: edgesOn('circle:c1') },
+      { kind: 'circle', circleId: 'c1', hostId: null },
+    )
+    expect(can(caps, 'circle.editSettings')).toBe(true)
+    expect(can(caps, 'circle.post')).toBe(true)
+  })
+
+  it('a circle edge is SCOPE-ISOLATED — it does not leak to another circle', () => {
+    const viewer = { profileId: 'e1', role: 'member' as const, leadsScope: edgesOn('circle:c1') }
+    expect(can(resolveCapabilities(viewer, { kind: 'circle', circleId: 'c1', hostId: null }), 'circle.editSettings')).toBe(true)
+    expect(can(resolveCapabilities(viewer, { kind: 'circle', circleId: 'c2', hostId: null }), 'circle.editSettings')).toBe(false)
+  })
+
+  it('edge leadership lights hub.manage and nexus.manage in-scope only', () => {
+    const viewer = { profileId: 'e2', role: 'member' as const, leadsScope: edgesOn('hub:h1', 'nexus:n1') }
+    expect(can(resolveCapabilities(viewer, { kind: 'hub', hubId: 'h1' }), 'hub.manage')).toBe(true)
+    expect(can(resolveCapabilities(viewer, { kind: 'hub', hubId: 'h2' }), 'hub.manage')).toBe(false)
+    expect(can(resolveCapabilities(viewer, { kind: 'nexus', nexusId: 'n1' }), 'nexus.manage')).toBe(true)
+    expect(can(resolveCapabilities(viewer, { kind: 'nexus', nexusId: 'n2' }), 'nexus.manage')).toBe(false)
+  })
+
+  it('PARITY: edges that mirror the leader FKs resolve identically to FK-only (the backfill state)', () => {
+    // The provable "PR-1 is behavior-preserving" guarantee: for every leader who has
+    // both an FK and a matching edge (ADR-218 backfill), the resolved caps are equal
+    // whether or not leadsScope is supplied.
+    const scopes: Scope[] = [
+      { kind: 'circle', circleId: 'c1', hostId: 'leader' },
+      { kind: 'hub', hubId: 'h1', guideId: 'leader' },
+      { kind: 'nexus', nexusId: 'n1', mentorId: 'leader' },
+    ]
+    const withEdges = edgesOn('circle:c1', 'hub:h1', 'nexus:n1')
+    for (const scope of scopes) {
+      const fkOnly = [...resolveCapabilities({ profileId: 'leader', role: 'host' }, scope)].sort()
+      const fkPlusEdge = [...resolveCapabilities({ profileId: 'leader', role: 'host', leadsScope: withEdges }, scope)].sort()
+      expect(fkPlusEdge).toEqual(fkOnly)
+    }
+  })
+
+  it('back-compat: a viewer with no edges (predicate absent or false) is unchanged', () => {
+    const fk = resolveCapabilities({ profileId: 'host1', role: 'host' }, { kind: 'circle', circleId: 'c1', hostId: 'host1' })
+    const fkFalse = resolveCapabilities(
+      { profileId: 'host1', role: 'host', leadsScope: () => false },
+      { kind: 'circle', circleId: 'c1', hostId: 'host1' },
+    )
+    expect([...fkFalse].sort()).toEqual([...fk].sort())
+    // And a non-leader with no edges still cannot manage.
+    expect(can(resolveCapabilities({ profileId: 'x', role: 'member', leadsScope: () => false }, { kind: 'circle', circleId: 'c1', hostId: 'host1' }), 'circle.editSettings')).toBe(false)
+  })
+})
