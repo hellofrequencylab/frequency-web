@@ -1,6 +1,6 @@
 # On Air — the practice timer mini-app
 
-> Status: **P1 shipped** (ADR-229). Canon names: NAMING.md §The Quest ("On Air",
+> Status: **P1 + P2 shipped** (ADR-229). Canon names: NAMING.md §The Quest ("On Air",
 > "Airtime", "Dispatch from Vera"). Member help: `content/help/the-game/on-air.md`.
 
 One tap → the world goes quiet → you breathe → the game pays you in person → Vera
@@ -58,10 +58,13 @@ Two layers so it's fast, cheap, and never wrong:
 1. **The WHAT is deterministic** (`resolveAssignment`): priority = next Journey step
    due → challenge ≥50% done → no event attendance this week → depth mark ≤5 logs
    away → steady default. All reads from existing systems.
-2. **The VOICE**: P1 ships template copy in the brand voice (plain sentences, no em
-   dashes, proper nouns carry the magic). **P2 layers AI phrasing over the same
-   payload** behind the standard `aiAvailable` + budget gates, templates as
-   fallback. The cache row shape doesn't change.
+2. **The VOICE** (P2, shipped): `voiceCopy()` asks Haiku to rephrase the payload's
+   fact line (names + numbers verbatim, 140-char cap) behind the standard
+   `aiAvailable` + `featureOverBudget('vera-dispatch')` gates, with usage recorded
+   to the AI ledger. `cleanDispatchCopy` validates the result (strips quotes /
+   prefixes, swaps em dashes, rejects emoji / junk lengths) so a model hiccup can
+   never reach a member; the P1 templates remain the always-on fallback. Whatever
+   copy is minted is what replays forever (the cache row marks `voiced`).
 
 Cached one per (member, day) in `vera_dispatches` (unique race → read the winner).
 Replays and the history scroll (`listDispatches`) read the table — **no live Vera
@@ -69,7 +72,7 @@ on revisit**, by design.
 
 ## Roadmap
 
-- **P2 — Vera live:** AI phrasing over the resolver payload; Dispatch history screen.
+- ~~P2 — Vera live~~ ✅ shipped: AI phrasing + the Dispatch archive at `/on-air/dispatches`.
 - **P3 — the takeover:** PWA manifest shortcut ("Start practice"), desktop
   intercepted-modal entry, interval bells + haptic phase cues, presence ("N members
   practiced today" = count of today's logs), custom pattern slider (3–8s/phase).

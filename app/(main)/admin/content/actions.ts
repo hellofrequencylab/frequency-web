@@ -123,6 +123,34 @@ export async function setPracticeFlagsAction(
   return ok()
 }
 
+/** Bulk on/off for a library flag (the header master switch). Scoped to explicit
+ *  ids so the review queue, or anything filtered out of the table, can never be
+ *  flipped by accident. */
+export async function setAllPracticeFlagsAction(
+  ids: string[],
+  flag: 'is_public' | 'is_template',
+  value: boolean,
+): Promise<ActionResult> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (ids.length === 0) return ok()
+  try {
+    const admin = createAdminClient() as unknown as SupabaseClient
+    const { error } = await admin
+      .from('practices')
+      .update({ [flag]: value })
+      .in('id', ids.slice(0, 500))
+    if (error) return fail(error.message)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not update the practices.')
+  }
+  revalidateContent('practices')
+  return ok()
+}
+
 export async function setPracticeStatusAction(
   id: string,
   status: 'approved' | 'rejected',

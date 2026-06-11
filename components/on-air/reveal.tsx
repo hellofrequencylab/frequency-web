@@ -245,9 +245,14 @@ function DispatchPanel({ payload }: { payload: RevealPayload }) {
           </Link>
         )}
       </div>
-      <Link href="/feed" className="mt-5 inline-block text-xs font-semibold text-subtle hover:text-text">
-        Off air — back home
-      </Link>
+      <div className="mt-5 flex items-center justify-center gap-4">
+        <Link href="/on-air/dispatches" className="text-xs font-semibold text-subtle hover:text-text">
+          Past Dispatches
+        </Link>
+        <Link href="/feed" className="text-xs font-semibold text-subtle hover:text-text">
+          Off air, back home
+        </Link>
+      </div>
     </div>
   )
 }

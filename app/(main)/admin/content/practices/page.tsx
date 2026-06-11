@@ -5,22 +5,11 @@ import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { rankedPractices } from '@/lib/admin/content-signals'
-import {
-  PracticeReviewButtons,
-  PracticeFeatureToggle,
-  PracticePublicToggle,
-  PracticeTemplateToggle,
-} from '../content-controls'
+import { PracticeReviewButtons } from '../content-controls'
+import { PracticesTable } from './practices-table'
 
 // Library curation: the ranked practice library with visibility, template, and
 // feature controls, plus the review queue for member proposals.
-
-const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
-  pending: { label: 'Pending', cls: 'bg-signal/10 text-signal' },
-  approved: { label: 'Approved', cls: 'bg-success/10 text-success' },
-  rejected: { label: 'Rejected', cls: 'bg-danger-bg text-danger' },
-  draft: { label: 'Draft', cls: 'bg-border/60 text-muted' },
-}
 
 export default async function AdminContentPracticesPage() {
   await requireAdmin('host', { staff: 'community' })
@@ -77,61 +66,27 @@ export default async function AdminContentPracticesPage() {
 
       <AdminSection
         title={`Library (${library.length})`}
-        description="Ranked by adopters and recent logs. Public puts it in the open library; Template makes it a claimable starter."
+        description="Sort by any stat; the header switches flip Public or Template for the whole library at once."
       >
         {library.length === 0 ? (
           <EmptyState icon={BookOpen} title="No practices yet" description="Practices appear here as the library fills in." />
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-            <div className="hidden border-b border-border px-4 py-2 lg:grid lg:grid-cols-[1fr_120px_190px_90px_80px_80px_64px] lg:items-center lg:gap-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-subtle">Practice</span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-subtle">Creator</span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-subtle">Signal</span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-subtle">Status</span>
-              <span className="text-center text-xs font-semibold uppercase tracking-wider text-subtle">Public</span>
-              <span className="text-center text-xs font-semibold uppercase tracking-wider text-subtle">Template</span>
-              <span className="text-center text-xs font-semibold uppercase tracking-wider text-subtle">Feature</span>
-            </div>
-            <div className="divide-y divide-border/50">
-              {library.map((p) => {
-                const st = p.status ? STATUS_STYLES[p.status] ?? STATUS_STYLES.draft : STATUS_STYLES.approved
-                return (
-                  <div
-                    key={p.id}
-                    className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 lg:grid-cols-[1fr_120px_190px_90px_80px_80px_64px]"
-                  >
-                    <div className="min-w-0">
-                      <Link href={`/practices/${p.id}`} className="flex items-center gap-1.5 text-sm font-medium text-text hover:underline">
-                        <span className="truncate">{p.title}</span>
-                        <ExternalLink className="h-3 w-3 shrink-0 text-subtle" />
-                      </Link>
-                      <span className="mt-0.5 block text-xs text-subtle lg:hidden">
-                        {p.adopters} adopters · {p.logs_30d} logs in 30d
-                      </span>
-                    </div>
-                    <span className="hidden truncate text-xs text-muted lg:block">
-                      {p.creator?.display_name ?? p.creator?.handle ?? 'System'}
-                    </span>
-                    <span className="hidden text-xs tabular-nums text-muted lg:block">
-                      {p.adopters} adopters · {p.logs_30d} in 30d · {p.logs_total} total
-                    </span>
-                    <span className={`hidden w-fit items-center rounded-md px-2 py-0.5 text-xs font-semibold lg:inline-flex ${st.cls}`}>
-                      {st.label}
-                    </span>
-                    <div className="hidden justify-center lg:flex">
-                      <PracticePublicToggle id={p.id} isPublic={p.is_public} />
-                    </div>
-                    <div className="hidden justify-center lg:flex">
-                      <PracticeTemplateToggle id={p.id} isTemplate={p.is_template} />
-                    </div>
-                    <div className="flex justify-center">
-                      <PracticeFeatureToggle id={p.id} featured={!!p.featured_at} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          <PracticesTable
+            rows={library.map((p) => ({
+              id: p.id,
+              title: p.title,
+              creator: p.creator?.display_name ?? p.creator?.handle ?? 'System',
+              status: p.status ?? 'approved',
+              adopters: p.adopters,
+              logs_30d: p.logs_30d,
+              logs_total: p.logs_total,
+              score: p.score,
+              created_at: p.created_at,
+              is_public: p.is_public,
+              is_template: p.is_template,
+              featured: !!p.featured_at,
+            }))}
+          />
         )}
       </AdminSection>
     </AdminPage>
