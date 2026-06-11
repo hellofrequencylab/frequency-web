@@ -3,6 +3,7 @@ import { requireAdminFloor } from '@/lib/admin/guard'
 import { AdminTopNav } from '@/components/admin/admin-top-nav'
 import { AdminLeftNav } from '@/components/admin/admin-left-nav'
 import { AdminInfoRail } from '@/components/admin/admin-info-rail'
+import { AdminFooter } from '@/components/admin/admin-footer'
 
 // Admin route group. The guard is the single entry gate (host+); a viewer without
 // access is redirected home (logged-out → '/', insufficient role → '/feed') rather
@@ -44,6 +45,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </aside>
       </div>
+
+      <AdminFooter role={role} webRole={webRole} staffRole={staffRole} />
     </div>
   )
 }
