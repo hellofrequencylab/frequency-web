@@ -10,6 +10,7 @@ import { isError } from '@/lib/action-result'
 import { formatMoney, type CrmStage, type CrmDeal, type PersonLite } from '@/lib/crm/pipeline'
 import { getInitials } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Banner } from '@/components/admin/status'
 
 export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmDeal[] }) {
   const router = useRouter()
@@ -69,14 +70,18 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
 
   return (
     <div className="space-y-4">
-      {error && <p className="rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>}
+      {error && (
+        <Banner tone="critical" title="That didn’t go through">
+          {error}
+        </Banner>
+      )}
 
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted">
           {deals.length} deal{deals.length === 1 ? '' : 's'} across {stages.length} stages
         </p>
         <Button type="button" size="sm" onClick={() => setAdding((v) => !v)}>
-          <Plus className="h-4 w-4" /> New deal
+          <Plus className="h-4 w-4" /> Quick add
         </Button>
       </div>
 
@@ -118,7 +123,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
                 <div className="flex min-w-0 items-center gap-2">
                   <span className={`h-2 w-2 shrink-0 rounded-full ${stage.kind === 'won' ? 'bg-success' : stage.kind === 'lost' ? 'bg-danger' : 'bg-primary'}`} />
                   <p className="truncate text-sm font-semibold text-text">{stage.name}</p>
-                  <span className="shrink-0 text-xs text-subtle">{items.length}</span>
+                  <span className="shrink-0 text-xs tabular-nums text-subtle">{items.length}</span>
                 </div>
                 <span className="shrink-0 text-xs font-medium tabular-nums text-muted">{formatMoney(stageValue(stage.id))}</span>
               </div>
@@ -145,7 +150,7 @@ function Avatar({ person }: { person: PersonLite }) {
   return person.avatar_url ? (
     <Image src={person.avatar_url} alt={person.display_name} width={20} height={20} className="h-5 w-5 rounded-full object-cover" />
   ) : (
-    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-3xs font-semibold text-primary-strong select-none">
+    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-2xs font-semibold text-primary-strong select-none">
       {getInitials(person.display_name)}
     </span>
   )
@@ -187,7 +192,7 @@ function DealCard({
         {deal.owner && <Avatar person={deal.owner} />}
       </div>
       {deal.expected_close_date && (
-        <p className="mt-1 flex items-center gap-1 text-2xs text-subtle">
+        <p className="mt-1 flex items-center gap-1 text-xs text-subtle">
           <CalendarClock className="h-3 w-3" />
           {new Date(deal.expected_close_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
         </p>
@@ -202,7 +207,7 @@ function DealCard({
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
-        <span className="text-3xs uppercase tracking-wide text-subtle">{stages[idx]?.name ?? '–'}</span>
+        <span className="truncate text-2xs font-semibold uppercase tracking-wide text-subtle">{stages[idx]?.name ?? '–'}</span>
         <button
           type="button"
           disabled={!next || pending}

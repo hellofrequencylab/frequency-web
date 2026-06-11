@@ -8,16 +8,17 @@ import { DetailTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { resolvePerson } from '@/lib/crm/person'
 import { buildJourney, groupByPhase, type JourneyKind } from '@/lib/crm/journey'
 import { InviteButton } from './invite-button'
 
 export const dynamic = 'force-dynamic'
 
-const CONSENT_STYLE: Record<string, string> = {
-  subscribed: 'bg-success-bg text-success',
-  unsubscribed: 'bg-danger-bg text-danger',
-  unknown: 'bg-surface-elevated text-muted',
+const CONSENT_TONE: Record<string, StatusTone> = {
+  subscribed: 'success',
+  unsubscribed: 'danger',
+  unknown: 'neutral',
 }
 
 const KIND_ICON: Record<JourneyKind, typeof User> = {
@@ -83,17 +84,13 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
       badges={
         <span className="flex items-center gap-1.5">
           {member ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong">
-              <UserCheck className="h-3 w-3" /> Member
-            </span>
+            <StatusChip tone="info"><UserCheck className="h-3 w-3" /> Member</StatusChip>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium text-muted">
-              <User className="h-3 w-3" /> Lead
-            </span>
+            <StatusChip tone="neutral"><User className="h-3 w-3" /> Lead</StatusChip>
           )}
-          <span className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${CONSENT_STYLE[contact.consentState] ?? CONSENT_STYLE.unknown}`}>
-            {contact.consentState}
-          </span>
+          <StatusChip tone={CONSENT_TONE[contact.consentState] ?? 'neutral'}>
+            <span className="capitalize">{contact.consentState}</span>
+          </StatusChip>
         </span>
       }
       actions={!member ? <InviteButton contactId={contact.id} /> : undefined}

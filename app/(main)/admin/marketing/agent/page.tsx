@@ -1,9 +1,8 @@
 import { Check, X, Sparkles, PenLine } from 'lucide-react'
 import { listActions } from '@/lib/studio/agent'
 import { generateProposals, generateContentDrafts, approveAction, dismissAction } from './actions'
-import { AdminTemplate } from '@/components/templates'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { Button } from '@/components/ui/button'
-import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 
 export const dynamic = 'force-dynamic'
@@ -17,25 +16,27 @@ export default async function AgentPage() {
       title="Agent Console"
       description="The operator proposes actions; you approve. Every approved action runs through the spine (consent + suppression + unsubscribe), so the agent can never bypass the guardrails. The proposer is deterministic for now; a live Claude operator slots in here later."
     >
-      <div className="flex flex-wrap gap-2">
-        <form action={generateProposals}>
-          <Button type="submit">
-            <Sparkles className="w-4 h-4" />
-            Generate winbacks
-          </Button>
-        </form>
-        <form action={generateContentDrafts}>
-          <Button type="submit" variant="secondary">
-            <PenLine className="w-4 h-4" />
-            Generate content drafts
-          </Button>
-        </form>
-      </div>
+      <AdminSection title="Generate" description="Ask the operator to draft. Everything lands in the queue as a proposal.">
+        <div className="flex flex-wrap gap-2">
+          <form action={generateProposals}>
+            <Button type="submit">
+              <Sparkles className="w-4 h-4" />
+              Generate winbacks
+            </Button>
+          </form>
+          <form action={generateContentDrafts}>
+            <Button type="submit" variant="secondary">
+              <PenLine className="w-4 h-4" />
+              Generate content drafts
+            </Button>
+          </form>
+        </div>
+      </AdminSection>
 
-      <section>
-        <SectionHeader title="Action queue" count={proposed.length} />
+      <AdminSection title="Action queue" description={`${proposed.length} awaiting your approval.`}>
         {proposed.length === 0 ? (
           <EmptyState
+            variant="cleared"
             title="No proposals."
             description="Generate winbacks or content drafts above to fill the queue."
           />
@@ -79,12 +80,11 @@ export default async function AgentPage() {
           })}
           </div>
         )}
-      </section>
+      </AdminSection>
 
-      <section>
-        <SectionHeader title="Recently executed" />
+      <AdminSection title="Recently executed">
         {executed.length === 0 ? (
-          <EmptyState title="Nothing executed yet." />
+          <EmptyState variant="first-use" title="Nothing executed yet." description="Approved actions show up here once they run through the spine." />
         ) : (
           <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/60 max-w-2xl">
             {executed.slice(0, 20).map((a) => (
@@ -94,7 +94,7 @@ export default async function AgentPage() {
             ))}
           </div>
         )}
-      </section>
+      </AdminSection>
     </AdminTemplate>
   )
 }
