@@ -14,9 +14,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **Vera welcomes new members now**: the old "Frequency Moderation" account is
   Vera, with a **Moderator** badge. When someone new joins, she drops a single
-  quiet line in the feed ("so-and-so joined the community") instead of a full
-  post, the way a group chat notes a new arrival, and sends the newcomer a
-  personal hello in their notifications. And she stays out of people search,
+  quiet line in the feed instead of a full post, the way a group chat notes a
+  new arrival: "so-and-so joined through their-inviter", both names linked,
+  each with their live Zap count beside it. The newcomer also gets a personal
+  hello in their notifications. And she stays out of people search,
   mentions and the directory; she's a voice, not a member.
 
 - **Quests and Journeys are free for everyone**: a **Journey** is a set of practices you move
