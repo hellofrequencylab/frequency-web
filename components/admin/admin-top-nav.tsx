@@ -9,17 +9,15 @@ import type { StaffRole } from '@/lib/core/staff-roles'
 import {
   ADMIN_HOME,
   visibleGroups,
-  canSeeGroup,
   domainForPath,
-  groupLinks,
   groupSections,
 } from '@/app/(main)/admin/sections'
 
-// The admin TOP bar (five-area IA): the open, background-less menu that holds the
-// anchor "Admin Dashboard" tab on the left (under the logo, styled to signal admin
-// mode) and the active area's SUB-NAV on the right. The primary areas live in the
-// LEFT rail (admin-left-nav.tsx); selecting one there surfaces its tools here. Role
-// filtering is reused verbatim from sections.ts. Mobile collapses to one sheet.
+// Admin chrome bits (open workspace look): the anchor "Admin Dashboard" tab (rides
+// under the logo, a solid primary pill so admin mode reads at a glance) and the
+// mobile nav sheet. The primary areas live in the LEFT rail (admin-left-nav.tsx)
+// and the command bar (admin-search-bar.tsx) sits above the content. No background
+// panels — everything sits directly on the canvas.
 
 interface AdminNavProps {
   role: CommunityRole
@@ -31,9 +29,9 @@ function linkActive(pathname: string, href: string) {
   return href === pathname || pathname.startsWith(`${href}/`)
 }
 
-// The anchor tab — the Home link, styled as a solid primary pill so admin mode reads
-// at a glance. Rides under the logo (the top bar's left segment).
-function DashboardTab({ pathname }: { pathname: string }) {
+/** The Home anchor — a solid primary pill (no surrounding panel). */
+export function AdminDashboardTab() {
+  const pathname = usePathname()
   const HomeIcon = ADMIN_HOME.Icon
   const onHome = pathname === '/admin'
   return (
@@ -51,9 +49,9 @@ function DashboardTab({ pathname }: { pathname: string }) {
   )
 }
 
-// ── Mobile: a single "Admin menu" sheet (the left rail + sub-nav are hidden on
-//    phones, so the sheet carries the full nav). ────────────────────────────────
-function MobileMenu({ role, webRole = 'none', staffRole = null }: AdminNavProps) {
+/** Mobile: a single "Admin menu" sheet carrying the full nav (the left rail is
+ *  hidden on phones). */
+export function AdminMobileNav({ role, webRole = 'none', staffRole = null }: AdminNavProps) {
   const groups = visibleGroups(role, webRole, staffRole).map((g) => ({
     group: g,
     sections: groupSections(g.key, role, webRole, staffRole),
@@ -61,18 +59,17 @@ function MobileMenu({ role, webRole = 'none', staffRole = null }: AdminNavProps)
   const pathname = usePathname()
   const activeDomain = domainForPath(pathname)
   const [open, setOpen] = useState(false)
-  const HomeIcon = ADMIN_HOME.Icon
 
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+        className="flex w-full items-center gap-2.5 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
       >
         <Menu className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        <span className="flex-1 text-left">Admin menu</span>
+        <span className="flex-1 text-left">Areas</span>
         <span className="text-xs text-subtle">{activeDomain?.label ?? ADMIN_HOME.label}</span>
       </button>
 
@@ -105,7 +102,7 @@ function MobileMenu({ role, webRole = 'none', staffRole = null }: AdminNavProps)
                     : 'font-medium text-muted hover:bg-surface-elevated hover:text-text'
                 }`}
               >
-                <HomeIcon className="h-[18px] w-[18px] shrink-0" aria-hidden />
+                <ADMIN_HOME.Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
                 {ADMIN_HOME.label}
               </Link>
 
@@ -156,75 +153,6 @@ function MobileMenu({ role, webRole = 'none', staffRole = null }: AdminNavProps)
           </aside>
         </div>
       )}
-    </div>
-  )
-}
-
-/** The admin top bar: the Admin Dashboard anchor tab + the active area's sub-nav.
- *  Background-less (the open workspace look); the left rail is the primary nav. */
-export function AdminTopNav(props: AdminNavProps) {
-  const pathname = usePathname()
-  const active = domainForPath(pathname)
-  const subLinks = active
-    ? groupLinks(active.key, props.role, props.webRole ?? 'none', props.staffRole ?? null)
-    : []
-  // Active only when the domain is actually visible to the viewer (defensive).
-  const showSub =
-    !!active && canSeeGroup(active, props.role, props.webRole ?? 'none', props.staffRole ?? null)
-
-  return (
-    <div className="sticky top-14 z-30 mb-8 bg-surface">
-      <div className="mx-auto flex w-full max-w-[105rem] gap-8">
-        {/* Left segment — the anchor tab, aligned under the logo with the rail. */}
-        <div className="hidden w-48 shrink-0 items-center py-2.5 lg:flex">
-          <DashboardTab pathname={pathname} />
-        </div>
-
-        {/* Content column — the active area's sub-nav (horizontal, scrolls if long). */}
-        <div className="min-w-0 flex-1">
-          <nav
-            aria-label={active ? `${active.label} sections` : 'Admin'}
-            className="hidden h-14 items-center gap-1 overflow-x-auto md:flex"
-          >
-            {showSub && subLinks.length > 0 ? (
-              subLinks.map((link) => {
-                const isActive = linkActive(pathname, link.href)
-                const LinkIcon = link.Icon
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    title={link.desc}
-                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-                      isActive
-                        ? 'bg-surface-elevated text-text'
-                        : 'text-muted hover:bg-surface-elevated hover:text-text'
-                    }`}
-                  >
-                    <LinkIcon
-                      className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary-strong' : 'text-subtle'}`}
-                      aria-hidden
-                    />
-                    {link.label}
-                  </Link>
-                )
-              })
-            ) : (
-              <span className="text-sm text-subtle">Pick an area on the left to see its tools.</span>
-            )}
-          </nav>
-
-          {/* Mobile disclosure — Admin Dashboard tab + the full-nav sheet. */}
-          <div className="flex items-center gap-2 py-2.5 md:hidden">
-            <DashboardTab pathname={pathname} />
-            <div className="min-w-0 flex-1">
-              <MobileMenu {...props} />
-            </div>
-          </div>
-        </div>
-
-        <div className="hidden w-64 shrink-0 xl:block" aria-hidden />
-      </div>
     </div>
   )
 }
