@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, Menu, X } from 'lucide-react'
+import { useState } from 'react'
+import { Menu, X } from 'lucide-react'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
 import {
@@ -12,58 +12,34 @@ import {
   canSeeGroup,
   domainForPath,
   groupSections,
-  type AdminLink,
-  type DomainKey,
 } from '@/app/(main)/admin/sections'
 
-// The admin WORKSPACE menubar (Phase 4, ADR-228). One sticky top bar is the entire
-// admin nav — no persistent sidebar, no breadcrumb strip.
+// The admin top bar (ADR-228 addendum 2): PLAIN domain links — no dropdowns, no
+// mega-row. The LEFT navigation column (admin-left-nav.tsx) is the primary nav;
+// this bar is just the domain switcher + wayfinding (active domain highlighted).
 //
-//   Home   Programs ▾   Operations ▾   Growth ▾
-//   ─────────────────────────────────────────────  ← clicking a domain pops open a
-//   Overview · …      COMMUNITY   PEOPLE   …          SECOND ROW under the bar: the
-//                                                     domain's areas as columns.
+//   Home   Programs   Operations   Growth
 //
-// MEGA-MENU, second-row style: a domain click expands a full-width row beneath the
-// bar (click again / Esc / outside / navigate closes it) rather than a floating
-// panel — the columns read like a settings band, not a dropdown. Operations keeps
-// its titled section columns (Community / People / Trust & safety / Site & system);
-// a flat domain splits into balanced columns. Role filtering is reused verbatim
-// from sections.ts (canSeeGroup / groupSections → canUseLink) — gating is never
-// reimplemented here. The active domain (domainForPath) is highlighted, which is
-// the wayfinding the old breadcrumb provided.
+// Role filtering is reused verbatim from sections.ts (canSeeGroup) — gating is
+// never reimplemented here. Mobile keeps the "Admin menu" sheet (the left rail is
+// hidden below lg, so the sheet carries the full nav on phones).
 
 interface AdminNavProps {
   role: CommunityRole
-  /** STAFF axis (web_role, ADR-208) — gates admin/janitor-min destinations. */
   webRole?: WebRole
   staffRole?: StaffRole | null
-}
-
-/** The domains this viewer may enter, each with its role-visible link sections. */
-function useVisibleGroups({ role, webRole = 'none', staffRole = null }: AdminNavProps) {
-  return ADMIN_GROUPS.filter((g) => canSeeGroup(g, role, webRole, staffRole)).map((g) => ({
-    group: g,
-    sections: groupSections(g.key, role, webRole, staffRole),
-  }))
 }
 
 function linkActive(pathname: string, href: string) {
   return href === pathname || pathname.startsWith(`${href}/`)
 }
 
-/** Split a flat link list into balanced mega-menu columns of at most `size`
- *  (a domain with no `section` buckets still reads as columns, not a strip). */
-function chunkLinks(links: AdminLink[], size: number): AdminLink[][] {
-  if (links.length === 0) return []
-  const cols = Math.ceil(links.length / size)
-  const per = Math.ceil(links.length / cols)
-  return Array.from({ length: cols }, (_, i) => links.slice(i * per, (i + 1) * per))
-}
-
 // ── Mobile: a single "Admin menu" sheet ──────────────────────────────────────
-function MobileMenu(props: AdminNavProps) {
-  const groups = useVisibleGroups(props)
+function MobileMenu({ role, webRole = 'none', staffRole = null }: AdminNavProps) {
+  const groups = ADMIN_GROUPS.filter((g) => canSeeGroup(g, role, webRole, staffRole)).map((g) => ({
+    group: g,
+    sections: groupSections(g.key, role, webRole, staffRole),
+  }))
   const pathname = usePathname()
   const activeDomain = domainForPath(pathname)
   const [open, setOpen] = useState(false)
@@ -166,223 +142,62 @@ function MobileMenu(props: AdminNavProps) {
   )
 }
 
-/** The admin workspace top-nav. Sticky under the global header; full-bleed to the
- *  shell's content padding. Desktop = a menubar whose domain items expand a
- *  SECOND ROW of column links beneath the bar; mobile = an "Admin menu" sheet. */
+/** The admin top bar: plain domain links, active domain highlighted. The left
+ *  rail is the deep nav; this just switches domains. */
 export function AdminTopNav(props: AdminNavProps) {
   const pathname = usePathname()
   const activeDomain = domainForPath(pathname)
-  const groups = useVisibleGroups(props)
+  const groups = ADMIN_GROUPS.filter((g) =>
+    canSeeGroup(g, props.role, props.webRole ?? 'none', props.staffRole ?? null),
+  )
   const HomeIcon = ADMIN_HOME.Icon
 
-  // Which domain's second row is open (desktop). Click toggles; Esc / a click
-  // outside the bar / navigating closes. Moving the mouse OFF the bar lingers
-  // (~LINGER_MS), then FADES the row out (~FADE_MS) — re-entering cancels both.
-  const [openKey, setOpenKey] = useState<DomainKey | null>(null)
-  const [fading, setFading] = useState(false)
-  const barRef = useRef<HTMLDivElement>(null)
-  const lingerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const LINGER_MS = 450
-  const FADE_MS = 200
-
-  const cancelClose = () => {
-    if (lingerTimer.current) clearTimeout(lingerTimer.current)
-    if (fadeTimer.current) clearTimeout(fadeTimer.current)
-    lingerTimer.current = null
-    fadeTimer.current = null
-    setFading(false)
-  }
-
-  const closeNow = () => {
-    cancelClose()
-    setOpenKey(null)
-  }
-
-  // Mouse left the bar+row: wait, fade, then close.
-  const scheduleClose = () => {
-    if (!openKey || lingerTimer.current) return
-    lingerTimer.current = setTimeout(() => {
-      setFading(true)
-      fadeTimer.current = setTimeout(closeNow, FADE_MS)
-    }, LINGER_MS)
-  }
-
-  // Clear any pending timers on unmount.
-  useEffect(() => cancelClose, [])
-
-  useEffect(() => {
-    if (!openKey) return
-    const onDoc = (e: MouseEvent) => {
-      if (barRef.current && !barRef.current.contains(e.target as Node)) closeNow()
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeNow()
-    }
-    document.addEventListener('mousedown', onDoc)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDoc)
-      document.removeEventListener('keydown', onKey)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openKey])
-
-  // Navigating anywhere closes the row — derived during render (the React
-  // "adjust state when props change" pattern; no effect, no extra paint).
-  const [lastPath, setLastPath] = useState(pathname)
-  if (lastPath !== pathname) {
-    setLastPath(pathname)
-    if (openKey) setOpenKey(null)
-  }
-
-  const openGroup = groups.find((g) => g.group.key === openKey) ?? null
-
   return (
-    <div
-      ref={barRef}
-      onMouseEnter={cancelClose}
-      onMouseLeave={scheduleClose}
-      className="sticky top-14 z-30 -mx-6 -mt-6 mb-6 border-b border-border bg-surface/95 px-6 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10"
-    >
-      {/* The STRIP spans full-bleed (background + border), but the menu itself runs
-          in a centered column aligned with the three-column frame below (left nav +
-          content + info rail). */}
+    <div className="sticky top-14 z-30 -mx-6 -mt-6 mb-8 border-b border-border bg-surface/95 px-6 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
       <div className="mx-auto w-full max-w-[105rem]">
-      {/* Row 1 — the menubar. */}
-      <nav aria-label="Admin" className="hidden h-12 items-center gap-1 md:flex">
-        <Link
-          href={ADMIN_HOME.href}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-            pathname === '/admin'
-              ? 'bg-surface-elevated text-text'
-              : 'text-muted hover:bg-surface-elevated hover:text-text'
-          }`}
-        >
-          <HomeIcon
-            className={`h-4 w-4 shrink-0 ${pathname === '/admin' ? 'text-primary-strong' : 'text-subtle'}`}
-            aria-hidden
-          />
-          Home
-        </Link>
-
-        {groups.map(({ group }) => {
-          const DomainIcon = group.Icon
-          const isOpen = openKey === group.key
-          const isActive = activeDomain?.key === group.key
-          return (
-            <button
-              key={group.key}
-              type="button"
-              aria-expanded={isOpen}
-              aria-controls={`admin-megarow-${group.key}`}
-              onClick={() => {
-                if (isOpen) closeNow()
-                else {
-                  cancelClose()
-                  setOpenKey(group.key)
-                }
-              }}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-                isActive || isOpen
-                  ? 'bg-surface-elevated text-text'
-                  : 'text-muted hover:bg-surface-elevated hover:text-text'
-              }`}
-            >
-              <DomainIcon
-                className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary-strong' : 'text-subtle'}`}
-                aria-hidden
-              />
-              {group.label}
-              <ChevronDown
-                className={`h-3.5 w-3.5 shrink-0 text-subtle transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                aria-hidden
-              />
-            </button>
-          )
-        })}
-      </nav>
-
-      {/* Row 2 — the mega row: the open domain's areas as columns. */}
-      {openGroup && (
-        <div
-          id={`admin-megarow-${openGroup.group.key}`}
-          className={`hidden border-t border-border py-4 transition-opacity duration-200 md:block ${
-            fading ? 'opacity-0' : 'opacity-100'
-          }`}
-        >
-          <div className="flex flex-wrap gap-x-10 gap-y-4">
-            {/* Lead column: the domain dashboard + its one-line framing. */}
-            <div className="w-64 min-w-0">
+        {/* Desktop: plain links. */}
+        <nav aria-label="Admin" className="hidden h-12 items-center gap-1 md:flex">
+          <Link
+            href={ADMIN_HOME.href}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+              pathname === '/admin'
+                ? 'bg-surface-elevated text-text'
+                : 'text-muted hover:bg-surface-elevated hover:text-text'
+            }`}
+          >
+            <HomeIcon
+              className={`h-4 w-4 shrink-0 ${pathname === '/admin' ? 'text-primary-strong' : 'text-subtle'}`}
+              aria-hidden
+            />
+            Home
+          </Link>
+          {groups.map((group) => {
+            const DomainIcon = group.Icon
+            const isActive = activeDomain?.key === group.key
+            return (
               <Link
-                href={openGroup.group.href}
-                onClick={closeNow}
-                className={`block rounded-xl px-3 py-2 ${
-                  pathname === openGroup.group.href ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
+                key={group.key}
+                href={group.href}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  isActive
+                    ? 'bg-surface-elevated text-text'
+                    : 'text-muted hover:bg-surface-elevated hover:text-text'
                 }`}
               >
-                <span
-                  className={`block text-sm font-bold ${
-                    pathname === openGroup.group.href ? 'text-primary-strong' : 'text-text'
-                  }`}
-                >
-                  {openGroup.group.label} dashboard
-                </span>
-                <span className="mt-0.5 block text-xs leading-snug text-muted">
-                  {openGroup.group.blurb}
-                </span>
+                <DomainIcon
+                  className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary-strong' : 'text-subtle'}`}
+                  aria-hidden
+                />
+                {group.label}
               </Link>
-            </div>
+            )
+          })}
+        </nav>
 
-            {/* Section columns: Operations gets its titled buckets; a flat domain is
-                split into balanced columns of ~6. */}
-            {(openGroup.sections.length > 1
-              ? openGroup.sections
-              : chunkLinks(openGroup.sections[0]?.links ?? [], 6).map((links) => ({
-                  section: '',
-                  links,
-                }))
-            ).map((section, i) => (
-              <div key={section.section || `col-${i}`} className="w-52 min-w-0">
-                {section.section && (
-                  <p className="px-3 pb-1.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
-                    {section.section}
-                  </p>
-                )}
-                {section.links.map((link) => {
-                  const LinkIcon = link.Icon
-                  const isActive = linkActive(pathname, link.href)
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      title={link.desc}
-                      onClick={closeNow}
-                      className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm ${
-                        isActive
-                          ? 'bg-primary-bg font-semibold text-primary-strong'
-                          : 'font-medium text-text hover:bg-surface-elevated'
-                      }`}
-                    >
-                      <LinkIcon
-                        className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary-strong' : 'text-subtle'}`}
-                        aria-hidden
-                      />
-                      <span className="truncate">{link.label}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-            ))}
-          </div>
+        {/* Mobile disclosure. */}
+        <div className="py-2.5 md:hidden">
+          <MobileMenu {...props} />
         </div>
-      )}
-
-      {/* Mobile disclosure. */}
-      <div className="py-2.5 md:hidden">
-        <MobileMenu {...props} />
-      </div>
       </div>
     </div>
   )
