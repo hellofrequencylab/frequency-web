@@ -1,13 +1,9 @@
 import { Suspense } from 'react'
-import {
-  Users, CircleDot, CalendarDays, ShieldAlert, LifeBuoy, SlidersHorizontal,
-  Layers, Building2, Radio, Hash, UserCog, BadgeCheck, Bot, ScrollText,
-  FileText, QrCode, Sparkles, ClipboardList, type LucideIcon,
-} from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
-import { StatCard } from '@/components/ui/stat-card'
+import { DashSection, StatRow, StatItem } from '@/components/admin/dash'
 import { AdminAreaSections } from '@/components/admin/admin-area-grid'
 import { groupSections } from '../sections'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -15,13 +11,14 @@ import { ticketStatusCounts } from '@/lib/support/store'
 import { isOpenStatus } from '@/lib/support/types'
 import { aiEnabledFlag, demoContentExists } from '@/lib/platform-flags'
 
-// Operations — "run the site." Rebuilt (ADR-228 pattern, mirroring the admin HOME
-// dashboard) into a sectioned operator dashboard: a header KPI strip up top, then
-// described sections — Community · People · Trust & safety · System — each a row of
-// drill-down StatCards backed by REAL admin head-counts. The "Areas of focus"
-// navigation map stays at the bottom. Gate: host+ floor (community staff); each
-// linked area keeps its own (often janitor) gate. Heavier per-section sweeps sit
-// behind their own <Suspense> so the shell never blocks (PAGE-FRAMEWORK §5).
+// Operations — "run the site." Restyled onto the ADR-228 dashboard card grammar
+// (mirroring the admin HOME dashboard): a header KPI strip up top (one white,
+// value-first strip), then described sections — Community · People · Trust &
+// safety · System — each a WHITE DashSection card holding a StatRow of value-first
+// StatItems backed by REAL admin head-counts, every drill-down href preserved. The
+// "Areas of focus" navigation map stays at the bottom. Gate: host+ floor (community
+// staff); each linked area keeps its own (often janitor) gate. Heavier per-section
+// sweeps sit behind their own <Suspense> so the shell never blocks (PAGE-FRAMEWORK §5).
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -41,23 +38,23 @@ export default async function OperationsDashboard() {
         </Suspense>
       }
     >
-      <Suspense fallback={<SectionSkeleton title="Community" count={6} />}>
+      <Suspense fallback={<DashSkeleton title="Community" />}>
         <CommunitySection />
       </Suspense>
 
-      <Suspense fallback={<SectionSkeleton title="People" count={3} />}>
+      <Suspense fallback={<DashSkeleton title="People" />}>
         <PeopleSection />
       </Suspense>
 
-      <Suspense fallback={<SectionSkeleton title="Trust & safety" count={5} />}>
+      <Suspense fallback={<DashSkeleton title="Trust & safety" />}>
         <TrustSafetySection />
       </Suspense>
 
-      <Suspense fallback={<SectionSkeleton title="System" count={4} />}>
+      <Suspense fallback={<DashSkeleton title="System" />}>
         <SystemSection />
       </Suspense>
 
-      <AdminSection title="Areas of focus" description="Everything in Operations you can manage.">
+      <AdminSection title="All areas" description="Everything in Operations you can manage.">
         <AdminAreaSections sections={sections} />
       </AdminSection>
     </AdminPage>
@@ -65,7 +62,7 @@ export default async function OperationsDashboard() {
 }
 
 // ── Header KPI strip — the four numbers that frame the domain at a glance.
-// Soft container, pronounced numbers (mirrors the admin HOME HeaderKpis). ─────────
+// One white, value-first strip (mirrors the admin HOME header). ────────────────────
 async function HeaderKpis() {
   const admin = createAdminClient()
   const nowIso = new Date().toISOString()
@@ -82,33 +79,16 @@ async function HeaderKpis() {
   ])
 
   return (
-    <HeaderKpiStrip
-      items={[
-        { label: 'Circles', value: (circles.count ?? 0).toLocaleString(), icon: CircleDot },
-        { label: 'Channels', value: (channels.count ?? 0).toLocaleString(), icon: Hash },
-        { label: 'Events', value: (events.count ?? 0).toLocaleString(), icon: CalendarDays },
-        { label: 'Open reports', value: (reports.count ?? 0).toLocaleString(), icon: ShieldAlert },
-      ]}
-    />
-  )
-}
-
-function HeaderKpiStrip({
-  items,
-}: {
-  items: { label: string; value: React.ReactNode; icon: LucideIcon }[]
-}) {
-  return (
-    <div className="flex flex-wrap items-stretch gap-0.5 rounded-2xl bg-surface-elevated/70 p-1">
-      {items.map((k) => (
-        <div key={k.label} className="min-w-[5.5rem] rounded-xl px-3.5 py-2">
-          <span className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
-            <k.icon className="h-3 w-3 shrink-0" aria-hidden />
-            {k.label}
-          </span>
-          <span className="mt-0.5 block text-xl font-extrabold leading-none tabular-nums text-text">
-            {k.value}
-          </span>
+    <div className="flex divide-x divide-border/60 rounded-2xl border border-border bg-surface px-1 py-2.5 shadow-sm">
+      {[
+        { label: 'Circles', value: (circles.count ?? 0).toLocaleString() },
+        { label: 'Channels', value: (channels.count ?? 0).toLocaleString() },
+        { label: 'Events', value: (events.count ?? 0).toLocaleString() },
+        { label: 'Open reports', value: (reports.count ?? 0).toLocaleString() },
+      ].map((k) => (
+        <div key={k.label} className="px-4">
+          <p className="text-xl font-extrabold leading-none tabular-nums text-text">{k.value}</p>
+          <p className="mt-1 whitespace-nowrap text-xs font-medium text-muted">{k.label}</p>
         </div>
       ))}
     </div>
@@ -117,24 +97,27 @@ function HeaderKpiStrip({
 
 function HeaderKpisSkeleton() {
   return (
-    <div className="flex flex-wrap items-stretch gap-0.5 rounded-2xl bg-surface-elevated/70 p-1">
+    <div className="flex divide-x divide-border/60 rounded-2xl border border-border bg-surface px-1 py-2.5 shadow-sm">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="h-14 min-w-[5.5rem] animate-pulse rounded-xl bg-surface-elevated/60" />
+        <div key={i} className="px-4">
+          <div className="h-5 w-12 animate-pulse rounded bg-surface-elevated" />
+          <div className="mt-1.5 h-3 w-16 animate-pulse rounded bg-surface-elevated/70" />
+        </div>
       ))}
     </div>
   )
 }
 
-// Titled row of pulsing tiles — the per-section Suspense fallback.
-function SectionSkeleton({ title, count }: { title: string; count: number }) {
+// Suspense fallback — a white section card with pulsing content (mirrors HOME).
+function DashSkeleton({ title }: { title: string }) {
   return (
-    <AdminSection title={title}>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className="h-14 animate-pulse rounded-2xl bg-surface-elevated/60" />
-        ))}
+    <DashSection title={title}>
+      <div className="space-y-2.5">
+        <div className="h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
+        <div className="h-4 w-1/2 animate-pulse rounded bg-surface-elevated" />
+        <div className="h-10 animate-pulse rounded-xl bg-surface-elevated/70" />
       </div>
-    </AdminSection>
+    </DashSection>
   )
 }
 
@@ -157,19 +140,19 @@ async function CommunitySection() {
   ])
 
   return (
-    <AdminSection
+    <DashSection
       title="Community"
       description="The shape of the live site — circles, channels, events, and the regions and broadcasts that reach them."
     >
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <StatCard label="Active circles" value={(circles.count ?? 0).toLocaleString()} icon={CircleDot} href="/admin/circles" />
-        <StatCard label="Channels" value={(channels.count ?? 0).toLocaleString()} icon={Hash} href="/admin/channels" />
-        <StatCard label="Upcoming events" value={(events.count ?? 0).toLocaleString()} icon={CalendarDays} href="/admin/events" />
-        <StatCard label="Hubs" value={(hubs.count ?? 0).toLocaleString()} icon={Building2} href="/admin/hubs" />
-        <StatCard label="Nexuses" value={(nexuses.count ?? 0).toLocaleString()} icon={Layers} href="/admin/nexuses" />
-        <StatCard label="Broadcasts" value={(dispatches.count ?? 0).toLocaleString()} icon={Radio} href="/admin/dispatches" />
-      </div>
-    </AdminSection>
+      <StatRow>
+        <StatItem value={(circles.count ?? 0).toLocaleString()} label="Active circles" href="/admin/circles" />
+        <StatItem value={(channels.count ?? 0).toLocaleString()} label="Channels" href="/admin/channels" />
+        <StatItem value={(events.count ?? 0).toLocaleString()} label="Upcoming events" href="/admin/events" />
+        <StatItem value={(hubs.count ?? 0).toLocaleString()} label="Hubs" href="/admin/hubs" />
+        <StatItem value={(nexuses.count ?? 0).toLocaleString()} label="Nexuses" href="/admin/nexuses" />
+        <StatItem value={(dispatches.count ?? 0).toLocaleString()} label="Broadcasts" href="/admin/dispatches" />
+      </StatRow>
+    </DashSection>
   )
 }
 
@@ -188,17 +171,25 @@ async function PeopleSection() {
       .eq('state', 'claimed'),
   ])
 
+  const verifyQueue = pendingPersonas.count ?? 0
+
   return (
-    <AdminSection
+    <DashSection
       title="People"
       description="Active members, the staff team, and partners waiting on verification."
     >
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <StatCard label="Active members" value={(members.count ?? 0).toLocaleString()} icon={Users} href="/admin/members" />
-        <StatCard label="Team members" value={(team.count ?? 0).toLocaleString()} icon={UserCog} href="/admin/roles" />
-        <StatCard label="Verify queue" value={(pendingPersonas.count ?? 0).toLocaleString()} icon={BadgeCheck} href="/admin/personas" />
-      </div>
-    </AdminSection>
+      <StatRow>
+        <StatItem value={(members.count ?? 0).toLocaleString()} label="Active members" href="/admin/members" />
+        <StatItem value={(team.count ?? 0).toLocaleString()} label="Team members" href="/admin/roles" />
+        <StatItem
+          value={verifyQueue.toLocaleString()}
+          label="Verify queue"
+          deltaTone={verifyQueue > 0 ? 'bad' : 'neutral'}
+          delta={verifyQueue > 0 ? 'awaiting verification' : undefined}
+          href="/admin/personas"
+        />
+      </StatRow>
+    </DashSection>
   )
 }
 
@@ -219,20 +210,40 @@ async function TrustSafetySection() {
     (sum, [status, n]) => (isOpenStatus(status as never) ? sum + n : sum),
     0,
   )
+  const reportsOpen = openReports.count ?? 0
+  const actionsPending = pendingActions.count ?? 0
 
   return (
-    <AdminSection
+    <DashSection
       title="Trust & safety"
       description="The live queue — open reports, support tickets, pending AI actions, recent moderation, and the AI master switch."
     >
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard label="Open reports" value={(openReports.count ?? 0).toLocaleString()} icon={ShieldAlert} href="/admin/moderation" />
-        <StatCard label="Open tickets" value={openTickets.toLocaleString()} icon={LifeBuoy} href="/admin/support" />
-        <StatCard label="AI actions · pending" value={(pendingActions.count ?? 0).toLocaleString()} icon={Bot} href="/admin/studio" />
-        <StatCard label="Mod actions · 7d" value={(recentModeration.count ?? 0).toLocaleString()} icon={ScrollText} href="/admin/audit" />
-        <StatCard label="AI controls" value={aiOn ? 'On' : 'Off'} icon={Sparkles} href="/admin/ai" />
-      </div>
-    </AdminSection>
+      <StatRow>
+        <StatItem
+          value={reportsOpen.toLocaleString()}
+          label="Open reports"
+          deltaTone={reportsOpen > 0 ? 'bad' : 'neutral'}
+          delta={reportsOpen > 0 ? 'needs attention' : undefined}
+          href="/admin/moderation"
+        />
+        <StatItem
+          value={openTickets.toLocaleString()}
+          label="Open tickets"
+          deltaTone={openTickets > 0 ? 'bad' : 'neutral'}
+          delta={openTickets > 0 ? 'needs attention' : undefined}
+          href="/admin/support"
+        />
+        <StatItem
+          value={actionsPending.toLocaleString()}
+          label="AI actions · pending"
+          deltaTone={actionsPending > 0 ? 'bad' : 'neutral'}
+          delta={actionsPending > 0 ? 'awaiting review' : undefined}
+          href="/admin/studio"
+        />
+        <StatItem value={(recentModeration.count ?? 0).toLocaleString()} label="Mod actions · 7d" href="/admin/audit" />
+        <StatItem value={aiOn ? 'On' : 'Off'} label="AI controls" href="/admin/ai" />
+      </StatRow>
+    </DashSection>
   )
 }
 
@@ -249,16 +260,16 @@ async function SystemSection() {
   ])
 
   return (
-    <AdminSection
+    <DashSection
       title="System"
       description="The platform keys — published pages, live QR codes, the audit trail, and whether demo content is present."
     >
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Pages" value={(pages.count ?? 0).toLocaleString()} icon={FileText} href="/admin/content" />
-        <StatCard label="Active QR codes" value={(codes.count ?? 0).toLocaleString()} icon={QrCode} href="/admin/qr" />
-        <StatCard label="Audit log · 7d" value={(auditEntries.count ?? 0).toLocaleString()} icon={ClipboardList} href="/admin/audit" />
-        <StatCard label="Demo content" value={hasDemo ? 'Present' : 'None'} icon={SlidersHorizontal} href="/admin/demo" />
-      </div>
-    </AdminSection>
+      <StatRow>
+        <StatItem value={(pages.count ?? 0).toLocaleString()} label="Pages" href="/admin/content" />
+        <StatItem value={(codes.count ?? 0).toLocaleString()} label="Active QR codes" href="/admin/qr" />
+        <StatItem value={(auditEntries.count ?? 0).toLocaleString()} label="Audit log · 7d" href="/admin/audit" />
+        <StatItem value={hasDemo ? 'Present' : 'None'} label="Demo content" href="/admin/demo" />
+      </StatRow>
+    </DashSection>
   )
 }
