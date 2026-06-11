@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { X, BookOpen, ScanLine, Compass, ArrowRight, MapPin, CalendarCheck, CalendarPlus, ContactRound, Ghost } from 'lucide-react'
+import { X, BookOpen, ScanLine, Compass, MapPin, CalendarCheck, CalendarPlus, ContactRound, Ghost } from 'lucide-react'
 import { CaptureBox } from './capture-box'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
@@ -86,36 +86,41 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               </button>
             </div>
 
-            {/* The reader — the hero of this surface. Point your camera at a business
-                card or an event poster; each row spells out the real-world outcome. */}
-            <Link
-              href="/connections/new"
-              onClick={close}
-              className="group mb-4 flex shrink-0 items-center gap-4 overflow-hidden rounded-2xl border border-primary/40 bg-primary-bg/60 p-5 transition-colors hover:border-primary/60 hover:bg-primary-bg/80"
-            >
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary shadow-pop">
-                <ScanLine className="h-7 w-7" aria-hidden />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-base font-bold text-text">Capture a card or poster</span>
-                <span className="mt-1.5 flex items-start gap-1.5">
-                  <ContactRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden />
-                  <span className="min-w-0 flex-1 text-xs leading-relaxed text-muted">
-                    Business card: snaps straight into your contacts, details filled in.
-                  </span>
+            {/* The reader — the hero of this surface. One lead line, then two equal
+                tiles: a card for your contacts, a poster for local events. Vera reads
+                whichever you point at and fills the details in. */}
+            <p className="mb-2.5 flex shrink-0 items-center gap-1.5 px-1 text-xs text-muted">
+              <ScanLine className="h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden />
+              Snap it and Vera fills in the details for you.
+            </p>
+            <div className="mb-4 grid shrink-0 grid-cols-2 gap-3">
+              <Link
+                href="/connections/new"
+                onClick={close}
+                className="group flex flex-col items-start gap-2 rounded-2xl border border-primary/40 bg-primary-bg/60 p-4 transition-colors hover:border-primary/60 hover:bg-primary-bg/80"
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-on-primary shadow-pop">
+                  <ContactRound className="h-6 w-6" aria-hidden />
                 </span>
-                <span className="mt-1 flex items-start gap-1.5">
-                  <CalendarPlus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden />
-                  <span className="min-w-0 flex-1 text-xs leading-relaxed text-muted">
-                    Event poster: becomes an event draft for local events.
-                  </span>
-                  <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 text-3xs uppercase text-subtle">
-                    Soon
-                  </span>
+                <span className="block text-sm font-bold text-text">Upload a card</span>
+                <span className="block text-xs leading-relaxed text-muted">
+                  A business card lands straight in your contacts.
                 </span>
-              </span>
-              <ArrowRight className="h-4 w-4 shrink-0 text-primary-strong transition-transform group-hover:translate-x-0.5" aria-hidden />
-            </Link>
+              </Link>
+              <Link
+                href="/events/scan"
+                onClick={close}
+                className="group flex flex-col items-start gap-2 rounded-2xl border border-primary/40 bg-primary-bg/60 p-4 transition-colors hover:border-primary/60 hover:bg-primary-bg/80"
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-on-primary shadow-pop">
+                  <CalendarPlus className="h-6 w-6" aria-hidden />
+                </span>
+                <span className="block text-sm font-bold text-text">Upload a poster</span>
+                <span className="block text-xs leading-relaxed text-muted">
+                  An event poster becomes a local event draft.
+                </span>
+              </Link>
+            </div>
 
             {/* …or capture by hand */}
             <div className="mb-3 flex shrink-0 items-center gap-3">

@@ -77,7 +77,7 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
   Ranks are `ghost → echo → signal → beacon → conduit → luminary` (`season_rank_enum`;
   renamed 2026 — see docs/NAMING.md; migration `20260613000030`).
 - **Season-end Zap → Gem rollover — flat 5:1 + rank bonus (Rewards Economy v2).**
-  At season end, `reset_season()` (migration `20260614000000`) converts
+  At season end, `reset_season()` (migration `20260614200000`) converts
   `floor(season_zaps / 5)` into Gems **for everyone**, plus a **one-time
   final-rank bonus**:
 

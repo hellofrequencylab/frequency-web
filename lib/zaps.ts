@@ -48,6 +48,11 @@ export const ZAP_AMOUNTS = {
   co_op_pulse: 3,
   welcome_back: 10,
   practice_full_cycle: 50,
+  // Poster events: publishing a town event you captured from a poster (the base,
+  // before the honesty multiplier in lib/events/poster-quality.ts) + the bonus
+  // paid to the poster when an organizer claims it. Both are real-world/outreach.
+  event_posted: 20,
+  event_claim_bonus: 30,
 } as const
 
 /** Zap action for a practice's weight class (the per-log payout driver). */

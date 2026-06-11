@@ -71,6 +71,19 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
   },
+  // Admin reorg Phase 3: the CRM + Marketing operator surfaces moved INTO the admin
+  // address space, and the old /growth launchpad collapsed into the /admin/growth
+  // dashboard. These redirects catch bookmarks and any lingering reference. Temporary
+  // (permanent: false) so the mapping can still evolve without a cached 308 locking it.
+  async redirects() {
+    return [
+      { source: '/crm', destination: '/admin/crm', permanent: false },
+      { source: '/crm/:path*', destination: '/admin/crm/:path*', permanent: false },
+      { source: '/marketing', destination: '/admin/marketing', permanent: false },
+      { source: '/marketing/:path*', destination: '/admin/marketing/:path*', permanent: false },
+      { source: '/growth', destination: '/admin/growth', permanent: false },
+    ]
+  },
   images: {
     // Serve modern formats + responsive sizes via Next's optimizer.
     formats: ["image/avif", "image/webp"],

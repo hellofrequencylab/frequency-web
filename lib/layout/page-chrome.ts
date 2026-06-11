@@ -41,6 +41,8 @@ const FOCUS_PREFIXES = [
 const FOCUS_PATTERNS: RegExp[] = [
   /^\/messages\/.+/, // a DM or room thread (the /messages inbox keeps the rail)
   /^\/events\/new$/, // create an event
+  /^\/events\/scan$/, // capture an event poster (scan-confirm flow)
+  /^\/events\/drafts(\/.+)?$/, // captured-event drafts + the draft editor
   /^\/practices\/[^/]+\/edit$/, // edit a practice
   /^\/connections\/.+/, // a contact editor / new contact (the index keeps the rail)
 ]
@@ -52,6 +54,27 @@ const FOCUS_PATTERNS: RegExp[] = [
 // inline in a single main column, and the community rail frames them on the
 // right. Re-add a prefix here only if a section grows a genuine in-body rail.
 const SCOPED_PREFIXES: string[] = []
+
+// The admin WORKSPACE (Phase 2): under /admin/* the global member LEFT rail is
+// swapped for the admin sidebar (mounted by app/(main)/admin/layout.tsx). This is a
+// SEPARATE axis from the right rail (`railFor` above governs the right rail and is
+// unchanged for admin) — the shell reads BOTH: `railFor` for the right column,
+// `leftRailFor` for the left. Keeping them separate means admin can drop its member
+// rail without losing the global right rail. To swap the left rail for another
+// workspace, add its prefix here — never path-sniff in the shell.
+const LEFT_WORKSPACE_PREFIXES = ['/admin']
+
+export type LeftRail = 'global' | 'none'
+
+/** Whether the global MEMBER left rail frames a page. 'none' = a workspace
+ *  (today: /admin/*) mounts its OWN left nav in its layout and the shell suppresses
+ *  the member rail to avoid a double left rail. */
+export function leftRailFor(pathname: string): LeftRail {
+  const inWorkspace = LEFT_WORKSPACE_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  )
+  return inWorkspace ? 'none' : 'global'
+}
 
 export function railFor(pathname: string): Rail {
   // The profile editor keeps the standard community rail even though it lives under

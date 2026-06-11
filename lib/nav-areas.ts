@@ -95,10 +95,11 @@ export const NAV_AREAS: readonly NavArea[] = [
   // ── Studio → the partner business block (non-admin operator surfaces) ─────────
   // Personal contacts (surface 'personalCrm') folded into the Network hub's
   // "My Contacts" tab (ADR-172) — reached via Community › Network, not a Studio entry.
-  { key: 'crm',             href: '/crm',           label: 'CRM Pipeline',  section: 'Studio', defaultAccess: 'admin', surface: 'businessCrm' },
+  // CRM and Growth Studio moved into the admin address space (Phase 3): CRM now lives
+  // at /admin/crm and the growth launchpad collapsed into the /admin/growth dashboard,
+  // both reached through the admin sidebar's Growth domain — no member-rail entry.
   { key: 'website',         href: '/coming-soon?feature=website',     label: 'Website',       section: 'Studio', defaultAccess: 'admin', surface: 'website', comingSoon: true },
   { key: 'hook-network',    href: '/coming-soon?feature=hook',        label: 'Hook Network',  section: 'Studio', defaultAccess: 'admin', surface: 'hookNetwork', comingSoon: true },
-  { key: 'growth',          href: '/growth',        label: 'Growth Studio', section: 'Studio', defaultAccess: 'admin', staffDomain: 'marketing', surface: 'growthStudio' },
   { key: 'earnings',        href: '/coming-soon?feature=finances',    label: 'Finances',      section: 'Studio', defaultAccess: 'admin', surface: 'earnings', comingSoon: true },
   { key: 'admin-qr',        href: '/admin/qr',      label: 'QR Studio',     section: 'Studio', defaultAccess: 'member', previewBelowAccess: true, surface: 'qrStudio' },
   { key: 'settings',        href: '/settings',      label: 'Settings',      section: 'Studio', defaultAccess: 'member', surface: 'settings' },

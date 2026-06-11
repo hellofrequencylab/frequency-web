@@ -41,7 +41,7 @@
     one-time **final-rank Gem bonus** (Echo 10 / Signal 25 / Beacon 50 /
     Conduit 100 / Luminary 250). This is the Rewards Economy v2 tuning that
     resolved the earlier provisional rank-based ladder (reset_season(),
-    20260614000000).
+    20260614200000).
   - **Gems** — earned from online activity + the Zap rollover; spendable.
   - **Vault Store** = where Gems are spent. **The Vault** = the member treasury
     holding Gems, Zaps, and Awards (Awards = season trophies + achievements).

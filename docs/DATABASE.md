@@ -54,15 +54,15 @@ You" lane — ADR entries 2026-06)
 
 **Gamification**
 `achievements`, `user_achievements`, `streaks`, `challenge_progress`,
-`season_challenges` (+ `is_active` archive flag — ADR-214), `challenge_qr_codes`,
+`season_challenges` (+ `is_active` archive flag — ADR-219), `challenge_qr_codes`,
 `season_trophies`, `seasons`, `quests`,
 `crew_tasks` (+ `circle_id`/`assigned_to`/`claimed_at` — ADR-205), `crew_completions`,
 `gem_config`, `gem_transactions`, `zap_config`, `zap_transactions`, `store_items`
-(+ `season_id`/`expires_at` — ADR-214), `store_redemptions`,
+(+ `season_id`/`expires_at` — ADR-219), `store_redemptions`,
 `reward_grants` (idempotent claim-then-pay — ADR-168/200),
-`practice_streaks` (per-practice consistency + depth cache — ADR-214),
-`witnessed_grants` (peer-granted awards, UNIQUE (season, award, granter) — ADR-214),
-`circle_awards` (circle-level awards: Circle Current banner, Co-op Synchrony — ADR-214).
+`practice_streaks` (per-practice consistency + depth cache — ADR-219),
+`witnessed_grants` (peer-granted awards, UNIQUE (season, award, granter) — ADR-219),
+`circle_awards` (circle-level awards: Circle Current banner, Co-op Synchrony — ADR-219).
 Profiles gained `amplitude` (lifetime XP, accrued only by `after_zap_transaction()`);
 practices gained `weight_class` (the per-log payout driver; `reward_zaps` deprecated);
 nodes gained `city` (admin-entered, for the long-range award).

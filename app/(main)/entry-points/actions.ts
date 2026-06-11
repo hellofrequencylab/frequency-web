@@ -125,7 +125,7 @@ export async function createEntryPoint(input: EntryPointInput): Promise<ActionRe
   }
 
   revalidatePath('/entry-points')
-  revalidatePath('/marketing/funnels')
+  revalidatePath('/admin/marketing/funnels')
   return ok({ id: (data as { id: string }).id })
 }
 
@@ -164,7 +164,7 @@ export async function updateEntryPoint(id: string, input: EntryPointInput): Prom
   if (error) return fail('Could not save changes.')
 
   revalidatePath('/entry-points')
-  revalidatePath('/marketing/funnels')
+  revalidatePath('/admin/marketing/funnels')
   return ok()
 }
 
@@ -179,6 +179,6 @@ export async function deleteEntryPoint(id: string): Promise<ActionResult> {
   if (error) return fail('Could not delete the entry point.')
 
   revalidatePath('/entry-points')
-  revalidatePath('/marketing/funnels')
+  revalidatePath('/admin/marketing/funnels')
   return ok()
 }
