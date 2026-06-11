@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { X, BookOpen, Zap } from 'lucide-react'
 import { CaptureBox } from './capture-box'
-import { EventArt, ContactArt, PartnersArt, CheckInArt, GhostArt, OnAirArt } from './zap-menu-art'
+import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt } from './zap-menu-art'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
 
@@ -117,14 +117,14 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               placeholder="Share something on your journey…"
             />
 
-            {/* The tools — every way to put energy into the world, one soft grid. */}
+            {/* The tools — row one is live, row two is on the way. */}
             <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
               <ZapTile href="/events/scan" onClick={close} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
               <ZapTile href="/connections/new" onClick={close} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
-              <ZapTile href="/partners" onClick={close} label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
-              <ZapTile href="/events" onClick={close} label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub="At the door" />
+              <ZapTile href="/codes" onClick={close} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />
+              <ZapTile soon label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub="At the door" />
               <ZapTile soon label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
-              <ZapTile href="/on-air" onClick={close} label="On Air" zaps="+8–15" art={<OnAirArt className="block h-12" />} sub="Time a practice" />
+              <ZapTile soon label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
             </div>
 
             <Link
