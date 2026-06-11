@@ -64,7 +64,7 @@ export function AdminTemplate({
         description={description}
         actions={actions}
       />
-      <div className="space-y-6">{children}</div>
+      <div className="space-y-8 lg:space-y-10">{children}</div>
     </div>
   )
 }
@@ -83,7 +83,7 @@ export function AdminSection({
   children: React.ReactNode
 }) {
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
       {(title || actions) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">

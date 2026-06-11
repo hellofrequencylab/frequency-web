@@ -99,13 +99,13 @@ export function ChartCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4">
+    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5">
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-subtle">{title}</p>
         {delta && <p className="text-xs font-semibold text-success">{delta}</p>}
       </div>
       {value && <p className="mt-1 text-2xl font-bold text-text">{value}</p>}
-      <div className="mt-2 min-h-16 flex-1">{children}</div>
+      <div className="mt-3 min-h-16 flex-1">{children}</div>
       {caption && <p className="mt-1.5 text-2xs text-subtle">{caption}</p>}
     </div>
   )
