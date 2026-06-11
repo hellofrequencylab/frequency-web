@@ -10,6 +10,9 @@ import {
   deleteDispatch,
 } from '../actions'
 import { Button } from '@/components/ui/button'
+import { StatusChip, type StatusTone, Banner } from '@/components/admin/status'
+import { EmptyState } from '@/components/ui/empty-state'
+import { DangerModal } from '@/components/admin/danger-modal'
 
 type DispatchType = 'post' | 'poll' | 'challenge' | 'article'
 
@@ -34,11 +37,12 @@ const TYPE_LABELS: Record<DispatchType, string> = {
   article:   'Article',
 }
 
-const TYPE_COLORS: Record<DispatchType, string> = {
-  post:      'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle',
-  poll:      'bg-signal-bg text-signal-strong',
-  challenge: 'bg-warning-bg text-warning dark:bg-warning-bg dark:text-warning',
-  article:   'bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong',
+// Type → the shared StatusChip vocabulary (retired the local TYPE_COLORS dict).
+const TYPE_TONE: Record<DispatchType, StatusTone> = {
+  post:      'neutral',
+  poll:      'info',
+  challenge: 'warning',
+  article:   'info',
 }
 
 type CommunityRole = 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
@@ -304,9 +308,9 @@ function MarkdownPreview({ text }: { text: string }) {
   return <pre className="whitespace-pre-wrap font-sans text-sm">{text}</pre>
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  draft:     'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle',
-  published: 'bg-success-bg text-success dark:bg-success-bg',
+const STATUS_TONE: Record<string, StatusTone> = {
+  draft: 'neutral',
+  published: 'success',
 }
 
 export function DispatchesClient({
@@ -332,6 +336,7 @@ export function DispatchesClient({
   )
   const [isPending,   startTransition] = useTransition()
   const [actionError, setActionError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<DispatchRow | null>(null)
 
   function handleUpdate(id: string, fd: FormData) {
     setActionError(null)
@@ -362,7 +367,6 @@ export function DispatchesClient({
   }
 
   function handleDelete(id: string) {
-    if (!confirm('Delete this dispatch permanently?')) return
     setActionError(null)
     startTransition(async () => {
       try { await deleteDispatch(id) }
@@ -373,15 +377,19 @@ export function DispatchesClient({
   return (
     <div>
       {actionError && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg border border-danger bg-danger-bg/30 px-4 py-3 text-sm text-danger">
-          <span className="shrink-0 font-semibold">Error:</span>
-          <span className="flex-1">{actionError}</span>
-          <button onClick={() => setActionError(null)} className="shrink-0 text-danger hover:text-danger transition-colors">✕</button>
+        <div className="mb-4">
+          <Banner tone="critical" title="That action could not be completed" dismissible>
+            {actionError}
+          </Banner>
         </div>
       )}
       <div className="space-y-2">
         {dispatches.length === 0 && (
-          <p className="text-sm text-subtle py-8 text-center">No dispatches yet.</p>
+          <EmptyState
+            variant="first-use"
+            title="No broadcasts yet"
+            description="Publish an announcement to reach your people. It appears on the Broadcasts page and drops into the main feed."
+          />
         )}
 
         {dispatches.map(d => (
@@ -404,17 +412,17 @@ export function DispatchesClient({
                     >
                       {d.title}
                     </Link>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium capitalize ${STATUS_COLOR[d.status]}`}>
-                      {d.status}
-                    </span>
+                    <StatusChip tone={STATUS_TONE[d.status] ?? 'neutral'} size="sm">
+                      <span className="capitalize">{d.status}</span>
+                    </StatusChip>
                     {d.dispatch_type && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${TYPE_COLORS[d.dispatch_type]}`}>
+                      <StatusChip tone={TYPE_TONE[d.dispatch_type]} size="sm">
                         {TYPE_LABELS[d.dispatch_type]}
-                      </span>
+                      </StatusChip>
                     )}
-                    <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium capitalize">
-                      → {d.audience_scope}
-                    </span>
+                    <StatusChip tone="neutral" size="sm">
+                      <span className="capitalize">→ {d.audience_scope}</span>
+                    </StatusChip>
                   </div>
                   {d.excerpt && (
                     <p className="text-xs text-subtle line-clamp-1">{d.excerpt}</p>
@@ -455,13 +463,13 @@ export function DispatchesClient({
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => handleDelete(d.id)}
+                    onClick={() => setConfirmDelete(d)}
                     disabled={isPending}
-                    className="p-1.5 rounded-lg text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
+                    className="p-1.5 rounded-lg text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors motion-reduce:transition-none"
                     aria-label="Delete"
                     title="Delete"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3.5 h-3.5" aria-hidden />
                   </button>
                 </div>
               </div>
@@ -469,6 +477,21 @@ export function DispatchesClient({
           </div>
         ))}
       </div>
+
+      <DangerModal
+        open={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        title="Delete this broadcast?"
+        body={
+          <>
+            Deleting <span className="font-semibold text-text">{confirmDelete?.title}</span> removes it permanently. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete broadcast"
+        onConfirm={() => {
+          if (confirmDelete) handleDelete(confirmDelete.id)
+        }}
+      />
     </div>
   )
 }
