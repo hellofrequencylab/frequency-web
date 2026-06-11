@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import { Briefcase, UserPlus, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { setStaffRole, addStaffMember } from './actions'
 import {
   STAFF_ROLES, STAFF_ROLE_LABEL, STAFF_ROLE_BLURB, type StaffRole,
@@ -111,15 +112,15 @@ export function StaffRoleManager({ members }: { members: StaffMemberRow[] }) {
             <option key={r} value={r}>{STAFF_ROLE_LABEL[r]}</option>
           ))}
         </select>
-        <button
+        <Button
           type="button"
           onClick={add}
           disabled={!handle.trim() || adding}
-          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="shrink-0 shadow-sm"
         >
           <UserPlus className="h-4 w-4" />
           {adding ? 'Adding…' : 'Add'}
-        </button>
+        </Button>
       </div>
 
       {/* Current team */}

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Plus, UserPlus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { addMembersToCircle, addCircle } from './actions'
 
 type DemoCircle = { id: string; name: string; memberCount: number; channel: string | null }
@@ -77,7 +78,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
                 className={`w-20 ${field}`}
               />
             </label>
-            <button
+            <Button
               type="button"
               disabled={pending || !memberCircle}
               onClick={() =>
@@ -86,11 +87,10 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
                   `Added ${memberCount} member${memberCount === 1 ? '' : 's'}.`,
                 )
               }
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
               Add members
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -133,7 +133,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
                 className={`w-20 ${field}`}
               />
             </label>
-            <button
+            <Button
               type="button"
               disabled={pending || !circleName.trim()}
               onClick={() =>
@@ -145,11 +145,10 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
                   `Spun up "${circleName.trim()}" with ${circleSize} members.`,
                 )
               }
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Spin up circle
-            </button>
+            </Button>
           </div>
         </div>
       </div>
