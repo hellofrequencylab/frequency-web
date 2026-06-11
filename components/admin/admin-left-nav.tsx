@@ -100,7 +100,7 @@ export function AdminLeftNav({ role, webRole = 'none', staffRole = null }: Admin
         {groupSections(activeDomain.key, role, webRole, staffRole).map((section, i) => (
           <div key={section.section || `flat-${i}`} className="space-y-0.5">
             {section.section && (
-              <p className="px-3 pb-1 pt-1 text-3xs font-semibold uppercase tracking-wider text-subtle">
+              <p className="pb-1 pl-[2.625rem] pr-3 pt-1 text-3xs font-semibold uppercase tracking-wider text-subtle">
                 {section.section}
               </p>
             )}
