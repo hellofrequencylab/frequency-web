@@ -3,7 +3,7 @@ title: Practices, choose, do, log
 description: Adopt a practice or follow your circle's, then log it each day to earn Zaps and build your streak.
 category: getting-started
 order: 3
-updated: 2026-06-10
+updated: 2026-06-11
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -48,8 +48,8 @@ You can shape practices, not just pick them:
   yours? Hit **Customize** to make your own private copy and edit it freely. The
   original stays exactly as it was for everyone else.
 
-(Editing covers the content and cadence; the Zaps a practice rewards are set by the
-team so the game stays fair.)
+(Editing covers the content and cadence; the weight a practice carries, and so the
+Zaps it rewards, is set by the team so the game stays fair.)
 
 ## Claim a starter template
 
@@ -101,7 +101,7 @@ thousands:
 
 ## Rewards vary by practice
 
-Most practices earn the standard Zaps when you log them, but some reward a little
-more. A cold plunge or a dawn surf asks more of you, so it gives back more. Each
-practice shows its reward (e.g. "+20 Zaps · streak +1") so you know what logging it
-is worth before you commit.
+Every practice has a weight: **light (8 Zaps)**, **standard (12)**, or **heavy
+(15)** per log. A cold plunge or a dawn surf asks more of you, so it gives back
+more. Each practice page shows its reward up front, so you know what logging it is
+worth before you commit.
