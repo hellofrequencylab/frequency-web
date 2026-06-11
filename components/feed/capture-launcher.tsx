@@ -119,7 +119,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             />
 
             {/* The tools — Mindless leads (the daily ritual outranks the captures),
-                then the live rows (Partners is the last holdout). */}
+                then the live rows. Every tile earns (ADR-236). */}
             <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
               <Link
                 href="/on-air"
@@ -138,7 +138,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               <ZapTile href="/codes" onClick={close} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />
               <ZapTile href="/scan?hint=checkin" onClick={close} label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub="Scan at the door" />
               <ZapTile href="/scan?hint=node" onClick={close} label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
-              <ZapTile soon label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
+              <ZapTile href="/partners" onClick={close} label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
             </div>
 
             <Link

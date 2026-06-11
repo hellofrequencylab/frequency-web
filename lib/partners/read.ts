@@ -91,3 +91,61 @@ export async function getPartnerView(slug: string): Promise<PartnerDetail | null
     })),
   }
 }
+
+export interface LiveOffer extends PartnerOffer {
+  partner: { slug: string; name: string; city: string | null }
+  /** ISO timestamp of the viewer's redemption, when they've unlocked it. */
+  redeemedAt: string | null
+}
+
+/** Every live offer across active partners, offers-first (the Zap menu's
+ *  Partners surface, ADR-236), with the viewer's unlocked state merged in.
+ *  A redemption with a null offer_id (plaque tapped before offers existed)
+ *  counts for the partner's current offer. */
+export async function listLiveOffers(profileId: string | null): Promise<LiveOffer[]> {
+  const client = db()
+  const nowIso = new Date().toISOString()
+  const { data: offers } = await client
+    .from('partner_offers')
+    .select('id, title, description, member_terms, valid_until, partner_id, partners!partner_id ( slug, name, city, status )')
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+
+  type Row = {
+    id: string
+    title: string
+    description: string | null
+    member_terms: string | null
+    valid_until: string | null
+    partner_id: string
+    partners: { slug: string; name: string; city: string | null; status: string } | null
+  }
+  const live = ((offers ?? []) as unknown as Row[]).filter(
+    (o) =>
+      o.partners?.status === 'active' &&
+      (!o.valid_until || o.valid_until >= nowIso),
+  )
+
+  const mineByOffer = new Map<string, string>()
+  const mineByPartner = new Map<string, string>()
+  if (profileId && live.length > 0) {
+    const { data: mine } = await client
+      .from('partner_redemptions')
+      .select('offer_id, partner_id, redeemed_at')
+      .eq('profile_id', profileId)
+    for (const r of (mine ?? []) as { offer_id: string | null; partner_id: string; redeemed_at: string }[]) {
+      if (r.offer_id) mineByOffer.set(r.offer_id, r.redeemed_at)
+      else mineByPartner.set(r.partner_id, r.redeemed_at)
+    }
+  }
+
+  return live.map((o) => ({
+    id: o.id,
+    title: o.title,
+    description: o.description,
+    memberTerms: o.member_terms,
+    validUntil: o.valid_until,
+    partner: { slug: o.partners!.slug, name: o.partners!.name, city: o.partners!.city },
+    redeemedAt: mineByOffer.get(o.id) ?? mineByPartner.get(o.partner_id) ?? null,
+  }))
+}

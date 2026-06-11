@@ -25,6 +25,7 @@ type ScanState =
 const HINT_COPY: Record<string, { title: string; line: string }> = {
   checkin: { title: 'Check in', line: 'Point at the event code at the door.' },
   node: { title: 'Ghost Node', line: 'Found one? Point at the node to capture it.' },
+  partner: { title: 'Partners', line: 'Point at the partner\u2019s plaque or code.' },
   default: { title: 'Scan', line: 'Point at any Frequency code.' },
 }
 
