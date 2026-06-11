@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { X, BookOpen, Zap } from 'lucide-react'
+import { X, BookOpen, Zap, ChevronRight } from 'lucide-react'
 import { CaptureBox } from './capture-box'
-import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt } from './zap-menu-art'
+import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, OnAirArt } from './zap-menu-art'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
 
@@ -126,6 +126,22 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               <ZapTile soon label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
               <ZapTile soon label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
             </div>
+
+            {/* On Air — not a capture, a sit: the timer app gets its own
+                full-width door under the tools (owner ask: the menu must
+                always carry a path to On Air). */}
+            <Link
+              href="/on-air"
+              onClick={close}
+              className="mt-2.5 flex shrink-0 items-center gap-3 rounded-2xl border border-primary/30 bg-primary-bg/40 p-3 transition-all hover:border-primary/60 hover:bg-primary-bg/70 active:scale-[0.99]"
+            >
+              <OnAirArt className="block h-12 shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-text">On Air</span>
+                <span className="block text-2xs leading-snug text-subtle">Time a practice</span>
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+            </Link>
 
             <Link
               href="/journal"
