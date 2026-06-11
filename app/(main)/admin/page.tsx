@@ -16,7 +16,7 @@ import { StatusBadge } from '@/components/groups/status-badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { MemberManager, type MemberItem } from './member-manager'
 import { ADMIN_GROUPS, type DomainKey } from './sections'
-import { DASH_ORDER_COOKIE, sanitizeDashOrder, type DashSectionId } from './dash-sections'
+import { dashCookie, sanitizeDashOrder } from './dash-sections'
 import { OPEN_STATUSES } from '@/lib/support/types'
 import { isJanitor } from '@/lib/core/roles'
 import type { CommunityRole } from '@/lib/core/roles'
@@ -111,8 +111,8 @@ export default async function AdminPageView() {
 
   // The operator's saved section order (the page-admin dock writes the cookie) and
   // the sections it arranges. Vera's read leads by default as the exec summary.
-  const sectionOrder = sanitizeDashOrder((await cookies()).get(DASH_ORDER_COOKIE)?.value)
-  const janitorSections: Record<DashSectionId, React.ReactNode> = {
+  const sectionOrder = sanitizeDashOrder('home', (await cookies()).get(dashCookie('home'))?.value)
+  const janitorSections: Record<string, React.ReactNode> = {
     vera: (
       <Suspense fallback={<DashSkeleton title="Vera's read" />}>
         <VeraReadSection />

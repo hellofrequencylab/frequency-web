@@ -1,5 +1,4 @@
 import { Suspense } from 'react'
-import { cookies } from 'next/headers'
 import { requireAdminFloor } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminDashboardTab, AdminMobileNav } from '@/components/admin/admin-top-nav'
@@ -9,7 +8,6 @@ import { AdminInfoRail } from '@/components/admin/admin-info-rail'
 import { AdminProfileCard } from '@/components/admin/admin-profile-card'
 import { AdminPageDock } from '@/components/admin/admin-page-dock'
 import { AdminFooter } from '@/components/admin/admin-footer'
-import { DASH_ORDER_COOKIE, sanitizeDashOrder } from './dash-sections'
 import type { ProfileIdentity } from '@/lib/types/profile'
 
 // Admin route group. The guard is the single entry gate (host+); a viewer without
@@ -29,17 +27,13 @@ import type { ProfileIdentity } from '@/lib/types/profile'
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { profileId, role, webRole, staffRole } = await requireAdminFloor()
 
-  // The operator's identity (bottom-left card) + their saved Home section order
-  // (bottom-right dock). One cheap row read; the cookie is already in the request.
-  const [{ data: identity }, jar] = await Promise.all([
-    createAdminClient()
-      .from('profiles')
-      .select('display_name, handle, avatar_url')
-      .eq('id', profileId)
-      .single(),
-    cookies(),
-  ])
-  const dashOrder = sanitizeDashOrder(jar.get(DASH_ORDER_COOKIE)?.value)
+  // The operator's identity for the bottom-left card. One cheap row read. (The
+  // bottom-right dock's section sorter reads its per-scope order client-side.)
+  const { data: identity } = await createAdminClient()
+    .from('profiles')
+    .select('display_name, handle, avatar_url')
+    .eq('id', profileId)
+    .single()
 
   // The corner tabs share one canvas skin: flush to the bottom edge, rounded on top,
   // hairline outline, canvas-colored (no solid panel) with a soft blur over content.
@@ -95,7 +89,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       )}
       <div className={`fixed bottom-0 right-3 z-40 hidden w-72 lg:block ${cornerTab}`}>
-        <AdminPageDock role={role} webRole={webRole} staffRole={staffRole} initialOrder={dashOrder} />
+        <AdminPageDock role={role} webRole={webRole} staffRole={staffRole} />
       </div>
 
       <AdminFooter role={role} webRole={webRole} staffRole={staffRole} />
