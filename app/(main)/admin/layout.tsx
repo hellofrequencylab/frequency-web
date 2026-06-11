@@ -4,7 +4,6 @@ import { AdminTopNav } from '@/components/admin/admin-top-nav'
 import { AdminLeftNav } from '@/components/admin/admin-left-nav'
 import { AdminInfoRail } from '@/components/admin/admin-info-rail'
 import { AdminFooter } from '@/components/admin/admin-footer'
-import { NotOnAdminHome } from '@/components/admin/not-on-admin-home'
 
 // Admin route group. The guard is the single entry gate (host+); a viewer without
 // access is redirected home (logged-out → '/', insufficient role → '/feed') rather
@@ -37,17 +36,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {/* The page. */}
         <main className="min-w-0 flex-1">{children}</main>
 
-        {/* Info right — live signal on INTERIOR pages only. The Home dashboard owns
-            these numbers on-page, so the rail there duplicated it 1:1. */}
-        <NotOnAdminHome>
-          <aside className="hidden w-64 shrink-0 xl:block">
-            <div className="sticky top-[6.5rem] max-h-[calc(100vh-7.5rem)] overflow-y-auto pb-6">
-              <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl border border-border bg-surface" />}>
-                <AdminInfoRail />
-              </Suspense>
-            </div>
-          </aside>
-        </NotOnAdminHome>
+        {/* Info right — live signal on every admin page (the owner wants the rail
+            on Home too; the page body avoids duplicating its lists instead). */}
+        <aside className="hidden w-64 shrink-0 xl:block">
+          <div className="sticky top-[6.5rem] max-h-[calc(100vh-7.5rem)] overflow-y-auto pb-6">
+            <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl border border-border bg-surface" />}>
+              <AdminInfoRail />
+            </Suspense>
+          </div>
+        </aside>
       </div>
 
       <AdminFooter role={role} webRole={webRole} staffRole={staffRole} />
