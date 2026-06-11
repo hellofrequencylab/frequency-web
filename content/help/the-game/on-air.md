@@ -33,6 +33,12 @@ not the clock.
 - **Box**: four counts in, hold, out, hold. Steady under pressure.
 - **Coherent**: five and a half in, five and a half out. The long-haul rhythm.
 - **4-7-8**: long exhale. For winding down.
+- **Custom**: set your own counts with three sliders, three to eight seconds a
+  phase. Skip the hold entirely if that suits your body better.
+
+Want sound or touch instead of watching the screen? Turn on the soft **bell** (it
+rings at each phase change, or each minute on the plain timer) or **vibration**
+under Cues. Both stay off unless you choose them, and your choice is remembered.
 
 Follow the rings: they grow when you breathe in, rest while you hold, and settle
 as you let go.
