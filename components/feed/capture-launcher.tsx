@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { X, BookOpen, ScanLine, Compass, MapPin, CalendarCheck, CalendarPlus, ContactRound, Ghost } from 'lucide-react'
+import { X, BookOpen, Zap } from 'lucide-react'
 import { CaptureBox } from './capture-box'
+import { EventArt, ContactArt, PartnersArt, CheckInArt, GhostArt, OnAirArt } from './zap-menu-art'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
 
@@ -16,8 +17,25 @@ type Mode = 'post' | 'note' | 'photo' | 'contact'
 export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<Mode>('post')
+  // Vera's live line: a static fallback renders instantly; the cheap API
+  // (today's cached Dispatch, else a streak template) swaps in when it lands.
+  const [veraLine, setVeraLine] = useState<string | null>(null)
 
   const close = useCallback(() => setOpen(false), [])
+
+  useEffect(() => {
+    if (!open || veraLine) return
+    let on = true
+    fetch('/api/zap-prompt')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (on && d?.line) setVeraLine(d.line)
+      })
+      .catch(() => {})
+    return () => {
+      on = false
+    }
+  }, [open, veraLine])
 
   // The centre-nav button (and anything else) opens the modal via a window event,
   // optionally requesting a starting mode.
@@ -64,16 +82,20 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[90vh] sm:max-w-md sm:rounded-3xl sm:border"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
-            {/* Header — quest-framed: this is the player catching something real from
-                the world, an expression of the Quest they're on. */}
-            <div className="mb-3 flex shrink-0 items-start justify-between gap-2 px-1 pt-[max(0px,env(safe-area-inset-top))]">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
-                  <Compass className="h-5 w-5" aria-hidden />
+            {/* Header — the Zap menu: where the interactive energy starts.
+                Vera's live line reacts to the member's day (streak, next step);
+                it renders instantly from a fallback and swaps when the cheap
+                cached line arrives. */}
+            <div className="mb-4 flex shrink-0 items-start justify-between gap-2 px-1 pt-[max(0px,env(safe-area-inset-top))]">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+                  <Zap className="h-5 w-5 fill-primary-strong/20" aria-hidden />
                 </span>
                 <div className="min-w-0">
                   <p className="text-base font-bold text-text">Capture a moment</p>
-                  <p className="text-xs text-muted">A piece of your Quest, caught from real life.</p>
+                  <p className="text-xs leading-relaxed text-muted">
+                    {veraLine ?? 'Catch something real from the day.'}
+                  </p>
                 </div>
               </div>
               <button
@@ -86,102 +108,81 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               </button>
             </div>
 
-            {/* The reader — the hero of this surface. One lead line, then two equal
-                tiles: a card for your contacts, a poster for local events. Vera reads
-                whichever you point at and fills the details in. */}
-            <p className="mb-2.5 flex shrink-0 items-center gap-1.5 px-1 text-xs text-muted">
-              <ScanLine className="h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden />
-              Snap it and Vera fills in the details for you.
-            </p>
-            <div className="mb-4 grid shrink-0 grid-cols-2 gap-3">
-              <Link
-                href="/connections/new"
-                onClick={close}
-                className="group flex flex-col items-start gap-2 rounded-2xl border border-primary/40 bg-primary-bg/60 p-4 transition-colors hover:border-primary/60 hover:bg-primary-bg/80"
-              >
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-on-primary shadow-pop">
-                  <ContactRound className="h-6 w-6" aria-hidden />
-                </span>
-                <span className="block text-sm font-bold text-text">Upload a card</span>
-                <span className="block text-xs leading-relaxed text-muted">
-                  A business card lands straight in your contacts.
-                </span>
-              </Link>
-              <Link
-                href="/events/scan"
-                onClick={close}
-                className="group flex flex-col items-start gap-2 rounded-2xl border border-primary/40 bg-primary-bg/60 p-4 transition-colors hover:border-primary/60 hover:bg-primary-bg/80"
-              >
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-on-primary shadow-pop">
-                  <CalendarPlus className="h-6 w-6" aria-hidden />
-                </span>
-                <span className="block text-sm font-bold text-text">Upload a poster</span>
-                <span className="block text-xs leading-relaxed text-muted">
-                  An event poster becomes a local event draft.
-                </span>
-              </Link>
-            </div>
-
-            {/* …or capture by hand */}
-            <div className="mb-3 flex shrink-0 items-center gap-3">
-              <span className="h-px flex-1 bg-border" />
-              <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">or capture by hand</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-
-            {/* The blip — this page is about logging real life, not posting online. */}
-            <p className="mb-3 shrink-0 px-1 text-xs leading-relaxed text-muted">
-              This is your log of real life: who you met, where you showed up, what actually
-              happened. Catch it while it&rsquo;s fresh.
-            </p>
-
+            {/* The prompt box — sharing stays the zero-tap action. */}
             <CaptureBox
               key={mode}
               scopeId={scopeId}
               visibility="public"
               defaultMode={mode}
-              placeholder="What happened out there?"
+              placeholder="Share something on your journey…"
             />
 
-            {/* Coming soon — the next real-world capture types, visible but inert so
-                members can see where this surface is headed. */}
-            <div className="mt-4 shrink-0">
-              <p className="mb-2 px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Coming soon</p>
-              <div className="grid grid-cols-1 gap-2">
-                {[
-                  { Icon: MapPin, label: 'Local check-in' },
-                  { Icon: CalendarCheck, label: 'Event check-in' },
-                  { Icon: Ghost, label: 'Capture a Ghost Node' },
-                ].map(({ Icon, label }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    disabled
-                    aria-disabled
-                    className="flex cursor-not-allowed items-center gap-3 rounded-2xl border border-dashed border-border bg-surface/50 p-3 text-left opacity-60"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-elevated text-subtle">
-                      <Icon className="h-5 w-5" aria-hidden />
-                    </span>
-                    <span className="min-w-0 flex-1 text-sm font-semibold text-muted">{label}</span>
-                    <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide text-subtle">
-                      Soon
-                    </span>
-                  </button>
-                ))}
-              </div>
+            {/* The tools — every way to put energy into the world, one soft grid. */}
+            <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
+              <ZapTile href="/events/scan" onClick={close} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
+              <ZapTile href="/connections/new" onClick={close} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
+              <ZapTile href="/partners" onClick={close} label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
+              <ZapTile href="/events" onClick={close} label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub="At the door" />
+              <ZapTile soon label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
+              <ZapTile href="/on-air" onClick={close} label="On Air" zaps="+8–15" art={<OnAirArt className="block h-12" />} sub="Time a practice" />
             </div>
 
             <Link
               href="/journal"
               onClick={close}
-              className="mt-3 flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="mt-4 flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
-              <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your journal
+              <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your log
             </Link>
           </div>
         </div>
       )}
     </>
+  )
+}
+
+// One tool tile: art over a clean label, a soft wash, a quiet zap chip when the
+// act pays. Big tap target, gentle press. `soon` renders the same shape inert.
+function ZapTile({
+  href,
+  onClick,
+  label,
+  sub,
+  zaps,
+  art,
+  soon = false,
+}: {
+  href?: string
+  onClick?: () => void
+  label: string
+  sub: string
+  zaps?: string
+  art: React.ReactNode
+  soon?: boolean
+}) {
+  const inner = (
+    <>
+      <span className="flex h-12 w-full items-center justify-center">{art}</span>
+      <span className="mt-1.5 block text-sm font-bold text-text">{label}</span>
+      <span className="block text-2xs leading-snug text-subtle">{soon ? 'Soon' : sub}</span>
+      {zaps && (
+        <span className="mt-1 inline-flex items-center gap-0.5 rounded-full bg-primary-bg px-1.5 py-0.5 text-3xs font-bold text-primary-strong">
+          <Zap className="h-2.5 w-2.5" /> {zaps}
+        </span>
+      )}
+    </>
+  )
+  const cls =
+    'flex flex-col items-center rounded-2xl border p-3 text-center transition-all ' +
+    (soon
+      ? 'cursor-default border-dashed border-border bg-surface/50 opacity-60'
+      : 'border-primary/30 bg-primary-bg/40 hover:border-primary/60 hover:bg-primary-bg/70 active:scale-[0.97]')
+  if (soon || !href) {
+    return <div className={cls}>{inner}</div>
+  }
+  return (
+    <Link href={href} onClick={onClick} className={cls}>
+      {inner}
+    </Link>
   )
 }

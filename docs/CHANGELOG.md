@@ -27,6 +27,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **The Zap button**: the center button is now the home of everything that earns.
+  One tap opens your tools: share something on your journey, snap an event poster
+  or a business card, find partner rewards, check in at a gathering, or go On Air,
+  with a live line from Vera reading where your streak stands. Your log lives at
+  the bottom.
 - **On Air, the practice timer**: a quiet little app inside The Quest. Pick a
   practice, go on air, and follow the breathing rings (Box, Coherent, or 4-7-8) or
   a plain countdown, or set your own pace with the **Custom** sliders; an optional
