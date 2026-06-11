@@ -11,11 +11,12 @@ import { ProfileFeed } from '@/components/feed/profile-feed'
 import { ProfilePosts } from '@/components/feed/profile-posts'
 import { ProfileTabs, type ProfileTab } from './profile-tabs'
 import { getInitials } from '@/lib/utils'
-import { isEndorsed } from '@/lib/season-ranks'
+import { isEndorsed, rankProgress, seasonRankStyle } from '@/lib/season-ranks'
+import { StandingTiles } from '@/components/gamification/standing-tiles'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Gem, Users, MapPin, Settings, Trophy, Star, Flame, Contact, Heart } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Users, MapPin, Settings, Trophy, Star, Contact, Heart } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
@@ -39,28 +40,6 @@ import { PrivateContactPanel } from '@/components/connections/private-contact-pa
 import { PracticeShelf } from '@/components/profile/practice-shelf'
 import { GiveAwardButton } from './give-award-button'
 import { giveableAwards } from './award-actions'
-
-const RANK_TIERS = [
-  { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-border-strong' },
-  { name: 'Spark',    min: 50,   cls: 'bg-warning-bg text-warning',   bar: 'bg-primary' },
-  { name: 'Flame',    min: 150,  cls: 'bg-warning-bg text-warning', bar: 'bg-primary' },
-  { name: 'Blaze',    min: 400,  cls: 'bg-danger-bg text-danger',       bar: 'bg-danger' },
-  { name: 'Inferno',  min: 1000, cls: 'bg-signal-bg text-signal-strong', bar: 'bg-signal' },
-]
-
-function getRank(zaps: number) {
-  for (let i = RANK_TIERS.length - 1; i >= 0; i--) {
-    if (zaps >= RANK_TIERS[i].min) return RANK_TIERS[i]
-  }
-  return RANK_TIERS[0]
-}
-
-function getNextRank(zaps: number) {
-  for (const tier of RANK_TIERS) {
-    if (zaps < tier.min) return tier
-  }
-  return null
-}
 
 export default async function ProfilePage({
   params,
@@ -213,9 +192,9 @@ export default async function ProfilePage({
   const circles = ((circlesResult.data ?? []) as unknown as { circles: { id: string; name: string; slug: string } | null }[])
     .map(m => m.circles).filter((c): c is { id: string; name: string; slug: string } => !!c)
 
-  const rank = getRank(totalZaps)
-  const nextRank = getNextRank(totalZaps)
-  const progress = nextRank ? Math.min(100, Math.round(((totalZaps - rank.min) / (nextRank.min - rank.min)) * 100)) : 100
+  // Rank, next tier, and progress come from the one canonical source (season-ranks),
+  // so the profile shows the same ladder as the feed, crew home, and leaderboard.
+  const { rank, def: rankDef, next: nextRankDef, pct: progress, zapsToNext } = rankProgress(totalZaps)
   // Rank is *endorsed* (shown publicly) only on the paid tier (Crew/Supporter); a
   // free member earns it but it stays in their own Vault, not on their public
   // profile (ADR-141, PB.1i: tier, not role). Inert in Beta (everyone is comped Crew).
@@ -287,7 +266,7 @@ export default async function ProfilePage({
           <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-xs leading-tight" />
           {isSupporter && <SupporterBadge />}
           {rankEndorsed && (
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>{rank.name}</span>
+            <span className="rank-badge text-xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
           )}
           {isDemo && <DemoBadge />}
         </span>
@@ -376,21 +355,19 @@ export default async function ProfilePage({
             {rankEndorsed && (
               <>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${rank.cls}`}>{rank.name}</span>
+                  <span className="rank-badge text-xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
                   <span className="text-xs text-subtle">
-                    {nextRank ? <>{nextRank.min - totalZaps} zaps to <span className="font-medium text-muted">{nextRank.name}</span></> : 'Max rank reached'}
+                    {nextRankDef ? <>{zapsToNext.toLocaleString()} zaps to <span className="font-medium text-muted">{nextRankDef.label}</span></> : 'Max rank reached'}
                   </span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-surface-elevated">
-                  <div className={`h-full rounded-full transition-all ${rank.bar}`} style={{ width: `${progress}%` }} />
+                  <div className={`h-full rounded-full transition-all ${rankDef.color}`} style={{ width: `${progress}%` }} />
                 </div>
               </>
             )}
 
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              <HeaderStat icon={Zap} label="Zaps" value={totalZaps} />
-              <HeaderStat icon={Gem} label="Gems" value={gems} />
-              <HeaderStat icon={Flame} label="Streak" value={currentStreak} />
+            <div className="mt-4">
+              <StandingTiles zaps={totalZaps} gems={gems} streak={currentStreak} rank={rank} showRank={false} />
             </div>
 
             <div className="mt-4">
@@ -477,19 +454,6 @@ export default async function ProfilePage({
         />
       )}
     </DetailTemplate>
-  )
-}
-
-// A single big gamification stat in the header (Zaps · Gems · Streak).
-function HeaderStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number }) {
-  return (
-    <div className="rounded-2xl bg-surface-elevated/60 px-3 py-2.5">
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-subtle">
-        <Icon className="h-3.5 w-3.5 text-primary" />
-        {label}
-      </div>
-      <p className="mt-0.5 text-2xl font-bold tabular-nums text-text">{value.toLocaleString()}</p>
-    </div>
   )
 }
 
