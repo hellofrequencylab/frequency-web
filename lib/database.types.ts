@@ -4899,6 +4899,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           city: string | null
+          community_level: string
           community_role: Database["public"]["Enums"]["community_role"] | null
           created_at: string | null
           current_season_gems: number
@@ -4968,6 +4969,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
+          community_level?: string
           community_role?: Database["public"]["Enums"]["community_role"] | null
           created_at?: string | null
           current_season_gems?: number
@@ -5037,6 +5039,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
+          community_level?: string
           community_role?: Database["public"]["Enums"]["community_role"] | null
           created_at?: string | null
           current_season_gems?: number
@@ -5965,6 +5968,44 @@ export type Database = {
           srtext?: string | null
         }
         Relationships: []
+      }
+      stewardships: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          role: string
+          scope_id: string
+          scope_type: string
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          role: string
+          scope_id: string
+          scope_type: string
+          state?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          role?: string
+          scope_id?: string
+          scope_type?: string
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stewardships_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       store_items: {
         Row: {
