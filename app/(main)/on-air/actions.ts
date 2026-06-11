@@ -26,6 +26,12 @@ export interface CompleteSessionInput {
   pattern: string | null
   seconds: number
   startedAt: string | null
+  /** Custom-pattern seconds + cue toggles, remembered with the rest of the setup (P3). */
+  customIn?: number
+  customHold?: number
+  customOut?: number
+  bell?: boolean
+  haptics?: boolean
 }
 
 export async function completeSession(
@@ -55,10 +61,23 @@ export async function completeSession(
     const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
     const meta = ((prof as { meta: Record<string, unknown> | null } | null)?.meta ?? {}) as Record<string, unknown>
     totalSeconds = Number((meta.onAirTotalSeconds as number | undefined) ?? 0) + seconds
+    // Merge over what's already stored: a timer session must not wipe the
+    // member's custom-pattern sliders or cue toggles (and old prefs without
+    // the P3 keys keep working untouched).
+    const prior = (meta.onAir ?? {}) as Partial<OnAirPrefs>
+    const phaseSec = (v: number | undefined, lo: number) =>
+      typeof v === 'number' && Number.isFinite(v)
+        ? Math.min(8, Math.max(lo, Math.round(v)))
+        : undefined
     const prefs: OnAirPrefs = {
       mode: input.mode,
       pattern: input.pattern ?? 'box',
       minutes: Math.max(1, Math.round(seconds / 60)) || 5,
+      customIn: phaseSec(input.customIn, 3) ?? prior.customIn,
+      customHold: phaseSec(input.customHold, 0) ?? prior.customHold,
+      customOut: phaseSec(input.customOut, 3) ?? prior.customOut,
+      bell: typeof input.bell === 'boolean' ? input.bell : prior.bell,
+      haptics: typeof input.haptics === 'boolean' ? input.haptics : prior.haptics,
     }
     await admin
       .from('profiles')

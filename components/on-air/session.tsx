@@ -8,14 +8,19 @@
 // practice is the unit, not the duration. "Just log" skips the timer entirely
 // so On Air is never a tax on logging.
 
-import { useEffect, useRef, useState } from 'react'
-import { Zap, Radio, Wind, Timer as TimerIcon, Check } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Zap, Radio, Wind, Timer as TimerIcon, Check, Volume2, Vibrate } from 'lucide-react'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import {
   BREATH_PATTERNS,
+  CUSTOM_PHASE_MAX,
+  CUSTOM_PHASE_MIN,
   DURATION_PRESETS,
+  breathPositionAt,
+  buildCustomPattern,
   patternBySlug,
+  type BreathPhase,
   type OnAirPrefs,
   type RevealPayload,
   type SessionMode,
@@ -31,14 +36,63 @@ export interface OnAirPractice {
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 
+// --- interval bell (Web Audio, no asset files) -------------------------------
+// One soft sine ding: quick attack, exponential decay. Gain stays well under
+// earbud-hostile levels; every call is wrapped so a flaky context never throws.
+
+function ding(ctx: AudioContext, at: number, durationSec = 0.4) {
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.type = 'sine'
+  osc.frequency.value = 880
+  gain.gain.setValueAtTime(0.12, at)
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + durationSec)
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+  osc.start(at)
+  osc.stop(at + durationSec + 0.05)
+}
+
+function chime(ctx: AudioContext | null) {
+  if (!ctx) return
+  try {
+    ding(ctx, ctx.currentTime)
+  } catch {
+    // the bell is a nicety, never a blocker
+  }
+}
+
+/** Slightly longer double-ding for the end of the session. */
+function endChime(ctx: AudioContext | null) {
+  if (!ctx) return
+  try {
+    ding(ctx, ctx.currentTime, 0.5)
+    ding(ctx, ctx.currentTime + 0.3, 0.7)
+  } catch {
+    // the bell is a nicety, never a blocker
+  }
+}
+
+/** Vibration where supported (Android). iOS web has no vibration; never throw. */
+function buzz(pulse: number | number[] = 15) {
+  try {
+    navigator.vibrate?.(pulse)
+  } catch {
+    // no vibration on this device
+  }
+}
+
 export function OnAirSession({
   practices,
   defaultPracticeId,
   prefs,
+  practicedToday = 0,
 }: {
   practices: OnAirPractice[]
   defaultPracticeId: string | null
   prefs: OnAirPrefs
+  /** Distinct members with a practice log today (presence line, shown at ≥3). */
+  practicedToday?: number
 }) {
   const [stage, setStage] = useState<Stage>('setup')
   const [practiceId, setPracticeId] = useState(
@@ -47,13 +101,27 @@ export function OnAirSession({
   const [mode, setMode] = useState<SessionMode>(prefs.mode)
   const [minutes, setMinutes] = useState(prefs.minutes)
   const [patternSlug, setPatternSlug] = useState(prefs.pattern)
+  const [customIn, setCustomIn] = useState(prefs.customIn ?? 4)
+  const [customHold, setCustomHold] = useState(prefs.customHold ?? 4)
+  const [customOut, setCustomOut] = useState(prefs.customOut ?? 6)
+  const [bell, setBell] = useState(prefs.bell ?? false)
+  const [haptics, setHaptics] = useState(prefs.haptics ?? false)
   const [startedAt, setStartedAt] = useState(0)
   const [remaining, setRemaining] = useState(0)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
+  const audio = useRef<AudioContext | null>(null)
+  const lastPhase = useRef<BreathPhase | null>(null)
+  const lastMinute = useRef(0)
 
-  const pattern = patternBySlug(patternSlug)
+  const pattern = useMemo(
+    () =>
+      patternSlug === 'custom'
+        ? buildCustomPattern(customIn, customHold, customOut)
+        : patternBySlug(patternSlug),
+    [patternSlug, customIn, customHold, customOut],
+  )
   const practice = practices.find((p) => p.id === practiceId)
 
   // --- takeover plumbing ----------------------------------------------------
@@ -109,11 +177,42 @@ export function OnAirSession({
       const elapsed = (Date.now() - startedAt) / 1000
       const left = Math.max(0, total - elapsed)
       setRemaining(left)
+      // Cues: a phase-change ding/tap in breath mode, a minute ding on the
+      // timer. The end gets its own double-ding in finish(), so skip at zero.
+      if (left > 0) {
+        if (mode === 'breath') {
+          const { phase } = breathPositionAt(pattern, elapsed)
+          if (lastPhase.current && phase !== lastPhase.current) {
+            if (bell) chime(audio.current)
+            if (haptics) buzz(15)
+          }
+          lastPhase.current = phase
+        } else {
+          const minute = Math.floor(elapsed / 60)
+          if (minute > lastMinute.current) {
+            lastMinute.current = minute
+            if (bell) chime(audio.current)
+          }
+        }
+      }
       if (left <= 0) void finish(false)
     }, 250)
     return () => clearInterval(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, startedAt, minutes])
+
+  // Let the audio context go when the surface unmounts.
+  useEffect(() => {
+    const ctx = audio
+    return () => {
+      try {
+        void ctx.current?.close()
+      } catch {
+        // already closed
+      }
+      ctx.current = null
+    }
+  }, [])
 
   // --- transitions -------------------------------------------------------------
 
@@ -123,6 +222,17 @@ export function OnAirSession({
       void finishWith(0, null)
       return
     }
+    if (bell) {
+      // Lazily, on the tap: autoplay policy only unlocks audio in a gesture.
+      try {
+        audio.current = audio.current ?? new AudioContext()
+        void audio.current.resume()
+      } catch {
+        // the bell is a nicety, never a blocker
+      }
+    }
+    lastPhase.current = null
+    lastMinute.current = 0
     setStartedAt(Date.now())
     setRemaining(minutes * 60)
     setStage('live')
@@ -133,11 +243,8 @@ export function OnAirSession({
     if (finishing.current) return
     finishing.current = true
     const seconds = early ? Math.round((Date.now() - startedAt) / 1000) : minutes * 60
-    try {
-      navigator.vibrate?.(early ? 10 : [30, 80, 30])
-    } catch {
-      /* iOS web has no vibration */
-    }
+    if (bell) endChime(audio.current)
+    if (haptics) buzz(early ? 10 : [30, 80, 30])
     await finishWith(seconds, new Date(startedAt).toISOString())
   }
 
@@ -150,6 +257,11 @@ export function OnAirSession({
       pattern: patternSlug,
       seconds,
       startedAt: startedIso,
+      customIn,
+      customHold,
+      customOut,
+      bell,
+      haptics,
     })
     finishing.current = false
     if (isError(result)) {
@@ -263,7 +375,7 @@ export function OnAirSession({
       {mode === 'breath' && (
         <div>
           <Label>Pattern</Label>
-          <div className="mt-2 grid grid-cols-3 gap-1.5">
+          <div className="mt-2 grid grid-cols-4 gap-1.5">
             {BREATH_PATTERNS.map((p) => (
               <button
                 key={p.slug}
@@ -279,8 +391,27 @@ export function OnAirSession({
                 {p.name}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setPatternSlug('custom')}
+              title="Your counts. Set each phase to what fits."
+              className={`rounded-xl border px-2 py-2 text-sm transition-colors ${
+                patternSlug === 'custom'
+                  ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                  : 'border-border text-muted hover:bg-surface-elevated'
+              }`}
+            >
+              Custom
+            </button>
           </div>
           <p className="mt-1.5 text-xs text-subtle">{pattern.blurb}</p>
+          {patternSlug === 'custom' && (
+            <div className="mt-3 space-y-3 rounded-xl border border-border px-3.5 py-3">
+              <PhaseSlider label="Breathe in" min={CUSTOM_PHASE_MIN} value={customIn} onChange={setCustomIn} />
+              <PhaseSlider label="Hold" min={0} value={customHold} onChange={setCustomHold} />
+              <PhaseSlider label="Let go" min={CUSTOM_PHASE_MIN} value={customOut} onChange={setCustomOut} />
+            </div>
+          )}
         </div>
       )}
 
@@ -306,6 +437,32 @@ export function OnAirSession({
         </div>
       )}
 
+      {mode !== 'log' && (
+        <div>
+          <Label>Cues</Label>
+          <div className="mt-2 grid grid-cols-2 gap-1.5">
+            <ToggleChip
+              active={bell}
+              onClick={() => setBell(!bell)}
+              icon={Volume2}
+              label="Sound"
+              title={
+                mode === 'breath'
+                  ? 'A soft bell at each phase change.'
+                  : 'A soft bell at each minute.'
+              }
+            />
+            <ToggleChip
+              active={haptics}
+              onClick={() => setHaptics(!haptics)}
+              icon={Vibrate}
+              label="Vibration"
+              title="A small tap at each phase change. Not every phone supports it."
+            />
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={() => void start()}
@@ -314,6 +471,11 @@ export function OnAirSession({
       >
         <Radio className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Go on air'}
       </button>
+      {practicedToday >= 3 && (
+        <p className="text-center text-xs text-subtle">
+          {practicedToday} members practiced today.
+        </p>
+      )}
       {practice?.loggedToday && mode !== 'log' && (
         <p className="text-center text-xs text-subtle">
           {practice.title} is already counted today. The sit still banks airtime.
@@ -358,6 +520,70 @@ function ModeButton({
       <Icon className="h-4 w-4" />
       {label}
     </button>
+  )
+}
+
+function ToggleChip({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+  title,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ElementType
+  label: string
+  title: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      title={title}
+      className={`flex items-center justify-center gap-2 rounded-xl border px-2 py-2.5 text-xs transition-colors ${
+        active
+          ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+          : 'border-border text-muted hover:bg-surface-elevated'
+      }`}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+      <span className={active ? 'text-primary-strong' : 'text-subtle'}>{active ? 'on' : 'off'}</span>
+    </button>
+  )
+}
+
+function PhaseSlider({
+  label,
+  min,
+  value,
+  onChange,
+}: {
+  label: string
+  min: number
+  value: number
+  onChange: (v: number) => void
+}) {
+  return (
+    <label className="block text-xs text-muted">
+      <span className="mb-1 flex items-baseline justify-between">
+        <span>{label}</span>
+        <span className="font-semibold tabular-nums text-text">
+          {value === 0 ? 'off' : `${value}s`}
+        </span>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={CUSTOM_PHASE_MAX}
+        step={1}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full accent-primary"
+      />
+    </label>
   )
 }
 
