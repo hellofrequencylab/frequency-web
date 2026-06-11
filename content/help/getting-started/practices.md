@@ -83,8 +83,8 @@ Each practice also has a category (movement, holistic health, spirituality, crea
 human relating, business support) and a cadence hint (daily, weekly, as needed). The
 library is browsable by what you are drawn to.
 
-If a practice is part of any **journeys** or is being run by any **circles**, the page
-shows a **"Used in"** section linking to them, a quick way to find a journey built
+If a practice is part of any **Journeys** or is being run by any **circles**, the page
+shows a **"Used in"** section linking to them, a quick way to find a Journey built
 around it or a circle already practising it together.
 
 ## Find your way around the library

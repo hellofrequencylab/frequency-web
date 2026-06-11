@@ -140,30 +140,6 @@ export function MindlessArt({ className = '' }: Props) {
   )
 }
 
-// On Air — the ripple rings with the live dot.
-export function OnAirArt({ className = '' }: Props) {
-  return (
-    <span className={className}>
-      <Frame>
-        {[10, 17, 24].map((r, i) => (
-          <circle
-            key={r}
-            cx="60"
-            cy="40"
-            r={r}
-            className="stroke-primary"
-            strokeWidth={i === 0 ? 2.5 : 2}
-            opacity={0.9 - i * 0.25}
-            fill="none"
-          />
-        ))}
-        <circle cx="60" cy="40" r="4" className="fill-primary" />
-        <circle cx="92" cy="18" r="4" className="fill-primary animate-pulse" />
-      </Frame>
-    </span>
-  )
-}
-
 // Connect — your personal code held up between two people meeting.
 export function ConnectArt({ className = '' }: Props) {
   return (
