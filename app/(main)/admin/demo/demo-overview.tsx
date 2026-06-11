@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Loader2 } from 'lucide-react'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { StatCard } from '@/components/ui/stat-card'
+import { Toggle } from '@/components/admin/toggle'
 
 import { setDemoMode } from './actions'
 
@@ -26,8 +26,7 @@ export function DemoOverview({
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  function toggle() {
-    const next = !on
+  function toggle(next: boolean) {
     setOn(next)
     setError(null)
     setSaved(false)
@@ -68,36 +67,14 @@ export function DemoOverview({
               ? 'Visible across the directory, circles, events, and feeds. The ⚡ marks it as sample content.'
               : 'The rows still exist. Flip back on any time, or purge them for good in the Danger zone below.'}
           </p>
-          <p className="mt-1 flex min-h-4 items-center gap-1.5 text-xs">
-            {pending && (
-              <span className="inline-flex items-center gap-1.5 text-subtle">
-                <Loader2 className="h-3 w-3 animate-spin" /> Saving…
-              </span>
-            )}
-            {!pending && saved && (
-              <span className="inline-flex items-center gap-1.5 font-medium text-success">
-                <Check className="h-3 w-3" /> Saved
-              </span>
-            )}
-          </p>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={on}
-          aria-label="Show demo content"
-          onClick={toggle}
+        <Toggle
+          checked={on}
+          onChange={toggle}
+          ariaLabel="Show demo content"
           disabled={pending}
-          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 motion-reduce:transition-none ${
-            on ? 'bg-primary' : 'bg-border-strong'
-          }`}
-        >
-          <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform motion-reduce:transition-none ${
-              on ? 'translate-x-5' : 'translate-x-0.5'
-            }`}
-          />
-        </button>
+          saveState={pending ? 'saving' : saved ? 'saved' : 'idle'}
+        />
       </div>
 
       {/* At-a-glance counts */}
