@@ -369,6 +369,24 @@ h1, h2, h3, h4, h5, h6 {
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
+/* ── Beta badge wiggle (the induction's BETA tag) ──────────────────────────────
+   A periodic attention nudge: still ~90% of the loop, then a quick shake. */
+@keyframes wiggle {
+  0%, 90%, 100% { transform: rotate(0deg); }
+  92%  { transform: rotate(-7deg); }
+  94%  { transform: rotate(6deg); }
+  96%  { transform: rotate(-4deg); }
+  98%  { transform: rotate(2deg); }
+}
+.animate-wiggle {
+  animation: wiggle 4.5s ease-in-out infinite;
+  transform-origin: 50% 60%;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-wiggle { animation: none; }
+}
+
 /* ── Marquee strip (marketing) ─────────────────────────────────────────────── */
 @keyframes marquee {
   from { transform: translateX(0); }
