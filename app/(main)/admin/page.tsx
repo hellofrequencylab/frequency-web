@@ -168,9 +168,10 @@ export default async function AdminPageView() {
   )
 }
 
-// The four engraved header numbers. Members + Events come from the cheap sweep;
-// Active + Practices need the practice read, so they default to a placeholder and
-// the live variant fills them in once it resolves.
+// The four header numbers. Members + Events come from the cheap sweep; Active +
+// Practices need the practice read, so they default to a placeholder and the live
+// variant fills them in once it resolves. Solid warm-dark (not the old faded
+// engraving) so they read clearly, but a notch quieter than the page title.
 function HeaderKpis({
   members,
   events,
@@ -192,10 +193,10 @@ function HeaderKpis({
     <div className="flex gap-7 pr-2 sm:gap-9 sm:pr-8">
       {items.map((k) => (
         <div key={k.label}>
-          <p className="whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-subtle">
+          <p className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-muted">
             {k.label}
           </p>
-          <p className="mt-1 text-3xl font-extrabold leading-none tabular-nums text-muted/80 [text-shadow:0_1px_0_var(--color-surface)]">
+          <p className="mt-1.5 text-3xl font-bold leading-none tabular-nums text-text">
             {k.value}
           </p>
         </div>
@@ -240,14 +241,17 @@ function RankList({ items }: { items: { value: string; n: number }[] }) {
 async function ProgramsArea({ practiceSeries }: { practiceSeries: number[] }) {
   const admin = createAdminClient()
   const since = new Date(new Date().getTime() - GROWTH_WEEKS * WEEK).toISOString()
-  const [practicesC, journeysC, challengesC, storeC, practice, newPractices] = await Promise.all([
-    admin.from('practices').select('id', { count: 'exact', head: true }),
-    admin.from('journey_plans').select('id', { count: 'exact', head: true }).eq('visibility', 'public'),
-    admin.from('season_challenges').select('id', { count: 'exact', head: true }),
-    admin.from('store_items').select('id', { count: 'exact', head: true }),
-    getPracticeMetrics(),
-    admin.from('practices').select('created_at').gte('created_at', since),
-  ])
+  const [practicesC, journeysC, challengesC, storeC, adoptionsC, featuredC, practice, newPractices] =
+    await Promise.all([
+      admin.from('practices').select('id', { count: 'exact', head: true }),
+      admin.from('journey_plans').select('id', { count: 'exact', head: true }).eq('visibility', 'public'),
+      admin.from('season_challenges').select('id', { count: 'exact', head: true }),
+      admin.from('store_items').select('id', { count: 'exact', head: true }),
+      admin.from('journey_plan_adoptions').select('id', { count: 'exact', head: true }).eq('active', true),
+      admin.from('practices').select('id', { count: 'exact', head: true }).not('featured_at', 'is', null),
+      getPracticeMetrics(),
+      admin.from('practices').select('created_at').gte('created_at', since),
+    ])
   const totalPractices = practicesC.count ?? 0
   const createdWeekly = weeklyBuckets(
     ((newPractices.data ?? []) as { created_at: string }[]).map((r) => new Date(r.created_at)),
@@ -257,7 +261,14 @@ async function ProgramsArea({ practiceSeries }: { practiceSeries: number[] }) {
   const libraryGrowth = cumulative(totalPractices - inWindow, createdWeekly)
   const g = area('programs')
   return (
-    <DashArea icon={g.Icon} label={g.label} blurb={g.blurb} href={g.href} hrefLabel={`Open ${g.label}`}>
+    <DashArea
+      icon={g.Icon}
+      label={g.label}
+      blurb={g.blurb}
+      href={g.href}
+      hrefLabel={`Open ${g.label}`}
+      footnote="Catalog counts read live from the content suite; practice volume is verified logs from the engagement ledger."
+    >
       <TileGrid>
         <Tile label="The catalog">
           <MiniGrid>
@@ -265,6 +276,8 @@ async function ProgramsArea({ practiceSeries }: { practiceSeries: number[] }) {
             <MiniStat value={(journeysC.count ?? 0).toLocaleString()} label="Journeys" />
             <MiniStat value={(challengesC.count ?? 0).toLocaleString()} label="Challenges" />
             <MiniStat value={(storeC.count ?? 0).toLocaleString()} label="Store items" />
+            <MiniStat value={(adoptionsC.count ?? 0).toLocaleString()} label="Adoptions" />
+            <MiniStat value={(featuredC.count ?? 0).toLocaleString()} label="Featured" />
           </MiniGrid>
         </Tile>
         <GraphTile
@@ -305,11 +318,17 @@ async function CommunityArea({
   joinedThisMonth: number
 }) {
   const admin = createAdminClient()
-  const [hubsC, nexusesC, openReports, openTickets, fullestRes] = await Promise.all([
+  const weekAgo = new Date(new Date().getTime() - 7 * DAY).toISOString()
+  const [hubsC, nexusesC, openReports, openTickets, wamRows, fullestRes] = await Promise.all([
     admin.from('hubs').select('id', { count: 'exact', head: true }),
     admin.from('nexuses').select('id', { count: 'exact', head: true }),
     admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     admin.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', OPEN_STATUSES),
+    admin
+      .from('engagement_events')
+      .select('actor_profile_id')
+      .eq('event_type', 'practice.verified')
+      .gte('created_at', weekAgo),
     admin
       .from('circles')
       .select('id, name, slug, member_count, member_cap, hub:hubs!hub_id(name)')
@@ -319,11 +338,23 @@ async function CommunityArea({
   const g = area('community')
   const reports = openReports.count ?? 0
   const tickets = openTickets.count ?? 0
+  const wam = new Set(
+    ((wamRows.data ?? []) as { actor_profile_id: string | null }[])
+      .map((r) => r.actor_profile_id)
+      .filter((id): id is string => !!id),
+  ).size
   const fullest = (fullestRes.data ?? []) as unknown as Array<{
     id: string; name: string; slug: string; member_count: number; member_cap: number; hub: { name: string } | null
   }>
   return (
-    <DashArea icon={g.Icon} label={g.label} blurb={g.blurb} href={g.href} hrefLabel={`Open ${g.label}`}>
+    <DashArea
+      icon={g.Icon}
+      label={g.label}
+      blurb={g.blurb}
+      href={g.href}
+      hrefLabel={`Open ${g.label}`}
+      footnote="Network and roster are live; active counts the members who verified a practice in the last 7 days. Circles are ordered by fill."
+    >
       <TileGrid>
         <GraphTile
           label="Member growth"
@@ -350,6 +381,8 @@ async function CommunityArea({
         <Tile label="People & safety">
           <MiniGrid>
             <MiniStat value={membersCount.toLocaleString()} label="Members" />
+            <MiniStat value={wam.toLocaleString()} label="Active · 7d" />
+            <MiniStat value={joinedThisMonth.toLocaleString()} label="New · 30d" />
             <MiniStat value={upcomingEvents.toLocaleString()} label="Events ahead" />
             <MiniStat value={reports.toLocaleString()} label="Open reports" tone={reports > 0 ? 'bad' : 'neutral'} />
             <MiniStat value={tickets.toLocaleString()} label="Open tickets" tone={tickets > 0 ? 'bad' : 'neutral'} />
@@ -382,18 +415,28 @@ async function CommunityArea({
 // ── Growth — funnels, onboarding, pipeline, traffic, and the expansion signal. ─
 async function GrowthArea() {
   const admin = createAdminClient()
-  const [practice, density, dash, crmC] = await Promise.all([
+  const weekAgo = new Date(new Date().getTime() - 7 * DAY).toISOString()
+  const [practice, density, dash, crmC, new7dC, outpostsC] = await Promise.all([
     getPracticeMetrics(),
     getDensitySignal(),
     getEngagementDashboard(7),
     admin.from('crm_deals').select('id', { count: 'exact', head: true }),
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_system', false).gte('created_at', weekAgo),
+    admin.from('outposts').select('id', { count: 'exact', head: true }),
   ])
   const views = dash.byType.find((t) => t.eventType === 'nav.page_view')
   const features = dash.byType.find((t) => t.eventType === 'feature.used')
   const topSignal = density.ready[0] ?? density.places[0]
   const g = area('growth')
   return (
-    <DashArea icon={g.Icon} label={g.label} blurb={g.blurb} href={g.href} hrefLabel={`Open ${g.label}`}>
+    <DashArea
+      icon={g.Icon}
+      label={g.label}
+      blurb={g.blurb}
+      href={g.href}
+      hrefLabel={`Open ${g.label}`}
+      footnote="Traffic and feature use are first-party from the event backbone (last 7 days); expansion readiness is the density score that opens the next Lab."
+    >
       <TileGrid>
         <RingTile
           pct={practice.activationRate}
@@ -405,6 +448,7 @@ async function GrowthArea() {
             <MiniStat value={(views?.events ?? 0).toLocaleString()} label="Page views" />
             <MiniStat value={(views?.actors ?? 0).toLocaleString()} label="Visitors" />
             <MiniStat value={(features?.events ?? 0).toLocaleString()} label="Feature uses" />
+            <MiniStat value={(new7dC.count ?? 0).toLocaleString()} label="New · 7d" />
             <MiniStat value={(crmC.count ?? 0).toLocaleString()} label="CRM deals" />
           </MiniGrid>
         </Tile>
@@ -416,6 +460,7 @@ async function GrowthArea() {
               label="Labs ready"
               tone={density.ready.length > 0 ? 'good' : 'neutral'}
             />
+            <MiniStat value={(outpostsC.count ?? 0).toLocaleString()} label="Outposts" />
             <MiniStat value={density.totals.listings.toLocaleString()} label="Listings" />
             <MiniStat value={density.totals.residents.toLocaleString()} label="Residents" />
           </MiniGrid>
@@ -429,11 +474,11 @@ async function GrowthArea() {
         {topSignal && (
           <Tile label="Strongest signal">
             <p className="leading-none">
-              <span className="text-3xl font-extrabold tabular-nums text-text">{Math.round(topSignal.score)}</span>
+              <span className="text-[1.625rem] font-bold tabular-nums text-text">{Math.round(topSignal.score)}</span>
               <span className="text-sm text-subtle">/100</span>
             </p>
             <p className="mt-2 text-sm font-semibold text-text">{topSignal.city}</p>
-            <p className="text-2xs uppercase tracking-wider text-subtle">{topSignal.stage} stage</p>
+            <p className="mt-0.5 text-xs uppercase tracking-wide text-subtle">{topSignal.stage} stage</p>
           </Tile>
         )}
       </TileGrid>
@@ -460,13 +505,21 @@ async function OperationsArea() {
   const answered = answered7d.count ?? 0
   const deflected = deflected7d.count ?? 0
   const answeredRate = total > 0 ? Math.round((answered / total) * 100) : null
+  const deflectedRate = total > 0 ? Math.round((deflected / total) * 100) : null
   const qSeries = weeklyBuckets(
     ((qSeriesRes.data ?? []) as { created_at: string }[]).map((r) => new Date(r.created_at)),
     VOLUME_WEEKS,
   )
   const g = area('operations')
   return (
-    <DashArea icon={g.Icon} label={g.label} blurb={g.blurb} href={g.href} hrefLabel={`Open ${g.label}`}>
+    <DashArea
+      icon={g.Icon}
+      label={g.label}
+      blurb={g.blurb}
+      href={g.href}
+      hrefLabel={`Open ${g.label}`}
+      footnote="Assistant figures cover the last 7 days of Vera questions; system reflects the current platform flags and the security audit trail."
+    >
       <TileGrid>
         <RingTile
           pct={answeredRate === null ? 0 : answeredRate / 100}
@@ -480,6 +533,7 @@ async function OperationsArea() {
           <MiniGrid>
             <MiniStat value={total.toLocaleString()} label="Questions · 7d" />
             <MiniStat value={answeredRate === null ? '—' : `${answeredRate}%`} label="Answered" />
+            <MiniStat value={deflectedRate === null ? '—' : `${deflectedRate}%`} label="Deflected" tone={deflectedRate !== null && deflectedRate > 0 ? 'bad' : 'neutral'} />
             <MiniStat value={deflected.toLocaleString()} label="Help gaps" tone={deflected > 0 ? 'bad' : 'neutral'} />
             <MiniStat value={(pendingActions.count ?? 0).toLocaleString()} label="Studio prompts" />
           </MiniGrid>
@@ -523,9 +577,10 @@ async function VeraReadSection() {
     <DashArea
       icon={Sparkles}
       label="Vera's read"
-      blurb="Vera reads the live engagement signal and suggests the next move."
+      blurb="Vera reads the live engagement signal and suggests the next move. Start with whatever she flags as needing attention."
       href="/admin/insights"
       hrefLabel="Full read"
+      footnote="Recomputed on every load from the last 7 days of member activity and the support queue."
     >
       <TileGrid>
         <Tile span={3}>
