@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Minus, Plus } from 'lucide-react'
+import { Check, Minus, Plus, X } from 'lucide-react'
 import { LotusIcon, BreatheIcon, DialIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
@@ -301,14 +301,18 @@ export function OnAirSession({
   // screen the member came FROM (the page where they hit the Zap button or
   // the board's radio). Direct entries (PWA shortcut, typed URL) have no app
   // history, so they land on home instead of exiting the app.
-  function closeReveal() {
-    setPayload(null)
-    setStage('setup')
+  function leave() {
     if (typeof window !== 'undefined' && window.history.length > 1) {
       router.back()
     } else {
       router.replace('/feed')
     }
+  }
+
+  function closeReveal() {
+    setPayload(null)
+    setStage('setup')
+    leave()
   }
 
   if (stage === 'reveal' && payload) {
@@ -384,206 +388,227 @@ export function OnAirSession({
     )
   }
 
-  // setup
+  // setup — the same full-page takeover as the sit (P8): entering Mindless means
+  // the world steps back BEFORE the timer starts. No app chrome, one compact
+  // viewport, the wordmark on top (same mark as the live screen, still rather
+  // than pulsing) and Tune out pinned above the fold in a sticky footer.
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
-      <div>
-        <Label>Practice</Label>
-        <div className="mt-2 space-y-1.5">
-          {practices.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setPracticeId(p.id)}
-              className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-left text-sm transition-colors ${
-                p.id === practiceId
-                  ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                  : 'border-border text-muted hover:bg-surface-elevated'
-              }`}
-            >
-              <span className="truncate">{p.title}</span>
-              {p.loggedToday && (
-                <span className="ml-2 flex shrink-0 items-center gap-1 text-2xs font-semibold text-success">
-                  <Check className="h-3 w-3" /> logged
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+    <Overlay>
+      <div className="relative flex items-center justify-center pb-1">
+        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-primary-strong">
+          <LotusIcon className="h-4 w-4" /> Mindless
+        </p>
+        <button
+          type="button"
+          onClick={leave}
+          aria-label="Close"
+          className="absolute -right-2 -top-1 rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
+      <p className="pb-4 text-center text-xs text-subtle">The world can wait a few minutes.</p>
 
-      <div>
-        <Label>Mode</Label>
-        <div className="mt-2 grid grid-cols-3 gap-1.5">
-          <ModeButton active={mode === 'breath'} onClick={() => setMode('breath')} icon={BreatheIcon} label="Breathe" />
-          <ModeButton active={mode === 'timer'} onClick={() => setMode('timer')} icon={DialIcon} label="Timer" />
-          <ModeButton active={mode === 'log'} onClick={() => setMode('log')} icon={BoltIcon} label="Just log" />
-        </div>
-      </div>
-
-      {mode === 'breath' && (
+      <div className="space-y-4">
         <div>
-          <Label>Pattern</Label>
-          <div className="mt-2 grid grid-cols-4 gap-1.5">
-            {BREATH_PATTERNS.map((p) => (
+          <Label>Practice</Label>
+          {/* One scrollable chip row — stays compact however long the list grows. */}
+          <div className="-mx-6 mt-1.5 flex gap-1.5 overflow-x-auto px-6 pb-0.5">
+            {practices.map((p) => (
               <button
-                key={p.slug}
+                key={p.id}
                 type="button"
-                onClick={() => setPatternSlug(p.slug)}
-                title={p.blurb}
-                className={`rounded-xl border px-2 py-2 text-sm transition-colors ${
-                  p.slug === patternSlug
+                onClick={() => setPracticeId(p.id)}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                  p.id === practiceId
                     ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                     : 'border-border text-muted hover:bg-surface-elevated'
                 }`}
               >
-                {p.name}
+                <span className="max-w-[12rem] truncate">{p.title}</span>
+                {p.loggedToday && <Check className="h-3 w-3 shrink-0 text-success" />}
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => setPatternSlug('custom')}
-              title="Your counts. Set each phase to what fits."
-              className={`rounded-xl border px-2 py-2 text-sm transition-colors ${
-                patternSlug === 'custom'
-                  ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                  : 'border-border text-muted hover:bg-surface-elevated'
-              }`}
-            >
-              Custom
-            </button>
-          </div>
-          <p className="mt-1.5 text-xs text-subtle">{pattern.blurb}</p>
-          {patternSlug === 'custom' && (
-            <div className="mt-3 space-y-3 rounded-xl border border-border px-3.5 py-3">
-              <PhaseSlider label="Breathe in" min={CUSTOM_PHASE_MIN} value={customIn} onChange={setCustomIn} />
-              <PhaseSlider label="Hold" min={0} value={customHold} onChange={setCustomHold} />
-              <PhaseSlider label="Let go" min={CUSTOM_PHASE_MIN} value={customOut} onChange={setCustomOut} />
-            </div>
-          )}
-        </div>
-      )}
-
-      {mode !== 'log' && (
-        <div>
-          <Label>Minutes</Label>
-          <div className="mt-2 flex gap-1.5">
-            {DURATION_PRESETS.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMinutes(m)}
-                className={`flex-1 rounded-xl border px-2 py-2 text-sm tabular-nums transition-colors ${
-                  m === minutes
-                    ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                    : 'border-border text-muted hover:bg-surface-elevated'
-                }`}
-              >
-                {m}
-              </button>
-            ))}
-            {/* The stepper: any length, one minute at a time (1–120). */}
-            <div className="flex flex-[1.6] items-center justify-between rounded-xl border border-border px-1.5">
-              <button
-                type="button"
-                onClick={() => setMinutes((m) => clampMinutes(m - 1))}
-                aria-label="One minute less"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="text-sm font-semibold tabular-nums text-text">{minutes}m</span>
-              <button
-                type="button"
-                onClick={() => setMinutes((m) => clampMinutes(m + 1))}
-                aria-label="One minute more"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
           </div>
         </div>
-      )}
 
-      {mode !== 'log' && (
         <div>
-          <Label>Cues</Label>
-          <div className="mt-2 grid grid-cols-2 gap-1.5">
-            <ToggleChip
-              active={bell}
-              onClick={() => setBell(!bell)}
-              icon={BellCueIcon}
-              label="Sound"
-              title={
-                mode === 'breath'
-                  ? 'A soft bell at each phase change.'
-                  : 'A soft bell at each minute.'
-              }
-            />
-            <ToggleChip
-              active={haptics}
-              onClick={() => setHaptics(!haptics)}
-              icon={VibrationIcon}
-              label="Vibration"
-              title="A small tap at each phase change. Not every phone supports it."
-            />
+          <Label>Mode</Label>
+          <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+            <ModeButton active={mode === 'breath'} onClick={() => setMode('breath')} icon={BreatheIcon} label="Breathe" />
+            <ModeButton active={mode === 'timer'} onClick={() => setMode('timer')} icon={DialIcon} label="Timer" />
+            <ModeButton active={mode === 'log'} onClick={() => setMode('log')} icon={BoltIcon} label="Just log" />
           </div>
-          {bell && (
-            <div className="mt-1.5 grid grid-cols-3 gap-1.5">
-              {BELL_TONES.map((t) => (
+        </div>
+
+        {mode === 'breath' && (
+          <div>
+            <Label>Pattern</Label>
+            <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+              {BREATH_PATTERNS.map((p) => (
                 <button
-                  key={t.slug}
+                  key={p.slug}
                   type="button"
-                  onClick={() => {
-                    setBellToneSlug(t.slug)
-                    // A one-strike preview on the tap (the gesture unlocks audio).
-                    try {
-                      audio.current = audio.current ?? new AudioContext()
-                      void audio.current.resume()
-                      chime(audio.current, t)
-                    } catch {
-                      // preview is a nicety
-                    }
-                  }}
-                  className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
-                    t.slug === bellToneSlug
+                  onClick={() => setPatternSlug(p.slug)}
+                  title={p.blurb}
+                  className={`rounded-xl border px-2 py-1.5 text-sm transition-colors ${
+                    p.slug === patternSlug
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
                   }`}
                 >
-                  {t.name}
+                  {p.name}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setPatternSlug('custom')}
+                title="Your counts. Set each phase to what fits."
+                className={`rounded-xl border px-2 py-1.5 text-sm transition-colors ${
+                  patternSlug === 'custom'
+                    ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                    : 'border-border text-muted hover:bg-surface-elevated'
+                }`}
+              >
+                Custom
+              </button>
             </div>
-          )}
-        </div>
-      )}
+            <p className="mt-1.5 text-xs text-subtle">{pattern.blurb}</p>
+            {patternSlug === 'custom' && (
+              <div className="mt-2.5 space-y-2.5 rounded-xl border border-border px-3.5 py-2.5">
+                <PhaseSlider label="Breathe in" min={CUSTOM_PHASE_MIN} value={customIn} onChange={setCustomIn} />
+                <PhaseSlider label="Hold" min={0} value={customHold} onChange={setCustomHold} />
+                <PhaseSlider label="Let go" min={CUSTOM_PHASE_MIN} value={customOut} onChange={setCustomOut} />
+              </div>
+            )}
+          </div>
+        )}
 
-      <button
-        type="button"
-        onClick={() => void start()}
-        disabled={!practiceId}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-      >
-        <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Tune out'}
-      </button>
-      {practicedToday >= 3 && (
-        <p className="text-center text-xs text-subtle">
-          {practicedToday} members practiced today.
+        {mode !== 'log' && (
+          <div>
+            <Label>Minutes</Label>
+            <div className="mt-1.5 flex gap-1.5">
+              {DURATION_PRESETS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMinutes(m)}
+                  className={`flex-1 rounded-xl border px-2 py-1.5 text-sm tabular-nums transition-colors ${
+                    m === minutes
+                      ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                      : 'border-border text-muted hover:bg-surface-elevated'
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+              {/* The stepper: any length, one minute at a time (1–120). */}
+              <div className="flex flex-[1.6] items-center justify-between rounded-xl border border-border px-1.5">
+                <button
+                  type="button"
+                  onClick={() => setMinutes((m) => clampMinutes(m - 1))}
+                  aria-label="One minute less"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="text-sm font-semibold tabular-nums text-text">{minutes}m</span>
+                <button
+                  type="button"
+                  onClick={() => setMinutes((m) => clampMinutes(m + 1))}
+                  aria-label="One minute more"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mode !== 'log' && (
+          <div>
+            <Label>Cues</Label>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+              <ToggleChip
+                active={bell}
+                onClick={() => setBell(!bell)}
+                icon={BellCueIcon}
+                label="Sound"
+                title={
+                  mode === 'breath'
+                    ? 'A soft bell at each phase change.'
+                    : 'A soft bell at each minute.'
+                }
+              />
+              <ToggleChip
+                active={haptics}
+                onClick={() => setHaptics(!haptics)}
+                icon={VibrationIcon}
+                label="Vibration"
+                title="A small tap at each phase change. Not every phone supports it."
+              />
+            </div>
+            {bell && (
+              <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+                {BELL_TONES.map((t) => (
+                  <button
+                    key={t.slug}
+                    type="button"
+                    onClick={() => {
+                      setBellToneSlug(t.slug)
+                      // A one-strike preview on the tap (the gesture unlocks audio).
+                      try {
+                        audio.current = audio.current ?? new AudioContext()
+                        void audio.current.resume()
+                        chime(audio.current, t)
+                      } catch {
+                        // preview is a nicety
+                      }
+                    }}
+                    className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                      t.slug === bellToneSlug
+                        ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                        : 'border-border text-muted hover:bg-surface-elevated'
+                    }`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <p className="text-center">
+          <a href="/on-air/dispatches" className="text-2xs font-medium text-subtle hover:text-text">
+            Past Dispatches from Vera
+          </a>
         </p>
-      )}
-      {practice?.loggedToday && mode !== 'log' && (
-        <p className="text-center text-xs text-subtle">
-          {practice.title} is already counted today. The sit still banks airtime.
-        </p>
-      )}
-      <p className="text-center">
-        <a href="/on-air/dispatches" className="text-xs font-medium text-subtle hover:text-text">
-          Past Dispatches from Vera
-        </a>
-      </p>
-    </div>
+      </div>
+
+      {/* Pinned: Tune out never sinks below the fold, even with Custom open. */}
+      <div className="sticky bottom-0 -mx-6 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-5">
+        {practice?.loggedToday && mode !== 'log' && (
+          <p className="pb-1.5 text-center text-2xs text-subtle">
+            {practice.title} is already counted today. The sit still banks airtime.
+          </p>
+        )}
+        {practicedToday >= 3 && (
+          <p className="pb-1.5 text-center text-2xs text-subtle">
+            {practicedToday} members practiced today.
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={() => void start()}
+          disabled={!practiceId}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+        >
+          <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Tune out'}
+        </button>
+      </div>
+    </Overlay>
   )
 }
 
@@ -608,7 +633,7 @@ function ModeButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs transition-colors ${
+      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs transition-colors ${
         active
           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'
@@ -639,7 +664,7 @@ function ToggleChip({
       aria-pressed={active}
       onClick={onClick}
       title={title}
-      className={`flex items-center justify-center gap-2 rounded-xl border px-2 py-2.5 text-xs transition-colors ${
+      className={`flex items-center justify-center gap-2 rounded-xl border px-2 py-2 text-xs transition-colors ${
         active
           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'
