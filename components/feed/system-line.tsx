@@ -45,7 +45,7 @@ export async function SystemLine({ body }: { body: string | null }) {
                 {handle}
               </Link>
               {zaps !== undefined && (
-                <span className="ml-1 inline-flex items-center gap-0.5 align-[-1px] text-2xs font-bold text-primary-strong">
+                <span className="ml-1 inline-flex items-center gap-0.5 align-[-1px] text-2xs font-bold text-primary">
                   <Zap className="h-3 w-3 fill-current" aria-hidden />
                   {zaps}
                 </span>

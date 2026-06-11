@@ -166,6 +166,8 @@ const LEDGER_LABELS: Record<string, string> = {
   event_host: 'Hosted an event',
   circle_activate: 'Activated a circle',
   invite_accepted: 'An invite you sent joined',
+  community_join: 'Joined the community',
+  referred_join_bonus: 'Joined through a friend',
   referral_activated: 'A member you brought in showed up',
   event_attend: 'Showed up (verified check-in)',
   outreach_task: 'Completed an outreach task',
