@@ -78,8 +78,7 @@ export function BetaCompleteFinalizer() {
   }, [router])
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-marketing-canvas px-6">
-      <div aria-hidden className="pointer-events-none fixed left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-[0.09] blur-[140px]" />
+    <main className="relative flex min-h-screen items-center justify-center bg-canvas px-6">
       <div className="relative z-10 max-w-sm text-center">
         <span className="brandmark mx-auto block h-10 aspect-[963/170]" aria-hidden />
         {mode === 'error' ? (
