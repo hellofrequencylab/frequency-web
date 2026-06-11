@@ -50,6 +50,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   the wild pays its bounty, a member's code takes you to their profile. Foreign
   QR codes are politely refused.
 
+- **The Zap menu pays attention**: when an event you RSVP'd to is happening
+  right now, the **Check In** tile glows with a quiet pulse ("Happening now").
+  And your very first time in the menu, one line explains the deal: everything
+  here earns.
 - **Partner offers, front and center**: the Zap menu's **Partners** tile is live.
   The Partners page now leads with the offers themselves: what you get, which
   business gives it, and an **Unlocked** mark on everything you've already
