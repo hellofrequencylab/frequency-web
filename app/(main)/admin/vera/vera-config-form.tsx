@@ -62,12 +62,12 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
         {/* Induction / funnel copy */}
         <FormSection
           title="Founder induction copy"
-          description="The oath and welcome copy new founders read during induction, plus the 'how did you hear about us' options."
+          description="The Beta Promise and welcome copy new founders read during induction, plus the 'how did you hear about us' options."
         >
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={LABEL} htmlFor="oathHeading">Oath heading</label>
+                <label className={LABEL} htmlFor="oathHeading">Beta Promise heading</label>
                 <input id="oathHeading" name="oathHeading" defaultValue={cfg.induction.oathHeading} className={`mt-1 ${FIELD}`} />
               </div>
               <div>
@@ -77,7 +77,7 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={LABEL} htmlFor="oathBody">Oath body</label>
+                <label className={LABEL} htmlFor="oathBody">Beta Promise body</label>
                 <textarea id="oathBody" name="oathBody" rows={3} defaultValue={cfg.induction.oathBody} className={`mt-1 ${FIELD}`} />
               </div>
               <div>
@@ -86,10 +86,10 @@ export function VeraConfigForm({ cfg, featured }: { cfg: VeraConfig; featured: F
               </div>
             </div>
             <div>
-              <label className={LABEL}>The three oaths</label>
+              <label className={LABEL}>The three promises</label>
               <div className="mt-1 space-y-2">
                 {oaths.map((v, i) => (
-                  <input key={i} name={`oath${i}`} defaultValue={v} className={FIELD} aria-label={`Oath ${i + 1}`} />
+                  <input key={i} name={`oath${i}`} defaultValue={v} className={FIELD} aria-label={`Promise ${i + 1}`} />
                 ))}
               </div>
             </div>
