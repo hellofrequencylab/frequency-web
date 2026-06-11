@@ -37,8 +37,11 @@ export interface Practice {
   header_image: string | null
   body: string | null
   cadence: string | null
+  /** DEPRECATED (Rewards Economy v2): weight_class drives the payout now. */
   reward_zaps: number | null
   reward_note: string | null
+  /** Payout driver for a log: 'light' (8⚡) | 'standard' (12⚡) | 'heavy' (15⚡). */
+  weight_class: string | null
   /** The Pillar this practice belongs to (domains.id), or null if uncategorized. */
   domain_id: string | null
   /** The sub-category within the Pillar (practice_subcategories.id), or null. */
@@ -75,7 +78,7 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, domain_id, subcategory_id, status'
+  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, weight_class, domain_id, subcategory_id, status'
 
 // --- Library + reads ------------------------------------------------------
 
@@ -703,6 +706,9 @@ export interface LogPracticeResult {
   zapsAwarded: number
   /** Journey bonuses this log unlocked (Full Day / Weekly Rhythm / completion), for the toast. */
   journey?: JourneyRewardResult
+  /** First log after a 7+ day gap: render the warm re-entry state (one line —
+   *  good to see you + one small next step). NEVER broken-streak shame UI. */
+  welcomeBack?: boolean
 }
 
 /**
@@ -729,6 +735,40 @@ export async function logPractice(input: {
   })
   if (!recorded) return { logged: false, zapsAwarded: 0 }
 
+  // Welcome Back (Rewards Economy v2): detect the gap BEFORE writing today's row.
+  // First log after a 7+ day gap pays +10⚡ once per gap (the return day keys the
+  // grant) and flags the response so the client renders the warm re-entry state.
+  let welcomeBack = false
+  try {
+    const { data: lastLog } = await db()
+      .from('practice_logs')
+      .select('logged_for')
+      .eq('profile_id', profileId)
+      .lt('logged_for', day)
+      .order('logged_for', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    const lastDay = (lastLog as { logged_for: string } | null)?.logged_for
+    if (lastDay) {
+      const gapDays = Math.round((Date.parse(day) - Date.parse(lastDay)) / 86_400_000)
+      if (gapDays >= 7) {
+        const { error } = await db().from('reward_grants').insert({
+          rule_key: `welcome.back:${day}`,
+          profile_id: profileId,
+          reward_kind: 'zaps',
+          amount: 0, // ledger row below carries the live amount
+          detail: 'Welcome Back',
+        })
+        if (!error) {
+          await awardZapsForAction(profileId, 'welcome_back')
+          welcomeBack = true
+        }
+      }
+    }
+  } catch {
+    // a missed welcome-back must never block the log
+  }
+
   // Durable log row (unique on profile+practice+day mirrors the idempotency key).
   await db()
     .from('practice_logs')
@@ -738,26 +778,35 @@ export async function logPractice(input: {
     )
 
   // Verified practice earns zaps + an attendance streak tick (same as a check-in).
-  // A practice may override the default reward via its `reward_zaps` column
-  // (rewards the doing — a cold plunge is worth more than a journal entry).
-  let overrideZaps: number | undefined
+  // The practice's WEIGHT CLASS drives the payout (Rewards Economy v2: light 8 /
+  // standard 12 / heavy 15, live-tunable in zap_config). Supersedes reward_zaps.
+  let weightClass: string | null = null
   try {
     const { data } = await db()
       .from('practices')
-      .select('reward_zaps')
+      .select('weight_class')
       .eq('id', practiceId)
       .maybeSingle()
-    const rz = (data as { reward_zaps: number | null } | null)?.reward_zaps
-    if (typeof rz === 'number') overrideZaps = rz
+    weightClass = (data as { weight_class: string | null } | null)?.weight_class ?? null
   } catch {
-    // fall back to the default reward
+    // fall back to the standard class
   }
 
   let zapsAwarded = 0
   try {
-    zapsAwarded = (await awardZapsForAction(profileId, 'practice_logged', overrideZaps)).amount
+    const { practiceLogAction } = await import('@/lib/zaps')
+    zapsAwarded = (await awardZapsForAction(profileId, practiceLogAction(weightClass))).amount
   } catch {
     // never let a reward read break the log
+  }
+
+  // Depth ladder (Practice Shelf): lifetime_logs increments on every log; the
+  // nightly job owns the weekly consistency ladder. Best-effort.
+  try {
+    const { bumpPracticeDepth } = await import('@/lib/practice-shelf')
+    await bumpPracticeDepth(profileId, practiceId)
+  } catch {
+    // shelf state must never break the log
   }
   await recordStreakActivity(profileId, 'attendance').catch(() => {})
   // The daily practice streak (the headline streak members feel) — advances the
@@ -816,5 +865,14 @@ export async function logPractice(input: {
     // never let a surprise break the log
   }
 
-  return { logged: true, zapsAwarded, journey }
+  // The Quiet Ones (Rewards Economy v2): secret awards a log can complete
+  // (Dawn Patrol / Radio Silence / Four Pillars). Hidden until earned; best-effort.
+  try {
+    const { evaluateSecretAwardsForLog } = await import('@/lib/awards/secret')
+    await evaluateSecretAwardsForLog(profileId)
+  } catch {
+    // a secret award check must never break the log
+  }
+
+  return { logged: true, zapsAwarded, journey, welcomeBack }
 }

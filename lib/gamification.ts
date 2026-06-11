@@ -59,6 +59,15 @@ export type AchievementCriteria =
   | { type: 'task_complete';  count: number }
   | { type: 'all_challenges' }
   | { type: 'manual' }
+  // Amplitude milestones (Rewards Economy v2) — lifetime XP totals.
+  | { type: 'amplitude';      count: number }
+  // The Quiet Ones (secret awards) — evaluated by lib/awards/secret.ts, NOT the
+  // generic engine (each needs its own query); listed so seeds typecheck.
+  | { type: 'dawn_patrol';    count: number }
+  | { type: 'radio_silence';  count: number }
+  | { type: 'four_pillars' }
+  | { type: 'carrier_wave';   count: number }
+  | { type: 'long_range';     count: number }
 
 // ---------------------------------------------------------------------------
 // Streak types

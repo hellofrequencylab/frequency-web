@@ -75,17 +75,6 @@ export async function awardGems(
   return { awarded: true, amount, capped: false }
 }
 
-export const GEM_TIER_THRESHOLDS = [
-  { min: 0,     label: 'New',      color: 'bg-gray-300 dark:bg-gray-600' },
-  { min: 100,   label: 'Active',   color: 'bg-blue-400' },
-  { min: 500,   label: 'Regular',  color: 'bg-green-500' },
-  { min: 2000,  label: 'Veteran',  color: 'bg-amber-500' },
-  { min: 10000, label: 'Legend',   color: 'bg-violet-500' },
-] as const
-
-export function getGemTier(gems: number) {
-  for (let i = GEM_TIER_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (gems >= GEM_TIER_THRESHOLDS[i].min) return GEM_TIER_THRESHOLDS[i]
-  }
-  return GEM_TIER_THRESHOLDS[0]
-}
+// Gem tiers (New → Legend) are RETIRED (Rewards Economy v2): Amplitude levels
+// (lib/amplitude.ts) are the lifetime progression layer now. Gems are purely
+// spendable currency.

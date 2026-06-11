@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -11,24 +12,73 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
   if (!profileId) return fail('Not authenticated')
 
   const admin = createAdminClient()
+  // season_id / expires_at lag the generated Database types (repo pattern: untyped
+  // handle until `supabase gen types` is re-run).
+  const db = admin as unknown as SupabaseClient
 
-  const [{ data: item }, { data: profile }, { data: spends }] = await Promise.all([
-    admin.from('store_items')
-      .select('id, slug, gem_cost, stock, is_active, metadata, category')
+  const [{ data: itemRow }, { data: profile }, { data: spends }] = await Promise.all([
+    db.from('store_items')
+      .select('id, slug, gem_cost, stock, is_active, metadata, category, season_id, expires_at')
       .eq('id', itemId)
       .maybeSingle(),
     admin.from('profiles')
-      .select('id, lifetime_gems')
+      .select('id, lifetime_gems, current_season_rank')
       .eq('id', profileId)
       .maybeSingle(),
     admin.from('store_redemptions')
       .select('gems_spent')
       .eq('profile_id', profileId),
   ])
+  const item = itemRow as {
+    id: string
+    slug: string
+    gem_cost: number
+    stock: number | null
+    is_active: boolean
+    metadata: Record<string, unknown> | null
+    category: string
+    season_id: number | null
+    expires_at: string | null
+  } | null
 
   if (!item) return fail('Item not found')
   if (!item.is_active) return fail('Item is no longer available')
-  if (item.stock !== null && item.stock <= 0) return fail('Out of stock')
+
+  // Season-exclusive + retiring SKUs (Rewards Economy v2): an S1 item stops
+  // selling at season close; expires_at is a hard cutoff.
+  if (item.expires_at && new Date(item.expires_at).getTime() < Date.now()) {
+    return fail('This item has retired')
+  }
+  if (item.season_id !== null) {
+    const { data: season } = await admin
+      .from('seasons')
+      .select('season_number')
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle()
+    if ((season?.season_number ?? null) !== item.season_id) {
+      return fail('This item was a season exclusive and has retired')
+    }
+  }
+
+  // Rank-gated SKUs (e.g. Founders' Table requires Conduit or above).
+  const requiredRank = (item.metadata as { requires_rank?: string } | null)?.requires_rank
+  if (requiredRank) {
+    const order = ['ghost', 'echo', 'signal', 'beacon', 'conduit', 'luminary']
+    const have = order.indexOf((profile?.current_season_rank as string | null) ?? 'ghost')
+    if (have < order.indexOf(requiredRank)) {
+      return fail(`Requires ${requiredRank.charAt(0).toUpperCase()}${requiredRank.slice(1)} rank or above`)
+    }
+  }
+
+  // Capped SKUs: stock is the TOTAL sellable count (e.g. 12 Listening Room seats).
+  if (item.stock !== null) {
+    const { count: sold } = await admin
+      .from('store_redemptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('item_id', itemId)
+    if ((sold ?? 0) >= item.stock) return fail('Out of stock')
+  }
 
   // Spendable balance = gems earned (lifetime) − gems already spent. lifetime_gems
   // is monotonic, so the difference is the real wallet (ADR-140 fix).
@@ -50,11 +100,11 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
     if (existing) return fail('You already own this item')
   }
 
-  const { error } = await admin.from('store_redemptions').insert({
+  const { error } = await db.from('store_redemptions').insert({
     profile_id: profileId,
     item_id: itemId,
     gems_spent: item.gem_cost,
-    metadata: item.metadata,
+    metadata: item.metadata ?? {},
   })
 
   if (error) return fail(error.message)
@@ -123,8 +173,16 @@ export async function getStoreData() {
   // Spendable balance = gems earned − gems spent (lifetime_gems is monotonic).
   const spent = (redemptions ?? []).reduce((s, r) => s + (r.gems_spent ?? 0), 0)
 
+  // Hard-expired SKUs drop off the shelf (season-exclusive cutoffs are enforced
+  // at redeem time, where the active season is known).
+  const now = Date.now()
+  const onShelf = (items ?? []).filter((i) => {
+    const exp = (i as { expires_at?: string | null }).expires_at
+    return !exp || new Date(exp).getTime() >= now
+  })
+
   return {
-    items: (items ?? []).map(item => ({
+    items: onShelf.map(item => ({
       ...item,
       owned: ownedIds.has(item.id),
     })),

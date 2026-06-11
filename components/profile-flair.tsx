@@ -1,6 +1,5 @@
 import { Flame, Award, Gem } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
-import { getGemTier } from '@/lib/gems'
 
 interface ProfileFlairProps {
   rank?: SeasonRank | string | null
@@ -18,10 +17,11 @@ export function ProfileFlair({ rank, streak, achievementCount, gems, compact = f
   const validRank = endorsed && rank && rank !== 'ghost' ? (rank as SeasonRank) : null
   const hasStreak = (streak ?? 0) > 0
   const hasAchievements = (achievementCount ?? 0) > 0
+  // Gem tiers (New → Legend) are retired (Rewards Economy v2): the count shows
+  // as plain spendable currency; Amplitude is the lifetime progression layer.
   const gemCount = gems ?? 0
-  const gemTier = gemCount > 0 ? getGemTier(gemCount) : null
 
-  if (!validRank && !hasStreak && !hasAchievements && !gemTier) return null
+  if (!validRank && !hasStreak && !hasAchievements && gemCount <= 0) return null
 
   return (
     <>
@@ -38,13 +38,10 @@ export function ProfileFlair({ rank, streak, achievementCount, gems, compact = f
           <Flame className="w-3 h-3" />{streak}
         </span>
       )}
-      {gemTier && !compact && (
+      {gemCount > 0 && !compact && (
         <span className="text-2xs font-medium text-signal-strong flex items-center gap-0.5">
           <Gem className="w-3 h-3" />{gemCount.toLocaleString()}
         </span>
-      )}
-      {gemTier && compact && gemCount >= 100 && (
-        <span className={`w-2 h-2 rounded-full ${gemTier.color}`} title={`${gemCount} gems. ${gemTier.label}`} />
       )}
       {hasAchievements && !compact && (
         <span className="text-2xs font-medium text-signal dark:text-signal flex items-center gap-0.5">

@@ -28,6 +28,11 @@ export const STREAK_MILESTONES: StreakMilestone[] = [
  *  missed day so one slip doesn't erase weeks of momentum. */
 export const STREAK_FREEZE_CAP = 2
 
+/** Second earn path (Rewards Economy v2): every 5 Full Day bonuses earned converts
+ *  to +1 freeze when below the cap — otherwise the credit banks until a slot opens.
+ *  Freezes are never purchasable. */
+export const FULL_DAYS_PER_FREEZE = 5
+
 export interface StreakProgress {
   streak: number
   /** Milestones already reached (day <= streak). */
