@@ -12,6 +12,7 @@ import {
   cancelEventFromReport,
 } from '@/app/(main)/feed/report-actions'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 type ReportItem = {
   id: string
@@ -189,38 +190,41 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
                     <MessageSquare className="w-3.5 h-3.5" />
                     Warn
                   </button>
-                  <button
+                  <Button
+                    variant="danger"
+                    size="sm"
                     disabled={isPending}
                     onClick={() => setOpenSuspendFor(report.id)}
-                    className="flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors"
                   >
                     <UserX className="w-3.5 h-3.5" />
                     Suspend
-                  </button>
+                  </Button>
                 </>
               )}
 
               {/* Event → Cancel */}
               {report.target_type === 'event' && (
-                <button
+                <Button
+                  variant="danger"
+                  size="sm"
                   disabled={isPending}
                   onClick={() => handleCancelEvent(report.id, report.target_id)}
-                  className="flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors"
                 >
                   <CalendarX className="w-3.5 h-3.5" />
                   Cancel event
-                </button>
+                </Button>
               )}
 
               {/* Dismiss always available */}
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={isPending}
                 onClick={() => handleDismiss(report.id)}
-                className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-elevated disabled:opacity-50 transition-colors"
               >
                 <XCircle className="w-3.5 h-3.5" />
                 Dismiss
-              </button>
+              </Button>
             </div>
 
             {/* Inline suspend duration picker */}

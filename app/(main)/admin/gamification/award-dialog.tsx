@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Award, Search, X, Loader2, Check } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { awardAchievement, revokeAchievement } from '@/app/(main)/crew/gamification-actions'
 
 interface Achievement {
@@ -72,13 +73,10 @@ export function AwardDialog({
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
-      >
+      <Button onClick={() => setOpen(true)} className="whitespace-nowrap">
         <Award className="w-4 h-4" />
         Award Achievement
-      </button>
+      </Button>
     )
   }
 
@@ -172,14 +170,15 @@ export function AwardDialog({
 
               {/* Actions */}
               <div className="flex items-center gap-2 pt-2">
-                <button
+                <Button
+                  size="sm"
                   onClick={handleAward}
                   disabled={!selectedMember || !selectedAchievement || isPending}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
+                  className="flex-1 py-2"
                 >
                   {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Award className="w-3.5 h-3.5" />}
                   Award
-                </button>
+                </Button>
                 <button
                   onClick={handleRevoke}
                   disabled={!selectedMember || !selectedAchievement || isPending}
