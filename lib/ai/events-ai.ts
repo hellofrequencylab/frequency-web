@@ -97,9 +97,9 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
         type: 'object',
         description: 'Your honest read on the capture quality of the photo.',
         properties: {
-          legible: { type: 'boolean', description: 'True if the text is clear enough to read.' },
-          glare: { type: 'boolean', description: 'True if glare or reflection blocks part of the poster.' },
-          skew: { type: 'boolean', description: 'True if the poster is tilted or photographed at a steep angle.' },
+          legible: { type: 'boolean', description: 'True if the text is clear enough to read. Lean toward true for any usable shot.' },
+          glare: { type: 'boolean', description: 'True ONLY if glare or reflection actually hides text. The normal sheen of a glossy poster that is still fully readable is NOT glare.' },
+          skew: { type: 'boolean', description: 'True only if a steep angle makes the poster hard to read. A mild tilt the app can straighten is fine.' },
           note: {
             type: 'string',
             description:
@@ -217,7 +217,7 @@ Read every detail you can and call the save_event tool. Rules:
 - tags: 3 to 6 short lowercase descriptors drawn from the poster.
 - cover: if a strong image region appears on a poster (artwork, photo, the main graphic), set found=true, imageIndex to which image it is in (0-based, in the order given), and box to the normalized bounding box (x,y top-left, w,h size, each 0..1) around the best cover region. If there is no usable image region, set found=false.
 - corners: when you can clearly see all four corners of the poster in the photo, give them as four normalized points (each 0..1) in order top-left, top-right, bottom-right, bottom-left. This lets the app straighten a tilted shot. Omit corners when they are cropped off or unclear.
-- quality: report honestly. Set legible=false when text is too blurry or small to read, glare=true when a reflection blocks part of the poster, skew=true when it is photographed at a steep angle. When the capture is poor, add a short plain retake note (for example "The bottom is cut off. Try a straight-on shot of the whole poster."). Leave the note empty when the photo is fine. No em dashes, no emojis.
+- quality: report honestly, and lean toward accepting a usable shot. Set legible=false ONLY when text is genuinely too blurry or small to read. Set glare=true ONLY when a reflection actually hides text you would otherwise be able to read; do NOT flag the normal sheen or shine of a glossy poster that is still fully readable. Set skew=true only when a steep angle makes it hard to read (a mild tilt the app straightens on its own is fine). When the capture is genuinely poor, add a short plain retake note (for example "The bottom is cut off. Try a straight-on shot of the whole poster."). Leave the note empty when the photo is readable. No em dashes, no emojis.
 - details: harvest everything else printed on the poster into the details fields. Identify the lineup (bands, speakers, djs, performers, hosts) and, when a photo of an act is shown, give its imageBox crop region. Capture set times (schedule), amenities and highlights (features), ticket tiers (tickets), links and handles (links), sponsors, any other croppable image regions for a gallery (imageRegions), and put anything else in other as label/value pairs. Mark a row confidence=low when the poster is hard to read there. Never invent a detail that is not on the poster.`
 
 const ASSIST_SYSTEM = `You are Vera, Frequency's assistant. A community member is typing a quick note about an event they want to post, and wants it tidied into an event draft.

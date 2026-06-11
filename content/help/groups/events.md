@@ -41,7 +41,8 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 
 See a cool event poster around town? Capture it and put the event on Frequency.
 
-- Open **Capture** and tap **Capture an event poster**. Snap the whole poster, squared up and out of glare; the app reads it and drafts the event for you: title, time, place, lineup, the works.
+- Open **Capture** and tap **Upload a poster**. Snap the whole poster, ideally squared up and out of direct glare; the app reads it and drafts the event for you: title, time, place, lineup, the works. A slight tilt or a little shine is fine, it straightens and reads the poster on its own.
+- If the poster has a **QR code**, the app reads it too and saves the booking or RSVP link straight onto the event.
 - Check the draft, fix anything the poster made hard to read, and publish. If it's **your** event, you become the host. If you **found** it, it posts to local events with your name on it: "Posted by you" with a little Zap.
 - Posting someone else's event earns **Zaps**, and you get a ready-to-send message inviting the organizer to claim it. When they claim it, the event becomes theirs to run, your credit stays, and you earn a **claim bonus**.
 - Keep it honest: events that real people RSVP to and organizers actually claim build your posting reputation. Flooding the library with events nobody engages with earns nothing.
