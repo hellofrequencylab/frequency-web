@@ -55,13 +55,12 @@ const FOCUS_PATTERNS: RegExp[] = [
 // right. Re-add a prefix here only if a section grows a genuine in-body rail.
 const SCOPED_PREFIXES: string[] = []
 
-// The admin WORKSPACE (Phase 2): under /admin/* the global member LEFT rail is
-// swapped for the admin sidebar (mounted by app/(main)/admin/layout.tsx). This is a
-// SEPARATE axis from the right rail (`railFor` above governs the right rail and is
-// unchanged for admin) — the shell reads BOTH: `railFor` for the right column,
-// `leftRailFor` for the left. Keeping them separate means admin can drop its member
-// rail without losing the global right rail. To swap the left rail for another
-// workspace, add its prefix here — never path-sniff in the shell.
+// The admin WORKSPACE (Phase 4, ADR-228): under /admin/* the global member LEFT
+// rail is suppressed (the admin layout mounts a sticky top-nav menubar instead of a
+// left sidebar). The shell reads BOTH axes: `leftRailFor` for the left column,
+// `railFor` for the right — and admin now returns 'none' on BOTH (full-width
+// operator workspace). To swap the left rail for another workspace, add its prefix
+// here — never path-sniff in the shell.
 const LEFT_WORKSPACE_PREFIXES = ['/admin']
 
 export type LeftRail = 'global' | 'none'
@@ -77,6 +76,12 @@ export function leftRailFor(pathname: string): LeftRail {
 }
 
 export function railFor(pathname: string): Rail {
+  // The admin WORKSPACE (Phase 4, ADR-228) is a full-width operator surface: no
+  // right rail, just the sticky top-nav menubar (app/(main)/admin/layout.tsx) over
+  // a wide content column. The member community rail is irrelevant in admin, so it
+  // is dropped on both axes (leftRailFor already returns 'none' for /admin/*).
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return 'none'
+
   // The profile editor keeps the standard community rail even though it lives under
   // /settings (otherwise Focus): editing your profile is a "me" surface, so the
   // identity/standings rail belongs beside it (ADR-117). Overrides the prefix below.
