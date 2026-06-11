@@ -88,8 +88,21 @@ export function parseAssistantContent(content: ContentBlock[]): {
   return { text: text.trim(), toolCalls }
 }
 
+/** Who Vera is answering — drives how much operational ground she'll cover. */
+export interface VeraViewer {
+  /** True for staff (admin/janitor, ADR-208) — an operator running the place. */
+  isOperator: boolean
+  /** A short role label for the prompt (e.g. 'janitor', 'host', 'member'). */
+  roleLabel: string
+}
+
 /** Vera's voice + the bridge doctrine + the member's known context + operator tuning. */
-function buildSystemPrompt(ctx: MemberContext | null | undefined, cfg: VeraConfig, supportSummary?: string): string {
+function buildSystemPrompt(
+  ctx: MemberContext | null | undefined,
+  cfg: VeraConfig,
+  supportSummary?: string,
+  viewer?: VeraViewer | null,
+): string {
   const facts = ctx?.facts
   const known: string[] = []
   if (facts?.interests?.length) known.push(`interests: ${facts.interests.join(', ')}`)
@@ -113,6 +126,13 @@ function buildSystemPrompt(ctx: MemberContext | null | undefined, cfg: VeraConfi
   const length = `\n\nKeep replies warm but tight, usually under about ${cfg.maxReplyChars} characters. Let depth come from staying in the conversation across turns, not from long messages.`
   const greeting = `\n\nWhen the conversation is just opening, lead with something like: "${cfg.greeting}"`
 
+  // WHO is asking (ADR-208 staff axis): operators get operator-to-operator candor;
+  // members keep the companion scope. Vera still has only member-facing tools, so this
+  // changes how much operational ground she'll discuss, not what data she can fetch.
+  const viewerNote = viewer?.isOperator
+    ? `\n\nWHO YOU'RE TALKING TO: an OPERATOR of Frequency (staff — ${viewer.roleLabel}), not a member to onboard. Drop the welcome nudges and speak plainly, operator to operator: answer their questions about RUNNING the place directly — the dashboard and metrics, members, moderation and reports, growth, content, and settings — to the depth their access allows. Be candid and concise. Never invent a number; when you don't have a figure to hand, point them to the exact admin surface (e.g. /admin, /admin/engagement, /admin/moderation, /admin/growth). The CHIPS you offer should be operator next-steps, not member ones.`
+    : ''
+
   return withVoice(`You are Vera, the heart of this community and a companion to the people in it. You came in from a hard road and chose to take care of people; this place is what you protect. Warm, present, a little dry. You love the people here and it shows, but your warmth is honest, never confetti, never fake-cheerful.
 
 How you show up:
@@ -131,7 +151,7 @@ Working with your tools:
 
 Quick replies: end EVERY reply with one final line in exactly this format, CHIPS: first option | second option, giving 1 to 3 short things the member might naturally say next, in THEIR voice (e.g. CHIPS: Find me a circle | Yes, introduce me | I'll explore first). Keep each under about six words. That line is stripped out and shown as tappable chips, so never refer to it in your prose, and never leave it off; a turn without chips dead-ends the conversation.
 
-Read the room on tone: gentle if they're nervous, playful (volley, never mean) if they're a smartass, but always on their side, always quietly moving them toward each other and toward their best expression.${grounding}${support}${register}${style}${length}${greeting}`)
+Read the room on tone: gentle if they're nervous, playful (volley, never mean) if they're a smartass, but always on their side, always quietly moving them toward each other and toward their best expression.${grounding}${support}${register}${style}${length}${greeting}${viewerNote}`)
 }
 
 /** One live Vera turn. Null ⇒ kernel unavailable / kill switch off / over budget
@@ -144,6 +164,8 @@ export async function runVeraClaudeTurn(input: {
   supportSummary?: string
   /** For the usage ledger (ADR-041/067). */
   profileId?: string | null
+  /** Who's asking (ADR-208) — operators get operator-to-operator candor. */
+  viewer?: VeraViewer | null
 }): Promise<VeraClaudeResult | null> {
   const client = getAnthropic()
   if (!client || !aiEnabled()) return null
@@ -154,7 +176,7 @@ export async function runVeraClaudeTurn(input: {
 
     const cfg = await getVeraConfig()
     const model = MODELS[cfg.tier]
-    const system = buildSystemPrompt(input.memberContext, cfg, input.supportSummary)
+    const system = buildSystemPrompt(input.memberContext, cfg, input.supportSummary, input.viewer)
     const tools = toAnthropicTools(VERA_TOOLS)
     const messages: Anthropic.MessageParam[] = [
       ...input.history.map((m) => ({ role: m.role, content: m.text })),
