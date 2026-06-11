@@ -1,4 +1,5 @@
-import { Suspense } from 'react'
+import { Fragment, Suspense } from 'react'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { Plus, Sparkles } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -15,6 +16,7 @@ import { StatusBadge } from '@/components/groups/status-badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { MemberManager, type MemberItem } from './member-manager'
 import { ADMIN_GROUPS, type DomainKey } from './sections'
+import { DASH_ORDER_COOKIE, sanitizeDashOrder, type DashSectionId } from './dash-sections'
 import { OPEN_STATUSES } from '@/lib/support/types'
 import { isJanitor } from '@/lib/core/roles'
 import type { CommunityRole } from '@/lib/core/roles'
@@ -107,6 +109,45 @@ export default async function AdminPageView() {
     ? 'Full platform access. Every surface below.'
     : `Scoped to your ${role} level.`
 
+  // The operator's saved section order (the page-admin dock writes the cookie) and
+  // the sections it arranges. Vera's read leads by default as the exec summary.
+  const sectionOrder = sanitizeDashOrder((await cookies()).get(DASH_ORDER_COOKIE)?.value)
+  const janitorSections: Record<DashSectionId, React.ReactNode> = {
+    vera: (
+      <Suspense fallback={<DashSkeleton title="Vera's read" />}>
+        <VeraReadSection />
+      </Suspense>
+    ),
+    programs: (
+      <Suspense fallback={<DashSkeleton title="Programs" />}>
+        <ProgramsArea practiceSeries={practiceSeries} />
+      </Suspense>
+    ),
+    community: (
+      <Suspense fallback={<DashSkeleton title="Community" />}>
+        <CommunityArea
+          membersCount={membersCount.count ?? 0}
+          circlesCount={circlesCount.count ?? 0}
+          broadcasts={dispatchesCount.count ?? 0}
+          upcomingEvents={upcomingCount.count ?? 0}
+          growthSeries={growthSeries}
+          eventSeries={eventSeries}
+          joinedThisMonth={joinedThisMonth}
+        />
+      </Suspense>
+    ),
+    growth: (
+      <Suspense fallback={<DashSkeleton title="Growth" />}>
+        <GrowthArea />
+      </Suspense>
+    ),
+    operations: (
+      <Suspense fallback={<DashSkeleton title="Operations" />}>
+        <OperationsArea />
+      </Suspense>
+    ),
+  }
+
   return (
     <AdminPage
       title="Admin Dashboard"
@@ -114,10 +155,9 @@ export default async function AdminPageView() {
       description={description}
       width="wide"
       // The header owns the four live numbers (F-pattern: most important, top
-      // right of the title). No box — the stats sit ON the canvas, big and faded,
-      // with a light lower highlight so they read engraved (debossed) into the
-      // background. Bottom-aligned with the subtitle's last line (actionsAlign),
-      // with a breathing margin off the right edge.
+      // right of the title). No box — the stats sit ON the canvas in solid warm
+      // ink. Bottom-aligned with the subtitle's last line (actionsAlign), with a
+      // breathing margin off the right edge.
       actionsAlign="end"
       // Active + Practices need the heavier practice read, so the whole strip sits
       // behind its own Suspense; Members + Events come from the cheap sweep above
@@ -130,37 +170,12 @@ export default async function AdminPageView() {
         </Suspense>
       }
     >
-      {staffJanitor && (
-        <>
-          {/* Exec summary — Vera's narrative read of the live signal, on the canvas. */}
-          <Suspense fallback={<DashSkeleton title="Vera's read" />}>
-            <VeraReadSection />
-          </Suspense>
-
-          {/* One comprehensive section per primary area. Header + instructional copy
-              on the canvas; every stat, graph, and list in white tiles below. */}
-          <Suspense fallback={<DashSkeleton title="Programs" />}>
-            <ProgramsArea practiceSeries={practiceSeries} />
-          </Suspense>
-          <Suspense fallback={<DashSkeleton title="Community" />}>
-            <CommunityArea
-              membersCount={membersCount.count ?? 0}
-              circlesCount={circlesCount.count ?? 0}
-              broadcasts={dispatchesCount.count ?? 0}
-              upcomingEvents={upcomingCount.count ?? 0}
-              growthSeries={growthSeries}
-              eventSeries={eventSeries}
-              joinedThisMonth={joinedThisMonth}
-            />
-          </Suspense>
-          <Suspense fallback={<DashSkeleton title="Growth" />}>
-            <GrowthArea />
-          </Suspense>
-          <Suspense fallback={<DashSkeleton title="Operations" />}>
-            <OperationsArea />
-          </Suspense>
-        </>
-      )}
+      {/* One comprehensive section per primary area (header + instructional copy on
+          the canvas; stats, graphs, and lists in white tiles), rendered in the
+          operator's saved order — the page-admin dock's drag-and-drop organizer
+          writes it; sanitizeDashOrder guarantees every section appears once. */}
+      {staffJanitor &&
+        sectionOrder.map((id) => <Fragment key={id}>{janitorSections[id]}</Fragment>)}
       {role === 'host' && <HostPanel profileId={profileId} />}
       {role === 'guide' && <GuidePanel profileId={profileId} />}
       {role === 'mentor' && <MentorPanel profileId={profileId} />}
