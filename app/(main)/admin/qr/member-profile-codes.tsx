@@ -9,6 +9,7 @@ import { VcardEditor } from '@/app/(main)/codes/vcard-editor'
 import { updateMemberCodeStyle, updateMemberVcard } from './member-actions'
 import type { QrStyle } from '@/lib/qr/style'
 import type { VcardConfig } from '@/lib/vcard'
+import { Button } from '@/components/ui/button'
 
 // Admin "Member profile codes" category — one auto-generated code per member. An
 // operator can download the output files AND edit the member's design + contact
@@ -93,13 +94,9 @@ function MemberCard({ code }: { code: MemberProfileCode }) {
         <div className="mt-3 space-y-3 border-t border-border pt-3">
           <StyleEditor value={style} onChange={setStyle} previewUrl={code.url} />
           <div className="flex items-center gap-2">
-            <button
-              onClick={saveStyle}
-              disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
-            >
+            <Button size="sm" onClick={saveStyle} disabled={pending} className="disabled:opacity-60">
               <Palette className="h-3.5 w-3.5" /> {pending ? 'Saving…' : 'Save design'}
-            </button>
+            </Button>
             {saved && <span className="text-xs text-success">Saved.</span>}
           </div>
           <VcardEditor
