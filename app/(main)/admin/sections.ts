@@ -151,7 +151,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure', section: 'Community' },
       { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community', section: 'Community' },
       // ── People ──
-      { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor', section: 'People' },
+      { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor', staffDomain: 'members', section: 'People' },
       { href: '/admin/roles', label: 'Roles & permissions', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor', section: 'People' },
       { href: '/admin/personas', label: 'Partner verification', desc: 'Vet and verify partner persona claims.', Icon: BadgeCheck, min: 'janitor', staffDomain: 'profiles', section: 'People' },
       // ── Trust & safety ──
