@@ -11,7 +11,7 @@
 // (the unified resolver). community_level is floored by community_role so no current
 // leader regresses — see communityRoleToLevel.
 
-import type { CommunityRole } from './roles'
+import { roleRank, type CommunityRole } from './roles'
 
 /** A scoped management role. `crew` is the in-circle helper rung (distinct from the
  *  retired global `crew` enum value and the `crew` billing tier); `outpost_lead` is the
@@ -120,4 +120,25 @@ export function leadsScope(
   return edges.some(
     (e) => isActive(e) && e.scopeType === scopeType && e.scopeId === scopeId,
   )
+}
+
+/**
+ * The COMMUNITY standing the surface matrix should read for a viewer (P1.6 PR 2,
+ * ADR-221): the derived global `community_level` projected back onto the matrix's
+ * `community_role` column, taken as the MOST-OPEN of the level and the legacy
+ * `community_role`. Because `community_level >= communityRoleToLevel(community_role)`
+ * always (the cache is floored, ADR-218), this is a NO-OP for every community rung
+ * member…mentor; the max guard exists ONLY so a global `admin`/`janitor` keeps its
+ * matrix column (those rank ABOVE the `mentor` cap of CommunityLevel). Purely
+ * additive — it can never lower a viewer's standing below today's `community_role`.
+ *
+ * A `CommunityLevel` value is a strict subset of `CommunityRole`, so the result is a
+ * valid matrix `role` column.
+ */
+export function communityStanding(
+  level: CommunityLevel,
+  communityRole: CommunityRole | null | undefined,
+): CommunityRole {
+  const role = communityRole ?? 'member'
+  return roleRank(level) >= roleRank(role) ? level : role
 }
