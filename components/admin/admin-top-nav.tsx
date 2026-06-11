@@ -211,10 +211,6 @@ export function AdminTopNav(props: AdminNavProps) {
       ref={barRef}
       className="sticky top-14 z-30 -mx-6 -mt-6 mb-6 border-b border-border bg-surface/95 px-6 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10"
     >
-      {/* The STRIP spans full-bleed (background + border), but the menu runs
-          between the side columns: the same centered max-w-5xl column the
-          AdminTemplate content uses, so rows line up with the page below. */}
-      <div className="mx-auto w-full max-w-5xl">
       {/* Row 1 — the menubar. */}
       <nav aria-label="Admin" className="hidden h-12 items-center gap-1 md:flex">
         <Link
@@ -339,7 +335,6 @@ export function AdminTopNav(props: AdminNavProps) {
       {/* Mobile disclosure. */}
       <div className="py-2.5 md:hidden">
         <MobileMenu {...props} />
-      </div>
       </div>
     </div>
   )
