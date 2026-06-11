@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Pencil, Check, X } from 'lucide-react'
 import { updateNexus } from '../actions'
+import { Button } from '@/components/ui/button'
 
 type NexusRow = {
   id: string
@@ -75,14 +76,14 @@ function NexusForm({ initial, mentors, onSave, onCancel, isPending }: {
         </div>
       )}
       <div className="sm:col-span-2 flex items-center gap-2 pt-1">
-        <button type="submit" disabled={!name.trim() || isPending} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors">
+        <Button type="submit" size="sm" disabled={!name.trim() || isPending}>
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Saving…' : initial ? 'Save changes' : 'Create nexus'}
-        </button>
-        <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors">
+        </Button>
+        <Button type="button" variant="secondary" size="sm" onClick={onCancel} disabled={isPending}>
           <X className="w-3.5 h-3.5" />
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   )

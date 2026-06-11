@@ -9,6 +9,7 @@ import {
   unpublishDispatch,
   deleteDispatch,
 } from '../actions'
+import { Button } from '@/components/ui/button'
 
 type DispatchType = 'post' | 'poll' | 'challenge' | 'article'
 
@@ -273,23 +274,24 @@ function DispatchForm({
       </div>
 
       <div className="flex items-center gap-2 pt-1">
-        <button
+        <Button
           type="submit"
+          size="sm"
           disabled={!title.trim() || !body.trim() || !audId || isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Saving…' : initial ? 'Save changes' : 'Save draft'}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
+          size="sm"
           onClick={onCancel}
           disabled={isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
         >
           <X className="w-3.5 h-3.5" />
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   )
