@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { CirclesClient } from './circles-client'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 
@@ -100,7 +100,7 @@ export default async function AdminCirclesPage({
     .order('display_name')
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Circles"
       eyebrow="Community"
       description="Create and manage circles within your scope. Each circle needs a hub assignment to appear in the hierarchy."
@@ -110,6 +110,6 @@ export default async function AdminCirclesPage({
       <AdminSection>
         <CirclesClient circles={circles} hubs={hubs} hosts={hostProfiles ?? []} initialEditId={edit ?? null} />
       </AdminSection>
-    </AdminPage>
+    </AdminTemplate>
   )
 }

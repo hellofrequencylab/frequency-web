@@ -5,6 +5,10 @@ import { Pencil, Archive, Check, X } from 'lucide-react'
 import { updateCircle, archiveCircle } from '../actions'
 import { InviteLinkButton } from './invite-link-button'
 import { Button } from '@/components/ui/button'
+import { DataTable, type ColumnDef } from '@/components/admin/data-table'
+import { StatusChip, type StatusTone } from '@/components/admin/status'
+import { EmptyState } from '@/components/ui/empty-state'
+import { DangerModal } from '@/components/admin/danger-modal'
 import type { CircleBase } from '@/lib/types/circle'
 
 type CircleRow = CircleBase & {
@@ -21,8 +25,16 @@ type HostOption = { id: string; display_name: string }
 
 const STATUSES = ['forming', 'active', 'paused', 'archived'] as const
 
-const input  = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
+const input  = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 const lbl    = 'block text-xs font-medium text-muted mb-1'
+
+// The one status vocabulary (retired the local STATUS_COLOR dict, ADR-233 §4).
+const STATUS_TONE: Record<string, StatusTone> = {
+  forming: 'info',
+  active: 'success',
+  paused: 'warning',
+  archived: 'neutral',
+}
 
 function CircleForm({
   initial,
@@ -61,14 +73,14 @@ function CircleForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg mb-4">
+    <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5">
       <div className="sm:col-span-2">
         <label className={lbl}>Circle name *</label>
         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Encinitas Morning Ride" required disabled={isPending} className={input} />
       </div>
 
       <div className="sm:col-span-2">
-        <label className={lbl}>About <span className="text-subtle font-normal">(optional)</span></label>
+        <label className={lbl}>About <span className="font-normal text-subtle">(optional)</span></label>
         <textarea value={about} onChange={e => setAbout(e.target.value)} placeholder="What is this circle about?" rows={2} disabled={isPending} className={`${input} resize-none`} />
       </div>
 
@@ -112,25 +124,18 @@ function CircleForm({
         </select>
       </div>
 
-      <div className="sm:col-span-2 flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-2 pt-1 sm:col-span-2">
         <Button type="submit" size="sm" disabled={!name.trim() || isPending}>
-          <Check className="w-3.5 h-3.5" />
+          <Check className="h-3.5 w-3.5" />
           {isPending ? 'Saving…' : initial ? 'Save changes' : 'Create circle'}
         </Button>
         <Button type="button" variant="secondary" size="sm" onClick={onCancel} disabled={isPending}>
-          <X className="w-3.5 h-3.5" />
+          <X className="h-3.5 w-3.5" />
           Cancel
         </Button>
       </div>
     </form>
   )
-}
-
-const STATUS_COLOR: Record<string, string> = {
-  forming:  'bg-signal-bg text-signal-strong',
-  active:   'bg-success-bg text-success dark:bg-success-bg',
-  paused:   'bg-warning-bg text-warning dark:bg-warning-bg dark:text-warning',
-  archived: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle',
 }
 
 export function CirclesClient({
@@ -150,6 +155,7 @@ export function CirclesClient({
   const [editingId,  setEditingId]  = useState<string | null>(
     initialEditId && circles.some((c) => c.id === initialEditId) ? initialEditId : null,
   )
+  const [confirmArchive, setConfirmArchive] = useState<CircleRow | null>(null)
   const [isPending,  startTransition] = useTransition()
 
   function handleUpdate(id: string, fd: FormData) {
@@ -160,7 +166,6 @@ export function CirclesClient({
   }
 
   function handleArchive(id: string) {
-    if (!confirm('Archive this circle? Members will no longer see it.')) return
     startTransition(async () => {
       await archiveCircle(id)
     })
@@ -168,76 +173,100 @@ export function CirclesClient({
 
   const active = circles.filter(c => c.status !== 'archived')
   const archived = circles.filter(c => c.status === 'archived')
+  const editing = active.find((c) => c.id === editingId)
+
+  const columns: ColumnDef<CircleRow>[] = [
+    {
+      key: 'name',
+      header: 'Circle',
+      render: (c) => (
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-medium text-text">{c.name}</span>
+          <StatusChip tone={STATUS_TONE[c.status] ?? 'info'} size="sm">
+            <span className="capitalize">{c.status}</span>
+          </StatusChip>
+          <StatusChip tone="neutral" size="sm">{c.type}</StatusChip>
+        </span>
+      ),
+    },
+    {
+      key: 'members',
+      header: 'Members',
+      type: 'number',
+      render: (c) => <span className="tabular-nums">{c.member_count}/{c.member_cap}</span>,
+    },
+    { key: 'hub', header: 'Hub', render: (c) => c.hub?.name ?? <span className="text-subtle">—</span> },
+    { key: 'host', header: 'Host', render: (c) => c.host?.display_name ?? <span className="text-subtle">—</span> },
+  ]
 
   return (
     <div>
-      {/* Active list */}
-      <div className="space-y-2">
-        {active.length === 0 && (
-          <p className="text-sm text-subtle py-6 text-center">No circles yet.</p>
-        )}
-        {active.map(circle => (
-          <div key={circle.id}>
-            {editingId === circle.id ? (
-              <CircleForm
-                initial={circle}
-                hubs={hubs}
-                hosts={hosts}
-                onSave={(fd) => handleUpdate(circle.id, fd)}
-                onCancel={() => setEditingId(null)}
-                isPending={isPending}
-              />
-            ) : (
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 group">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-text">{circle.name}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium capitalize ${STATUS_COLOR[circle.status] ?? STATUS_COLOR.forming}`}>
-                      {circle.status}
-                    </span>
-                    <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
-                      {circle.type}
-                    </span>
-                  </div>
-                  <p className="text-xs text-subtle mt-0.5">
-                    {circle.member_count}/{circle.member_cap} members
-                    {circle.hub && ` · ${circle.hub.name}`}
-                    {circle.host && ` · Host: ${circle.host.display_name}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <InviteLinkButton circleId={circle.id} />
-                  <button onClick={() => setEditingId(circle.id)} className="p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors" aria-label="Edit">
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  {circle.status !== 'archived' && (
-                    <button onClick={() => handleArchive(circle.id)} disabled={isPending} className="p-1.5 rounded-lg text-subtle hover:text-warning hover:bg-warning-bg dark:hover:bg-warning-bg/30 disabled:opacity-50 transition-colors" aria-label="Archive">
-                      <Archive className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      {editing && (
+        <CircleForm
+          initial={editing}
+          hubs={hubs}
+          hosts={hosts}
+          onSave={(fd) => handleUpdate(editing.id, fd)}
+          onCancel={() => setEditingId(null)}
+          isPending={isPending}
+        />
+      )}
 
-      {/* Archived section */}
+      <DataTable
+        caption="Circles"
+        rows={active}
+        getRowId={(c) => c.id}
+        columns={columns}
+        rowActions={(c) => (
+          <div className="flex items-center gap-1">
+            <InviteLinkButton circleId={c.id} />
+            <button onClick={() => setEditingId(c.id)} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
+              <Pencil className="h-3.5 w-3.5" aria-hidden />
+            </button>
+            <button onClick={() => setConfirmArchive(c)} disabled={isPending} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-warning-bg hover:text-warning disabled:opacity-50 motion-reduce:transition-none" aria-label="Archive">
+              <Archive className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </div>
+        )}
+        empty={
+          <EmptyState
+            variant="first-use"
+            title="No circles yet"
+            description="Create a circle to give your people a place to gather. Each circle needs a hub to appear in the hierarchy."
+          />
+        }
+      />
+
       {archived.length > 0 && (
         <details className="mt-6">
-          <summary className="text-xs font-medium text-subtle cursor-pointer hover:text-muted select-none">
+          <summary className="cursor-pointer select-none text-xs font-medium text-subtle hover:text-muted">
             {archived.length} archived circle{archived.length > 1 ? 's' : ''}
           </summary>
-          <div className="space-y-2 mt-2 opacity-60">
+          <div className="mt-2 space-y-2 opacity-60">
             {archived.map(circle => (
               <div key={circle.id} className="flex items-center gap-3 rounded-xl border border-border px-4 py-3">
-                <span className="text-sm text-muted flex-1">{circle.name}</span>
+                <span className="flex-1 text-sm text-muted">{circle.name}</span>
                 <span className="text-xs text-subtle">archived</span>
               </div>
             ))}
           </div>
         </details>
       )}
+
+      <DangerModal
+        open={confirmArchive !== null}
+        onClose={() => setConfirmArchive(null)}
+        title="Archive this circle?"
+        body={
+          <>
+            Archiving <span className="font-semibold text-text">{confirmArchive?.name}</span> hides it from members. You can still find it in the archived list.
+          </>
+        }
+        confirmLabel="Archive circle"
+        onConfirm={() => {
+          if (confirmArchive) handleArchive(confirmArchive.id)
+        }}
+      />
     </div>
   )
 }

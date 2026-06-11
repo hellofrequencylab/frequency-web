@@ -6,10 +6,12 @@ import { atLeastRole } from '@/lib/core/roles'
 import { getTicketAdmin, listAssignableAgents, ticketCountForProfile } from '@/lib/support/store'
 import { relativeTime } from '@/lib/utils'
 import { AdminTemplate } from '@/components/templates'
+import { StatusChip } from '@/components/admin/status'
 import { TicketMessages } from '@/components/support/ticket-messages'
 import { TicketContext } from '@/components/support/ticket-context'
 import { AdminTicketControls } from '@/components/support/admin-ticket-controls'
-import { TYPE_LABELS, STATUS_LABELS, statusChipClass } from '@/lib/support/types'
+import { TYPE_LABELS, STATUS_LABELS } from '@/lib/support/types'
+import { STATUS_TONE } from '../support-chips'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,8 +36,8 @@ export default async function AdminSupportTicketPage({ params }: { params: Promi
       back={{ href: '/admin/support', label: 'Support queue' }}
       eyebrow={
         <span className="inline-flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${statusChipClass(ticket.status)}`}>{STATUS_LABELS[ticket.status]}</span>
-          <span className="text-2xs font-medium text-subtle">{TYPE_LABELS[ticket.type]} · #{ticket.ref} · opened {relativeTime(ticket.createdAt)}</span>
+          <StatusChip tone={STATUS_TONE[ticket.status]} size="sm">{STATUS_LABELS[ticket.status]}</StatusChip>
+          <span className="text-xs font-medium text-subtle">{TYPE_LABELS[ticket.type]} · #{ticket.ref} · opened {relativeTime(ticket.createdAt)}</span>
         </span>
       }
     >
