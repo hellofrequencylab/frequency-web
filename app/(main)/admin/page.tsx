@@ -4,7 +4,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { requireAdminFloor } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
-import { AdminLaunchpad } from '@/components/admin/admin-launchpad'
 import { StatCard } from '@/components/ui/stat-card'
 import { ChartCard, RingGauge, TrendArea, WeekBars, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
 import { AdminCreateMenu } from './create-menu'
@@ -26,7 +25,7 @@ const GROWTH_WEEKS = 12
 const VOLUME_WEEKS = 8
 
 export default async function AdminPageView() {
-  const { profileId, role, webRole, staffRole } = await requireAdminFloor()
+  const { profileId, role, webRole } = await requireAdminFloor()
   const staffJanitor = isJanitor(webRole) // STAFF axis (ADR-208), not the community ladder
   const admin = createAdminClient()
 
@@ -99,19 +98,20 @@ export default async function AdminPageView() {
       width="wide"
       actions={<AdminCreateMenu role={role} />}
     >
-      {/* ── The dashboard: site optics on one wide band ─────────────────────── */}
+      {/* ── The dashboard: site optics, best-practice order — the four live
+            numbers first (a compact row, never stretched by the charts), then the
+            trend + conversion, then the weekly pulses. ───────────────────────── */}
       <AdminSection title="This week">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-12">
-          {/* KPI tiles — the four live numbers. */}
-          <div className="col-span-2 grid grid-cols-2 gap-3 lg:col-span-4">
-            <StatCard label="Members" value={(membersCount.count ?? 0).toLocaleString()} icon={Users} />
-            <StatCard label="Weekly active" value={practice.wam} icon={Zap} />
-            <StatCard label="Practices · 7d" value={practice.verifiedThisWeek} icon={Activity} />
-            <StatCard label="Events · next 7d" value={upcomingCount.count ?? 0} icon={Layers} />
-          </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <StatCard label="Members" value={(membersCount.count ?? 0).toLocaleString()} icon={Users} />
+          <StatCard label="Weekly active" value={practice.wam} icon={Zap} />
+          <StatCard label="Practices · 7d" value={practice.verifiedThisWeek} icon={Activity} />
+          <StatCard label="Events · next 7d" value={upcomingCount.count ?? 0} icon={Layers} />
+        </div>
 
+        <div className="mt-4 grid gap-4 lg:grid-cols-12">
           {/* Member growth — the trend that frames everything else. */}
-          <div className="col-span-2 lg:col-span-5">
+          <div className="lg:col-span-8">
             <ChartCard
               title="Member growth"
               value={(totalProfiles ?? 0).toLocaleString()}
@@ -123,8 +123,8 @@ export default async function AdminPageView() {
           </div>
 
           {/* Activation — the North-Star conversion. */}
-          <div className="col-span-2 lg:col-span-3">
-            <div className="flex h-full flex-col justify-center rounded-2xl border border-border bg-surface p-4">
+          <div className="lg:col-span-4">
+            <div className="flex h-full flex-col justify-center rounded-2xl border border-border bg-surface p-5">
               <RingGauge
                 pct={practice.activationRate}
                 label="Activation · 7d"
@@ -134,7 +134,7 @@ export default async function AdminPageView() {
           </div>
 
           {/* Weekly volume — the two pulses, side by side. */}
-          <div className="col-span-2 lg:col-span-6">
+          <div className="lg:col-span-6">
             <ChartCard
               title="Verified practices / week"
               caption={`${VOLUME_WEEKS} weeks · current week highlighted`}
@@ -142,7 +142,7 @@ export default async function AdminPageView() {
               <WeekBars values={practiceSeries} />
             </ChartCard>
           </div>
-          <div className="col-span-2 lg:col-span-6">
+          <div className="lg:col-span-6">
             <ChartCard
               title="Events / week"
               caption={`${VOLUME_WEEKS} weeks by start date · includes the week ahead`}
@@ -151,10 +151,6 @@ export default async function AdminPageView() {
             </ChartCard>
           </div>
         </div>
-      </AdminSection>
-
-      <AdminSection title="Jump to" description="Your three operator domains. Pick one to dive in.">
-        <AdminLaunchpad role={role} webRole={webRole} staffRole={staffRole} />
       </AdminSection>
 
       {staffJanitor && (
@@ -284,7 +280,7 @@ async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number
   return (
     <>
       <AdminSection title="Platform totals">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatCard label="Nexuses" value={nexusesRes.count ?? 0} icon={Building2} />
           <StatCard label="Hubs" value={hubsRes.count ?? 0} icon={Building2} />
           <StatCard label="Circles" value={circlesCount} icon={Layers} />
@@ -293,7 +289,7 @@ async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number
       </AdminSection>
 
       {/* Side-by-side panels — circles by fill | newest members. */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         <AdminSection
           title="Circles by fill"
           actions={
@@ -375,7 +371,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
   }>
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-8 lg:grid-cols-2">
       <AdminSection title={`Your circles · ${hostCircles.length}`}>
         {hostCircles.length === 0 ? (
           <EmptyState message="No circles yet." cta={{ href: '/admin/circles', label: 'Create a circle' }} />
@@ -438,7 +434,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         {typedHubs.map((hub) => (
           <AdminSection
             key={hub.id}
@@ -525,7 +521,7 @@ async function MentorPanel({ profileId }: { profileId: string }) {
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         {typedNexuses.map((nexus) => {
           const nexusTotal = nexus.hubs.reduce((sum, h) => sum + h.circles.reduce((s, c) => s + (c.member_count ?? 0), 0), 0)
           return (
