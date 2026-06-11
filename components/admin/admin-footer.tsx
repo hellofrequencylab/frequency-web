@@ -76,7 +76,7 @@ export function AdminFooter({ role, webRole = 'none', staffRole = null }: AdminF
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           {/* Navigation */}
           <FootCol title="Navigation">
-            <FootLink href={ADMIN_HOME.href}>Home</FootLink>
+            <FootLink href={ADMIN_HOME.href}>{ADMIN_HOME.label}</FootLink>
             {domains.map((g) => (
               <FootLink key={g.key} href={g.href}>
                 {g.label}
