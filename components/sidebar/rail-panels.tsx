@@ -8,6 +8,7 @@ import { isOnline, ONLINE_MS, RECENT_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
+import { StandingTiles } from '@/components/gamification/standing-tiles'
 
 // The rail's PAGE PANELS (ADR-161) — contextual stat cards keyed into the right rail
 // by route (lib/layout/rail-panels.ts). Each is an independent async server component
@@ -315,35 +316,14 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
           </Link>
 
           {/* Season scoreboard — zaps · gems · streak, each linking into the Quest dashboard */}
-          <div className="grid grid-cols-3 gap-1.5">
-            <Link
-              href="/crew/leaderboard"
-              className="rounded-lg bg-primary-bg/40 px-2 py-1.5 text-center transition-colors hover:bg-primary-bg/60"
-            >
-              <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
-                <Zap className="h-3 w-3 text-primary" /> {zaps.toLocaleString()}
-              </span>
-              <span className="text-3xs font-medium uppercase tracking-wide text-subtle">Zaps</span>
-            </Link>
-            <Link
-              href="/crew/store"
-              className="rounded-lg bg-primary-bg/40 px-2 py-1.5 text-center transition-colors hover:bg-primary-bg/60"
-            >
-              <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
-                <Gem className="h-3 w-3 text-signal" /> {gems.toLocaleString()}
-              </span>
-              <span className="text-3xs font-medium uppercase tracking-wide text-subtle">Gems</span>
-            </Link>
-            <Link
-              href="/crew/streaks"
-              className="rounded-lg bg-primary-bg/40 px-2 py-1.5 text-center transition-colors hover:bg-primary-bg/60"
-            >
-              <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
-                <Flame className={`h-3 w-3 ${streak > 0 ? 'text-primary-strong' : 'text-subtle'}`} /> {streak}
-              </span>
-              <span className="text-3xs font-medium uppercase tracking-wide text-subtle">Streak</span>
-            </Link>
-          </div>
+          <StandingTiles
+            variant="compact"
+            zaps={zaps}
+            gems={gems}
+            streak={streak}
+            rank={rank}
+            links={{ zaps: '/crew/leaderboard', gems: '/crew/store', streak: '/crew/streaks' }}
+          />
 
           {streak > 0 && (
             <p className="flex items-center gap-1 text-2xs font-semibold text-primary-strong">
