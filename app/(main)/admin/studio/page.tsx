@@ -2,13 +2,20 @@ import { Lightbulb, Sparkles, History } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
+import { Banner } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getStudioRead } from '@/lib/studio/recommendations'
 import { SITE_ACTIONS, isSiteAction } from '@/lib/studio/site-actions'
-import { RecommendationCard, RevertButton } from './recommendation-card'
+import { RecommendationCard } from './recommendation-card'
+import { StudioChangeTable } from './change-table'
 
 export const dynamic = 'force-dynamic'
+
+// AI Intelligence Studio — the QUEUE/INDEX template (ADR-233 §3.5/§3.3). A ranked spine
+// of AI recommendations, each exposing its evidence and a propose-then-confirm
+// accept/apply inline, over an index of the governed change log. Header + the AI read on
+// the canvas; the recommendations and the change table live in white tiles.
 
 interface ChangeRow {
   id: string
@@ -37,62 +44,65 @@ export default async function StudioPage() {
   const [read, changes] = await Promise.all([getStudioRead(), recentChanges()])
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="AI Intelligence Studio"
       icon={Lightbulb}
-      eyebrow="Insights"
-      description="What the platform’s behavior, support, and help signals say to change, ranked, with evidence. Applyable fixes are one click and fully reversible."
+      eyebrow="Operations"
+      description="What the platform's behavior, support, and help signals say to change, ranked, with evidence. Applyable fixes are one click and fully reversible."
     >
       {/* The read — Claude narrates the summary when AI is on, else a deterministic line. */}
-      <div className="rounded-2xl border border-primary-bg/60 bg-primary-bg/20 p-4">
-        <div className="mb-1 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary-strong" />
-          <span className="text-xs font-bold uppercase tracking-wide text-primary-strong">
-            The read{read.aiNarrated ? '' : ' · deterministic'}
-          </span>
-        </div>
-        <p className="text-sm leading-relaxed text-text">{read.summary}</p>
-      </div>
+      <AdminSection>
+        <Banner
+          tone="info"
+          title={
+            <span className="inline-flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4" aria-hidden />
+              The read{read.aiNarrated ? '' : ' · deterministic'}
+            </span>
+          }
+        >
+          {read.summary}
+        </Banner>
+      </AdminSection>
 
       <AdminSection title="Recommendations" description={`${read.recs.length} from the live signal.`}>
-        <div className="space-y-3">
-          {read.recs.map((rec) => (
-            <RecommendationCard key={rec.id} rec={rec} />
-          ))}
-        </div>
+        {read.recs.length === 0 ? (
+          <EmptyState
+            variant="cleared"
+            title="Nothing to recommend"
+            description="The live signal is clean. New recommendations appear here as behavior, support, and help data move."
+          />
+        ) : (
+          <div className="space-y-3">
+            {read.recs.map((rec) => (
+              <RecommendationCard key={rec.id} rec={rec} />
+            ))}
+          </div>
+        )}
       </AdminSection>
 
       <AdminSection title="Change log" description="Every governed change applied here. Who, what, and the result.">
         {changes.length === 0 ? (
-          <EmptyState icon={History} title="No changes yet" description="Applied recommendations will be logged here, with one-click revert for reversible ones." />
+          <EmptyState
+            variant="first-use"
+            icon={History}
+            title="No changes yet"
+            description="Applied recommendations will be logged here, with one-click revert for reversible ones."
+          />
         ) : (
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
-            {changes.map((c) => {
-              const label = isSiteAction(c.action_key) ? SITE_ACTIONS[c.action_key].label : c.action_key
-              const reversible = isSiteAction(c.action_key) && SITE_ACTIONS[c.action_key].reversible
-              return (
-                <li key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-text">{label}</p>
-                    <p className="truncate text-xs text-subtle">
-                      {c.actor?.display_name ?? 'System'} · {new Date(c.created_at).toLocaleString()}
-                      {c.detail ? ` · ${c.detail}` : ''}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 rounded-md px-2 py-0.5 text-2xs font-semibold uppercase ${
-                      c.status === 'applied' ? 'bg-success-bg/40 text-success' : c.status === 'reverted' ? 'bg-surface-elevated text-muted' : 'bg-danger-bg/40 text-danger'
-                    }`}
-                  >
-                    {c.status}
-                  </span>
-                  {c.status === 'applied' && reversible && <RevertButton logId={c.id} />}
-                </li>
-              )
-            })}
-          </ul>
+          <StudioChangeTable
+            rows={changes.map((c) => ({
+              id: c.id,
+              label: isSiteAction(c.action_key) ? SITE_ACTIONS[c.action_key].label : c.action_key,
+              reversible: isSiteAction(c.action_key) && SITE_ACTIONS[c.action_key].reversible,
+              actor: c.actor?.display_name ?? 'System',
+              status: c.status,
+              detail: c.detail,
+              createdAt: c.created_at,
+            }))}
+          />
         )}
       </AdminSection>
-    </AdminPage>
+    </AdminTemplate>
   )
 }
