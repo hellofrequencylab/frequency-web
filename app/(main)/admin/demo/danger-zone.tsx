@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Trash2, AlertTriangle, Eye, Wind, ShieldAlert, MapPin } from 'lucide-react'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { purgeArea, runDemoDecay } from './studio/actions'
 import { deleteDemoCircles, purgeDemoContent } from './actions'
 
@@ -67,8 +67,8 @@ export function DangerZone({
     })
   }
 
-  const dangerBtn =
-    'inline-flex items-center gap-1.5 rounded-lg border border-danger px-3 py-1.5 text-sm font-semibold text-danger transition-colors hover:bg-danger-bg/30 disabled:cursor-not-allowed disabled:opacity-40'
+  // The canonical outlined-danger tokens (ui/button); sm scale with the panel's text-sm.
+  const dangerBtn = buttonClasses('dangerOutline', 'sm', 'text-sm')
 
   return (
     <div className="space-y-4 rounded-2xl border border-danger-bg bg-danger-bg/10 p-5">
