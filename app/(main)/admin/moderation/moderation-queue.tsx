@@ -169,27 +169,29 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
             <div className="flex gap-2 pt-3 border-t border-border flex-wrap">
               {/* Post / comment / dispatch → soft-hide */}
               {(report.target_type === 'post' || report.target_type === 'comment' || report.target_type === 'dispatch') && (
-                <button
+                <Button
+                  variant="warning"
+                  size="sm"
                   disabled={isPending}
                   onClick={() => handleHide(report.id)}
-                  className="flex items-center gap-1.5 rounded-lg bg-warning px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors"
                 >
                   <EyeOff className="w-3.5 h-3.5" />
                   Hide {targetLabel.toLowerCase()}
-                </button>
+                </Button>
               )}
 
               {/* Member → Warn + Suspend */}
               {report.target_type === 'member' && (
                 <>
-                  <button
+                  <Button
+                    variant="warning"
+                    size="sm"
                     disabled={isPending}
                     onClick={() => handleWarn(report.id, report.target_id, report.reason)}
-                    className="flex items-center gap-1.5 rounded-lg bg-warning px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                     Warn
-                  </button>
+                  </Button>
                   <Button
                     variant="danger"
                     size="sm"
