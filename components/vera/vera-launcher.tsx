@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Sparkles, Search, BookOpen, Mail, X, MessageCircle, LifeBuoy, Bug, Ticket } from 'lucide-react'
 import type { HelpSearchEntry } from '@/lib/help/content'
 import { searchHelp } from '@/lib/help/search'
@@ -23,6 +24,9 @@ import { EdgePill } from '@/components/layout/edge-pill'
 type Tab = 'chat' | 'help'
 
 export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
+  // Admin pages drop the edge tab (the page-admin dock owns that corner); the panel
+  // still opens there via the command bar's open-vera event.
+  const onAdmin = usePathname().startsWith('/admin')
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<Tab>('chat')
   const [q, setQ] = useState('')
@@ -79,16 +83,20 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
   return (
     <>
       {/* Vera — right-edge pill: collapsed until hover (web) / tap (mobile), then a
-          click opens the chat. Pulses an orange glow when a chat is left unclosed. */}
-      <EdgePill
-        side="right"
-        glow="orange"
-        label="Vera"
-        icon={<Sparkles className="h-5 w-5" aria-hidden />}
-        waiting={pulse}
-        onOpen={openPanel}
-        ariaLabel="Open Vera"
-      />
+          click opens the chat. Pulses an orange glow when a chat is left unclosed.
+          NOT on /admin (owner call): the page-admin dock owns that corner there; the
+          panel itself stays mounted so the admin "Ask Vera" bar (open-vera) works. */}
+      {!onAdmin && (
+        <EdgePill
+          side="right"
+          glow="orange"
+          label="Vera"
+          icon={<Sparkles className="h-5 w-5" aria-hidden />}
+          waiting={pulse}
+          onOpen={openPanel}
+          ariaLabel="Open Vera"
+        />
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="vera-launcher-title">
