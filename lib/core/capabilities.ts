@@ -20,6 +20,7 @@
 
 import { type CommunityRole, type WebRole, isStaff as webIsStaff, isJanitor as webIsJanitor } from './roles'
 import { isPaid, type EntitlementTier } from './access-matrix'
+import { type ScopeType } from './stewardship'
 
 export type Capability =
   // circle
@@ -85,6 +86,14 @@ export interface Viewer {
   /** Billing entitlement tier. Paid (Crew/Supporter) unlocks the membership-gated
    *  capabilities (e.g. task volunteering). Omitted ⇒ free. */
   tier?: EntitlementTier | null
+  /** SCOPED stewardship predicate (P1.6, ADR-218→220): does the viewer hold an
+   *  ACTIVE stewardship edge on `(scopeType, scopeId)`? Supplied by the server seam
+   *  from the `stewardships` table; OR'd with the legacy leader-FK identity match so
+   *  a scoped leader recorded only as an edge (P1.7 direct grants, with no FK) is
+   *  still recognized. Omitted ⇒ no edges, i.e. pure FK behavior (unchanged). Because
+   *  every leader FK was backfilled to a matching edge (ADR-218) and no edge exists
+   *  without an FK yet, this is provably a no-op on today's data. */
+  leadsScope?: (scopeType: ScopeType, scopeId: string) => boolean
 }
 
 /**
@@ -119,10 +128,12 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
     case 'circle': {
       caps.add('circle.view')
 
-      const isHost = !!profileId && scope.hostId === profileId
-      // Leadership over THIS circle: its host, platform staff (admin/janitor), or
-      // the guide/mentor who manages its parent hub/nexus (caller-computed to avoid
-      // granting every guide rights on every circle).
+      const isHost =
+        (!!profileId && scope.hostId === profileId) ||
+        (viewer.leadsScope?.('circle', scope.circleId) ?? false)
+      // Leadership over THIS circle: its host (by FK or stewardship edge), platform
+      // staff (admin/janitor), or the guide/mentor who manages its parent hub/nexus
+      // (caller-computed to avoid granting every guide rights on every circle).
       const leads = isHost || isStaff || scope.viewerManagesParent === true
       const activeMember = scope.membership?.status === 'active' || leads
 
@@ -153,6 +164,7 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
     case 'hub': {
       const leadsHub =
         (!!profileId && scope.guideId === profileId) ||
+        (viewer.leadsScope?.('hub', scope.hubId) ?? false) ||
         scope.viewerManagesParent === true ||
         isJanitor
       if (leadsHub) caps.add('hub.manage')
@@ -160,7 +172,10 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
     }
 
     case 'nexus': {
-      const leadsNexus = (!!profileId && scope.mentorId === profileId) || isJanitor
+      const leadsNexus =
+        (!!profileId && scope.mentorId === profileId) ||
+        (viewer.leadsScope?.('nexus', scope.nexusId) ?? false) ||
+        isJanitor
       if (leadsNexus) caps.add('nexus.manage')
       break
     }
