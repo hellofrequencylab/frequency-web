@@ -40,7 +40,7 @@ practice page button      wake lock · visualizer      ② Streak    N-1 → N, 
 | Route | `app/(main)/on-air/` | Focus surface; `'/on-air'` registered `'none'` in `lib/layout/page-chrome.ts` |
 | Session machine | `components/on-air/session.tsx` | setup → live → saving → reveal; wake lock + mobile fullscreen, re-acquired on visibility |
 | Visualizer | `components/on-air/visualizer.tsx` | RippleRings motif breathing; rAF writes transforms via refs (no React frame-rate renders); reduced-motion → opacity fade |
-| Breath math | `lib/on-air.ts` (+ tests) | Box 4-4-4-4 · Coherent 5.5 · 4-7-8; `breathPositionAt` / `ringScaleAt` pure |
+| Breath math | `lib/on-air.ts` (+ tests) | Box 4-4-4-4 · 3X (physiological sigh, 4-1-7) · 4-7-8; `breathPositionAt` / `ringScaleAt` pure, per-phase scale ranges for stacked breaths |
 | Completion | `app/(main)/on-air/actions.ts` | ONE action: insert `practice_sessions` → **`logPractice()` (the only economy entry — same idempotency, zaps, bonuses, streaks)** → gather reveal payload → Dispatch |
 | Reveal | `components/on-air/reveal.tsx` | 4 scroll-snap panels; bonus cascade staged 550ms apart; type-on Dispatch card |
 | Dispatch engine | `lib/vera-dispatch.ts` | See below |
@@ -140,6 +140,12 @@ on revisit**, by design.
   pause length never counts as airtime (startedAt shifts on resume). At zero
   the end bell rings once and the screen WAITS — no auto-advance; the member
   collects in their own time.
+
+- ~~P11 — 3X replaces Coherent~~ ✅ shipped: the middle pattern is now the
+  **physiological sigh** as **3X** (big inhale 4s → "Sip in" 1s → "Let go" 7s).
+  The phase model gained optional per-phase scale ranges so the double inhale
+  grows the rings in two stacked steps with no reset between breaths (tested).
+  Saved 'coherent' prefs fall back to Box gracefully.
 
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.
