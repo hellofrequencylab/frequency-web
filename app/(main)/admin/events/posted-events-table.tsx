@@ -12,6 +12,7 @@
 //     clawback + poster notification fire in the lib.
 // All mutations re-verify janitor on the server; `canManage` only hides chrome.
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -183,7 +184,7 @@ function PostedRow({ row, canManage }: { row: PostedEventRow; canManage: boolean
                   setError(null)
                   setPanel(panel === 'remove' ? 'none' : 'remove')
                 }}
-                className="inline-flex items-center gap-1 rounded-lg border border-danger px-2 py-1 text-xs font-medium text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+                className={buttonClasses('dangerOutline', 'sm')}
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Remove

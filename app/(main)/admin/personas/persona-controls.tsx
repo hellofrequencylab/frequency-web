@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Zap, Ban, RotateCcw, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { transitionPersona } from './actions'
 import { isError } from '@/lib/action-result'
 import { canStaffTransition, type PartnerPersona, type PersonaState } from '@/lib/personas'
@@ -50,14 +50,14 @@ export function PersonaControls({
         </Button>
       ) : (
         ACTIONS.filter((a) => canStaffTransition(state, a.to)).map((a) =>
-          // Suspend keeps its subtle outlined-danger look (no canonical variant matches);
+          // Suspend uses the canonical outlined-danger variant (quieter than solid danger);
           // Verify/Activate map cleanly to the primary button.
           a.tone === 'danger' ? (
             <button
               key={a.to}
               onClick={() => move(a.to)}
               disabled={isPending}
-              className="inline-flex items-center gap-1 rounded-lg border border-danger/40 px-2.5 py-1 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg/30 disabled:opacity-60"
+              className={buttonClasses('dangerOutline', 'sm')}
             >
               <a.Icon className="h-3.5 w-3.5" /> {a.label}
             </button>
