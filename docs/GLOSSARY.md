@@ -119,12 +119,33 @@ pays gems. The single source of truth is `currencyForCriteria` /
   member-facing **"how you earned" log** in the Vault (`/crew/store/ledger`,
   `lib/economy/ledger.ts`). `awardZaps`/`awardGems` only ever append a ledger row.
   (Never call it a "points log" — it's Zaps/Gems.)
-- **Season rollover** — at season end, `reset_season()` rolls a **rank-based share**
-  of `current_season_zaps` into Gems via the named `ZAP_TO_GEM_RATES` ladder
-  (Ghost/Echo 5:1 → Signal 4:1 → Beacon 3:1 → Conduit 2:1 → Luminary 1.5:1), mints a
-  `season_trophies` row, then zeroes season counters. **PROVISIONAL — pending economy
-  tuning; do not build logic that assumes any fixed Zap:Gem relationship** (NAMING.md
-  §Economy). So Zaps are the seasonal "doing", Gems are the durable spendable.
+- **Season rollover** — at season end, `reset_season()` (migration `20260614000000`,
+  ADR-214) converts `floor(season_zaps / 5)` into Gems **flat for everyone**, pays a
+  one-time **final-rank Gem bonus** (Echo 10 / Signal 25 / Beacon 50 / Conduit 100 /
+  Luminary 250), mints a `season_trophies` row for everyone who played, then zeroes
+  season counters — all claim-then-pay via `reward_grants`. (Replaces the provisional
+  rank-based `ZAP_TO_GEM_RATES` ladder.) So Zaps are the seasonal "doing", Gems are
+  the durable spendable.
+- **Amplitude** — lifetime XP (`profiles.amplitude`, ADR-214): cumulative Zaps ever
+  earned, hosting-class actions 2×, accrued only by `after_zap_transaction()`. Never
+  resets, never spent, never gates play. Level = largest L with `50·L·(L+1) ≤ amplitude`
+  (`lib/amplitude.ts`); shown beside the season rank ("Beacon · 14,200"). Supersedes the
+  lifetime-rank *display* (the `lifetime_rank` column stays for the retro rules). Gem
+  tiers (New→Legend) are retired.
+- **Practice weight class** — `practices.weight_class ∈ light|standard|heavy` drives the
+  per-log Zap payout (8/12/15, live in `zap_config`; ADR-214). A property of the
+  practice, never the member's depth tier. Supersedes the deprecated `reward_zaps`.
+- **Practice Shelf** — the profile module of per-practice awards (ADR-214): the
+  consistency ladder (In Motion 2w / Groove 4w / Deep Groove 8w / **Full Cycle** 13w —
+  only Full Cycle pays, +50⚡ once per practice) and the depth ladder (10/25/50/100
+  Deep). Cache: `practice_streaks`; truth derives from `practice_logs`
+  (`lib/practice-shelf.ts`, nightly `lib/practice-streaks-job.ts`).
+- **Co-op Pulse** — +3⚡ when 3+ active members of one circle each log the same adopted
+  Journey the same day (nightly `lib/coop-pulse.ts`; once per member/journey/date).
+  Feeds Carrier Wave and the circle-level **Co-op Synchrony** award.
+- **Witnessed awards** — peer-granted (`witnessed_grants`, ADR-214): *Carried the Room*
+  (circle Host → a member of their circle) and *Strong Signal* (any member), each once
+  per season per granter; displayed with the granted-by name (`lib/awards/witnessed.ts`).
 - **Quests & Journeys** — hierarchy **Quest → Journey → Practice** (canon; see NAMING.md
   and [THE-QUEST.md](THE-QUEST.md)). A **Quest** (`quests`) is a season's official, free
   container of Journeys; a **Journey** (`journey_plans` + `journey_plan_items`) is a set of
