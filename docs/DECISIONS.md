@@ -6424,3 +6424,11 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 - **Surface**: `/scan` (auth-gated, FOCUS chrome) renders a full-bleed takeover in the Mindless overlay grammar — title, corner-bracket reticle, hint copy varied by `?hint=` (`checkin` / `node`), ✕ back to where you came from.
 - **The Zap menu**: Check In → `/scan?hint=checkin` ("Scan at the door"), Ghost Node → `/scan?hint=node` — both LIVE; Partners stays the last coming-soon tile (its offer surface is the next backlog item).
 **Consequences:** Every earning tile in the Zap menu except Partners is now real. The scanner is generic: future codes (gift zaps, circle joins) work with zero scanner changes because the resolver owns the semantics.
+
+
+## ADR-236: The partner-offer surface — every Zap menu tile earns
+
+**Status:** Accepted · `lib/partners/read.ts` (`listLiveOffers`), `app/(main)/partners/page.tsx` (offers-first section), `components/scan/scanner.tsx` (`partner` hint), `components/feed/capture-launcher.tsx` (Partners tile live).
+**Context:** The Partners tile was the last coming-soon tile (ADR-230): the directory existed, but members had no offers-first view and no unlocked state — and unlocking happens physically (a partner plaque is a `nodes` row with `partner_id`; `captureNode` inserts `partner_redemptions` and pays the node's zaps).
+**Decision:** The partners index leads with **"Offers right now"** — every active offer across active partners (expired `valid_until` filtered), each card showing the deal, the business, and the viewer's **Unlocked ✓** state (`partner_redemptions` by offer, falling back to the partner for plaque-first redemptions with null offer_id). A standing line links to **/scan?hint=partner** ("Point at the partner's plaque or code") — the page never claims anything; unlocking stays a real-world act through the existing node pipeline. The Zap menu's Partners tile goes live → /partners. With that, **every tile in the Zap menu earns**.
+**Consequences:** ADR-230's follow-up list is fully closed except polish items (tile pulses, education line, CTR analytics — next). Offer freshness is owner-managed via the existing partner admin; no schema changes.

@@ -50,6 +50,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   the wild pays its bounty, a member's code takes you to their profile. Foreign
   QR codes are politely refused.
 
+- **Partner offers, front and center**: the Zap menu's **Partners** tile is live.
+  The Partners page now leads with the offers themselves: what you get, which
+  business gives it, and an **Unlocked** mark on everything you've already
+  claimed in person. Walk in, scan the plaque, collect the offer and the Zaps.
 - **Joining pays**: every new member starts with **10 Zaps** the moment they join,
   and arriving through a friend's link pays a **15 Zap bonus** on top (your friend
   still earns their invite reward, so the link is always the better door). Vera's
