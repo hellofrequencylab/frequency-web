@@ -7,9 +7,10 @@ import {
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { DetailTemplate } from '@/components/templates'
-import { normalizeTag } from '@/lib/connections/normalize'
+import { normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
+import { DetailsEditor, DetailsView } from '@/components/connections/contact-details-fields'
 import type { ContactDetail } from '@/lib/connections/store'
-import type { ContactStatus, Visibility } from '@/lib/connections/types'
+import type { ContactDetails, ContactStatus, Visibility } from '@/lib/connections/types'
 import {
   updateProfile, setStatus, setVisibility, deleteProfile, addNote, deleteNote, addTag, removeTag,
 } from '../actions'
@@ -24,7 +25,7 @@ function fmtDate(s: string | null): string {
 
 export function Detail({ initial, timeline }: { initial: ContactDetail; timeline?: React.ReactNode }) {
   const router = useRouter()
-  const { contact, notes, tags, avatarUrl } = initial
+  const { contact, notes, tags, avatarUrl, cardFrontUrl, cardBackUrl, logoUrl } = initial
   const [pending, start] = useTransition()
   const refresh = () => start(() => router.refresh())
 
@@ -72,7 +73,13 @@ export function Detail({ initial, timeline }: { initial: ContactDetail; timeline
       subtitle={
         <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           {(contact.title || contact.company) && (
-            <span>{[contact.title, contact.company].filter(Boolean).join(' · ')}</span>
+            <span className="inline-flex items-center gap-1.5">
+              {logoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt="" className="h-4 w-4 shrink-0 rounded-sm object-cover" />
+              )}
+              {[contact.title, contact.company].filter(Boolean).join(' · ')}
+            </span>
           )}
           <span className="text-xs text-subtle">Added {fmtDate(contact.createdAt)}</span>
         </span>
@@ -145,6 +152,23 @@ export function Detail({ initial, timeline }: { initial: ContactDetail; timeline
                 <p className="text-sm text-subtle">No contact details yet. Use Edit to add some.</p>
               )}
           </dl>
+        </Section>
+      )}
+
+      {/* Everything harvested from the card (read-only; edit via Edit above). */}
+      {!editing && hasAnyDetails(contact.details) && (
+        <Section title="From the card">
+          <DetailsView details={contact.details} />
+        </Section>
+      )}
+
+      {/* The card itself, deskewed and kept on file. Tap a side to view it large. */}
+      {(cardFrontUrl || cardBackUrl) && (
+        <Section title="Card on file">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {cardFrontUrl && <CardImage url={cardFrontUrl} label="Front" />}
+            {cardBackUrl && <CardImage url={cardBackUrl} label="Back" />}
+          </div>
         </Section>
       )}
 
@@ -233,6 +257,24 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
+/** One kept card side; opens the full-size signed image in a new tab. */
+function CardImage({ url, label }: { url: string; label: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="group relative block overflow-hidden rounded-xl border border-border bg-surface-elevated"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt={`${label} of the card`} className="w-full object-contain" />
+      <span className="absolute bottom-1.5 left-1.5 rounded bg-black/55 px-1.5 py-0.5 text-xs font-medium text-white">
+        {label}
+      </span>
+    </a>
+  )
+}
+
 function Row({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2">
@@ -271,6 +313,7 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
     linkedin: contact.socials.linkedin ?? '',
     x: contact.socials.x ?? '',
   })
+  const [details, setDetails] = useState<ContactDetails>(contact.details ?? {})
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }))
 
   function save() {
@@ -289,6 +332,7 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
           ...(f.linkedin.trim() ? { linkedin: f.linkedin.trim() } : {}),
           ...(f.x.trim() ? { x: f.x.trim() } : {}),
         },
+        details,
       })
       setSaving(false)
       onSaved()
@@ -309,6 +353,10 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
         <Field label="Instagram"><input className={input} value={f.instagram} onChange={(e) => set('instagram', e.target.value)} /></Field>
         <Field label="LinkedIn"><input className={input} value={f.linkedin} onChange={(e) => set('linkedin', e.target.value)} /></Field>
         <Field label="X"><input className={input} value={f.x} onChange={(e) => set('x', e.target.value)} /></Field>
+      </div>
+      <div className="mt-4 border-t border-border/70 pt-4">
+        <p className="mb-3 text-xs font-medium text-muted">From the card</p>
+        <DetailsEditor value={details} onChange={setDetails} />
       </div>
       <button
         type="button"

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { createDeal, updateDeal, moveDeal } from '@/app/(main)/crm/actions'
+import { createDeal, updateDeal, moveDeal } from '@/app/(main)/admin/crm/actions'
 import type { CrmStage, CrmDeal } from '@/lib/crm/pipeline'
 
 const input =
@@ -49,7 +49,7 @@ export function DealForm({ stages, deal }: { stages: CrmStage[]; deal?: CrmDeal 
         })
         if ('error' in r) return setError(r.error)
       }
-      router.push('/crm')
+      router.push('/admin/crm')
       router.refresh()
     })
   }
@@ -92,7 +92,7 @@ export function DealForm({ stages, deal }: { stages: CrmStage[]; deal?: CrmDeal 
       {error && <p className="text-xs text-danger">{error}</p>}
 
       <div className="flex items-center justify-end gap-2 pt-1">
-        <button type="button" onClick={() => router.push('/crm')} className="rounded-lg px-4 py-2 text-sm font-medium text-subtle hover:text-text">
+        <button type="button" onClick={() => router.push('/admin/crm')} className="rounded-lg px-4 py-2 text-sm font-medium text-subtle hover:text-text">
           Cancel
         </button>
         <button

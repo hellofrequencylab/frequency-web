@@ -8,7 +8,7 @@
 // (the single place totals move); this module owns the derived math + display.
 
 /** Hosting-class zap actions accrue Amplitude at 2×. Mirrors the trigger CASE in
- *  20260614000000_rewards_economy_v2.sql — change both together. */
+ *  20260614200000_rewards_economy_v2.sql — change both together. */
 export const HOSTING_AMPLITUDE_ACTIONS = [
   'event_host',
   'program_run',

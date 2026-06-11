@@ -74,5 +74,5 @@ export async function updateProfile(data: {
   revalidatePath('/settings/profile')
   revalidatePath('/feed')
   revalidatePath('/people')
-  revalidatePath('/crm') // contact edits reflect in the CRM
+  revalidatePath('/admin/crm') // contact edits reflect in the CRM
 }

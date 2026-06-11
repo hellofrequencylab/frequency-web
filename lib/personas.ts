@@ -44,8 +44,8 @@ export const PERSONA_META: Record<
     unlocks: 'A business listing + loyalty rewards + CRM + web builder.',
     tools: [
       { label: 'Your listing', href: '/partners/listing' },
-      { label: 'Business CRM', href: '/crm' },
-      { label: 'Growth Studio', href: '/growth' },
+      { label: 'Business CRM', href: '/admin/crm' },
+      { label: 'Growth Studio', href: '/admin/growth' },
     ],
   },
   organization: {
@@ -54,8 +54,8 @@ export const PERSONA_META: Record<
     unlocks: 'Your own sub-community on Hook + CRM + gamification + promotion.',
     tools: [
       { label: 'Your listing', href: '/partners/listing' },
-      { label: 'Business CRM', href: '/crm' },
-      { label: 'Growth Studio', href: '/growth' },
+      { label: 'Business CRM', href: '/admin/crm' },
+      { label: 'Growth Studio', href: '/admin/growth' },
     ],
   },
 }

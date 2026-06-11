@@ -73,7 +73,7 @@ async function PipelineStat() {
       value={formatMoney(metrics.openValue)}
       icon={DollarSign}
       delta={{ label: `${metrics.openCount} open`, trend: 'flat' }}
-      href="/crm"
+      href="/admin/crm"
     />
   )
 }

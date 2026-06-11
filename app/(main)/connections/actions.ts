@@ -5,7 +5,7 @@ import { getCachedUser } from '@/lib/auth'
 import { contactsOwnerId } from '@/lib/connections/access'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { scanCardImage, assistFromText } from '@/lib/ai/connections-ai'
-import { dedupeTags, normalizeTag } from '@/lib/connections/normalize'
+import { dedupeTags, normalizeTag, coerceContactDetails } from '@/lib/connections/normalize'
 import * as store from '@/lib/connections/store'
 import { mergeContactProfile, dismissContactMatch, unmergeContact } from '@/lib/connections/matching'
 import { syncScanToCrm } from '@/lib/connections/crm-sync'
@@ -13,6 +13,7 @@ import { maybeSendScanIntro } from '@/lib/connections/invite'
 import type {
   ExtractedContact,
   ContactSocials,
+  ContactDetails,
   ContactSource,
   ContactStatus,
   Visibility,
@@ -37,10 +38,13 @@ async function assertOwnPath(path: string): Promise<string> {
 
 // ── AI harvest ───────────────────────────────────────────────────────────────
 
-/** Scan one or more images of the same contact (e.g. front + back of a card, plus
- *  other photos) that the client already uploaded to the private bucket. The temp
- *  scans are deleted after extraction (we keep only the cropped avatar). */
-export async function scanCard(paths: string[]): Promise<ExtractResult> {
+/** Scan one or more images of the same contact (front, optional back, plus other
+ *  photos) that the client already uploaded to the private bucket. Only the TEMP
+ *  scan uploads passed in here are cleaned up after extraction; the client keeps
+ *  the card on file by uploading the deskewed front/back to stable kept paths
+ *  ({userId}/{uuid}-front.jpg / -back.jpg) and passing them to createProfile.
+ *  `hasBack` tells the model image 2 is the back of the same card. */
+export async function scanCard(paths: string[], opts?: { hasBack?: boolean }): Promise<ExtractResult> {
   const ownerId = await requireOwner()
   const clean = (paths ?? []).slice(0, 6)
   for (const p of clean) await assertOwnPath(p)
@@ -53,7 +57,8 @@ export async function scanCard(paths: string[]): Promise<ExtractResult> {
     return { ok: false, reason: 'ai_unavailable' }
   }
 
-  // Download in order so the model's photo.imageIndex matches the client's list.
+  // Download in order so the model's imageIndex/corners line up with the
+  // client's list (front, back, extras).
   const images: { base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/webp' }[] = []
   for (const p of clean) {
     const img = await store.downloadImageBase64(p)
@@ -61,8 +66,8 @@ export async function scanCard(paths: string[]): Promise<ExtractResult> {
   }
   if (!images.length) { cleanup(); return { ok: false, reason: 'no_read' } }
 
-  const extraction = await scanCardImage({ images, profileId: ownerId })
-  cleanup() // best-effort delete of the temp scans
+  const extraction = await scanCardImage({ images, hasBack: opts?.hasBack === true, profileId: ownerId })
+  cleanup() // best-effort delete of the temp OCR scans only (keepers are uploaded separately)
 
   if (!extraction) return { ok: false, reason: 'no_result' }
   return { ok: true, extraction }
@@ -94,6 +99,12 @@ export interface CreateProfileInput {
   tags?: string[]
   connectionNote?: string
   avatarPath?: string | null
+  /** The flexible details rows from the form (re-validated server-side). */
+  details?: ContactDetails
+  /** Kept card images + logo, already uploaded by the client to its own folder. */
+  cardFrontPath?: string | null
+  cardBackPath?: string | null
+  logoPath?: string | null
   visibility?: Visibility
   extraction?: unknown
   /** Send the one-time intro/invite email to this contact (if they have an email). */
@@ -103,6 +114,9 @@ export interface CreateProfileInput {
 export async function createProfile(input: CreateProfileInput): Promise<{ id: string } | { error: string }> {
   const ownerId = await requireOwner()
   if (input.avatarPath) await assertOwnPath(input.avatarPath)
+  if (input.cardFrontPath) await assertOwnPath(input.cardFrontPath)
+  if (input.cardBackPath) await assertOwnPath(input.cardBackPath)
+  if (input.logoPath) await assertOwnPath(input.logoPath)
 
   const id = await store.createContact(ownerId, {
     source: input.source,
@@ -116,6 +130,10 @@ export async function createProfile(input: CreateProfileInput): Promise<{ id: st
     website: input.website,
     socials: input.socials,
     avatarPath: input.avatarPath ?? null,
+    details: coerceContactDetails(input.details),
+    cardFrontPath: input.cardFrontPath ?? null,
+    cardBackPath: input.cardBackPath ?? null,
+    logoPath: input.logoPath ?? null,
     extraction: input.extraction,
   })
   if (!id) return { error: 'Could not save the profile.' }
@@ -162,11 +180,16 @@ export interface UpdateProfileInput {
   city?: string
   website?: string
   socials?: ContactSocials
+  /** The flexible details rows from the edit form (re-validated server-side). */
+  details?: ContactDetails
 }
 
 export async function updateProfile(id: string, patch: UpdateProfileInput): Promise<void> {
   const ownerId = await requireOwner()
-  await store.updateContact(ownerId, id, patch)
+  await store.updateContact(ownerId, id, {
+    ...patch,
+    ...(patch.details !== undefined ? { details: coerceContactDetails(patch.details) } : {}),
+  })
   revalidatePath('/connections')
   revalidatePath(`/connections/${id}`)
 }

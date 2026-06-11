@@ -1,5 +1,5 @@
 // Campaign reads (ADR-126, Phase 2). A campaign (entry_campaigns) is a themed group
-// of entry points sharing a goal/branding; the admin builder (/marketing/funnels)
+// of entry points sharing a goal/branding; the admin builder (/admin/marketing/funnels)
 // manages them. entry_campaigns + qr_codes.campaign_id aren't in the generated DB
 // types until regen, so we read through an untyped handle (repo convention). The
 // mutations live in the funnels actions (admin-gated). Server-only.
