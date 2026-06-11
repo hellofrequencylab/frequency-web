@@ -106,13 +106,15 @@ export function DashArea({
 
 /** The tile grid that fills an area body — varied white tiles, responsive. */
 export function TileGrid({ children }: { children: React.ReactNode }) {
-  return <div className="mt-5 grid grid-cols-2 gap-3.5 lg:grid-cols-3">{children}</div>
+  // Single column below sm (every card full-width so values/labels never truncate),
+  // two-up at sm, three at lg. Do not tighten further on phones.
+  return <div className="mt-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
 }
 
 const SPAN = {
   1: 'col-span-1',
-  2: 'col-span-2',
-  3: 'col-span-2 lg:col-span-3',
+  2: 'col-span-1 sm:col-span-2',
+  3: 'col-span-1 sm:col-span-2 lg:col-span-3',
 } as const
 
 /** A white content tile — the only white surface in the area grammar. Optional

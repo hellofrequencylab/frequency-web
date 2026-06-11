@@ -44,7 +44,8 @@ export function AdminDashboardTab() {
       }`}
     >
       <HomeIcon className="h-4 w-4 shrink-0" aria-hidden />
-      {ADMIN_HOME.label}
+      {/* Icon-only on phones so it can't collide with the Areas pill; full label sm+. */}
+      <span className="hidden sm:inline">{ADMIN_HOME.label}</span>
     </Link>
   )
 }
@@ -69,8 +70,12 @@ export function AdminMobileNav({ role, webRole = 'none', staffRole = null }: Adm
         className="flex w-full items-center gap-2.5 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
       >
         <Menu className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        <span className="flex-1 text-left">Areas</span>
-        <span className="text-xs text-subtle">{activeDomain?.label ?? ADMIN_HOME.label}</span>
+        <span className="flex-1 truncate text-left">Areas</span>
+        {/* The current-domain hint wraps the row at 360px — drop it on phones, show
+            it from sm up where there's room. */}
+        <span className="hidden shrink-0 text-xs text-subtle sm:inline">
+          {activeDomain?.label ?? ADMIN_HOME.label}
+        </span>
       </button>
 
       {open && (
