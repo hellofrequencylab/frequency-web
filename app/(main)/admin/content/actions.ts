@@ -29,6 +29,7 @@ import {
   sendTip,
   dismissTip,
 } from '@/lib/ai/creator-tips'
+import { generatePosterReviews, resolveFlag } from '@/lib/ai/poster-observer'
 import { AiUnavailableError } from '@/lib/ai/complete'
 
 function ub(): SupabaseClient {
@@ -333,6 +334,49 @@ export async function generateTipsAction(): Promise<ActionResult<{ created: numb
     }
     return fail(e instanceof Error ? e.message : 'Could not generate tips.')
   }
+}
+
+export async function generatePosterReviewsAction(): Promise<ActionResult<{ created: number; skipped: number }>> {
+  let caller: { id: string }
+  try {
+    caller = await requireJanitor()
+  } catch {
+    return fail('Janitor only.')
+  }
+  try {
+    const result = await generatePosterReviews(caller.id)
+    revalidateContent('tips')
+    return ok(result)
+  } catch (e) {
+    if (e instanceof AiUnavailableError) {
+      return fail('AI is off or this feature is over budget for today. Try again later.')
+    }
+    return fail(e instanceof Error ? e.message : 'Could not generate poster reviews.')
+  }
+}
+
+/** Mark an internal spam flag reviewed. No notification ever goes out for a
+ *  flag; the honesty bands already throttle the reward automatically. */
+export async function resolveFlagAction(id: string): Promise<ActionResult> {
+  let caller: { id: string }
+  try {
+    caller = await requireJanitor()
+  } catch {
+    return fail('Janitor only.')
+  }
+  try {
+    await resolveFlag(id, caller.id)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not resolve the flag.')
+  }
+  await logAdminAction({
+    actorId: caller.id,
+    action: 'content.flag.resolve',
+    targetType: 'creator_tip',
+    targetId: id,
+  })
+  revalidateContent('tips')
+  return ok()
 }
 
 export async function approveAndSendTipAction(id: string, text: string): Promise<ActionResult> {
