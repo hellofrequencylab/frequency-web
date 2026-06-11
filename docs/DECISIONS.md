@@ -6341,6 +6341,8 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 **Update — P12 (pull-down dismiss):** the reveal accepts a pull-down anywhere — a clearly-vertical downward touch drag (dy > 80px, > 1.5× horizontal) slides the whole card stack down (300ms, reduced-motion exempt) and closes through the same guarded `onClose`. Horizontal paging unaffected.
 
+**Update — P13 (armed start):** entering the live screen no longer starts the clock — `start()` arms the session paused at zero (`pausedAt = startedAt`), so the screen opens still, the button reads **Start**, and the member begins in their own time. One-line change: arming IS a pause, so the P10 pause-shift math, cues, and airtime accounting all hold untouched.
+
 **Consequences:** The daily WAM act gains a ritual surface with zero new economy paths to audit. P3 items (PWA shortcut, desktop modal entry, bells/haptics, presence counter, custom pattern) and P4 (reveal animation/art pass) are scoped in docs/ON-AIR.md. Migration is additive + idempotent; regenerate database.types.ts after apply (new tables are read via untyped handles until then).
 
 

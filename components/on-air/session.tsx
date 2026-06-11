@@ -266,8 +266,13 @@ export function OnAirSession({
     lastPhase.current = null
     lastMinute.current = 0
     endCued.current = false
-    setPausedAt(null)
-    setStartedAt(Date.now())
+    // The live screen opens ARMED, not running (owner ask): the clock sits
+    // paused at zero until the member taps Start — settle in first. Arming
+    // counts as a pause from the very first millisecond, so the existing
+    // Start ⇄ Pause machinery (and the airtime math) needs nothing new.
+    const now = Date.now()
+    setStartedAt(now)
+    setPausedAt(now)
     setRemaining(minutes * 60)
     setStage('live')
     void acquireQuiet()
