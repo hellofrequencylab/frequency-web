@@ -1,8 +1,10 @@
-import { Suspense } from 'react'
+import { Fragment, Suspense } from 'react'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { ArrowUpRight, TrendingUp } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { dashCookie, sanitizeDashOrder } from '../dash-sections'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { DashArea, TileGrid, Tile, GraphTile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { TrendArea, WeekBars, RingGauge, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
@@ -29,6 +31,30 @@ const GROWTH_WEEKS = 12
 export default async function GrowthDashboard() {
   const { role, webRole, staffRole } = await requireAdmin('host', { staff: 'marketing' })
   const links = groupLinks('growth', role, webRole, staffRole)
+  const order = sanitizeDashOrder('growth', (await cookies()).get(dashCookie('growth'))?.value)
+
+  const sections: Record<string, React.ReactNode> = {
+    funnel: (
+      <Suspense fallback={<DashSkeleton title="Funnel & activation" />}>
+        <FunnelArea />
+      </Suspense>
+    ),
+    pipeline: (
+      <Suspense fallback={<DashSkeleton title="Pipeline" />}>
+        <PipelineArea />
+      </Suspense>
+    ),
+    expansion: (
+      <Suspense fallback={<DashSkeleton title="Expansion" />}>
+        <ExpansionArea />
+      </Suspense>
+    ),
+    work: (
+      <AdminSection title="Work in Growth" description="Every surface in this domain you can reach.">
+        <AreaTiles links={links} />
+      </AdminSection>
+    ),
+  }
 
   return (
     <AdminTemplate
@@ -38,21 +64,9 @@ export default async function GrowthDashboard() {
       width="wide"
       description="Grow it. Funnels, onboarding, pipeline, campaigns, and the expansion signal. Start with whatever needs your attention, then dig into a surface."
     >
-      <Suspense fallback={<DashSkeleton title="Funnel & activation" />}>
-        <FunnelArea />
-      </Suspense>
-
-      <Suspense fallback={<DashSkeleton title="Pipeline" />}>
-        <PipelineArea />
-      </Suspense>
-
-      <Suspense fallback={<DashSkeleton title="Expansion" />}>
-        <ExpansionArea />
-      </Suspense>
-
-      <AdminSection title="Work in Growth" description="Every surface in this domain you can reach.">
-        <AreaTiles links={links} />
-      </AdminSection>
+      {order.map((id) => (
+        <Fragment key={id}>{sections[id]}</Fragment>
+      ))}
     </AdminTemplate>
   )
 }

@@ -1,8 +1,10 @@
-import { Suspense } from 'react'
+import { Fragment, Suspense } from 'react'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { ArrowUpRight, Users } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
+import { dashCookie, sanitizeDashOrder } from '../dash-sections'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { DashArea, TileGrid, Tile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { AttentionList, type AttentionItem } from '@/components/admin/attention-list'
@@ -27,6 +29,25 @@ const DAY = 24 * 60 * 60 * 1000
 export default async function CommunityDashboard() {
   const { role, webRole, staffRole } = await requireAdmin('host', { staff: 'community' })
   const links = groupLinks('community', role, webRole, staffRole)
+  const order = sanitizeDashOrder('community', (await cookies()).get(dashCookie('community'))?.value)
+
+  const sections: Record<string, React.ReactNode> = {
+    trust: (
+      <Suspense fallback={<DashSkeleton title="Trust & safety" />}>
+        <TrustSafetyArea />
+      </Suspense>
+    ),
+    structure: (
+      <Suspense fallback={<DashSkeleton title="Structure & people" />}>
+        <StructureArea />
+      </Suspense>
+    ),
+    work: (
+      <AdminSection title="Work in Community" description="Every surface in this domain you can manage.">
+        <AreaTiles links={links} />
+      </AdminSection>
+    ),
+  }
 
   return (
     <AdminTemplate
@@ -36,17 +57,9 @@ export default async function CommunityDashboard() {
       width="wide"
       description="The people and their spaces. Circles, members, events, and trust and safety. Start with whatever needs your attention, then dig into a surface."
     >
-      <Suspense fallback={<DashSkeleton title="Trust & safety" />}>
-        <TrustSafetyArea />
-      </Suspense>
-
-      <Suspense fallback={<DashSkeleton title="Structure & people" />}>
-        <StructureArea />
-      </Suspense>
-
-      <AdminSection title="Work in Community" description="Every surface in this domain you can manage.">
-        <AreaTiles links={links} />
-      </AdminSection>
+      {order.map((id) => (
+        <Fragment key={id}>{sections[id]}</Fragment>
+      ))}
     </AdminTemplate>
   )
 }
