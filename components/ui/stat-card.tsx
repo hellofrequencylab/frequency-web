@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { TrendArea } from '@/components/admin/spark-charts'
 
 // One stat tile for KPI rows and dashboards (crew home, Studio, admin). The
 // audits found stat strips static (no time-axis) and over-boxed; this tile is a
@@ -44,6 +45,7 @@ export function StatCard({
   href,
   bordered = false,
   size = 'md',
+  sparkline,
 }: {
   label: React.ReactNode
   value: React.ReactNode
@@ -56,6 +58,9 @@ export function StatCard({
   bordered?: boolean
   /** 'sm' = compact tile (text-sm value) for phrase values that would wrap at 2xl. */
   size?: 'md' | 'sm'
+  /** Optional trend series rendered as a sparkline under the stat (ADR-233: value +
+   *  delta + context visual — never a bare number). */
+  sparkline?: number[]
 }) {
   const t = delta ? TREND[delta.trend ?? 'flat'] : null
   const sm = size === 'sm'
@@ -82,6 +87,11 @@ export function StatCard({
           <t.Icon className="h-3.5 w-3.5 shrink-0" />
           {delta.label}
         </p>
+      )}
+      {sparkline && sparkline.length > 1 && (
+        <div className="mt-2 h-8">
+          <TrendArea points={sparkline} height={32} />
+        </div>
       )}
     </>
   )
