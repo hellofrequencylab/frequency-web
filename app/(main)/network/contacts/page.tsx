@@ -6,6 +6,7 @@ import { listContacts } from '@/lib/connections/store'
 import { findContactMatches } from '@/lib/connections/matching'
 import { getInitials } from '@/lib/utils'
 import { IndexTemplate } from '@/components/templates'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { ContactMatches } from '@/components/connections/contact-matches'
@@ -80,27 +81,21 @@ export default async function ConnectionsPage({
           </Link>
         }
         toolbar={
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border">
-            <div className="flex gap-1">
-              {STATUS_TABS.map((t) => {
-                const active = status === t.key
-                const count = all.filter((c) => matches(c, t.key, q)).length
-                const href = t.key === 'all'
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <UnderlineTabs
+              activeHref={
+                status === 'all'
                   ? `/network/contacts${q ? `?q=${encodeURIComponent(q)}` : ''}`
-                  : `/network/contacts?status=${t.key}${q ? `&q=${encodeURIComponent(q)}` : ''}`
-                return (
-                  <Link
-                    key={t.key}
-                    href={href}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                      active ? 'border-primary text-primary-strong' : 'border-transparent text-muted hover:text-text'
-                    }`}
-                  >
-                    {t.label} <span className="text-subtle">{count}</span>
-                  </Link>
-                )
-              })}
-            </div>
+                  : `/network/contacts?status=${status}${q ? `&q=${encodeURIComponent(q)}` : ''}`
+              }
+              tabs={STATUS_TABS.map((t) => ({
+                href: t.key === 'all'
+                  ? `/network/contacts${q ? `?q=${encodeURIComponent(q)}` : ''}`
+                  : `/network/contacts?status=${t.key}${q ? `&q=${encodeURIComponent(q)}` : ''}`,
+                label: t.label,
+                count: all.filter((c) => matches(c, t.key, q)).length,
+              }))}
+            />
             <form className="relative pb-2" action="/network/contacts" method="get">
               {status !== 'all' && <input type="hidden" name="status" value={status} />}
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-[calc(50%+4px)] text-subtle" />
