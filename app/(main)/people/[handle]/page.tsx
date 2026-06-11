@@ -95,6 +95,7 @@ export default async function ProfilePage({
       current_streak,
       lifetime_gems,
       is_demo,
+      is_system,
       vcard,
       nexus_regions!nexus_region_id ( name )
     `)
@@ -268,7 +269,8 @@ export default async function ProfilePage({
       }
       badges={
         <span className="flex items-center gap-2 flex-wrap">
-          <RoleBadge role={role} className="text-xs leading-tight" />
+          {/* The system voice (Vera, ADR-231) shows "Moderator" — never the web role. */}
+          <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-xs leading-tight" />
           {isSupporter && <SupporterBadge />}
           {rankEndorsed && (
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>{rank.name}</span>
