@@ -498,25 +498,34 @@ export function Composer({
             <Maximize2 className="h-4 w-4" />
           </Tool>
         )}
+
+        {compactTools && !expanded && (
+          <Tool onClick={() => setToolsOpen(false)} label="Hide formatting">
+            <ChevronDown className="h-4 w-4" />
+          </Tool>
+        )}
       </div>
       )}
 
-      {/* Settings + send. The Format toggle sits here, under the divider — the
-          little arrow points up at where the tools unfold. */}
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        {compactTools && !expanded && (
+      {/* Folded: the Format handle rides the fold line itself — its own slim
+          row where the tools unfold, so the feature selector below never gets
+          squeezed. */}
+      {compactTools && !toolsOpen && !expanded && (
+        <div className="mt-1.5">
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => setToolsOpen((v) => !v)}
-            aria-expanded={toolsOpen}
-            className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1 py-1 text-2xs font-medium text-subtle transition-colors hover:text-text"
+            onClick={() => setToolsOpen(true)}
+            aria-expanded={false}
+            className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-2xs font-medium text-subtle transition-colors hover:text-text"
           >
-            {toolsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
-            Format
+            <ChevronUp className="h-3 w-3" /> Format
           </button>
-        )}
+        </div>
+      )}
+
+      {/* Settings + send. */}
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
         {bottomSlot != null ? (
           bottomSlot
         ) : canAnnounce && kind !== 'note' ? (
@@ -547,7 +556,6 @@ export function Composer({
         ) : (
           <span />
         )}
-        </div>
 
         <div className="flex items-center gap-2.5">
           <span className="hidden text-2xs text-subtle sm:inline">⌘ + Enter</span>
