@@ -8,6 +8,7 @@ import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
 import { NfcWriter } from './nfc-writer'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
+import { Button } from '@/components/ui/button'
 
 export interface StudioNode {
   id: string
@@ -92,12 +93,9 @@ export function QrStudio({
               </p>
             </div>
             {!creating && (
-              <button
-                onClick={() => setCreating(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors"
-              >
+              <Button size="sm" onClick={() => setCreating(true)}>
                 <Plus className="w-3.5 h-3.5" /> New code
-              </button>
+              </Button>
             )}
           </div>
           {creating && (
@@ -526,14 +524,10 @@ export function NodeForm({
       {error && <p className="text-xs text-danger">{error}</p>}
 
       <div className="flex items-center gap-2">
-        <button
-          onClick={submit}
-          disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
-        >
+        <Button size="sm" onClick={submit} disabled={pending} className="disabled:opacity-60">
           <QrCode className="w-3.5 h-3.5" />
           {pending ? 'Saving…' : node ? 'Save changes' : 'Create code'}
-        </button>
+        </Button>
         <button
           onClick={onCancel}
           className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"

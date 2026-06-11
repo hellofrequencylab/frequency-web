@@ -8,6 +8,7 @@ import {
   deleteStoreItem,
   toggleStoreItemActive,
 } from './actions'
+import { Button } from '@/components/ui/button'
 import type { Database } from '@/lib/database.types'
 
 type StoreCategory = Database['public']['Enums']['store_category']
@@ -197,14 +198,10 @@ function ItemForm({
       </div>
 
       <div className="flex items-center gap-2 pt-1">
-        <button
-          type="submit"
-          disabled={pending}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
-        >
+        <Button type="submit" disabled={pending} className="flex-1">
           {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           {item ? 'Save changes' : 'Create item'}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onCancel}
@@ -241,13 +238,10 @@ export function NewItemButton() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
-      >
+      <Button onClick={() => setOpen(true)} className="whitespace-nowrap">
         <Plus className="w-4 h-4" />
         New item
-      </button>
+      </Button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
