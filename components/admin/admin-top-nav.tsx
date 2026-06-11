@@ -48,6 +48,15 @@ function linkActive(pathname: string, href: string) {
   return href === pathname || pathname.startsWith(`${href}/`)
 }
 
+/** Split a flat link list into balanced mega-menu columns of at most `size`
+ *  (a domain with no `section` buckets still reads as columns, not a strip). */
+function chunkLinks(links: AdminLink[], size: number): AdminLink[][] {
+  if (links.length === 0) return []
+  const cols = Math.ceil(links.length / size)
+  const per = Math.ceil(links.length / cols)
+  return Array.from({ length: cols }, (_, i) => links.slice(i * per, (i + 1) * per))
+}
+
 // ── Desktop: one dropdown per domain ─────────────────────────────────────────
 function DomainMenu({
   group,
@@ -108,14 +117,14 @@ function DomainMenu({
         <div
           role="menu"
           aria-label={group.label}
-          className="absolute left-0 top-full z-50 mt-1.5 w-80 rounded-2xl border border-border bg-surface p-1.5 shadow-pop"
+          className="absolute left-0 top-full z-50 mt-1.5 min-w-72 max-w-[min(56rem,calc(100vw-3rem))] rounded-2xl border border-border bg-surface p-2 shadow-pop"
         >
-          {/* The domain dashboard is always the first item. */}
+          {/* The domain dashboard is the full-width header row of the mega-menu. */}
           <Link
             href={group.href}
             role="menuitem"
             onClick={() => setOpen(false)}
-            className={`mb-1 flex items-center gap-2.5 rounded-xl px-3 py-2 ${
+            className={`mb-1.5 flex items-center gap-2.5 rounded-xl px-3 py-2 ${
               pathname === group.href ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
             }`}
           >
@@ -130,43 +139,47 @@ function DomainMenu({
             </span>
           </Link>
 
-          {sections.map((section, i) => (
-            <div key={section.section || `flat-${i}`} className="border-t border-border/70 pt-1">
-              {section.section && (
-                <p className="px-3 pb-0.5 pt-1.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
-                  {section.section}
-                </p>
-              )}
-              {section.links.map((link) => {
-                const LinkIcon = link.Icon
-                const isActive = linkActive(pathname, link.href)
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    role="menuitem"
-                    onClick={() => setOpen(false)}
-                    className={`flex items-start gap-2.5 rounded-xl px-3 py-2 ${
-                      isActive ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
-                    }`}
-                  >
-                    <LinkIcon
-                      className={`mt-0.5 h-[18px] w-[18px] shrink-0 ${isActive ? 'text-primary-strong' : 'text-subtle'}`}
-                      aria-hidden
-                    />
-                    <span className="min-w-0">
-                      <span
-                        className={`block text-sm font-semibold ${isActive ? 'text-primary-strong' : 'text-text'}`}
-                      >
-                        {link.label}
-                      </span>
-                      <span className="block text-xs leading-snug text-muted">{link.desc}</span>
-                    </span>
-                  </Link>
-                )
-              })}
-            </div>
-          ))}
+          {/* Sections as side-by-side COLUMNS (the mega-menu): Operations gets its four
+              titled columns (Community / People / Trust & safety / Site & system); a flat
+              domain (one unlabeled bucket) is split into balanced columns of ~6. */}
+          <div className="flex flex-wrap gap-1 border-t border-border/70 pt-1.5">
+            {(sections.length > 1
+              ? sections
+              : chunkLinks(sections[0]?.links ?? [], 6).map((links) => ({ section: '', links }))
+            ).map((section, i) => (
+              <div key={section.section || `col-${i}`} className="w-56 min-w-0">
+                {section.section && (
+                  <p className="px-3 pb-1 pt-1 text-3xs font-semibold uppercase tracking-wider text-subtle">
+                    {section.section}
+                  </p>
+                )}
+                {section.links.map((link) => {
+                  const LinkIcon = link.Icon
+                  const isActive = linkActive(pathname, link.href)
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      role="menuitem"
+                      title={link.desc}
+                      onClick={() => setOpen(false)}
+                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ${
+                        isActive
+                          ? 'bg-primary-bg font-semibold text-primary-strong'
+                          : 'font-medium text-text hover:bg-surface-elevated'
+                      }`}
+                    >
+                      <LinkIcon
+                        className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-primary-strong' : 'text-subtle'}`}
+                        aria-hidden
+                      />
+                      <span className="truncate">{link.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
