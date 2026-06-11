@@ -2,11 +2,14 @@ import { describe, it, expect } from 'vitest'
 import {
   deriveCommunityLevel,
   communityRoleToLevel,
+  communityStanding,
   roleToLevel,
   leadsScope,
   levelRank,
+  type CommunityLevel,
   type StewardshipEdge,
 } from '@/lib/core/stewardship'
+import { roleRank, type CommunityRole } from '@/lib/core/roles'
 
 // Edge builders for readable cases.
 const host = (scopeId = 'c1'): StewardshipEdge => ({ role: 'host', scopeType: 'circle', scopeId })
@@ -103,5 +106,49 @@ describe('levelRank', () => {
     expect(levelRank('crew')).toBeLessThan(levelRank('host'))
     expect(levelRank('host')).toBeLessThan(levelRank('guide'))
     expect(levelRank('guide')).toBeLessThan(levelRank('mentor'))
+  })
+})
+
+// ─── communityStanding — the surface matrix's community column (P1.6 PR 2, ADR-221) ──
+describe('communityStanding (the matrix standing — additive, never a downgrade)', () => {
+  const LEVELS: readonly CommunityLevel[] = ['member', 'crew', 'host', 'guide', 'mentor']
+  const ROLES: readonly CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'admin', 'janitor']
+
+  it('is a NO-OP for every community rung member…mentor (level === role since the cache is floored)', () => {
+    // Because community_level >= communityRoleToLevel(community_role) ALWAYS, the level
+    // passed in is at least the role's level; for member…mentor the result is the role itself.
+    for (const role of ['member', 'crew', 'host', 'guide', 'mentor'] as const) {
+      const level = communityRoleToLevel(role) // the cache's floor for this role
+      expect(communityStanding(level, role)).toBe(role)
+    }
+  })
+
+  it('THE FLOOR INVARIANT: result rank is never below the legacy community_role', () => {
+    // Exhaustive over the (level × role) grid: communityStanding can only ADD standing.
+    for (const level of LEVELS) {
+      for (const role of ROLES) {
+        const out = communityStanding(level, role)
+        expect(roleRank(out)).toBeGreaterThanOrEqual(roleRank(role))
+        expect(roleRank(out)).toBeGreaterThanOrEqual(roleRank(level as CommunityRole))
+      }
+    }
+  })
+
+  it('keeps a global admin/janitor matrix column (they rank above the mentor level cap)', () => {
+    // The derived level tops out at mentor, but a legacy global admin/janitor must keep
+    // its column — the max guard preserves it.
+    expect(communityStanding('mentor', 'admin')).toBe('admin')
+    expect(communityStanding('mentor', 'janitor')).toBe('janitor')
+  })
+
+  it('an edge-derived level above the role lifts the standing (a global member leading a hub)', () => {
+    // community_level='guide' from an edge, but community_role='member' → matrix sees guide.
+    expect(communityStanding('guide', 'member')).toBe('guide')
+    expect(communityStanding('host', 'member')).toBe('host')
+  })
+
+  it('fails closed on a null community_role (member floor)', () => {
+    expect(communityStanding('member', null)).toBe('member')
+    expect(communityStanding('host', undefined)).toBe('host')
   })
 })
