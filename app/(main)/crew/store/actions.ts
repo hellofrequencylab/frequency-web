@@ -6,6 +6,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { canCashIn } from '@/lib/core/entitlement'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 
 export async function redeemItem(itemId: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
@@ -22,7 +24,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
       .eq('id', itemId)
       .maybeSingle(),
     admin.from('profiles')
-      .select('id, lifetime_gems, current_season_rank')
+      .select('id, lifetime_gems, current_season_rank, membership_tier')
       .eq('id', profileId)
       .maybeSingle(),
     admin.from('store_redemptions')
@@ -43,6 +45,16 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
 
   if (!item) return fail('Item not found')
   if (!item.is_active) return fail('Item is no longer available')
+
+  // Cash-in is the PAID unlock (ROLES.md §Entitlement; the Vault ✋→✅ gate). Accrual
+  // runs for everyone; spending Gems / claiming rewards is gated on the real entitlement
+  // column — never the (retired) community role (ADR-207/225). The store UI already mutes
+  // the grid for free members (CrewGate), but the server action is the authority, so we
+  // enforce it here too and hand back a clean upsell pointing at /upgrade.
+  const tier = ((profile as { membership_tier?: EntitlementTier | null } | null)?.membership_tier) ?? 'free'
+  if (!canCashIn(tier)) {
+    return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems — you keep everything you’ve earned.')
+  }
 
   // Season-exclusive + retiring SKUs (Rewards Economy v2): an S1 item stops
   // selling at season close; expires_at is a hard cutoff.
