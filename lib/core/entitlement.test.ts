@@ -21,7 +21,7 @@ describe('isPaid', () => {
   })
 })
 
-describe('canCashIn — the Vault cash-in (spend/claim) gate (P2.6, ADR-225)', () => {
+describe('canCashIn — the Vault cash-in (spend/claim) gate (P2.6, ADR-226)', () => {
   it('only the paid tiers can cash in; free accrues but cannot spend', () => {
     expect(canCashIn('free')).toBe(false)
     expect(canCashIn('crew')).toBe(true)

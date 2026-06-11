@@ -6261,7 +6261,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 **Consequences.** Every promotion up the ladder (member → host → guide → mentor) now has a curated path; the curriculum selection logic is pure + tested (14 unit tests); help articles can be associated with a role/feature additively. Operator-facing "how to author / run the curriculum" instructional content belongs in the **Notion** "Web Platform — Training & Strategy" DB per the docs protocol (link back to this ADR + the authoring surface) — flagged as a follow-up, not blocking. Follow-ups: the in-place curriculum editor (write-through to a future table), and a coachmark/tour step per article (ADR-157 item 3) once the tour system is wired to training.
 
-## ADR-225: P2 billing remainder — `membership_tier` is the sole paid source; Vault cash-in gated on the tier; the crew-role conflation removed
+## ADR-226: P2 billing remainder — `membership_tier` is the sole paid source; Vault cash-in gated on the tier; the crew-role conflation removed
 
 **Status:** Accepted · `lib/core/entitlement.ts` (`canCashIn`, + test), `app/(main)/crew/store/actions.ts` (`redeemItem` server-side gate), `app/api/stripe/webhook/route.ts` (drop the `community_role='crew'` write), `lib/core/viewer-hats.ts` + `app/(main)/crew/store/page.tsx` (stale-comment re-point). Implements BUILD-LIST **P2.1 remainder** + **P2.6** (cash-in eligibility). Builds on ADR-163 (the three-axis role model), ADR-207 (crew role value retired), ADR-037 (free-app + accruing Vault, membership-to-cash-in); **supersedes** the ADR-208 "auto-set `community_role='crew'` on payment" business rule.
 
