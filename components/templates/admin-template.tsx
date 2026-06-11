@@ -29,6 +29,7 @@ export function AdminTemplate({
   eyebrow,
   description,
   actions,
+  back,
   width = 'default',
   children,
 }: {
@@ -40,6 +41,8 @@ export function AdminTemplate({
   description?: React.ReactNode
   /** Right-aligned header controls (buttons, links). */
   actions?: React.ReactNode
+  /** Back-link for a nested admin sub-page (entity detail). */
+  back?: { href: string; label: string }
   width?: keyof typeof WIDTHS
   children: React.ReactNode
 }) {
@@ -59,6 +62,7 @@ export function AdminTemplate({
         }
         description={description}
         actions={actions}
+        back={back}
       />
       <div className="space-y-6">{children}</div>
     </div>

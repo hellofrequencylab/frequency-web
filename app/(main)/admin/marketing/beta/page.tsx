@@ -1,6 +1,7 @@
 import { listBetaSignups, summarizeBeta, pendingEmailCount, type BetaStatus } from '@/lib/studio/beta'
 import { admitBetaSignup, resendBetaConfirm, drainQueueNow } from './actions'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
+import { Button } from '@/components/ui/button'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -32,7 +33,7 @@ export default async function BetaPage() {
   const stats = summarizeBeta(signups)
 
   return (
-    <DashboardTemplate
+    <AdminTemplate
       eyebrow="Marketing"
       title="Beta waitlist"
       description="People who asked to join the community Beta. Admit confirmed signups in batches to send them their invite to create an account."
@@ -47,12 +48,9 @@ export default async function BetaPage() {
             </span>
           </p>
           <form action={drainQueueNow}>
-            <button
-              type="submit"
-              className="shrink-0 rounded-lg bg-primary text-on-primary px-3.5 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors"
-            >
+            <Button type="submit" size="sm" className="shrink-0">
               Send queued emails now
-            </button>
+            </Button>
           </form>
         </div>
       )}
@@ -93,22 +91,12 @@ export default async function BetaPage() {
                   <td className="px-4 py-2.5 text-right">
                     {s.status === 'confirmed' && (
                       <form action={admitBetaSignup.bind(null, s.id)} className="inline">
-                        <button
-                          type="submit"
-                          className="rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors"
-                        >
-                          Admit
-                        </button>
+                        <Button type="submit" size="sm">Admit</Button>
                       </form>
                     )}
                     {s.status === 'pending' && (
                       <form action={resendBetaConfirm.bind(null, s.id)} className="inline">
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-text hover:border-border-strong transition-colors"
-                        >
-                          Resend confirm
-                        </button>
+                        <Button type="submit" variant="secondary" size="sm">Resend confirm</Button>
                       </form>
                     )}
                     {s.status === 'invited' && (
@@ -122,6 +110,6 @@ export default async function BetaPage() {
           </table>
         </div>
       )}
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }

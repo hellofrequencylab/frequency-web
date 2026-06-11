@@ -11,16 +11,15 @@ import {
 } from 'lucide-react'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { getStudioCounts } from '@/lib/studio/analytics'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 
 export const dynamic = 'force-dynamic'
 
 // Marketing overview: the entry hall to the workspace. Every tool in the
-// Marketing tab bar also gets a card here, so the overview is a real index
-// rather than a single Contacts link. Cards mirror the tabs in
-// app/(main)/marketing/sub-nav.tsx (same icons, same order).
+// Growth dropdown (ADR-228) also gets a card here, so the overview is a real index
+// rather than a single Contacts link.
 type Module = {
   href: string
   label: string
@@ -76,8 +75,8 @@ export default async function MarketingOverview() {
   ])
 
   return (
-    <DashboardTemplate
-      eyebrow="Marketing"
+    <AdminTemplate
+      eyebrow="Growth"
       title="Marketing"
       description="Your marketing workspace. Contacts, campaigns, automations, analytics, and the AI operator live here. Everything sends through the one spine and reads from the one event backbone."
     >
@@ -118,6 +117,6 @@ export default async function MarketingOverview() {
           </Link>
         ))}
       </div>
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }

@@ -4,7 +4,8 @@ import { searchContacts, type ContactCore } from '@/lib/crm/person'
 import { setContactConsent } from './actions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ScanInviteToggle } from './scan-invite-toggle'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 
 export const dynamic = 'force-dynamic'
@@ -61,7 +62,7 @@ export default async function ContactsPage({
   const scanInviteOn = flagRow?.value ?? false
 
   return (
-    <DashboardTemplate
+    <AdminTemplate
       eyebrow="Marketing"
       title="Contacts"
       description="The unified CRM record for leads, customers, and members. Email is the join key; members auto-link on signup. Click anyone to see their User Stats: every record about them, grouped, and the path they took through the system."
@@ -84,9 +85,7 @@ export default async function ContactsPage({
             className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text outline-none placeholder:text-subtle focus:border-border-strong"
           />
         </div>
-        <button type="submit" className="rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-on-primary hover:bg-primary-strong transition-colors">
-          Search
-        </button>
+        <Button type="submit">Search</Button>
         {q && (
           <Link href={hrefFor(filter, '')} className="text-sm font-medium text-muted hover:text-text">
             Clear
@@ -170,6 +169,6 @@ export default async function ContactsPage({
           </table>
         </div>
       )}
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }

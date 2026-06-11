@@ -9,6 +9,7 @@ import { createDeal, moveDeal } from './actions'
 import { isError } from '@/lib/action-result'
 import { formatMoney, type CrmStage, type CrmDeal, type PersonLite } from '@/lib/crm/pipeline'
 import { getInitials } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: CrmDeal[] }) {
   const router = useRouter()
@@ -74,13 +75,9 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
         <p className="text-sm text-muted">
           {deals.length} deal{deals.length === 1 ? '' : 's'} across {stages.length} stages
         </p>
-        <button
-          type="button"
-          onClick={() => setAdding((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-        >
+        <Button type="button" size="sm" onClick={() => setAdding((v) => !v)}>
           <Plus className="h-4 w-4" /> New deal
-        </button>
+        </Button>
       </div>
 
       {adding && (
@@ -104,14 +101,9 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
           </select>
           <div className="flex gap-2">
             <input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={`min-w-0 flex-1 ${field}`} title="Expected close" />
-            <button
-              type="button"
-              disabled={pending}
-              onClick={submitNew}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-            >
+            <Button type="button" size="sm" disabled={pending} onClick={submitNew} className="shrink-0">
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -1,7 +1,8 @@
 import { Check, X, Sparkles, PenLine } from 'lucide-react'
 import { listActions } from '@/lib/studio/agent'
 import { generateProposals, generateContentDrafts, approveAction, dismissAction } from './actions'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
+import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -11,29 +12,23 @@ export default async function AgentPage() {
   const [proposed, executed] = await Promise.all([listActions('proposed'), listActions('executed')])
 
   return (
-    <DashboardTemplate
+    <AdminTemplate
       eyebrow="Marketing"
       title="Agent Console"
       description="The operator proposes actions; you approve. Every approved action runs through the spine (consent + suppression + unsubscribe), so the agent can never bypass the guardrails. The proposer is deterministic for now; a live Claude operator slots in here later."
     >
       <div className="flex flex-wrap gap-2">
         <form action={generateProposals}>
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-sm font-semibold px-4 py-2 shadow-sm transition-colors"
-          >
+          <Button type="submit">
             <Sparkles className="w-4 h-4" />
             Generate winbacks
-          </button>
+          </Button>
         </form>
         <form action={generateContentDrafts}>
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface hover:bg-surface-elevated text-text text-sm font-semibold px-4 py-2 shadow-sm transition-colors"
-          >
+          <Button type="submit" variant="secondary">
             <PenLine className="w-4 h-4" />
             Generate content drafts
-          </button>
+          </Button>
         </form>
       </div>
 
@@ -100,6 +95,6 @@ export default async function AgentPage() {
           </div>
         )}
       </section>
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }
