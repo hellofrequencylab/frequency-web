@@ -1,14 +1,22 @@
 'use client'
 
-// The library table: sortable stat columns + bulk on/off master switches for
-// Public and Template. Sorting is client-side (the page hands down all rows);
-// the master switch flips exactly the rows on this table, never the review
-// queue, via setAllPracticeFlagsAction.
+// The library table: sortable stat columns + bulk on/off master switches for Public
+// and Template. Sorting is client-side (the page hands down all rows); the master
+// switch flips exactly the rows on this table, never the review queue, via
+// setAllPracticeFlagsAction.
+//
+// KIT GAP (ADR-233): DataTable models selection → bulkActions and SERVER (URL) sort.
+// This surface needs (a) client-side in-memory sort over the full handed-down row set
+// and (b) always-on per-column MASTER SWITCHES that flip a flag for every row at once
+// (not a selection-driven bulk action). Neither is in DataTable's contract, so the
+// table stays bespoke here — but it now speaks the shared StatusChip vocabulary and
+// uses only semantic tokens. See the PR description for the proposed contract.
 
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, ChevronUp, ChevronDown } from 'lucide-react'
+import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { setAllPracticeFlagsAction } from '../actions'
 import {
   PracticeFeatureToggle,
@@ -31,11 +39,11 @@ export interface LibraryRow {
   featured: boolean
 }
 
-const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
-  pending: { label: 'Pending', cls: 'bg-signal/10 text-signal' },
-  approved: { label: 'Approved', cls: 'bg-success/10 text-success' },
-  rejected: { label: 'Rejected', cls: 'bg-danger-bg text-danger' },
-  draft: { label: 'Draft', cls: 'bg-border/60 text-muted' },
+const STATUS_TONE: Record<string, { tone: StatusTone; label: string }> = {
+  pending: { tone: 'info', label: 'Pending' },
+  approved: { tone: 'success', label: 'Approved' },
+  rejected: { tone: 'danger', label: 'Rejected' },
+  draft: { tone: 'neutral', label: 'Draft' },
 }
 
 type SortKey = 'score' | 'title' | 'adopters' | 'logs_30d' | 'logs_total' | 'created_at'
@@ -51,7 +59,7 @@ const SORTS: Record<SortKey, (a: LibraryRow, b: LibraryRow) => number> = {
 
 function PlainHeader({ children, center = false }: { children: React.ReactNode; center?: boolean }) {
   return (
-    <span className={`block text-xs font-semibold uppercase tracking-wider text-subtle ${center ? 'text-center' : ''}`}>
+    <span className={`block text-xs font-semibold uppercase tracking-wide text-muted ${center ? 'text-center' : ''}`}>
       {children}
     </span>
   )
@@ -77,12 +85,12 @@ function SortHeader({
     <button
       type="button"
       onClick={() => onSort(k)}
-      className={`flex items-center gap-0.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
-        active ? 'text-text' : 'text-subtle hover:text-text'
+      className={`flex items-center gap-0.5 text-xs font-semibold uppercase tracking-wide transition-colors motion-reduce:transition-none ${
+        active ? 'text-text' : 'text-muted hover:text-text'
       } ${center ? 'justify-center' : ''}`}
     >
       {children}
-      {active && (flipped ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+      {active && (flipped ? <ChevronUp className="h-3 w-3" aria-hidden /> : <ChevronDown className="h-3 w-3" aria-hidden />)}
     </button>
   )
 }
@@ -108,12 +116,12 @@ function MasterSwitch({
       onClick={() => onToggle(!on)}
       title={`Turn ${label} ${on ? 'off' : 'on'} for all ${count}`}
       aria-label={`All ${label} ${on ? 'off' : 'on'}`}
-      className={`relative mx-auto mt-1 block h-3.5 w-7 rounded-full transition-colors disabled:opacity-50 ${
-        on ? 'bg-primary' : 'bg-border'
+      className={`relative mx-auto mt-1 block h-3.5 w-7 rounded-full transition-colors disabled:opacity-50 motion-reduce:transition-none ${
+        on ? 'bg-primary' : 'bg-border-strong'
       }`}
     >
       <span
-        className={`absolute top-0.5 h-2.5 w-2.5 rounded-full bg-surface shadow transition-all ${
+        className={`absolute top-0.5 h-2.5 w-2.5 rounded-full bg-surface shadow transition-all motion-reduce:transition-none ${
           on ? 'left-4' : 'left-0.5'
         }`}
       />
@@ -154,7 +162,7 @@ export function PracticesTable({ rows }: { rows: LibraryRow[] }) {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-      <div className="hidden border-b border-border px-4 py-2 lg:grid lg:grid-cols-[1fr_110px_76px_64px_64px_64px_84px_72px_76px_56px] lg:items-center lg:gap-2.5">
+      <div className="hidden border-b border-border bg-surface-elevated/50 px-4 py-2 lg:grid lg:grid-cols-[1fr_110px_76px_64px_64px_64px_84px_72px_76px_56px] lg:items-center lg:gap-2.5">
         <SortHeader k="title" sortKey={sortKey} flipped={flipped} onSort={setSort}>Practice</SortHeader>
         <PlainHeader>Creator</PlainHeader>
         <SortHeader k="adopters" center sortKey={sortKey} flipped={flipped} onSort={setSort}>Adopters</SortHeader>
@@ -172,9 +180,9 @@ export function PracticesTable({ rows }: { rows: LibraryRow[] }) {
         </div>
         <PlainHeader center>Feature</PlainHeader>
       </div>
-      <div className="divide-y divide-border/50">
+      <div className="divide-y divide-border/60">
         {sorted.map((p) => {
-          const st = STATUS_STYLES[p.status] ?? STATUS_STYLES.approved
+          const st = STATUS_TONE[p.status] ?? STATUS_TONE.approved
           const age = Math.max(0, Math.floor((now - new Date(p.created_at).getTime()) / 86_400_000))
           return (
             <div
@@ -184,7 +192,7 @@ export function PracticesTable({ rows }: { rows: LibraryRow[] }) {
               <div className="min-w-0">
                 <Link href={`/practices/${p.id}`} className="flex items-center gap-1.5 text-sm font-medium text-text hover:underline">
                   <span className="truncate">{p.title}</span>
-                  <ExternalLink className="h-3 w-3 shrink-0 text-subtle" />
+                  <ExternalLink className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
                 </Link>
                 <span className="mt-0.5 block text-xs text-subtle lg:hidden">
                   {p.adopters} adopters · {p.logs_30d} logs in 30d
@@ -197,8 +205,8 @@ export function PracticesTable({ rows }: { rows: LibraryRow[] }) {
               <span className="hidden text-center text-xs tabular-nums text-muted lg:block">
                 {age === 0 ? 'today' : `${age}d`}
               </span>
-              <span className={`hidden w-fit items-center rounded-md px-2 py-0.5 text-xs font-semibold lg:inline-flex ${st.cls}`}>
-                {st.label}
+              <span className="hidden lg:inline-flex">
+                <StatusChip tone={st.tone} size="sm">{st.label}</StatusChip>
               </span>
               <div className="hidden justify-center lg:flex">
                 <PracticePublicToggle id={p.id} isPublic={p.is_public} />
