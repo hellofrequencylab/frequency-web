@@ -27,6 +27,13 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **On Air, the practice timer**: a quiet little app inside The Quest. Pick a
+  practice, go on air, and follow the breathing rings (Box, Coherent, or 4-7-8) or
+  a plain countdown; the screen stays awake and everything else gets out of the
+  way. When you finish, swipe through your payout: Zaps and bonuses landing one by
+  one, your **streak ticking over**, your airtime and stats, and a **Dispatch from
+  Vera** with your next assignment. It remembers your setup, two minutes counts,
+  and ending early is never punished.
 - **Amplitude, your lifetime number**: every Zap you ever earn feeds it, hosting-class
   acts count double, and it **never resets**. Watch it climb next to your rank
   ("Beacon · 14,200"), level up as you go, and bank permanent Awards at the big totals.
