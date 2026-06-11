@@ -325,12 +325,9 @@ function CampaignForm({
               ? 'Save campaign'
               : 'Create campaign'}
         </Button>
-        <button
-          onClick={onCancel}
-          className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted hover:text-text transition-colors"
-        >
+        <Button variant="ghost" size="sm" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   )

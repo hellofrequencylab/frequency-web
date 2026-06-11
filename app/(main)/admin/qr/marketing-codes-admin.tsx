@@ -7,6 +7,7 @@ import { StyleEditor } from './style-editor'
 import { NfcWriter } from './nfc-writer'
 import { updateMarketingCodeAdmin, setMarketingActive, deleteMarketingCodeAdmin } from './marketing-actions'
 import type { QrStyle } from '@/lib/qr/style'
+import { Button } from '@/components/ui/button'
 
 // Admin "Marketing codes" category — every member's funnel code, so an operator
 // can oversee, restyle, pause, or retire them. Members still self-manage on /codes.
@@ -141,13 +142,9 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
           </label>
           <StyleEditor value={style} onChange={setStyle} previewUrl={code.url} />
           <div className="flex items-center gap-2">
-            <button
-              onClick={save}
-              disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
-            >
+            <Button onClick={save} size="sm" disabled={pending}>
               <Palette className="h-3.5 w-3.5" /> {pending ? 'Saving…' : 'Save changes'}
-            </button>
+            </Button>
             {saved && <span className="text-xs text-success">Saved.</span>}
           </div>
         </div>
