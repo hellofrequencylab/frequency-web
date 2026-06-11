@@ -14,12 +14,20 @@ import { usePathname } from 'next/navigation'
 //     { href: `/admin/events/${id}/attendance`, label: 'Attendance' },
 //   ]} />
 
-export function UnderlineTabs({ tabs }: { tabs: { href: string; label: string; count?: number }[] }) {
+export function UnderlineTabs({
+  tabs,
+  activeHref,
+}: {
+  tabs: { href: string; label: string; count?: number }[]
+  /** Override the active tab explicitly (for query-param tabs like `?view=`, where
+   *  pathname matching can't tell them apart). Defaults to pathname matching. */
+  activeHref?: string
+}) {
   const pathname = usePathname()
   return (
     <nav className="-mb-px flex gap-1 overflow-x-auto border-b border-border" aria-label="Tabs">
       {tabs.map((t) => {
-        const active = pathname === t.href
+        const active = activeHref !== undefined ? activeHref === t.href : pathname === t.href
         return (
           <Link
             key={t.href}

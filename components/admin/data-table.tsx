@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowDown, ArrowUp, ChevronsUpDown, MoreHorizontal } from 'lucide-react'
@@ -60,6 +60,8 @@ export function DataTable<T>({
   density = 'comfortable',
   caption,
   empty,
+  expandedRowId,
+  expandedRow,
 }: {
   columns: ColumnDef<T>[]
   rows: T[]
@@ -72,6 +74,10 @@ export function DataTable<T>({
   density?: 'comfortable' | 'compact'
   caption: string
   empty?: React.ReactNode
+  /** Inline-edit / detail panel: when a row's id matches, `expandedRow(row)` renders in
+   *  a full-width row beneath it (the page owns which row is open). */
+  expandedRowId?: string
+  expandedRow?: (row: T) => React.ReactNode
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -105,6 +111,7 @@ export function DataTable<T>({
   }
 
   const pad = PAD[density]
+  const colSpan = columns.length + (selectable ? 1 : 0) + (rowActions ? 1 : 0)
   const ids = [...selected]
   const promoted = bulkActions.slice(0, 2)
   const overflow = bulkActions.slice(2)
@@ -222,8 +229,8 @@ export function DataTable<T>({
               const id = getRowId(row)
               const href = rowHref?.(row)
               return (
+                <Fragment key={id}>
                 <tr
-                  key={id}
                   className={`group ${href ? 'cursor-pointer' : ''} ${selected.has(id) ? 'bg-primary-bg/30' : 'hover:bg-surface-elevated/40'}`}
                   onClick={href ? () => router.push(href) : undefined}
                 >
@@ -265,6 +272,14 @@ export function DataTable<T>({
                     </td>
                   )}
                 </tr>
+                {expandedRow && expandedRowId === id && (
+                  <tr>
+                    <td colSpan={colSpan} className="border-t border-border/60 bg-surface-elevated/30 px-4 py-3">
+                      {expandedRow(row)}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               )
             })}
           </tbody>
