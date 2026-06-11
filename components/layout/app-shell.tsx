@@ -889,7 +889,11 @@ function MobileTabBar({
     )
   }
 
-  const control = 'flex w-10 shrink-0 items-center justify-center text-muted transition-colors hover:text-text'
+  // Edge handles — the same flush-tab language as the Vera / Next-steps pills:
+  // a half-pill growing out of its screen edge reads "something slides from
+  // here", and stays compact at phone widths.
+  const handle =
+    'self-center flex h-10 w-8 shrink-0 items-center justify-center border border-border bg-surface-elevated/70 text-muted transition-colors active:bg-primary-bg'
 
   return (
     <nav
@@ -904,14 +908,19 @@ function MobileTabBar({
       {!hideAppNav && (
         <span
           aria-hidden
-          className="pointer-events-none absolute bottom-full left-1/2 -mb-px h-5 w-[4.75rem] -translate-x-1/2 rounded-t-full border-x border-t border-border bg-surface"
+          className="pointer-events-none absolute bottom-full left-1/2 -mb-px h-8 w-16 -translate-x-1/2 rounded-t-full border-x border-t border-border bg-surface"
         />
       )}
 
-      {/* Left control → the nav drawer. A panel-open indicator, not an arrow:
-          it reads as "there's a menu here" and flips to its close twin while open. */}
-      <button type="button" onClick={onOpenMenu} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} className={`${control} ${menuOpen ? 'text-text' : ''}`}>
-        {menuOpen ? <PanelLeftClose className="h-[22px] w-[22px]" strokeWidth={2} /> : <PanelLeftOpen className="h-[22px] w-[22px]" strokeWidth={2} />}
+      {/* Left handle → the nav drawer: flush to the edge, rounded inward. */}
+      <button
+        type="button"
+        onClick={onOpenMenu}
+        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={menuOpen}
+        className={`${handle} mr-1 rounded-r-2xl border-l-0 ${menuOpen ? 'bg-primary-bg text-text' : ''}`}
+      >
+        {menuOpen ? <PanelLeftClose className="h-[18px] w-[18px]" strokeWidth={2} /> : <PanelLeftOpen className="h-[18px] w-[18px]" strokeWidth={2} />}
       </button>
 
       {!hideAppNav && MOBILE_TABS.slice(0, 2).map(renderTab)}
@@ -949,11 +958,17 @@ function MobileTabBar({
 
       {!hideAppNav && MOBILE_TABS.slice(2).map(renderTab)}
 
-      {/* Right control → The Quest drawer (stats / streaks / gamification). The
-          gem IS the label — the currency you go there to see. */}
+      {/* Right handle → The Quest drawer. The gem IS the label — the currency
+          you go there to see. */}
       {!hideAppNav && (
-        <button type="button" onClick={onOpenStats} aria-label={statsOpen ? 'Close stats' : 'Open stats'} aria-expanded={statsOpen} className={`${control} ${statsOpen ? 'text-signal' : ''}`}>
-          <Gem className="h-[22px] w-[22px]" strokeWidth={statsOpen ? 2.5 : 2} />
+        <button
+          type="button"
+          onClick={onOpenStats}
+          aria-label={statsOpen ? 'Close stats' : 'Open stats'}
+          aria-expanded={statsOpen}
+          className={`${handle} ml-1 rounded-l-2xl border-r-0 ${statsOpen ? 'bg-signal-bg/60 text-signal-strong' : 'text-signal'}`}
+        >
+          <Gem className="h-[18px] w-[18px]" strokeWidth={statsOpen ? 2.5 : 2} />
         </button>
       )}
     </nav>
@@ -1300,7 +1315,7 @@ export default function AppShell({
             )}
 
             {/* Account — its own divider, pushed to the far right of the block on lg+. */}
-            <div className="flex items-center gap-1 ml-1 pl-1.5 border-l border-border md:gap-2 md:pl-2 lg:ml-auto">
+            <div className="flex items-center gap-1.5 ml-2 pl-2.5 border-l border-border md:gap-2 md:pl-2.5 lg:ml-auto">
               <AccountDropdown
                 profile={profile}
                 profileHref={profileHref}
