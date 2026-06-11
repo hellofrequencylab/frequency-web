@@ -23,8 +23,8 @@ import {
   Monitor,
   ChevronUp,
   ChevronRight,
-  ChevronLeft,
-  Maximize2,
+  PanelLeftOpen,
+  PanelLeftClose,
   Flame,
   QrCode,
   Megaphone,
@@ -115,12 +115,10 @@ const NAV_SECTIONS = buildSections([...NAV_AREAS])
 // as aspirational surfaces.
 const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Admin', 'Studio', 'Platform'])
 
-// Split the rail for mobile: the member worlds vs the axis-gated Manage groups. On
-// a phone the member worlds stay in the drawer / edge menus while Manage moves to
-// the avatar (initials) menu, so the primary nav stays calm. Desktop shows both in
-// the left rail. (Manage = the TELESCOPE groups.)
-const MEMBER_SECTIONS = NAV_SECTIONS.filter((s) => !TELESCOPE_SECTIONS.has(s.label ?? ''))
-const MANAGE_SECTIONS = NAV_SECTIONS.filter((s) => TELESCOPE_SECTIONS.has(s.label ?? ''))
+// Mobile renders the SAME rail as desktop (owner call, mobile-menus pass): the
+// left drawer carries the member worlds AND the axis-gated Manage groups — one
+// menu structure everywhere. Manage telescopes, so members never see admin
+// headers; the account menu stays purely personal.
 
 // The effective access for an area = a janitor's per-area override, if any,
 // else the code default. `role` is the viewer's community role (null = visitor).
@@ -321,11 +319,6 @@ function AccountDropdown({
   profile,
   profileHref,
   role,
-  gateRole,
-  staffRole,
-  permissions,
-  navAccess,
-  isActive,
   themeLabel,
   ThemeIcon,
   cycleTheme,
@@ -333,12 +326,6 @@ function AccountDropdown({
   profile: Profile
   profileHref: string
   role: CommunityRole
-  /** Gating role (respects "view as") used to telescope the mobile Manage groups. */
-  gateRole: CommunityRole | null
-  staffRole: StaffRole | null
-  permissions?: Record<string, NavAccess>
-  navAccess?: Record<string, AccessLevel>
-  isActive: (href: string) => boolean
   themeLabel: string
   ThemeIcon: React.ElementType
   cycleTheme: () => void
@@ -355,11 +342,6 @@ function AccountDropdown({
   }, [])
 
   const showCrewLink = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
-  // Mobile-only: the Manage groups the viewer can actually reach (telescoped), so
-  // global admin lives in the initials menu on a phone (desktop keeps it in the rail).
-  const hasManage = MANAGE_SECTIONS.some((s) =>
-    s.items.some((it) => itemReachable(it, gateRole, staffRole, permissions, navAccess)),
-  )
 
   return (
     <div ref={ref} className="relative">
@@ -414,36 +396,9 @@ function AccountDropdown({
             </button>
           </div>
 
-          {/* Crew dashboard. Role-gated. (Admin lives in the page admin dock +
-              the primary nav's Manage sections, not here.) */}
-          {showCrewLink && (
-            <div className="border-t border-border py-1">
-              <Link
-                href="/crew"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-              >
-                <Zap className="w-4 h-4 text-primary" />
-                Dashboard
-              </Link>
-            </div>
-          )}
-
-          {/* Manage — mobile only. On desktop these live in the left rail; on a
-              phone the primary nav stays member-only and admin lives here. */}
-          {hasManage && (
-            <div className="md:hidden border-t border-border py-1">
-              <NavLinkList
-                isActive={isActive}
-                role={gateRole}
-                staffRole={staffRole}
-                permissions={permissions}
-                navAccess={navAccess}
-                sections={MANAGE_SECTIONS}
-                onNavigate={() => setOpen(false)}
-              />
-            </div>
-          )}
+          {/* Dashboard moved to the mobile right (gamification) drawer; admin
+              lives in the left drawer + desktop rail (mobile-menus pass). This
+              menu stays purely personal. */}
 
           {/* Account links */}
           <div className="border-t border-border py-1">
@@ -867,7 +822,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={MEMBER_SECTIONS} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={NAV_SECTIONS} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -934,7 +889,7 @@ function MobileTabBar({
     )
   }
 
-  const arrow = 'flex w-7 shrink-0 items-center justify-center text-muted transition-colors hover:text-text'
+  const control = 'flex w-10 shrink-0 items-center justify-center text-muted transition-colors hover:text-text'
 
   return (
     <nav
@@ -953,9 +908,10 @@ function MobileTabBar({
         />
       )}
 
-      {/* Left arrow → nav menu. Points IN (›) to expand, OUT (‹) to collapse. */}
-      <button type="button" onClick={onOpenMenu} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} className={arrow}>
-        {menuOpen ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+      {/* Left control → the nav drawer. A panel-open indicator, not an arrow:
+          it reads as "there's a menu here" and flips to its close twin while open. */}
+      <button type="button" onClick={onOpenMenu} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} className={`${control} ${menuOpen ? 'text-text' : ''}`}>
+        {menuOpen ? <PanelLeftClose className="h-[22px] w-[22px]" strokeWidth={2} /> : <PanelLeftOpen className="h-[22px] w-[22px]" strokeWidth={2} />}
       </button>
 
       {!hideAppNav && MOBILE_TABS.slice(0, 2).map(renderTab)}
@@ -990,100 +946,92 @@ function MobileTabBar({
 
       {!hideAppNav && MOBILE_TABS.slice(2).map(renderTab)}
 
-      {/* Right arrow → stats. Points IN (‹) to expand, OUT (›) to collapse. */}
+      {/* Right control → The Quest drawer (stats / streaks / gamification). The
+          gem IS the label — the currency you go there to see. */}
       {!hideAppNav && (
-        <button type="button" onClick={onOpenStats} aria-label={statsOpen ? 'Close stats' : 'Open stats'} aria-expanded={statsOpen} className={arrow}>
-          {statsOpen ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+        <button type="button" onClick={onOpenStats} aria-label={statsOpen ? 'Close stats' : 'Open stats'} aria-expanded={statsOpen} className={`${control} ${statsOpen ? 'text-signal' : ''}`}>
+          <Gem className="h-[22px] w-[22px]" strokeWidth={statsOpen ? 2.5 : 2} />
         </button>
       )}
     </nav>
   )
 }
 
-// ── Mobile edge menu (right = stats/streaks) ──────────────────────────────────
-// A sliding panel opened ONLY by the bottom tab bar's arrow (no mid-screen edge
-// tab — one trigger, one menu). It stays open until you tap outside (the shared
-// backdrop), select a link (route change), scroll, or open the opposite drawer
-// (the shell closes one side when the other opens). A Micro / Full size selector
-// sits at the bottom (per-device setting). The panel is always mounted and slides
-// on a transform, so open/close animates. Mobile only — desktop uses the real rails.
+// ── Mobile right drawer (The Quest: stats / streaks / gamification) ──────────
+// Mirrors the left drawer exactly (mobile-menus pass): same full-height panel,
+// same backdrop, same thumb-zone Close — the old micro/full size toggle is gone.
+// Opened only from the tab bar's gem control; one side open closes the other.
+// Dashboard lives at the top here (moved out of the account menu).
 
-export type RailSize = 'micro' | 'full'
-
-function EdgeMenu({
-  side,
-  ariaLabel,
-  size,
-  onSizeChange,
+function MobileRightDrawer({
   open,
-  micro,
+  onClose,
   children,
 }: {
-  side: 'left' | 'right'
-  ariaLabel: string
-  size: RailSize
-  onSizeChange: (s: RailSize) => void
   open: boolean
-  /** The collapsed body — a single icon column. */
-  micro: React.ReactNode
-  /** The expanded body — full, content-appropriate. */
+  onClose: () => void
   children: React.ReactNode
 }) {
-  const onLeft = side === 'left'
-  const widthClass =
-    size === 'micro' ? 'w-16' : onLeft ? 'w-64 max-w-[80vw]' : 'w-[88vw] max-w-sm'
-  // Closed → slid fully off its own edge; open → flush. Transitions both ways.
-  const slideClass = open ? 'translate-x-0' : onLeft ? '-translate-x-full' : 'translate-x-full'
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    if (open) window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
 
   return (
-    <>
-      {/* Panel — always mounted, slides in/out (and animates its width on resize).
-          Soft easing both ways. */}
+    <div
+      className={`md:hidden fixed inset-0 z-50 ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
+      aria-hidden={!open}
+    >
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
+          open ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+
       <aside
         role="dialog"
-        aria-label={ariaLabel}
-        aria-hidden={!open}
-        className={`md:hidden fixed top-14 z-40 flex flex-col border-border bg-surface shadow-xl transition-all duration-300 ease-in-out ${
-          onLeft ? 'left-0 border-r' : 'right-0 border-l'
-        } ${widthClass} ${slideClass} ${open ? '' : 'pointer-events-none'}`}
-        style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
+        aria-label="Streaks & stats"
+        className={`absolute inset-y-0 right-0 w-72 max-w-[85vw] bg-surface shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
+          open ? 'translate-x-0' : 'translate-x-full'
+        }`}
       >
-        <div className="flex-1 overflow-y-auto">{size === 'micro' ? micro : children}</div>
+        <div className="h-14 shrink-0 flex items-center gap-2 px-4 border-b border-border">
+          <Gem className="h-4 w-4 text-signal" strokeWidth={2.5} />
+          <p className="text-sm font-bold text-text">The Quest</p>
+        </div>
 
-        {/* Bottom control. In micro it's a single expand button (the column is too
-            narrow for a segmented control); in full it's the Micro/Full picker
-            (shared per-device across both menus). */}
-        {size === 'micro' ? (
+        {/* Dashboard — promoted here from the account menu (owner ask): the
+            gamification drawer is where the game lives. */}
+        <Link
+          href="/crew"
+          onClick={onClose}
+          className="mx-3 mt-3 flex shrink-0 items-center gap-2.5 rounded-lg bg-surface-elevated px-3 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-border-strong"
+        >
+          <Zap className="w-4 h-4 text-primary" />
+          Dashboard
+          <ChevronRight className="ml-auto h-4 w-4 text-subtle" />
+        </Link>
+
+        <div className="flex-1 overflow-y-auto p-3">{children}</div>
+
+        {/* Bottom close. Sits in the thumb zone, same as the left drawer. */}
+        <div className="shrink-0 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button
-            type="button"
-            onClick={() => onSizeChange('full')}
-            aria-label="Expand menu"
-            className="flex shrink-0 items-center justify-center border-t border-border p-2.5 text-subtle transition-colors hover:text-text"
+            onClick={onClose}
+            aria-label="Close stats"
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-surface-elevated text-text text-sm font-medium py-3 hover:bg-border-strong transition-colors"
           >
-            <Maximize2 className="h-4 w-4" />
+            <X className="w-4 h-4" />
+            Close
           </button>
-        ) : (
-          <div className="flex shrink-0 items-center gap-2 border-t border-border p-2">
-            <span className="flex-1 pl-1 text-2xs font-semibold uppercase tracking-wide text-subtle">View</span>
-            <div className="flex items-center rounded-lg bg-surface-elevated p-0.5">
-              {(['micro', 'full'] as const).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => onSizeChange(s)}
-                  aria-pressed={size === s}
-                  className={`rounded-md px-2.5 py-1 text-2xs font-semibold capitalize transition-colors ${
-                    size === s ? 'bg-surface text-text shadow-sm' : 'text-subtle hover:text-text'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        </div>
       </aside>
-    </>
+    </div>
   )
 }
 
@@ -1149,25 +1097,12 @@ export default function AppShell({
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)
 
-  // Mobile right edge menu (stats) — opened only from the bottom tab bar's arrow.
-  // Micro/Full size preference is per device. The left side is the nav DRAWER
-  // (drawerOpen, also bottom-bar triggered); the shell keeps the two mutually
-  // exclusive — opening one closes the other.
-  const [railSize, setRailSize] = useState<RailSize>('micro')
+  // Mobile right drawer (The Quest stats) — opened only from the tab bar's gem
+  // control. The left side is the nav DRAWER (drawerOpen, also bottom-bar
+  // triggered); the shell keeps the two mutually exclusive.
   const [rightOpen, setRightOpen] = useState(false)
   function closeEdges() {
     setRightOpen(false)
-  }
-  useEffect(() => {
-    // One-time hydration of client-only prefs: server + first client render both see
-    // the defaults → no hydration mismatch; we sync to the stored values after
-    // mount. (This is the legitimate effect→setState case.)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (localStorage.getItem('freq-rail-size') === 'full') setRailSize('full')
-  }, [])
-  function changeRailSize(s: RailSize) {
-    localStorage.setItem('freq-rail-size', s)
-    setRailSize(s)
   }
 
   // Close mobile drawer + edge menu when the route changes (covers back/forward).
@@ -1176,20 +1111,6 @@ export default function AppShell({
     if (drawerOpen) setDrawerOpen(false)
     if (rightOpen) closeEdges()
   }
-
-  // Scrolling the feed closes the open edge menu.
-  useEffect(() => {
-    if (!rightOpen) return
-    const el = document.querySelector('[data-feed-scroll]') as HTMLElement | null
-    if (!el) return
-    let lastTop = el.scrollTop
-    const onScroll = () => {
-      if (Math.abs(el.scrollTop - lastTop) > 6) closeEdges()
-      lastTop = el.scrollTop
-    }
-    el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [rightOpen])
 
   // ⌘K / Ctrl+K → open the live search overlay. Other surfaces (the admin command
   // bar) open it by dispatching an 'open-search' window event.
@@ -1381,11 +1302,6 @@ export default function AppShell({
                 profile={profile}
                 profileHref={profileHref}
                 role={role}
-                gateRole={gateRole}
-                staffRole={staffRole}
-                permissions={permissions}
-                navAccess={navAccess}
-                isActive={isActive}
                 themeLabel={themeLabel}
                 ThemeIcon={ThemeIcon}
                 cycleTheme={cycleTheme}
@@ -1474,66 +1390,12 @@ export default function AppShell({
       {/* Page-specific admin now lives inline at the top of the content
           (PageAdminBar in <main>), replacing the old right-edge admin drawer. */}
 
-      {/* ── Mobile right edge menu — stats / streaks / gamification, opened only
-            from the bottom tab bar's right arrow. The left side is the nav drawer
-            (also bottom-bar triggered); one side open closes the other. ── */}
+      {/* ── Mobile right drawer — The Quest (stats / streaks / gamification),
+            opened only from the tab bar's gem. Mirrors the left drawer. ── */}
       {!hideAppNav && statsPanel && (
-        <>
-          {/* Fading backdrop — a tap anywhere outside closes the menu. */}
-          <div
-            aria-hidden
-            onClick={closeEdges}
-            className={`md:hidden fixed inset-0 z-30 bg-black/10 transition-opacity duration-300 ease-in-out ${
-              rightOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-          />
-          <EdgeMenu
-            side="right"
-            ariaLabel="Streaks & stats"
-            size={railSize}
-            onSizeChange={changeRailSize}
-            open={rightOpen}
-          micro={
-            <div className="flex flex-col items-center gap-1.5 p-2">
-              <Link
-                href="/crew"
-                aria-label="Streak"
-                title="Streak"
-                onClick={closeEdges}
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
-                <Flame className="h-5 w-5" strokeWidth={2} />
-              </Link>
-              <Link
-                href="/crew"
-                aria-label="Zaps this season"
-                title="Zaps this season"
-                onClick={closeEdges}
-                className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-muted transition-colors hover:bg-surface-elevated"
-              >
-                <Zap className="h-5 w-5 text-primary" strokeWidth={2.5} />
-                <span className="text-3xs font-bold tabular-nums text-text">
-                  {(profile.current_season_zaps ?? 0).toLocaleString()}
-                </span>
-              </Link>
-              <Link
-                href="/crew"
-                aria-label="Gems"
-                title="Gems"
-                onClick={closeEdges}
-                className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-muted transition-colors hover:bg-surface-elevated"
-              >
-                <Gem className="h-5 w-5 text-signal" strokeWidth={2.5} />
-                <span className="text-3xs font-bold tabular-nums text-text">
-                  {(profile.lifetime_gems ?? 0).toLocaleString()}
-                </span>
-              </Link>
-            </div>
-          }
-        >
-          <div className="p-3">{statsPanel}</div>
-          </EdgeMenu>
-        </>
+        <MobileRightDrawer open={rightOpen} onClose={closeEdges}>
+          {statsPanel}
+        </MobileRightDrawer>
       )}
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}

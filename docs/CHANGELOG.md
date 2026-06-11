@@ -33,6 +33,15 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   legendary). Finish the first fourteen and **The Completionist** completes itself, with
   the biggest bonus and a border you can't get any other way.
 
+### Changed
+
+- **Clearer mobile menus**: the bottom bar's little arrows are gone — a panel
+  icon on the left opens the menu, a **gem** on the right opens your Quest panel
+  (streaks, stats, and now the **Dashboard** link, moved out of the account
+  menu). Both panels open the same way; the small/full size toggle is retired.
+  For operators, admin tools now live in the left menu on your phone, exactly
+  where they sit on desktop.
+
 ### Added
 
 - **Joining pays**: every new member starts with **10 Zaps** the moment they join,

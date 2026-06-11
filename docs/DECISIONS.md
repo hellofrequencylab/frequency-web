@@ -6399,3 +6399,14 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 - **Per-page definition of done** + a full **rollout map** of the 71 surfaces → template live in the doc.
 - Body ink warmed to `#3D352A` (warm charcoal). Status only via semantic tokens; retire every per-page `*_STYLES`/`ACTION_LABEL` dict into `StatusChip`.
 **Consequences:** Every admin surface composes one template + the shared kit, so the section reads as one product and a new page can't be orphaned. Build agents have a single spec to implement against. The `AdminPage` alias and `DashSection` white-card grammar are on a deprecation path (home + domain dashboards move to the `DashArea`/`Tile` grammar). Risk: a large surface area to convert — mitigated by the foundation-first cadence and the per-page checklist.
+
+## ADR-234: Mobile menus — indicator + gem controls, symmetric drawers, admin in the left drawer
+
+**Status:** Accepted · `components/layout/app-shell.tsx` only.
+**Context:** The owner's mobile-menus pass: the bottom bar's anonymous `‹ ›` arrows said nothing about what they open; the right stats menu had a micro/full size toggle nobody needed; the Dashboard link and the admin (Manage) sections hid inside the top-right account dropdown, splitting the nav into two structures (mobile ≠ desktop).
+**Decision:**
+- **Tab bar controls say what they open:** the left arrow became a **panel-open indicator** (`PanelLeftOpen` ⇄ `PanelLeftClose` while open) and the right arrow became a **gem** (`Gem`, signal-tinted while open) — the currency you go there to see. Both sized to the tab icons (22px, w-10 strips).
+- **The right menu mirrors the left** (`MobileRightDrawer` replaces `EdgeMenu`): same full-height panel, backdrop, Escape, and thumb-zone Close. The **micro/full RailSize machinery is deleted** (state, localStorage `freq-rail-size` pref, the View picker, the scroll-to-close listener — the backdrop now owns dismissal).
+- **Dashboard moved into the right drawer** — a pinned row at the top of the gamification panel ("The Quest" header), out of the account dropdown.
+- **Admin/Manage moved into the left drawer**: the mobile drawer now renders the **full `NAV_SECTIONS`** — the exact desktop-rail structure (member worlds + telescoped Manage groups) — instead of the member-only split; `MEMBER_SECTIONS`/`MANAGE_SECTIONS` are deleted and the account dropdown is purely personal (profile, friends, invite, settings, theme, sign out).
+**Consequences:** One nav structure everywhere; the account menu stops being a junk drawer; members never see admin headers (telescoping unchanged). The per-device rail-size pref is orphaned in localStorage — harmless. Lost behavior: the right menu no longer closes on feed scroll (it's modal now, like the left).
