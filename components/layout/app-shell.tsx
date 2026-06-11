@@ -1191,7 +1191,8 @@ export default function AppShell({
     return () => el.removeEventListener('scroll', onScroll)
   }, [rightOpen])
 
-  // ⌘K / Ctrl+K → open the live search overlay
+  // ⌘K / Ctrl+K → open the live search overlay. Other surfaces (the admin command
+  // bar) open it by dispatching an 'open-search' window event.
   const [searchOpen, setSearchOpen] = useState(false)
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -1200,8 +1201,15 @@ export default function AppShell({
         setSearchOpen(true)
       }
     }
+    function handleOpen() {
+      setSearchOpen(true)
+    }
     window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
+    window.addEventListener('open-search', handleOpen)
+    return () => {
+      window.removeEventListener('keydown', handleKey)
+      window.removeEventListener('open-search', handleOpen)
+    }
   }, [])
 
   function isActive(href: string) {
