@@ -69,6 +69,7 @@ export default async function OnAirPage({
     customHold: stored.customHold,
     customOut: stored.customOut,
     bell: stored.bell,
+    bellTone: stored.bellTone,
     haptics: stored.haptics,
   }
 

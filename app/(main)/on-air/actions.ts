@@ -31,6 +31,7 @@ export interface CompleteSessionInput {
   customHold?: number
   customOut?: number
   bell?: boolean
+  bellTone?: string
   haptics?: boolean
 }
 
@@ -77,6 +78,7 @@ export async function completeSession(
       customHold: phaseSec(input.customHold, 0) ?? prior.customHold,
       customOut: phaseSec(input.customOut, 3) ?? prior.customOut,
       bell: typeof input.bell === 'boolean' ? input.bell : prior.bell,
+      bellTone: typeof input.bellTone === 'string' ? input.bellTone : prior.bellTone,
       haptics: typeof input.haptics === 'boolean' ? input.haptics : prior.haptics,
     }
     await admin
