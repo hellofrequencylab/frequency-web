@@ -119,8 +119,7 @@ export default async function ProfilePage({
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = !!user && profile.auth_user_id === user.id
 
-  // The system voice (Vera, ADR-231) shows "Moderator" — never the web role.
-  const role = (profile.is_system ? 'moderator' : profile.community_role ?? 'member') as CommunityRole
+  const role = (profile.community_role ?? 'member') as CommunityRole
   const isDemo = (profile as { is_demo?: boolean }).is_demo ?? false
   const initials = getInitials(profile.display_name)
   const regionName = (profile.nexus_regions as unknown as { name: string } | null)?.name
@@ -270,7 +269,8 @@ export default async function ProfilePage({
       }
       badges={
         <span className="flex items-center gap-2 flex-wrap">
-          <RoleBadge role={role} className="text-xs leading-tight" />
+          {/* The system voice (Vera, ADR-231) shows "Moderator" — never the web role. */}
+          <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-xs leading-tight" />
           {isSupporter && <SupporterBadge />}
           {rankEndorsed && (
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>{rank.name}</span>

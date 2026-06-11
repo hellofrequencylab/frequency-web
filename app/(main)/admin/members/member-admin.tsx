@@ -209,7 +209,7 @@ function MemberRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-text truncate">{m.display_name}</span>
-            <RoleBadge role={(m.is_system ? 'moderator' : m.community_role) as CommunityRole} className="text-xs leading-tight" />
+            <RoleBadge role={m.is_system ? 'moderator' : m.community_role} className="text-xs leading-tight" />
             {m.is_system && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium bg-primary-bg text-primary-strong">System</span>}
             {!m.is_active && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium bg-danger-bg text-danger">Inactive</span>}
           </div>
