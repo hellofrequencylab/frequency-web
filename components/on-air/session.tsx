@@ -43,15 +43,21 @@ export interface OnAirPractice {
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 
 // --- interval bell (Web Audio, no asset files) -------------------------------
-// One soft sine ding: quick attack, exponential decay. Gain stays well under
-// earbud-hostile levels; every call is wrapped so a flaky context never throws.
+// A soft bell/bowl strike: a SOFT ATTACK (a short fade-in, so there's no click —
+// the click is what makes a synth ding feel harsh), a low peak well under
+// earbud-hostile levels, and a long exponential ring-out. A strike layers the
+// voice's partials with each higher overtone faded down, so the fundamental
+// carries and the overtones just add bell body. Every call is wrapped so a flaky
+// context never throws.
 
-function ding(ctx: AudioContext, at: number, freq: number, durationSec: number) {
+// One sine partial: fade in over ~25ms, ring out exponentially.
+function ding(ctx: AudioContext, at: number, freq: number, durationSec: number, peak: number) {
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
   osc.type = 'sine'
   osc.frequency.value = freq
-  gain.gain.setValueAtTime(0.12, at)
+  gain.gain.setValueAtTime(0.0001, at)
+  gain.gain.linearRampToValueAtTime(peak, at + 0.025) // soft attack — no onset click
   gain.gain.exponentialRampToValueAtTime(0.0001, at + durationSec)
   osc.connect(gain)
   gain.connect(ctx.destination)
@@ -59,24 +65,32 @@ function ding(ctx: AudioContext, at: number, freq: number, durationSec: number) 
   osc.stop(at + durationSec + 0.05)
 }
 
-/** One strike of the chosen voice (the bowl layers two oscillators). */
+// One strike of a voice at `at`: fundamental loudest, overtones progressively
+// quieter + a touch shorter, for a warm bell/bowl body.
+function strike(ctx: AudioContext, tone: BellTone, at: number) {
+  tone.freqs.forEach((f, i) => {
+    const peak = 0.08 * Math.pow(0.55, i)
+    const dur = tone.decay * (i === 0 ? 1 : 0.8)
+    ding(ctx, at, f, dur, peak)
+  })
+}
+
+/** One strike of the chosen voice. */
 function chime(ctx: AudioContext | null, tone: BellTone) {
   if (!ctx) return
   try {
-    for (const f of tone.freqs) ding(ctx, ctx.currentTime, f, tone.decay)
+    strike(ctx, tone, ctx.currentTime)
   } catch {
     // the bell is a nicety, never a blocker
   }
 }
 
-/** Slightly longer double strike for the end of the session. */
+/** A gentle double strike to close the session, the second a touch softer. */
 function endChime(ctx: AudioContext | null, tone: BellTone) {
   if (!ctx) return
   try {
-    for (const f of tone.freqs) {
-      ding(ctx, ctx.currentTime, f, tone.decay + 0.2)
-      ding(ctx, ctx.currentTime + 0.35, f, tone.decay + 0.4)
-    }
+    strike(ctx, tone, ctx.currentTime)
+    strike(ctx, tone, ctx.currentTime + 0.55)
   } catch {
     // the bell is a nicety, never a blocker
   }
