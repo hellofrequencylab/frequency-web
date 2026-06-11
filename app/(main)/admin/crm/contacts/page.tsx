@@ -6,12 +6,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 import { RoleBadge } from '@/lib/community-roles'
 import { getInitials } from '@/lib/utils'
-import { DashboardTemplate } from '@/components/templates'
+import { AdminTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
-import { CrmTabs } from '../crm-tabs'
 import { StartDealButton } from './start-deal-button'
 
 export const dynamic = 'force-dynamic'
@@ -136,7 +135,7 @@ export default async function CrmContactsPage() {
   }))
 
   return (
-    <DashboardTemplate
+    <AdminTemplate
       eyebrow="CRM"
       title="Contacts"
       description={
@@ -146,8 +145,6 @@ export default async function CrmContactsPage() {
       }
       width="wide"
     >
-      <CrmTabs />
-
       {members.length === 0 ? (
         <EmptyState
           icon={Search}
@@ -250,6 +247,6 @@ export default async function CrmContactsPage() {
           ))}
         </ul>
       )}
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }

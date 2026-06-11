@@ -13,6 +13,7 @@
 // the page, so this works in a server component.
 
 import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
 
 export interface DetailTab {
@@ -26,6 +27,7 @@ export function DetailTemplate({
   subtitle,
   badges,
   actions,
+  back,
   tabs,
   children,
 }: {
@@ -35,6 +37,9 @@ export function DetailTemplate({
   badges?: React.ReactNode
   /** Capability-gated inline actions (the headerActions slot). Gate with <Can>. */
   actions?: React.ReactNode
+  /** Back-link shown above the identity band (nested detail pages). The single
+   *  back affordance — don't also hand-roll one in `actions`. */
+  back?: { href: string; label: string }
   tabs?: DetailTab[]
   children: React.ReactNode
 }) {
@@ -43,6 +48,15 @@ export function DetailTemplate({
       {/* Context header band. On mobile the actions stack BELOW the identity so the
           title is never crushed into a truncation; from sm up they sit inline right. */}
       <header className="border-b border-border pb-4 mb-4">
+        {back && (
+          <Link
+            href={back.href}
+            className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {back.label}
+          </Link>
+        )}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">

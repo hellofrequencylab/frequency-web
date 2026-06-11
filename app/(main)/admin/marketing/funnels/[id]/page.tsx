@@ -2,9 +2,7 @@
 // reuses the Phase 1 EntryForm/EntryRow, filing new entry points under this campaign.
 
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
-import { DashboardTemplate } from '@/components/templates/dashboard-template'
+import { AdminTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { listMarketingTargets } from '@/lib/qr/marketing'
 import { shortLinkUrl } from '@/lib/qr/links'
@@ -45,12 +43,8 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   for (const e of eps) owners[e.id] = { ownerId: e.ownerId, ownerName: e.ownerName }
 
   return (
-    <DashboardTemplate
-      eyebrow={
-        <Link href="/admin/marketing/funnels" className="inline-flex items-center gap-1 text-muted hover:text-text">
-          <ArrowLeft className="h-3 w-3" /> Campaigns
-        </Link>
-      }
+    <AdminTemplate
+      back={{ href: '/admin/marketing/funnels', label: 'Campaigns' }}
       title={campaign.name}
       description={`${campaign.entryCount} entry point${campaign.entryCount === 1 ? '' : 's'} · ${campaign.scans} scan${campaign.scans === 1 ? '' : 's'} · ${campaign.status}`}
     >
@@ -61,6 +55,6 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
         members={members}
         destinationGroups={entryDestinationGroups(targets)}
       />
-    </DashboardTemplate>
+    </AdminTemplate>
   )
 }
