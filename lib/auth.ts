@@ -21,6 +21,7 @@ import { createClient } from '@/lib/supabase/server'
 import { applyViewAs } from '@/lib/view-as'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { asWebRole, isStaff, type WebRole } from '@/lib/core/roles'
+import { communityRoleToLevel, levelRank, type CommunityLevel } from '@/lib/core/stewardship'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -53,6 +54,7 @@ const resolveCaller = cache(
     id: string
     community_role: CommunityRole
     realRole: CommunityRole
+    communityLevel: CommunityLevel
     webRole: WebRole
     realWebRole: WebRole
     membershipTier: EntitlementTier
@@ -61,12 +63,12 @@ const resolveCaller = cache(
     if (!user) return null
 
     // Own-row read: RLS lets a signed-in user read their own profile, so the
-    // session client suffices (no service-role bypass). web_role is selected via
-    // the untyped cast (column not yet in the generated types).
+    // session client suffices (no service-role bypass). web_role + community_level
+    // are selected via the untyped cast (columns not yet in the generated types).
     const supabase = await createClient()
     const { data } = await (supabase as unknown as SupabaseClient)
       .from('profiles')
-      .select('id, community_role, web_role, membership_tier')
+      .select('id, community_role, community_level, web_role, membership_tier')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
@@ -77,10 +79,19 @@ const resolveCaller = cache(
     // View-as is a DOWNGRADE preview of the trust ladder; when it's active the staff
     // axis is stripped too, so the preview faithfully hides staff surfaces.
     const previewing = effectiveRole !== realRole
+    // The derived global Community level (ADR-218, floored by community_role so a
+    // global role never regresses; live in prod). Under a view-as DOWNGRADE we floor
+    // it to the impersonated role's level so a janitor-viewing-as-member faithfully
+    // loses elevated standing — mirrors the webRole strip above. (ADR-221.)
+    const realLevel = asCommunityLevel(data.community_level, realRole)
+    const previewLevel = communityRoleToLevel(effectiveRole)
     return {
       id: data.id as string,
       community_role: effectiveRole,
       realRole,
+      communityLevel: previewing
+        ? COMMUNITY_LEVEL_FLOOR(realLevel, previewLevel)
+        : realLevel,
       webRole: previewing ? 'none' : realWebRole,
       realWebRole,
       // Billing entitlement (orthogonal to role). The check constraint guarantees the union.
@@ -88,6 +99,23 @@ const resolveCaller = cache(
     }
   },
 )
+
+/** Narrow the untyped `profiles.community_level` read to a CommunityLevel, never
+ *  below the floor the legacy `community_role` contributes (additive — ADR-218/221). */
+function asCommunityLevel(
+  raw: unknown,
+  floorRole: CommunityRole | null | undefined,
+): CommunityLevel {
+  const floor = communityRoleToLevel(floorRole)
+  const known: readonly CommunityLevel[] = ['member', 'crew', 'host', 'guide', 'mentor']
+  const v = known.includes(raw as CommunityLevel) ? (raw as CommunityLevel) : 'member'
+  return COMMUNITY_LEVEL_FLOOR(v, floor)
+}
+
+/** The HIGHER of two levels — used to floor (never downgrade) the standing. */
+function COMMUNITY_LEVEL_FLOOR(a: CommunityLevel, b: CommunityLevel): CommunityLevel {
+  return levelRank(a) >= levelRank(b) ? a : b
+}
 
 /**
  * The caller's profile id + effective community role + STAFF web_role, or null if
@@ -97,12 +125,23 @@ const resolveCaller = cache(
 export async function getCallerProfile(): Promise<{
   id: string
   community_role: CommunityRole
+  /** The derived global Community level (ADR-218): the highest stewardship edge a
+   *  person holds anywhere, floored by `community_role` so a global role never
+   *  regresses, and floored to the impersonated role under a view-as downgrade. The
+   *  surface matrix sources its community standing from this (ADR-221). */
+  communityLevel: CommunityLevel
   webRole: WebRole
   membershipTier: EntitlementTier
 } | null> {
   const c = await resolveCaller()
   if (!c) return null
-  return { id: c.id, community_role: c.community_role, webRole: c.webRole, membershipTier: c.membershipTier }
+  return {
+    id: c.id,
+    community_role: c.community_role,
+    communityLevel: c.communityLevel,
+    webRole: c.webRole,
+    membershipTier: c.membershipTier,
+  }
 }
 
 /**
