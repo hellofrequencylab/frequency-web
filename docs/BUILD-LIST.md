@@ -175,7 +175,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 | **1.5** | Admin axis formalization | 📋 | §11.3 — move `admin`/`janitor` into `team_members`; add the **missing staff-domain unlocks** (Support→`/admin/support`, Members roster, Vera); migrate the manual `/admin/support` guard to `requireAdmin`. |
 | **1.6** | Unified capability resolver | 📋 | §11.6 — one resolver = union of Community edges ⊕ Entitlement ⊕ Partner personas ⊕ Admin matrix, with org-tenant isolation. Wraps `access-matrix` + `capabilities.ts`. |
 | **1.7** | Per-function permission grid | 📋 | Extend `/admin/roles` from per-route to per-capability editing (owner-editable matrix). |
-| **1.8** | Role-advancement training Journeys | ⏳ | §7 — assignment-on-promotion ✅; still need curriculum (7.3–7.5), help-article `role`/`featureKeys` tagging, authoring UI. |
+| **1.8** | Role-advancement training Journeys | ⏳ | §7 — assignment-on-promotion ✅; curriculum (7.3–7.5) ✅ full ladder member→host→guide→mentor (registry + pure selectors, ADR-224); help-article `role` tagging ✅ (front-matter + loader, additive); authoring surface ✅ read-mostly `/admin/content/training`. Remaining: in-place curriculum editor (write-through table) + per-step coachmark tours. |
 
 ## P2 — Entitlement & Billing
 
