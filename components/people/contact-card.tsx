@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { RoleBadge } from '@/lib/community-roles'
-import type { CommunityRole } from '@/lib/community-roles'
+import type { RoleChipKey } from '@/lib/community-roles'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { BAND_LABEL, type ProximityBand } from '@/lib/connections/location'
 
@@ -26,7 +26,7 @@ export function ContactCard({
   handle: string
   displayName: string
   avatarUrl?: string | null
-  role: CommunityRole
+  role: RoleChipKey
   /** Region / city line under the role badge. */
   location?: string | null
   online?: boolean
