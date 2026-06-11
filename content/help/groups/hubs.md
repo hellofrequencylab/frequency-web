@@ -5,6 +5,7 @@ category: groups
 order: 1
 updated: 2026-06-03
 audience: member
+role: guide
 featureKeys: [hubs]
 status: published
 ---

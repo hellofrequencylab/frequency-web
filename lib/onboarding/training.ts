@@ -2,59 +2,22 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardGems } from '@/lib/gems'
 import type { CommunityRole } from '@/lib/core/roles'
+import { TRAINING, type TrainingDef } from './training-curriculum'
+
+// Role-advancement training — DB layer (ADR-157 §7.2, ADR-224 §7.3–7.5). Every
+// promotion assigns a training Journey for the role gained — a curated path through
+// the role's help articles that teaches the functions it just unlocked. The
+// curriculum itself (the registry + selectors + help-tag resolution) is the pure
+// module training-curriculum.ts; this file owns the `training_paths` records
+// (assigned → started → completed) and the one-time completion reward.
+
+export type { TrainingStep, TrainingDef } from './training-curriculum'
+export { TRAINING } from './training-curriculum'
 
 // `training_paths` is newer than the generated DB types — read/write through a
 // loosely-typed client (the same escape hatch the feed RPCs use).
 function tdb(): SupabaseClient {
   return createAdminClient() as unknown as SupabaseClient
-}
-
-// Role-advancement training (ADR-157, build §7). Every promotion assigns a training
-// Journey for the role gained — a curated path through the role's help articles that
-// teaches the functions it just unlocked. The curriculum is a registry for now
-// (7.5 makes it owner-editable); records live in `training_paths` (7.2).
-
-export interface TrainingStep {
-  label: string
-  href: string
-}
-
-export interface TrainingDef {
-  role: CommunityRole
-  title: string
-  blurb: string
-  steps: TrainingStep[]
-  /** Gems paid once on completion (online training → gems, ADR-139). */
-  reward: number
-}
-
-// The member rung already exists (the induction + activation funnel), so training
-// starts at the first paid/earned step. Extend as roles gain surfaces.
-export const TRAINING: Partial<Record<CommunityRole, TrainingDef>> = {
-  crew: {
-    role: 'crew',
-    title: 'Welcome to Crew',
-    blurb: 'You’re in. Here’s how to get the most out of the community: find your circles and start a practice.',
-    steps: [
-      { label: 'Join a local circle', href: '/help/getting-started/join-a-circle' },
-      { label: 'Adopt a practice', href: '/help/getting-started/practices' },
-      { label: 'Follow a Journey', href: '/help/the-game/your-journey' },
-      { label: 'Earn zaps & gems', href: '/help/the-game/zaps-and-gems' },
-    ],
-    reward: 15,
-  },
-  host: {
-    role: 'host',
-    title: 'Host Training',
-    blurb: 'You can host now. This walks you through running a circle and the admin tools you just unlocked.',
-    steps: [
-      { label: 'Run events', href: '/help/groups/events' },
-      { label: 'Use channels', href: '/help/groups/channels' },
-      { label: 'Send a broadcast', href: '/help/sharing/broadcasts' },
-      { label: 'Hubs & scope', href: '/help/groups/hubs' },
-    ],
-    reward: 25,
-  },
 }
 
 /** Assign the training Journey for a role on promotion (idempotent). */
