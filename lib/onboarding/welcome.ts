@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardZapsForAction } from '@/lib/zaps'
+import { postSystemLine } from '@/lib/system-line'
 
 // Joining pays (ADR-232): every new member starts with `community_join` Zaps, and
 // joining through a friend's link pays the NEWCOMER `referred_join_bonus` on top
@@ -79,15 +80,11 @@ export async function postWelcomeForMember(
     const { data: ref } = await admin.from('profiles').select('handle').eq('id', refId).maybeSingle()
     inviter = (ref as { handle: string } | null)?.handle ?? null
   }
-  await admin.from('posts').insert({
-    author_id: system.id,
-    scope_id: system.id,
-    visibility: 'public',
-    post_type: 'system',
-    body: inviter
+  await postSystemLine(
+    inviter
       ? `@${handle} joined through @${inviter} 👋`
       : `@${handle} joined the community 👋`,
-  })
+  )
 
   // The word in the newcomer's ear.
   const firstName = displayName.trim().split(/\s+/)[0] || displayName

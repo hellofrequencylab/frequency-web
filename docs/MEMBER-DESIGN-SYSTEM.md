@@ -5,7 +5,7 @@ experience — feed, spaces, the Quest, profiles, messaging). The member sibling
 [`ADMIN-DESIGN-SYSTEM.md`](ADMIN-DESIGN-SYSTEM.md): same warm canvas-and-tiles bones,
 tuned for a member instead of an operator. With the marketing language
 ([`DESIGN-LANGUAGE.md`](DESIGN-LANGUAGE.md)) and the admin spec, this is the third leg of
-**one uniform site**. ADR-234.
+**one uniform site**. ADR-240.
 
 > The kit is already ~85% adopted (the in-app overhaul, ADR-061/090). This finishes and
 > enforces it — composition, not reinvention. Voice + naming bind every word
