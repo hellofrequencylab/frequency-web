@@ -26,7 +26,8 @@ and it remembers them for next time:
 - **Minutes.** Two is enough. Five is plenty. Use the stepper for anything up to
   a hundred and twenty.
 
-Then hit **Tune out**. While you're tuned out the screen stays awake and
+Then hit **Tune out**. The world goes quiet, and nothing moves until you tap
+**Start** — settle in first. While you're tuned out the screen stays awake and
 everything else gets out of the way. **Pause** if life interrupts (paused time
 doesn't count), and when the timer runs out, hit **Finish** to collect. Need to
 stop early? **Close Session** still counts; the practice is the point, not the
