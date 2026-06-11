@@ -101,18 +101,24 @@ export default async function AdminPageView() {
       description={description}
       width="wide"
       // The header owns the four live numbers (F-pattern: most important, top
-      // right of the title) — one white strip, value-first.
+      // right of the title). No box — the stats sit ON the canvas, big and faded,
+      // with a light lower highlight so they read engraved (debossed) into the
+      // background. Highlight color comes from the surface token, never a hex.
       actions={
-        <div className="flex divide-x divide-border/60 rounded-2xl border border-border bg-surface px-1 py-2.5 shadow-sm">
+        <div className="flex gap-7 sm:gap-9">
           {[
             { label: 'Members', value: (membersCount.count ?? 0).toLocaleString() },
             { label: 'Active · 7d', value: practice.wam },
             { label: 'Practices · 7d', value: practice.verifiedThisWeek },
             { label: 'Events · 7d', value: upcomingCount.count ?? 0 },
           ].map((k) => (
-            <div key={k.label} className="px-4">
-              <p className="text-xl font-extrabold leading-none tabular-nums text-text">{k.value}</p>
-              <p className="mt-1 whitespace-nowrap text-xs font-medium text-muted">{k.label}</p>
+            <div key={k.label}>
+              <p className="whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-subtle">
+                {k.label}
+              </p>
+              <p className="mt-1 text-3xl font-extrabold leading-none tabular-nums text-muted/80 [text-shadow:0_1px_0_var(--color-surface)]">
+                {k.value}
+              </p>
             </div>
           ))}
         </div>
@@ -469,7 +475,7 @@ const MEMBERSHIP_SELECT = `id, volunteer_role, joined_at,
 async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number; broadcasts: number }) {
   const admin = createAdminClient()
 
-  const [circlesRes, hubsRes, nexusesRes, recentRes] = await Promise.all([
+  const [circlesRes, hubsRes, nexusesRes] = await Promise.all([
     // Fullest circles first — where capacity pressure is.
     admin
       .from('circles')
@@ -478,19 +484,11 @@ async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number
       .limit(6),
     admin.from('hubs').select('id', { count: 'exact', head: true }),
     admin.from('nexuses').select('id', { count: 'exact', head: true }),
-    // Newest joins — who just arrived.
-    admin
-      .from('memberships')
-      .select(MEMBERSHIP_SELECT)
-      .eq('status', 'active')
-      .order('joined_at', { ascending: false })
-      .limit(8),
   ])
 
   const circles = (circlesRes.data ?? []) as unknown as Array<{
     id: string; name: string; slug: string; status: string; member_count: number; member_cap: number; hub: { name: string } | null
   }>
-  const recent = (recentRes.data ?? []) as unknown as MembershipRow[]
 
   return (
     <>
@@ -508,56 +506,26 @@ async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number
         </StatRow>
       </DashSection>
 
-      {/* Side-by-side panels — circles by fill | newest members. */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <DashSection
-          title="Circles by fill"
-          description="Fullest first — where capacity pressure is building."
-          href="/admin/circles"
-          hrefLabel="View all"
-        >
-          <div className="space-y-2">
-            {circles.map((c) => (
-              <CircleRow
-                key={c.id}
-                href={`/circles/${c.slug}`}
-                name={c.name}
-                status={c.status}
-                meta={`${c.member_count} / ${c.member_cap}${c.hub?.name ? ` · ${c.hub.name}` : ''}`}
-              />
-            ))}
-          </div>
-        </DashSection>
-
-        <DashSection
-          title="Newest members"
-          description="The last few people to join."
-          href="/admin/members"
-          hrefLabel="Full roster"
-        >
-          <div className="space-y-2">
-            {recent.map((m) => (
-              <Link
-                key={m.id}
-                href={`/people/${m.profile.handle}`}
-                className="flex items-center justify-between rounded-2xl bg-surface-elevated/60 px-4 py-3 transition-colors hover:bg-surface-elevated"
-              >
-                <div className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-text">{m.profile.display_name}</span>
-                  <p className="mt-0.5 text-xs text-subtle">
-                    @{m.profile.handle}
-                    {m.circle?.name ? ` · ${m.circle.name}` : ''}
-                  </p>
-                </div>
-                <span className="shrink-0 text-xs text-subtle">
-                  {new Date(m.joined_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </span>
-              </Link>
-            ))}
-            {recent.length === 0 && <EmptyState message="No members yet." />}
-          </div>
-        </DashSection>
-      </div>
+      {/* Circles by fill — newest joins live in the right Info rail ("Just joined"),
+          so the page does not repeat them. */}
+      <DashSection
+        title="Circles by fill"
+        description="Fullest first — where capacity pressure is building."
+        href="/admin/circles"
+        hrefLabel="View all"
+      >
+        <div className="grid gap-2 lg:grid-cols-2">
+          {circles.map((c) => (
+            <CircleRow
+              key={c.id}
+              href={`/circles/${c.slug}`}
+              name={c.name}
+              status={c.status}
+              meta={`${c.member_count} / ${c.member_cap}${c.hub?.name ? ` · ${c.hub.name}` : ''}`}
+            />
+          ))}
+        </div>
+      </DashSection>
     </>
   )
 }
