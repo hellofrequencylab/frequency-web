@@ -146,8 +146,10 @@ export const DURATION_PRESETS = [2, 5, 10, 20] as const
 
 export type SessionMode = 'timer' | 'breath' | 'log'
 
-// Bell tones (P5): one soft synthesized strike per cue, three voices. `freqs`
-// layers oscillators (the bowl is a twin-tone), `decay` is the ring-out seconds.
+// Bell tones (P5): one soft synthesized strike per cue, three voices. `freqs` is the
+// partial stack — a fundamental plus a few overtones that give each voice its bell/bowl
+// body (the synth fades higher partials down + adds a soft attack so there's no click);
+// `decay` is the ring-out seconds. Tuned warm and low (not piercing) for a calm sit.
 export interface BellTone {
   slug: string
   name: string
@@ -156,9 +158,10 @@ export interface BellTone {
 }
 
 export const BELL_TONES: BellTone[] = [
-  { slug: 'soft', name: 'Soft', freqs: [880], decay: 0.4 },
-  { slug: 'low', name: 'Low', freqs: [528], decay: 0.7 },
-  { slug: 'bowl', name: 'Bowl', freqs: [660, 442], decay: 1.4 },
+  // Warm singing-bowl-leaning voices: a low fundamental + harmonic shimmer, long ring.
+  { slug: 'soft', name: 'Soft', freqs: [528, 1056], decay: 1.8 },
+  { slug: 'low', name: 'Warm', freqs: [320, 480, 640], decay: 2.6 },
+  { slug: 'bowl', name: 'Bowl', freqs: [288, 432, 519, 864], decay: 3.6 },
 ]
 
 export function bellToneBySlug(slug: string | null | undefined): BellTone {
