@@ -26,6 +26,7 @@ export type Rail = 'global' | 'scoped' | 'none'
 // and members asked for a consistent right column site-wide.
 const FOCUS_PREFIXES = [
   '/settings', // narrow account forms
+  '/on-air', // the practice timer takeover (ADR-229) — breathe with zero chrome
   '/codes', // personal codes / QR hub (a single centered card)
   '/founder', // Founder's First Week checklist (build item 1.4)
   '/journal', // your Capture daily-log (build item §6 Phase 3)

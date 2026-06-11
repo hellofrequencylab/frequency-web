@@ -29,6 +29,15 @@
 - **Practice Shelf** = the profile module of per-practice awards. Consistency ladder:
   **In Motion (2w) / Groove (4w) / Deep Groove (8w) / Full Cycle (13w)**; depth
   ladder: **10/25/50/100 Deep**. These award names are documented exceptions below.
+- **On Air** (ADR-229) = the practice timer mini-app at `/on-air`: the fullscreen
+  sit (breath visualizer + timer), then the reveal (rewards → streak → stats →
+  Dispatch). "Going on air" = starting a session; "off air" = done. **Airtime** =
+  timed practice minutes (`practice_sessions`).
+- **Dispatch from Vera** (ADR-229) = Vera's daily personal assignment, shown at the
+  end of an On Air session (`vera_dispatches`; one per member per day, cached —
+  replays never regenerate). **Collision guard:** distinct from broadcast
+  **Dispatches** (`dispatches`, /broadcast) — both are transmissions in the same
+  radio family; "Dispatch from Vera" / "Vera Dispatch" always carries the qualifier.
 - **Season ranks: Ghost → Echo → Signal → Beacon → Conduit → Luminary.**
   Rename map: Runner→Echo, Operative→Signal, Agent→Beacon. Thresholds unchanged
   (0/100/300/750/1500/3000). Luminary stays double-gated.
