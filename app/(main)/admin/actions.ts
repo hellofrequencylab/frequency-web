@@ -105,9 +105,16 @@ export async function updateMemberProfile(profileId: string, fd: FormData) {
   const name = (fd.get('display_name') as string)?.trim()
   const handle = (fd.get('handle') as string)?.trim()
   const bio = (fd.get('bio') as string)?.trim()
+  const avatarUrl = (fd.get('avatar_url') as string | null)?.trim()
   if (name) updates.display_name = name
   if (handle) updates.handle = handle
   if (bio !== undefined) updates.bio = bio || null
+  // Only https URLs; clearing the field clears the avatar. Lets janitors set the
+  // system voice's face (Vera has no sign-in to upload her own, ADR-231).
+  if (avatarUrl !== undefined && avatarUrl !== null) {
+    if (avatarUrl && !/^https:\/\//.test(avatarUrl)) throw new Error('Avatar URL must start with https://')
+    updates.avatar_url = avatarUrl || null
+  }
 
   const { error } = await admin.from('profiles').update(updates).eq('id', profileId)
   if (error) throw new Error(error.message)

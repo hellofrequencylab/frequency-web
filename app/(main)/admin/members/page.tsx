@@ -74,18 +74,25 @@ export default async function AdminMembersPage({
 // ── Members ──────────────────────────────────────────────────────────────────
 async function MembersTab() {
   const admin = createAdminClient()
-  const { data: members } = await admin
-    .from('profiles')
-    .select(`
+  const select = `
       id, auth_user_id, display_name, handle, avatar_url, bio, community_role,
-      is_active, created_at, current_season_rank, current_season_zaps,
+      is_active, is_system, created_at, current_season_rank, current_season_zaps,
       nexus_regions!nexus_region_id ( name )
-    `)
-    .eq('is_system', false)
-    .order('created_at', { ascending: false })
-    .limit(200)
+    `
+  // The system voice (Vera, ADR-231) is fetched separately and PINNED to the top:
+  // she's the oldest row, so the newest-200 window would silently drop her, and
+  // janitors must always be able to reach her settings from here.
+  const [{ data: members }, { data: systemProfiles }] = await Promise.all([
+    admin
+      .from('profiles')
+      .select(select)
+      .eq('is_system', false)
+      .order('created_at', { ascending: false })
+      .limit(200),
+    admin.from('profiles').select(select).eq('is_system', true),
+  ])
 
-  const allMembers = (members ?? []).map((m) => ({
+  const allMembers = [...(systemProfiles ?? []), ...(members ?? [])].map((m) => ({
     ...m,
     community_role: m.community_role ?? 'member',
     regionName: m.nexus_regions?.name ?? null,
@@ -108,7 +115,7 @@ async function MembersTab() {
 
   return (
     <>
-      <p className="text-sm text-muted mb-4">{allMembers.length} total members</p>
+      <p className="text-sm text-muted mb-4">{allMembers.filter((m) => !m.is_system).length} total members</p>
       <MemberAdmin members={allMembers} emailMap={emailMap} />
     </>
   )

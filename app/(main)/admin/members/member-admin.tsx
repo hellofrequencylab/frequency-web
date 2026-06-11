@@ -28,6 +28,8 @@ interface Member {
   bio: string | null
   community_role: string
   is_active: boolean | null
+  /** The system voice (Vera, ADR-231): no sign-in, can't be deleted, chip reads Moderator. */
+  is_system?: boolean
   created_at: string | null
   current_season_rank: string | null
   current_season_zaps: number | null
@@ -207,7 +209,8 @@ function MemberRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-text truncate">{m.display_name}</span>
-            <RoleBadge role={m.community_role as CommunityRole} className="text-xs leading-tight" />
+            <RoleBadge role={(m.is_system ? 'moderator' : m.community_role) as CommunityRole} className="text-xs leading-tight" />
+            {m.is_system && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium bg-primary-bg text-primary-strong">System</span>}
             {!m.is_active && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium bg-danger-bg text-danger">Inactive</span>}
           </div>
           <p className="text-xs text-subtle truncate">
@@ -273,6 +276,10 @@ function MemberRow({
                 <label className="text-sm font-bold text-text">Bio</label>
                 <textarea name="bio" defaultValue={m.bio ?? ''} rows={2} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs resize-none" />
               </div>
+              <div>
+                <label className="text-sm font-bold text-text">Avatar URL</label>
+                <input name="avatar_url" type="url" defaultValue={m.avatar_url ?? ''} placeholder="https://…" className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs" />
+              </div>
               <div className="flex items-center gap-2">
                 <Button type="submit" size="sm" disabled={isPending}>
                   Save changes
@@ -298,14 +305,18 @@ function MemberRow({
             >
               <Pencil className="w-3 h-3" /> Edit profile
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleSendMagicLink}
-              disabled={isPending}
-            >
-              <Mail className="w-3 h-3" /> Send sign-in link
-            </Button>
+            {/* No sign-in link or delete for the system voice: she has no auth user,
+                and deleteUserAccount guards her server-side anyway (ADR-231). */}
+            {!m.is_system && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSendMagicLink}
+                disabled={isPending}
+              >
+                <Mail className="w-3 h-3" /> Send sign-in link
+              </Button>
+            )}
             {m.is_active ? (
               <Button variant="warningOutline" size="sm" onClick={handleDeactivate} disabled={isPending}>
                 <UserX className="w-3 h-3" /> Deactivate
@@ -315,7 +326,7 @@ function MemberRow({
                 <UserCheck className="w-3 h-3" /> Reactivate
               </Button>
             )}
-            {!confirmDelete ? (
+            {m.is_system ? null : !confirmDelete ? (
               <Button variant="dangerOutline" size="sm" onClick={() => setConfirmDelete(true)}>
                 <Trash2 className="w-3 h-3" /> Delete account
               </Button>

@@ -71,6 +71,12 @@
   - **Vault Store** = where Gems are spent. **The Vault** = the member treasury
     holding Gems, Zaps, and Awards (Awards = season trophies + achievements).
   - Never "points" — always Zaps/Gems.
+- **Vera** = the ONE system voice (ADR-231): the assistant, the Dispatch writer,
+  AND the system account (`profiles.is_system`, callsign **@moderation** — kept,
+  the warn-DM flow keys on it). Her member-facing role chip is **Moderator**
+  (a VIRTUAL chip off `is_system`; the `community_role` enum is never extended).
+  "Frequency Moderation" is retired as a display name. Her join notices are
+  **system lines** (`post_type 'system'`): one centered feed line, never a card.
 - **Pillars** = Mind / Body / Spirit / Expression ("Domains" retired; `domains` table
   → `pillars`). Pillars are NEVER called Channels.
 - **Co-op** = 3+ active circle members on the same Journey (replaces Chorus, ADR-199).

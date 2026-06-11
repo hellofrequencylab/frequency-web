@@ -40,6 +40,9 @@ export type FeedPost = {
     /** Entitlement tier (returned by the feed RPCs since 20260612060000) — any
      *  public flair/endorsement keys off THIS, not the role (PB.1i / ADR-141). */
     membership_tier?: string | null
+    /** The system voice (Vera, ADR-231) — badge reads "Moderator", and her
+     *  `system` posts render as a single feed line. */
+    is_system?: boolean
   }
   reactions: Array<{
     id: string
@@ -73,6 +76,8 @@ export interface RawPost {
     community_role: string
     /** Present on rows from the feed RPCs (20260612060000+); absent on older selects. */
     membership_tier?: string | null
+    /** Present on rows from the feed RPCs (20260616110000+); absent on older selects. */
+    is_system?: boolean
   }
   reactions: Array<{
     id: string
@@ -91,7 +96,14 @@ export function PostCard({
   viewerRole?: string
 }) {
   const { author, reactions } = post
-  const role = (author.community_role ?? 'member') as CommunityRole
+  // The system voice never shows an operational web role to members (ADR-231).
+  const role = (author.is_system ? 'moderator' : author.community_role ?? 'member') as CommunityRole
+
+  // System lines (post_type 'system' — Vera's join announcements, ADR-231) render
+  // as ONE quiet centered line, WhatsApp-style: no card, no avatar, no actions.
+  if (post.post_type === 'system') {
+    return <SystemLine body={post.body} />
+  }
 
   const heartCount = reactions.filter((r) => r.reaction_type === 'heart').length
   const plusCount = reactions.filter((r) => r.reaction_type === 'plus_one').length
@@ -269,5 +281,32 @@ export function PostCard({
           />
       </div>
     </article>
+  )
+}
+
+// One quiet line in the stream (ADR-231): Vera's system announcements ("X joined
+// the community") render like a group-chat join notice — centered chip, mentions
+// linked by name, no author chrome and no reaction row.
+function SystemLine({ body }: { body: string | null }) {
+  if (!body) return null
+  const parts = body.split(/(@[a-zA-Z0-9_]+)/g)
+  return (
+    <div className="flex justify-center py-0.5">
+      <p className="max-w-full rounded-full border border-border bg-surface/70 px-3.5 py-1.5 text-center text-xs text-muted">
+        {parts.map((part, i) =>
+          part.startsWith('@') ? (
+            <Link
+              key={i}
+              href={`/people/${part.slice(1)}`}
+              className="font-semibold text-text hover:underline"
+            >
+              {part.slice(1)}
+            </Link>
+          ) : (
+            <span key={i}>{part}</span>
+          )
+        )}
+      </p>
+    </div>
   )
 }
