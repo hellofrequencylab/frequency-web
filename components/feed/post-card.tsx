@@ -96,8 +96,10 @@ export function PostCard({
   viewerRole?: string
 }) {
   const { author, reactions } = post
-  // The system voice never shows an operational web role to members (ADR-231).
-  const role = (author.is_system ? 'moderator' : author.community_role ?? 'member') as CommunityRole
+  const role = (author.community_role ?? 'member') as CommunityRole
+  // The system voice never shows an operational web role to members (ADR-231) —
+  // 'moderator' is a chip-only key, so the override lives at the badge, not here.
+  const chipRole = author.is_system ? 'moderator' : role
 
   // System lines (post_type 'system' — Vera's join announcements, ADR-231) render
   // as ONE quiet centered line, WhatsApp-style: no card, no avatar, no actions.
@@ -190,7 +192,7 @@ export function PostCard({
                 >
                   {author.display_name}
                 </Link>
-                <RoleBadge role={role} className="text-2xs leading-tight" />
+                <RoleBadge role={chipRole} className="text-2xs leading-tight" />
                 {post.is_demo && <DemoBadge />}
                 {post.scopeContext && (
                   <>
