@@ -1,14 +1,20 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
-import { Users, Layers, Building2, Plus, Zap, Activity } from 'lucide-react'
+import {
+  Users, Layers, Building2, Plus, Zap, Activity, CalendarDays,
+  Sparkles, HelpCircle, LifeBuoy, ShieldAlert, Lightbulb, Map as MapIcon, Radar,
+  type LucideIcon,
+} from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
+import { getDensitySignal } from '@/lib/analytics/density'
 import { requireAdminFloor } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { StatCard } from '@/components/ui/stat-card'
 import { ChartCard, RingGauge, TrendArea, WeekBars, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
-import { AdminCreateMenu } from './create-menu'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { MemberManager, type MemberItem } from './member-manager'
+import { OPEN_STATUSES } from '@/lib/support/types'
 import { isJanitor } from '@/lib/core/roles'
 import type { CommunityRole } from '@/lib/core/roles'
 import type { SeasonRank } from '@/lib/season-ranks'
@@ -93,28 +99,27 @@ export default async function AdminPageView() {
   return (
     <AdminPage
       title="Admin home"
-      eyebrow="Overview"
+      eyebrow="Dashboard"
       description={description}
       width="wide"
-      actions={<AdminCreateMenu role={role} />}
+      // The Create button is gone — the live "this week" pulse lives up here instead.
+      actions={
+        <HeaderKpis
+          items={[
+            { label: 'Members', value: (membersCount.count ?? 0).toLocaleString(), icon: Users },
+            { label: 'Active · 7d', value: practice.wam, icon: Zap },
+            { label: 'Practices · 7d', value: practice.verifiedThisWeek, icon: Activity },
+            { label: 'Events · 7d', value: upcomingCount.count ?? 0, icon: CalendarDays },
+          ]}
+        />
+      }
     >
-      {/* ── The dashboard: site optics, best-practice order — the four live
-            numbers first (a compact row, never stretched by the charts), then the
-            trend + conversion, then the weekly pulses. ───────────────────────── */}
-      <AdminSection title="This week">
+      <AdminSection
+        title="Growth"
+        description="New members joining, and how many become active practitioners within their first week."
+      >
         <div className="grid gap-4 lg:grid-cols-12">
-          {/* KPI tiles — the previous 2x2 block beside the chart, but the tiles sit
-              at their natural (compact) height instead of stretching to the chart
-              row (content-start), so each box reads about half as tall. */}
-          <div className="grid grid-cols-2 content-start gap-4 lg:col-span-4">
-            <StatCard label="Members" value={(membersCount.count ?? 0).toLocaleString()} icon={Users} />
-            <StatCard label="Weekly active" value={practice.wam} icon={Zap} />
-            <StatCard label="Practices · 7d" value={practice.verifiedThisWeek} icon={Activity} />
-            <StatCard label="Events · next 7d" value={upcomingCount.count ?? 0} icon={Layers} />
-          </div>
-
-          {/* Member growth — the trend that frames everything else. */}
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-8">
             <ChartCard
               title="Member growth"
               value={(totalProfiles ?? 0).toLocaleString()}
@@ -124,10 +129,7 @@ export default async function AdminPageView() {
               <TrendArea points={growthSeries} />
             </ChartCard>
           </div>
-
-          {/* Activation — the North-Star conversion. Compact card to match the
-              shorter tiles + charts. */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             <div className="flex h-full items-center rounded-2xl border border-border bg-surface px-4 py-3">
               <RingGauge
                 pct={practice.activationRate}
@@ -136,34 +138,139 @@ export default async function AdminPageView() {
               />
             </div>
           </div>
+        </div>
+      </AdminSection>
 
-          {/* Weekly volume — the two pulses, side by side. */}
-          <div className="lg:col-span-6">
-            <ChartCard
-              title="Verified practices / week"
-              caption={`${VOLUME_WEEKS} weeks · current week highlighted`}
-            >
-              <WeekBars values={practiceSeries} />
-            </ChartCard>
-          </div>
-          <div className="lg:col-span-6">
-            <ChartCard
-              title="Events / week"
-              caption={`${VOLUME_WEEKS} weeks by start date · includes the week ahead`}
-            >
-              <WeekBars values={eventSeries} />
-            </ChartCard>
-          </div>
+      <AdminSection
+        title="Engagement"
+        description="How actively the community is practicing and gathering, week over week."
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ChartCard title="Verified practices / week" caption={`${VOLUME_WEEKS} weeks · current week highlighted`}>
+            <WeekBars values={practiceSeries} />
+          </ChartCard>
+          <ChartCard title="Events / week" caption={`${VOLUME_WEEKS} weeks by start date · includes the week ahead`}>
+            <WeekBars values={eventSeries} />
+          </ChartCard>
         </div>
       </AdminSection>
 
       {staffJanitor && (
-        <JanitorPanel circlesCount={circlesCount.count ?? 0} broadcasts={dispatchesCount.count ?? 0} />
+        <>
+          <Suspense fallback={<SectionSkeleton title="Vera & support" />}>
+            <VeraSupportSection />
+          </Suspense>
+          <Suspense fallback={<SectionSkeleton title="Expansion signal" />}>
+            <ExpansionSection />
+          </Suspense>
+          <JanitorPanel circlesCount={circlesCount.count ?? 0} broadcasts={dispatchesCount.count ?? 0} />
+        </>
       )}
       {role === 'host' && <HostPanel profileId={profileId} />}
       {role === 'guide' && <GuidePanel profileId={profileId} />}
       {role === 'mentor' && <MentorPanel profileId={profileId} />}
     </AdminPage>
+  )
+}
+
+const DAY = 24 * 60 * 60 * 1000
+
+// The header pulse — soft container, pronounced numbers. Replaces the old Create
+// button in the page header (PageHeading actions slot); stacks below the title on
+// mobile.
+function HeaderKpis({
+  items,
+}: {
+  items: { label: string; value: React.ReactNode; icon: LucideIcon }[]
+}) {
+  return (
+    <div className="flex flex-wrap items-stretch gap-0.5 rounded-2xl bg-surface-elevated/70 p-1">
+      {items.map((k) => (
+        <div key={k.label} className="min-w-[5.5rem] rounded-xl px-3.5 py-2">
+          <span className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
+            <k.icon className="h-3 w-3 shrink-0" aria-hidden />
+            {k.label}
+          </span>
+          <span className="mt-0.5 block text-xl font-extrabold leading-none tabular-nums text-text">
+            {k.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Suspense fallback for the async dashboard sections — a titled row of pulsing tiles.
+function SectionSkeleton({ title }: { title: string }) {
+  return (
+    <AdminSection title={title}>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-14 animate-pulse rounded-2xl bg-surface-elevated/60" />
+        ))}
+      </div>
+    </AdminSection>
+  )
+}
+
+// ── Vera & support — AI help signal + the operator queue (janitor). ───────────
+async function VeraSupportSection() {
+  const admin = createAdminClient()
+  const weekAgo = new Date(new Date().getTime() - 7 * DAY).toISOString()
+
+  const [queries7d, deflected7d, answered7d, openTickets, openReports, pendingActions] = await Promise.all([
+    admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
+    admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('deflected', true),
+    admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('answered', true),
+    admin.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', OPEN_STATUSES),
+    admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    admin.from('agent_actions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+  ])
+
+  const total = queries7d.count ?? 0
+  const answeredRate = total > 0 ? Math.round(((answered7d.count ?? 0) / total) * 100) : 0
+
+  return (
+    <AdminSection
+      title="Vera & support"
+      description="What members asked Vera, what she couldn't answer yet (your to-write list), and the live support and moderation queue."
+    >
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <StatCard label="Vera questions · 7d" value={total} icon={Sparkles} href="/admin/vera" />
+        <StatCard label="Answered" value={`${answeredRate}%`} icon={Sparkles} href="/admin/vera" />
+        <StatCard label="Help gaps" value={deflected7d.count ?? 0} icon={HelpCircle} href="/admin/help-gaps" />
+        <StatCard label="Open tickets" value={openTickets.count ?? 0} icon={LifeBuoy} href="/admin/support" />
+        <StatCard label="Open reports" value={openReports.count ?? 0} icon={ShieldAlert} href="/admin/moderation" />
+        <StatCard label="AI Studio · pending" value={pendingActions.count ?? 0} icon={Lightbulb} href="/admin/studio" />
+      </div>
+    </AdminSection>
+  )
+}
+
+// ── Expansion signal — density readiness for the next Lab (janitor). ──────────
+async function ExpansionSection() {
+  const density = await getDensitySignal()
+  const top = density.ready[0] ?? density.places[0]
+
+  return (
+    <AdminSection
+      title="Expansion signal"
+      description="Where member density is crossing the threshold that justifies opening the next Lab."
+    >
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <StatCard label="Cities tracked" value={density.totals.cities} icon={MapIcon} href="/admin/expansion" />
+        <StatCard label="Labs ready" value={density.ready.length} icon={Radar} href="/admin/expansion" />
+        <StatCard label="Listings" value={density.totals.listings.toLocaleString()} icon={Building2} href="/admin/expansion" />
+        <StatCard label="Residents" value={density.totals.residents.toLocaleString()} icon={Users} href="/admin/expansion" />
+      </div>
+      {top && (
+        <p className="mt-3 text-sm text-muted">
+          Strongest signal:{' '}
+          <span className="font-semibold text-text">{top.city}</span> · readiness{' '}
+          {Math.round(top.score)}/100 ({top.stage})
+        </p>
+      )}
+    </AdminSection>
   )
 }
 
@@ -283,7 +390,10 @@ async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number
 
   return (
     <>
-      <AdminSection title="Platform totals">
+      <AdminSection
+        title="Network"
+        description="The structure of the community — regions, hubs, circles, and the broadcasts that reach them."
+      >
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatCard label="Nexuses" value={nexusesRes.count ?? 0} icon={Building2} />
           <StatCard label="Hubs" value={hubsRes.count ?? 0} icon={Building2} />
@@ -296,6 +406,7 @@ async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number
       <div className="grid gap-8 lg:grid-cols-2">
         <AdminSection
           title="Circles by fill"
+          description="Fullest first — where capacity pressure is building."
           actions={
             <Link href="/admin/circles" className="text-xs font-semibold text-primary-strong hover:underline">
               View all →
@@ -317,6 +428,7 @@ async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number
 
         <AdminSection
           title="Newest members"
+          description="The last few people to join."
           actions={
             <Link href="/admin/members" className="text-xs font-semibold text-primary-strong hover:underline">
               Full roster →
