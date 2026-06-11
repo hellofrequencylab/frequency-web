@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { Users, ArrowUpRight } from 'lucide-react'
 import { MemberAdmin } from './member-admin'
-import { MembersTabs } from './members-tabs'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { SubscribersTable, BetaTable } from './lists-tables'
 import { listSubscribers } from '@/lib/studio/contacts'
 import { listBetaSignups, summarizeBeta } from '@/lib/studio/beta'
@@ -26,6 +26,14 @@ export default async function AdminMembersPage({
   const { view } = await searchParams
   const tab: TabKey = view === 'subscribers' || view === 'beta' ? view : 'members'
 
+  // Query-state (?view=) tabs on ONE route — drive the active tab explicitly by href
+  // since pathname matching can't tell `?view=` variants apart.
+  const tabHref: Record<TabKey, string> = {
+    members: '/admin/members',
+    subscribers: '/admin/members?view=subscribers',
+    beta: '/admin/members?view=beta',
+  }
+
   return (
     <AdminTemplate
       title="People & lists"
@@ -35,7 +43,14 @@ export default async function AdminMembersPage({
       width="wide"
     >
       <AdminSection>
-        <MembersTabs active={tab} />
+        <UnderlineTabs
+          activeHref={tabHref[tab]}
+          tabs={[
+            { href: tabHref.members, label: 'Members' },
+            { href: tabHref.subscribers, label: 'Subscribers' },
+            { href: tabHref.beta, label: 'Beta invites' },
+          ]}
+        />
         <div className="mt-6">
           {tab === 'members' && <MembersTab />}
           {tab === 'subscribers' && <SubscribersTab />}

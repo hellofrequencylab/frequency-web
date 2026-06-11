@@ -55,7 +55,7 @@ function NexusForm({ initial, mentors, onSave, onCancel, isPending }: {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <label className={lbl}>Nexus name *</label>
         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. San Diego Nexus" required disabled={isPending} className={input} />
@@ -99,7 +99,6 @@ export function NexusesClient({ nexuses, mentors, initialEditId = null }: { nexu
     initialEditId && nexuses.some((n) => n.id === initialEditId) ? initialEditId : null,
   )
   const [isPending,  startTransition] = useTransition()
-  const editing = nexuses.find((n) => n.id === editingId)
 
   const columns: ColumnDef<NexusRow>[] = [
     {
@@ -131,20 +130,21 @@ export function NexusesClient({ nexuses, mentors, initialEditId = null }: { nexu
 
   return (
     <div>
-      {editing && (
-        <NexusForm
-          initial={editing}
-          mentors={mentors}
-          onSave={(fd) => { startTransition(async () => { await updateNexus(editing.id, fd); setEditingId(null) }) }}
-          onCancel={() => setEditingId(null)}
-          isPending={isPending}
-        />
-      )}
       <DataTable
         caption="Nexuses"
         rows={nexuses}
         getRowId={(n) => n.id}
         columns={columns}
+        expandedRowId={editingId ?? undefined}
+        expandedRow={(n) => (
+          <NexusForm
+            initial={n}
+            mentors={mentors}
+            onSave={(fd) => { startTransition(async () => { await updateNexus(n.id, fd); setEditingId(null) }) }}
+            onCancel={() => setEditingId(null)}
+            isPending={isPending}
+          />
+        )}
         rowActions={(n) => (
           <button onClick={() => setEditingId(n.id)} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
             <Pencil className="h-3.5 w-3.5" aria-hidden />

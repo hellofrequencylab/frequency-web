@@ -65,7 +65,7 @@ function HubForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <label className={lbl}>Hub name *</label>
         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. North County Hub" required disabled={isPending} className={input} />
@@ -115,7 +115,6 @@ export function HubsClient({ hubs, nexuses, guides, initialEditId = null }: { hu
     initialEditId && hubs.some((h) => h.id === initialEditId) ? initialEditId : null,
   )
   const [isPending,  startTransition] = useTransition()
-  const editing = hubs.find((h) => h.id === editingId)
 
   const columns: ColumnDef<HubRow>[] = [
     {
@@ -142,21 +141,22 @@ export function HubsClient({ hubs, nexuses, guides, initialEditId = null }: { hu
 
   return (
     <div>
-      {editing && (
-        <HubForm
-          initial={editing}
-          nexuses={nexuses}
-          guides={guides}
-          onSave={(fd) => { startTransition(async () => { await updateHub(editing.id, fd); setEditingId(null) }) }}
-          onCancel={() => setEditingId(null)}
-          isPending={isPending}
-        />
-      )}
       <DataTable
         caption="Hubs"
         rows={hubs}
         getRowId={(h) => h.id}
         columns={columns}
+        expandedRowId={editingId ?? undefined}
+        expandedRow={(h) => (
+          <HubForm
+            initial={h}
+            nexuses={nexuses}
+            guides={guides}
+            onSave={(fd) => { startTransition(async () => { await updateHub(h.id, fd); setEditingId(null) }) }}
+            onCancel={() => setEditingId(null)}
+            isPending={isPending}
+          />
+        )}
         rowActions={(h) => (
           <button onClick={() => setEditingId(h.id)} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
             <Pencil className="h-3.5 w-3.5" aria-hidden />
