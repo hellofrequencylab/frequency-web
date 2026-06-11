@@ -40,29 +40,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true, duplicate: true })
   }
 
-  const isPaidTier = (tier: string) => tier === 'crew' || tier === 'supporter'
-
+  // membership_tier is the SOLE paid source of truth (ADR-207/225). A paid transition
+  // writes ONLY the tier — it never touches community_role. The old "auto-set
+  // community_role='crew' on pay" rule (ADR-208 era) is retired: ADR-207 retired the
+  // crew role VALUE and moved every row to 'member', so re-writing it here would
+  // re-introduce a dead enum value and re-conflate the role with the tier. Crew the
+  // PAID membership and Crew the (retired) community role are fully decoupled.
   const setTier = async (profileId: string, tier: string, customerId?: string | null) => {
     const patch: { membership_tier: string; stripe_customer_id?: string } = { membership_tier: tier }
     if (customerId) patch.stripe_customer_id = customerId
     await admin.from('profiles').update(patch).eq('id', profileId)
-
-    // NAMING.md §Roles + ADR-208: "Crew = paid" — when a member's billing goes PAID,
-    // auto-set community_role='crew'. This is a BUSINESS RULE (membership_tier stays the
-    // payment source of truth), not a schema coupling. Idempotent and carefully gated:
-    //  • only on the paid transition (not on lapse to 'free'),
-    //  • only WHEN currently 'member' — never demote a host/guide/mentor or clobber a
-    //    deliberate elevation,
-    //  • left in place on lapse (set-on-pay, keep-on-lapse — ADR-208 pending tuning).
-    // web_role is read via the untyped cast (column not yet in the generated types),
-    // though the .eq('community_role','member') filter alone makes the write idempotent.
-    if (isPaidTier(tier)) {
-      await (admin as unknown as SupabaseClient)
-        .from('profiles')
-        .update({ community_role: 'crew' })
-        .eq('id', profileId)
-        .eq('community_role', 'member')
-    }
   }
 
   switch (event.type) {
