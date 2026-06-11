@@ -3,6 +3,7 @@
 // rolling 7 days); activation = first verified practice within N days of joining.
 // See docs/COMMS-CRM-ARCHITECTURE.md §0 + ADR-024/025. Server-only.
 
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const PRACTICE_EVENT = 'practice.verified'
@@ -22,7 +23,7 @@ export interface PracticeMetrics {
   activationRate: number
 }
 
-export async function getPracticeMetrics(): Promise<PracticeMetrics> {
+async function computePracticeMetrics(): Promise<PracticeMetrics> {
   const admin = createAdminClient()
   const now = Date.now()
   const weekAgo = new Date(now - 7 * DAY).toISOString()
@@ -84,6 +85,10 @@ export async function getPracticeMetrics(): Promise<PracticeMetrics> {
     activationRate: newMembers > 0 ? activated / newMembers : 0,
   }
 }
+
+// Request-scoped memo: several dashboard sections read these metrics in the same
+// render; cache() collapses them to a single DB sweep per request.
+export const getPracticeMetrics = cache(computePracticeMetrics)
 
 const WEEK = 7 * DAY
 
