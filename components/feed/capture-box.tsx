@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { PenLine, Megaphone, NotebookPen, UserPlus } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { PenLine, Megaphone, NotebookPen, UserPlus, Camera } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { updateMyAvatar } from '@/app/(main)/feed/actions'
 import { Composer } from './composer'
 import { ContactCaptureForm } from './contact-capture-form'
 
@@ -17,9 +19,10 @@ type Mode = 'post' | 'dispatch' | 'note' | 'photo' | 'contact'
 
 const MODES: { key: Mode; icon: typeof PenLine; label: string; hostOnly?: boolean }[] = [
   { key: 'post', icon: PenLine, label: 'Post' },
-  { key: 'dispatch', icon: Megaphone, label: 'Dispatch', hostOnly: true },
+  { key: 'photo', icon: Camera, label: 'Photo' },
   { key: 'note', icon: NotebookPen, label: 'Note' },
   { key: 'contact', icon: UserPlus, label: 'Connect' },
+  { key: 'dispatch', icon: Megaphone, label: 'Dispatch', hostOnly: true },
 ]
 
 export function CaptureBox({
@@ -28,6 +31,7 @@ export function CaptureBox({
   placeholder = 'What’s on your mind?',
   canAnnounce = false,
   defaultMode = 'post',
+  compactTools = false,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -35,6 +39,8 @@ export function CaptureBox({
   canAnnounce?: boolean
   /** Mobile/contact-forward surfaces can open straight into 'contact'. */
   defaultMode?: Mode
+  /** Fold the composer's formatting tools behind a "Format" toggle. */
+  compactTools?: boolean
 }) {
   const [mode, setMode] = useState<Mode>(defaultMode)
   const modes = MODES.filter((m) => !m.hostOnly || canAnnounce)
@@ -70,6 +76,7 @@ export function CaptureBox({
     return (
       <div className="rounded-2xl bg-surface p-4 shadow-md">
         <ContactCaptureForm />
+        <TakeProfilePic />
         <div className="mt-3 border-t border-border pt-3">{featureRow}</div>
       </div>
     )
@@ -79,6 +86,7 @@ export function CaptureBox({
     <Composer
       key={mode}
       scopeId={scopeId}
+      compactTools={compactTools}
       visibility={visibility}
       kind={mode === 'note' ? 'note' : 'post'}
       autoImage={mode === 'photo'}
@@ -87,5 +95,63 @@ export function CaptureBox({
       placeholder={mode === 'note' ? 'Jot a note: what happened, what you noticed…' : placeholder}
       submitLabel="Capture"
     />
+  )
+}
+
+// "Take a profile pic" inside the Connect feature: front camera straight to your
+// avatar — same storage path the onboarding upload uses (avatars/<uid>/avatar.ext),
+// persisted through the updateMyAvatar action. Quiet failure copy; never blocks.
+function TakeProfilePic() {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [state, setState] = useState<'idle' | 'saving' | 'done' | 'error'>('idle')
+
+  async function onSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setState('saving')
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('not signed in')
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `${user.id}/avatar.${ext}`
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+      await updateMyAvatar(publicUrl)
+      setState('done')
+    } catch {
+      setState('error')
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="user"
+        className="hidden"
+        onChange={(e) => void onSelect(e)}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={state === 'saving'}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+      >
+        <Camera className="h-3.5 w-3.5" />
+        {state === 'saving'
+          ? 'Saving…'
+          : state === 'done'
+            ? 'Profile pic updated'
+            : 'Take a profile pic'}
+      </button>
+      {state === 'error' && (
+        <p className="mt-1 text-2xs text-danger">That didn’t save. Try again, or set it in Settings.</p>
+      )}
+    </div>
   )
 }
