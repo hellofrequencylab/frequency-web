@@ -67,7 +67,12 @@ export function AdminFooter({ role, webRole = 'none', staffRole = null }: AdminF
 
   return (
     <footer className="mt-12 border-t border-border pt-8 pb-10">
-      <div className="mx-auto w-full max-w-[105rem]">
+      {/* Align the footer content with the CENTER column: same frame + rail spacers
+          as the layout (left nav w-48 / info rail w-64), so the columns start and
+          end exactly where the page content does. */}
+      <div className="mx-auto flex w-full max-w-[105rem] gap-8">
+        <div className="hidden w-48 shrink-0 lg:block" aria-hidden />
+        <div className="min-w-0 flex-1">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           {/* Navigation */}
           <FootCol title="Navigation">
@@ -115,6 +120,8 @@ export function AdminFooter({ role, webRole = 'none', staffRole = null }: AdminF
         <p className="mt-8 text-2xs text-subtle">
           Frequency admin · you have access scoped to your role. Sensitive actions are logged to the audit trail.
         </p>
+        </div>
+        <div className="hidden w-64 shrink-0 xl:block" aria-hidden />
       </div>
     </footer>
   )
