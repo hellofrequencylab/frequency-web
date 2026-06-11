@@ -44,6 +44,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Scan from inside the app**: the Zap menu's **Check In** and **Ghost Node**
+  tiles are live. One in-app scanner opens your camera and reads any Frequency
+  code — the event code at the door checks you in (+25 Zaps), a Ghost Node in
+  the wild pays its bounty, a member's code takes you to their profile. Foreign
+  QR codes are politely refused.
+
 - **Joining pays**: every new member starts with **10 Zaps** the moment they join,
   and arriving through a friend's link pays a **15 Zap bonus** on top (your friend
   still earns their invite reward, so the link is always the better door). Vera's
