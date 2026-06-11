@@ -107,3 +107,26 @@ export function rankForZaps(zaps: number): SeasonRank {
   }
   return earned
 }
+
+export type RankDef = typeof SEASON_RANKS[number]
+
+/** Progress toward the next rank from a season-zaps total — the one calculation
+ *  every "climbing to the next tier" bar reads from (the rail Quest panel, the
+ *  profile rank bar). `pct` is clamped 0–100; at the apex `next` is null and `pct`
+ *  is 100. */
+export function rankProgress(zaps: number): {
+  rank: SeasonRank
+  def: RankDef
+  next: RankDef | null
+  pct: number
+  zapsToNext: number
+} {
+  const rank = rankForZaps(zaps)
+  const idx = SEASON_RANKS.findIndex((r) => r.rank === rank)
+  const def = SEASON_RANKS[idx < 0 ? 0 : idx]
+  const next = SEASON_RANKS[(idx < 0 ? 0 : idx) + 1] ?? null
+  const pct = next && next.minZaps > def.minZaps
+    ? Math.min(100, Math.max(0, Math.round(((zaps - def.minZaps) / (next.minZaps - def.minZaps)) * 100)))
+    : 100
+  return { rank, def, next, pct, zapsToNext: next ? Math.max(0, next.minZaps - zaps) : 0 }
+}

@@ -1,7 +1,6 @@
-import { Zap, Gem, Flame, Trophy } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rankForZaps, RANK_LABELS, seasonRankStyle } from '@/lib/season-ranks'
-import { StatCard } from '@/components/ui/stat-card'
+import { StandingTiles } from '@/components/gamification/standing-tiles'
 
 // The gamification panel (docs/JOURNEYS.md §10) — Zaps · rank · streak · Gems. A REQUIRED
 // active-mode widget. Async Server Component: it self-fetches the player's totals from
@@ -41,12 +40,18 @@ export async function GamificationPanel({ profileId }: { profileId: string }) {
           </span>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        <StatCard label="Zaps" value={zaps.toLocaleString()} icon={Zap} />
-        <StatCard label="Rank" value={rank ? (RANK_LABELS[rank] ?? rank) : '–'} icon={Trophy} />
-        <StatCard label="Streak" value={`${streak}d`} icon={Flame} />
-        <StatCard label="Gems" value={gems.toLocaleString()} icon={Gem} />
-      </div>
+      <StandingTiles
+        zaps={zaps}
+        gems={gems}
+        streak={streak}
+        rank={rank}
+        links={{
+          zaps: '/crew/leaderboard',
+          rank: '/crew/achievements',
+          streak: '/crew/streaks',
+          gems: '/crew/store',
+        }}
+      />
     </section>
   )
 }
