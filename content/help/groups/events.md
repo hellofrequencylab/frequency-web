@@ -5,6 +5,7 @@ category: groups
 order: 3
 updated: 2026-06-10
 audience: member
+role: host
 featureKeys: [events]
 status: published
 ---
