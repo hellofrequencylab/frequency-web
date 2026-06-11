@@ -918,8 +918,9 @@ function MobileTabBar({
 
       {/* Zap — the action button (ADR-230). Member-facing it's Zap; the backend
           stays Capture (the 'open-capture' event, the captures machinery): Zap is
-          the function that captures. The bolt reads softly ENGRAVED into the
-          raised circle: a light catch just below a darker glyph, both tokens. */}
+          the function that captures. The bolt is a LIGHT glyph on the orange button
+          in light mode and a DARK glyph on the gold button at night, with a soft
+          catch behind it that flips to match (all tokens). */}
       {!hideAppNav && (
         <button
           type="button"
@@ -928,15 +929,17 @@ function MobileTabBar({
           className="relative flex flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-3xs font-semibold text-primary-strong"
         >
           <span className="relative -mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary shadow-pop">
-            {/* the light edge the carve catches */}
+            {/* the catch behind the glyph — a soft shadow under the bolt (flips with
+                the glyph so the carve always reads) */}
             <Zap
               aria-hidden
-              className="absolute h-[24px] w-[24px] translate-y-[1.5px] text-on-primary/45 fill-on-primary/25"
+              className="absolute h-[24px] w-[24px] translate-y-[1.5px] text-primary-strong/40 fill-primary-strong/20 dark:text-on-primary/45 dark:fill-on-primary/25"
               strokeWidth={2}
             />
-            {/* the engraved glyph */}
+            {/* the glyph: LIGHT on the orange button in light mode, DARK on the gold
+                button in night mode */}
             <Zap
-              className="relative h-[24px] w-[24px] text-primary-strong fill-primary-strong/35"
+              className="relative h-[24px] w-[24px] text-on-primary fill-on-primary/35 dark:text-ink dark:fill-ink/35"
               strokeWidth={2}
             />
           </span>

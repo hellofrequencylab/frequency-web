@@ -50,6 +50,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   the wild pays its bounty, a member's code takes you to their profile. Foreign
   QR codes are politely refused.
 
+- **Vera has a real profile now**: tap her name anywhere and you get her, not a
+  member template: who she is, what she does around the place, and an Ask Vera
+  button. No streaks or rank; she's a voice, not a player.
 - **The Zap menu pays attention**: when an event you RSVP'd to is happening
   right now, the **Check In** tile glows with a quiet pulse ("Happening now").
   And your very first time in the menu, one line explains the deal: everything

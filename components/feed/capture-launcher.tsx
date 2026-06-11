@@ -154,14 +154,24 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               <Link
                 href="/on-air"
                 onClick={tapTile('mindless')}
-                className="col-span-3 flex items-center gap-3.5 rounded-2xl border-2 border-primary/50 bg-primary-bg/60 p-3.5 shadow-sm transition-all hover:border-primary hover:bg-primary-bg/80 active:scale-[0.99]"
+                className="group col-span-3 flex items-center gap-4 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-4 shadow-sm transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
               >
-                <MindlessArt className="block h-14 shrink-0" />
+                <MindlessArt className="block h-16 shrink-0" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-base font-bold text-text">Mindless</span>
-                  <span className="block text-xs leading-snug text-muted">Tune out</span>
+                  <span className="flex items-center gap-2">
+                    <span className="block text-lg font-bold text-text">Mindless</span>
+                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-primary-strong">
+                      Daily sit
+                    </span>
+                  </span>
+                  <span className="mt-0.5 block text-xs leading-snug text-muted">
+                    Breathe, sit, or just tune out. Your daily reset, your way.
+                  </span>
                 </span>
-                <ChevronRight className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
+                <span className="flex h-9 shrink-0 items-center gap-1 rounded-full bg-primary pl-3.5 pr-2.5 text-sm font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">
+                  Start
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </span>
               </Link>
               <ZapTile href="/events/scan" onClick={tapTile('event')} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
               <ZapTile href="/connections/new" onClick={tapTile('contact')} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />

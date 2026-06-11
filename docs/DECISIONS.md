@@ -6443,3 +6443,11 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 - **First-open education line** (per device, `fq_zap_intro_seen`): "First time? Everything in this menu earns. Tap a tile, do the real thing, and the Zaps follow." Set in the open-event handler, shown once.
 - **Tile analytics** ride the ADR-166 interaction firehose (open taxonomy, consent enforced server-side): `zap_menu.open` on open, `zap_menu.tile_tap` with `{tile}` for every tile, the Mindless row, and the journal link — CTR per tile readable from `interaction_events` with zero new infrastructure.
 **Consequences:** ADR-230's follow-up list is fully closed. Tile-level usage lands in the existing analytics tables for the admin traffic panel to surface later.
+
+
+## ADR-238: Vera's profile page — the voice gets her own layout
+
+**Status:** Accepted · `components/people/vera-profile.tsx`, `components/people/ask-vera-button.tsx`, `app/(main)/people/[handle]/page.tsx` (is_system branch).
+**Context:** ADR-231 made Vera fully visible (directory card, search, mentions), so members land on her profile — which rendered as a standard member page: streak/rank/gems stats, a friend button, a tip button, all wrong for a system voice with no login.
+**Decision:** The people page branches on `profile.is_system` immediately after the profile fetch (skipping every member-shaped query) into a dedicated **VeraProfile**: avatar + name + @handle, the Moderator chip, her bio, a "What Vera does" card list (join lines + welcome notifications · Dispatches after a sit · help-grounded answers · routing reports to humans, never AI moderation), the honesty line ("a voice, not a player: no streaks, no rank"), and ONE action — **Ask Vera**, opening the existing chat panel via the `open-vera` event. No friend/message/tip/block chrome.
+**Consequences:** Tapping Vera anywhere (join lines, directory, search) now lands somewhere true. The layout is generic over the system account, so a future renamed/rebranded voice inherits it.
