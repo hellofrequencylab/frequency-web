@@ -66,7 +66,8 @@ When the timer ends, swipe through four screens:
    screen.
 
 When you reach the last card, one more swipe sends it off the screen and you're
-back where you started.
+back where you started. In a hurry? Pull any card straight down and the whole
+thing slides away.
 
 Already logged that practice today? The extra sit still banks airtime, and your
 streak holds. Nothing pays twice, and nothing is lost.

@@ -6339,6 +6339,8 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 **Update — P11 (3X replaces Coherent):** the middle breath pattern is now the **physiological sigh**, named **3X** (owner call): in 4s → sip 1s → out 7s, 12s/cycle. `BreathPhase` gained optional `fromScale`/`toScale` (0..1 of the ring band) so consecutive inhales stack — the big breath grows to 0.82, the sip tops up to 1, no reset between phases; `ringScaleAt` generalized, holds rest at the previous phase's end scale. Slug `3x`; the retired `coherent` slug falls back to Box via patternBySlug (covered in tests, 13 passing).
 
+**Update — P12 (pull-down dismiss):** the reveal accepts a pull-down anywhere — a clearly-vertical downward touch drag (dy > 80px, > 1.5× horizontal) slides the whole card stack down (300ms, reduced-motion exempt) and closes through the same guarded `onClose`. Horizontal paging unaffected.
+
 **Consequences:** The daily WAM act gains a ritual surface with zero new economy paths to audit. P3 items (PWA shortcut, desktop modal entry, bells/haptics, presence counter, custom pattern) and P4 (reveal animation/art pass) are scoped in docs/ON-AIR.md. Migration is additive + idempotent; regenerate database.types.ts after apply (new tables are read via untyped handles until then).
 
 
@@ -6352,6 +6354,8 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 **Update — On Air returns to the menu:** the first owner pass left the Zap menu with NO path to On Air (the tile became Connect and the header icon was already gone) — the owner hit this on mobile. On Air is back as a **full-width row under the grid** ("On Air · Time a practice", OnAirArt + chevron, → /on-air): a door to the timer app, deliberately a different shape from the capture tiles because a sit is not a capture. NAMING.md entry updated.
 
 **Update — the door is Mindless, between the rows:** the row moved UP to sit between the live and coming-soon rows (`col-span-3` inside the same grid) and now carries the sit's member-facing name: **Mindless**, subtitle **"Tune out"**, with new lotus-on-water art (`MindlessArt`). Matches the ADR-229 P7 rename.
+
+**Update — the menu leads with the ritual (owner pass):** the **Mindless row moved to the TOP of the grid** (above Event / Contact / Connect) and got more presence (border-2 primary/50, deeper wash, h-14 art, base-size label). The Capture box folds its formatting tools behind a small **Format** toggle (`compactTools` on Composer — writing stays front and center), the feature row reads **Post · Photo · Note · Connect** (Photo promoted from the hidden camera path; Dispatch stays host-only at the end), and the Connect feature gains **"Take a profile pic"** — front camera → avatars bucket (own folder, same path as onboarding) → `updateMyAvatar` server action persists it.
 
 **Consequences:** One surface now teaches the whole earning loop. Follow-ups: in-app QR scanner for Check In/Ghost Node tiles (BarcodeDetector + jsQR fallback), contextual tile pulses (live event → Check In), first-open education line, tile CTR analytics. The Camera icon leaves the tab bar; help copy updated.
 

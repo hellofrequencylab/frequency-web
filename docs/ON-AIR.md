@@ -147,5 +147,10 @@ on revisit**, by design.
   grows the rings in two stacked steps with no reset between breaths (tested).
   Saved 'coherent' prefs fall back to Box gracefully.
 
+- ~~P12 — pull-down dismiss~~ ✅ shipped: a clearly-vertical downward drag on
+  any reveal card (dy > 80px and > 1.5× the horizontal travel) slides the
+  whole reveal down and closes the mode — same `onClose` path as the ghost
+  panel. Horizontal swipes keep paging; reduced motion skips the slide.
+
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.
