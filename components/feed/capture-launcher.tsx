@@ -114,29 +114,28 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               scopeId={scopeId}
               visibility="public"
               defaultMode={mode}
+              compactTools
               placeholder="Share something real from your day…"
             />
 
-            {/* The tools — the live row, then the Mindless door, then what's on the way. */}
+            {/* The tools — Mindless leads (the daily ritual outranks the captures),
+                then the live row, then what's on the way. */}
             <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
-              <ZapTile href="/events/scan" onClick={close} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
-              <ZapTile href="/connections/new" onClick={close} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
-              <ZapTile href="/codes" onClick={close} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />
-              {/* Mindless (the On Air timer) — not a capture, a sit: its own
-                  full-width door between the rows (owner ask: the menu must
-                  always carry a path to the timer). */}
               <Link
                 href="/on-air"
                 onClick={close}
-                className="col-span-3 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary-bg/40 p-3 transition-all hover:border-primary/60 hover:bg-primary-bg/70 active:scale-[0.99]"
+                className="col-span-3 flex items-center gap-3.5 rounded-2xl border-2 border-primary/50 bg-primary-bg/60 p-3.5 shadow-sm transition-all hover:border-primary hover:bg-primary-bg/80 active:scale-[0.99]"
               >
-                <MindlessArt className="block h-12 shrink-0" />
+                <MindlessArt className="block h-14 shrink-0" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold text-text">Mindless</span>
-                  <span className="block text-2xs leading-snug text-subtle">Tune out</span>
+                  <span className="block text-base font-bold text-text">Mindless</span>
+                  <span className="block text-xs leading-snug text-muted">Tune out</span>
                 </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                <ChevronRight className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
               </Link>
+              <ZapTile href="/events/scan" onClick={close} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
+              <ZapTile href="/connections/new" onClick={close} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
+              <ZapTile href="/codes" onClick={close} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />
               <ZapTile soon label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub="At the door" />
               <ZapTile soon label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
               <ZapTile soon label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
