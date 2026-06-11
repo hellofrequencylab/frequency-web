@@ -9,12 +9,12 @@
 // fully decoupled from the community role (a free-tier Host is a steward, not "paid" —
 // they get their tools from the role, via the access matrix, not from membership).
 
-import type { EntitlementTier } from './access-matrix'
+import { isPaid, type EntitlementTier } from './access-matrix'
 
 export type { EntitlementTier }
 // `isPaid(tier)` is THE single "is this person paid?" predicate (defined next to the
 // matrix it feeds). Re-exported here so app code imports it from the entitlement seam.
-export { isPaid } from './access-matrix'
+export { isPaid }
 
 export const ENTITLEMENT_TIERS: readonly EntitlementTier[] = ['free', 'crew', 'supporter'] as const
 
@@ -31,4 +31,16 @@ export const ENTITLEMENT_LABEL: Record<EntitlementTier, string> = {
  */
 export function deriveTier(membershipTier: EntitlementTier | null | undefined): EntitlementTier {
   return membershipTier ?? 'free'
+}
+
+/**
+ * Can this tier CASH IN the Vault — spend Gems / claim store rewards (ROLES.md
+ * §Entitlement: "Gamification cash-in on the Crew tier")? Accrual (Zaps/Gems/rank) runs
+ * for everyone on the free tier; the *cash-in* (claim/spend/compete) is the paid unlock.
+ * The pure predicate behind both the Vault matrix gate and the server-side `redeemItem`
+ * enforcement, so the UI nudge and the action guard never drift. Paid = the TIER only
+ * (`isPaid`), fully decoupled from the community role (ADR-207/225).
+ */
+export function canCashIn(tier: EntitlementTier | null | undefined): boolean {
+  return isPaid(tier)
 }
