@@ -668,6 +668,38 @@ export type Database = {
           },
         ]
       }
+      circle_awards: {
+        Row: {
+          award_slug: string
+          circle_id: string
+          created_at: string
+          id: string
+          season: number | null
+        }
+        Insert: {
+          award_slug: string
+          circle_id: string
+          created_at?: string
+          id?: string
+          season?: number | null
+        }
+        Update: {
+          award_slug?: string
+          circle_id?: string
+          created_at?: string
+          id?: string
+          season?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_awards_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circle_challenge_adoptions: {
         Row: {
           adopted_by: string | null
@@ -1238,6 +1270,66 @@ export type Database = {
             columns: ["migrated_to_room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_tips: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string | null
+          creator_id: string
+          draft_text: string
+          evidence: Json
+          id: string
+          kind: string
+          reviewed_by: string | null
+          sent_at: string | null
+          sent_text: string | null
+          status: string
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string | null
+          creator_id: string
+          draft_text: string
+          evidence?: Json
+          id?: string
+          kind?: string
+          reviewed_by?: string | null
+          sent_at?: string | null
+          sent_text?: string | null
+          status?: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string | null
+          creator_id?: string
+          draft_text?: string
+          evidence?: Json
+          id?: string
+          kind?: string
+          reviewed_by?: string | null
+          sent_at?: string | null
+          sent_text?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_tips_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_tips_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2387,9 +2479,13 @@ export type Database = {
         Row: {
           capacity: number | null
           category: string
+          claim_token: string | null
+          claimed_at: string | null
           created_at: string | null
           currency: string
           description: string | null
+          details: Json
+          domain_id: string | null
           ends_at: string | null
           energy_tag: string | null
           host_id: string | null
@@ -2399,23 +2495,36 @@ export type Database = {
           location: string | null
           mux_playback_id: string | null
           mux_stream_id: string | null
+          organizer_contact: string | null
+          organizer_name: string | null
           parent_event_id: string | null
+          posted_by_profile_id: string | null
+          poster_path: string | null
           price_cents: number | null
+          published_at: string | null
           recurrence_type: string
           recurrence_until: string | null
+          removed_at: string | null
+          removed_reason: string | null
           scope_id: string
           scope_type: string
           slug: string
+          source: string
           starts_at: string
+          status: string
           title: string
           visibility: string
         }
         Insert: {
           capacity?: number | null
           category?: string
+          claim_token?: string | null
+          claimed_at?: string | null
           created_at?: string | null
           currency?: string
           description?: string | null
+          details?: Json
+          domain_id?: string | null
           ends_at?: string | null
           energy_tag?: string | null
           host_id?: string | null
@@ -2425,23 +2534,36 @@ export type Database = {
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
+          organizer_contact?: string | null
+          organizer_name?: string | null
           parent_event_id?: string | null
+          posted_by_profile_id?: string | null
+          poster_path?: string | null
           price_cents?: number | null
+          published_at?: string | null
           recurrence_type?: string
           recurrence_until?: string | null
+          removed_at?: string | null
+          removed_reason?: string | null
           scope_id: string
           scope_type: string
           slug: string
+          source?: string
           starts_at: string
+          status?: string
           title: string
           visibility?: string
         }
         Update: {
           capacity?: number | null
           category?: string
+          claim_token?: string | null
+          claimed_at?: string | null
           created_at?: string | null
           currency?: string
           description?: string | null
+          details?: Json
+          domain_id?: string | null
           ends_at?: string | null
           energy_tag?: string | null
           host_id?: string | null
@@ -2451,18 +2573,34 @@ export type Database = {
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
+          organizer_contact?: string | null
+          organizer_name?: string | null
           parent_event_id?: string | null
+          posted_by_profile_id?: string | null
+          poster_path?: string | null
           price_cents?: number | null
+          published_at?: string | null
           recurrence_type?: string
           recurrence_until?: string | null
+          removed_at?: string | null
+          removed_reason?: string | null
           scope_id?: string
           scope_type?: string
           slug?: string
+          source?: string
           starts_at?: string
+          status?: string
           title?: string
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "events_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "pillars"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_host_id_fkey"
             columns: ["host_id"]
@@ -2475,6 +2613,13 @@ export type Database = {
             columns: ["parent_event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_posted_by_profile_id_fkey"
+            columns: ["posted_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2949,6 +3094,7 @@ export type Database = {
           cover_image: string | null
           created_at: string
           emoji: string | null
+          featured_at: string | null
           fork_of: string | null
           forked_count: number
           id: string
@@ -2977,6 +3123,7 @@ export type Database = {
           cover_image?: string | null
           created_at?: string
           emoji?: string | null
+          featured_at?: string | null
           fork_of?: string | null
           forked_count?: number
           id?: string
@@ -3005,6 +3152,7 @@ export type Database = {
           cover_image?: string | null
           created_at?: string
           emoji?: string | null
+          featured_at?: string | null
           fork_of?: string | null
           forked_count?: number
           id?: string
@@ -3436,9 +3584,12 @@ export type Database = {
       network_contacts: {
         Row: {
           avatar_path: string | null
+          card_back_path: string | null
+          card_front_path: string | null
           city: string | null
           company: string | null
           created_at: string
+          details: Json
           display_name: string | null
           email: string | null
           extraction: Json
@@ -3446,6 +3597,8 @@ export type Database = {
           invited_at: string | null
           linked_contact_id: string | null
           linked_profile_id: string | null
+          logo_path: string | null
+          match_dismissed: boolean
           owner_id: string
           phone: string | null
           socials: Json
@@ -3458,9 +3611,12 @@ export type Database = {
         }
         Insert: {
           avatar_path?: string | null
+          card_back_path?: string | null
+          card_front_path?: string | null
           city?: string | null
           company?: string | null
           created_at?: string
+          details?: Json
           display_name?: string | null
           email?: string | null
           extraction?: Json
@@ -3468,6 +3624,8 @@ export type Database = {
           invited_at?: string | null
           linked_contact_id?: string | null
           linked_profile_id?: string | null
+          logo_path?: string | null
+          match_dismissed?: boolean
           owner_id: string
           phone?: string | null
           socials?: Json
@@ -3480,9 +3638,12 @@ export type Database = {
         }
         Update: {
           avatar_path?: string | null
+          card_back_path?: string | null
+          card_front_path?: string | null
           city?: string | null
           company?: string | null
           created_at?: string
+          details?: Json
           display_name?: string | null
           email?: string | null
           extraction?: Json
@@ -3490,6 +3651,8 @@ export type Database = {
           invited_at?: string | null
           linked_contact_id?: string | null
           linked_profile_id?: string | null
+          logo_path?: string | null
+          match_dismissed?: boolean
           owner_id?: string
           phone?: string | null
           socials?: Json
@@ -4578,6 +4741,58 @@ export type Database = {
           },
         ]
       }
+      practice_streaks: {
+        Row: {
+          best_on_track_weeks: number
+          consecutive_on_track_weeks: number
+          full_cycle_paid: boolean
+          lifetime_logs: number
+          practice_id: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          best_on_track_weeks?: number
+          consecutive_on_track_weeks?: number
+          full_cycle_paid?: boolean
+          lifetime_logs?: number
+          practice_id: string
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          best_on_track_weeks?: number
+          consecutive_on_track_weeks?: number
+          full_cycle_paid?: boolean
+          lifetime_logs?: number
+          practice_id?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_streaks_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_streaks_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_streaks_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       practice_subcategories: {
         Row: {
           created_at: string
@@ -4775,6 +4990,7 @@ export type Database = {
           description: string | null
           domain_id: string | null
           embedding: string | null
+          featured_at: string | null
           header_image: string | null
           icon: string
           id: string
@@ -4786,10 +5002,10 @@ export type Database = {
           reward_note: string | null
           reward_zaps: number | null
           status: string
-          weight_class: string
           subcategory_id: string | null
           summary: string | null
           title: string
+          weight_class: string
         }
         Insert: {
           body?: string | null
@@ -4800,6 +5016,7 @@ export type Database = {
           description?: string | null
           domain_id?: string | null
           embedding?: string | null
+          featured_at?: string | null
           header_image?: string | null
           icon?: string
           id?: string
@@ -4811,10 +5028,10 @@ export type Database = {
           reward_note?: string | null
           reward_zaps?: number | null
           status?: string
-          weight_class?: string
           subcategory_id?: string | null
           summary?: string | null
           title: string
+          weight_class?: string
         }
         Update: {
           body?: string | null
@@ -4825,6 +5042,7 @@ export type Database = {
           description?: string | null
           domain_id?: string | null
           embedding?: string | null
+          featured_at?: string | null
           header_image?: string | null
           icon?: string
           id?: string
@@ -4836,10 +5054,10 @@ export type Database = {
           reward_note?: string | null
           reward_zaps?: number | null
           status?: string
-          weight_class?: string
           subcategory_id?: string | null
           summary?: string | null
           title?: string
+          weight_class?: string
         }
         Relationships: [
           {
@@ -4932,8 +5150,8 @@ export type Database = {
       profiles: {
         Row: {
           achievement_count: number
-          amplitude: number
           acquisition: Json | null
+          amplitude: number
           auth_user_id: string | null
           avatar_url: string | null
           bio: string | null
@@ -5003,8 +5221,8 @@ export type Database = {
         }
         Insert: {
           achievement_count?: number
-          amplitude?: number
           acquisition?: Json | null
+          amplitude?: number
           auth_user_id?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -5074,8 +5292,8 @@ export type Database = {
         }
         Update: {
           achievement_count?: number
-          amplitude?: number
           acquisition?: Json | null
+          amplitude?: number
           auth_user_id?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -6675,6 +6893,48 @@ export type Database = {
           },
         ]
       }
+      witnessed_grants: {
+        Row: {
+          award_slug: string
+          created_at: string
+          granted_by: string
+          granted_to: string
+          id: string
+          season: number
+        }
+        Insert: {
+          award_slug: string
+          created_at?: string
+          granted_by: string
+          granted_to: string
+          id?: string
+          season: number
+        }
+        Update: {
+          award_slug?: string
+          created_at?: string
+          granted_by?: string
+          granted_to?: string
+          id?: string
+          season?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "witnessed_grants_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "witnessed_grants_granted_to_fkey"
+            columns: ["granted_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       zap_config: {
         Row: {
           action_type: string
@@ -6795,6 +7055,7 @@ export type Database = {
           description: string | null
           domain_id: string | null
           embedding: string | null
+          featured_at: string | null
           header_image: string | null
           icon: string | null
           id: string | null
@@ -6809,10 +7070,10 @@ export type Database = {
           reward_zaps: number | null
           score: number | null
           status: string | null
-          weight_class: string | null
           subcategory_id: string | null
           summary: string | null
           title: string | null
+          weight_class: string | null
         }
         Relationships: [
           {
@@ -7137,6 +7398,14 @@ export type Database = {
           reactions: Json
           scope_id: string
           visibility: string
+        }[]
+      }
+      find_contact_matches: {
+        Args: { p_owner: string }
+        Returns: {
+          contact_id: string
+          match_on: string
+          profile_id: string
         }[]
       }
       geometry: { Args: { "": string }; Returns: unknown }
@@ -7640,6 +7909,10 @@ export type Database = {
           id: string
           media_urls: string[]
         }[]
+      }
+      recompute_community_level: {
+        Args: { p_profile: string }
+        Returns: undefined
       }
       record_qr_scan:
         | {
@@ -8558,4 +8831,3 @@ export const Constants = {
     },
   },
 } as const
-
