@@ -4,10 +4,11 @@
 -- The owner's call: the moderation account IS Vera — the same voice that runs
 -- the assistant and writes the Dispatches. One identity, one face.
 --
---   1. Profile: display_name 'Vera' (the @moderation callsign is KEPT — the
---      warn-DM flow keys on it, app/(main)/feed/report-actions.ts), plus her
---      bio. Member-facing role chip reads "Moderator" (client-side off
---      is_system — the community_role enum is NOT extended).
+--   1. Profile: display_name 'Vera'. (The handle rename @moderation → @vera and
+--      her bio live in 20260615400000, the parallel workstream that also de-keyed
+--      the warn-DM lookup from the handle — this update is handle-agnostic and
+--      idempotent over it.) Member-facing role chip reads "Moderator"
+--      (client-side off is_system — the community_role enum is NOT extended).
 --   2. Old welcome posts become 'system' lines and their bodies are normalized
 --      to the one-line join notice, so feed history renders like the new ones.
 --   3. search_handles_public excludes system accounts — fixes the mention
@@ -24,9 +25,8 @@
 -- ── 1. The profile ───────────────────────────────────────────────────────────
 
 UPDATE profiles
-SET display_name = 'Vera',
-    bio = COALESCE(bio, 'I look after this place and the people in it.')
-WHERE is_system = true AND handle = 'moderation';
+SET display_name = 'Vera'
+WHERE is_system = true;
 
 -- ── 2. Old welcome posts → one-line system notices ───────────────────────────
 
