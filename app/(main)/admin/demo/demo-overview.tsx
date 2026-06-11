@@ -2,10 +2,15 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { Check, Loader2 } from 'lucide-react'
+import { Banner, StatusChip } from '@/components/admin/status'
+import { StatCard } from '@/components/ui/stat-card'
+
 import { setDemoMode } from './actions'
 
-// Dashboard overview — the at-a-glance state of the demo layer + the one global
-// switch that shows/hides it everywhere. Counts come from the server (page.tsx).
+// Dashboard overview — the at-a-glance state of the demo layer + the one global switch
+// that shows/hides it everywhere. Counts come from the server (page.tsx). The switch
+// autosaves with an inline "Saved" (ADR-233 §5 save semantics).
 export function DemoOverview({
   enabled,
   counts,
@@ -17,6 +22,7 @@ export function DemoOverview({
 }) {
   const router = useRouter()
   const [on, setOn] = useState(enabled)
+  const [saved, setSaved] = useState(false)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -24,10 +30,13 @@ export function DemoOverview({
     const next = !on
     setOn(next)
     setError(null)
+    setSaved(false)
     start(async () => {
       try {
         await setDemoMode(next)
         router.refresh()
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
       } catch (e) {
         setOn(!next)
         setError(e instanceof Error ? e.message : 'Something went wrong.')
@@ -38,21 +47,18 @@ export function DemoOverview({
   return (
     <div className="space-y-4">
       {error && (
-        <p className="rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>
+        <Banner tone="critical" title="Could not save">
+          {error}
+        </Banner>
       )}
 
       {/* Global visibility switch */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-surface p-5">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                on ? 'bg-success-bg text-success' : 'bg-surface-elevated text-subtle'
-              }`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${on ? 'bg-success' : 'bg-subtle'}`} />
+            <StatusChip tone={on ? 'success' : 'neutral'} size="sm">
               {on ? 'Visible' : 'Hidden'}
-            </span>
+            </StatusChip>
             <p className="text-sm font-semibold text-text">
               {on ? 'Demo content is live across the app' : 'Demo content is hidden everywhere'}
             </p>
@@ -62,6 +68,18 @@ export function DemoOverview({
               ? 'Visible across the directory, circles, events, and feeds. The ⚡ marks it as sample content.'
               : 'The rows still exist. Flip back on any time, or purge them for good in the Danger zone below.'}
           </p>
+          <p className="mt-1 flex min-h-4 items-center gap-1.5 text-xs">
+            {pending && (
+              <span className="inline-flex items-center gap-1.5 text-subtle">
+                <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+              </span>
+            )}
+            {!pending && saved && (
+              <span className="inline-flex items-center gap-1.5 font-medium text-success">
+                <Check className="h-3 w-3" /> Saved
+              </span>
+            )}
+          </p>
         </div>
         <button
           type="button"
@@ -70,12 +88,12 @@ export function DemoOverview({
           aria-label="Show demo content"
           onClick={toggle}
           disabled={pending}
-          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 motion-reduce:transition-none ${
             on ? 'bg-primary' : 'bg-border-strong'
           }`}
         >
           <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform ${
+            className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform motion-reduce:transition-none ${
               on ? 'translate-x-5' : 'translate-x-0.5'
             }`}
           />
@@ -84,15 +102,9 @@ export function DemoOverview({
 
       {/* At-a-glance counts */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <div className="rounded-2xl border border-primary-bg bg-primary-bg/30 p-4">
-          <p className="text-2xl font-bold tabular-nums text-text">{total.toLocaleString()}</p>
-          <p className="mt-0.5 text-xs font-medium text-primary-strong">total demo rows</p>
-        </div>
+        <StatCard bordered label="total demo rows" value={total.toLocaleString()} />
         {counts.map((c) => (
-          <div key={c.label} className="rounded-2xl border border-border bg-surface p-4">
-            <p className="text-2xl font-bold tabular-nums text-text">{c.count.toLocaleString()}</p>
-            <p className="mt-0.5 text-xs text-muted">{c.label}</p>
-          </div>
+          <StatCard key={c.label} bordered label={c.label} value={c.count.toLocaleString()} />
         ))}
       </div>
     </div>

@@ -6,6 +6,7 @@ import { Loader2, Eye, Sparkles, MapPin } from 'lucide-react'
 import { previewArea, seedArea } from './actions'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { Button } from '@/components/ui/button'
+import { Banner } from '@/components/admin/status'
 
 type Channel = { slug: string; name: string }
 type Preview = Awaited<ReturnType<typeof previewArea>>
@@ -74,7 +75,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
 
   return (
     <div className="max-w-2xl space-y-6">
-      {error && <p className="rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>}
+      {error && <Banner tone="critical" title="Something went wrong">{error}</Banner>}
 
       {/* 1. Where */}
       <section className="rounded-2xl border border-border bg-surface p-5">

@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { Sparkles } from 'lucide-react'
 import { DemoOverview } from './demo-overview'
 import { GrowNetwork } from './grow-network'
@@ -51,8 +51,9 @@ export default async function AdminDemoPage() {
   const channels = (channelList.data ?? []).map((c) => ({ slug: c.slug as string, name: c.name as string }))
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Demo Studio"
+      eyebrow="Operations"
       icon={Sparkles}
       description="Generate a believable community for any area, then manage or purge it. All tagged demo (⚡), previewable, and reversible."
       width="default"
@@ -85,6 +86,6 @@ export default async function AdminDemoPage() {
           defaultLocation={{ name: 'Encinitas', lat: 33.0369, lng: -117.292 }}
         />
       </AdminSection>
-    </AdminPage>
+    </AdminTemplate>
   )
 }

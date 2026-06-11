@@ -1,12 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { MessageCircleQuestion, ShieldX } from 'lucide-react'
+import { MessageCircleQuestion, ShieldX, CheckCircle2 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Badge } from '@/components/admin/status'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Janitor-only: the demand side of the living-docs loop (docs/SUPPORT-SYSTEM.md §6).
-// What members ask Vera that she can't confidently answer — the "to-write" list.
+// What members ask Vera that she can't confidently answer — the "to-write" list. The
+// QUEUE template (ADR-233 §3.5): a frequency-ranked spine of deflected questions, each
+// row exposing how often it's asked. Header + instructional copy on the canvas; the KPIs
+// and the queue live in white tiles; the cleared state celebrates an empty queue.
 export const dynamic = 'force-dynamic'
 
 export default async function HelpGapsPage() {
@@ -39,41 +44,48 @@ export default async function HelpGapsPage() {
   const gaps = [...grouped.values()].sort((a, b) => b.count - a.count).slice(0, 50)
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Help gaps"
       eyebrow="Vera"
-      description="What members asked Vera that she couldn’t confidently answer in the last 30 days. The to-write list for the help center."
+      icon={MessageCircleQuestion}
+      description="What members asked Vera that she couldn't confidently answer in the last 30 days. The to-write list for the help center."
     >
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-          <StatCard label="Questions asked" value={total.toLocaleString()} icon={MessageCircleQuestion} />
-          <StatCard label="Deflected (no sure answer)" value={`${deflectRate}%`} icon={ShieldX} />
+          <StatCard bordered label="Questions asked" value={total.toLocaleString()} icon={MessageCircleQuestion} />
+          <StatCard bordered label="Deflected (no sure answer)" value={`${deflectRate}%`} icon={ShieldX} />
         </div>
       </AdminSection>
 
-      <AdminSection title="To write" description="Deflected questions, grouped and ranked by how often they’re asked.">
+      <AdminSection
+        title="To write"
+        description="Deflected questions, grouped and ranked by how often they're asked."
+      >
         {total === 0 ? (
-          <p className="rounded-2xl border border-border bg-surface p-5 text-sm text-muted">
-            No questions logged yet. Once AI search is live (see SUPPORT-SYSTEM §13), unanswered
-            questions show up here, ranked by how often they’re asked.
-          </p>
+          <EmptyState
+            variant="first-use"
+            icon={MessageCircleQuestion}
+            title="No questions logged yet"
+            description="Once AI search is live (see SUPPORT-SYSTEM §13), unanswered questions show up here, ranked by how often they're asked."
+          />
         ) : gaps.length === 0 ? (
-          <p className="rounded-2xl border border-success-bg bg-success-bg/20 p-5 text-sm text-text">
-            ✅ Nothing deflected. Vera answered everything from the help center.
-          </p>
+          <EmptyState
+            variant="cleared"
+            icon={CheckCircle2}
+            title="Nothing deflected"
+            description="Vera answered everything from the help center. No gaps to write."
+          />
         ) : (
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface">
+          <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border bg-surface">
             {gaps.map((g, i) => (
               <li key={i} className="flex items-start justify-between gap-3 px-4 py-3">
                 <span className="min-w-0 text-sm text-text">{g.sample}</span>
-                <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-semibold tabular-nums text-muted">
-                  ×{g.count}
-                </span>
+                <Badge>×{g.count}</Badge>
               </li>
             ))}
           </ul>
         )}
       </AdminSection>
-    </AdminPage>
+    </AdminTemplate>
   )
 }
