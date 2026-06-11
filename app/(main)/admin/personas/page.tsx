@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { BadgeCheck, Inbox } from 'lucide-react'
+import { BadgeCheck } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { getInitials } from '@/lib/utils'
 import {
   getPersonaQueue,
@@ -15,11 +16,12 @@ import { PersonaControls } from './persona-controls'
 
 export const dynamic = 'force-dynamic'
 
-const TONE_CLS = {
-  pending: 'bg-warning-bg/50 text-warning',
-  success: 'bg-success-bg/40 text-success',
-  muted: 'bg-surface-elevated text-muted',
-} as const
+// State tone → the shared StatusChip vocabulary (retired the local TONE_CLS dict).
+const STATE_TONE: Record<'pending' | 'success' | 'muted', StatusTone> = {
+  pending: 'warning',
+  success: 'success',
+  muted: 'neutral',
+}
 
 function PersonaRow({ row }: { row: PersonaQueueRow }) {
   const meta = PERSONA_META[row.persona]
@@ -42,9 +44,7 @@ function PersonaRow({ row }: { row: PersonaQueueRow }) {
           </p>
         </div>
       </Link>
-      <span className={`inline-flex shrink-0 items-center rounded-lg px-2.5 py-1 text-xs font-semibold ${TONE_CLS[stateMeta.tone]}`}>
-        {stateMeta.label}
-      </span>
+      <StatusChip tone={STATE_TONE[stateMeta.tone]}>{stateMeta.label}</StatusChip>
       <PersonaControls profileId={row.profileId} persona={row.persona} state={row.state} />
     </li>
   )
@@ -60,7 +60,7 @@ export default async function AdminPersonasPage() {
   const rest = queue.filter((r) => r.state !== 'claimed')
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Partner verification"
       icon={BadgeCheck}
       eyebrow="People"
@@ -71,7 +71,7 @@ export default async function AdminPersonasPage() {
         description={pending.length ? `${pending.length} waiting on you.` : undefined}
       >
         {pending.length === 0 ? (
-          <EmptyState icon={Inbox} title="Nothing to review" description="New partner claims land here for verification." />
+          <EmptyState variant="cleared" title="Nothing to review" description="New partner claims land here for verification." />
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
             {pending.map((r) => (
@@ -90,6 +90,6 @@ export default async function AdminPersonasPage() {
           </ul>
         </AdminSection>
       )}
-    </AdminPage>
+    </AdminTemplate>
   )
 }

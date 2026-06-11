@@ -1,5 +1,5 @@
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { NewChannelCompose } from '@/components/compose/new-channel-compose'
 import { getChannelsAdminData } from './load-channels'
 import { ChannelsAdminList } from './channels-admin-list'
@@ -10,7 +10,7 @@ export default async function AdminChannelsPage() {
   const { scopeOptions, visible, hidden } = await getChannelsAdminData(profileId)
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Channels"
       eyebrow="Community"
       description="Manage channels across your scope. Archiving hides from discovery."
@@ -20,6 +20,6 @@ export default async function AdminChannelsPage() {
       <AdminSection>
         <ChannelsAdminList visible={visible} hidden={hidden} />
       </AdminSection>
-    </AdminPage>
+    </AdminTemplate>
   )
 }

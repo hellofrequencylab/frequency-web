@@ -1,7 +1,8 @@
 import { Shield } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage } from '@/components/admin/admin-page'
+import { AdminTemplate } from '@/components/templates'
+import { FormSection } from '@/components/admin/form-section'
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL, roleBadgeStyle } from '@/lib/community-roles'
 import { ROLE_META } from '@/lib/roles-meta'
@@ -84,43 +85,67 @@ export default async function AdminRolesPage() {
   }, {} as Record<CommunityRole, number>)
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Roles & permissions"
       eyebrow="Platform"
       icon={Shield}
       description="Assign roles, spot members ready to advance, and see what each role unlocks."
       width="default"
     >
-      {/* Role roster */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {ROLE_HIERARCHY.map((r) => {
-          const RoleIcon = ROLE_META[r].Icon
-          return (
-          <div key={r} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-elevated text-muted">
-                  <RoleIcon className="h-4 w-4" />
-                </span>
-                <span className="rank-badge text-xs font-bold leading-tight" style={roleBadgeStyle(r)}>
-                  {ROLE_LABEL[r]}
-                </span>
+      <FormSection
+        title="The ladder"
+        description="The community trust roles and how many members hold each. Roles unlock as members earn their way up the ladder."
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {ROLE_HIERARCHY.map((r) => {
+            const RoleIcon = ROLE_META[r].Icon
+            return (
+              <div key={r} className="rounded-2xl border border-border bg-canvas/40 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-elevated text-muted">
+                      <RoleIcon className="h-4 w-4" aria-hidden />
+                    </span>
+                    <span className="rank-badge text-xs font-bold leading-tight" style={roleBadgeStyle(r)}>
+                      {ROLE_LABEL[r]}
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold tabular-nums text-muted">{counts[r]}</span>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-muted">{ROLE_META[r].blurb}</p>
               </div>
-              <span className="text-sm font-semibold tabular-nums text-muted">{counts[r]}</span>
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-muted">{ROLE_META[r].blurb}</p>
-          </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      </FormSection>
 
-      <RoleManager members={members} />
+      <FormSection
+        title="Community roles"
+        description="Assign a community role to any member. Promotions unlock that role's tools and assign its training Journey."
+      >
+        <RoleManager members={members} />
+      </FormSection>
 
-      <StaffRoleManager members={teamMembers} />
+      <FormSection
+        title="Staff roles"
+        description="The operations team and the capability domain each staff role holds (ADR-127)."
+      >
+        <StaffRoleManager members={teamMembers} />
+      </FormSection>
 
-      <PermissionGrid initial={permissions} defaults={NAV_AREA_DEFAULTS} />
+      <FormSection
+        title="Area permissions"
+        description="Which nav areas each role can reach. Overrides layer on top of the defaults."
+      >
+        <PermissionGrid initial={permissions} defaults={NAV_AREA_DEFAULTS} />
+      </FormSection>
 
-      <CapabilityGrid defaults={capabilityDefaults} initial={capabilityOverrides} />
-    </AdminPage>
+      <FormSection
+        title="Capability matrix"
+        description="The fine-grained staff capabilities per domain. Overrides layer on top of the CAPS defaults."
+      >
+        <CapabilityGrid defaults={capabilityDefaults} initial={capabilityOverrides} />
+      </FormSection>
+    </AdminTemplate>
   )
 }
