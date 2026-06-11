@@ -1,8 +1,6 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { LifeBuoy } from 'lucide-react'
-import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { listTickets, ticketStatusCounts, type AdminTicketRow } from '@/lib/support/store'
 import { relativeTime } from '@/lib/utils'
@@ -24,15 +22,17 @@ const FILTERS: { key: string; label: string }[] = [
 ]
 
 // Support console (ADR-159) — the staff triage queue. Wired to the reporter's profile
-// (and from there, the CRM). Host+ only; a janitor can retune access in the grid.
+// (and from there, the CRM). Gate (ADR-223): community host+ OR a staff role with the
+// `members` domain (write) — Support/Operations do member assist (docs/ROLES.md
+// §System 3). Swapped from the bespoke host-only inline guard to the standard
+// `requireAdmin` helper; the floor matches the sections.ts link gate exactly (host +
+// `members`), so it admits the same host+ plus the intended members-domain operators.
 export default async function AdminSupportPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string; type?: string; q?: string }>
 }) {
-  const me = await getCallerProfile()
-  if (!me) redirect('/')
-  if (!atLeastRole(me.community_role, 'host')) redirect('/feed')
+  await requireAdmin('host', { staff: 'members' })
 
   const { status = 'open_all', type, q } = await searchParams
   const [tickets, counts] = await Promise.all([
