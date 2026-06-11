@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check, Loader2 } from 'lucide-react'
+import { Toggle } from '@/components/admin/toggle'
 import { setHostPayoutsEnabled } from './actions'
 
 // The master on/off switch for host payouts (tips, event tickets, future store/
@@ -43,40 +43,18 @@ export function PayoutsToggle({
         <span className={`text-sm font-semibold ${on ? 'text-success' : 'text-subtle'}`}>
           {on ? 'Payouts are ON' : 'Payouts are OFF'}
         </span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={on}
-          aria-label="Host payouts enabled"
-          onClick={toggle}
+        <Toggle
+          checked={on}
+          onChange={toggle}
+          ariaLabel="Host payouts enabled"
           disabled={isPending}
-          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 motion-reduce:transition-none ${
-            on ? 'bg-primary' : 'bg-border-strong'
-          }`}
-        >
-          <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform motion-reduce:transition-none ${
-              on ? 'translate-x-5' : 'translate-x-0.5'
-            }`}
-          />
-        </button>
+          saveState={isPending ? 'saving' : saved ? 'saved' : 'idle'}
+        />
       </div>
 
-      <div className="mt-2 flex min-h-5 items-center gap-2 text-xs">
-        {isPending && (
-          <span className="inline-flex items-center gap-1.5 text-subtle">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…
-          </span>
-        )}
-        {!isPending && saved && (
-          <span className="inline-flex items-center gap-1.5 font-medium text-success">
-            <Check className="h-3.5 w-3.5" /> Saved
-          </span>
-        )}
-        {!isPending && !saved && on && !stripeConfigured && (
-          <span className="text-warning">Stripe key not configured, still dormant until keys are set.</span>
-        )}
-      </div>
+      {!isPending && !saved && on && !stripeConfigured && (
+        <p className="mt-2 text-xs text-warning">Stripe key not configured, still dormant until keys are set.</p>
+      )}
 
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}
     </div>
