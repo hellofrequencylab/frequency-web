@@ -14,7 +14,7 @@ import { FocusTemplate } from '@/components/templates'
 import { OnAirSession, type OnAirPractice } from '@/components/on-air/session'
 
 export const metadata: Metadata = {
-  title: 'On Air',
+  title: 'Mindless',
   description: 'Your daily practice timer: breathe, log, and collect the day.',
 }
 
@@ -81,7 +81,7 @@ export default async function OnAirPage({
   return (
     <FocusTemplate
       eyebrow="The Quest"
-      title="On Air"
+      title="Mindless"
       description="The world can wait a few minutes. Breathe, log, collect the day."
       width="narrow"
       divider={false}

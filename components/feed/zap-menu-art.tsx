@@ -96,6 +96,50 @@ export function GhostArt({ className = '' }: Props) {
   )
 }
 
+// Mindless — the lotus afloat on quiet water (the On Air timer's door).
+export function MindlessArt({ className = '' }: Props) {
+  return (
+    <span className={className}>
+      <Frame>
+        <path
+          d="M60 14c4.6 5.2 6.8 10 6.8 14.4 0 6-3 10.4-6.8 12.6-3.8-2.2-6.8-6.6-6.8-12.6 0-4.4 2.2-9.2 6.8-14.4Z"
+          className="fill-primary/25 stroke-primary-strong"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M57.2 40.2C49.2 39 44.2 33.8 43 25.4c5 .8 9 3 11.8 6.2"
+          className="stroke-primary"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <path
+          d="M62.8 40.2c8-1.2 13-6.4 14.2-14.8-5 .8-9 3-11.8 6.2"
+          className="stroke-primary"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <path
+          d="M47 42.5c3.6 3.4 7.9 5.1 13 5.1s9.4-1.7 13-5.1"
+          className="stroke-primary-strong"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <path
+          d="M28 58c5.3 4 10.7 4 16 0s10.7-4 16 0 10.7 4 16 0 10.7-4 16 0"
+          className="stroke-signal"
+          strokeWidth="2"
+          strokeLinecap="round"
+          fill="none"
+        />
+      </Frame>
+    </span>
+  )
+}
+
 // On Air — the ripple rings with the live dot.
 export function OnAirArt({ className = '' }: Props) {
   return (

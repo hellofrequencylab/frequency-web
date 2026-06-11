@@ -36,9 +36,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Go On Air",
-      "short_name": "On Air",
-      "description": "Time your practice",
+      "name": "Mindless",
+      "short_name": "Mindless",
+      "description": "Tune out: time your practice",
       "url": "/on-air",
       "icons": [
         {
