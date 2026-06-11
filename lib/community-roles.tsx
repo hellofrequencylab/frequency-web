@@ -11,28 +11,32 @@
 import type { RankKey } from '@/lib/season-ranks'
 import { rankBadgeStyle } from '@/lib/season-ranks'
 
-export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
+export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor' | 'moderator'
 
 // Community ladder: stone (grey) → clay → jade → teal → plum (lavender, apex).
 // admin/janitor are operational web roles → neutral stone (no rank colour).
+// 'moderator' is VIRTUAL (ADR-231): never stored in the community_role enum —
+// it's the member-facing chip for the system voice (Vera, profiles.is_system).
 export const ROLE_RANK: Record<CommunityRole, RankKey> = {
-  member:  'stone',
-  crew:    'clay',
-  host:    'jade',
-  guide:   'teal',
-  mentor:  'plum',
-  admin:   'stone',
-  janitor: 'stone',
+  member:    'stone',
+  crew:      'clay',
+  host:      'jade',
+  guide:     'teal',
+  mentor:    'plum',
+  admin:     'stone',
+  janitor:   'stone',
+  moderator: 'stone',
 }
 
 export const ROLE_LABEL: Record<CommunityRole, string> = {
-  member:  'Member',
-  crew:    'Crew',
-  host:    'Host',
-  guide:   'Guide',
-  mentor:  'Mentor',
-  admin:   'Admin',
-  janitor: 'Janitor',
+  member:    'Member',
+  crew:      'Crew',
+  host:      'Host',
+  guide:     'Guide',
+  mentor:    'Mentor',
+  admin:     'Admin',
+  janitor:   'Janitor',
+  moderator: 'Moderator',
 }
 
 // Inline style triplet to feed into the .rank-badge CSS class. Pass the

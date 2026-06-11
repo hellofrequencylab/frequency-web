@@ -95,6 +95,7 @@ export default async function ProfilePage({
       current_streak,
       lifetime_gems,
       is_demo,
+      is_system,
       vcard,
       nexus_regions!nexus_region_id ( name )
     `)
@@ -118,7 +119,8 @@ export default async function ProfilePage({
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = !!user && profile.auth_user_id === user.id
 
-  const role = (profile.community_role ?? 'member') as CommunityRole
+  // The system voice (Vera, ADR-231) shows "Moderator" — never the web role.
+  const role = (profile.is_system ? 'moderator' : profile.community_role ?? 'member') as CommunityRole
   const isDemo = (profile as { is_demo?: boolean }).is_demo ?? false
   const initials = getInitials(profile.display_name)
   const regionName = (profile.nexus_regions as unknown as { name: string } | null)?.name
