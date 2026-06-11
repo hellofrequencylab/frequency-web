@@ -126,6 +126,31 @@ export const DURATION_PRESETS = [2, 5, 10, 20] as const
 
 export type SessionMode = 'timer' | 'breath' | 'log'
 
+// Bell tones (P5): one soft synthesized strike per cue, three voices. `freqs`
+// layers oscillators (the bowl is a twin-tone), `decay` is the ring-out seconds.
+export interface BellTone {
+  slug: string
+  name: string
+  freqs: number[]
+  decay: number
+}
+
+export const BELL_TONES: BellTone[] = [
+  { slug: 'soft', name: 'Soft', freqs: [880], decay: 0.4 },
+  { slug: 'low', name: 'Low', freqs: [528], decay: 0.7 },
+  { slug: 'bowl', name: 'Bowl', freqs: [660, 442], decay: 1.4 },
+]
+
+export function bellToneBySlug(slug: string | null | undefined): BellTone {
+  return BELL_TONES.find((t) => t.slug === slug) ?? BELL_TONES[0]
+}
+
+/** Free-form session length (the stepper): 1–120 minutes. */
+export function clampMinutes(m: number): number {
+  if (!Number.isFinite(m)) return 5
+  return Math.min(120, Math.max(1, Math.round(m)))
+}
+
 export interface OnAirPrefs {
   mode: SessionMode
   pattern: string
@@ -136,6 +161,8 @@ export interface OnAirPrefs {
   customOut?: number
   /** Soft bell on phase changes (breath) / minute marks (timer). Default off. */
   bell?: boolean
+  /** Which bell voice (P5): soft | low | bowl. */
+  bellTone?: string
   /** Vibration on phase changes, where the device supports it. Default off. */
   haptics?: boolean
 }

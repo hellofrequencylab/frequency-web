@@ -86,5 +86,14 @@ on revisit**, by design.
   visualizer. Everything bows out under prefers-reduced-motion. Optional ambient
   audio remains unscheduled.
 
+- ~~P5 — mobile polish (owner feedback)~~ ✅ shipped: the live session, saving
+  state and reveal now run in a TRUE full-viewport takeover (`fixed inset-0 z-50`,
+  above the app header and tab bar) until done or End; bigger rings + a flashing
+  per-phase breath counter in the center; larger ON AIR indicator; chevron swipe
+  indicators flanking the reveal dots; swiping (or arrowing) past the last card
+  slides it off and closes the mode back to a refreshed setup; free-form minutes
+  stepper (1–120) beside the presets; three bell voices (Soft / Low / Bowl) with
+  a tap preview; an On Air radio icon in the global header.
+
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.
