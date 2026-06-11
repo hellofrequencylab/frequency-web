@@ -35,7 +35,8 @@ clock.
 ## Breathing patterns
 
 - **Box**: four counts in, hold, out, hold. Steady under pressure.
-- **Coherent**: five and a half in, five and a half out. The long-haul rhythm.
+- **3X**: a big breath in, sip a little more, then one long letting go (the
+  physiological sigh). The body's fastest reset.
 - **4-7-8**: long exhale. For winding down.
 - **Custom**: set your own counts with three sliders, three to eight seconds a
   phase. Skip the hold entirely if that suits your body better.

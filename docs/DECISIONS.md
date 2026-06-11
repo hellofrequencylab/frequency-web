@@ -6337,6 +6337,8 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 **Update — P10 (live controls):** a dynamic primary pill replaces the lone End button: **Pause ⇄ Start** while running, **Finish** once the clock hits zero, with a ghost **Close Session** link beneath — both Finish and Close Session log via the same `finish()` path and advance to the reveal (Close Session mid-run = the old early End, still no shame). Pause is implemented as a startedAt shift on resume so every elapsed-based read (clock, phase cues, the visualizer's new `paused` prop) stays seamless and paused time never banks as airtime; at zero the end bell/haptic fires once (`endCued`) and the screen waits instead of auto-finishing.
 
+**Update — P11 (3X replaces Coherent):** the middle breath pattern is now the **physiological sigh**, named **3X** (owner call): in 4s → sip 1s → out 7s, 12s/cycle. `BreathPhase` gained optional `fromScale`/`toScale` (0..1 of the ring band) so consecutive inhales stack — the big breath grows to 0.82, the sip tops up to 1, no reset between phases; `ringScaleAt` generalized, holds rest at the previous phase's end scale. Slug `3x`; the retired `coherent` slug falls back to Box via patternBySlug (covered in tests, 13 passing).
+
 **Consequences:** The daily WAM act gains a ritual surface with zero new economy paths to audit. P3 items (PWA shortcut, desktop modal entry, bells/haptics, presence counter, custom pattern) and P4 (reveal animation/art pass) are scoped in docs/ON-AIR.md. Migration is additive + idempotent; regenerate database.types.ts after apply (new tables are read via untyped handles until then).
 
 
