@@ -5,6 +5,7 @@ category: groups
 order: 2
 updated: 2026-06-10
 audience: member
+role: host
 featureKeys: [channels]
 status: published
 ---
