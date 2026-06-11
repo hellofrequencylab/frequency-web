@@ -130,12 +130,17 @@ export function OnAirSession({
   const router = useRouter()
   const [startedAt, setStartedAt] = useState(0)
   const [remaining, setRemaining] = useState(0)
+  // Paused = the wall-clock moment the member tapped Pause; resuming shifts
+  // startedAt forward by the pause length, so every elapsed-based read (clock,
+  // cues, visualizer) continues seamlessly and pauses never count as airtime.
+  const [pausedAt, setPausedAt] = useState<number | null>(null)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
   const audio = useRef<AudioContext | null>(null)
   const lastPhase = useRef<BreathPhase | null>(null)
   const lastMinute = useRef(0)
+  const endCued = useRef(false)
 
   const pattern = useMemo(
     () =>
@@ -196,11 +201,13 @@ export function OnAirSession({
     if (stage !== 'live') return
     const total = minutes * 60
     const id = setInterval(() => {
+      if (pausedAt !== null) return
       const elapsed = (Date.now() - startedAt) / 1000
       const left = Math.max(0, total - elapsed)
       setRemaining(left)
       // Cues: a phase-change ding/tap in breath mode, a minute ding on the
-      // timer. The end gets its own double-ding in finish(), so skip at zero.
+      // timer. At zero the end bell rings ONCE and the screen waits — the
+      // member collects with Finish in their own time (P10), no auto-advance.
       if (left > 0) {
         if (mode === 'breath') {
           const { phase } = breathPositionAt(pattern, elapsed)
@@ -216,12 +223,15 @@ export function OnAirSession({
             if (bell) chime(audio.current, bellToneBySlug(bellToneSlug))
           }
         }
+      } else if (!endCued.current) {
+        endCued.current = true
+        if (bell) endChime(audio.current, bellToneBySlug(bellToneSlug))
+        if (haptics) buzz([30, 80, 30])
       }
-      if (left <= 0) void finish(false)
     }, 250)
     return () => clearInterval(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage, startedAt, minutes])
+  }, [stage, startedAt, minutes, pausedAt])
 
   // Let the audio context go when the surface unmounts.
   useEffect(() => {
@@ -255,18 +265,31 @@ export function OnAirSession({
     }
     lastPhase.current = null
     lastMinute.current = 0
+    endCued.current = false
+    setPausedAt(null)
     setStartedAt(Date.now())
     setRemaining(minutes * 60)
     setStage('live')
     void acquireQuiet()
   }
 
+  function togglePause() {
+    if (pausedAt === null) {
+      setPausedAt(Date.now())
+    } else {
+      setStartedAt((s) => s + (Date.now() - pausedAt))
+      setPausedAt(null)
+    }
+  }
+
   async function finish(early: boolean) {
     if (finishing.current) return
     finishing.current = true
-    const seconds = early ? Math.round((Date.now() - startedAt) / 1000) : minutes * 60
-    if (bell) endChime(audio.current, bellToneBySlug(bellToneSlug))
-    if (haptics) buzz(early ? 10 : [30, 80, 30])
+    // The end bell already rang when the clock hit zero; an early Close Session
+    // gets a small ack tap only. Paused time never counts as airtime.
+    const elapsedMs = (pausedAt ?? Date.now()) - startedAt
+    const seconds = early ? Math.max(0, Math.round(elapsedMs / 1000)) : minutes * 60
+    if (haptics && early) buzz(10)
     await finishWith(seconds, new Date(startedAt).toISOString())
   }
 
@@ -354,6 +377,8 @@ export function OnAirSession({
   if (stage === 'live') {
     const mm = Math.floor(remaining / 60)
     const ss = Math.floor(remaining % 60)
+    const ended = remaining <= 0
+    const paused = pausedAt !== null
     return (
       <Overlay>
         <div className="flex flex-1 flex-col items-center justify-between pb-10 pt-12">
@@ -363,7 +388,7 @@ export function OnAirSession({
 
           <div className="flex flex-col items-center gap-5">
             {mode === 'breath' ? (
-              <BreathVisualizer pattern={pattern} startedAt={startedAt} />
+              <BreathVisualizer pattern={pattern} startedAt={startedAt} paused={paused || ended} />
             ) : (
               <p className="text-8xl font-bold tabular-nums text-text">
                 {mm}:{String(ss).padStart(2, '0')}
@@ -371,18 +396,30 @@ export function OnAirSession({
             )}
             {mode === 'breath' && (
               <p className="text-base tabular-nums text-subtle">
-                {mm}:{String(ss).padStart(2, '0')} left
+                {ended ? 'Done' : `${mm}:${String(ss).padStart(2, '0')} left`}
               </p>
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => void finish(true)}
-            className="rounded-full border border-border px-6 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            End
-          </button>
+          {/* The dynamic control (P10): Pause ⇄ Start while running, Finish once
+              the clock lands. Finish and Close Session BOTH log and move on —
+              ending early is never punished. */}
+          <div className="flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={() => (ended ? void finish(false) : togglePause())}
+              className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              {ended ? 'Finish' : paused ? 'Start' : 'Pause'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void finish(!ended)}
+              className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+            >
+              Close Session
+            </button>
+          </div>
         </div>
       </Overlay>
     )
@@ -394,9 +431,10 @@ export function OnAirSession({
   // than pulsing) and Tune out pinned above the fold in a sticky footer.
   return (
     <Overlay>
-      <div className="relative flex items-center justify-center pb-1">
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-primary-strong">
-          <LotusIcon className="h-4 w-4" /> Mindless
+      <div className="flex flex-1 flex-col px-2 pt-3">
+      <div className="relative flex items-center justify-center pb-2">
+        <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-primary-strong">
+          <LotusIcon className="h-6 w-6" /> Mindless
         </p>
         <button
           type="button"
@@ -407,13 +445,16 @@ export function OnAirSession({
           <X className="h-4 w-4" />
         </button>
       </div>
-      <p className="pb-4 text-center text-xs text-subtle">The world can wait a few minutes.</p>
+      <p className="pb-6 text-center text-xs text-subtle">The world can wait a few minutes.</p>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
+        {practices.length > 1 && (
         <div>
           <Label>Practice</Label>
-          {/* One scrollable chip row — stays compact however long the list grows. */}
-          <div className="-mx-6 mt-1.5 flex gap-1.5 overflow-x-auto px-6 pb-0.5">
+          {/* One scrollable chip row — stays compact however long the list grows.
+              With a single adopted practice it's auto-selected and the section
+              hides entirely (owner ask: no badge when there's nothing to pick). */}
+          <div className="-mx-8 mt-2 flex gap-1.5 overflow-x-auto px-8 pb-0.5">
             {practices.map((p) => (
               <button
                 key={p.id}
@@ -431,20 +472,22 @@ export function OnAirSession({
             ))}
           </div>
         </div>
+        )}
 
         <div>
           <Label>Mode</Label>
-          <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+          {/* Meditate = the plain silent countdown; Breathe = the guided rings. */}
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <ModeButton active={mode === 'timer'} onClick={() => setMode('timer')} icon={LotusIcon} label="Meditate" />
             <ModeButton active={mode === 'breath'} onClick={() => setMode('breath')} icon={BreatheIcon} label="Breathe" />
-            <ModeButton active={mode === 'timer'} onClick={() => setMode('timer')} icon={DialIcon} label="Timer" />
-            <ModeButton active={mode === 'log'} onClick={() => setMode('log')} icon={BoltIcon} label="Just log" />
+            <ModeButton active={mode === 'log'} onClick={() => setMode('log')} icon={BoltIcon} label="Just Log" />
           </div>
         </div>
 
         {mode === 'breath' && (
           <div>
             <Label>Pattern</Label>
-            <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+            <div className="mt-2 grid grid-cols-4 gap-2">
               {BREATH_PATTERNS.map((p) => (
                 <button
                   key={p.slug}
@@ -473,7 +516,7 @@ export function OnAirSession({
                 Custom
               </button>
             </div>
-            <p className="mt-1.5 text-xs text-subtle">{pattern.blurb}</p>
+            <p className="mt-2 text-xs text-subtle">{pattern.blurb}</p>
             {patternSlug === 'custom' && (
               <div className="mt-2.5 space-y-2.5 rounded-xl border border-border px-3.5 py-2.5">
                 <PhaseSlider label="Breathe in" min={CUSTOM_PHASE_MIN} value={customIn} onChange={setCustomIn} />
@@ -487,7 +530,7 @@ export function OnAirSession({
         {mode !== 'log' && (
           <div>
             <Label>Minutes</Label>
-            <div className="mt-1.5 flex gap-1.5">
+            <div className="mt-2 flex gap-2">
               {DURATION_PRESETS.map((m) => (
                 <button
                   key={m}
@@ -529,7 +572,7 @@ export function OnAirSession({
         {mode !== 'log' && (
           <div>
             <Label>Cues</Label>
-            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+            <div className="mt-2 grid grid-cols-2 gap-2">
               <ToggleChip
                 active={bell}
                 onClick={() => setBell(!bell)}
@@ -550,7 +593,7 @@ export function OnAirSession({
               />
             </div>
             {bell && (
-              <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+              <div className="mt-2 grid grid-cols-3 gap-2">
                 {BELL_TONES.map((t) => (
                   <button
                     key={t.slug}
@@ -588,7 +631,7 @@ export function OnAirSession({
       </div>
 
       {/* Pinned: Tune out never sinks below the fold, even with Custom open. */}
-      <div className="sticky bottom-0 -mx-6 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-5">
+      <div className="sticky bottom-0 -mx-8 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-8 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6">
         {practice?.loggedToday && mode !== 'log' && (
           <p className="pb-1.5 text-center text-2xs text-subtle">
             {practice.title} is already counted today. The sit still banks airtime.
@@ -603,10 +646,11 @@ export function OnAirSession({
           type="button"
           onClick={() => void start()}
           disabled={!practiceId}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Tune out'}
         </button>
+      </div>
       </div>
     </Overlay>
   )
