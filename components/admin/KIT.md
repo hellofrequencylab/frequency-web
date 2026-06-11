@@ -16,7 +16,7 @@ only; warm type; tabular numerals; AA.
 - `Banner` — `{ tone:'info'|'warning'|'critical', title, action?, dismissible? }`; `critical` ⇒ `role="alert"`.
 
 ## Tables — `@/components/admin/data-table`
-- `DataTable<T>` + `ColumnDef<T>`, `BulkAction`. Typed columns, row-as-link (`rowHref` — omit for a static browse table), hover `rowActions`, checkbox `selectable` + promoted/overflow `bulkActions`, `stickyHeader`, `density`, `caption`, `empty`, and `expandedRowId`+`expandedRow(row)` for an inline-edit/detail panel beneath a row. Sort writes `?sort&dir` to the URL (server owns data). Pass rows already sorted/filtered/paged by the server.
+- `DataTable<T>` + `ColumnDef<T>`. **Server-safe** (no `'use client'`/hooks) — a Server Component renders it directly; `render`/`rowActions`/`rowHref` run on the server (do NOT make them pass functions to a client child; `render` may RETURN client components like `StatusChip`). Typed columns, row-as-link (`rowHref` — omit for a static browse table), hover `rowActions`, `stickyHeader`, `density`, `caption`, `empty`, and `expandedRowId`+`expandedRow(row)` for an inline-edit/detail panel. **Sort/filter/paginate server-side in the page** (read the params, order the query); `ColumnDef.sortable` is a marker — make the `header` a `<Link href="?sort=key">`. Selection/bulk, if ever needed, go in a small Client wrapper.
 - `FilterBar` — `@/components/admin/filter-bar`. URL-as-state `{ filters:FilterDef[], search? }` (selects + search + removable chips) above a DataTable.
 - `TableSkeleton` — `@/components/admin/table-skeleton`. Suspense fallback (`rows`,`cols`).
 - `RankList` — `@/components/admin/rank-list`. Ranked value→count micro-list (`items:{value,n,href?}[]`) for a `Tile` (top pages/features/channels).
