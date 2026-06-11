@@ -296,12 +296,18 @@ export function OnAirSession({
 
   // --- screens -------------------------------------------------------------------
 
-  // Done or swiped off the last card: drop the takeover, land back on a fresh
-  // setup (refresh picks up the new logged state).
+  // Done or swiped off the last card: drop the takeover and return to the
+  // screen the member came FROM (the page where they hit the Zap button or
+  // the board's radio). Direct entries (PWA shortcut, typed URL) have no app
+  // history, so they land on home instead of exiting the app.
   function closeReveal() {
     setPayload(null)
     setStage('setup')
-    router.refresh()
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back()
+    } else {
+      router.replace('/feed')
+    }
   }
 
   if (stage === 'reveal' && payload) {
@@ -345,7 +351,7 @@ export function OnAirSession({
     const ss = Math.floor(remaining % 60)
     return (
       <Overlay>
-        <div className="flex flex-1 flex-col items-center justify-between py-2">
+        <div className="flex flex-1 flex-col items-center justify-between pb-10 pt-12">
           <p className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-primary-strong">
             <span className="h-3 w-3 animate-pulse rounded-full bg-primary" /> On Air
           </p>
