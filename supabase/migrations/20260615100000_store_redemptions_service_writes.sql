@@ -1,0 +1,24 @@
+-- =============================================================================
+-- Store redemptions: service-role writes only (defense-in-depth, ADR-226 follow-up)
+--
+-- WHY: the original gem-store policy "store_redemptions: self insert" (20240121)
+-- lets any signed-in member INSERT their own redemption row from the client. That
+-- predates the server redeem path becoming the authority: `redeemItem`
+-- (app/(main)/crew/store/actions.ts) now enforces the paid-tier cash-in gate
+-- (canCashIn, ADR-226), the rank gates, stock vs sold-count, season/expiry
+-- cutoffs, and duplicate-ownership checks — none of which RLS replicates. A
+-- direct client insert bypasses every one of them (and, post ADR-227, would also
+-- decrement capped-SKU stock via the trigger without any validation).
+--
+-- FIX: drop the client INSERT policy. Both legitimate writers — `redeemItem` and
+-- the granted-cosmetics sweep (lib/awards/cosmetics.ts) — already write through
+-- the SERVICE ROLE (admin client), which bypasses RLS, so nothing legitimate
+-- changes. This matches the house posture for guarded writes (profile_personas /
+-- stewardships / capability_permissions: reads via RLS, writes via the audited
+-- server action only). Read policies are untouched.
+--
+-- Behavior change: none for the app; only the undocumented direct-client write
+-- path closes. Idempotent.
+-- =============================================================================
+
+DROP POLICY IF EXISTS "store_redemptions: self insert" ON public.store_redemptions;
