@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Copy, RefreshCw, Trash2, UserPlus, X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { Input } from '@/components/ui/field'
+import { DangerModal } from '@/components/admin/danger-modal'
 import { BandChip } from './band-chip'
 import type { PostedEventRow } from './load-posted'
 import {
@@ -96,6 +97,7 @@ function PostedRow({ row, canManage }: { row: PostedEventRow; canManage: boolean
   const [copied, setCopied] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [confirmNewLink, setConfirmNewLink] = useState(false)
 
   const unclaimed = row.status === 'unclaimed'
 
@@ -110,7 +112,6 @@ function PostedRow({ row, canManage }: { row: PostedEventRow; canManage: boolean
   }
 
   function handleNewLink() {
-    if (!window.confirm('Mint a new claim link? The old link stops working immediately.')) return
     setError(null)
     start(async () => {
       const res = await regenerateClaimLink(row.id)
@@ -160,7 +161,7 @@ function PostedRow({ row, canManage }: { row: PostedEventRow; canManage: boolean
             )}
             {canManage && unclaimed && (
               <>
-                <button type="button" onClick={handleNewLink} disabled={pending} className={actionBtn}>
+                <button type="button" onClick={() => setConfirmNewLink(true)} disabled={pending} className={actionBtn}>
                   <RefreshCw className="h-3.5 w-3.5" />
                   New claim link
                 </button>
@@ -224,6 +225,14 @@ function PostedRow({ row, canManage }: { row: PostedEventRow; canManage: boolean
           </td>
         </tr>
       )}
+      <DangerModal
+        open={confirmNewLink}
+        onClose={() => setConfirmNewLink(false)}
+        title="Mint a new claim link?"
+        body="The current claim link stops working immediately. Anyone holding the old link can no longer claim this event."
+        confirmLabel="Mint new link"
+        onConfirm={handleNewLink}
+      />
     </>
   )
 }
