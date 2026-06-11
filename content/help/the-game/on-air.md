@@ -49,7 +49,8 @@ When the timer ends, swipe through four screens:
    practice, and your Amplitude.
 4. **Dispatch from Vera.** Your next assignment: the next step on your Journey, a
    challenge you can close out, or where to show up this week. One per day; it
-   stays saved, so you can come back and read it anytime.
+   stays saved. Find every past one under **Past Dispatches** on the On Air
+   screen.
 
 Already logged that practice today? The extra sit still banks airtime, and your
 streak holds. Nothing pays twice, and nothing is lost.

@@ -319,6 +319,11 @@ export function OnAirSession({
           {practice.title} is already counted today. The sit still banks airtime.
         </p>
       )}
+      <p className="text-center">
+        <a href="/on-air/dispatches" className="text-xs font-medium text-subtle hover:text-text">
+          Past Dispatches from Vera
+        </a>
+      </p>
     </div>
   )
 }
