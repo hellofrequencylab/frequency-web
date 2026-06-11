@@ -8,10 +8,10 @@ import {
 } from '@/lib/partners/read'
 import { getMyProfileId } from '@/lib/auth'
 import { IndexTemplate } from '@/components/templates/index-template'
-import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
+import { RowCard } from '@/components/cards/row-card'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,18 +34,6 @@ export default async function PartnersPage() {
       title="Partners"
       description="Local businesses that back the community. Walk in, tap their plaque or scan a code to claim a members-only offer, and pick up Zaps while you’re at it."
     >
-      {partners.length > 0 && (
-        <div className="mb-6">
-          <StatStrip
-            items={[
-              { value: partners.length, label: 'Partners' },
-              { value: cities, label: 'Cities' },
-              { value: categories, label: 'Categories' },
-            ]}
-          />
-        </div>
-      )}
-
       {offers.length > 0 && (
         <section className="mb-8">
           <SectionHeader title="Offers right now" count={offers.length} />
@@ -66,7 +54,20 @@ export default async function PartnersPage() {
       )}
 
       <section>
-        <SectionHeader title="All partners" count={partners.length} />
+        {/* Counts stay quiet inline context (the gamified-stat law, MEMBER-DESIGN-SYSTEM §2) —
+            never a KPI tile on a member page. */}
+        <SectionHeader
+          title="All partners"
+          count={partners.length}
+          action={
+            cities > 0 ? (
+              <p className="text-xs text-subtle">
+                {cities} {cities === 1 ? 'city' : 'cities'}
+                {categories > 0 && <> · {categories} {categories === 1 ? 'category' : 'categories'}</>}
+              </p>
+            ) : undefined
+          }
+        />
         {partners.length === 0 ? (
           <EmptyState
             icon={Store}
@@ -117,18 +118,26 @@ function PartnerCard({ partner }: { partner: PartnerSummary }) {
 }
 
 // One live offer: what you get, who gives it, whether you've already unlocked it.
+// A dense list row (RowCard, the kit's compact browse card) — the unlocked/until
+// state rides as the passive trailing chip.
 function OfferCard({ offer }: { offer: LiveOffer }) {
   const until = offer.validUntil
     ? new Date(offer.validUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : null
   return (
-    <Link
+    <RowCard
       href={`/partners/${offer.partner.slug}`}
-      className="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-bold leading-snug text-text">{offer.title}</p>
-        {offer.redeemedAt ? (
+      title={offer.title}
+      description={offer.description ?? undefined}
+      meta={
+        <span className="flex items-center gap-1 font-medium text-primary-strong">
+          <Store className="h-3 w-3 shrink-0" aria-hidden />
+          {offer.partner.name}
+          {offer.partner.city && <span className="font-normal text-subtle">· {offer.partner.city}</span>}
+        </span>
+      }
+      trailing={
+        offer.redeemedAt ? (
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-success-bg/50 px-2 py-0.5 text-2xs font-semibold text-success">
             <Check className="h-3 w-3" /> Unlocked
           </span>
@@ -136,16 +145,8 @@ function OfferCard({ offer }: { offer: LiveOffer }) {
           <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle">
             Until {until}
           </span>
-        ) : null}
-      </div>
-      {offer.description && (
-        <p className="line-clamp-2 text-xs leading-relaxed text-muted">{offer.description}</p>
-      )}
-      <p className="mt-auto flex items-center gap-1 pt-1 text-xs font-medium text-primary-strong">
-        <Store className="h-3 w-3 shrink-0" aria-hidden />
-        {offer.partner.name}
-        {offer.partner.city && <span className="font-normal text-subtle">· {offer.partner.city}</span>}
-      </p>
-    </Link>
+        ) : undefined
+      }
+    />
   )
 }
