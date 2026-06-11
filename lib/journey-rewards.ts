@@ -5,7 +5,7 @@
 // (UNIQUE(rule_key, profile_id) → exactly-once) and writes the gem/zap ledger. Currency
 // follows ADR-139: practice consistency → Zaps; the season-completion payoff → Gems.
 //
-// The standard per-log Zap (+12) is granted by the existing practice-log loop, not here;
+// The per-log Zap is granted by the existing practice-log loop, not here;
 // practiceLogZaps() is exposed only so callers share one source for that value.
 
 export type RewardKind = 'zaps' | 'gems' // matches reward_grants.reward_kind / the ledgers
@@ -19,15 +19,23 @@ export interface RewardBonus {
   label: string
 }
 
+// Practice-log weight classes (Rewards Economy v2). The practice's weight_class
+// drives the payout — it supersedes the old per-practice reward_zaps override.
+// Fallback values; the live numbers come from zap_config
+// (practice_logged_light / practice_logged / practice_logged_heavy).
+export const LIGHT_LOG_ZAPS = 8
 export const STANDARD_LOG_ZAPS = 12
+export const HEAVY_LOG_ZAPS = 15
 export const FULL_DAY_ZAPS = 25
 export const WEEKLY_RHYTHM_ZAPS = 50
 export const DEFAULT_COMPLETION_GEMS = 30
 
-/** The per-practice standard log value: a practice's own override, else the standard 12.
- *  (The 8–15 band in the brief is authoring guidance, not enforced here.) */
-export function practiceLogZaps(rewardZapsOverride: number | null | undefined): number {
-  return rewardZapsOverride ?? STANDARD_LOG_ZAPS
+/** The per-log Zap value for a practice's weight class (display fallback; the
+ *  award path reads the live amount from zap_config via practiceLogAction). */
+export function practiceLogZaps(weightClass: string | null | undefined): number {
+  if (weightClass === 'light') return LIGHT_LOG_ZAPS
+  if (weightClass === 'heavy') return HEAVY_LOG_ZAPS
+  return STANDARD_LOG_ZAPS
 }
 
 export function fullDayKey(date: string): string {

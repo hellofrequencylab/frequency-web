@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { Zap, Users, Flame, Pencil, Repeat, Wand2 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getRankedPractice, getPracticeMemberState } from '@/lib/practices'
+import { practiceLogZaps } from '@/lib/journey-rewards'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { DetailTemplate } from '@/components/templates'
 import { HelpMarkdown } from '@/components/help/help-markdown'
@@ -107,7 +108,7 @@ export default async function PracticeDetailPage({ params }: Params) {
           size="sm"
           icon={Zap}
           label="Reward per log"
-          value={practice.reward_note ?? `+${practice.reward_zaps ?? 12} zaps`}
+          value={`+${practiceLogZaps(practice.weight_class)} zaps`}
         />
         <StatCard bordered size="sm" icon={Repeat} label="Cadence" value={practice.cadence ?? 'Your call'} />
         <StatCard bordered size="sm" icon={Users} label="Practising now" value={practice.adopters.toLocaleString()} />

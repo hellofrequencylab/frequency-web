@@ -54,8 +54,19 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
 - **Zaps = the showing-up currency** that drives **season ranks** — *the weight of
   being there*. Earned by **in-person + outreach** acts (and **every practice log**,
   personal or circle — the real-world doing), the biggest rewards living off the
-  screen. Harder to earn, and for a Member **harder still** (a lower rate / level
-  cap, §6); Member zaps accumulate but stay **inert**.
+  screen. **Everyone earns at full rate** (Rewards Economy v2: the old
+  `MEMBER_ZAP_RATE = 0.5` throttle is deleted — the free game is the principle;
+  ADR-141 visibility gating is the membership value).
+- **Amplitude — the lifetime layer (Rewards Economy v2).** `profiles.amplitude` =
+  lifetime cumulative Zaps, hosting-class actions (`event_host`, `program_run`,
+  `circle_start`, `circle_activate`) counting **2×**. Accrued ONLY in
+  `after_zap_transaction()`; never decremented, never spent, never gates play.
+  Level derives on read: largest L where `50·L·(L+1) ≤ amplitude`
+  (`lib/amplitude.ts`); milestones at 1k/5k/10k/25k/50k/100k mint permanent Awards
+  (1k "First Thousand" + 5k "Five K" seeded for S1). Displayed beside the season
+  rank ("Beacon · 14,200"). Supersedes the ADR-037 lifetime-rank *display*; the
+  `lifetime_rank` column + ratchet stay for the retro reward rules. **Gem tiers
+  (New→Legend) are retired.**
 - **Season rank vs. lifetime rank (ADR-164).** The **season rank** advances with this
   season's zaps and resets to `ghost` at each `reset_season()`. The **lifetime rank** is a
   separate, **locked peak** (`profiles.lifetime_rank`) that only ever moves up and survives
@@ -65,23 +76,25 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
   (the Store widget + the "how you earned" headline); public display still follows ADR-141.
   Ranks are `ghost → echo → signal → beacon → conduit → luminary` (`season_rank_enum`;
   renamed 2026 — see docs/NAMING.md; migration `20260613000030`).
-- **Season-end Zap → Gem rollover — `ZAP_TO_GEM_RATES` (the rank ladder).** At season end,
-  `reset_season()` rolls a **rank-based share** of `current_season_zaps` into Gems via one named
-  config, **`ZAP_TO_GEM_RATES`** in the economy lib — the higher your final rank, the better the
-  conversion:
+- **Season-end Zap → Gem rollover — flat 5:1 + rank bonus (Rewards Economy v2).**
+  At season end, `reset_season()` (migration `20260614200000`) converts
+  `floor(season_zaps / 5)` into Gems **for everyone**, plus a **one-time
+  final-rank bonus**:
 
-  | Final rank | Zap : Gem |
-  | :-- | :-- |
-  | Ghost / Echo | 5 : 1 |
-  | Signal | 4 : 1 |
-  | Beacon | 3 : 1 |
-  | Conduit | 2 : 1 |
-  | Luminary | 1.5 : 1 |
+  | Final rank | Bonus Gems |
+  | :-- | --: |
+  | Echo | 10 |
+  | Signal | 25 |
+  | Beacon | 50 |
+  | Conduit | 100 |
+  | Luminary | 250 |
 
-  > **PROVISIONAL — pending economy tuning; expected to change.** Do not build logic that assumes
-  > any fixed Zap:Gem relationship. The rates above are the *current* rank ladder, not a contract.
-  > Canon definition + the verbatim provisional note live in [NAMING.md](NAMING.md) §Economy —
-  > this doc cross-links it, it is not duplicated as a second source of truth.
+  Both grants are claim-then-pay through `reward_grants` (re-running the reset can
+  never double-pay). The reset also mints a **season trophy** (final rank + season
+  Zaps stamped) for every profile with ≥1 practice log or any season Zaps, and the
+  Season 1 close grants the **Founding Season stamp** (the `season-one`
+  achievement) to everyone who practiced. This resolves the earlier provisional
+  rank-based sliding ladder (5:1→1.5:1, retired).
 
 > **Categorization is canonical (ADR-139): online → Gems, real life → Zaps — and
 > it applies to the meta-layer too.** Achievements, season challenges, and Journeys
@@ -107,8 +120,20 @@ NAMING.md/ADR-208)*:
 | An invite you sent joins | 40 | RSVP to an event | 5 |
 | Show up (verified check-in) | 25 | Join a circle | 5 |
 | Outreach task (flyer/QR) | 20 | Post (≤3/day) | 3 |
-| Log a real-world practice | 12 | Reply (≤5/day) | 2 |
+| Log a practice — light / standard / heavy | 8 / 12 / 15 | Reply (≤5/day) | 2 |
 | Capture a ghost node | 10 | Daily login (1/day) · React (≤5/day) | 2 · 1 |
+
+**Rewards Economy v2 additions** (all live-tunable in `zap_config`):
+`practices.weight_class` drives the per-log payout (8/12/15 — supersedes the
+`reward_zaps` override) · **Co-op Pulse +3⚡** (3+ circle members log the same
+adopted Journey the same day; nightly job, once per member/journey/day) ·
+**Welcome Back +10⚡** (first log after a 7+ day gap, once per gap, warm re-entry
+UI — never streak shame) · **Full Cycle +50⚡** (13 consecutive on-track weeks on
+one practice, one-time per practice; all other per-practice tiers are badge-only).
+Streak freezes gain a second earn path: **every 5 Full Day bonuses = +1 freeze**
+(cap 2, banks while full; never purchasable). The **Practice Shelf** on the profile
+shows each practice's consistency tier (In Motion 2w / Groove 4w / Deep Groove 8w /
+Full Cycle 13w, permanent ring) + depth count (10/25/50/100 Deep, never resets).
 
 So a free member *feels* the game (counters climbing, streaks alive) without getting
 its status payoff. Paying flips the earned Zaps/Gems from dead to live.
@@ -154,9 +179,10 @@ you can only *do* as Crew.
 ## 6. Decisions
 
 **Locked:**
-- **Member zap rate → lower multiplier.** Members earn Zaps at a reduced rate (they
-  climb, slowly). Gems stay easy. ✅ Done (ADR-140): `MEMBER_ZAP_RATE` in `awardZaps`,
-  gated on `BETA_MEMBERS_GET_CREW` (inert in Beta, live at Launch).
+- ~~**Member zap rate → lower multiplier.**~~ 🔴 **Reversed by Rewards Economy v2**
+  (see the superseding ADR): `MEMBER_ZAP_RATE` is deleted — everyone earns Zaps at
+  full rate. It was inert in Beta, so zero behavior change; the membership value is
+  ADR-141 visibility gating, not throttled earning.
 - **Journeys are Crew-only — no member DIY.** Free members get individual practices,
   not the tracked all-in-one Journey flow. ✅ Join-gating done (ADR-140): `startQuest`
   is Crew-gated; `/crew/quests` browse + CrewGate Start.
@@ -167,8 +193,9 @@ you can only *do* as Crew.
 - **Member rank display → no rank** at all on a free member's public profile (no inert
   chip). The rank reappears on upgrade. `isEndorsed(role)` gates it; inert in Beta.
 - **Endorsement set → rank only, for now.** The rank badge is Crew-gated; streak,
-  achievement count, and gem tier stay visible for everyone as *earned* stats. Cosmetics,
-  titles, and Journey badges ride the same `isEndorsed` gate once they render publicly.
+  achievement count, and gem count stay visible for everyone as *earned* stats (gem
+  *tiers* are retired — Rewards Economy v2). Cosmetics, titles, and Journey badges
+  ride the same `isEndorsed` gate once they render publicly.
 
 **Still open:**
 - **Authoring.** Who builds the seasonal journeys, and where (admin content tool)?

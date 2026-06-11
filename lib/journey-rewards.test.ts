@@ -74,8 +74,10 @@ describe('practiceLogZaps', () => {
   it('defaults to the standard 12', () => {
     expect(practiceLogZaps(null)).toBe(STANDARD_LOG_ZAPS)
     expect(practiceLogZaps(undefined)).toBe(12)
+    expect(practiceLogZaps('standard')).toBe(12)
   })
-  it('uses a per-practice override when set', () => {
-    expect(practiceLogZaps(15)).toBe(15)
+  it('pays by weight class (Rewards Economy v2: 8 / 12 / 15)', () => {
+    expect(practiceLogZaps('light')).toBe(8)
+    expect(practiceLogZaps('heavy')).toBe(15)
   })
 })

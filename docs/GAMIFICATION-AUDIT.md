@@ -63,20 +63,35 @@ chain in the currency of its real-world steps.
 |---|---|---|
 | Journey **join-gating** | `quest_progress` = joined; `advanceQuests` only advances started chains; new `startQuest` action + a real `/crew/quests` browse/join page | ✅ done |
 | **Pillar column** on the legacy action-chain engine (dropped, ADR-152) | Pillar foreign key, backfilled on the 4 seasonal Journeys; page groups by Pillar | ✅ done |
-| Member **zap-rate multiplier** | `MEMBER_ZAP_RATE` (0.5) in `awardZaps`; gated on `BETA_MEMBERS_GET_CREW` so it's inert in Beta, live at Launch | ✅ done |
+| Member **zap-rate multiplier** | ~~`MEMBER_ZAP_RATE` (0.5)~~ 🔴 **Deleted by Rewards Economy v2 (ADR-219)** — everyone earns Zaps at full rate; visibility gating (ADR-141) is the membership value | superseded |
 | Store **gems balance** | Spendable = `lifetime_gems − Σ gems_spent`, enforced in `getStoreData` + `redeemItem` | ✅ done |
 | Starter **content** | 2 bonus micro-journeys + 7 system-curated library practices across the Pillars | ✅ seeded |
 | **Endorsement layer** (rank) | `isEndorsed(role)` Crew-gates the public rank on profile + people cards + post flair; free profiles show earned stats but no rank (ADR-141). Inert in Beta. | ✅ done (rank) |
 | **DIY journey builder** | The **Studio** window — a reusable creation surface; members compose practices into a shareable life-development track (emoji/accent, intro, drag-reorder, per-step cadence, Pillar balance, share-to-library). First instance of a cross-site builder (ADR-142). | ✅ done |
+
+## Closed by Rewards Economy v2 (ADR-219, June 2026)
+
+| Item | Resolution | Status |
+|---|---|---|
+| Provisional **Zap→Gem rank ladder** | Flat **5:1** + one-time final-rank Gem bonus (10/25/50/100/250), claim-then-pay in `reset_season()` | ✅ done |
+| **Lifetime layer** | **Amplitude** = lifetime Zaps (hosting 2×), levels `50·L·(L+1)`, milestones 1k/5k seeded; supersedes the lifetime-rank display (column stays for retro rules) | ✅ done |
+| **Gem tiers** (New→Legend) | Retired — gems are purely spendable; Amplitude is the progression layer | ✅ done |
+| Flat practice-log Zap | **Weight classes** light 8 / standard 12 / heavy 15 (`practices.weight_class`; `reward_zaps` deprecated + backfilled) | ✅ done |
+| S1 challenge sprawl (39) | Re-seeded to the **15-template**; purse of the 14 non-Completionist = **1,000⚡**; the 24 extras archived (`is_active=false`), never deleted | ✅ done |
+| New bonus mechanics | Co-op Pulse +3⚡ (nightly), Welcome Back +10⚡, freeze second path (5 Full Days = +1), per-practice streaks + **Practice Shelf**, Full Cycle +50⚡ | ✅ done |
+| S1 award set | Quiet Ones (5 secret), Witnessed peer grants, rank/journey cosmetics (granted-only store items), circle banner + Co-op Synchrony, Vault S1 SKUs (rank/stock/season gates) | ✅ done |
+| Crew-task ledger **regression** | `20260613000030` had restored the pre-ADR-139 `after_crew_completion()` (direct profile writes, ledger bypass) — re-fixed in `20260614000000` | ✅ fixed |
 
 ## Where the program is still lacking (recommended next)
 
 | Gap | Why it matters | Effort |
 |---|---|---|
 | ⏳ **Studio: more entities** (ADR-142) | Mount circle / practice / event onto the Studio shell as their own specs — the cross-site "create anywhere" vision | M each |
-| ⏳ Season challenges are all tagged **Season 1** | The engine ignores the season filter so they still fire, but new seasons need fresh challenge sets to feel like "a new climb" | S (seasonal seed) |
-| ⏳ **Endorsement set — cosmetics/titles/journey badges** | These aren't rendered on public surfaces yet; when they are, gate them on the same `isEndorsed` helper | S (rides existing gate) |
-| ⏳ **Beta zap supply** | Most beta activity is online (gems). Drive zaps with seeded ghost nodes / QR drops + event check-ins so the rank ladder isn't flat | content |
+| ⏳ **Endorsement set — cosmetics/titles/journey badges** | Granted + owned now (ADR-219 sweeps); public rendering still rides the `isEndorsed` gate when it lands | S (rides existing gate) |
+| ⏳ **Beta zap supply** | Most beta activity is online (gems). Drive zaps with seeded ghost nodes / QR drops + event check-ins so the rank ladder isn't flat — ships WITH the v2 economy (don't launch into a world with no faucets) | content |
+| ⏳ **Celebration art** | Amplitude level-up (mid-tier) + milestone / Full Spectrum (full-screen) are minted but visually stubbed; only 1k/5k art ships in S1 | design |
+| ⏳ **Forge Claim** | `forge_claim` metadata flags the Beacon/Luminary tokens; the physical claim flow is unbuilt | M |
+| ⏳ **Types regen** | `lib/database.types.ts` was hand-patched for the new columns; regenerate from the live schema after `20260614000000` applies | XS |
 
 > Demo community already looks alive: the demo engine seeds zaps/gems/ranks/streaks
 > per rank-band and inserts attendance streaks + trophy cases, so leaderboards and

@@ -3595,6 +3595,7 @@ export type Database = {
         Row: {
           active: boolean
           capture_rule: string
+          city: string | null
           created_at: string
           id: string
           label: string | null
@@ -3614,6 +3615,7 @@ export type Database = {
         Insert: {
           active?: boolean
           capture_rule?: string
+          city?: string | null
           created_at?: string
           id?: string
           label?: string | null
@@ -3633,6 +3635,7 @@ export type Database = {
         Update: {
           active?: boolean
           capture_rule?: string
+          city?: string | null
           created_at?: string
           id?: string
           label?: string | null
@@ -4751,6 +4754,7 @@ export type Database = {
           reward_note: string | null
           reward_zaps: number | null
           status: string
+          weight_class: string
           subcategory_id: string | null
           summary: string | null
           title: string
@@ -4775,6 +4779,7 @@ export type Database = {
           reward_note?: string | null
           reward_zaps?: number | null
           status?: string
+          weight_class?: string
           subcategory_id?: string | null
           summary?: string | null
           title: string
@@ -4799,6 +4804,7 @@ export type Database = {
           reward_note?: string | null
           reward_zaps?: number | null
           status?: string
+          weight_class?: string
           subcategory_id?: string | null
           summary?: string | null
           title?: string
@@ -4894,6 +4900,7 @@ export type Database = {
       profiles: {
         Row: {
           achievement_count: number
+          amplitude: number
           acquisition: Json | null
           auth_user_id: string | null
           avatar_url: string | null
@@ -4963,6 +4970,7 @@ export type Database = {
         }
         Insert: {
           achievement_count?: number
+          amplitude?: number
           acquisition?: Json | null
           auth_user_id?: string | null
           avatar_url?: string | null
@@ -5032,6 +5040,7 @@ export type Database = {
         }
         Update: {
           achievement_count?: number
+          amplitude?: number
           acquisition?: Json | null
           auth_user_id?: string | null
           avatar_url?: string | null
@@ -5743,6 +5752,7 @@ export type Database = {
           description: string
           difficulty: Database["public"]["Enums"]["challenge_difficulty"]
           id: string
+          is_active: boolean
           name: string
           season: number
           slug: string
@@ -5759,6 +5769,7 @@ export type Database = {
           description: string
           difficulty?: Database["public"]["Enums"]["challenge_difficulty"]
           id?: string
+          is_active?: boolean
           name: string
           season?: number
           slug: string
@@ -5775,6 +5786,7 @@ export type Database = {
           description?: string
           difficulty?: Database["public"]["Enums"]["challenge_difficulty"]
           id?: string
+          is_active?: boolean
           name?: string
           season?: number
           slug?: string
@@ -5971,6 +5983,7 @@ export type Database = {
           category: Database["public"]["Enums"]["store_category"]
           created_at: string
           description: string
+          expires_at: string | null
           gem_cost: number
           icon: string
           id: string
@@ -5978,6 +5991,7 @@ export type Database = {
           metadata: Json
           name: string
           preview: string | null
+          season_id: number | null
           slug: string
           sort_order: number
           stock: number | null
@@ -5986,6 +6000,7 @@ export type Database = {
           category: Database["public"]["Enums"]["store_category"]
           created_at?: string
           description: string
+          expires_at?: string | null
           gem_cost: number
           icon?: string
           id?: string
@@ -5993,6 +6008,7 @@ export type Database = {
           metadata?: Json
           name: string
           preview?: string | null
+          season_id?: number | null
           slug: string
           sort_order?: number
           stock?: number | null
@@ -6001,6 +6017,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["store_category"]
           created_at?: string
           description?: string
+          expires_at?: string | null
           gem_cost?: number
           icon?: string
           id?: string
@@ -6008,6 +6025,7 @@ export type Database = {
           metadata?: Json
           name?: string
           preview?: string | null
+          season_id?: number | null
           slug?: string
           sort_order?: number
           stock?: number | null
@@ -6718,6 +6736,7 @@ export type Database = {
           reward_zaps: number | null
           score: number | null
           status: string | null
+          weight_class: string | null
           subcategory_id: string | null
           summary: string | null
           title: string | null
