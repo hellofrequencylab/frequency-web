@@ -125,13 +125,14 @@ export default async function AdminPageView() {
             </ChartCard>
           </div>
 
-          {/* Activation — the North-Star conversion. */}
+          {/* Activation — the North-Star conversion. Compact card to match the
+              shorter tiles + charts. */}
           <div className="lg:col-span-3">
-            <div className="flex h-full flex-col justify-center rounded-2xl border border-border bg-surface p-5">
+            <div className="flex h-full items-center rounded-2xl border border-border bg-surface px-4 py-3">
               <RingGauge
                 pct={practice.activationRate}
                 label="Activation · 7d"
-                sub={`${practice.activated} of ${practice.newMembers} new members logged a verified practice within a week`}
+                sub={`${practice.activated} of ${practice.newMembers} new members activated`}
               />
             </div>
           </div>
