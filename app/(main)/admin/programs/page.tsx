@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowUpRight, Gamepad2 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { dashCookie, sanitizeDashOrder } from '../dash-sections'
+import { RelatedAreas } from '@/components/admin/related-areas'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { DashArea, TileGrid, Tile, GraphTile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { TrendArea, WeekBars, RingGauge, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
@@ -64,6 +65,8 @@ export default async function ProgramsDashboard() {
       {order.map((id) => (
         <Fragment key={id}>{sections[id]}</Fragment>
       ))}
+
+      <RelatedAreas current="programs" role={role} webRole={webRole} staffRole={staffRole} />
     </AdminTemplate>
   )
 }
