@@ -17,7 +17,9 @@ async function railData() {
   const weekAhead = new Date(now.getTime() + 7 * DAY).toISOString()
 
   const [members, wamRows, events, reports, newest] = await Promise.all([
-    admin.from('memberships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+    // Members = real (non-system) person profiles — the canonical count
+    // (lib/analytics/members.ts), matching the dashboard's top stat + Pulse.
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_system', false),
     admin
       .from('engagement_events')
       .select('actor_profile_id')
@@ -30,10 +32,10 @@ async function railData() {
       .lte('starts_at', weekAhead),
     admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     admin
-      .from('memberships')
-      .select('id, joined_at, profile:profiles!profile_id ( display_name, handle, avatar_url )')
-      .eq('status', 'active')
-      .order('joined_at', { ascending: false })
+      .from('profiles')
+      .select('id, display_name, handle, avatar_url, created_at')
+      .eq('is_system', false)
+      .order('created_at', { ascending: false })
       .limit(5),
   ])
 
@@ -46,11 +48,13 @@ async function railData() {
     wam,
     eventsAhead: events.count ?? 0,
     openReports: reports.count ?? 0,
-    newest: ((newest.data ?? []) as unknown as Array<{
+    newest: (newest.data ?? []) as unknown as Array<{
       id: string
-      joined_at: string
-      profile: { display_name: string; handle: string; avatar_url: string | null } | null
-    }>).filter((m) => m.profile),
+      display_name: string
+      handle: string
+      avatar_url: string | null
+      created_at: string
+    }>,
   }
 }
 
@@ -113,14 +117,14 @@ export async function AdminInfoRail() {
           {d.newest.map((m) => (
             <Link
               key={m.id}
-              href={`/people/${m.profile!.handle}`}
+              href={`/people/${m.handle}`}
               className="flex items-center justify-between rounded-xl px-3 py-1.5 transition-colors hover:bg-surface-elevated"
             >
               <span className="min-w-0 truncate text-xs font-medium text-text">
-                {m.profile!.display_name}
+                {m.display_name}
               </span>
               <span className="shrink-0 pl-2 text-2xs text-subtle">
-                {new Date(m.joined_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                {new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </span>
             </Link>
           ))}

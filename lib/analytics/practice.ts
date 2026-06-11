@@ -46,6 +46,7 @@ async function computePracticeMetrics(): Promise<PracticeMetrics> {
   const { data: newProfiles } = await admin
     .from('profiles')
     .select('id, created_at')
+    .eq('is_system', false)
     .gte('created_at', monthAgo)
 
   const newMembers = newProfiles?.length ?? 0

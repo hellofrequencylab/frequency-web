@@ -61,7 +61,9 @@ async function HeaderKpis() {
 
   const [circles, members, events, reports] = await Promise.all([
     admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-    admin.from('memberships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+    // Members = real (non-system) person profiles — the canonical count
+    // (lib/analytics/members.ts). Circle membership is shown separately below.
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_system', false),
     admin
       .from('events')
       .select('id', { count: 'exact', head: true })
@@ -151,7 +153,7 @@ async function StructureSection() {
 async function PeopleSection() {
   const admin = createAdminClient()
 
-  const [members, team, pendingPersonas] = await Promise.all([
+  const [inCircles, team, pendingPersonas] = await Promise.all([
     admin.from('memberships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
     admin.from('team_members').select('id', { count: 'exact', head: true }),
     // profile_personas isn't in the generated types yet (repo convention: untyped cast).
@@ -170,7 +172,7 @@ async function PeopleSection() {
       description="Active members, the staff team, and partners waiting on verification."
     >
       <StatRow>
-        <StatItem value={(members.count ?? 0).toLocaleString()} label="Active members" href="/admin/members" />
+        <StatItem value={(inCircles.count ?? 0).toLocaleString()} label="In circles" href="/admin/members" />
         <StatItem value={(team.count ?? 0).toLocaleString()} label="Team members" href="/admin/roles" />
         <StatItem
           value={verifyQueue.toLocaleString()}
