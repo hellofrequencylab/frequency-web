@@ -22,6 +22,7 @@ const PENDING_AVATAR_KEY = 'fq_pending_avatar'
 import { FeedRender } from '@/components/onboarding/renders/feed-render'
 import { CirclesRender } from '@/components/onboarding/renders/circles-render'
 import { EventsRender } from '@/components/onboarding/renders/events-render'
+import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
@@ -378,21 +379,19 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
   // ── Styles (warm light throughout) ───────────────────────────────────────────
   const inputInset =
-    'w-full rounded-xl border border-border bg-marketing-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
+    'w-full rounded-xl border border-border bg-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
   const fieldLabel = 'mb-1.5 block text-left text-xs font-semibold uppercase tracking-wider text-subtle'
   const backLink = 'text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
-  const btnPrimary =
-    'text-emboss inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-primary px-8 py-4 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
+  // Primary action — the shared Wizard button (app register), used across the beats.
+  const btnPrimary = wizardPrimaryClass
   const eyebrow = 'text-sm font-semibold uppercase tracking-[0.25em] text-primary'
-  const heading = 'font-display uppercase leading-[1.0] text-[var(--brand-mark)]'
+  const heading = 'font-display uppercase leading-[1.0] text-text'
 
   const slide = reel[reelIndex]
   const isLastSlide = reelIndex >= reel.length - 1
 
   return (
-    <main className="theme-light-lock relative min-h-screen overflow-hidden bg-marketing-canvas">
-      {/* Soft warm glow (Hook-style), centered behind the content. */}
-      <div aria-hidden className="pointer-events-none fixed left-1/2 top-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-[0.09] blur-[160px]" />
+    <main className="relative min-h-screen overflow-hidden bg-canvas">
 
       {/* Preview-only badge (subtle; public /preview route; ADR-068). */}
       {preview && (
@@ -839,7 +838,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
                     <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-                      <div className="relative flex justify-center text-xs uppercase"><span className="bg-marketing-canvas px-2 text-subtle">or</span></div>
+                      <div className="relative flex justify-center text-xs uppercase"><span className="bg-canvas px-2 text-subtle">or</span></div>
                     </div>
 
                     <button
@@ -864,24 +863,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             )}
           </div>
 
-        {/* Progress — tight under the content. */}
+        {/* Progress — tight under the content, the shared staged-flow cue. */}
         <div className="mt-9 w-full max-w-sm shrink-0">
-          <div
-            className="flex w-full items-center gap-1.5"
-            role="progressbar"
-            aria-valuemin={1}
-            aria-valuemax={BEAT_COUNT}
-            aria-valuenow={beat + 1}
-            aria-valuetext={`Step ${beat + 1} of ${BEAT_COUNT}: ${BEAT_LABELS[beat]}`}
-          >
-            {Array.from({ length: BEAT_COUNT }).map((_, i) => (
-              <span key={i} aria-hidden className={`h-1 flex-1 rounded-full transition-colors duration-700 ${i <= beat ? 'bg-primary' : 'bg-border-strong'}`} />
-            ))}
-          </div>
-          {/* Polite announcement of the current beat for assistive tech. */}
-          <p className="sr-only" aria-live="polite">
-            Step {beat + 1} of {BEAT_COUNT}: {BEAT_LABELS[beat]}
-          </p>
+          <WizardProgress current={beat + 1} total={BEAT_COUNT} label={BEAT_LABELS[beat]} />
         </div>
 
         {/* A quiet way out on every step — never trap anyone, but keep focus on
