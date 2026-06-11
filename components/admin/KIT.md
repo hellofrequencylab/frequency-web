@@ -28,6 +28,7 @@ only; warm type; tabular numerals; AA.
 ## Forms & settings
 - `FormSection` — `@/components/admin/form-section`. Annotated group `{ title, description, children }` (Settings template).
 - `Toggle` — `@/components/admin/toggle`. Accessible `role="switch"` `{ checked, onChange, ariaLabel, saveState? }` with a built-in Saving…/Saved cue (imperative settings autosave).
+- `RangeField` — `@/components/admin/range-field`. Tokenized `<input type="range">` + labeled value readout `{ label, value, min, max, step?, onChange, suffix?, disabled? }` (tabular-nums readout, `accent-primary`). For wizard/generator sliders — stop hand-rolling the label + readout + range markup. CLIENT (needs interaction); use inside a Client surface.
 - Styled link-button: use the existing `Button` with `asChild` (`<Button asChild><Link …/></Button>`) or `buttonClasses(variant,size)` from `@/components/ui/button` — do NOT hand-roll `bg-primary…` on a `<Link>`.
 
 ## Entity-detail tabs note
