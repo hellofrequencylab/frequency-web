@@ -98,8 +98,8 @@ export default async function AdminPageView() {
 
   return (
     <AdminPage
-      title="Admin home"
-      eyebrow="Dashboard"
+      title="Admin Dashboard"
+      eyebrow="Overview"
       description={description}
       width="wide"
       // The header owns the four live numbers (F-pattern: most important, top

@@ -93,7 +93,7 @@ export interface AdminLink {
 // ('programs' → /admin/programs). Programs/Operations floor at community host (+
 // the community staff domain); Growth floors at host / marketing staff. Individual
 // links keep their own (often stricter, janitor) gates.
-export type DomainKey = 'programs' | 'operations' | 'growth'
+export type DomainKey = 'programs' | 'community' | 'growth' | 'operations'
 
 export interface AdminGroup {
   key: DomainKey
@@ -120,52 +120,43 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     min: 'host',
     staffDomain: 'community',
     links: [
-      { href: '/admin/content', label: 'Content suite', desc: 'Curate the Quest. Seasons, Journeys, Practices, Challenges.', Icon: Map, min: 'host', staffDomain: 'community' },
-      { href: '/admin/content/seasons', label: 'Seasons', desc: 'Season identity, theme, and lifecycle.', Icon: CalendarDays, min: 'host', staffDomain: 'community' },
-      { href: '/admin/content/journeys', label: 'Journeys', desc: 'Curate and publish official journeys.', Icon: BookOpen, min: 'host', staffDomain: 'community' },
-      { href: '/admin/content/practices', label: 'Practices', desc: 'The practice catalog and its adopters.', Icon: Sparkles, min: 'host', staffDomain: 'community' },
-      { href: '/admin/content/challenges', label: 'Challenges', desc: 'Define challenges and watch completion.', Icon: Target, min: 'host', staffDomain: 'community' },
-      { href: '/admin/content/tips', label: 'Creator tips', desc: 'Tips and prompts for content creators.', Icon: Lightbulb, min: 'host', staffDomain: 'community' },
-      { href: '/admin/gamification', label: 'Gamification & rewards', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community' },
-      { href: '/admin/store', label: 'Store', desc: 'Manage gem store items and catalog.', Icon: ShoppingBag, min: 'host', staffDomain: 'community' },
-      { href: '/admin/rewards', label: 'Retroactive rewards', desc: 'Reward past behavior. Define a rule, grant once.', Icon: Gift, min: 'admin' },
-      { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community' },
-      { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community' },
-      { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and Journeys stall.', Icon: Target, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
+      { href: '/admin/content', label: 'Content suite', desc: 'Curate the Quest. Seasons, Journeys, Practices, Challenges.', Icon: Map, min: 'host', staffDomain: 'community', section: 'Content' },
+      { href: '/admin/content/seasons', label: 'Seasons', desc: 'Season identity, theme, and lifecycle.', Icon: CalendarDays, min: 'host', staffDomain: 'community', section: 'Content' },
+      { href: '/admin/content/journeys', label: 'Journeys', desc: 'Curate and publish official journeys.', Icon: BookOpen, min: 'host', staffDomain: 'community', section: 'Content' },
+      { href: '/admin/content/practices', label: 'Practices', desc: 'The practice catalog and its adopters.', Icon: Sparkles, min: 'host', staffDomain: 'community', section: 'Content' },
+      { href: '/admin/content/challenges', label: 'Challenges', desc: 'Define challenges and watch completion.', Icon: Target, min: 'host', staffDomain: 'community', section: 'Content' },
+      { href: '/admin/content/tips', label: 'Creator tips', desc: 'Tips and prompts for content creators.', Icon: Lightbulb, min: 'host', staffDomain: 'community', section: 'Content' },
+      { href: '/admin/gamification', label: 'Gamification & rewards', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community', section: 'Rewards' },
+      { href: '/admin/store', label: 'Store', desc: 'Manage gem store items and catalog.', Icon: ShoppingBag, min: 'host', staffDomain: 'community', section: 'Rewards' },
+      { href: '/admin/rewards', label: 'Retroactive rewards', desc: 'Reward past behavior. Define a rule, grant once.', Icon: Gift, min: 'admin', section: 'Rewards' },
+      { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community', section: 'Rewards' },
+      { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community', section: 'Enablement' },
     ],
   },
   {
-    key: 'operations',
-    label: 'Operations',
-    blurb: 'Run the site. Community, people, trust and safety, and the platform keys.',
-    href: '/admin/operations',
-    Icon: SlidersHorizontal,
+    key: 'community',
+    label: 'Community',
+    blurb: 'The people and their spaces. Circles, members, events, and trust and safety.',
+    href: '/admin/community',
+    Icon: Users,
     min: 'host',
     staffDomain: 'community',
     links: [
-      // ── Community ──
-      { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community', section: 'Community' },
-      { href: '/admin/channels', label: 'Channels', desc: 'Topical and event channels.', Icon: Radio, min: 'host', staffDomain: 'community', section: 'Community' },
-      { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles, plus posted events, claims, and poster quality.', Icon: CalendarDays, min: 'host', staffDomain: 'community', section: 'Community' },
-      { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure', section: 'Community' },
-      { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure', section: 'Community' },
-      { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community', section: 'Community' },
-      // ── People ──
-      { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor', staffDomain: 'members', section: 'People' },
-      { href: '/admin/roles', label: 'Roles & permissions', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor', section: 'People' },
-      { href: '/admin/personas', label: 'Partner verification', desc: 'Vet and verify partner persona claims.', Icon: BadgeCheck, min: 'janitor', staffDomain: 'profiles', section: 'People' },
+      // ── Structure ──
+      { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community', section: 'Structure' },
+      { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure', section: 'Structure' },
+      { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure', section: 'Structure' },
+      { href: '/admin/channels', label: 'Channels', desc: 'Topical and event channels.', Icon: Radio, min: 'host', staffDomain: 'community', section: 'Structure' },
+      // ── People & access ──
+      { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor', staffDomain: 'members', section: 'People & access' },
+      { href: '/admin/roles', label: 'Roles & permissions', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor', section: 'People & access' },
+      { href: '/admin/personas', label: 'Partner verification', desc: 'Vet and verify partner persona claims.', Icon: BadgeCheck, min: 'janitor', staffDomain: 'profiles', section: 'People & access' },
+      // ── Activity ──
+      { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles, plus posted events, claims, and poster quality.', Icon: CalendarDays, min: 'host', staffDomain: 'community', section: 'Activity' },
+      { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community', section: 'Activity' },
       // ── Trust & safety ──
       { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community', section: 'Trust & safety' },
       { href: '/admin/support', label: 'Support', desc: 'Member support tickets and help requests.', Icon: LifeBuoy, min: 'host', staffDomain: 'members', section: 'Trust & safety' },
-      { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor', staffDomain: 'platform', section: 'Trust & safety' },
-      { href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', Icon: ScrollText, min: 'admin', section: 'Trust & safety' },
-      // ── Site & system ──
-      { href: '/pages', label: 'Pages', desc: 'Edit public pages and content blocks.', Icon: FileText, min: 'janitor', section: 'Site & system' },
-      { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr', section: 'Site & system' },
-      { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor', staffDomain: 'insights', section: 'Site & system' },
-      { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected. The to-write list.', Icon: HelpCircle, min: 'janitor', section: 'Site & system' },
-      { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor', section: 'Site & system' },
-      { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor', section: 'Site & system' },
     ],
   },
   {
@@ -177,18 +168,45 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     min: 'host',
     staffDomain: 'marketing',
     links: [
-      { href: '/admin/intel', label: 'Lead funnels & marketing intel', desc: 'Real-time growth, demand, and leader signal.', Icon: Telescope, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
-      { href: '/pages/splash', label: 'Onboarding splash', desc: 'The first-run splash members land on.', Icon: Rocket, min: 'janitor' },
-      { href: '/pages/sequences', label: 'Splash pages', desc: 'Sequenced splash pages and flows.', Icon: Layers, min: 'janitor' },
-      { href: '/admin/crm', label: 'CRM pipeline', desc: 'Deals, stages, and follow-ups.', Icon: Contact, min: 'host', staffDomain: 'marketing' },
-      { href: '/connections', label: 'Profiles & contacts', desc: 'People, contacts, and relationships.', Icon: ContactRound, min: 'host', staffDomain: 'profiles' },
-      { href: '/admin/marketing', label: 'Marketing campaigns', desc: 'Campaigns across your channels.', Icon: Briefcase, min: 'host', staffDomain: 'marketing' },
-      { href: '/entry-points', label: 'Entry points', desc: 'Where people first enter your spaces.', Icon: QrCode, min: 'host', staffDomain: 'marketing' },
-      { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
-      { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
-      { href: '/admin/expansion', label: 'Expansion signal', desc: 'Where density justifies the next Lab.', Icon: Radar, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
-      { href: '/admin/studio', label: 'AI Studio', desc: 'Ranked AI recommendations and one-click, reversible changes.', Icon: Lightbulb, min: 'admin', staffDomain: 'insights' },
-      { href: '/admin/insights', label: 'AI read', desc: 'A narrative of what to do next.', Icon: Sparkles, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
+      // ── Acquisition ──
+      { href: '/entry-points', label: 'Entry points', desc: 'Where people first enter your spaces.', Icon: QrCode, min: 'host', staffDomain: 'marketing', section: 'Acquisition' },
+      { href: '/pages/splash', label: 'Onboarding splash', desc: 'The first-run splash members land on.', Icon: Rocket, min: 'janitor', section: 'Acquisition' },
+      { href: '/pages/sequences', label: 'Splash pages', desc: 'Sequenced splash pages and flows.', Icon: Layers, min: 'janitor', section: 'Acquisition' },
+      { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr', section: 'Acquisition' },
+      // ── Pipeline ──
+      { href: '/admin/crm', label: 'CRM pipeline', desc: 'Deals, stages, and follow-ups.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
+      { href: '/connections', label: 'Profiles & contacts', desc: 'People, contacts, and relationships.', Icon: ContactRound, min: 'host', staffDomain: 'profiles', section: 'Pipeline' },
+      { href: '/admin/marketing', label: 'Marketing campaigns', desc: 'Campaigns across your channels.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
+      // ── Audiences & signals ──
+      { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Audiences & signals' },
+      { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Audiences & signals' },
+      { href: '/admin/expansion', label: 'Expansion signal', desc: 'Where density justifies the next Lab.', Icon: Radar, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Audiences & signals' },
+      { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and Journeys stall.', Icon: Target, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Audiences & signals' },
+      // ── AI growth ──
+      { href: '/admin/intel', label: 'Lead funnels & marketing intel', desc: 'Real-time growth, demand, and leader signal.', Icon: Telescope, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'AI growth' },
+      { href: '/admin/studio', label: 'AI Studio', desc: 'Ranked AI recommendations and one-click, reversible changes.', Icon: Lightbulb, min: 'admin', staffDomain: 'insights', section: 'AI growth' },
+      { href: '/admin/insights', label: 'AI read', desc: 'A narrative of what to do next.', Icon: Sparkles, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'AI growth' },
+    ],
+  },
+  {
+    key: 'operations',
+    label: 'Operations',
+    blurb: 'The platform machine. AI, content infrastructure, commerce, and the system trail.',
+    href: '/admin/operations',
+    Icon: SlidersHorizontal,
+    min: 'janitor',
+    staffDomain: 'platform',
+    links: [
+      // ── AI & assistant ──
+      { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor', staffDomain: 'platform', section: 'AI & assistant' },
+      { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor', staffDomain: 'insights', section: 'AI & assistant' },
+      { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected. The to-write list.', Icon: HelpCircle, min: 'janitor', section: 'AI & assistant' },
+      // ── Platform ──
+      { href: '/pages', label: 'Pages', desc: 'Edit public pages and content blocks.', Icon: FileText, min: 'janitor', section: 'Platform' },
+      { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor', section: 'Platform' },
+      // ── System ──
+      { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor', section: 'System' },
+      { href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', Icon: ScrollText, min: 'admin', section: 'System' },
     ],
   },
 ] as const
@@ -209,7 +227,7 @@ export interface AdminDestination {
 
 export const ADMIN_HOME: AdminDestination = {
   key: 'home',
-  label: 'Home',
+  label: 'Admin Dashboard',
   href: '/admin',
   Icon: LayoutDashboard,
   exact: true,
