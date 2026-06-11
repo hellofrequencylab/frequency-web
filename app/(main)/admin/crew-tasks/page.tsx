@@ -1,11 +1,9 @@
-import { SidebarCard } from '@/components/ui/sidebar-card'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CrewTasksClient } from './crew-tasks-client'
 import { CircleTasksPanel, type HostedCircleTasks } from './circle-tasks-panel'
 import { NewTaskCompose } from '@/components/compose/new-task-compose'
-import { SectionHeader } from '@/components/ui/section-header'
 import { listCircleTasks } from '@/lib/crew/circle-tasks'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -89,41 +87,38 @@ export default async function AdminCrewTasksPage() {
   }))
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Crew Tasks"
       eyebrow="Community"
       description="Define the tasks members can complete to earn zaps. Changes apply immediately across the app."
       width="wide"
       actions={<NewTaskCompose />}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content */}
-        <div className="lg:col-span-2 space-y-8">
-          <CrewTasksClient
-            tasks={tasks}
-            pendingVerifications={filteredPending}
-          />
+      {/* Verification queue + task editing — all behavior lives in the client */}
+      <AdminSection>
+        <CrewTasksClient
+          tasks={tasks}
+          pendingVerifications={filteredPending}
+        />
+      </AdminSection>
 
-          {/* Circle tasks — host-assigned, one claimer at a time */}
-          {hostedCircles.length > 0 && (
-            <div>
-              <SectionHeader title="Circle tasks" />
-              <p className="mb-3 -mt-2 text-xs text-subtle">
-                Tasks scoped to a circle you host. One Crew member claims a task at a time;
-                they complete it on their Crew dashboard. Release a claim to re-open a stalled task.
-              </p>
-              <CircleTasksPanel circles={hostedCircles} />
-            </div>
-          )}
-        </div>
+      {/* Circle tasks — host-assigned, one claimer at a time */}
+      {hostedCircles.length > 0 && (
+        <AdminSection
+          title="Circle tasks"
+          description="Tasks scoped to a circle you host. One Crew member claims a task at a time; they complete it on their Crew dashboard. Release a claim to re-open a stalled task."
+        >
+          <CircleTasksPanel circles={hostedCircles} />
+        </AdminSection>
+      )}
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <SidebarCard title="Quick actions">
-            <p className="px-4 py-3 text-xs text-subtle">Tasks that require verification must be manually approved here before Zaps are awarded. Repeatable tasks can be completed multiple times per season.</p>
-          </SidebarCard>
-        </div>
-      </div>
-    </AdminPage>
+      {/* Quick-reference note for operators */}
+      <AdminSection>
+        <p className="text-sm text-muted">
+          Tasks that require verification must be manually approved here before Zaps are awarded.
+          Repeatable tasks can be completed multiple times per season.
+        </p>
+      </AdminSection>
+    </AdminTemplate>
   )
 }

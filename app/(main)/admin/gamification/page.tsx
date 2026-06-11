@@ -2,8 +2,12 @@ import Link from 'next/link'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Award, Target, Flame, Trophy, Zap, Users } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
+import { EmptyState } from '@/components/ui/empty-state'
+import { DataTable, type ColumnDef } from '@/components/admin/data-table'
+import { StatusChip } from '@/components/admin/status'
+import type { StatusTone } from '@/components/admin/status'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { TIER_CONFIG, DIFFICULTY_CONFIG } from '@/lib/gamification'
 import type { AchievementTier, ChallengeDifficulty } from '@/lib/gamification'
@@ -15,6 +19,11 @@ import { SeasonControl } from './season-control'
 import { RewardConfig, type RewardRow } from './reward-config'
 import { MetricsPanel } from './metrics-panel'
 
+// Gamification — achievements, challenges, and engagement stats. INDEX / TABLE (ADR-233 §3.3).
+// TIER_CONFIG/.bg/.color and DIFFICULTY_CONFIG/.bg/.color are NOT applied directly to markup —
+// instead we render their .label inside StatusChip with a neutral tone to avoid bespoke hex.
+// The lib/gamification constants are not edited (shared lib).
+
 // zap_config / gem_config aren't in the generated types yet (read via untyped handle).
 type ZapCfgRow = { action_type: string; zaps_amount: number; daily_cap: number | null; is_active: boolean; description: string | null }
 type GemCfgRow = { action_type: string; gems_amount: number; daily_cap: number | null; is_active: boolean; description: string | null }
@@ -23,6 +32,25 @@ type TopEarner = Pick<
   Database['public']['Tables']['profiles']['Row'],
   'id' | 'display_name' | 'handle' | 'achievement_count' | 'lifetime_zaps' | 'current_streak'
 >
+
+// Tone map for achievement tiers (label-only; raw .bg/.color from TIER_CONFIG are not used)
+const TIER_TONE: Record<AchievementTier, StatusTone> = {
+  bronze:   'warning',
+  silver:   'neutral',
+  gold:     'warning',
+  platinum: 'info',
+}
+
+// Tone map for challenge difficulties
+const DIFF_TONE: Record<ChallengeDifficulty, StatusTone> = {
+  easy:      'success',
+  normal:    'info',
+  hard:      'warning',
+  legendary: 'danger',
+}
+
+type AchievementRow = { id: string; slug: string; name: string; tier: string; category: string; zaps_reward: number }
+type ChallengeRow   = { id: string; slug: string; name: string; difficulty: string; target: number; zaps_reward: number }
 
 export default async function AdminGamificationPage() {
   const { role } = await requireAdmin('host', { staff: 'community' })
@@ -73,8 +101,80 @@ export default async function AdminGamificationPage() {
     }))
   }
 
+  // DataTable column definitions — tier/diff labels come from the shared config (.label only)
+  const achievementColumns: ColumnDef<AchievementRow>[] = [
+    {
+      key: 'name',
+      header: 'Achievement',
+      render: (a) => <span className="text-sm font-medium text-text truncate">{a.name}</span>,
+    },
+    {
+      key: 'tier',
+      header: 'Tier',
+      render: (a) => {
+        const tier = TIER_CONFIG[a.tier as AchievementTier]
+        return <StatusChip tone={TIER_TONE[a.tier as AchievementTier] ?? 'neutral'}>{tier?.label ?? a.tier}</StatusChip>
+      },
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      render: (a) => <span className="text-xs text-muted capitalize">{a.category}</span>,
+    },
+    {
+      key: 'zaps_reward',
+      header: 'Zaps',
+      align: 'right',
+      type: 'number',
+      render: (a) => (
+        <span className="tabular-nums text-muted flex items-center justify-end gap-0.5">
+          <Zap className="w-2.5 h-2.5 text-primary" aria-hidden />
+          +{a.zaps_reward}
+        </span>
+      ),
+    },
+  ]
+
+  const challengeColumns: ColumnDef<ChallengeRow>[] = [
+    {
+      key: 'name',
+      header: 'Challenge',
+      render: (c) => <span className="text-sm font-medium text-text truncate">{c.name}</span>,
+    },
+    {
+      key: 'difficulty',
+      header: 'Difficulty',
+      render: (c) => {
+        const diff = DIFFICULTY_CONFIG[c.difficulty as ChallengeDifficulty]
+        return <StatusChip tone={DIFF_TONE[c.difficulty as ChallengeDifficulty] ?? 'neutral'}>{diff?.label ?? c.difficulty}</StatusChip>
+      },
+    },
+    {
+      key: 'target',
+      header: 'Target',
+      align: 'right',
+      type: 'number',
+      render: (c) => <span className="tabular-nums text-muted">{c.target}</span>,
+    },
+    {
+      key: 'zaps_reward',
+      header: 'Zaps',
+      align: 'right',
+      type: 'number',
+      render: (c) => (
+        <span className="tabular-nums text-muted flex items-center justify-end gap-0.5">
+          <Zap className="w-2.5 h-2.5 text-primary" aria-hidden />
+          +{c.zaps_reward}
+        </span>
+      ),
+    },
+  ]
+
+  const achievementRows = (achievements ?? []) as AchievementRow[]
+  const challengeRows   = (challenges ?? []) as ChallengeRow[]
+
   return (
-    <AdminPage
+    <AdminTemplate
       title="Gamification"
       eyebrow="Community"
       description="Overview of achievements, challenges, and engagement stats."
@@ -99,112 +199,93 @@ export default async function AdminGamificationPage() {
       <AdminSection>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard label="Achievements" value={totalAchievements ?? 0} icon={Award} />
-          <StatCard label="Times Unlocked" value={totalUnlocked ?? 0} icon={Trophy} />
-          <StatCard label="Season Challenges" value={totalChallenges ?? 0} icon={Target} />
-          <StatCard label="Challenges Completed" value={totalChallengesCompleted ?? 0} icon={Flame} />
+          <StatCard label="Times unlocked" value={totalUnlocked ?? 0} icon={Trophy} />
+          <StatCard label="Season challenges" value={totalChallenges ?? 0} icon={Target} />
+          <StatCard label="Challenges completed" value={totalChallengesCompleted ?? 0} icon={Flame} />
         </div>
       </AdminSection>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top achievers */}
-        <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-border">
-            <h2 className="text-sm font-bold text-text flex items-center gap-2">
-              <Users className="w-3.5 h-3.5" />
-              Top Achievers
-            </h2>
-          </div>
-          <div>
-            {((topEarners ?? []) as TopEarner[]).map((p, i) => (
-              <div
-                key={p.id}
-                className={`flex items-center gap-3 px-4 py-3 ${
-                  i < (topEarners?.length ?? 0) - 1 ? 'border-b border-border' : ''
-                }`}
-              >
-                <span className="text-sm font-bold text-subtle w-5">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <Link href={`/people/${p.handle}`} className="text-sm font-medium text-text hover:underline truncate block">
-                    {p.display_name}
-                  </Link>
-                </div>
-                <div className="flex items-center gap-3 shrink-0 text-xs text-muted">
-                  <span className="flex items-center gap-1">
-                    <Award className="w-3 h-3 text-signal" />
-                    {p.achievement_count ?? 0}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-primary" />
-                    {(p.lifetime_zaps ?? 0).toLocaleString()}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Flame className="w-3 h-3 text-primary" />
-                    {p.current_streak ?? 0}w
-                  </span>
-                </div>
-              </div>
-            ))}
-            {!(topEarners?.length) && (
-              <div className="px-4 py-8 text-center text-sm text-subtle">No achievements earned yet.</div>
-            )}
-          </div>
-        </section>
-
-        {/* Achievement list */}
-        <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-border">
-            <h2 className="text-sm font-bold text-text flex items-center gap-2">
-              <Award className="w-3.5 h-3.5" />
-              All Achievements ({achievements?.length ?? 0})
-            </h2>
-          </div>
-          <div className="max-h-80 overflow-y-auto">
-            {(achievements ?? []).map(a => {
-              const tier = TIER_CONFIG[a.tier as AchievementTier]
-              return (
-                <div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-border dark:border-border/30 last:border-0">
-                  <span className={`text-xs px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
-                    {tier.label}
-                  </span>
-                  <span className="text-xs text-text flex-1 truncate">{a.name}</span>
-                  {a.zaps_reward > 0 && (
-                    <span className="text-xs text-subtle flex items-center gap-0.5">
-                      <Zap className="w-2.5 h-2.5 text-primary" />+{a.zaps_reward}
+      {/* Top achievers — compact leaderboard panel */}
+      <AdminSection title="Top achievers">
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+          {((topEarners ?? []) as TopEarner[]).length === 0 ? (
+            <EmptyState
+              variant="first-use"
+              icon={Users}
+              title="No achievements earned yet"
+              description="Members who unlock achievements will appear here."
+            />
+          ) : (
+            <div>
+              {((topEarners ?? []) as TopEarner[]).map((p, i) => (
+                <div
+                  key={p.id}
+                  className={`flex items-center gap-3 px-4 py-3 ${
+                    i < (topEarners?.length ?? 0) - 1 ? 'border-b border-border' : ''
+                  }`}
+                >
+                  <span className="text-sm font-bold text-subtle w-5 tabular-nums">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <Link href={`/people/${p.handle}`} className="text-sm font-medium text-text hover:underline truncate block">
+                      {p.display_name}
+                    </Link>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 text-xs text-muted">
+                    <span className="flex items-center gap-1 tabular-nums">
+                      <Award className="w-3 h-3 text-signal" aria-hidden />
+                      {p.achievement_count ?? 0}
                     </span>
-                  )}
+                    <span className="flex items-center gap-1 tabular-nums">
+                      <Zap className="w-3 h-3 text-primary" aria-hidden />
+                      {(p.lifetime_zaps ?? 0).toLocaleString()}
+                    </span>
+                    <span className="flex items-center gap-1 tabular-nums">
+                      <Flame className="w-3 h-3 text-primary" aria-hidden />
+                      {p.current_streak ?? 0}w
+                    </span>
+                  </div>
                 </div>
-              )
-            })}
-          </div>
-        </section>
+              ))}
+            </div>
+          )}
+        </div>
+      </AdminSection>
 
-        {/* Season challenges list */}
-        <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden lg:col-span-2">
-          <div className="px-4 py-3 border-b border-border">
-            <h2 className="text-sm font-bold text-text flex items-center gap-2">
-              <Target className="w-3.5 h-3.5" />
-              Season 1 Challenges ({challenges?.length ?? 0})
-            </h2>
-          </div>
-          <div className="divide-y divide-border/30">
-            {(challenges ?? []).map(c => {
-              const diff = DIFFICULTY_CONFIG[c.difficulty as ChallengeDifficulty]
-              return (
-                <div key={c.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className={`text-xs px-1.5 py-0.5 rounded-md font-semibold ${diff.bg} ${diff.color}`}>
-                    {diff.label}
-                  </span>
-                  <span className="text-xs text-text flex-1">{c.name}</span>
-                  <span className="text-xs text-subtle">Target: {c.target}</span>
-                  <span className="text-xs text-subtle flex items-center gap-0.5">
-                    <Zap className="w-2.5 h-2.5 text-primary" />+{c.zaps_reward}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-      </div>
-    </AdminPage>
+      {/* All achievements — DataTable */}
+      <AdminSection title={`All achievements (${achievementRows.length})`}>
+        <DataTable
+          caption="All achievements"
+          columns={achievementColumns}
+          rows={achievementRows}
+          getRowId={(a) => a.id}
+          empty={
+            <EmptyState
+              variant="first-use"
+              icon={Award}
+              title="No achievements yet"
+              description="Achievements you configure will appear here."
+            />
+          }
+        />
+      </AdminSection>
+
+      {/* Season challenges — DataTable */}
+      <AdminSection title={`Season challenges (${challengeRows.length})`}>
+        <DataTable
+          caption="Active season challenges"
+          columns={challengeColumns}
+          rows={challengeRows}
+          getRowId={(c) => c.id}
+          empty={
+            <EmptyState
+              variant="first-use"
+              icon={Target}
+              title="No active challenges"
+              description="Active challenges for the current season will appear here."
+            />
+          }
+        />
+      </AdminSection>
+    </AdminTemplate>
   )
 }

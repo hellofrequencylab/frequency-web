@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Sparkles, Send, X, Eye, Flag, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/field'
+import { StatusChip } from '@/components/admin/status'
 import { isError } from '@/lib/action-result'
 import type { ActionResult } from '@/lib/action-result'
 import {
@@ -245,9 +246,9 @@ export function FlagReviewCard({
   return (
     <div className="rounded-2xl border border-warning/30 bg-warning-bg/40 p-4">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="inline-flex items-center gap-1 rounded-md bg-warning-bg px-1.5 py-0.5 text-xs font-semibold text-warning">
-          <Flag className="h-3 w-3" /> Spam flag
-        </span>
+        <StatusChip tone="warning" size="sm">
+          <Flag className="h-3 w-3" aria-hidden /> Spam flag
+        </StatusChip>
         <span className="text-sm font-semibold text-text">{posterName}</span>
         <span className="text-xs text-subtle">posted events · flagged {relativeTime(createdAt)}</span>
       </div>
