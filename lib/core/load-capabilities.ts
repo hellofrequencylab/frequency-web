@@ -8,6 +8,7 @@
 // NOTE: server-only — it uses the admin client. Do not import from a client
 // component.
 
+import { cache } from 'react'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
@@ -18,21 +19,33 @@ import {
 import { type CommunityRole } from './roles'
 import { deriveTier } from './entitlement'
 import { isPaid } from './access-matrix'
+import { leadsScope as edgeLeadsScope } from './stewardship'
+import { getStewardships } from '@/lib/stewardships'
 import { countOpenCircleTasks } from '@/lib/crew/circle-tasks'
 
 // The STAFF axis (web_role, ADR-208) rides on the caller profile alongside the
 // community role, so the SAME Viewer feeds every scope builder below — DB → auth →
 // capabilities. getCallerProfile() reads web_role through the untyped cast (the
 // generated types are stale until the migration applies).
-async function currentViewer(): Promise<Viewer> {
+//
+// SCOPED stewardship (P1.6, ADR-218): the viewer also carries its `stewardships`
+// edges as a `leadsScope` predicate, so the resolver recognizes a scoped leader by
+// edge as well as by the legacy leader FK. Edges are fetched ONCE per request
+// (cache()) and OR'd with the FK match in the resolver — provably a no-op on today's
+// data (every FK was backfilled to an edge; no edge exists without an FK yet). The
+// whole viewer is memoized so the several per-scope builders below share one
+// getCallerProfile() + one getStewardships() round-trip.
+const currentViewer = cache(async (): Promise<Viewer> => {
   const p = await getCallerProfile()
+  const edges = p?.id ? await getStewardships(p.id) : []
   return {
     profileId: p?.id ?? null,
     role: (p?.community_role ?? 'member') as CommunityRole,
     webRole: p?.webRole ?? 'none',
     tier: deriveTier(p?.membershipTier),
+    leadsScope: (scopeType, scopeId) => edgeLeadsScope(edges, scopeType, scopeId),
   }
-}
+})
 
 /** App-level capabilities (e.g. admin.access for the Admin tab). */
 export async function getGlobalCapabilities(): Promise<Set<Capability>> {
