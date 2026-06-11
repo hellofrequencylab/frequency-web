@@ -247,9 +247,9 @@ export function AdminTopNav(props: AdminNavProps) {
       className="sticky top-14 z-30 -mx-6 -mt-6 mb-6 border-b border-border bg-surface/95 px-6 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10"
     >
       {/* The STRIP spans full-bleed (background + border), but the menu itself runs
-          in a centered column aligned with the page content below (max-w-7xl — the
-          wide AdminTemplate the dashboard uses). */}
-      <div className="mx-auto w-full max-w-7xl">
+          in a centered column aligned with the three-column frame below (left nav +
+          content + info rail). */}
+      <div className="mx-auto w-full max-w-[105rem]">
       {/* Row 1 — the menubar. */}
       <nav aria-label="Admin" className="hidden h-12 items-center gap-1 md:flex">
         <Link
