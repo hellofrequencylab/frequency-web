@@ -20,15 +20,17 @@ little lotus next to any practice), or from a practice page. Pick three things,
 and it remembers them for next time:
 
 - **A practice** from your list.
-- **A mode.** *Breathe* gives you a guided breathing pattern with a visual to
-  follow. *Timer* is a plain countdown for any practice. *Just log* skips straight
-  to the rewards; the timer is never required.
+- **A mode.** *Meditate* is a plain countdown for a silent sit. *Breathe* gives
+  you a guided breathing pattern with a visual to follow. *Just Log* skips
+  straight to the rewards; the timer is never required.
 - **Minutes.** Two is enough. Five is plenty. Use the stepper for anything up to
   a hundred and twenty.
 
 Then hit **Tune out**. While you're tuned out the screen stays awake and
-everything else gets out of the way. There's one button: **End**. Ending early
-still counts; the practice is the point, not the clock.
+everything else gets out of the way. **Pause** if life interrupts (paused time
+doesn't count), and when the timer runs out, hit **Finish** to collect. Need to
+stop early? **Close Session** still counts; the practice is the point, not the
+clock.
 
 ## Breathing patterns
 
