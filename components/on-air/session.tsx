@@ -9,17 +9,22 @@
 // so On Air is never a tax on logging.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Zap, Radio, Wind, Timer as TimerIcon, Check, Volume2, Vibrate } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Zap, Radio, Wind, Timer as TimerIcon, Check, Volume2, Vibrate, Minus, Plus } from 'lucide-react'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import {
+  BELL_TONES,
   BREATH_PATTERNS,
   CUSTOM_PHASE_MAX,
   CUSTOM_PHASE_MIN,
   DURATION_PRESETS,
+  bellToneBySlug,
   breathPositionAt,
   buildCustomPattern,
+  clampMinutes,
   patternBySlug,
+  type BellTone,
   type BreathPhase,
   type OnAirPrefs,
   type RevealPayload,
@@ -40,11 +45,11 @@ type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 // One soft sine ding: quick attack, exponential decay. Gain stays well under
 // earbud-hostile levels; every call is wrapped so a flaky context never throws.
 
-function ding(ctx: AudioContext, at: number, durationSec = 0.4) {
+function ding(ctx: AudioContext, at: number, freq: number, durationSec: number) {
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
   osc.type = 'sine'
-  osc.frequency.value = 880
+  osc.frequency.value = freq
   gain.gain.setValueAtTime(0.12, at)
   gain.gain.exponentialRampToValueAtTime(0.0001, at + durationSec)
   osc.connect(gain)
@@ -53,24 +58,38 @@ function ding(ctx: AudioContext, at: number, durationSec = 0.4) {
   osc.stop(at + durationSec + 0.05)
 }
 
-function chime(ctx: AudioContext | null) {
+/** One strike of the chosen voice (the bowl layers two oscillators). */
+function chime(ctx: AudioContext | null, tone: BellTone) {
   if (!ctx) return
   try {
-    ding(ctx, ctx.currentTime)
+    for (const f of tone.freqs) ding(ctx, ctx.currentTime, f, tone.decay)
   } catch {
     // the bell is a nicety, never a blocker
   }
 }
 
-/** Slightly longer double-ding for the end of the session. */
-function endChime(ctx: AudioContext | null) {
+/** Slightly longer double strike for the end of the session. */
+function endChime(ctx: AudioContext | null, tone: BellTone) {
   if (!ctx) return
   try {
-    ding(ctx, ctx.currentTime, 0.5)
-    ding(ctx, ctx.currentTime + 0.3, 0.7)
+    for (const f of tone.freqs) {
+      ding(ctx, ctx.currentTime, f, tone.decay + 0.2)
+      ding(ctx, ctx.currentTime + 0.35, f, tone.decay + 0.4)
+    }
   } catch {
     // the bell is a nicety, never a blocker
   }
+}
+
+/** The takeover shell: while a session is live (and through the reveal) On Air
+ *  owns the WHOLE viewport — above the app header and the bottom tab bar —
+ *  until the member finishes or ends (P5). */
+function Overlay({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-canvas">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-6 py-5">{children}</div>
+    </div>
+  )
 }
 
 /** Vibration where supported (Android). iOS web has no vibration; never throw. */
@@ -105,7 +124,9 @@ export function OnAirSession({
   const [customHold, setCustomHold] = useState(prefs.customHold ?? 4)
   const [customOut, setCustomOut] = useState(prefs.customOut ?? 6)
   const [bell, setBell] = useState(prefs.bell ?? false)
+  const [bellToneSlug, setBellToneSlug] = useState(prefs.bellTone ?? 'soft')
   const [haptics, setHaptics] = useState(prefs.haptics ?? false)
+  const router = useRouter()
   const [startedAt, setStartedAt] = useState(0)
   const [remaining, setRemaining] = useState(0)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
@@ -183,7 +204,7 @@ export function OnAirSession({
         if (mode === 'breath') {
           const { phase } = breathPositionAt(pattern, elapsed)
           if (lastPhase.current && phase !== lastPhase.current) {
-            if (bell) chime(audio.current)
+            if (bell) chime(audio.current, bellToneBySlug(bellToneSlug))
             if (haptics) buzz(15)
           }
           lastPhase.current = phase
@@ -191,7 +212,7 @@ export function OnAirSession({
           const minute = Math.floor(elapsed / 60)
           if (minute > lastMinute.current) {
             lastMinute.current = minute
-            if (bell) chime(audio.current)
+            if (bell) chime(audio.current, bellToneBySlug(bellToneSlug))
           }
         }
       }
@@ -243,7 +264,7 @@ export function OnAirSession({
     if (finishing.current) return
     finishing.current = true
     const seconds = early ? Math.round((Date.now() - startedAt) / 1000) : minutes * 60
-    if (bell) endChime(audio.current)
+    if (bell) endChime(audio.current, bellToneBySlug(bellToneSlug))
     if (haptics) buzz(early ? 10 : [30, 80, 30])
     await finishWith(seconds, new Date(startedAt).toISOString())
   }
@@ -261,6 +282,7 @@ export function OnAirSession({
       customHold,
       customOut,
       bell,
+      bellTone: bellToneSlug,
       haptics,
     })
     finishing.current = false
@@ -274,19 +296,36 @@ export function OnAirSession({
 
   // --- screens -------------------------------------------------------------------
 
-  if (stage === 'reveal' && payload) return <Reveal payload={payload} />
+  // Done or swiped off the last card: drop the takeover, land back on a fresh
+  // setup (refresh picks up the new logged state).
+  function closeReveal() {
+    setPayload(null)
+    setStage('setup')
+    router.refresh()
+  }
+
+  if (stage === 'reveal' && payload) {
+    return (
+      <Overlay>
+        <Reveal payload={payload} onClose={closeReveal} />
+      </Overlay>
+    )
+  }
 
   if (stage === 'saving') {
     return (
+      <Overlay>
       <CenterScreen>
         <Radio className="h-8 w-8 animate-pulse text-primary" />
         <p className="text-sm font-medium text-muted">Off air. Counting it up…</p>
       </CenterScreen>
+      </Overlay>
     )
   }
 
   if (stage === 'error') {
     return (
+      <Overlay>
       <CenterScreen>
         <p className="text-sm font-medium text-text">That didn’t save. Your sit still happened.</p>
         <button
@@ -297,6 +336,7 @@ export function OnAirSession({
           Try again
         </button>
       </CenterScreen>
+      </Overlay>
     )
   }
 
@@ -304,34 +344,36 @@ export function OnAirSession({
     const mm = Math.floor(remaining / 60)
     const ss = Math.floor(remaining % 60)
     return (
-      <div className="flex min-h-[78vh] flex-col items-center justify-between py-6">
-        <p className="flex items-center gap-2 text-2xs font-bold uppercase tracking-[0.2em] text-primary-strong">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-primary" /> On Air
-        </p>
+      <Overlay>
+        <div className="flex flex-1 flex-col items-center justify-between py-2">
+          <p className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-primary-strong">
+            <span className="h-3 w-3 animate-pulse rounded-full bg-primary" /> On Air
+          </p>
 
-        <div className="flex flex-col items-center gap-6">
-          {mode === 'breath' ? (
-            <BreathVisualizer pattern={pattern} startedAt={startedAt} />
-          ) : (
-            <p className="text-7xl font-bold tabular-nums text-text">
-              {mm}:{String(ss).padStart(2, '0')}
-            </p>
-          )}
-          {mode === 'breath' && (
-            <p className="text-sm tabular-nums text-subtle">
-              {mm}:{String(ss).padStart(2, '0')} left
-            </p>
-          )}
+          <div className="flex flex-col items-center gap-5">
+            {mode === 'breath' ? (
+              <BreathVisualizer pattern={pattern} startedAt={startedAt} />
+            ) : (
+              <p className="text-8xl font-bold tabular-nums text-text">
+                {mm}:{String(ss).padStart(2, '0')}
+              </p>
+            )}
+            {mode === 'breath' && (
+              <p className="text-base tabular-nums text-subtle">
+                {mm}:{String(ss).padStart(2, '0')} left
+              </p>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void finish(true)}
+            className="rounded-full border border-border px-6 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+          >
+            End
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={() => void finish(true)}
-          className="rounded-full border border-border px-5 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-        >
-          End
-        </button>
-      </div>
+      </Overlay>
     )
   }
 
@@ -433,6 +475,26 @@ export function OnAirSession({
                 {m}
               </button>
             ))}
+            {/* The stepper: any length, one minute at a time (1–120). */}
+            <div className="flex flex-[1.6] items-center justify-between rounded-xl border border-border px-1.5">
+              <button
+                type="button"
+                onClick={() => setMinutes((m) => clampMinutes(m - 1))}
+                aria-label="One minute less"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-sm font-semibold tabular-nums text-text">{minutes}m</span>
+              <button
+                type="button"
+                onClick={() => setMinutes((m) => clampMinutes(m + 1))}
+                aria-label="One minute more"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -460,6 +522,34 @@ export function OnAirSession({
               title="A small tap at each phase change. Not every phone supports it."
             />
           </div>
+          {bell && (
+            <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+              {BELL_TONES.map((t) => (
+                <button
+                  key={t.slug}
+                  type="button"
+                  onClick={() => {
+                    setBellToneSlug(t.slug)
+                    // A one-strike preview on the tap (the gesture unlocks audio).
+                    try {
+                      audio.current = audio.current ?? new AudioContext()
+                      void audio.current.resume()
+                      chime(audio.current, t)
+                    } catch {
+                      // preview is a nicety
+                    }
+                  }}
+                  className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                    t.slug === bellToneSlug
+                      ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                      : 'border-border text-muted hover:bg-surface-elevated'
+                  }`}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

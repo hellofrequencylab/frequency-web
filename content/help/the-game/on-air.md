@@ -22,7 +22,8 @@ a practice page. Pick three things, and it remembers them for next time:
 - **A mode.** *Breathe* gives you a guided breathing pattern with a visual to
   follow. *Timer* is a plain countdown for any practice. *Just log* skips straight
   to the rewards; the timer is never required.
-- **Minutes.** Two is enough. Five is plenty.
+- **Minutes.** Two is enough. Five is plenty. Use the stepper for anything up to
+  a hundred and twenty.
 
 While you're on air the screen stays awake and everything else gets out of the way.
 There's one button: **End**. Ending early still counts; the practice is the point,
@@ -36,9 +37,11 @@ not the clock.
 - **Custom**: set your own counts with three sliders, three to eight seconds a
   phase. Skip the hold entirely if that suits your body better.
 
-Want sound or touch instead of watching the screen? Turn on the soft **bell** (it
-rings at each phase change, or each minute on the plain timer) or **vibration**
-under Cues. Both stay off unless you choose them, and your choice is remembered.
+Want sound or touch instead of watching the screen? Turn on the **bell** (it
+rings at each phase change, or each minute on the plain timer) and pick its
+voice: Soft, Low, or Bowl. Or turn on **vibration**. Both stay off unless you
+choose them, and your choices are remembered. While you breathe, the number in
+the middle of the rings counts each phase down with you.
 
 Follow the rings: they grow when you breathe in, rest while you hold, and settle
 as you let go.
@@ -57,6 +60,9 @@ When the timer ends, swipe through four screens:
    challenge you can close out, or where to show up this week. One per day; it
    stays saved. Find every past one under **Past Dispatches** on the On Air
    screen.
+
+When you reach the last card, one more swipe sends it off the screen and you're
+off air.
 
 Already logged that practice today? The extra sit still banks airtime, and your
 streak holds. Nothing pays twice, and nothing is lost.
