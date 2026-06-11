@@ -25,11 +25,8 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/crew',
       // Operator / steward DASHBOARDS keep the uniform slim stats rail like the rest
       // of the app (page-chrome.ts §FOCUS_PREFIXES note — a consistent right column
-      // site-wide; the rail is a thin strip, so no double-rail cost). CRM + Marketing
-      // moved under /admin (Phase 3) but still ride the global right rail there.
-      '/admin/marketing',
-      '/admin/marketing/analytics',
-      '/admin/crm',
+      // site-wide; the rail is a thin strip, so no double-rail cost). The /admin/*
+      // workspace is the exception (full-width, no rail — see its own test below).
       '/outreach',
     ]) {
       expect(railFor(p), p).toBe('global')
@@ -99,9 +96,22 @@ describe('leftRailFor — the global member left rail vs. the admin workspace', 
     }
   })
 
-  it('does not move the right rail for admin (that is governed separately)', () => {
-    // The admin workspace drops the member LEFT rail but the right rail is unchanged:
-    // /admin still resolves through railFor like any global page.
-    expect(railFor('/admin')).toBe('global')
+  it('drops BOTH rails for the admin workspace (full-width, Phase 4 ADR-228)', () => {
+    // The admin workspace suppresses the member LEFT rail AND the right rail — it is a
+    // full-width operator surface framed only by its top-nav menubar.
+    for (const p of [
+      '/admin',
+      '/admin/programs',
+      '/admin/circles',
+      '/admin/members',
+      '/admin/crm', // CRM moved under admin (Phase 3); full-width like the rest
+      '/admin/marketing', // Marketing too
+      '/admin/marketing/analytics',
+    ]) {
+      expect(railFor(p), p).toBe('none')
+      expect(leftRailFor(p), p).toBe('none')
+    }
+    // A non-admin path that merely shares the prefix text keeps the global rails.
+    expect(railFor('/administrators')).toBe('global')
   })
 })
