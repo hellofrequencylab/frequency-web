@@ -28,7 +28,10 @@ export default async function AdminMembersPage({
 }: {
   searchParams: Promise<{ view?: string }>
 }) {
-  await requireAdmin('janitor')
+  // ADR-223: janitor (web_role) OR a staff role with the `members` domain (write) —
+  // Operations/Support do member assist (docs/ROLES.md §System 3). Matches the nav
+  // link gate in sections.ts so the roster never shows-then-redirects.
+  await requireAdmin('janitor', { staff: 'members' })
 
   const { view } = await searchParams
   const tab: TabKey = view === 'subscribers' || view === 'beta' ? view : 'members'

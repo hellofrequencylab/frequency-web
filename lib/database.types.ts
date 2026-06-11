@@ -414,6 +414,38 @@ export type Database = {
           },
         ]
       }
+      capability_permissions: {
+        Row: {
+          access: string
+          domain: string
+          role: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          access: string
+          domain: string
+          role: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          access?: string
+          domain?: string
+          role?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capability_permissions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       captures: {
         Row: {
           actor_profile_id: string

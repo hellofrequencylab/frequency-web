@@ -24,6 +24,11 @@ export interface HelpArticle {
   updated: string
   /** Who the article is written for (member / host / guide / janitor / partner). */
   audience: string
+  /** Optional community-role tag (member / crew / host / guide / mentor). When set,
+   *  the article belongs to that role's advancement-training curriculum (ADR-224):
+   *  the curated path a member walks when promoted INTO that role. Undefined for the
+   *  vast majority of articles — purely additive, behavior-preserving when absent. */
+  role?: string
   /** Code areas this article documents; powers drift detection (docs/HELP-CENTER.md). */
   featureKeys: string[]
   status: HelpStatus
@@ -102,6 +107,7 @@ async function readArticle(category: string, file: string): Promise<HelpArticle>
     order: Number(str(data.order, '99')) || 99,
     updated: str(data.updated),
     audience: str(data.audience, 'member'),
+    role: str(data.role) || undefined,
     featureKeys: arr(data.featureKeys),
     status: (str(data.status, 'published') as HelpStatus) === 'draft' ? 'draft' : 'published',
     body: content,
