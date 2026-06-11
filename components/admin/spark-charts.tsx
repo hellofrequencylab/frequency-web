@@ -7,7 +7,7 @@
 const W = 100 // viewBox width — charts scale to their container
 
 /** Cumulative trend as a filled area + line (e.g. total members over time). */
-export function TrendArea({ points, height = 72 }: { points: number[]; height?: number }) {
+export function TrendArea({ points, height = 54 }: { points: number[]; height?: number }) {
   if (points.length < 2) return <EmptyChart height={height} />
   const max = Math.max(...points)
   const min = Math.min(...points)
@@ -26,7 +26,7 @@ export function TrendArea({ points, height = 72 }: { points: number[]; height?: 
 }
 
 /** Weekly volume bars (e.g. practices / events per week). Current week pops. */
-export function WeekBars({ values, height = 72 }: { values: number[]; height?: number }) {
+export function WeekBars({ values, height = 54 }: { values: number[]; height?: number }) {
   if (values.length === 0) return <EmptyChart height={height} />
   const max = Math.max(...values, 1)
   const gap = 2
@@ -51,26 +51,26 @@ export function WeekBars({ values, height = 72 }: { values: number[]; height?: n
   )
 }
 
-/** A 0..1 progress ring (e.g. 7-day activation). */
+/** A 0..1 progress ring (e.g. 7-day activation). Compact: ring + tight label. */
 export function RingGauge({ pct, label, sub }: { pct: number; label: string; sub?: string }) {
   const r = 34
   const c = 2 * Math.PI * r
   const clamped = Math.max(0, Math.min(1, pct))
   return (
-    <div className="flex items-center gap-4">
-      <svg viewBox="0 0 80 80" className="h-20 w-20 shrink-0" aria-hidden>
-        <circle cx="40" cy="40" r={r} className="fill-none stroke-border" strokeWidth="7" />
+    <div className="flex items-center gap-3.5">
+      <svg viewBox="0 0 80 80" className="h-14 w-14 shrink-0" aria-hidden>
+        <circle cx="40" cy="40" r={r} className="fill-none stroke-border" strokeWidth="8" />
         <circle
           cx="40"
           cy="40"
           r={r}
           className="fill-none stroke-primary"
-          strokeWidth="7"
+          strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={`${(clamped * c).toFixed(1)} ${c.toFixed(1)}`}
           transform="rotate(-90 40 40)"
         />
-        <text x="40" y="45" textAnchor="middle" className="fill-text text-[17px] font-bold">
+        <text x="40" y="46" textAnchor="middle" className="fill-text text-[19px] font-bold">
           {Math.round(clamped * 100)}%
         </text>
       </svg>
@@ -99,13 +99,13 @@ export function ChartCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5">
+    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-subtle">{title}</p>
         {delta && <p className="text-xs font-semibold text-success">{delta}</p>}
       </div>
-      {value && <p className="mt-1 text-2xl font-bold text-text">{value}</p>}
-      <div className="mt-3 min-h-16 flex-1">{children}</div>
+      {value && <p className="mt-0.5 text-xl font-bold leading-tight text-text">{value}</p>}
+      <div className="mt-2 min-h-12 flex-1">{children}</div>
       {caption && <p className="mt-1.5 text-2xs text-subtle">{caption}</p>}
     </div>
   )
