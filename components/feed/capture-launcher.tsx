@@ -151,26 +151,29 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             {/* The tools — Mindless leads (the daily ritual outranks the captures),
                 then the live rows. Every tile earns (ADR-236). */}
             <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
+              {/* The featured door: art · title+chip over ONE truncating line ·
+                  a compact Start pill — sized so nothing wraps or collides at
+                  360px (the chip bows out first on very narrow screens). */}
               <Link
                 href="/on-air"
                 onClick={tapTile('mindless')}
-                className="group col-span-3 flex items-center gap-4 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-4 shadow-sm transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
+                className="group col-span-3 flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 shadow-sm transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
               >
-                <MindlessArt className="block h-16 shrink-0" />
+                <MindlessArt className="block h-12 shrink-0" />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
-                    <span className="block text-lg font-bold text-text">Mindless</span>
-                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-primary-strong">
+                    <span className="block text-base font-bold leading-tight text-text">Mindless</span>
+                    <span className="hidden shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-primary-strong min-[400px]:inline-block">
                       Daily sit
                     </span>
                   </span>
-                  <span className="mt-0.5 block text-xs leading-snug text-muted">
-                    Breathe, sit, or just tune out. Your daily reset, your way.
+                  <span className="mt-0.5 block truncate text-xs leading-snug text-muted">
+                    Breathe, sit, or just tune out.
                   </span>
                 </span>
-                <span className="flex h-9 shrink-0 items-center gap-1 rounded-full bg-primary pl-3.5 pr-2.5 text-sm font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">
+                <span className="flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-primary pl-3 pr-2 text-xs font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">
                   Start
-                  <ChevronRight className="h-4 w-4" aria-hidden />
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                 </span>
               </Link>
               <ZapTile href="/events/scan" onClick={tapTile('event')} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
