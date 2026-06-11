@@ -1,6 +1,6 @@
 import { Sparkles, Send, Inbox, Flag } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { listTips } from '@/lib/ai/creator-tips'
@@ -26,7 +26,7 @@ export default async function AdminContentTipsPage() {
   const reviewedFlags = live.filter((t) => t.kind === 'flag' && t.status === 'approved')
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Vera's tips"
       eyebrow="Content"
       description="Vera reads the performance signals and drafts one engagement tip per creator, plus poster reviews for town-event posters. Review, edit, and send, or dismiss. Nothing goes out without your approval."
@@ -51,6 +51,7 @@ export default async function AdminContentTipsPage() {
       >
         {queue.length === 0 ? (
           <EmptyState
+            variant="cleared"
             icon={Sparkles}
             title="No drafts waiting"
             description="Use Generate tips for the top performers, or Generate poster reviews for event posters whose pattern needs attention. Anything already covered is skipped."
@@ -107,7 +108,12 @@ export default async function AdminContentTipsPage() {
 
       <AdminSection title={`Sent (${sent.length})`} description="What actually went out, newest first.">
         {sent.length === 0 ? (
-          <p className="text-sm text-muted">Nothing sent yet.</p>
+          <EmptyState
+            variant="first-use"
+            icon={Send}
+            title="Nothing sent yet"
+            description="Tips you approve and send will appear here."
+          />
         ) : (
           <div className="overflow-hidden rounded-2xl border border-border bg-surface">
             <div className="divide-y divide-border/50">
@@ -129,6 +135,6 @@ export default async function AdminContentTipsPage() {
           </div>
         )}
       </AdminSection>
-    </AdminPage>
+    </AdminTemplate>
   )
 }

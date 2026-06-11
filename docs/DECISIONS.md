@@ -6389,8 +6389,18 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 - **Chip color**: the SystemLine ⚡count renders in the **`primary` token** — the same orange as the Vera tab (`EdgePill` right skin `bg-primary/95`) — per the owner; was `primary-strong`.
 **Consequences:** A new member's first screen shows a non-zero number with their name on it, and the referral loop pays both sides. The join grant is the first zap action earned for a web act — any future taxonomy cleanup starts here. Demo personas are excluded (their numbers are staged by the demo engine).
 
+## ADR-233: Admin design system — full operator-section redesign
 
-## ADR-233: Mobile menus — indicator + gem controls, symmetric drawers, admin in the left drawer
+**Status:** Accepted · `docs/ADMIN-DESIGN-SYSTEM.md` (the spec), `components/admin/dash.tsx` + the shared admin kit, `app/(main)/admin/**`. Rolling out per-domain after the foundation kit.
+**Context:** The owner asked for a "full wipe redesign" of the admin section: take the liked home-dashboard grammar (warm canvas headers + white data tiles, charcoal ink, bold-not-heavy numerals), apply it as a *system*, and make every cobbled-together admin page cohesive — backed by deep research into what makes an operator section successful and well-engaged. An audit found 71 surfaces in a transitional state: only the home used the tile grammar; the four domain dashboards were on legacy `DashSection`/`StatRow`; ~20 pages had bespoke raw tables, ~15 fragmented forms, only 11/71 handled empty states, ~40 still imported the `AdminPage` alias, and Marketing/CRM partly duplicated. Five parallel research agents benchmarked Stripe, Linear, Vercel/Geist, Polaris, SLDS, Atlassian, GitHub/Primer, Supabase, Retool, Tremor + NN/g/WCAG 2.2.
+**Decision:**
+- **Scope:** deep redesign, **keep the current IA** (no route/URL churn); **cadence:** a foundation PR (this doc + the shared kit) then fan out one PR per domain.
+- **`docs/ADMIN-DESIGN-SYSTEM.md`** is the binding standard: 11 ranked principles, an **8-template taxonomy** (Exec/Domain Dashboard · Index/Table · Entity Detail · Queue · Focus/Form · Wizard · Settings), explicit **component contracts** (`DataTable`, `FilterBar`, `StatusChip`/`Banner`/`DangerModal`/`UndoToast`, `EntityHeader`+`UnderlineTabs`, `FormSection`, `AttentionList`, `FreshnessNote`, extended `EmptyState`/`StatCard`), interaction standards (drill-down, URL-as-state, changeset→Save, destructive tiering, per-section Suspense + degrade-don't-disable, ⌘K), the four states, and an engagement model (role-aware attention spine, next-best-action, Vera as an embedded propose-then-confirm copilot).
+- **Per-page definition of done** + a full **rollout map** of the 71 surfaces → template live in the doc.
+- Body ink warmed to `#3D352A` (warm charcoal). Status only via semantic tokens; retire every per-page `*_STYLES`/`ACTION_LABEL` dict into `StatusChip`.
+**Consequences:** Every admin surface composes one template + the shared kit, so the section reads as one product and a new page can't be orphaned. Build agents have a single spec to implement against. The `AdminPage` alias and `DashSection` white-card grammar are on a deprecation path (home + domain dashboards move to the `DashArea`/`Tile` grammar). Risk: a large surface area to convert — mitigated by the foundation-first cadence and the per-page checklist.
+
+## ADR-234: Mobile menus — indicator + gem controls, symmetric drawers, admin in the left drawer
 
 **Status:** Accepted · `components/layout/app-shell.tsx` only.
 **Context:** The owner's mobile-menus pass: the bottom bar's anonymous `‹ ›` arrows said nothing about what they open; the right stats menu had a micro/full size toggle nobody needed; the Dashboard link and the admin (Manage) sections hid inside the top-right account dropdown, splitting the nav into two structures (mobile ≠ desktop).

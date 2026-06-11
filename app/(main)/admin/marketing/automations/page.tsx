@@ -1,9 +1,8 @@
 import { listRules, AUTOMATION_TRIGGERS } from '@/lib/automations'
 import { RuleForm } from './rule-form'
-import { toggleRule } from './actions'
-import { AdminTemplate } from '@/components/templates'
-import { SectionHeader } from '@/components/ui/section-header'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { AutomationsTable } from './automations-table'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,43 +14,23 @@ export default async function AutomationsPage() {
       eyebrow="Marketing"
       title="Automations"
       description="Rules that watch the event backbone and act. When a member triggers an event (a verified practice, a check-in, a join), the rule runs through the spine (queued, consent-checked). This is what the AI operator will later drive."
+      width="wide"
     >
-      <RuleForm triggers={AUTOMATION_TRIGGERS} />
+      <AdminSection title="New rule">
+        <RuleForm triggers={AUTOMATION_TRIGGERS} />
+      </AdminSection>
 
-      <section>
-        <SectionHeader title="Rules" count={rules.length} />
+      <AdminSection title="Rules" description={`${rules.length} rule${rules.length === 1 ? '' : 's'}.`}>
         {rules.length === 0 ? (
           <EmptyState
+            variant="first-use"
             title="No automations yet."
             description="Add a rule above to react to events on the backbone."
           />
         ) : (
-          <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/60 max-w-2xl">
-              {rules.map((r) => (
-              <div key={r.id} className="flex items-center justify-between gap-4 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-text truncate">{r.name}</p>
-                  <p className="text-xs text-subtle">
-                    on <code className="text-text">{r.triggerEvent}</code> · email member
-                  </p>
-                </div>
-                <form action={toggleRule.bind(null, r.id, !r.enabled)}>
-                  <button
-                    type="submit"
-                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
-                      r.enabled
-                        ? 'bg-success-bg text-success hover:bg-surface-elevated'
-                        : 'bg-surface-elevated text-muted hover:bg-primary-bg hover:text-primary-strong'
-                    }`}
-                  >
-                    {r.enabled ? 'Enabled' : 'Disabled'}
-                  </button>
-                </form>
-              </div>
-            ))}
-          </div>
+          <AutomationsTable rules={rules} />
         )}
-      </section>
+      </AdminSection>
     </AdminTemplate>
   )
 }

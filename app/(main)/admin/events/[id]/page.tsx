@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { AdminTemplate } from '@/components/templates'
+import { StatusChip } from '@/components/admin/status'
 import { buttonClasses } from '@/components/ui/button'
 import { EventEditClient, type TierEditRow } from './event-edit-client'
 
@@ -66,11 +67,7 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
         <span className="flex flex-wrap items-center gap-2">
           {scope && <span>{scope.name}</span>}
           {host && <span>· Hosted by {host.display_name}</span>}
-          {event.is_cancelled && (
-            <span className="rounded-md bg-danger-bg px-1.5 py-0.5 text-xs font-medium text-danger">
-              Cancelled
-            </span>
-          )}
+          {event.is_cancelled && <StatusChip tone="danger" size="sm">Cancelled</StatusChip>}
         </span>
       }
       actions={

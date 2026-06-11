@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { DispatchesClient } from './dispatches-client'
 import { BroadcastCompose } from '@/app/(main)/broadcast/broadcast-compose'
 
@@ -67,7 +67,7 @@ export default async function AdminDispatchesPage({ searchParams }: { searchPara
     .order('name')
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Broadcasts"
       eyebrow="Community"
       description="Publish announcements to your community. Broadcasts appear on the Broadcasts page and drop into the main feed."
@@ -97,6 +97,6 @@ export default async function AdminDispatchesPage({ searchParams }: { searchPara
           initialEditId={edit ?? null}
         />
       </AdminSection>
-    </AdminPage>
+    </AdminTemplate>
   )
 }

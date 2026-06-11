@@ -123,7 +123,7 @@ function VariantRow({ codeId, v, groups, isWinner }: { codeId: string; v: Varian
       <span className="text-right text-sm tabular-nums font-semibold text-text">{v.conversions}</span>
       <span className={`text-right text-sm tabular-nums ${isWinner ? 'font-bold text-primary-strong' : 'text-muted'}`}>{pct(v.rate)}</span>
       <div className="flex items-center justify-end gap-1">
-        <button onClick={toggle} disabled={pending} title={v.active ? 'Pause' : 'Resume'} className="text-3xs font-semibold text-subtle hover:text-text disabled:opacity-60">{v.active ? '❚❚' : '▶'}</button>
+        <button onClick={toggle} disabled={pending} title={v.active ? 'Pause' : 'Resume'} aria-label={v.active ? 'Pause variant' : 'Resume variant'} className="text-2xs font-semibold text-subtle hover:text-text disabled:opacity-60">{v.active ? '❚❚' : '▶'}</button>
         <button onClick={remove} disabled={pending} aria-label="Delete variant" className="text-muted hover:text-danger disabled:opacity-60"><Trash2 className="h-3 w-3" /></button>
       </div>
     </div>

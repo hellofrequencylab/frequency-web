@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { BookOpen, Inbox, Star, Globe, ExternalLink } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { rankedPractices } from '@/lib/admin/content-signals'
@@ -21,7 +21,7 @@ export default async function AdminContentPracticesPage() {
   const featuredCount = practices.filter((p) => p.featured_at).length
 
   return (
-    <AdminPage
+    <AdminTemplate
       title="Practices"
       eyebrow="Content"
       description="The practice library, ranked by real usage. Tune what is public, what is a starter template, and what gets featured."
@@ -41,7 +41,11 @@ export default async function AdminContentPracticesPage() {
         description="Member-proposed practices waiting for a decision."
       >
         {pending.length === 0 ? (
-          <p className="text-sm text-muted">Nothing waiting. New proposals land here.</p>
+          <EmptyState
+            variant="cleared"
+            title="Nothing waiting"
+            description="New member proposals land here for a decision."
+          />
         ) : (
           <div className="overflow-hidden rounded-2xl border border-border bg-surface">
             <div className="divide-y divide-border/50">
@@ -69,7 +73,7 @@ export default async function AdminContentPracticesPage() {
         description="Sort by any stat; the header switches flip Public or Template for the whole library at once."
       >
         {library.length === 0 ? (
-          <EmptyState icon={BookOpen} title="No practices yet" description="Practices appear here as the library fills in." />
+          <EmptyState variant="first-use" icon={BookOpen} title="No practices yet" description="Practices appear here as the library fills in." />
         ) : (
           <PracticesTable
             rows={library.map((p) => ({
@@ -89,6 +93,6 @@ export default async function AdminContentPracticesPage() {
           />
         )}
       </AdminSection>
-    </AdminPage>
+    </AdminTemplate>
   )
 }

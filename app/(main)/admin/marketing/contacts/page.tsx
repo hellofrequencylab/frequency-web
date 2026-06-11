@@ -1,20 +1,14 @@
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 import { searchContacts, type ContactCore } from '@/lib/crm/person'
-import { setContactConsent } from './actions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ScanInviteToggle } from './scan-invite-toggle'
 import { AdminTemplate } from '@/components/templates'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ContactsTable } from './contacts-table'
 
 export const dynamic = 'force-dynamic'
-
-const CONSENT_STYLE: Record<string, string> = {
-  subscribed: 'bg-success-bg text-success',
-  unsubscribed: 'bg-danger-bg text-danger',
-  unknown: 'bg-surface-elevated text-muted',
-}
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -114,60 +108,12 @@ export default async function ContactsPage({
 
       {contacts.length === 0 ? (
         <EmptyState
+          variant={q ? 'no-results' : 'first-use'}
           title={q ? `No contacts match “${q}”.` : 'No contacts in this view.'}
           description={q ? 'Try a different spelling, or clear the search.' : 'Try a different filter, or contacts will appear here as they arrive.'}
         />
       ) : (
-        <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-subtle">
-                <th className="px-4 py-2.5 font-semibold">Email</th>
-                <th className="px-4 py-2.5 font-semibold">Name</th>
-                <th className="px-4 py-2.5 font-semibold">Member</th>
-                <th className="px-4 py-2.5 font-semibold">Source</th>
-                <th className="px-4 py-2.5 font-semibold">Consent</th>
-                <th className="px-4 py-2.5 font-semibold text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {contacts.map((c) => (
-                <tr key={c.id} className="border-b border-border/60 last:border-0 hover:bg-surface-elevated/40 transition-colors">
-                  <td className="px-4 py-2.5">
-                    <Link href={`/admin/marketing/contacts/${c.id}`} className="font-medium text-primary-strong hover:underline">
-                      {c.email}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2.5 text-muted">{c.displayName ?? '-'}</td>
-                  <td className="px-4 py-2.5 text-muted">{c.profileId ? 'Yes' : 'No'}</td>
-                  <td className="px-4 py-2.5 text-muted">{c.source ?? '-'}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${CONSENT_STYLE[c.consentState] ?? CONSENT_STYLE.unknown}`}>
-                      {c.consentState}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    {c.consentState === 'subscribed' ? (
-                      <form action={setContactConsent.bind(null, c.id, 'unsubscribed')} className="inline">
-                        <button type="submit" className="text-xs font-semibold text-danger hover:underline">
-                          Unsubscribe
-                        </button>
-                      </form>
-                    ) : c.consentState === 'unsubscribed' ? (
-                      <form action={setContactConsent.bind(null, c.id, 'subscribed')} className="inline">
-                        <button type="submit" className="text-xs font-semibold text-muted hover:text-text hover:underline">
-                          Resubscribe
-                        </button>
-                      </form>
-                    ) : (
-                      <span className="text-xs text-subtle">-</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ContactsTable contacts={contacts} />
       )}
     </AdminTemplate>
   )

@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { CalendarDays, MapPin, Pencil } from 'lucide-react'
 import { CancelToggle } from './events-client'
+import { StatusChip } from '@/components/admin/status'
+import { EmptyState } from '@/components/ui/empty-state'
 import type { AdminEvent } from './load-events'
 
 // Presentational event list shared by the /admin/events page and the in-place
@@ -19,10 +21,12 @@ function formatTime(iso: string) {
 export function EventsAdminList({ upcoming, past }: { upcoming: AdminEvent[]; past: AdminEvent[] }) {
   if (upcoming.length === 0 && past.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-        <CalendarDays className="mx-auto mb-3 h-8 w-8 text-subtle/60" />
-        <p className="text-sm text-muted">No events yet.</p>
-      </div>
+      <EmptyState
+        variant="first-use"
+        icon={CalendarDays}
+        title="No events yet"
+        description="Gatherings across your circles will appear here. Create one to get started."
+      />
     )
   }
 
@@ -74,11 +78,7 @@ function EventRow({ event }: { event: AdminEvent }) {
           >
             {event.title}
           </Link>
-          {event.is_cancelled && (
-            <span className="rounded-md bg-danger-bg px-1.5 py-0.5 text-xs font-medium text-danger dark:bg-danger-bg">
-              Cancelled
-            </span>
-          )}
+          {event.is_cancelled && <StatusChip tone="danger" size="sm">Cancelled</StatusChip>}
         </div>
         <div className="mt-0.5 flex items-center gap-2 text-xs text-subtle">
           <span>
