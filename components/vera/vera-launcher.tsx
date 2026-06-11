@@ -35,8 +35,18 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
 
   useEffect(() => {
     const onActivity = () => setPulse(true)
+    // Other surfaces (the admin "Ask Vera" bar) open the panel via this event.
+    const onOpen = () => {
+      setOpen(true)
+      setPulse(false)
+      try { localStorage.removeItem('fq_vera_unread') } catch {}
+    }
     window.addEventListener('vera-activity', onActivity)
-    return () => window.removeEventListener('vera-activity', onActivity)
+    window.addEventListener('open-vera', onOpen)
+    return () => {
+      window.removeEventListener('vera-activity', onActivity)
+      window.removeEventListener('open-vera', onOpen)
+    }
   }, [])
 
   const openPanel = () => {
