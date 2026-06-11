@@ -53,6 +53,11 @@ export const ZAP_AMOUNTS = {
   // paid to the poster when an organizer claims it. Both are real-world/outreach.
   event_posted: 20,
   event_claim_bonus: 30,
+  // Joining (ADR-232): every new member starts with a grant, and joining through
+  // a friend's link pays the NEWCOMER a bonus on top (the inviter's
+  // invite_accepted above is the other half of that handshake).
+  community_join: 10,
+  referred_join_bonus: 15,
 } as const
 
 /** Zap action for a practice's weight class (the per-log payout driver). */

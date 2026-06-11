@@ -35,6 +35,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Joining pays**: every new member starts with **10 Zaps** the moment they join,
+  and arriving through a friend's link pays a **15 Zap bonus** on top (your friend
+  still earns their invite reward, so the link is always the better door). Vera's
+  join lines in the feed now carry each person's live Zap count, already counting
+  everyone who joined before this shipped.
 - **The Zap button**: the center button is now the home of everything that earns.
   One tap opens your tools: share something on your journey, snap an event poster
   or a business card, or pull up your **Connect code** for someone you just met,
