@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Zap, Ban, RotateCcw, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { transitionPersona } from './actions'
 import { isError } from '@/lib/action-result'
 import { canStaffTransition, type PartnerPersona, type PersonaState } from '@/lib/personas'
@@ -44,28 +45,28 @@ export function PersonaControls({
       {error && <span className="mr-1 text-xs text-danger">{error}</span>}
       {isPending && <Loader2 className="h-4 w-4 animate-spin text-muted" />}
       {reinstate ? (
-        <button
-          onClick={() => move('verified')}
-          disabled={isPending}
-          className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
-        >
+        <Button variant="secondary" size="sm" onClick={() => move('verified')} disabled={isPending}>
           <RotateCcw className="h-3.5 w-3.5" /> Reinstate
-        </button>
+        </Button>
       ) : (
-        ACTIONS.filter((a) => canStaffTransition(state, a.to)).map((a) => (
-          <button
-            key={a.to}
-            onClick={() => move(a.to)}
-            disabled={isPending}
-            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-60 ${
-              a.tone === 'danger'
-                ? 'border border-danger/40 text-danger hover:bg-danger-bg/30'
-                : 'bg-primary text-on-primary hover:bg-primary-hover'
-            }`}
-          >
-            <a.Icon className="h-3.5 w-3.5" /> {a.label}
-          </button>
-        ))
+        ACTIONS.filter((a) => canStaffTransition(state, a.to)).map((a) =>
+          // Suspend keeps its subtle outlined-danger look (no canonical variant matches);
+          // Verify/Activate map cleanly to the primary button.
+          a.tone === 'danger' ? (
+            <button
+              key={a.to}
+              onClick={() => move(a.to)}
+              disabled={isPending}
+              className="inline-flex items-center gap-1 rounded-lg border border-danger/40 px-2.5 py-1 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg/30 disabled:opacity-60"
+            >
+              <a.Icon className="h-3.5 w-3.5" /> {a.label}
+            </button>
+          ) : (
+            <Button key={a.to} variant="primary" size="sm" onClick={() => move(a.to)} disabled={isPending}>
+              <a.Icon className="h-3.5 w-3.5" /> {a.label}
+            </Button>
+          ),
+        )
       )}
     </div>
   )
