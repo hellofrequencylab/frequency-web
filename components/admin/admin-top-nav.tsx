@@ -176,17 +176,49 @@ export function AdminTopNav(props: AdminNavProps) {
   const HomeIcon = ADMIN_HOME.Icon
 
   // Which domain's second row is open (desktop). Click toggles; Esc / a click
-  // outside the bar / navigating closes.
+  // outside the bar / navigating closes. Moving the mouse OFF the bar lingers
+  // (~LINGER_MS), then FADES the row out (~FADE_MS) — re-entering cancels both.
   const [openKey, setOpenKey] = useState<DomainKey | null>(null)
+  const [fading, setFading] = useState(false)
   const barRef = useRef<HTMLDivElement>(null)
+  const lingerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const LINGER_MS = 450
+  const FADE_MS = 200
+
+  const cancelClose = () => {
+    if (lingerTimer.current) clearTimeout(lingerTimer.current)
+    if (fadeTimer.current) clearTimeout(fadeTimer.current)
+    lingerTimer.current = null
+    fadeTimer.current = null
+    setFading(false)
+  }
+
+  const closeNow = () => {
+    cancelClose()
+    setOpenKey(null)
+  }
+
+  // Mouse left the bar+row: wait, fade, then close.
+  const scheduleClose = () => {
+    if (!openKey || lingerTimer.current) return
+    lingerTimer.current = setTimeout(() => {
+      setFading(true)
+      fadeTimer.current = setTimeout(closeNow, FADE_MS)
+    }, LINGER_MS)
+  }
+
+  // Clear any pending timers on unmount.
+  useEffect(() => cancelClose, [])
 
   useEffect(() => {
     if (!openKey) return
     const onDoc = (e: MouseEvent) => {
-      if (barRef.current && !barRef.current.contains(e.target as Node)) setOpenKey(null)
+      if (barRef.current && !barRef.current.contains(e.target as Node)) closeNow()
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenKey(null)
+      if (e.key === 'Escape') closeNow()
     }
     document.addEventListener('mousedown', onDoc)
     document.addEventListener('keydown', onKey)
@@ -194,6 +226,7 @@ export function AdminTopNav(props: AdminNavProps) {
       document.removeEventListener('mousedown', onDoc)
       document.removeEventListener('keydown', onKey)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openKey])
 
   // Navigating anywhere closes the row — derived during render (the React
@@ -209,8 +242,14 @@ export function AdminTopNav(props: AdminNavProps) {
   return (
     <div
       ref={barRef}
+      onMouseEnter={cancelClose}
+      onMouseLeave={scheduleClose}
       className="sticky top-14 z-30 -mx-6 -mt-6 mb-6 border-b border-border bg-surface/95 px-6 backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10"
     >
+      {/* The STRIP spans full-bleed (background + border), but the menu itself runs
+          in a centered column aligned with the page content below (max-w-7xl — the
+          wide AdminTemplate the dashboard uses). */}
+      <div className="mx-auto w-full max-w-7xl">
       {/* Row 1 — the menubar. */}
       <nav aria-label="Admin" className="hidden h-12 items-center gap-1 md:flex">
         <Link
@@ -238,7 +277,13 @@ export function AdminTopNav(props: AdminNavProps) {
               type="button"
               aria-expanded={isOpen}
               aria-controls={`admin-megarow-${group.key}`}
-              onClick={() => setOpenKey(isOpen ? null : group.key)}
+              onClick={() => {
+                if (isOpen) closeNow()
+                else {
+                  cancelClose()
+                  setOpenKey(group.key)
+                }
+              }}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                 isActive || isOpen
                   ? 'bg-surface-elevated text-text'
@@ -263,14 +308,16 @@ export function AdminTopNav(props: AdminNavProps) {
       {openGroup && (
         <div
           id={`admin-megarow-${openGroup.group.key}`}
-          className="hidden border-t border-border py-4 md:block"
+          className={`hidden border-t border-border py-4 transition-opacity duration-200 md:block ${
+            fading ? 'opacity-0' : 'opacity-100'
+          }`}
         >
           <div className="flex flex-wrap gap-x-10 gap-y-4">
             {/* Lead column: the domain dashboard + its one-line framing. */}
             <div className="w-64 min-w-0">
               <Link
                 href={openGroup.group.href}
-                onClick={() => setOpenKey(null)}
+                onClick={closeNow}
                 className={`block rounded-xl px-3 py-2 ${
                   pathname === openGroup.group.href ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
                 }`}
@@ -311,7 +358,7 @@ export function AdminTopNav(props: AdminNavProps) {
                       key={link.href}
                       href={link.href}
                       title={link.desc}
-                      onClick={() => setOpenKey(null)}
+                      onClick={closeNow}
                       className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm ${
                         isActive
                           ? 'bg-primary-bg font-semibold text-primary-strong'
@@ -335,6 +382,7 @@ export function AdminTopNav(props: AdminNavProps) {
       {/* Mobile disclosure. */}
       <div className="py-2.5 md:hidden">
         <MobileMenu {...props} />
+      </div>
       </div>
     </div>
   )
