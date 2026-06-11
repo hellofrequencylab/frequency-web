@@ -32,7 +32,10 @@
 - **On Air** (ADR-229) = the practice timer mini-app at `/on-air`: the fullscreen
   sit (breath visualizer + timer), then the reveal (rewards → streak → stats →
   Dispatch). "Going on air" = starting a session; "off air" = done. **Airtime** =
-  timed practice minutes (`practice_sessions`).
+  timed practice minutes (`practice_sessions`). The live-screen title reads
+  **"Mindless"** under a lotus mark, softly pulsing — the sit is a tune-out,
+  a connection in meditation, not a broadcast ("Connecting" was rejected: it
+  collides with the **Connect** tile). "On Air" stays the app's name.
 - **The Zap button** (ADR-230) = the raised center action button (the engraved ⚡)
   and its menu of earning tools. Live row: share, Event, Contact, **Connect**
   (your personal code, /codes). Coming-soon row: Check In, Ghost Node, Partners.
