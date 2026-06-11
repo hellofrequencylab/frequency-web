@@ -102,16 +102,19 @@ export default async function AdminPageView() {
             numbers first (a compact row, never stretched by the charts), then the
             trend + conversion, then the weekly pulses. ───────────────────────── */}
       <AdminSection title="This week">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatCard label="Members" value={(membersCount.count ?? 0).toLocaleString()} icon={Users} />
-          <StatCard label="Weekly active" value={practice.wam} icon={Zap} />
-          <StatCard label="Practices · 7d" value={practice.verifiedThisWeek} icon={Activity} />
-          <StatCard label="Events · next 7d" value={upcomingCount.count ?? 0} icon={Layers} />
-        </div>
+        <div className="grid gap-4 lg:grid-cols-12">
+          {/* KPI tiles — the previous 2x2 block beside the chart, but the tiles sit
+              at their natural (compact) height instead of stretching to the chart
+              row (content-start), so each box reads about half as tall. */}
+          <div className="grid grid-cols-2 content-start gap-4 lg:col-span-4">
+            <StatCard label="Members" value={(membersCount.count ?? 0).toLocaleString()} icon={Users} />
+            <StatCard label="Weekly active" value={practice.wam} icon={Zap} />
+            <StatCard label="Practices · 7d" value={practice.verifiedThisWeek} icon={Activity} />
+            <StatCard label="Events · next 7d" value={upcomingCount.count ?? 0} icon={Layers} />
+          </div>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-12">
           {/* Member growth — the trend that frames everything else. */}
-          <div className="lg:col-span-8">
+          <div className="lg:col-span-5">
             <ChartCard
               title="Member growth"
               value={(totalProfiles ?? 0).toLocaleString()}
@@ -123,7 +126,7 @@ export default async function AdminPageView() {
           </div>
 
           {/* Activation — the North-Star conversion. */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-3">
             <div className="flex h-full flex-col justify-center rounded-2xl border border-border bg-surface p-5">
               <RingGauge
                 pct={practice.activationRate}
