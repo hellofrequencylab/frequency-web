@@ -1,37 +1,61 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { getDensitySignal } from '@/lib/analytics/density'
 import { getEngagementRead } from '@/lib/analytics/engagement-read'
 import { getEngagementDashboard } from '@/lib/analytics/dashboard'
 import { requireAdminFloor } from '@/lib/admin/guard'
+import { aiEnabled } from '@/lib/ai'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { RingGauge, TrendArea, WeekBars, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
-import { DashSection, StatRow, StatItem, SeverityChip } from '@/components/admin/dash'
+import { DashArea, GraphTile, StatRow, StatItem, SeverityChip } from '@/components/admin/dash'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { MemberManager, type MemberItem } from './member-manager'
+import { ADMIN_GROUPS, groupLinks, type DomainKey } from './sections'
 import { OPEN_STATUSES } from '@/lib/support/types'
 import { isJanitor } from '@/lib/core/roles'
-import type { CommunityRole } from '@/lib/core/roles'
+import type { CommunityRole, WebRole } from '@/lib/core/roles'
+import type { StaffRole } from '@/lib/core/staff-roles'
 import type { SeasonRank } from '@/lib/season-ranks'
 
-// Admin home (ADR-228 redesign): the TOP is a real dashboard — site optics at a
-// glance (growth trend, weekly practice + event volume, activation ring) on a
-// WIDE multi-column grid that uses the full workspace, instead of the old narrow
-// single-column stack. The janitor roster/circle dumps are condensed to compact
-// side-by-side panels that LINK to their real management surfaces
-// (/admin/members, /admin/circles) — the home is for orientation, not scrolling.
+// Admin home (owner brief — comprehensive exec dashboard): the page is a BIRDS-EYE
+// view of the whole platform, organized by the four primary areas (Programs,
+// Community, Growth, Operations — the same IA as the nav). Vera's read leads as the
+// exec summary; then ONE rich section per area, each a mix of an instructional blurb,
+// Quick Links into that area's surfaces, its key stats, and its graphs. The sections
+// are printed ON THE CANVAS (no cards); only the graph tiles carry a white background.
+// Every metric lives under the area it belongs to, so nothing is orphaned and the
+// whole platform reads at a glance. Drill-downs go to each area's own dashboard.
 
 const WEEK = 7 * 24 * 60 * 60 * 1000
 const GROWTH_WEEKS = 12
 const VOLUME_WEEKS = 8
 
+// The viewer's effective roles — threaded to each area so its Quick Links show only
+// the surfaces the viewer may actually open (the admin IA gates each link).
+type Nav = { role: CommunityRole; webRole: WebRole; staffRole: StaffRole | null }
+
+/** An area's role-visible Quick Links, shaped for <DashArea>. */
+function quickLinks(key: DomainKey, nav: Nav) {
+  return groupLinks(key, nav.role, nav.webRole, nav.staffRole).map((l) => ({
+    href: l.href,
+    label: l.label,
+    Icon: l.Icon,
+  }))
+}
+
+/** The catalog entry for a primary area (label, blurb, glyph, dashboard href). */
+function area(key: DomainKey) {
+  return ADMIN_GROUPS.find((g) => g.key === key)!
+}
+
 export default async function AdminPageView() {
-  const { profileId, role, webRole } = await requireAdminFloor()
+  const { profileId, role, webRole, staffRole } = await requireAdminFloor()
   const staffJanitor = isJanitor(webRole) // STAFF axis (ADR-208), not the community ladder
+  const nav: Nav = { role, webRole, staffRole }
   const admin = createAdminClient()
 
   const now = new Date()
@@ -121,31 +145,36 @@ export default async function AdminPageView() {
         </Suspense>
       }
     >
-      {/* ── Pulse: ONE compact card — trend, weekly volume, activation. The
-          practice read renders behind Suspense; the cheap series are passed in. ── */}
-      <Suspense fallback={<DashSkeleton title="Pulse" />}>
-        <PulseSection
-          totalProfiles={totalProfiles}
-          joinedThisMonth={joinedThisMonth}
-          growthSeries={growthSeries}
-          practiceSeries={practiceSeries}
-          eventSeries={eventSeries}
-          upcomingEvents={upcomingCount.count ?? 0}
-        />
-      </Suspense>
-
       {staffJanitor && (
         <>
+          {/* Exec summary — Vera's narrative read of the live signal, on the canvas. */}
           <Suspense fallback={<DashSkeleton title="Vera's read" />}>
             <VeraReadSection />
           </Suspense>
-          <Suspense fallback={<DashSkeleton title="Site traffic" />}>
-            <SiteTrafficSection />
+
+          {/* One comprehensive section per primary area. Each folds in its own
+              instructional blurb + Quick Links + stats + graphs. */}
+          <Suspense fallback={<DashSkeleton title="Programs" />}>
+            <ProgramsArea nav={nav} practiceSeries={practiceSeries} />
           </Suspense>
-          <Suspense fallback={<DashSkeleton title="Expansion signal" />}>
-            <ExpansionSection />
+          <Suspense fallback={<DashSkeleton title="Community" />}>
+            <CommunityArea
+              nav={nav}
+              membersCount={membersCount.count ?? 0}
+              circlesCount={circlesCount.count ?? 0}
+              broadcasts={dispatchesCount.count ?? 0}
+              upcomingEvents={upcomingCount.count ?? 0}
+              growthSeries={growthSeries}
+              eventSeries={eventSeries}
+              joinedThisMonth={joinedThisMonth}
+            />
           </Suspense>
-          <JanitorPanel circlesCount={circlesCount.count ?? 0} broadcasts={dispatchesCount.count ?? 0} />
+          <Suspense fallback={<DashSkeleton title="Growth" />}>
+            <GrowthArea nav={nav} />
+          </Suspense>
+          <Suspense fallback={<DashSkeleton title="Operations" />}>
+            <OperationsArea nav={nav} />
+          </Suspense>
         </>
       )}
       {role === 'host' && <HostPanel profileId={profileId} />}
@@ -198,140 +227,302 @@ async function HeaderKpisLive({ members, events }: { members: number; events: nu
   )
 }
 
-// The Pulse card — practice read resolved here so the page shell never waits on it.
-// Cheap series (cumulative growth, weekly volume) are computed up top and passed in.
-async function PulseSection({
-  totalProfiles,
-  joinedThisMonth,
-  growthSeries,
-  practiceSeries,
-  eventSeries,
-  upcomingEvents,
-}: {
-  totalProfiles: number
-  joinedThisMonth: number
-  growthSeries: number[]
-  practiceSeries: number[]
-  eventSeries: number[]
-  upcomingEvents: number
-}) {
-  const practice = await getPracticeMetrics()
+// A white tile holding a centered metric ring (activation, answered-rate). The ring
+// is the graph; the tile is the only white surface in the area grammar.
+function RingTile({ pct, label, sub }: { pct: number; label: string; sub?: string }) {
   return (
-    <DashSection
-      title="Pulse"
-      description="Member growth and weekly activity at a glance."
-      href="/admin/engagement"
-      hrefLabel="Engagement"
+    <div className="flex items-center rounded-2xl border border-border bg-surface p-4">
+      <RingGauge pct={pct} label={label} sub={sub} />
+    </div>
+  )
+}
+
+// A ranked value→count list (top pages / features) for a white graph tile.
+function RankList({ items }: { items: { value: string; n: number }[] }) {
+  if (items.length === 0) return <p className="text-xs text-subtle">No signal yet this week.</p>
+  return (
+    <ul className="space-y-1">
+      {items.map((i) => (
+        <li key={i.value} className="flex items-baseline justify-between gap-3 text-sm">
+          <span className="truncate text-muted">{i.value}</span>
+          <span className="shrink-0 font-semibold tabular-nums text-text">{i.n.toLocaleString()}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// ── Programs — the game: content, seasons, rewards, the crews that run them. ───
+async function ProgramsArea({ nav, practiceSeries }: { nav: Nav; practiceSeries: number[] }) {
+  const admin = createAdminClient()
+  const [practicesC, journeysC, challengesC, storeC, practice] = await Promise.all([
+    admin.from('practices').select('id', { count: 'exact', head: true }),
+    admin.from('journey_plans').select('id', { count: 'exact', head: true }).eq('visibility', 'public'),
+    admin.from('season_challenges').select('id', { count: 'exact', head: true }),
+    admin.from('store_items').select('id', { count: 'exact', head: true }),
+    getPracticeMetrics(),
+  ])
+  const g = area('programs')
+  const windowTotal = practiceSeries.reduce((a, b) => a + b, 0)
+  return (
+    <DashArea
+      icon={g.Icon}
+      label={g.label}
+      blurb={g.blurb}
+      href={g.href}
+      hrefLabel={`Open ${g.label}`}
+      links={quickLinks('programs', nav)}
     >
-      <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
-        <PulseBlock
-          label="Member growth"
-          value={totalProfiles.toLocaleString()}
-          delta={joinedThisMonth > 0 ? `+${joinedThisMonth} this month` : undefined}
-          caption={`${GROWTH_WEEKS} weeks`}
-        >
-          <TrendArea points={growthSeries} height={44} />
-        </PulseBlock>
-        <PulseBlock
+      <StatRow>
+        <StatItem value={(practicesC.count ?? 0).toLocaleString()} label="Practices" href="/admin/content/practices" />
+        <StatItem value={(journeysC.count ?? 0).toLocaleString()} label="Journeys" href="/admin/content/journeys" />
+        <StatItem value={(challengesC.count ?? 0).toLocaleString()} label="Challenges" href="/admin/content/challenges" />
+        <StatItem value={practice.verifiedThisWeek} label="Verified / wk" href="/admin/content/practices" />
+        <StatItem value={(storeC.count ?? 0).toLocaleString()} label="Store items" href="/admin/store" />
+      </StatRow>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <GraphTile
           label="Verified practices / wk"
-          value={practice.verifiedThisWeek}
+          value={windowTotal}
           caption={`${VOLUME_WEEKS} weeks · current highlighted`}
         >
-          <WeekBars values={practiceSeries} height={44} />
-        </PulseBlock>
-        <PulseBlock
+          <WeekBars values={practiceSeries} height={56} />
+        </GraphTile>
+      </div>
+    </DashArea>
+  )
+}
+
+// ── Community — the people and their spaces: circles, members, events, T&S. ────
+async function CommunityArea({
+  nav,
+  membersCount,
+  circlesCount,
+  broadcasts,
+  upcomingEvents,
+  growthSeries,
+  eventSeries,
+  joinedThisMonth,
+}: {
+  nav: Nav
+  membersCount: number
+  circlesCount: number
+  broadcasts: number
+  upcomingEvents: number
+  growthSeries: number[]
+  eventSeries: number[]
+  joinedThisMonth: number
+}) {
+  const admin = createAdminClient()
+  const [hubsC, nexusesC, openReports, openTickets] = await Promise.all([
+    admin.from('hubs').select('id', { count: 'exact', head: true }),
+    admin.from('nexuses').select('id', { count: 'exact', head: true }),
+    admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    admin.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', OPEN_STATUSES),
+  ])
+  const g = area('community')
+  const reports = openReports.count ?? 0
+  const tickets = openTickets.count ?? 0
+  return (
+    <DashArea
+      icon={g.Icon}
+      label={g.label}
+      blurb={g.blurb}
+      href={g.href}
+      hrefLabel={`Open ${g.label}`}
+      links={quickLinks('community', nav)}
+    >
+      <StatRow>
+        <StatItem value={membersCount.toLocaleString()} label="Members" href="/admin/members" />
+        <StatItem value={circlesCount.toLocaleString()} label="Circles" href="/admin/circles" />
+        <StatItem value={(hubsC.count ?? 0).toLocaleString()} label="Hubs" href="/admin/hubs" />
+        <StatItem value={(nexusesC.count ?? 0).toLocaleString()} label="Nexuses" href="/admin/nexuses" />
+        <StatItem value={upcomingEvents.toLocaleString()} label="Events ahead" href="/admin/events" />
+        <StatItem value={broadcasts.toLocaleString()} label="Broadcasts" href="/admin/dispatches" />
+        <StatItem
+          value={reports.toLocaleString()}
+          label="Open reports"
+          deltaTone={reports > 0 ? 'bad' : 'neutral'}
+          href="/admin/moderation"
+        />
+        <StatItem
+          value={tickets.toLocaleString()}
+          label="Open tickets"
+          deltaTone={tickets > 0 ? 'bad' : 'neutral'}
+          href="/admin/support"
+        />
+      </StatRow>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <GraphTile
+          label="Member growth"
+          value={membersCount.toLocaleString()}
+          caption={`${GROWTH_WEEKS} weeks${joinedThisMonth > 0 ? ` · +${joinedThisMonth} this month` : ''}`}
+        >
+          <TrendArea points={growthSeries} height={56} />
+        </GraphTile>
+        <GraphTile
           label="Events / wk"
           value={upcomingEvents}
           caption={`${VOLUME_WEEKS} weeks · includes week ahead`}
         >
-          <WeekBars values={eventSeries} height={44} />
-        </PulseBlock>
-        <div className="flex items-center">
-          <RingGauge
-            pct={practice.activationRate}
-            label="Activation"
-            sub={`${practice.activated} of ${practice.newMembers} new members activated`}
-          />
-        </div>
+          <WeekBars values={eventSeries} height={56} />
+        </GraphTile>
       </div>
-    </DashSection>
+    </DashArea>
+  )
+}
+
+// ── Growth — funnels, onboarding, pipeline, traffic, and the expansion signal. ─
+async function GrowthArea({ nav }: { nav: Nav }) {
+  const admin = createAdminClient()
+  const [practice, density, dash, crmC] = await Promise.all([
+    getPracticeMetrics(),
+    getDensitySignal(),
+    getEngagementDashboard(7),
+    admin.from('crm_deals').select('id', { count: 'exact', head: true }),
+  ])
+  const views = dash.byType.find((t) => t.eventType === 'nav.page_view')
+  const features = dash.byType.find((t) => t.eventType === 'feature.used')
+  const topSignal = density.ready[0] ?? density.places[0]
+  const g = area('growth')
+  return (
+    <DashArea
+      icon={g.Icon}
+      label={g.label}
+      blurb={g.blurb}
+      href={g.href}
+      hrefLabel={`Open ${g.label}`}
+      links={quickLinks('growth', nav)}
+    >
+      <StatRow>
+        <StatItem value={`${Math.round(practice.activationRate * 100)}%`} label="Activation" href="/admin/engagement" />
+        <StatItem value={(views?.events ?? 0).toLocaleString()} label="Page views · 7d" href="/admin/engagement" />
+        <StatItem value={(views?.actors ?? 0).toLocaleString()} label="Active visitors" href="/admin/engagement" />
+        <StatItem value={(features?.events ?? 0).toLocaleString()} label="Feature uses" href="/admin/engagement" />
+        <StatItem
+          value={density.ready.length}
+          label="Labs ready"
+          deltaTone={density.ready.length > 0 ? 'good' : 'neutral'}
+          delta={density.ready.length > 0 ? 'over threshold' : undefined}
+          href="/admin/expansion"
+        />
+        <StatItem value={(crmC.count ?? 0).toLocaleString()} label="CRM deals" href="/admin/crm" />
+      </StatRow>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <RingTile
+          pct={practice.activationRate}
+          label="Activation"
+          sub={`${practice.activated} of ${practice.newMembers} new activated`}
+        />
+        <GraphTile label="Top pages" caption="last 7 days">
+          <RankList items={dash.topPages.slice(0, 5)} />
+        </GraphTile>
+        <GraphTile label="Top features" caption="last 7 days">
+          <RankList items={dash.topFeatures.slice(0, 5)} />
+        </GraphTile>
+      </div>
+      {topSignal && (
+        <p className="text-sm text-muted">
+          Strongest expansion signal: <span className="font-semibold text-text">{topSignal.city}</span> · readiness{' '}
+          {Math.round(topSignal.score)}/100 ({topSignal.stage})
+        </p>
+      )}
+    </DashArea>
+  )
+}
+
+// ── Operations — the platform machine: AI, Vera, support, the system trail. ────
+async function OperationsArea({ nav }: { nav: Nav }) {
+  const admin = createAdminClient()
+  const weekAgo = new Date(new Date().getTime() - 7 * DAY).toISOString()
+  const [queries7d, answered7d, deflected7d, pendingActions, auditC] = await Promise.all([
+    admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
+    admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('answered', true),
+    admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('deflected', true),
+    admin.from('agent_actions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    admin.from('admin_audit_log').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
+  ])
+  const ai = aiEnabled()
+  const total = queries7d.count ?? 0
+  const answered = answered7d.count ?? 0
+  const deflected = deflected7d.count ?? 0
+  const answeredRate = total > 0 ? Math.round((answered / total) * 100) : null
+  const g = area('operations')
+  return (
+    <DashArea
+      icon={g.Icon}
+      label={g.label}
+      blurb={g.blurb}
+      href={g.href}
+      hrefLabel={`Open ${g.label}`}
+      links={quickLinks('operations', nav)}
+    >
+      <StatRow>
+        <StatItem
+          value={ai ? 'On' : 'Off'}
+          label="AI"
+          deltaTone={ai ? 'good' : 'bad'}
+          href="/admin/ai"
+        />
+        <StatItem value={total.toLocaleString()} label="Vera questions · 7d" href="/admin/vera" />
+        <StatItem value={answeredRate === null ? '—' : `${answeredRate}%`} label="Answered" href="/admin/vera" />
+        <StatItem
+          value={deflected.toLocaleString()}
+          label="Help gaps"
+          delta={deflected > 0 ? 'articles to write' : undefined}
+          deltaTone={deflected > 0 ? 'bad' : 'neutral'}
+          href="/admin/help-gaps"
+        />
+        <StatItem value={(pendingActions.count ?? 0).toLocaleString()} label="Studio prompts" href="/admin/studio" />
+        <StatItem value={(auditC.count ?? 0).toLocaleString()} label="Audit events · 7d" href="/admin/audit" />
+      </StatRow>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <RingTile
+          pct={answeredRate === null ? 0 : answeredRate / 100}
+          label="Vera answered"
+          sub={`${answered} of ${total} questions this week`}
+        />
+      </div>
+    </DashArea>
   )
 }
 
 const DAY = 24 * 60 * 60 * 1000
 
-// One plot inside the Pulse card — label, headline value, compact plot, caption.
-// No inner border: the SECTION is the card; blocks inside divide by whitespace.
-function PulseBlock({
-  label,
-  value,
-  delta,
-  caption,
-  children,
-}: {
-  label: string
-  value: React.ReactNode
-  delta?: string
-  caption?: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="min-w-0">
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-2xl font-extrabold leading-none tabular-nums text-text">{value}</p>
-        {delta && <p className="text-2xs font-semibold text-success">{delta}</p>}
-      </div>
-      <p className="mt-1 text-xs font-medium text-muted">{label}</p>
-      <div className="mt-2 h-11">{children}</div>
-      {caption && <p className="mt-1 text-2xs text-subtle">{caption}</p>}
-    </div>
-  )
-}
-
-// Suspense fallback — a white section card with pulsing content.
+// Suspense fallback — an on-canvas area skeleton matching the DashArea grammar:
+// a title, an instructional line, a quick-link row, then a graph placeholder.
 function DashSkeleton({ title }: { title: string }) {
   return (
-    <DashSection title={title}>
-      <div className="space-y-2.5">
-        <div className="h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
-        <div className="h-4 w-1/2 animate-pulse rounded bg-surface-elevated" />
-        <div className="h-10 animate-pulse rounded-xl bg-surface-elevated/70" />
+    <section className="border-t border-border/70 pt-7 first:border-t-0 first:pt-0 sm:pt-8">
+      <h2 className="text-lg font-bold text-text">{title}</h2>
+      <div className="mt-2 h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
+      <div className="mt-3.5 flex gap-2">
+        <div className="h-7 w-24 animate-pulse rounded-full bg-surface-elevated" />
+        <div className="h-7 w-20 animate-pulse rounded-full bg-surface-elevated" />
+        <div className="h-7 w-24 animate-pulse rounded-full bg-surface-elevated" />
       </div>
-    </DashSection>
+      <div className="mt-5 h-24 animate-pulse rounded-2xl bg-surface-elevated/70" />
+    </section>
   )
 }
 
-// ── Vera's read — advice from the live site signal + the support queue. ───────
+// ── Vera's read — the exec summary: Vera's narrative read of the live signal. ──
+// Printed on the canvas (DashArea), leading the dashboard. The supporting counts it
+// used to carry now live under the areas they belong to (Operations, Community).
 async function VeraReadSection() {
-  const admin = createAdminClient()
-  const weekAgo = new Date(new Date().getTime() - 7 * DAY).toISOString()
-
-  const [read, queries7d, deflected7d, answered7d, openTickets, openReports, pendingActions] =
-    await Promise.all([
-      getEngagementRead(),
-      admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
-      admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('deflected', true),
-      admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo).eq('answered', true),
-      admin.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', OPEN_STATUSES),
-      admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-      admin.from('agent_actions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    ])
-
-  const total = queries7d.count ?? 0
-  const answeredRate = total > 0 ? Math.round(((answered7d.count ?? 0) / total) * 100) : null
+  const read = await getEngagementRead()
   const top = read.insights.slice(0, 3)
-
   return (
-    <DashSection
-      title="Vera's read"
-      description="Vera reads the live engagement signal and suggests the next move."
+    <DashArea
+      icon={Sparkles}
+      label="Vera's read"
+      blurb="Vera reads the live engagement signal and suggests the next move."
       href="/admin/insights"
       hrefLabel="Full read"
     >
       <p className="text-sm font-medium text-text">{read.summary}</p>
-
       {top.length > 0 && (
-        <ul className="mt-3 space-y-2.5">
+        <ul className="space-y-2.5">
           {top.map((i) => (
             <li key={i.id} className="flex items-start gap-2.5">
               <SeverityChip severity={i.severity} />
@@ -344,116 +535,7 @@ async function VeraReadSection() {
           ))}
         </ul>
       )}
-
-      <div className="mt-5 border-t border-border/60 pt-4">
-        <StatRow>
-          <StatItem value={total} label="Vera questions" href="/admin/vera" />
-          <StatItem value={answeredRate === null ? '—' : `${answeredRate}%`} label="Answered" href="/admin/vera" />
-          <StatItem
-            value={deflected7d.count ?? 0}
-            label="Help gaps"
-            delta={(deflected7d.count ?? 0) > 0 ? 'articles to write' : undefined}
-            deltaTone={(deflected7d.count ?? 0) > 0 ? 'bad' : 'neutral'}
-            href="/admin/help-gaps"
-          />
-          <StatItem
-            value={openTickets.count ?? 0}
-            label="Open tickets"
-            deltaTone={(openTickets.count ?? 0) > 0 ? 'bad' : 'neutral'}
-            href="/admin/support"
-          />
-          <StatItem
-            value={openReports.count ?? 0}
-            label="Open reports"
-            deltaTone={(openReports.count ?? 0) > 0 ? 'bad' : 'neutral'}
-            href="/admin/moderation"
-          />
-          <StatItem value={pendingActions.count ?? 0} label="Studio prompts" href="/admin/studio" />
-        </StatRow>
-      </div>
-    </DashSection>
-  )
-}
-
-// ── Site traffic — FIRST-PARTY analytics off the event backbone (7 days). ─────
-// (Live Google Analytics needs the GA4 Data API + a service account — not
-// configured; the event backbone already records views/features first-party.)
-async function SiteTrafficSection() {
-  const dash = await getEngagementDashboard(7)
-  const views = dash.byType.find((t) => t.eventType === 'nav.page_view')
-  const features = dash.byType.find((t) => t.eventType === 'feature.used')
-
-  return (
-    <DashSection
-      title="Site traffic"
-      description="First-party analytics from the event backbone — views, visitors, and the features being used (last 7 days)."
-      href="/admin/engagement"
-      hrefLabel="Engagement"
-    >
-      <StatRow>
-        <StatItem value={(views?.events ?? 0).toLocaleString()} label="Page views" />
-        <StatItem value={views?.actors ?? 0} label="Active visitors" />
-        <StatItem value={(features?.events ?? 0).toLocaleString()} label="Feature uses" />
-      </StatRow>
-
-      <div className="mt-5 grid gap-x-8 gap-y-4 border-t border-border/60 pt-4 sm:grid-cols-2">
-        <TopList title="Top pages" items={dash.topPages.slice(0, 5)} />
-        <TopList title="Top features" items={dash.topFeatures.slice(0, 5)} />
-      </div>
-    </DashSection>
-  )
-}
-
-function TopList({ title, items }: { title: string; items: { value: string; n: number }[] }) {
-  return (
-    <div className="min-w-0">
-      <p className="mb-1.5 text-xs font-semibold text-text">{title}</p>
-      {items.length === 0 ? (
-        <p className="text-xs text-subtle">No signal yet this week.</p>
-      ) : (
-        <ul className="space-y-1">
-          {items.map((i) => (
-            <li key={i.value} className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="truncate text-muted">{i.value}</span>
-              <span className="shrink-0 font-semibold tabular-nums text-text">{i.n.toLocaleString()}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
-// ── Expansion signal — density readiness for the next Lab (janitor). ──────────
-async function ExpansionSection() {
-  const density = await getDensitySignal()
-  const top = density.ready[0] ?? density.places[0]
-
-  return (
-    <DashSection
-      title="Expansion signal"
-      description="Where member density is crossing the threshold that justifies opening the next Lab."
-      href="/admin/expansion"
-      hrefLabel="Expansion"
-    >
-      <StatRow>
-        <StatItem value={density.totals.cities} label="Cities tracked" />
-        <StatItem
-          value={density.ready.length}
-          label="Labs ready"
-          deltaTone={density.ready.length > 0 ? 'good' : 'neutral'}
-          delta={density.ready.length > 0 ? 'over threshold' : undefined}
-        />
-        <StatItem value={density.totals.listings.toLocaleString()} label="Listings" />
-        <StatItem value={density.totals.residents.toLocaleString()} label="Residents" />
-      </StatRow>
-      {top && (
-        <p className="mt-4 border-t border-border/60 pt-3 text-sm text-muted">
-          Strongest signal: <span className="font-semibold text-text">{top.city}</span> · readiness{' '}
-          {Math.round(top.score)}/100 ({top.stage})
-        </p>
-      )}
-    </DashSection>
+    </DashArea>
   )
 }
 
@@ -538,67 +620,6 @@ function toMemberItems(rows: MembershipRow[]): MemberItem[] {
 const MEMBERSHIP_SELECT = `id, joined_at,
    profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
    circle:circles!circle_id ( name )`
-
-// ── Janitor: condensed platform panels — the home ORIENTS; the full lists live
-//    on their management surfaces (/admin/circles, /admin/members). ─────────────
-
-async function JanitorPanel({ circlesCount, broadcasts }: { circlesCount: number; broadcasts: number }) {
-  const admin = createAdminClient()
-
-  const [circlesRes, hubsRes, nexusesRes] = await Promise.all([
-    // Fullest circles first — where capacity pressure is.
-    admin
-      .from('circles')
-      .select('id, name, slug, status, member_count, member_cap, hub:hubs!hub_id(name)')
-      .order('member_count', { ascending: false })
-      .limit(6),
-    admin.from('hubs').select('id', { count: 'exact', head: true }),
-    admin.from('nexuses').select('id', { count: 'exact', head: true }),
-  ])
-
-  const circles = (circlesRes.data ?? []) as unknown as Array<{
-    id: string; name: string; slug: string; status: string; member_count: number; member_cap: number; hub: { name: string } | null
-  }>
-
-  return (
-    <>
-      <DashSection
-        title="Network"
-        description="The structure of the community — regions, hubs, circles, and the broadcasts that reach them."
-        href="/admin/operations"
-        hrefLabel="Operations"
-      >
-        <StatRow>
-          <StatItem value={nexusesRes.count ?? 0} label="Nexuses" href="/admin/nexuses" />
-          <StatItem value={hubsRes.count ?? 0} label="Hubs" href="/admin/hubs" />
-          <StatItem value={circlesCount} label="Circles" href="/admin/circles" />
-          <StatItem value={broadcasts} label="Broadcasts" href="/admin/dispatches" />
-        </StatRow>
-      </DashSection>
-
-      {/* Circles by fill — newest joins live in the right Info rail ("Just joined"),
-          so the page does not repeat them. */}
-      <DashSection
-        title="Circles by fill"
-        description="Fullest first — where capacity pressure is building."
-        href="/admin/circles"
-        hrefLabel="View all"
-      >
-        <div className="grid gap-2 lg:grid-cols-2">
-          {circles.map((c) => (
-            <CircleRow
-              key={c.id}
-              href={`/circles/${c.slug}`}
-              name={c.name}
-              status={c.status}
-              meta={`${c.member_count} / ${c.member_cap}${c.hub?.name ? ` · ${c.hub.name}` : ''}`}
-            />
-          ))}
-        </div>
-      </DashSection>
-    </>
-  )
-}
 
 // ── Host: circle + member overview ───────────────────────────────────────────
 
