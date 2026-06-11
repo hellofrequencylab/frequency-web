@@ -113,9 +113,9 @@ async function applyScope(hats: Hats, scope?: SurfaceScope): Promise<Hats> {
 
 /**
  * Does the live caller hold the paid ("crew") entitlement? The single source for the
- * scattered `['crew','host',…].includes(role)` gamification checks. Today the crew-or-
- * above proxy (via the matrix's `crew` column); once the entitlement tier (P2) lands,
- * `getViewerHats` reads the real flag and every call site flips automatically.
+ * scattered `['crew','host',…].includes(role)` gamification checks. The matrix's `crew`
+ * column is lit ONLY by `isPaid(tier)` (the real `membership_tier`, ADR-207/225) —
+ * fully decoupled from the community role — so this is the live paid predicate.
  */
 export async function isPaidViewer(): Promise<boolean> {
   return columnsForHats(await getViewerHats()).has('crew')

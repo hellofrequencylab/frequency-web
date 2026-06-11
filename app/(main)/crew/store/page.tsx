@@ -38,8 +38,10 @@ export default async function StorePage() {
   const amplitude = Number((prof as { amplitude?: number | null } | null)?.amplitude ?? 0)
   const hasAmplitude = amplitude > 0
   // Spending is the FULL Vault function; the matrix (access-matrix.ts) is the single
-  // source of truth — today the crew-or-above proxy, the paid Member tier once P2 lands.
-  // Limited access still browses everything (visible-but-locked + upgrade nudge).
+  // source of truth and the `vault` row's ✋→✅ jump is driven by `isPaid(tier)` (the real
+  // membership_tier, ADR-207/225) — the same `canCashIn` predicate the redeemItem action
+  // enforces server-side. Limited access still browses everything (visible-but-locked +
+  // upgrade nudge).
   const canSpend = (await surfaceAccess('vault')) === 'full'
 
   const categories = [

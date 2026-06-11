@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { deriveTier, isPaid } from '@/lib/core/entitlement'
+import { deriveTier, isPaid, canCashIn } from '@/lib/core/entitlement'
 import { accessTo } from '@/lib/core/access-matrix'
 
 describe('deriveTier', () => {
@@ -18,6 +18,29 @@ describe('isPaid', () => {
     expect(isPaid('crew')).toBe(true)
     expect(isPaid('supporter')).toBe(true)
     expect(isPaid(null)).toBe(false)
+  })
+})
+
+describe('canCashIn — the Vault cash-in (spend/claim) gate (P2.6, ADR-226)', () => {
+  it('only the paid tiers can cash in; free accrues but cannot spend', () => {
+    expect(canCashIn('free')).toBe(false)
+    expect(canCashIn('crew')).toBe(true)
+    expect(canCashIn('supporter')).toBe(true)
+    expect(canCashIn(null)).toBe(false)
+    expect(canCashIn(undefined)).toBe(false)
+  })
+
+  it('is the TIER predicate — never a function of the community role (ADR-207)', () => {
+    // A free-tier Host is a steward, not "paid"; they cannot cash in via their role.
+    // canCashIn sees only the tier, so the decoupling holds by construction.
+    expect(canCashIn('free')).toBe(false)
+  })
+
+  it('agrees with the Vault matrix gate (both are isPaid(tier))', () => {
+    for (const tier of ['free', 'crew', 'supporter'] as const) {
+      const matrixFull = accessTo('vault', { loggedIn: true, role: 'member', tier }) === 'full'
+      expect(canCashIn(tier)).toBe(matrixFull)
+    }
   })
 })
 
