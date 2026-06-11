@@ -6413,6 +6413,8 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 - **Admin/Manage moved into the left drawer**: the mobile drawer now renders the **full `NAV_SECTIONS`** — the exact desktop-rail structure (member worlds + telescoped Manage groups) — instead of the member-only split; `MEMBER_SECTIONS`/`MANAGE_SECTIONS` are deleted and the account dropdown is purely personal (profile, friends, invite, settings, theme, sign out).
 **Consequences:** One nav structure everywhere; the account menu stops being a junk drawer; members never see admin headers (telescoping unchanged). The per-device rail-size pref is orphaned in localStorage — harmless. Lost behavior: the right menu no longer closes on feed scroll (it's modal now, like the left).
 
+**Update — owner screenshot pass:** the two controls became **edge handles** in the app's existing flush-tab language (half-pills growing out of their screen edge, bordered, inner-rounded — the same grammar as the Vera/Next-steps pills) so they read "something slides from here" in tight space; open state tints them (primary-bg left, signal right). The header gained air between the bell and the account button. The Zap arch is now a **true semicircle** (h-8 w-16, height = half width) so it hugs the button's radius instead of reading as a squared tab. The composer (everywhere): **formatting folds below the divider** — a small ˄ Format toggle in the bottom row unfolds the tools above it (full-screen compose always shows them) — and the input grew a line (rows 3, min-h-24).
+
 
 ## ADR-235: The in-app QR scanner — Check In and Ghost Node go live
 

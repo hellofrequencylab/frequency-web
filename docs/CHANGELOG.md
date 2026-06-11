@@ -35,6 +35,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **A calmer writing box**: the composer leads with writing — three roomy lines,
+  and the bold/italic/list tools folded under a small **Format** arrow beneath
+  the divider. The side-menu buttons became little edge handles that show where
+  each panel slides from, and the arch behind the Zap button is now a true
+  half-circle that hugs it.
 - **Clearer mobile menus**: the bottom bar's little arrows are gone — a panel
   icon on the left opens the menu, a **gem** on the right opens your Quest panel
   (streaks, stats, and now the **Dashboard** link, moved out of the account
