@@ -9,8 +9,9 @@
 // minted keep working but aren't re-provisioned.) Server-only.
 
 import { createClient } from '@/lib/supabase/server'
+import { SITE_URL } from '@/lib/site'
+import { getPlatformSetting } from '@/lib/platform-flags'
 import { generateSlug } from './codes'
-import { personalCodeTargetUrl } from './links'
 import { STYLE_PRESETS, DEFAULT_STYLE, type QrStyle } from './style'
 
 export type MemberCodePurpose = 'connect' | 'referral' | 'gift_zap'
@@ -55,11 +56,15 @@ export async function ensureMemberCodes(profileId: string, handle: string): Prom
   const missing = PURPOSES.filter((p) => !have.has(p))
 
   if (missing.length > 0) {
+    // Where the connect code lands a scanner — operator-set (platform_settings
+    // 'personal_code_landing', a same-site path); defaults to '/', the splash.
+    const landing = await getPlatformSetting('personal_code_landing', '/')
+    const connectTarget = `${SITE_URL}${landing.startsWith('/') ? landing : '/'}`
     const rows = missing.map((purpose) => ({
       slug: generateSlug(),
       title: SPEC[purpose].title,
       destination_type: SPEC[purpose].destination_type,
-      target_url: purpose === 'connect' ? personalCodeTargetUrl() : null,
+      target_url: purpose === 'connect' ? connectTarget : null,
       purpose,
       owner_profile_id: profileId,
       created_by: profileId,

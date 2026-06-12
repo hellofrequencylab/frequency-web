@@ -144,6 +144,34 @@ export async function setPlatformFlag(
   }
 }
 
+// ── Text settings (platform_settings) ───────────────────────────────────────
+// The string sibling of the boolean flags above. Same store pattern; service-role.
+
+/** Read a TEXT platform setting. Cached per request; returns `fallback` on
+ *  missing/error so a transient DB hiccup never breaks a read. */
+export const getPlatformSetting = cache(async (key: string, fallback: string): Promise<string> => {
+  try {
+    // platform_settings isn't in the generated types yet (new table) — untyped handle.
+    const admin = createAdminClient() as unknown as SupabaseClient
+    const { data } = await admin.from('platform_settings').select('value').eq('key', key).maybeSingle()
+    return ((data?.value as string | undefined) ?? fallback) || fallback
+  } catch {
+    return fallback
+  }
+})
+
+/** Set a TEXT platform setting (operator-gated paths only). */
+export async function setPlatformSetting(key: string, value: string, changedBy?: string | null): Promise<void> {
+  const admin = createAdminClient() as unknown as SupabaseClient
+  const { error } = await admin.from('platform_settings').upsert({
+    key,
+    value,
+    updated_at: new Date().toISOString(),
+    updated_by: changedBy ?? null,
+  })
+  if (error) throw new Error(error.message)
+}
+
 /** Recent toggle history for a flag (newest first). Operator-only. */
 export async function listFlagEvents(key: string, limit = 20): Promise<FlagEvent[]> {
   try {
