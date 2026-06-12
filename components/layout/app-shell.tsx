@@ -126,7 +126,7 @@ function sectionsFromKeys(keys: string[] | undefined): NavSectionGroup[] {
 // — so a member never sees empty admin headers and a host isn't shown greyed-out
 // janitor tools. Member worlds (Community, The Quest) still mute/preview instead,
 // as aspirational surfaces.
-const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Admin'])
+const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Admin', 'Lead'])
 
 // Mobile renders the SAME rail as desktop (owner call, mobile-menus pass): the
 // left drawer carries the member worlds AND the axis-gated Manage groups — one
