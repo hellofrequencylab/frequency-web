@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { shouldShow, readProgressMap, type WalkthroughProgress } from './runtime'
+import { shouldShow, readProgressMap, triggerQualifies, type WalkthroughProgress, type MemberContext } from './runtime'
+import type { Walkthrough, WalkthroughTrigger } from '@/lib/walkthroughs'
 
 // Cadence gate tests. `now` is fixed; timestamps are expressed relative to it so the
 // window math (2h / 12h / 24h) is unambiguous.
@@ -64,6 +65,52 @@ describe('shouldShow — per_session', () => {
   it('hides when seen or dismissed within 2h', () => {
     expect(shouldShow('per_session', { seenAt: ago(HOUR) }, NOW)).toBe(false)
     expect(shouldShow('per_session', { dismissedAt: ago(HOUR) }, NOW)).toBe(false)
+  })
+})
+
+describe('triggerQualifies', () => {
+  const DAY = 24 * HOUR
+  const wt = (trigger: WalkthroughTrigger): Walkthrough =>
+    ({ trigger } as Walkthrough)
+  const ctx = (over: Partial<MemberContext> = {}): MemberContext => ({
+    role: 'member',
+    createdAt: null,
+    meta: null,
+    leadsCircle: false,
+    seasonStartedAt: null,
+    ...over,
+  })
+
+  it('manual: everyone qualifies', () => {
+    expect(triggerQualifies(wt('manual'), ctx(), NOW)).toBe(true)
+  })
+
+  it('new_member: only within the 21-day join window', () => {
+    expect(triggerQualifies(wt('new_member'), ctx({ createdAt: ago(3 * DAY) }), NOW)).toBe(true)
+    expect(triggerQualifies(wt('new_member'), ctx({ createdAt: ago(30 * DAY) }), NOW)).toBe(false)
+    expect(triggerQualifies(wt('new_member'), ctx({ createdAt: null }), NOW)).toBe(false)
+  })
+
+  it('role_*: matches the member community_role', () => {
+    expect(triggerQualifies(wt('role_host'), ctx({ role: 'host' }), NOW)).toBe(true)
+    expect(triggerQualifies(wt('role_host'), ctx({ role: 'member' }), NOW)).toBe(false)
+    expect(triggerQualifies(wt('role_guide'), ctx({ role: 'guide' }), NOW)).toBe(true)
+    expect(triggerQualifies(wt('role_mentor'), ctx({ role: 'mentor' }), NOW)).toBe(true)
+  })
+
+  it('circle_lead: qualifies only when the member leads a circle', () => {
+    expect(triggerQualifies(wt('circle_lead'), ctx({ leadsCircle: true }), NOW)).toBe(true)
+    expect(triggerQualifies(wt('circle_lead'), ctx({ leadsCircle: false }), NOW)).toBe(false)
+  })
+
+  it('season: only while the season is freshly launched (21-day window)', () => {
+    expect(triggerQualifies(wt('season'), ctx({ seasonStartedAt: ago(5 * DAY) }), NOW)).toBe(true)
+    expect(triggerQualifies(wt('season'), ctx({ seasonStartedAt: ago(30 * DAY) }), NOW)).toBe(false)
+    expect(triggerQualifies(wt('season'), ctx({ seasonStartedAt: null }), NOW)).toBe(false)
+  })
+
+  it('project: never qualifies (no project-launch concept yet)', () => {
+    expect(triggerQualifies(wt('project'), ctx(), NOW)).toBe(false)
   })
 })
 

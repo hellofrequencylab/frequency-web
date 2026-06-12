@@ -15,6 +15,7 @@ import { getWalkthroughs, type Walkthrough, type WalkthroughCadence } from '@/li
 // `createdAt` to break ties. Best-effort throughout (a bad row never breaks the feed).
 
 const NEW_MEMBER_WINDOW_MS = 21 * 24 * 60 * 60 * 1000 // joined within 21 days
+const SEASON_LAUNCH_WINDOW_MS = 21 * 24 * 60 * 60 * 1000 // season started within 21 days
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000
 const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
@@ -45,16 +46,27 @@ function withinWindow(now: number, iso: string | undefined, windowMs: number): b
   return t !== null && now - t < windowMs
 }
 
+/** Everything selection needs to know about THIS member, computed once at feed render. */
+export interface MemberContext {
+  role: string
+  createdAt: string | null
+  meta: unknown
+  /** True when the member holds an active stewardship edge on any circle. */
+  leadsCircle: boolean
+  /** starts_at of the current active season, or null when none / unknown. */
+  seasonStartedAt: string | null
+}
+
 /**
  * Does the member qualify for this walkthrough's trigger right now?
- * Slice 1 implements manual / new_member / role_*. circle_lead / season / project are
- * Slice 2 (return false until the qualifying state is wired in).
+ *   - manual              → everyone (the operator just flips it on).
+ *   - new_member          → joined within the new-member window.
+ *   - role_*              → their current community_role matches.
+ *   - circle_lead         → they actively lead at least one circle.
+ *   - season              → an active season launched within the season window.
+ *   - project             → not wired (no project-launch concept on this model yet).
  */
-function triggerQualifies(
-  wt: Walkthrough,
-  ctx: { role: string; createdAt: string | null },
-  now: number,
-): boolean {
+export function triggerQualifies(wt: Walkthrough, ctx: MemberContext, now: number): boolean {
   switch (wt.trigger) {
     case 'manual':
       // The operator just turns it on — everyone qualifies.
@@ -69,9 +81,15 @@ function triggerQualifies(
       return ctx.role === 'guide'
     case 'role_mentor':
       return ctx.role === 'mentor'
-    // Slice 2 — not wired yet (no circle-lead / season / project qualifying state).
     case 'circle_lead':
-    case 'season':
+      return ctx.leadsCircle
+    case 'season': {
+      // Fire only while the season is freshly launched, so a long-running season doesn't
+      // re-introduce its walkthrough to everyone for months.
+      const launched = parseTime(ctx.seasonStartedAt ?? undefined)
+      return launched !== null && now - launched <= SEASON_LAUNCH_WINDOW_MS
+    }
+    // No project-launch concept on this model yet — never qualifies.
     case 'project':
       return false
     default:
@@ -125,11 +143,7 @@ function withinSchedule(wt: Walkthrough, now: number): boolean {
  * and whose cadence allows showing given the member's saved progress, then returns the
  * highest-priority (newest createdAt on ties). Best-effort.
  */
-export async function selectWalkthroughForMember(ctx: {
-  role: string
-  createdAt: string | null
-  meta: unknown
-}): Promise<Walkthrough | null> {
+export async function selectWalkthroughForMember(ctx: MemberContext): Promise<Walkthrough | null> {
   const now = Date.now()
   const progressMap = readProgressMap(ctx.meta)
 
