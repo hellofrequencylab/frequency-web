@@ -6,7 +6,7 @@ import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_LABELS, seasonRankStyle, rankForZaps, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
 import { isOnline, ONLINE_MS, RECENT_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
-import { getOnboardingStatus } from '@/lib/onboarding/status'
+import { getOnboardingStatus, NEXT_STEPS_ENABLED } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
 
@@ -298,7 +298,9 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
   const next = SEASON_RANKS[cur + 1]
   const curMin = SEASON_RANKS[cur]?.minZaps ?? 0
   const pct = next && next.minZaps > curMin ? Math.round(((zaps - curMin) / (next.minZaps - curMin)) * 100) : 100
-  const nextStep = status?.current ?? null
+  // Next Steps prompts are shipped off (see lib/onboarding/status.ts) while the
+  // Walkthroughs suite takes over; the Quest cockpit (rank/standing/streak) stays.
+  const nextStep = NEXT_STEPS_ENABLED ? (status?.current ?? null) : null
 
   return (
     <WidgetCard title="Your Quest">
@@ -378,7 +380,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
       )}
 
       {/* The rest of the setup steps as tight progress cards. */}
-      {status && status.todo.length > 1 && (
+      {NEXT_STEPS_ENABLED && status && status.todo.length > 1 && (
         <div className="mt-2 space-y-1">
           {status.todo.slice(1, 4).map((s) => (
             <Link
