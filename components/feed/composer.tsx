@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import Image from 'next/image'
-import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera } from 'lucide-react'
+import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
@@ -88,16 +88,14 @@ export function Composer({
   const [manualHeight, setManualHeight] = useState<number | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Image upload state. Two inputs back ONE photo control: the library picker
-  // (fileInputRef) and the camera (cameraInputRef, capture='environment'). On a
-  // touch device the photo control opens a quick "Take photo / Upload" sheet; on a
-  // desktop pointer it opens the library picker directly.
+  // Image upload state. ONE input with accept='image/*' and no `capture`, so the
+  // phone's OWN photo sheet handles it — it offers Take Photo AND Photo Library
+  // without spawning the separate camera app (which the OS can reload on return,
+  // dropping the in-progress post). One control, the OS provides the quick choice.
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageError, setImageError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const cameraInputRef = useRef<HTMLInputElement>(null)
-  const [photoSheetOpen, setPhotoSheetOpen] = useState(false)
 
   // Mention autocomplete state
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
@@ -120,24 +118,14 @@ export function Composer({
     ta.style.height = `${Math.min(ta.scrollHeight, max)}px`
   }, [body, manualHeight, expanded])
 
-  // One photo entry point. On a touch device, offer a quick choice (Take photo →
-  // camera, Upload → library); on a desktop pointer there's no camera, so go
-  // straight to the library picker. Best-practice single control, not two items.
+  // One photo entry point — opens the phone's photo sheet (Take Photo / Library).
   const openPhotoPicker = useCallback(() => {
-    const coarse =
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(pointer: coarse)').matches
-    if (coarse) setPhotoSheetOpen(true)
-    else fileInputRef.current?.click()
+    fileInputRef.current?.click()
   }, [])
 
   // Capture "Photo" mode: pop the photo picker as soon as the composer mounts.
-  // Deferred a tick so the open isn't a synchronous setState inside the effect.
   useEffect(() => {
-    if (!autoImage) return
-    const t = setTimeout(() => openPhotoPicker(), 0)
-    return () => clearTimeout(t)
+    if (autoImage) openPhotoPicker()
   }, [autoImage, openPhotoPicker])
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -167,7 +155,6 @@ export function Composer({
     setImagePreview(null)
     setImageError('')
     if (fileInputRef.current) fileInputRef.current.value = ''
-    if (cameraInputRef.current) cameraInputRef.current.value = ''
   }
 
   async function uploadImage(): Promise<string | null> {
@@ -486,48 +473,9 @@ export function Composer({
       )}
       {imageError && <p className="mt-1.5 text-xs text-danger">{imageError}</p>}
 
-      {/* Hidden inputs — library (Upload) + camera (Take photo, rear camera). */}
+      {/* Hidden file input — accept='image/*' with no `capture`, so the phone's own
+          sheet offers Take Photo AND Photo Library without the camera-app takeover. */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageSelect} />
-
-      {/* Quick photo choice (touch only) — one control, two paths: shoot or upload.
-          A bottom sheet on phones, a centered card on larger touch screens. */}
-      {photoSheetOpen && (
-        <div
-          className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
-          onClick={() => setPhotoSheetOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Add a photo"
-        >
-          <div
-            className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:pb-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => { setPhotoSheetOpen(false); cameraInputRef.current?.click() }}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-            >
-              <Camera className="h-5 w-5 text-primary-strong" /> Take photo
-            </button>
-            <button
-              type="button"
-              onClick={() => { setPhotoSheetOpen(false); fileInputRef.current?.click() }}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-            >
-              <ImagePlus className="h-5 w-5 text-primary-strong" /> Upload from library
-            </button>
-            <button
-              type="button"
-              onClick={() => setPhotoSheetOpen(false)}
-              className="flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Formatting + media — the writing tools, cleanly clustered. Folded by
           default; the Format toggle lives BELOW the divider (full screen always
