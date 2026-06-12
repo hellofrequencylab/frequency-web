@@ -20,6 +20,8 @@ import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { personaTag, isPersonaId } from '@/lib/onboarding/personas'
 import { assignTag } from '@/lib/traits/tags'
 import { resolveAcquisition, stampAcquisitionTag } from '@/lib/attribution/server'
+import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/referral'
+import { persistAcquisition } from '@/lib/attribution/acquisition'
 import type { Json } from '@/lib/database.types'
 
 /** The audience sequence the member arrived through (cookie set by the induction). */
@@ -231,6 +233,17 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     await tagBetaCohort(prof.id, seqSlug)
     await tagPersona(prof.id, personaSlug)
     await stampAcquisitionTag(prof.id, acquisition)
+    // Referral attribution (ADR-095) — apply the `fq_ref` cookie the /q resolver
+    // drops when someone scans a member's personal code: set referred_by_profile_id,
+    // credit the referrer (invite_accepted zaps), and record the conversion +
+    // first-touch acquisition on the canonical column. MUST run BEFORE grantJoinZaps
+    // (inside postWelcomeForMember) so the newcomer's referred_join_bonus lands. The
+    // legacy completeOnboarding path does the same; the beta path had silently
+    // skipped it, so scanned referrals were never credited. Best-effort — never
+    // blocks onboarding (each fn is internally idempotent + clears its cookie).
+    await applyReferralAttribution(prof.id as string).catch(() => {})
+    await applyEntryPointConversion(prof.id as string).catch(() => {})
+    await persistAcquisition(prof.id as string).catch(() => {})
     // Welcome the new member from Vera — one quiet join line in the feed plus a
     // personal notification (ADR-231) — once, only on first completion (`meta` was
     // read pre-update, so it reflects the prior state). Best-effort.
