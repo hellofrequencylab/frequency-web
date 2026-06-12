@@ -240,10 +240,10 @@ export default async function ProfilePage({
       alt={profile.display_name}
       width={128}
       height={128}
-      className={`h-28 w-28 sm:h-32 sm:w-32 rounded-full object-cover ring-4 ring-surface ${isDemo ? 'grayscale-[0.5]' : ''}`}
+      className={`h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover ring-4 ring-surface ${isDemo ? 'grayscale-[0.5]' : ''}`}
     />
   ) : (
-    <span className="flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center rounded-full bg-primary-bg text-primary-strong text-4xl font-semibold ring-4 ring-surface">
+    <span className="flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full bg-primary-bg text-primary-strong text-4xl font-semibold ring-4 ring-surface">
       {initials}
     </span>
   )
@@ -345,7 +345,7 @@ export default async function ProfilePage({
         {/* Identity + actions. The avatar overlaps the cover by ~50%. */}
         <div className="flex flex-col gap-4 px-1 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <div className="relative z-10 -mt-14 sm:-mt-16">{avatarNode}</div>
+            <div className="relative z-10 -mt-12 sm:-mt-14">{avatarNode}</div>
             <div className="mt-3 flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl sm:text-3xl font-bold text-text break-words">{profile.display_name}</h1>
               {badges}
@@ -385,98 +385,13 @@ export default async function ProfilePage({
         )}
       </section>
 
-      {/* ── BODY — a social-profile split: the person's content on the left (2/3),
-          their standing + Frequency Signature in an interior sidebar on the right
-          (1/3). The page is 'scoped' (lib/layout/page-chrome), so the viewer's global
-          "Your Quest" rail (about THEM, not the person on screen) is suppressed and
-          this in-body sidebar takes its place. On mobile the sidebar rides up first
-          as a quick standing + signature summary, then the content follows. ── */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* MAIN (2/3) — bio, practice, the relationship panels, composer, timeline. */}
-        <div className="order-2 min-w-0 space-y-6 lg:order-1 lg:col-span-2">
-          {/* Bio — inline-editable for the owner, read-only for everyone else. */}
-          <EditableIdentity
-            isOwner={isOwner}
-            displayName={profile.display_name}
-            handle={profile.handle as string}
-            bio={profile.bio ?? ''}
-          />
-
-          {/* Practice Shelf — per-practice consistency + depth awards, plus any
-              Witnessed awards (Rewards v2). Hidden until something is earned. */}
-          <Suspense fallback={null}>
-            <PracticeShelf profileId={profileId} isOwner={isOwner} firstName={firstName} />
-          </Suspense>
-
-          {/* Your private contact card — only the viewer who merged their own
-              personal contact with this member sees this (their own logged data). */}
-          {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}
-
-          {/* How you're connected — the viewer's private read of their own tie (ADR-186). */}
-          {!isOwner && !!user && !isBlocked && (
-            <ConnectionPanel
-              profileId={profileId}
-              firstName={firstName}
-              friendAction={friendState.kind === 'none' ? <FriendButton targetProfileId={profileId} state={friendState} /> : undefined}
-            />
-          )}
-
-          {/* Staff-only: this member's support history, wired into the console. */}
-          {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
-
-          {/* Composer + timeline. */}
-          {myProfileId && (
-            <Composer
-              scopeId={profileId}
-              visibility="public"
-              placeholder={isOwner ? 'What’s on your mind?' : `Leave something for ${firstName}…`}
-            />
-          )}
-
-          <div>
-            <SectionHeader
-              title={
-                activeTab === 'posts'
-                  ? isOwner ? 'Your posts' : `${firstName}’s posts`
-                  : isOwner ? 'Your timeline' : `${firstName}’s timeline`
-              }
-              count={activeTab === 'posts' ? postCount : undefined}
-            />
-            {/* The one tab vocabulary (UnderlineTabs), ?tab=-driven. */}
-            <div className="mb-4">
-              <UnderlineTabs
-                activeHref={activeTab === 'posts' ? `/people/${profile.handle}?tab=posts` : `/people/${profile.handle}`}
-                tabs={[
-                  { href: `/people/${profile.handle}`, label: 'Activity' },
-                  { href: `/people/${profile.handle}?tab=posts`, label: 'Posts', count: postCount },
-                ]}
-              />
-            </div>
-            {activeTab === 'posts' ? (
-              <ProfilePosts
-                profileId={profileId}
-                firstName={firstName}
-                isOwner={isOwner}
-                myProfileId={myProfileId}
-                viewerRole={myRole}
-              />
-            ) : (
-              <ProfileFeed
-                profileId={profileId}
-                profileHandle={profile.handle as string}
-                myProfileId={myProfileId}
-                viewerRole={myRole}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* SIDEBAR (1/3) — the gamification stats as menu items (top), then the
-            Frequency Signature. Sticky on desktop; rides up first on mobile. */}
-        <aside className="order-1 min-w-0 space-y-5 self-start lg:order-2 lg:col-span-1 lg:sticky lg:top-20">
-          {/* Standing — Zaps · Gems · Streak · Rank as a tidy menu; the owner's rows
-              link into the Quest, a visitor's are read-only. Shown when the rank is
-              endorsed (public) or to the owner on their own page. */}
+      {/* ── BODY — ONE interior content column; the site's global right rail stays
+          put beside it (lib/layout/page-chrome keeps profiles on the global rail).
+          The person's standing + Frequency Signature ride at the top as a compact
+          summary band (gamification above the Signature), then bio + timeline. ── */}
+      <div className="space-y-6">
+        {/* Standing + Achievements — the gamification summary, above the Signature. */}
+        <div className="grid gap-4 sm:grid-cols-2">
           {(rankEndorsed || isOwner) && (
             <ProfileStandingCard
               isOwner={isOwner}
@@ -502,19 +417,94 @@ export default async function ProfilePage({
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Frequency Signature — the identity constellation, stacked for the column. */}
-          <div>
-            <SectionHeader title="Frequency Signature" />
-            <FrequencySignature
-              signature={signature}
-              variant="full"
-              layout="stack"
-              name={isOwner ? undefined : firstName}
-              className="mt-2"
+        {/* Frequency Signature — the identity constellation. */}
+        <div>
+          <SectionHeader title="Frequency Signature" />
+          <FrequencySignature
+            signature={signature}
+            variant="full"
+            name={isOwner ? undefined : firstName}
+            className="mt-2"
+          />
+        </div>
+
+        {/* Bio — inline-editable for the owner, read-only for everyone else. */}
+        <EditableIdentity
+          isOwner={isOwner}
+          displayName={profile.display_name}
+          handle={profile.handle as string}
+          bio={profile.bio ?? ''}
+        />
+
+        {/* Practice Shelf — per-practice consistency + depth awards, plus any
+            Witnessed awards (Rewards v2). Hidden until something is earned. */}
+        <Suspense fallback={null}>
+          <PracticeShelf profileId={profileId} isOwner={isOwner} firstName={firstName} />
+        </Suspense>
+
+        {/* Your private contact card — only the viewer who merged their own personal
+            contact with this member sees this (their own logged data). */}
+        {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}
+
+        {/* How you're connected — the viewer's private read of their own tie (ADR-186). */}
+        {!isOwner && !!user && !isBlocked && (
+          <ConnectionPanel
+            profileId={profileId}
+            firstName={firstName}
+            friendAction={friendState.kind === 'none' ? <FriendButton targetProfileId={profileId} state={friendState} /> : undefined}
+          />
+        )}
+
+        {/* Staff-only: this member's support history, wired into the console. */}
+        {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
+
+        {/* Composer + timeline. */}
+        {myProfileId && (
+          <Composer
+            scopeId={profileId}
+            visibility="public"
+            placeholder={isOwner ? 'What’s on your mind?' : `Leave something for ${firstName}…`}
+          />
+        )}
+
+        <div>
+          <SectionHeader
+            title={
+              activeTab === 'posts'
+                ? isOwner ? 'Your posts' : `${firstName}’s posts`
+                : isOwner ? 'Your timeline' : `${firstName}’s timeline`
+            }
+            count={activeTab === 'posts' ? postCount : undefined}
+          />
+          {/* The one tab vocabulary (UnderlineTabs), ?tab=-driven. */}
+          <div className="mb-4">
+            <UnderlineTabs
+              activeHref={activeTab === 'posts' ? `/people/${profile.handle}?tab=posts` : `/people/${profile.handle}`}
+              tabs={[
+                { href: `/people/${profile.handle}`, label: 'Activity' },
+                { href: `/people/${profile.handle}?tab=posts`, label: 'Posts', count: postCount },
+              ]}
             />
           </div>
-        </aside>
+          {activeTab === 'posts' ? (
+            <ProfilePosts
+              profileId={profileId}
+              firstName={firstName}
+              isOwner={isOwner}
+              myProfileId={myProfileId}
+              viewerRole={myRole}
+            />
+          ) : (
+            <ProfileFeed
+              profileId={profileId}
+              profileHandle={profile.handle as string}
+              myProfileId={myProfileId}
+              viewerRole={myRole}
+            />
+          )}
+        </div>
       </div>
     </>
   )
@@ -522,8 +512,8 @@ export default async function ProfilePage({
 
 // The profile's standing as a compact MENU — Zaps · Gems · Streak · Rank as rows
 // (the owner's link into the Quest; a visitor's are read-only), under a rank header
-// with a slim progress bar to the next tier. This is the gamification summary that
-// opens the profile's interior sidebar, above the Frequency Signature.
+// with a slim progress bar to the next tier. The gamification summary at the top of
+// the profile's interior column, above the Frequency Signature.
 function ProfileStandingCard({
   isOwner, rank, rankDef, next, pct, zapsToNext, zaps, gems, streak,
 }: {

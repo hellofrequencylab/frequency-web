@@ -50,13 +50,12 @@ const FOCUS_PATTERNS: RegExp[] = [
 ]
 
 // SCOPED — entity-detail sections that render their OWN in-body scope rail
-// (the double-rail trap is avoided by suppressing the global rail). A member
-// PROFILE (/people/<handle>) is scoped: it renders the person's own standing +
-// Frequency Signature in an interior right sidebar, so the viewer's global "Your
-// Quest" rail (which is about THEM, not the person on screen) would be a confusing
-// second rail. The /people INDEX keeps the global rail (the match below requires a
-// segment after the prefix). Circle and Channel detail still ride the global rail.
-const SCOPED_PREFIXES: string[] = ['/people/']
+// (the double-rail trap is avoided by suppressing the global rail). Nothing is
+// scoped today: every section (including member PROFILES) keeps the GLOBAL community
+// rail — the site's right rail is always present. A profile's own standing +
+// Frequency Signature live in its interior content column, not a rail. Re-add a
+// prefix here only if a section grows a genuine in-body rail.
+const SCOPED_PREFIXES: string[] = []
 
 // The admin WORKSPACE (Phase 4, ADR-228): under /admin/* the global member LEFT
 // rail is suppressed (the admin layout mounts a sticky top-nav menubar instead of a
