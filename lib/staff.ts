@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
+import { readViewAsTarget } from '@/lib/view-as'
 import { type StaffRole, type StaffDomain, type Access, staffCan } from '@/lib/core/staff-roles'
 
 // The role model + capability matrix live in lib/core/staff-roles.ts (client-safe);
@@ -28,8 +29,16 @@ export interface StaffMember {
   role: StaffRole
 }
 
-/** The current viewer's staff membership, or null if they aren't staff. */
+/** The current viewer's staff membership, or null if they aren't staff.
+ *
+ *  SECURITY (view-as faithfulness): while a steward is previewing a downgraded role
+ *  ("view as"), the staff axis is STRIPPED — exactly like `webRole → 'none'` in
+ *  resolveCaller. Without this, an operator's real `team_members` role leaked through
+ *  the admin guards (requireAdmin/requireAdminFloor call this directly), so "view as
+ *  Crew" still cleared the `/admin` floor and the staff-domain page opts. A view-as
+ *  cookie is only ever set on a real downgrade, so its mere presence means "preview". */
 export async function getStaffMember(): Promise<StaffMember | null> {
+  if (await readViewAsTarget()) return null
   const profileId = await getMyProfileId()
   if (!profileId) return null
 

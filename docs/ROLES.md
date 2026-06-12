@@ -259,3 +259,38 @@ surface). Personal **Settings** is not an admin tool — it lives on the profile
   role-permission editing, so the one shared menu is operator-managed (order + visibility +
   access) instead of code-edited. The matrix + the janitor `permissions` override
   (`/admin/roles`) are the data foundation; this is the UI over them.
+
+---
+
+## Admin lockdown + host re-entry (2026-06, owner: "shut all the doors, then let them back in")
+
+A Crew "view as" reached `/admin/qr` with the full admin shell. Root cause: the admin
+guards call `getStaffMember()` (the `team_members` axis) directly, and that path was NOT
+view-as aware, so a steward's real staff role leaked through `requireAdminFloor` /
+`requireAdmin(..., {staff})` even while previewing a downgrade. Secondary: the `/admin`
+floor admitted community **host+**, and some operator tools (QR Studio nav, `/print/qr`)
+were host/crew-reachable.
+
+### Shut (done)
+- **`getStaffMember()` is now view-as aware** — returns null whenever a view-as cookie is
+  present (mirrors the `webRole → 'none'` strip in `resolveCaller`). The guards faithfully
+  downgrade now, so previewing a role can never retain real staff access.
+- **`requireAdminFloor` is STAFF-ONLY** — `isStaff(webRole) || staffSeesAdmin(staffRole)`.
+  The community ladder no longer opens `/admin`. A host/guide/mentor is a community leader,
+  not a platform operator. (`docs` + `lib/admin/guard.ts`.)
+- **QR re-gated to staff** — the `admin-qr` nav maps to `platformManage` (+ `staffDomain: 'qr'`);
+  `/print/qr` raised from `host` to staff. No QR operator tool shows to crew/host now.
+
+### Let back in (next — the design)
+Hosts need BASIC, **network-scoped** admin, not the platform workspace. The model:
+- `/admin/*` stays the **staff platform workspace** (default deny).
+- Community leaders (host/guide/mentor) get a small, explicit re-entry to the **Community
+  admin domain only** — managing THEIR circles, members, events, and trust/safety — scoped
+  to what they lead via the per-scope capability resolver (ADR-017), never the platform-wide
+  data. Everything else (Roles, Financials, Platform, AI, Marketing/CRM/Growth, Settings)
+  stays staff-only.
+- Implementation options to weigh: (a) a per-route allowance in the admin layout floor that
+  re-opens the whitelisted Community routes to host+ with scope checks on each page, or
+  (b) a separate leader surface (e.g. `/lead`) that composes the same Community modules
+  scoped to the leader's circles. Plus the leader dispatch-down + leader DM (no friend
+  request) noted above.

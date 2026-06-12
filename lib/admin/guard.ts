@@ -67,9 +67,13 @@ export async function requireAdmin(
   return { profileId: profile.id, role: profile.community_role, webRole: profile.webRole, staffRole }
 }
 
-/** The /admin entry floor: community host+ OR platform staff (web_role admin/
- *  janitor) OR any team_members staff role that can see at least one admin group.
- *  Each group/page still gates itself precisely below this. */
+/** The /admin entry floor: STAFF ONLY (owner: "only admin roles in admin") —
+ *  platform staff (web_role admin/janitor) OR any team_members staff role that can
+ *  see at least one admin group. The community ladder no longer opens /admin: a
+ *  host/guide/mentor is a community leader, not a platform operator; their
+ *  network-scoped admin is a separate future surface (docs/ROLES.md). getCallerProfile
+ *  AND getStaffMember are both view-as aware, so a steward previewing a downgrade is
+ *  faithfully blocked here. Each group/page still gates itself precisely below this. */
 export async function requireAdminFloor(): Promise<AdminContext> {
   const profile = await getCallerProfile()
   if (!profile) redirect('/')
@@ -77,7 +81,6 @@ export async function requireAdminFloor(): Promise<AdminContext> {
   const staffRole = staff?.role ?? null
   const overrides = staffRole ? await getCapabilityOverrides() : undefined
   const okFloor =
-    atLeastRole(profile.community_role, 'host') ||
     isStaff(profile.webRole) ||
     staffSeesAdmin(staffRole, overrides)
   if (!okFloor) redirect('/feed')
