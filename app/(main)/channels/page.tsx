@@ -11,7 +11,6 @@ import { NewChannelCompose } from './new-channel-compose'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { PageContents } from '@/components/templates/page-contents'
 import { SectionHeader } from '@/components/ui/section-header'
-import { StatInline } from '@/components/ui/stat-inline'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
@@ -154,24 +153,6 @@ export default async function ChannelsPage() {
     })),
   ]
 
-  // At-a-glance stats across the whole taxonomy.
-  const stats = {
-    channels: sections.length,
-    interests: channelList.length,
-    tunedIn: myChannelIds.size,
-    circles: Object.values(circleCounts).reduce((s, n) => s + n, 0),
-  }
-
-  // Network stats parked at the right of the table-of-contents bar (no divider).
-  const statStrip = (
-    <div className="flex items-center gap-x-6">
-      <StatInline value={stats.channels} label="Pillars" />
-      <StatInline value={stats.interests} label="Channels" />
-      <StatInline value={stats.tunedIn} label="Tuned in" />
-      <StatInline value={stats.circles} label="Circles" />
-    </div>
-  )
-
   return (
     <IndexTemplate
       title={pageTitle}
@@ -202,9 +183,10 @@ export default async function ChannelsPage() {
     >
       <span id="top" className="sr-only" />
 
-      {/* Table of contents — jump between Channels — with the network stats parked
-          at its right (no divider rule), mirroring the Circles list. */}
-      <PageContents links={tocLinks} divider={false} rightSlot={statStrip} />
+      {/* Table of contents — jump between Channels. Per-Pillar counts ride on each
+          chip; taxonomy counts stay quiet inline context, never KPI tiles (the
+          gamified-stat law, MEMBER-DESIGN-SYSTEM §2). */}
+      <PageContents links={tocLinks} divider={false} />
 
       {/* Two columns: the Channels flow on the left; the browse nav sits in a STABLE
           right column so it's never orphaned at the bottom. */}

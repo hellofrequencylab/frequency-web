@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/server'
 import { EventCompose } from './event-compose'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { PageContents } from '@/components/templates/page-contents'
-import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -398,15 +397,9 @@ export default async function EventsPage({
         />
       )}
 
-      <div className="mb-6">
-        <StatStrip
-          items={[
-            { value: events.length, label: 'Upcoming' },
-            { value: goingEvents.length, label: 'You’re going' },
-            { value: myCircles.length, label: 'Your circles' },
-          ]}
-        />
-      </div>
+      {/* No stat strip: event/circle counts aren't gamified, so they stay quiet
+          inline context on the section headers below, never KPI tiles (the
+          gamified-stat law, MEMBER-DESIGN-SYSTEM §2). */}
 
       {/* Table of contents — only meaningful once there's more than one section.
           (The streamed "For you" lane is progressive content and stays out of the
