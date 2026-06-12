@@ -152,7 +152,7 @@ async function PagePanels({ profileId, role }: RightSidebarProps) {
 export default async function RightSidebar({ profileId, role }: RightSidebarProps) {
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex-1 space-y-8 px-3 pt-3 pb-6">
+      <div className="flex-1 space-y-4 pt-1 pb-6">
         {/* Site-wide demo notice — pinned ABOVE the Quest box when demo content is
             present (it self-hides otherwise). */}
         <DemoNotice />

@@ -1386,7 +1386,7 @@ export default function AppShell({
                 into view as you near the end; its left border is a full-height
                 divider. */}
             {showSidebar && (
-              <aside className="hidden lg:flex flex-col w-72 shrink-0 border-l border-border bg-surface/80 backdrop-blur-sm">
+              <aside className="hidden lg:flex flex-col w-80 shrink-0 px-4 py-6">
                 {sidebar}
               </aside>
             )}

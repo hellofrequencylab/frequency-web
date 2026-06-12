@@ -30,25 +30,42 @@ function DateChip({ iso }: { iso: string }) {
 
 // ── Events ────────────────────────────────────────────────────────────────────
 export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
-  if (circleIds.length === 0) return null
   const admin = createAdminClient()
   const now = new Date().toISOString()
+  type EventRow = { id: string; title: string; slug: string; location: string | null; starts_at: string }
 
-  const { data: raw } = await admin
-    .from('events')
-    .select('id, title, slug, location, starts_at')
-    .in('scope_id', circleIds)
-    .in('scope_type', ['circle', 'group'])
-    .eq('is_cancelled', false)
-    .gte('starts_at', now)
-    .order('starts_at', { ascending: true })
-    .limit(3)
+  // The viewer's circle events first.
+  let events: EventRow[] = []
+  if (circleIds.length > 0) {
+    const { data: raw } = await admin
+      .from('events')
+      .select('id, title, slug, location, starts_at')
+      .in('scope_id', circleIds)
+      .in('scope_type', ['circle', 'group'])
+      .eq('is_cancelled', false)
+      .gte('starts_at', now)
+      .order('starts_at', { ascending: true })
+      .limit(3)
+    events = (raw ?? []) as EventRow[]
+  }
 
-  const events = (raw ?? []) as { id: string; title: string; slug: string; location: string | null; starts_at: string }[]
+  // Always-populated: if the viewer's circles have nothing coming up, surface what's
+  // happening across the community so the events tile stays useful (engagement rail).
+  const fellBack = events.length === 0
+  if (fellBack) {
+    const { data: anyUpcoming } = await admin
+      .from('events')
+      .select('id, title, slug, location, starts_at')
+      .eq('is_cancelled', false)
+      .gte('starts_at', now)
+      .order('starts_at', { ascending: true })
+      .limit(3)
+    events = (anyUpcoming ?? []) as EventRow[]
+  }
   if (events.length === 0) return null
 
   return (
-    <WidgetCard title="Upcoming events">
+    <WidgetCard tile title={fellBack ? 'Happening soon' : 'Upcoming events'}>
       <div className="space-y-0.5">
         {events.map((event) => (
           <Link
@@ -129,7 +146,7 @@ export async function MembersPanel({ profileId, circleIds }: { profileId: string
   if (members.length === 0) return null
 
   return (
-    <WidgetCard title="Members" badge={onlineCount > 0 ? `${onlineCount} online` : undefined}>
+    <WidgetCard tile title="Members" badge={onlineCount > 0 ? `${onlineCount} online` : undefined}>
       <div className="space-y-0.5">
         {members.map((m) => {
           const online = isOnline(m.profile.last_seen_at)
@@ -171,7 +188,7 @@ export async function DispatchesPanel({ profileId, circleIds }: { profileId: str
   if (dispatches.length === 0) return null
 
   return (
-    <WidgetCard title="Broadcasts">
+    <WidgetCard tile title="Broadcasts">
       <div className="space-y-0.5">
         {dispatches.map((d) => (
           <Link
@@ -218,7 +235,7 @@ export async function LeaderboardPanel() {
   const rankColors = ['text-primary', 'text-subtle', 'text-primary', 'text-subtle', 'text-subtle']
 
   return (
-    <WidgetCard title="Leaderboard">
+    <WidgetCard tile title="Leaderboard">
       <div className="space-y-0.5">
         {top.map((member, i) => (
           <Link
@@ -397,7 +414,7 @@ export async function WhoOnlinePanel({ profileId }: { profileId: string }) {
   if (people.length === 0) return null
 
   return (
-    <WidgetCard title="Who’s online" badge={`${people.length}`}>
+    <WidgetCard tile title="Who’s online" badge={`${people.length}`}>
       <div className="flex flex-wrap gap-1.5 px-1 py-1">
         {people.slice(0, 10).map((p) => (
           <Link key={p.id} href={`/people/${p.handle}`} title={p.display_name} className="relative shrink-0">
@@ -436,7 +453,7 @@ export async function CirclesPanel({ circleIds }: { circleIds: string[] }) {
   if (rows.length === 0) return null
 
   return (
-    <WidgetCard title="Circles to explore">
+    <WidgetCard tile title="Circles to explore">
       <div className="space-y-0.5">
         {rows.map((c) => (
           <Link
@@ -478,16 +495,29 @@ export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
     .not('created_at', 'is', null)
     .order('created_at', { ascending: false })
     .limit(12)
-  const rows = ((data ?? []) as {
+  type CircleRow = {
     id: string; name: string; slug: string; neighborhood: string | null
     member_count: number | null; created_at: string | null
-  }[])
-    .filter((c) => !circleIds.includes(c.id))
-    .slice(0, 4)
+  }
+  let rows = ((data ?? []) as CircleRow[]).filter((c) => !circleIds.includes(c.id)).slice(0, 4)
+
+  // Always-populated: when there's nothing newly launched the viewer hasn't joined,
+  // fall back to the most popular circles to explore so "discover" never goes blank.
+  const fellBack = rows.length === 0
+  if (fellBack) {
+    const { data: popular } = await admin
+      .from('circles')
+      .select('id, name, slug, neighborhood, member_count, created_at')
+      .eq('is_demo', false)
+      .eq('status', 'active')
+      .order('member_count', { ascending: false })
+      .limit(12)
+    rows = ((popular ?? []) as CircleRow[]).filter((c) => !circleIds.includes(c.id)).slice(0, 4)
+  }
   if (rows.length === 0) return null
 
   return (
-    <WidgetCard title="Newest circles" badge="New">
+    <WidgetCard tile title={fellBack ? 'Circles to explore' : 'Newest circles'} badge={fellBack ? undefined : 'New'}>
       <div className="space-y-0.5">
         {rows.map((c) => (
           <Link
@@ -502,7 +532,9 @@ export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
               <p className="truncate text-sm font-semibold text-text">{c.name}</p>
               <p className="text-xs text-subtle">
                 {c.neighborhood ? `${c.neighborhood} · ` : ''}
-                {c.created_at ? `started ${relativeTime(c.created_at)}` : `${(c.member_count ?? 0).toLocaleString()} members`}
+                {fellBack
+                  ? `${(c.member_count ?? 0).toLocaleString()} members`
+                  : c.created_at ? `started ${relativeTime(c.created_at)}` : `${(c.member_count ?? 0).toLocaleString()} members`}
               </p>
             </div>
           </Link>
@@ -523,6 +555,10 @@ export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
 export async function ActiveNowPanel({ profileId }: { profileId: string }) {
   const admin = createAdminClient()
   const cutoff = new Date(new Date().getTime() - RECENT_MS).toISOString()
+  type Person = {
+    id: string; display_name: string; handle: string; avatar_url: string | null
+    last_seen_at: string | null; created_at?: string | null
+  }
   const { data } = await admin
     .from('profiles')
     .select('id, display_name, handle, avatar_url, last_seen_at')
@@ -532,15 +568,29 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
     .eq('is_system', false)
     .order('last_seen_at', { ascending: false })
     .limit(6)
-  const people = (data ?? []) as {
-    id: string; display_name: string; handle: string; avatar_url: string | null; last_seen_at: string | null
-  }[]
+  let people = (data ?? []) as Person[]
+
+  // Always-populated rail (engagement best practice): when nobody is recently
+  // active, fall back to the newest members so the "people" tile never vanishes —
+  // it just shifts from "who's around" to "say hi to new members".
+  const fellBack = people.length === 0
+  if (fellBack) {
+    const { data: newest } = await admin
+      .from('profiles')
+      .select('id, display_name, handle, avatar_url, last_seen_at, created_at')
+      .neq('id', profileId)
+      .eq('is_active', true)
+      .eq('is_system', false)
+      .order('created_at', { ascending: false })
+      .limit(6)
+    people = (newest ?? []) as Person[]
+  }
   if (people.length === 0) return null
 
   const onlineCount = people.filter((p) => isOnline(p.last_seen_at)).length
 
   return (
-    <WidgetCard title="Active now" badge={onlineCount > 0 ? `${onlineCount} online` : undefined}>
+    <WidgetCard tile title={fellBack ? 'New members' : 'Active now'} badge={!fellBack && onlineCount > 0 ? `${onlineCount} online` : undefined}>
       <div className="space-y-0.5">
         {people.map((p) => {
           const online = isOnline(p.last_seen_at)
@@ -565,7 +615,9 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-text">{p.display_name}</p>
                 <p className="text-xs text-subtle">
-                  {online ? 'Online now' : p.last_seen_at ? `active ${relativeTime(p.last_seen_at)}` : 'recently active'}
+                  {fellBack
+                    ? p.created_at ? `joined ${relativeTime(p.created_at)}` : 'new here'
+                    : online ? 'Online now' : p.last_seen_at ? `active ${relativeTime(p.last_seen_at)}` : 'recently active'}
                 </p>
               </div>
             </Link>
@@ -574,7 +626,7 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
       </div>
       <div className="px-1 pt-3">
         <Link href="/people" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
-          See who’s around →
+          {fellBack ? 'Meet the community →' : 'See who’s around →'}
         </Link>
       </div>
     </WidgetCard>
