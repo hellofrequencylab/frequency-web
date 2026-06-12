@@ -63,12 +63,13 @@ export default async function AchievementsPage() {
       title="Achievements"
       description="Earn badges by engaging with your community. Some are secret. Keep exploring to find them all."
     >
-      {/* Progress overview */}
+      {/* Progress overview — the gamified counts behind the collection (§2): the
+          badges earned, plus the lifetime zaps and streak that drive them. */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <StatCard label={`Earned · ${earnedPct}%`} value={`${stats.earned}/${stats.total}`} />
-        <StatCard label="Lifetime Zaps" value={stats.lifetimeZaps.toLocaleString()} />
-        <StatCard label="Current Streak" value={`${stats.currentStreak}w`} />
-        <StatCard label="Longest Streak" value={`${stats.longestStreak}w`} />
+        <StatCard label={`Earned · ${earnedPct}%`} value={`${stats.earned}/${stats.total}`} icon={Award} />
+        <StatCard label="Lifetime Zaps" value={stats.lifetimeZaps.toLocaleString()} icon={Zap} href="/crew/leaderboard" />
+        <StatCard label="Current Streak" value={`${stats.currentStreak}w`} icon={Flame} href="/crew/streaks" />
+        <StatCard label="Longest Streak" value={`${stats.longestStreak}w`} icon={Trophy} />
       </div>
 
       {/* Global progress bar */}
@@ -81,7 +82,7 @@ export default async function AchievementsPage() {
         </div>
         <div className="h-2.5 rounded-full bg-surface-elevated overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r bg-primary transition-all"
+            className="h-full rounded-full bg-primary transition-all"
             style={{ width: `${earnedPct}%` }}
           />
         </div>
