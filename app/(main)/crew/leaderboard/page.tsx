@@ -4,12 +4,14 @@ import Link from 'next/link'
 import { Zap, TrendingUp, Award, Flame, Gem, QrCode, UserPlus, Filter } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { getRankDef, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { getRankDef, rankForZaps, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 import { LeaderboardTabs } from './leaderboard-tabs'
 import { listEntryPointLeaderboard, signupsToNextTier } from '@/lib/entry-points/leaderboard'
+import { getCurrentSeason } from '@/lib/seasons'
 import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StandingHero } from '@/components/gamification/standing-hero'
 
 interface LeaderboardEntry {
   id: string
@@ -138,10 +140,29 @@ export default async function LeaderboardPage({
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
-    .select('id')
+    .select('id, current_season_zaps, current_streak, lifetime_gems')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!profile) notFound()
+
+  // The viewer's own standing — featured up top so the board always answers
+  // "where do I sit" before listing everyone else (the four counts, §2).
+  const myZaps = (profile as { current_season_zaps: number | null }).current_season_zaps ?? 0
+  const myGems = (profile as { lifetime_gems: number | null }).lifetime_gems ?? 0
+  const myStreak = (profile as { current_streak: number | null }).current_streak ?? 0
+  const myStandingRank = rankForZaps(myZaps)
+  const season = await getCurrentSeason()
+
+  const standingHero = (
+    <StandingHero
+      zaps={myZaps}
+      gems={myGems}
+      streak={myStreak}
+      rank={myStandingRank}
+      seasonName={season?.name}
+      links={{ zaps: '/crew/leaderboard', rank: '/crew/achievements', streak: '/crew/streaks', gems: '/crew/store' }}
+    />
+  )
 
   const params = await searchParams
   const scope = params.scope ?? 'circle'
@@ -160,6 +181,8 @@ export default async function LeaderboardPage({
         description="Season rankings across your community. Compete with your circle, hub, nexus, or everyone."
         toolbar={<LeaderboardTabs activeScope={scope} />}
       >
+        <div className="mb-6">{standingHero}</div>
+
         {me && (
           <div className="mb-4 rounded-xl bg-primary-bg/50 px-4 py-2.5 text-sm font-medium text-primary-strong">
             #{myIdx + 1} of {rows.length} · {me.tier.emoji} {me.tier.label} · {me.signups} signup{me.signups === 1 ? '' : 's'} from {me.scans} scan{me.scans === 1 ? '' : 's'}
@@ -233,6 +256,8 @@ export default async function LeaderboardPage({
       description="Season rankings across your community. Compete with your circle, hub, nexus, or everyone."
       toolbar={<LeaderboardTabs activeScope={scope} />}
     >
+      <div className="mb-6">{standingHero}</div>
+
       {myRank >= 0 && (
         <div className="mb-4 rounded-xl bg-primary-bg/50 px-4 py-2.5 flex items-center gap-2">
           <span className="text-sm font-medium text-primary-strong">

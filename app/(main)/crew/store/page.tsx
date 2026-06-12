@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Gem, Zap, Flame, Trophy, Receipt, ArrowRight } from 'lucide-react'
+import { Receipt, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getStoreData } from './actions'
 import { StoreGrid } from './store-grid'
@@ -8,9 +8,10 @@ import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { CrewGate } from '@/components/crew/upgrade-lightbox'
 import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
-import { StatCard } from '@/components/ui/stat-card'
 import { surfaceAccess } from '@/lib/core/viewer-hats'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, rankForZaps, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { StandingHero } from '@/components/gamification/standing-hero'
+import { getCurrentSeason } from '@/lib/seasons'
 import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
 
 export default async function StorePage() {
@@ -31,6 +32,9 @@ export default async function StorePage() {
     .maybeSingle()
   const zaps = (prof?.current_season_zaps as number | null) ?? 0
   const streak = (prof?.current_streak as number | null) ?? 0
+  // Standing rank derived from zaps so a stale column never shows the wrong tier.
+  const standingRank = rankForZaps(zaps)
+  const season = await getCurrentSeason()
   // Amplitude — the lifetime layer (Rewards Economy v2, supersedes the ADR-037
   // lifetime-rank display). Shown to the member on their own Vault regardless of
   // tier, beside the season rank: "Beacon · 14,200".
@@ -60,19 +64,32 @@ export default async function StorePage() {
         title="Vault Store"
         description="Your Vault and the Gem Store in one place. Everything you earn by showing up, and what you can spend it on."
         back={{ href: '/crew', label: 'Crew Dashboard' }}
-        stats={
-          <>
-            <StatCard label="Gems to spend" value={balance.toLocaleString()} icon={Gem} href="/crew/store/ledger" />
-            <StatCard label="Zaps · season" value={zaps.toLocaleString()} icon={Zap} />
-            <StatCard label="Streak" value={streak.toLocaleString()} icon={Flame} />
-            <StatCard label="Items won" value={ownedCount.toLocaleString()} icon={Trophy} />
-          </>
-        }
       >
+        {/* The standing hero — the four counts (Zaps · Rank · Streak · Gems), the
+            one way a member's standing renders. Gems point at the spend ledger;
+            balance is the gems you can spend in the Store. */}
+        <StandingHero
+          zaps={zaps}
+          gems={balance}
+          streak={streak}
+          rank={standingRank}
+          seasonName={season?.name}
+          links={{
+            zaps: '/crew/leaderboard',
+            rank: '/crew/achievements',
+            streak: '/crew/streaks',
+            gems: '/crew/store/ledger',
+          }}
+        />
+
         {/* The Vault — Amplitude (the lifetime layer), the earning ledger, and
             equipped winnings. */}
         <section>
-          <SectionHeader title="Your Vault" />
+          <SectionHeader title="Your Vault" action={
+            <span className="text-xs font-medium tabular-nums text-subtle">
+              {ownedCount} {ownedCount === 1 ? 'item won' : 'items won'}
+            </span>
+          } />
           <div className="rounded-2xl border border-success/60 bg-gradient-to-br from-success-bg to-signal-bg p-5 shadow-sm">
             {/* Amplitude — lifetime XP beside the season rank; never resets. */}
             {hasAmplitude && (
