@@ -9,6 +9,7 @@ import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
 import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
+import { NEXT_STEPS_ENABLED } from '@/lib/onboarding/status'
 import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { AUTO_POPUPS_ENABLED } from '@/lib/onboarding/flags'
@@ -177,7 +178,7 @@ export default async function FeedPage({
           the streak box (if any) rides below it. Complete → the guide is gone and the
           streak box graduates into the JourneyBoard, which takes the top spot, fronted
           by the stage strip (and a one-time celebration when the stage advances). */}
-      {onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
+      {NEXT_STEPS_ENABLED && onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
 
       {progress?.justAdvanced && progress.newlyUnlocked && (
         <StageCelebration

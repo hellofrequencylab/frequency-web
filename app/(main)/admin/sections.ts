@@ -62,6 +62,7 @@ import {
   ContactRound,
   Briefcase,
   Menu,
+  GraduationCap,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
@@ -214,6 +215,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       // ── Onboarding ──
       { href: '/pages/splash', label: 'Onboarding splash', desc: 'The first-run splash members land on.', Icon: Rocket, min: 'janitor', section: 'Onboarding' },
       { href: '/pages/sequences', label: 'Splash pages', desc: 'Sequenced splash pages and flows.', Icon: Layers, min: 'janitor', section: 'Onboarding' },
+      { href: '/admin/walkthroughs', label: 'Walkthroughs', desc: 'Instructional walkthroughs by role + trigger', Icon: GraduationCap, min: 'host', staffDomain: 'marketing', section: 'Onboarding' },
       // ── Expansion ──
       { href: '/admin/expansion', label: 'Expansion signal', desc: 'Where density justifies the next Lab.', Icon: Radar, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Expansion' },
     ],
