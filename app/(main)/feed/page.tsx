@@ -12,6 +12,7 @@ import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
 import { NEXT_STEPS_ENABLED } from '@/lib/onboarding/status'
 import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
+import { AUTO_POPUPS_ENABLED } from '@/lib/onboarding/flags'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { getPracticesToLogToday } from '@/lib/practices'
 import { getMemberProgress } from '@/lib/member-progress'
@@ -163,7 +164,7 @@ export default async function FeedPage({
 
   return (
     <div className="max-w-2xl mx-auto w-full">
-      {veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} startInChat={veraStartInChat} />}
+      {AUTO_POPUPS_ENABLED && veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} startInChat={veraStartInChat} />}
       <StreamTemplate
         eyebrow={today}
         title={greeting}

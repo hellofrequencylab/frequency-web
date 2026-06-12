@@ -29,6 +29,7 @@ import { getSearchIndex } from '@/lib/help/content'
 import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
 import { getOnboardingStatus, NEXT_STEPS_ENABLED } from '@/lib/onboarding/status'
+import { AUTO_POPUPS_ENABLED } from '@/lib/onboarding/flags'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
@@ -259,8 +260,8 @@ export default async function MainLayout({
       )}
       <PageViewTracker />
       <ObserveProvider />
-      <DailyCheckIn />
-      <TourProvider initialState={tourState} satisfied={tourSatisfied} />
+      {AUTO_POPUPS_ENABLED && <DailyCheckIn />}
+      {AUTO_POPUPS_ENABLED && <TourProvider initialState={tourState} satisfied={tourSatisfied} />}
     </AppShell>
   )
 }
