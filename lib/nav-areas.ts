@@ -97,7 +97,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'website',         href: '/coming-soon?feature=website',     label: 'Website',       section: 'Admin', defaultAccess: 'admin', surface: 'website', comingSoon: true },
   { key: 'hook-network',    href: '/coming-soon?feature=hook',        label: 'Hook Network',  section: 'Admin', defaultAccess: 'admin', surface: 'hookNetwork', comingSoon: true },
   { key: 'earnings',        href: '/coming-soon?feature=finances',    label: 'Finances',      section: 'Admin', defaultAccess: 'admin', surface: 'earnings', comingSoon: true },
-  { key: 'admin-qr',        href: '/admin/qr',      label: 'QR Studio',     section: 'Admin', defaultAccess: 'member', previewBelowAccess: true, surface: 'qrStudio' },
+  { key: 'admin-qr',        href: '/admin/qr',      label: 'QR Studio',     section: 'Admin', defaultAccess: 'admin', staffDomain: 'qr', surface: 'platformManage' },
   { key: 'financials',     href: '/coming-soon?feature=financials', label: 'Financial', section: 'Admin', defaultAccess: 'janitor', surface: 'financialDashboard', comingSoon: true },
   // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
   // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".
