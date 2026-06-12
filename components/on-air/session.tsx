@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Minus, Plus, X } from 'lucide-react'
-import { LotusIcon, BreatheIcon, DialIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
+import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import {
