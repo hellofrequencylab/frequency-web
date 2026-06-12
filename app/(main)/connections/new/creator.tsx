@@ -534,8 +534,8 @@ export function Creator({ userId }: { userId: string }) {
             </button>
           </div>
 
-          <input ref={frontRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('front', f) }} />
-          <input ref={backRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('back', f) }} />
+          <input ref={frontRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('front', f) }} />
+          <input ref={backRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('back', f) }} />
           <input ref={extraRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => addExtraFiles(e.target.files)} />
         </div>
       ) : (
