@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ONBOARDING_CRITERIA, type OnboardingStepKey } from '@/lib/onboarding/steps'
 
 // Walkthroughs (Phase A) — the model + best-effort reads for the management suite and
 // the slide editor. A walkthrough is an ordered set of instructional slides shown to a
@@ -63,6 +64,11 @@ export interface WalkthroughStep {
   ctaHref?: string
   /** Optional zaps reward stamped when the member completes the slide (Phase B). */
   zaps?: number
+  /** Optional activation milestone this slide stands in for, used ONLY by the reserved
+   *  Next Steps walkthrough (ONBOARDING_WALKTHROUGH_SLUG): tagging a slide with a criterion
+   *  lets the operator author that funnel step's copy/order while the done-detection stays
+   *  in code. Ignored on every other walkthrough. */
+  criterion?: OnboardingStepKey
 }
 
 /** A full walkthrough row. */
@@ -147,6 +153,7 @@ const VALID_TRIGGERS = new Set<string>(TRIGGERS)
 const VALID_CADENCES = new Set<string>(CADENCES)
 const VALID_LAYOUTS = new Set<string>(LAYOUTS)
 const VALID_ACCENTS = new Set<string>(ACCENTS)
+const VALID_CRITERIA = new Set<string>(ONBOARDING_CRITERIA)
 
 // ── Factories ────────────────────────────────────────────────────────────────────
 
@@ -234,6 +241,7 @@ function normalizeStep(raw: unknown): WalkthroughStep {
     ctaLabel: typeof s.ctaLabel === 'string' ? s.ctaLabel : undefined,
     ctaHref: typeof s.ctaHref === 'string' ? s.ctaHref : undefined,
     zaps: typeof s.zaps === 'number' ? s.zaps : undefined,
+    criterion: typeof s.criterion === 'string' && VALID_CRITERIA.has(s.criterion) ? (s.criterion as OnboardingStepKey) : undefined,
   }
 }
 

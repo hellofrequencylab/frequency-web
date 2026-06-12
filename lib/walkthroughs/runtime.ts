@@ -1,5 +1,6 @@
 import 'server-only'
 import { getWalkthroughs, type Walkthrough, type WalkthroughCadence } from '@/lib/walkthroughs'
+import { ONBOARDING_WALKTHROUGH_SLUG } from '@/lib/onboarding/steps'
 
 // Walkthroughs Phase B — selection + cadence runtime (server-only).
 //
@@ -156,6 +157,9 @@ export async function selectWalkthroughForMember(ctx: MemberContext): Promise<Wa
 
   const candidates = all.filter((wt) => {
     if (!wt.active) return false
+    // The reserved Next Steps funnel renders as the persistent feed guide via
+    // getOnboardingStatus — never as a dismissible card. Keep it out of card selection.
+    if (wt.slug === ONBOARDING_WALKTHROUGH_SLUG) return false
     if (wt.steps.length === 0) return false
     if (!withinSchedule(wt, now)) return false
     if (!triggerQualifies(wt, ctx, now)) return false
