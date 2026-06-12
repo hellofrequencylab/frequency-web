@@ -5,8 +5,11 @@ import { History, Zap } from 'lucide-react'
 import { FormSection } from '@/components/admin/form-section'
 import { StatusChip } from '@/components/admin/status'
 import { FlagToggle } from './flag-toggle'
-import { setNextStepsEnabled, setAutoPopupsEnabled, setReferralsEnabled } from './actions'
+import { setNextStepsEnabled, setAutoPopupsEnabled, setReferralsEnabled, setReferralLanding } from './actions'
+import { SITE_URL } from '@/lib/site'
 import type { getOnboardingControlsData, OnboardingSwitchEvent } from './load'
+
+const siteHost = SITE_URL.replace(/^https?:\/\//, '')
 
 // Presentational "Onboarding & referral controls" suite for /admin/onboarding-controls:
 // three master switches (Next Steps prompts, auto-launching popups, the referral program),
@@ -46,7 +49,7 @@ function AuditLog({ events }: { events: OnboardingSwitchEvent[] }) {
 }
 
 export function OnboardingControlsView({ data }: { data: Data }) {
-  const { nextSteps, autoPopups, referrals, nextStepsAudit, autoPopupsAudit, referralsAudit, referralReward } = data
+  const { nextSteps, autoPopups, referrals, nextStepsAudit, autoPopupsAudit, referralsAudit, referralReward, landing } = data
 
   return (
     <div>
@@ -107,6 +110,34 @@ export function OnboardingControlsView({ data }: { data: Data }) {
             </p>
           </div>
         </div>
+      </FormSection>
+
+      {/* Referral landing destination */}
+      <FormSection
+        title="Referral landing"
+        description="Where every personal QR code lands a scanner. A same-site path (default /, the splash). Saving retargets all existing codes too — the printed image never changes."
+      >
+        <form action={setReferralLanding} className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-subtle">{siteHost}</span>
+          <input
+            name="path"
+            defaultValue={landing}
+            spellCheck={false}
+            placeholder="/"
+            className="w-40 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
+          />
+          <button
+            type="submit"
+            className="rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          >
+            Save
+          </button>
+        </form>
+        <p className="mt-2 text-xs text-muted">
+          Must start with <code className="rounded bg-surface-elevated px-1">/</code> (same-site only). For example,{' '}
+          <code className="rounded bg-surface-elevated px-1">/</code> for the splash or{' '}
+          <code className="rounded bg-surface-elevated px-1">/welcome</code> for a campaign page.
+        </p>
       </FormSection>
     </div>
   )
