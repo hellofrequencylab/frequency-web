@@ -24,16 +24,21 @@ export function ProfileShareDisclosure({
 
   return (
     <div className="w-full">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-      >
-        <QrCode className="h-3.5 w-3.5" />
-        QR &amp; Links
-        <ChevronDown className={`h-3.5 w-3.5 transition-transform motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} />
-      </button>
+      {/* The trigger reads as a single line of text sitting ON the rule that closes
+          the hero — the divider fills the space to its left, the link to its right. */}
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" aria-hidden />
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="inline-flex items-center gap-1 text-xs font-medium text-muted transition-colors hover:text-text"
+        >
+          <QrCode className="h-3.5 w-3.5" />
+          QR &amp; Links
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
 
       {open && (
         <div className="mt-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
