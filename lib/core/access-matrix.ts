@@ -59,6 +59,8 @@ export type Surface =
   | 'messageBoards'
   // The Quest
   | 'quest' | 'journeys' | 'practices' | 'library' | 'vault'
+  // Lead — the network-scoped leader surface (host+ only)
+  | 'lead'
   // Studio
   | 'studioOverview' | 'support' | 'personalCrm' | 'businessCrm' | 'website'
   | 'hookNetwork' | 'growthStudio' | 'earnings' | 'qrStudio'
@@ -104,6 +106,13 @@ export const ACCESS_MATRIX: Record<Surface, Row> = {
   practices: QUEST_OPEN,
   library: QUEST_OPEN,
   vault: { visitor: 'limited', ...PAID_FULL }, // preview → paid; stewards/partners/staff full
+
+  // ── Lead — the consolidated LEADER dashboard, host+ on the trust ladder only ─────
+  // (ADR network-scoped leader surface, /lead). NOT a paid/preview surface and NOT
+  // staff-gated by department: a community leader is whoever holds host/guide/mentor.
+  // 'full' only for those rungs (cumulative columns) + the platform staff axis; member
+  // and visitor get 'none', so the nav item is hidden for them and the page redirects.
+  lead: { host: 'full', guide: 'full', mentor: 'full', admin: 'full', janitor: 'full' },
 
   // ── Studio — stewardship + the partner business block ───────────────────────────
   studioOverview: { visitor: 'limited', ...PAID_FULL }, // everyone previews the Studio; full at crew+

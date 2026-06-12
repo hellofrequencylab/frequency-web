@@ -78,6 +78,12 @@ export function leftRailFor(pathname: string): LeftRail {
 }
 
 export function railFor(pathname: string): Rail {
+  // The Leader surface (/lead/*) is a member-side CONSOLIDATED dashboard (not the
+  // /admin operator workspace), so it rides the standard GLOBAL community right rail
+  // — it is intentionally absent from FOCUS/SCOPED below and falls through to
+  // 'global' at the end. Registered here so the decision is explicit (PAGE-FRAMEWORK
+  // §3): a leader keeps the member chrome, unlike /admin which drops both rails.
+
   // The admin WORKSPACE (Phase 4, ADR-228) is a full-width operator surface: no
   // right rail, just the sticky top-nav menubar (app/(main)/admin/layout.tsx) over
   // a wide content column. The member community rail is irrelevant in admin, so it
