@@ -109,6 +109,12 @@ export interface MemberProgress {
   next: MemberStage | null
   signals: ProgressSignals
   streakState: PracticeStreakState
+  /** The member's standing counts — Zaps (season) + Gems (lifetime) — so a home
+   *  surface can render the unified StandingTiles without a second read. */
+  standing: {
+    seasonZaps: number
+    lifetimeGems: number
+  }
   rank: {
     rank: SeasonRank
     label: string
@@ -141,7 +147,7 @@ export async function getMemberProgress(profileId: string): Promise<MemberProgre
       getOnboardingStatus(profileId),
       getPracticeStreak(profileId),
       getActiveJourneyProgress(profileId),
-      admin.from('profiles').select('current_season_zaps, meta').eq('id', profileId).maybeSingle(),
+      admin.from('profiles').select('current_season_zaps, lifetime_gems, meta').eq('id', profileId).maybeSingle(),
       admin
         .from('memberships')
         .select('id', { count: 'exact', head: true })
@@ -150,6 +156,7 @@ export async function getMemberProgress(profileId: string): Promise<MemberProgre
     ])
 
   const seasonZaps = (profile?.current_season_zaps as number | null) ?? 0
+  const lifetimeGems = (profile?.lifetime_gems as number | null) ?? 0
   const signals: ProgressSignals = {
     activationComplete: onboarding.complete,
     streak: streakState.current,
@@ -185,6 +192,7 @@ export async function getMemberProgress(profileId: string): Promise<MemberProgre
     next,
     signals,
     streakState,
+    standing: { seasonZaps, lifetimeGems },
     rank,
     nextGates: gatesFor(stageKey, signals),
     justAdvanced,

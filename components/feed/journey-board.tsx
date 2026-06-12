@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users, Route, ArrowRight, Snowflake } from 'lucide-react'
 import { LotusIcon } from '@/components/on-air/icons'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
+import { StandingTiles } from '@/components/gamification/standing-tiles'
+import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice } from '@/lib/practices'
 import type { PillarCount } from '@/lib/pillars'
@@ -37,6 +39,9 @@ const RESOURCES = [
 export function JourneyBoard({
   practices,
   streak = 0,
+  zaps = 0,
+  gems = 0,
+  rank,
   atRisk = false,
   loggedToday = false,
   freezeTokens = 0,
@@ -47,6 +52,12 @@ export function JourneyBoard({
 }: {
   practices: Practice[]
   streak?: number
+  /** Season zaps — the standing scoreboard count (gamified-stat law, §2). */
+  zaps?: number
+  /** Lifetime gems — the standing scoreboard count (matches /crew + profile). */
+  gems?: number
+  /** Season rank, from lib/season-ranks. The one source of truth for the badge. */
+  rank?: SeasonRank
   /** Member stage index (lib/member-progress). Drives progressive reveal of the
    *  lower panels; defaults high so an un-staged caller shows everything. */
   stageIndex?: number
@@ -168,15 +179,41 @@ export function JourneyBoard({
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label="Collapse"
-            aria-expanded
-            className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
-          >
-            <ChevronDown className="h-4 w-4 rotate-180" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {rank && (
+              <Link
+                href="/crew/achievements"
+                title={`Season rank · ${RANK_LABELS[rank] ?? rank}`}
+                className="rank-badge text-2xs font-bold leading-tight"
+                style={seasonRankStyle(rank)}
+              >
+                {RANK_LABELS[rank] ?? rank}
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={toggle}
+              aria-label="Collapse"
+              aria-expanded
+              className="rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+            >
+              <ChevronDown className="h-4 w-4 rotate-180" />
+            </button>
+          </div>
+        </div>
+
+        {/* Standing scoreboard — the unified four counts (Zaps · Gems · Streak),
+            the same kit tiles the rail and /crew use (MEMBER-DESIGN-SYSTEM §2).
+            Rank rides as the badge above. */}
+        <div className="mt-3">
+          <StandingTiles
+            variant="compact"
+            zaps={zaps}
+            gems={gems}
+            streak={streak}
+            rank={rank ?? 'ghost'}
+            links={{ zaps: '/crew/leaderboard', gems: '/crew/store', streak: '/crew/streaks' }}
+          />
         </div>
 
         {/* Streak progress — slim bar + milestone pips. */}
