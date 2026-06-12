@@ -22,8 +22,18 @@ jobs:
           node-version: '22'
       # No install needed: the pipeline reads local Markdown (fs only) and embeds
       # via the Edge Function over HTTP. Node strips TS types natively.
+      #
+      # When the repo secrets aren't configured the embed can't authenticate, so
+      # we skip with a visible warning instead of failing every content merge on
+      # main (the help PAGES render from Markdown regardless; only AI search
+      # re-indexing needs these). Add the two secrets in repo Settings to enable it.
       - name: Build the help index
-        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-index.mts
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::warning title=help-index skipped::NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not configured. Skipping the AI-search re-index. Add them in repo Settings > Secrets and variables > Actions to enable it."
+            exit 0
+          fi
+          node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-index.mts
