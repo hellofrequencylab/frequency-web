@@ -79,6 +79,26 @@ export const hostPayoutsEnabledFlag = cache(async (): Promise<boolean> => {
   }
 })
 
+// Referral program master switch (platform_flags.referrals_enabled) — gates whether
+// an owner-owned /q scan drops the `fq_ref` attribution cookie, so turning it off
+// cleanly stops new referral credit (existing rewards are untouched). The reward
+// amount itself lives in zap_config.invite_accepted (edited at /admin/gamification).
+// Defaults to TRUE on any read failure so a transient DB hiccup never silently kills
+// attribution while the program is meant to be on. Cached per request.
+export const referralsEnabled = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'referrals_enabled')
+      .maybeSingle()
+    return data?.value ?? true
+  } catch {
+    return true
+  }
+})
+
 export interface FlagEvent {
   id: string
   flagKey: string
