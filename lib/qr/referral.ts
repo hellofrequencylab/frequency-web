@@ -56,7 +56,12 @@ export async function applyReferralAttribution(newProfileId: string): Promise<vo
 
     await db.from('profiles').update({ referred_by_profile_id: ref }).eq('id', newProfileId)
 
-    // Reward the referrer exactly once (ledger idempotency on the pair).
+    // Record the attribution once. The REFERRER is NOT paid here: research is clear
+    // that paying on signup invites self-referral / farming and rewards low-quality
+    // signups. Instead releaseReferralReward() credits the referrer (invite_accepted)
+    // once this member ACTIVATES (joins a circle / adopts or logs a practice) — the
+    // top anti-fraud move that also preferentially rewards the high-LTV cohort. The
+    // newcomer's own join + referred bonus still land at signup (grantJoinZaps).
     const { recorded } = await recordEngagementEvent({
       idempotencyKey: `referral:${ref}:${newProfileId}`,
       source: 'system',
@@ -64,13 +69,127 @@ export async function applyReferralAttribution(newProfileId: string): Promise<vo
       actorProfileId: ref,
       context: { referred: newProfileId },
     })
-    if (recorded) {
-      await awardZapsForAction(ref, 'invite_accepted').catch(() => {})
-      void track('qr.referral_signup', { referrer: ref }, newProfileId)
-    }
+    if (recorded) void track('qr.referral_signup', { referrer: ref }, newProfileId)
   } catch {
     // swallow — attribution is a bonus, never a blocker on signup
   } finally {
     jar.delete(REF_COOKIE)
+  }
+}
+
+// Activation milestones (mirrors lib/analytics/dashboard ACTIVATION_FUNNEL) — the
+// referred member must hit ONE before the referrer is paid. These are real-human
+// signals, so fake/self signups that never engage never trigger a payout.
+const ACTIVATION_EVENTS = ['circle.joined', 'practice.adopted', 'practice.verified']
+
+/** Pay the referrer for `referredProfileId` IFF that member has activated and the
+ *  reward hasn't been granted yet. Idempotent (reward_grants is UNIQUE on rule_key +
+ *  profile_id, so the payout is exactly-once per pair). Returns true only on a fresh
+ *  payout. Best-effort; never throws. */
+export async function releaseReferralReward(referredProfileId: string): Promise<boolean> {
+  try {
+    const db = createAdminClient()
+    const { data: me } = await db
+      .from('profiles')
+      .select('referred_by_profile_id')
+      .eq('id', referredProfileId)
+      .maybeSingle()
+    const ref = (me as { referred_by_profile_id: string | null } | null)?.referred_by_profile_id
+    if (!ref) return false
+
+    // Activated? (at least one qualifying engagement event)
+    const { count } = await db
+      .from('engagement_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('actor_profile_id', referredProfileId)
+      .in('event_type', ACTIVATION_EVENTS)
+    if (!count) return false
+
+    // Claim-then-pay: the UNIQUE (rule_key, profile_id) index makes this payout
+    // exactly-once for the (referrer, referred) pair.
+    const { error: claimErr } = await db.from('reward_grants').insert({
+      rule_key: `referral.activated:${referredProfileId}`,
+      profile_id: ref,
+      reward_kind: 'zaps',
+      amount: 0,
+      detail: 'Someone you invited got started',
+    })
+    if (claimErr) return false // already paid (or a transient error — retried next run)
+
+    await awardZapsForAction(ref, 'invite_accepted').catch(() => {})
+    await recordEngagementEvent({
+      idempotencyKey: `referral_reward:${ref}:${referredProfileId}`,
+      source: 'system',
+      eventType: 'referral.activated',
+      actorProfileId: ref,
+      context: { referred: referredProfileId },
+    }).catch(() => {})
+    void track('qr.referral_activated', { referrer: ref }, referredProfileId)
+    try {
+      await db.from('notifications').insert({
+        recipient_id: ref,
+        actor_id: referredProfileId,
+        type: 'referral',
+        reference_type: 'profile',
+        reference_id: referredProfileId,
+        body: 'Someone you invited just got started. You earned Zaps ⚡',
+      })
+    } catch {
+      // the notification is best-effort; the payout already landed
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Cron runner: release referral rewards for recently-activated referred members.
+ *  Idempotent + bounded (last 30 days, capped), so it is safe to run on a schedule —
+ *  re-processing an already-paid pair is a no-op. */
+export async function runReferralRelease(): Promise<{ released: number; checked: number }> {
+  const db = createAdminClient()
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: events } = await db
+    .from('engagement_events')
+    .select('actor_profile_id')
+    .in('event_type', ACTIVATION_EVENTS)
+    .gte('created_at', since)
+    .not('actor_profile_id', 'is', null)
+    .limit(3000)
+  const actorIds = [...new Set((events ?? []).map((e) => (e as { actor_profile_id: string }).actor_profile_id))]
+  if (actorIds.length === 0) return { released: 0, checked: 0 }
+  const { data: referred } = await db
+    .from('profiles')
+    .select('id')
+    .in('id', actorIds)
+    .not('referred_by_profile_id', 'is', null)
+  let released = 0
+  for (const r of (referred ?? []) as { id: string }[]) {
+    if (await releaseReferralReward(r.id)) released++
+  }
+  return { released, checked: (referred ?? []).length }
+}
+
+/** The referrer behind the current visitor's `fq_ref` cookie, for the personalized
+ *  splash ("[Name] invited you"). Read-only — does NOT clear the cookie (that happens
+ *  at signup in applyReferralAttribution). Null when there's no valid live referral. */
+export async function getReferrer(): Promise<{ displayName: string; handle: string; avatarUrl: string | null } | null> {
+  try {
+    const jar = await cookies()
+    const ref = jar.get(REF_COOKIE)?.value
+    if (!ref) return null
+    const db = createAdminClient()
+    const { data } = await db
+      .from('profiles')
+      .select('display_name, handle, avatar_url, is_active, is_system')
+      .eq('id', ref)
+      .maybeSingle()
+    const p = data as
+      | { display_name: string; handle: string; avatar_url: string | null; is_active: boolean; is_system: boolean }
+      | null
+    if (!p || p.is_active === false || p.is_system) return null
+    return { displayName: p.display_name, handle: p.handle, avatarUrl: p.avatar_url }
+  } catch {
+    return null
   }
 }
