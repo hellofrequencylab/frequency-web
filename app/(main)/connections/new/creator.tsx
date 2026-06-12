@@ -534,8 +534,12 @@ export function Creator({ userId }: { userId: string }) {
             </button>
           </div>
 
-          <input ref={frontRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('front', f) }} />
-          <input ref={backRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('back', f) }} />
+          {/* No `capture`: the OS picker offers BOTH camera and library and is far
+              lighter than the dedicated camera app, which on some phones reloaded the
+              heavy card creator on return and dropped the captured card before it
+              could upload. The picker still lets a member shoot a card in the moment. */}
+          <input ref={frontRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('front', f) }} />
+          <input ref={backRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('back', f) }} />
           <input ref={extraRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => addExtraFiles(e.target.files)} />
         </div>
       ) : (
