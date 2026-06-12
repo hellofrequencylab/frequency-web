@@ -19,7 +19,9 @@ export default async function QrPrintPage({
 }: {
   searchParams: Promise<{ code?: string; node?: string; layout?: string }>
 }) {
-  await requireAdmin('host')
+  // Staff-gated (owner: QR is an operator tool) — was host+, which let a community
+  // leader reach the print view directly (this route is outside the /admin floor).
+  await requireAdmin('admin', { staff: 'qr' })
   const { code, node, layout: layoutParam } = await searchParams
   const layout: Layout =
     layoutParam === 'stickers' ? 'stickers' : layoutParam === 'poster' ? 'poster' : 'tent'
