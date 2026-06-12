@@ -269,7 +269,7 @@ export default async function BroadcastPage() {
                 {upcomingEvents.map((e) => (
                   <Link key={e.id} href={`/events/${e.slug}`} className="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated">
                     <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
-                      <span className="text-[9px] font-bold uppercase leading-none">{new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short' })}</span>
+                      <span className="text-3xs font-bold uppercase leading-none">{new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short' })}</span>
                       <span className="text-sm font-bold leading-none">{new Date(e.starts_at).getDate()}</span>
                     </span>
                     <div className="min-w-0 flex-1">
