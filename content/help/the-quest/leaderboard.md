@@ -1,7 +1,7 @@
 ---
 title: The leaderboard
 description: Season rankings at every scale: your circle, your hub, your nexus, or everyone.
-category: the-game
+category: the-quest
 order: 8
 updated: 2026-06-10
 audience: member
@@ -23,7 +23,7 @@ Tabs across the top switch the board:
 - **Nexus**: the top 30 across your nexus, the wider region your hubs sit in.
 - **Global**: the top 50 across all of Frequency.
 - **Gems (All-Time)**: a different race entirely, lifetime
-  [Gems](/help/the-game/zaps-and-gems) instead of season Zaps. Since Gems never
+  [Gems](/help/the-quest/zaps-and-gems) instead of season Zaps. Since Gems never
   reset, this one rewards the long haul.
 - **Entry points**: a board for Crew who put up flyers and QR codes that bring
   new people in, ranked by scans and signups. Recruiters climb their own tiers as
@@ -33,7 +33,7 @@ Tabs across the top switch the board:
 
 Each row shows a member's season **Zaps** (or lifetime Gems on the Gems board),
 their daily **streak**, their **badge** count, and their current
-[season rank](/help/the-game/season-ranks). Your own row is highlighted, and a
+[season rank](/help/the-quest/season-ranks). Your own row is highlighted, and a
 banner up top tells you where you stand: "Your rank: #4 of 10 in My Circle".
 
 If you're not in a circle yet, the Circle scope will be empty. That's your cue:
@@ -43,5 +43,5 @@ If you're not in a circle yet, the Circle scope will be empty. That's your cue:
 
 The Zap boards reset with the season, so nobody is permanently out of reach; every
 season is a new climb. And remember what the Zaps measure: real-world showing up.
-The leaderboard isn't the game; it's the scoreboard for the part of life that
+The leaderboard isn't the Quest; it's the scoreboard for the part of life that
 happens off the screen.

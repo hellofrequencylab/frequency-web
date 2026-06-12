@@ -31,7 +31,7 @@ You can log a practice once per day. Do it for a few days in a row and the strea
 starts to pull you back, which is exactly the point.
 
 Want to actually do the practice right there, with a timer and guided breathing?
-Tap the little lotus to **[tune out with Mindless](/help/the-game/on-air)**. Same
+Tap the little lotus to **[tune out with Mindless](/help/the-quest/on-air)**. Same
 log, same rewards, plus the sit itself.
 
 ## Adopt or change anytime
@@ -53,7 +53,7 @@ You can shape practices, not just pick them:
   original stays exactly as it was for everyone else.
 
 (Editing covers the content and cadence; the weight a practice carries, and so the
-Zaps it rewards, is set by the team so the game stays fair.)
+Zaps it rewards, is set by the team so the Quest stays fair.)
 
 ## Claim a starter template
 

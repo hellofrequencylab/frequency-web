@@ -1,7 +1,7 @@
 ---
 title: Season challenges
 description: A set of season-long goals that pay bonus Zaps, and the road to Luminary.
-category: the-game
+category: the-quest
 order: 6
 updated: 2026-06-11
 audience: member
@@ -35,7 +35,7 @@ remain on the road to Luminary.
   and it lands on top of the Zaps the activity itself already earned you.
 - **Progress is seasonal.** When the season resets, challenge progress clears too,
   and a fresh set begins. (Your Gems, trophies and Amplitude are safe; see
-  [Season ranks](/help/the-game/season-ranks).)
+  [Season ranks](/help/the-quest/season-ranks).)
 
 ## The road to Luminary
 
@@ -48,11 +48,11 @@ is recognized by hand for people who've truly carried their community.
 
 Some challenges are **code hunts**: a set of Frequency QR codes hidden around your
 city or an event. Scan them to fill the progress bar; each code counts once. See
-[QR codes & checking in](/help/the-game/qr-check-ins) for how scanning works.
+[QR codes & checking in](/help/the-quest/qr-check-ins) for how scanning works.
 
 ## Doing one with your circle
 
 Circle hosts can **adopt a challenge for the whole circle**: the same goal, taken
 on together. Your personal progress still counts as yours, and every time someone
 in the circle finishes an adopted challenge, the circle's shared
-[Current](/help/groups/circle-current) builds. Same game, played side by side.
+[Current](/help/groups/circle-current) builds. Same Quest, played side by side.

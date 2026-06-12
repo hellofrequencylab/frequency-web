@@ -1,7 +1,7 @@
 ---
 title: QR codes & checking in
 description: Scan a Frequency code to earn, and share your own code to connect.
-category: the-game
+category: the-quest
 order: 3
 updated: 2026-06-10
 audience: member

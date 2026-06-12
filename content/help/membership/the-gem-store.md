@@ -43,7 +43,7 @@ on that below). What's free vs. member is covered in
 - Can't afford something yet? The button tells you exactly how many Gems you're
   short. No surprises.
 
-Anyone can **browse** the whole store; **spending** is the game-membership benefit.
+Anyone can **browse** the whole store; **spending** is the membership benefit.
 During the beta everything is open to everyone.
 
 ## "How you earned": your ledger
@@ -54,5 +54,5 @@ what earned it and when. Above the timeline sit your four weekly rhythms (attend
 posting, hosting, and activity) with your current and best runs.
 
 The rule that organizes it all: **online care earns Gems, real-world showing up
-earns Zaps** (see [Zaps & Gems](/help/the-game/zaps-and-gems)). If a number on your
+earns Zaps** (see [Zaps & Gems](/help/the-quest/zaps-and-gems)). If a number on your
 profile ever surprises you, the ledger is where the answer lives.

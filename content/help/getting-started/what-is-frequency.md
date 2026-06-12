@@ -27,7 +27,7 @@ Most online communities are a feed and a hope. Frequency has a shape:
 
 ## Why it works
 
-Frequency is built to get you off the screen and into the room. A light game
+Frequency is built to get you off the screen and into the room. The Quest
 rewards the things that actually build community: showing up, inviting a friend,
 and supporting local life. The point is the practices, the places, and the people.
 
@@ -35,6 +35,6 @@ and supporting local life. The point is the practices, the places, and the peopl
 
 1. Pick a Channel that fits what you want more of in your life.
 2. Find a Circle near you and join it.
-3. Show up to the next gathering. That is the whole game.
+3. Show up to the next gathering. That is the whole Quest.
 
 Ready? Head to [how to join a Circle](/help/getting-started/join-a-circle).

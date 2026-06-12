@@ -1,7 +1,7 @@
 ---
 title: Your Journey
 description: Adopt a seasonal set of practices, choose your depth, and follow your progress to completion.
-category: the-game
+category: the-quest
 order: 4
 updated: 2026-06-10
 audience: member

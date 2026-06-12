@@ -1,7 +1,7 @@
 ---
 title: Mindless, the practice timer
 description: Time your practice with guided breathing, then collect your rewards, streak and next assignment.
-category: the-game
+category: the-quest
 order: 4
 updated: 2026-06-11
 audience: member
@@ -10,7 +10,7 @@ status: published
 ---
 
 **Mindless** is where you do the practice, not just log it. One tap, the screen
-goes quiet, and it walks you through the sit. When you finish, the game pays you
+goes quiet, and it walks you through the sit. When you finish, the Quest pays you
 on the spot.
 
 ## Tuning out
