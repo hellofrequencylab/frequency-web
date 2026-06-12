@@ -64,6 +64,7 @@ import {
   Menu,
   GraduationCap,
   ToggleRight,
+  Share2,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
@@ -213,6 +214,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       // ── Entry points ──
       { href: '/entry-points', label: 'Entry points', desc: 'Where people first enter your spaces.', Icon: QrCode, min: 'host', staffDomain: 'marketing', section: 'Entry points' },
       { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr', section: 'Entry points' },
+      { href: '/admin/referrals', label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', Icon: Share2, min: 'host', staffDomain: 'marketing', section: 'Entry points' },
       // ── Onboarding ──
       { href: '/pages/splash', label: 'Onboarding splash', desc: 'The first-run splash members land on.', Icon: Rocket, min: 'janitor', section: 'Onboarding' },
       { href: '/pages/sequences', label: 'Splash pages', desc: 'Sequenced splash pages and flows.', Icon: Layers, min: 'janitor', section: 'Onboarding' },
