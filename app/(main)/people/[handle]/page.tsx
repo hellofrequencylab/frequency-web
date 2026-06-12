@@ -32,7 +32,6 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EditableIdentity } from './editable-identity'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { SupporterBadge } from '@/components/supporter-badge'
-import { DetailTemplate } from '@/components/templates'
 import { VeraProfile } from '@/components/people/vera-profile'
 import { getMemberSignature } from '@/lib/frequency-signature-data'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
@@ -317,11 +316,13 @@ export default async function ProfilePage({
     </>
   ) : null
 
+  // The page renders its own hero (cover + identity + actions) and its own
+  // UnderlineTabs, so it does NOT use DetailTemplate's empty header — that stacked a
+  // redundant "Directory" back link + the operator "Settings" bar on top of the app
+  // shell's breadcrumb and beside the new Edit Profile / QR & Links. Bare fragment;
+  // the shell's content column provides the width + the "Directory > handle" crumb.
   return (
-    <DetailTemplate
-      title=""
-      back={{ href: '/people', label: 'Directory' }}
-    >
+    <>
       {tippedCents !== null && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-primary-bg bg-primary-bg/40 px-4 py-2.5 text-sm font-semibold text-primary-strong">
           <Heart className="h-4 w-4" />
@@ -502,7 +503,7 @@ export default async function ProfilePage({
           viewerRole={myRole}
         />
       )}
-    </DetailTemplate>
+    </>
   )
 }
 
