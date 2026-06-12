@@ -50,6 +50,7 @@ import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
+import { MemberFooter } from '@/components/layout/member-footer'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
@@ -1195,6 +1196,14 @@ export default function AppShell({
   // by page-chrome.ts (leftRailFor) — the shell never path-sniffs.
   const showLeftRail = leftRailFor(pathname) === 'global'
 
+  // The member sitemap footer (canvas, end of the center column, scrolls with the
+  // page). Shown only on real MEMBER content pages: skip stripped shells
+  // (hideAppNav), the admin workspace (leftRailFor → 'none'), and Focus/takeover
+  // surfaces (railFor → 'none': on-air/scan/settings/compose). Stream/Index/
+  // Dashboard and scoped-detail pages all keep it. One declarative rule, read from
+  // the same page-chrome map the rails use — pages never toggle it.
+  const showFooter = !hideAppNav && showLeftRail && railFor(pathname) !== 'none'
+
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
     else if (theme === 'dark') setTheme('light')
@@ -1394,6 +1403,9 @@ export default function AppShell({
                 <PageAdminProvider value={{ role: gateRole, staffRole }}>
                   {children}
                 </PageAdminProvider>
+                {showFooter && (
+                  <MemberFooter role={gateRole} staffRole={staffRole} navAccess={navAccess} />
+                )}
               </main>
             </div>
 
