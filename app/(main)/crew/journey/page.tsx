@@ -1,16 +1,16 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Compass, Zap, Flame, Gem, Check, ArrowRight, Users } from 'lucide-react'
+import { Compass, Check, ArrowRight, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { IndexTemplate } from '@/components/templates'
-import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StandingTiles } from '@/components/gamification/standing-tiles'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { getActiveJourneyProgress, planPillarMap } from '@/lib/journey-plans'
 import { getPillars, pillarsById } from '@/lib/pillars'
-import { SEASON_RANKS, getRankDef, rankForZaps } from '@/lib/season-ranks'
+import { rankForZaps } from '@/lib/season-ranks'
 
 // "Your Journey" — the Active-Journey progress tab of the Dashboard. Shows the
 // member's adopted seasonal journey(s) as an ordered checklist across the four
@@ -36,9 +36,6 @@ export default async function JourneyPage() {
   const streak = (profile as { current_streak: number | null }).current_streak ?? 0
 
   const rank = rankForZaps(seasonZaps)
-  const rankIdx = SEASON_RANKS.findIndex((r) => r.rank === rank)
-  const nextRank = rankIdx < SEASON_RANKS.length - 1 ? SEASON_RANKS[rankIdx + 1] : null
-  const toNext = nextRank ? Math.max(0, nextRank.minZaps - seasonZaps) : 0
 
   const [journeys, pillars] = await Promise.all([
     getActiveJourneyProgress(profile.id, { withCompanions: true }),
@@ -51,21 +48,16 @@ export default async function JourneyPage() {
       title="Your Journey"
       description="Your season's practices across Mind · Body · Spirit · Expression. Keep each one on its cadence this week. Logging is the one move that advances your Journey and earns the rank, streak, and Gems."
     >
-      {/* Gamification panel — the practice log is what drives these. */}
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <StatCard
-          label={`${getRankDef(rank).label} · this season`}
-          value={seasonZaps.toLocaleString()}
-          icon={Zap}
-          delta={
-            nextRank
-              ? { label: `${toNext.toLocaleString()} to ${getRankDef(nextRank.rank).label}`, trend: 'up' }
-              : { label: 'Top rank', trend: 'flat' }
-          }
-          href="/crew"
+      {/* Your standing — the four counts the practice log drives (the one way a
+          member's standing renders, §2). */}
+      <div className="mb-8">
+        <StandingTiles
+          zaps={seasonZaps}
+          gems={gems}
+          streak={streak}
+          rank={rank}
+          links={{ zaps: '/crew/leaderboard', rank: '/crew/achievements', streak: '/crew/streaks', gems: '/crew/store' }}
         />
-        <StatCard label="Current streak" value={`${streak}w`} icon={Flame} href="/crew/streaks" />
-        <StatCard label="Gems" value={gems.toLocaleString()} icon={Gem} href="/crew/store" />
       </div>
 
       {journeys.length === 0 ? (

@@ -1,13 +1,17 @@
 import { notFound } from 'next/navigation'
 import { Flame, CalendarCheck, PenTool, Mic, Snowflake, Check, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getStreaksData } from '../gamification-actions'
 import { getPracticeStreak } from '@/lib/practice-streak'
 import { STREAK_CONFIG, isStreakActive } from '@/lib/gamification'
 import type { StreakType } from '@/lib/gamification'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
+import { rankForZaps } from '@/lib/season-ranks'
+import { getCurrentSeason } from '@/lib/seasons'
 import { IndexTemplate } from '@/components/templates'
+import { StandingHero } from '@/components/gamification/standing-hero'
 
 const STREAK_ICONS: Record<StreakType, React.ElementType> = {
   attendance: CalendarCheck,
@@ -34,10 +38,24 @@ export default async function StreaksPage() {
   const profileId = await getMyProfileId()
   if (!profileId) notFound()
 
-  const [streaks, practice] = await Promise.all([
+  const admin = createAdminClient()
+  const [streaks, practice, { data: prof }, season] = await Promise.all([
     getStreaksData(),
     getPracticeStreak(profileId),
+    admin
+      .from('profiles')
+      .select('current_season_zaps, lifetime_gems, current_streak')
+      .eq('id', profileId)
+      .maybeSingle(),
+    getCurrentSeason(),
   ])
+
+  // The viewer's standing — the four counts, with the flame (streak) the subject
+  // of this page (§2, one standing render).
+  const standZaps = (prof as { current_season_zaps: number | null } | null)?.current_season_zaps ?? 0
+  const standGems = (prof as { lifetime_gems: number | null } | null)?.lifetime_gems ?? 0
+  const standStreak = (prof as { current_streak: number | null } | null)?.current_streak ?? 0
+  const standRank = rankForZaps(standZaps)
 
   // Daily practice streak — the headline.
   const prog = streakProgress(practice.current)
@@ -51,6 +69,18 @@ export default async function StreaksPage() {
       title="Streaks"
       description="Build momentum by showing up. Your daily practice streak is the heartbeat; the weekly rhythms below track the rest of how you show up."
     >
+      {/* ── Standing hero — the four counts, the flame featured ──────── */}
+      <div className="mb-6">
+        <StandingHero
+          zaps={standZaps}
+          gems={standGems}
+          streak={standStreak}
+          rank={standRank}
+          seasonName={season?.name}
+          links={{ zaps: '/crew/leaderboard', rank: '/crew/achievements', streak: '/crew/streaks', gems: '/crew/store' }}
+        />
+      </div>
+
       {/* ── Hero: daily practice streak ─────────────────────────────── */}
       <div className="rounded-2xl border border-primary-bg bg-primary-bg/30 p-5">
         <div className="flex items-start gap-4">
