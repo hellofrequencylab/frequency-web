@@ -201,6 +201,28 @@ export async function planAuthorId(planId: string): Promise<string | null> {
   return (data as { author_id: string | null } | null)?.author_id ?? null
 }
 
+export interface PlanAuthor {
+  handle: string
+  displayName: string
+  avatarUrl: string | null
+}
+
+/** The author's public profile (handle · name · avatar) for the journey→author
+ *  cross-link on the discovery/active page. Null when the plan has no author, or the
+ *  author is inactive / has no handle to link to. Read-only. */
+export async function getPlanAuthor(authorId: string | null): Promise<PlanAuthor | null> {
+  if (!authorId) return null
+  const { data } = await db()
+    .from('profiles')
+    .select('handle, display_name, avatar_url')
+    .eq('id', authorId)
+    .eq('is_active', true)
+    .maybeSingle()
+  const p = data as { handle: string | null; display_name: string | null; avatar_url: string | null } | null
+  if (!p?.handle) return null
+  return { handle: p.handle, displayName: p.display_name ?? p.handle, avatarUrl: p.avatar_url }
+}
+
 /** Visibility + author of a plan (for the adopt/fork access checks). */
 export async function planMeta(planId: string): Promise<{ visibility: PlanVisibility; author_id: string | null } | null> {
   const { data } = await db().from('journey_plans').select('visibility, author_id').eq('id', planId).maybeSingle()
