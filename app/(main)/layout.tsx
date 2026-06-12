@@ -7,6 +7,7 @@ import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getAreaPermissions } from '@/lib/permissions'
+import { getMenuConfig, orderedVisibleAreas } from '@/lib/menu-config'
 import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
 import { getStaffMember } from '@/lib/staff'
 import { getViewerHats } from '@/lib/core/viewer-hats'
@@ -88,6 +89,14 @@ export default async function MainLayout({
   // Per-area access overrides (janitor-set from /admin/roles). Drives which menu
   // items are usable vs. muted. Falls back to {} (code defaults) on error.
   const permissions = await getAreaPermissions()
+
+  // GLOBAL menu config (janitor-set from /admin/menu): the ONE shared rail order +
+  // per-item visibility, applied to EVERYONE. Best-effort — falls back to the code
+  // order with nothing hidden if the table is absent or the query errors. The
+  // resolved key order drives buildSections in the shell; per-role gating still flows
+  // through `permissions` / `navAccess` on top of whatever stays visible.
+  const menuConfig = await getMenuConfig()
+  const menuAreaKeys = orderedVisibleAreas(menuConfig).map((a) => a.key)
 
   // Staff axis (team_members) — unlocks the Studio nav group independent of trust
   // role (ADR-027). Suppressed while previewing a lower role/visitor so the janitor
@@ -221,6 +230,7 @@ export default async function MainLayout({
       ticker={ticker}
       unreadCount={unreadCount}
       permissions={permissions}
+      menuAreaKeys={menuAreaKeys}
       navAccess={navAccess}
       staffRole={staffRole}
       demoMode={demoMode}
