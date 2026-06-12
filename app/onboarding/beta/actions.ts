@@ -206,6 +206,10 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     throw new Error(error.message)
   }
 
+  // The inviter's name (when this member arrived via a personal code), for the
+  // welcome email's utility-framed "say hi" line. Set after attribution below.
+  let inviterName: string | null = null
+
   // Seed Vera's memory so she already knows who just arrived — their interests,
   // what they came for, where they are (AI-VERA §5). Member-provided, best-effort;
   // never blocks onboarding.
@@ -244,6 +248,23 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     await applyReferralAttribution(prof.id as string).catch(() => {})
     await applyEntryPointConversion(prof.id as string).catch(() => {})
     await persistAcquisition(prof.id as string).catch(() => {})
+    // Name the inviter for the welcome email when this member joined through a
+    // personal code (attribution just set referred_by). Best-effort personalization.
+    try {
+      const admin = createAdminClient()
+      const { data: refRow } = await admin
+        .from('profiles')
+        .select('referred_by_profile_id')
+        .eq('id', prof.id)
+        .maybeSingle()
+      const refId = (refRow as { referred_by_profile_id: string | null } | null)?.referred_by_profile_id
+      if (refId) {
+        const { data: inviter } = await admin.from('profiles').select('display_name').eq('id', refId).maybeSingle()
+        inviterName = (inviter as { display_name: string | null } | null)?.display_name ?? null
+      }
+    } catch {
+      // personalization is a nicety, never a blocker
+    }
     // Welcome the new member from Vera — one quiet join line in the feed plus a
     // personal notification (ADR-231) — once, only on first completion (`meta` was
     // read pre-update, so it reflects the prior state). Best-effort.
@@ -253,7 +274,7 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
   }
 
   if (user.email) {
-    sendWelcomeEmail({ to: user.email, displayName }).catch(() => {})
+    sendWelcomeEmail({ to: user.email, displayName, inviterName }).catch(() => {})
   }
 
   // Beta: every new member comes in as Crew (full game), free.
