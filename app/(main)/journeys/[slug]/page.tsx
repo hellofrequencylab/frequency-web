@@ -2,10 +2,10 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Globe, Lock, Link2, Pencil, Sparkles } from 'lucide-react'
+import { Globe, Lock, Link2, Pencil, Sparkles, Flame } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
-import { getJourneyView, getPlan } from '@/lib/journey-plans'
+import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
@@ -143,7 +143,7 @@ export default async function JourneyPlanPage({
     )
   }
 
-  const pillars = await getPillars()
+  const [pillars, author] = await Promise.all([getPillars(), getPlanAuthor(plan.author_id)])
   const byId = indexPillars(pillars)
   const vis = VISIBILITY[plan.visibility]
   const accent = plan.accent
@@ -168,7 +168,28 @@ export default async function JourneyPlanPage({
           <span className="min-w-0 break-words">{plan.title}</span>
         </span>
       }
-      subtitle={plan.summary ? <span className="leading-relaxed">{plan.summary}</span> : undefined}
+      subtitle={
+        <span className="block space-y-1.5">
+          {plan.summary && <span className="block leading-relaxed">{plan.summary}</span>}
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            {author && (
+              <Link
+                href={`/people/${author.handle}`}
+                className="inline-flex items-center gap-1 text-muted hover:text-text"
+              >
+                By <span className="font-semibold text-text">{author.displayName}</span>
+              </Link>
+            )}
+            <Link
+              href="/crew"
+              className="inline-flex items-center gap-1 text-primary-strong hover:underline"
+            >
+              <Flame className="h-3 w-3 shrink-0" aria-hidden />
+              Keep your streak in the Quest
+            </Link>
+          </span>
+        </span>
+      }
       badges={
         <span className="inline-flex flex-wrap items-center gap-1.5">
           {plan.official && (
