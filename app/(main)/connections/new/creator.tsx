@@ -156,8 +156,12 @@ export function Creator({ userId }: { userId: string }) {
 
   const frontRef = useRef<HTMLInputElement>(null)
   const backRef = useRef<HTMLInputElement>(null)
+  const frontCamRef = useRef<HTMLInputElement>(null)
+  const backCamRef = useRef<HTMLInputElement>(null)
   const extraRef = useRef<HTMLInputElement>(null)
   const photoRef = useRef<HTMLInputElement>(null)
+  // Which side the Take photo / Upload sheet is adding a photo for (null = closed).
+  const [pickSide, setPickSide] = useState<'front' | 'back' | null>(null)
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((p) => ({ ...p, [k]: v }))
 
@@ -452,14 +456,14 @@ export function Creator({ userId }: { userId: string }) {
                 label="Front of card"
                 hint="Required"
                 thumb={frontThumb}
-                onPick={() => frontRef.current?.click()}
+                onPick={() => setPickSide('front')}
                 onClear={frontFile ? () => setSide('front', null) : undefined}
               />
               <CardSlot
                 label="Back of card"
                 hint="Optional"
                 thumb={backThumb}
-                onPick={() => backRef.current?.click()}
+                onPick={() => setPickSide('back')}
                 onClear={backFile ? () => setSide('back', null) : undefined}
               />
             </div>
@@ -534,13 +538,54 @@ export function Creator({ userId }: { userId: string }) {
             </button>
           </div>
 
-          {/* No `capture`: the OS picker offers BOTH camera and library and is far
-              lighter than the dedicated camera app, which on some phones reloaded the
-              heavy card creator on return and dropped the captured card before it
-              could upload. The picker still lets a member shoot a card in the moment. */}
+          {/* Two inputs per side: a CAMERA input (capture='environment' force-opens
+              the rear camera — the only way to shoot on mobile, since Android's
+              library picker has no camera) and a LIBRARY input (the OS photo picker).
+              The Take photo / Upload sheet below routes the tap to the right one. */}
+          <input ref={frontCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('front', f) }} />
+          <input ref={backCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('back', f) }} />
           <input ref={frontRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('front', f) }} />
           <input ref={backRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('back', f) }} />
           <input ref={extraRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => addExtraFiles(e.target.files)} />
+
+          {/* Take photo / Upload choice for a card side — Take photo opens the camera,
+              Upload opens the library. Shown when a slot is tapped. */}
+          {pickSide && (
+            <div
+              className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
+              onClick={() => setPickSide(null)}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Add a card photo"
+            >
+              <div
+                className="w-full max-w-sm space-y-1 rounded-t-2xl border border-border bg-surface p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:pb-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={() => { const s = pickSide; setPickSide(null); (s === 'back' ? backCamRef : frontCamRef).current?.click() }}
+                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                >
+                  <Camera className="h-5 w-5 text-primary-strong" /> Take photo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { const s = pickSide; setPickSide(null); (s === 'back' ? backRef : frontRef).current?.click() }}
+                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                >
+                  <Upload className="h-5 w-5 text-primary-strong" /> Choose from library
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPickSide(null)}
+                  className="flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-5">
