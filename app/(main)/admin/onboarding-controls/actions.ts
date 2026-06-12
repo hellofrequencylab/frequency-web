@@ -39,14 +39,26 @@ export async function setReferralsEnabled(enabled: boolean): Promise<void> {
 // at this value (lib/qr/member-codes reads the same setting).
 export async function setReferralLanding(formData: FormData): Promise<void> {
   const { profileId } = await requireAdmin('janitor')
-  let path = String(formData.get('path') ?? '').trim().replace(/\s+/g, '')
-  if (!path) path = '/'
-  if (!path.startsWith('/')) path = `/${path}`
+
+  // Resolve the operator input against our own origin and KEEP ONLY the same-origin
+  // path. Anything that resolves off-site (//evil.com, https://evil.com, a scheme)
+  // lands on a different origin and is rejected to '/', so the stored target can
+  // never become an open redirect (the /q resolver later redirects to it).
+  const raw = String(formData.get('path') ?? '').trim()
+  const ownOrigin = new URL(SITE_URL).origin
+  let path = '/'
+  try {
+    const u = new URL(raw || '/', SITE_URL)
+    if (u.origin === ownOrigin) path = `${u.pathname}${u.search}`
+  } catch {
+    /* unparseable input → default '/' */
+  }
+
   await setPlatformSetting('personal_code_landing', path, profileId)
   const admin = createAdminClient()
   await admin
     .from('qr_codes')
-    .update({ target_url: `${SITE_URL}${path}` })
+    .update({ target_url: `${ownOrigin}${path}` })
     .eq('purpose', 'connect')
     .eq('destination_type', 'url')
   revalidatePath('/admin/onboarding-controls')
