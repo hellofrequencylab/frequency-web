@@ -129,23 +129,24 @@ function effectiveAccess(
   return permissions?.[item.key] ?? item.defaultAccess
 }
 
-// Matrix-driven reachability (owner directive): a nav item shows if the viewer has ANY
-// access (limited or full) to its surface — for ANY hat (role / tier / persona / staff),
-// no matter where it sits in the menu. `navAccess` is the server-resolved access level
-// per key (lib/core/access-matrix via getViewerHats). Falls back to the role/staff ladder
-// when absent. Staff-domain unlocks always apply (finer than the matrix's coarse columns).
-function itemReachable(
+// Matrix-driven access (owner directive): the viewer's level on a nav item's surface,
+// 'none' | 'limited' | 'full'. `navAccess` (server-resolved per key via the access matrix)
+// is AUTHORITATIVE when present — it already folds in the viewer's effective role/tier/
+// staff (and under a view-as preview those are the impersonated values), so we do NOT
+// union a separate staff check on top of it (that path leaked real staff access into a
+// downgraded preview). Only DYNAMIC extras with no matrix key fall back to the role/staff
+// ladder, so a pinned/extra item is never wrongly hidden.
+function itemAccess(
   item: MainNavItem,
   role: CommunityRole | null,
   staffRole: StaffRole | null,
   permissions: Record<string, NavAccess> | undefined,
   navAccess: Record<string, AccessLevel> | undefined,
-): boolean {
-  // Known nav items resolve via the matrix; dynamic extras (not in the map) keep the
-  // role/staff ladder so a missing key never hides a pinned/extra item.
-  if (navAccess && item.key in navAccess) return navAccess[item.key] !== 'none' || meetsStaff(item, staffRole)
-  return meetsAccess(effectiveAccess(item, permissions), role) || meetsStaff(item, staffRole)
+): AccessLevel {
+  if (navAccess && item.key in navAccess) return navAccess[item.key]
+  return meetsAccess(effectiveAccess(item, permissions), role) || meetsStaff(item, staffRole) ? 'full' : 'none'
 }
+
 
 interface Profile extends ProfileIdentity {
   community_role: CommunityRole
@@ -555,11 +556,13 @@ function NavLinkList({
         // The leading label-less group is the home anchor (Feed): set it apart
         // from the destination groups with a hairline below and bolder items.
         const isHomeAnchor = i === 0 && section.label === null
-        // Admin sections telescope: keep only reachable items, and skip the whole
-        // group (header included) when nothing is reachable.
+        // Admin sections telescope AND require FULL access: an operator tool is shown only
+        // to someone who can actually operate it (not a 'limited' preview), and the whole
+        // group (header included) is skipped when nothing is full. So a visitor or member
+        // never sees an Admin header, and below-access viewers never get a ghosted admin row.
         const adminSection = TELESCOPE_SECTIONS.has(section.label ?? '')
         const visibleItems = adminSection
-          ? section.items.filter((it) => itemReachable(it, role, staffRole, permissions, navAccess))
+          ? section.items.filter((it) => itemAccess(it, role, staffRole, permissions, navAccess) === 'full')
           : section.items
         if (visibleItems.length === 0) return null
         return (
@@ -574,9 +577,12 @@ function NavLinkList({
           {!compact && section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {visibleItems.map((item) => {
             const { href, label, Icon } = item
-            // Member worlds always show (muting/preview below); admin sections were
-            // pre-filtered to reachable items above.
-            const reachable = itemReachable(item, role, staffRole, permissions, navAccess)
+            // The viewer's matrix level on this surface. full → the normal link; limited →
+            // a muted "ghost" preview that still clicks through to the gated page (e.g. a
+            // visitor on Practices/Library); none → a disabled, non-clickable ghost. Admin
+            // sections were pre-filtered to full-access items above.
+            const access = itemAccess(item, role, staffRole, permissions, navAccess)
+            const reachable = access !== 'none'
 
             // Icon-only column (micro edge menu): one square per area, tooltip-labelled.
             if (compact) {
@@ -612,16 +618,17 @@ function NavLinkList({
                 </Link>
               )
             }
-            // Preview-able areas (the Quest) stay CLICKABLE but read as a muted
-            // "dead" state for below-access viewers; the page gates engagement.
-            if (!reachable && item.preview) {
+            // Ghost preview — a 'limited' surface (a visitor on Practices/Library, or a
+            // below-tier viewer on a paid area). The row stays but reads muted and clicks
+            // through to the gated page, which shows the preview + how to unlock.
+            if (access === 'limited') {
               const active = isActive(href)
               return (
                 <Link
                   key={href}
                   href={href}
                   onClick={onNavigate}
-                  title="Preview. Upgrade to Crew to engage"
+                  title="Preview. Sign in or upgrade to engage"
                   className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     active ? 'bg-surface-elevated text-muted' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                   }`}
@@ -631,7 +638,8 @@ function NavLinkList({
                 </Link>
               )
             }
-            if (!reachable) {
+            // No access — a disabled, non-clickable ghost.
+            if (access === 'none') {
               return (
                 <div
                   key={href}

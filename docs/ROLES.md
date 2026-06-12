@@ -215,3 +215,47 @@ function* (🚫 none / ✋ limited / ✅ full) each hat gets per surface, and th
 - Confirm the **Collaborator vs Practitioner** line.
 - Does **Crew** get cross-Circle visibility by default? (today: Circle-anchored unless promoted.)
 - Pin exactly which **"special role/partner features"** gate behind the paid Member tier.
+
+---
+
+## Nav visibility — one menu, role-gated (2026-06, owner directive)
+
+The whole site is ONE menu everywhere; what a viewer sees is filtered by their access
+level on each item's surface (the access matrix). The nav resolution (app-shell
+`itemAccess`) reads the matrix as **authoritative** — it already folds in role · tier ·
+staff, and under a **view-as preview** those are the *impersonated* values, so a
+janitor-viewing-as-Visitor faithfully loses staff access (no `meetsStaff` union on top of
+the matrix — that was the leak).
+
+Three render states per item:
+
+| Matrix level | Community / Quest item | Admin (telescope) section |
+|---|---|---|
+| `full` | normal link | shown |
+| `limited` | **ghost** — muted, clicks through to the gated preview page (e.g. a visitor on Practices/Library) | **hidden** (an operator tool needs full access; no ghost admin rows) |
+| `none` | disabled ghost (greyed, non-clickable) | hidden |
+
+Admin sections also **telescope**: the header is skipped entirely when nothing is `full`,
+so a visitor/member never sees an "Admin" header.
+
+### Per-role nav (today)
+- **Visitor (logged out):** Community previews (Feed/Circles/Channels/Events/Market = limited); Message Boards/Community(Network) = disabled; the Quest (Dashboard/Journeys/Practices/Library) = **ghost preview**; Vault = ghost. **No Admin section.** Settings via the profile card only when signed in.
+- **Member / Crew (paid):** Community + Quest full (Vault unlocks on the paid tier). **No Admin section.** Personal Settings from the profile card.
+- **Host / Guide / Mentor (volunteer leaders):** as Member today. Their network-scoped admin is NOT wired yet (see below) — they do **not** see the platform Admin section for now.
+- **Admin (web_role):** the Admin section — Home, Programs, Operations, Growth, QR. Not Financials.
+- **Janitor (web_role):** all of Admin + Financials.
+
+Admin Home + the operator areas are gated to **staff admin/janitor** (`platformManage`
+surface). Personal **Settings** is not an admin tool — it lives on the profile card +
+`/settings`, never under "Admin".
+
+### Forward notes (not built yet — owner)
+- **Volunteer leader network admin.** Crew/Host/Guide/Mentor should get *network-scoped*
+  admin within their own circles/downline: a leader posts a **dispatch DOWN** (those under
+  them get it; peers beside them see it as shared content), and can **group/direct-message
+  as a leader without a friend request**. This needs a dedicated network-scoped surface
+  (and per-scope capability resolution), distinct from the staff `platformManage` gate.
+- **Menu manager (admin).** A drag-and-drop menu manager with per-item visibility toggles +
+  role-permission editing, so the one shared menu is operator-managed (order + visibility +
+  access) instead of code-edited. The matrix + the janitor `permissions` override
+  (`/admin/roles`) are the data foundation; this is the UI over them.
