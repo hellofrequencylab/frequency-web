@@ -102,9 +102,9 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
 }
 
 // One vertical rail holds every destination: the Home anchors (Feed · Around You,
-// pinned top), then the worlds — Practice · Community · The Quest — and finally
-// Manage, split into four axis-gated groups (Steward · Structure · Studio ·
-// Platform). Sections and their order are derived entirely from NAV_AREAS (no
+// pinned top), then the worlds — Community · The Quest — and finally the single
+// Admin category (admin + studio + platform rolled into one, mirroring the back-end
+// admin menu). Sections and their order are derived entirely from NAV_AREAS (no
 // hardcoded section list). The desktop rail and mobile drawer render the same set.
 const NAV_SECTIONS = buildSections([...NAV_AREAS])
 
@@ -113,7 +113,7 @@ const NAV_SECTIONS = buildSections([...NAV_AREAS])
 // — so a member never sees empty admin headers and a host isn't shown greyed-out
 // janitor tools. Member worlds (Community, The Quest) still mute/preview instead,
 // as aspirational surfaces.
-const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Admin', 'Studio', 'Platform'])
+const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Admin'])
 
 // Mobile renders the SAME rail as desktop (owner call, mobile-menus pass): the
 // left drawer carries the member worlds AND the axis-gated Manage groups — one
@@ -538,7 +538,7 @@ function NavLinkList({
   // `emphasize` = the home anchor (Feed): always the brand's dark brown and bold,
   // active or not, so it reads as the rail's permanent "home".
   const itemClass = (active: boolean, emphasize = false) =>
-    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+    `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
       emphasize
         ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface-elevated'}`
         : active
@@ -622,7 +622,7 @@ function NavLinkList({
                   href={href}
                   onClick={onNavigate}
                   title="Preview. Upgrade to Crew to engage"
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     active ? 'bg-surface-elevated text-muted' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                   }`}
                 >
@@ -637,7 +637,7 @@ function NavLinkList({
                   key={href}
                   aria-disabled="true"
                   title="You don't have access to this yet"
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none"
                 >
                   <Icon className="w-[18px] h-[18px] shrink-0 text-subtle" strokeWidth={2} />
                   {label}
@@ -1354,9 +1354,9 @@ export default function AppShell({
                 column scrolls past. A menu taller than the window scrolls
                 INTERNALLY instead of riding the page. */}
             {showLeftRail && (
-              <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-border bg-surface/80 backdrop-blur-sm">
+              <aside className="hidden md:flex w-48 shrink-0 flex-col">
                 {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
-                <nav className="sticky top-14 max-h-[calc(100vh-3.5rem-8rem)] self-start overflow-y-auto px-3 py-3 space-y-0.5">
+                <nav className="sticky top-14 max-h-[calc(100vh-3.5rem-8rem)] self-start overflow-y-auto px-3 py-3 space-y-1">
                   <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} />
                 </nav>
               </aside>
@@ -1398,7 +1398,7 @@ export default function AppShell({
             matches the left rail's width + chrome. Suppressed on workspace routes
             (/admin/*) where the admin sidebar owns the left column. */}
         {showLeftRail && (
-          <div className="hidden md:flex fixed bottom-0 left-0 z-20 w-52 flex-col border-r border-t border-border bg-surface/95 backdrop-blur-sm">
+          <div className="hidden md:flex fixed bottom-0 left-0 z-20 w-48 flex-col border-t border-border bg-[var(--color-canvas)]/95 backdrop-blur-sm">
             {!hideAppNav && role === 'member' && <UpgradeCrew />}
             <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
           </div>
