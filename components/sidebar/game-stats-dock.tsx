@@ -43,8 +43,8 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
   const open = manualOpen || revealed || hoverOpen
 
   return (
-    <div ref={rootRef} className="sticky bottom-0 z-10 border-t border-border bg-canvas">
-      {/* Compact bar — stuck to the bottom; tap to open/close. */}
+    <div ref={rootRef} className="sticky bottom-0 z-10 rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-1.5 pt-1 backdrop-blur-sm">
+      {/* Compact bar — the admin canvas corner-tab skin, mirroring the left profile card. */}
       <button
         type="button"
         onClick={() => setManualOpen((v) => !v)}
