@@ -334,7 +334,7 @@ export default async function ProfilePage({
           into the body so the top profile information rides under the header image). ── */}
       <section className="mb-6">
         {/* Cover — the member's header image when set, else the default gradient. */}
-        <div className="relative h-40 sm:h-56 overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-signal to-signal-strong">
+        <div className="relative h-28 sm:h-52 overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-signal to-signal-strong">
           {headerImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={headerImageUrl} alt="" className={`absolute inset-0 h-full w-full object-cover ${isDemo ? 'grayscale-[0.5]' : ''}`} />
