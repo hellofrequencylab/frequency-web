@@ -14,6 +14,11 @@ import {
   type WalkthroughTrigger,
   type WalkthroughCadence,
 } from '@/lib/walkthroughs'
+import {
+  DEFAULT_ONBOARDING_ORDER,
+  DEFAULT_ONBOARDING_STEPS,
+  ONBOARDING_WALKTHROUGH_SLUG,
+} from '@/lib/onboarding/steps'
 
 // Server actions for the Walkthroughs suite (Phase A). Acquisition-gated — marketing
 // staff (or janitor) only, mirroring the rest of the Onboarding surface. Writes go
@@ -85,6 +90,54 @@ export async function createWalkthrough(input?: { name?: string }): Promise<void
   if (error || !data) return
   revalidatePath(LIST_PATH)
   redirect(`${LIST_PATH}/${(data as { id: string }).id}`)
+}
+
+/** Open the reserved Next Steps funnel editor, seeding the row from the default copy if it
+ *  doesn't exist yet. Each seeded slide is pre-tagged with its activation criterion so the
+ *  funnel's done-detection works immediately; operators then edit the copy/order. The row
+ *  ships active (it only ever renders as the persistent feed guide, never a card). */
+export async function editOnboardingWalkthrough(): Promise<void> {
+  const me = await gate()
+  const { data: existing } = await db()
+    .from('walkthrough')
+    .select('id')
+    .eq('slug', ONBOARDING_WALKTHROUGH_SLUG)
+    .maybeSingle()
+
+  let id = (existing as { id: string } | null)?.id ?? null
+  if (!id) {
+    const steps = DEFAULT_ONBOARDING_ORDER.map((key) => {
+      const d = DEFAULT_ONBOARDING_STEPS[key]
+      return {
+        id: `seed_${key}`,
+        title: d.label,
+        body: d.blurb,
+        accent: 'broadcast',
+        layout: 'centered',
+        ctaLabel: d.cta,
+        ctaHref: d.href,
+        criterion: key,
+      }
+    })
+    const { data, error } = await db()
+      .from('walkthrough')
+      .insert({
+        slug: ONBOARDING_WALKTHROUGH_SLUG,
+        name: 'Next Steps (activation funnel)',
+        description: 'The new-member activation funnel shown in the feed. Tag each slide with an activation step; copy and order are yours, the done-detection stays automatic.',
+        trigger: 'new_member',
+        active: true,
+        cadence: 'until_done',
+        steps,
+        updated_by: me,
+      })
+      .select('id')
+      .single()
+    if (error || !data) return
+    id = (data as { id: string }).id
+  }
+  revalidatePath(LIST_PATH)
+  redirect(`${LIST_PATH}/${id}`)
 }
 
 /** Patch a walkthrough's meta + slides (the editor's Save). */

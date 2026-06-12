@@ -10,7 +10,7 @@ import {
   CADENCE_LABELS,
   type Walkthrough,
 } from '@/lib/walkthroughs'
-import { NewWalkthroughButton, WalkthroughRowActions } from './row-actions'
+import { EditNextStepsButton, NewWalkthroughButton, WalkthroughRowActions } from './row-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -101,7 +101,12 @@ export default async function WalkthroughsPage() {
       eyebrow="Acquisition · Onboarding"
       description="Instructional walkthroughs you write once and target by role and trigger. A welcome for a new member, a primer the day someone becomes a Host, a heads-up when a season launches."
       width="wide"
-      actions={<NewWalkthroughButton />}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <EditNextStepsButton />
+          <NewWalkthroughButton />
+        </div>
+      }
     >
       {all.length === 0 ? (
         <EmptyState

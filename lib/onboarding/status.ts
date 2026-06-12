@@ -1,6 +1,13 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMemberPractices } from '@/lib/practices'
+import { getWalkthrough } from '@/lib/walkthroughs'
+import {
+  buildOnboardingSteps,
+  ONBOARDING_WALKTHROUGH_SLUG,
+  type OnboardingStep,
+  type OnboardingStepKey,
+} from '@/lib/onboarding/steps'
 
 // Single source of truth for "where is this member in activation?" Both the feed
 // hero (the persistent onboarding guide) and any sidebar nudge read this, so they
@@ -30,20 +37,9 @@ export const nextStepsEnabled = cache(async (): Promise<boolean> => {
   }
 })
 
-export type OnboardingStepKey = 'avatar' | 'circle' | 'practice' | 'log'
-
-export interface OnboardingStep {
-  key: OnboardingStepKey
-  label: string
-  /** Short imperative used as the hero headline when this is the current step. */
-  headline: string
-  /** One inviting line shown under the headline when this is the current step. */
-  blurb: string
-  href: string
-  /** Label for the step's primary CTA button. */
-  cta: string
-  done: boolean
-}
+// The step model + default copy now live in lib/onboarding/steps.ts (pure, testable, and
+// shared with the walkthroughs editor). Re-export so existing importers are unaffected.
+export type { OnboardingStep, OnboardingStepKey } from '@/lib/onboarding/steps'
 
 export interface OnboardingStatus {
   steps: OnboardingStep[]
@@ -60,7 +56,7 @@ export interface OnboardingStatus {
 export async function getOnboardingStatus(profileId: string): Promise<OnboardingStatus> {
   const admin = createAdminClient()
 
-  const [profileRes, membershipRes, practiceRes, myPractices] = await Promise.all([
+  const [profileRes, membershipRes, practiceRes, myPractices, authored] = await Promise.all([
     admin.from('profiles').select('avatar_url, meta').eq('id', profileId).maybeSingle(),
     admin.from('memberships').select('id').eq('profile_id', profileId).eq('status', 'active').limit(1),
     admin
@@ -69,53 +65,29 @@ export async function getOnboardingStatus(profileId: string): Promise<Onboarding
       .eq('actor_profile_id', profileId)
       .eq('event_type', 'practice.verified'),
     getMemberPractices(profileId),
+    // The operator-authored funnel copy/order (best-effort; null falls back to defaults).
+    getWalkthrough(ONBOARDING_WALKTHROUGH_SLUG),
   ])
 
-  const steps: OnboardingStep[] = [
-    {
-      key: 'avatar',
-      label: 'Add a profile photo',
-      headline: 'Add a face to your name',
-      blurb: 'A photo helps your people recognize you. Takes ten seconds.',
-      href: '/settings/profile',
-      cta: 'Add a photo',
-      done: !!profileRes.data?.avatar_url,
-    },
-    {
-      key: 'circle',
-      label: 'Join or start a circle',
-      headline: 'Find your first circle',
-      blurb: 'Circles are where Frequency actually happens. Join one and your feed comes alive.',
-      href: '/circles',
-      cta: 'Browse circles',
-      done: (membershipRes.data ?? []).length > 0,
-    },
-    {
-      key: 'practice',
-      label: 'Adopt a practice',
-      headline: 'Adopt a practice',
-      blurb: 'Pick one small thing to do for yourself. It’s the heartbeat of this place.',
-      href: '/practices',
-      cta: 'Explore practices',
-      done: myPractices.length > 0,
-    },
-    {
-      key: 'log',
-      label: 'Log your first practice',
-      headline: 'Log your first practice',
-      blurb: 'Show up once. That single check-in starts your streak and your story here.',
-      href: '/practices',
-      cta: 'Log it',
-      done: (practiceRes.count ?? 0) > 0,
-    },
-  ]
+  // Done-detection stays in code — never trusts operator input. Keyed by criterion.
+  const done: Record<OnboardingStepKey, boolean> = {
+    avatar: !!profileRes.data?.avatar_url,
+    circle: (membershipRes.data ?? []).length > 0,
+    practice: myPractices.length > 0,
+    log: (practiceRes.count ?? 0) > 0,
+  }
 
-  // Force-complete overrides: a member can force a step done via the onboarding
-  // guide's obscured escape hatch (forceOnboardingStep). Stored in
-  // profiles.meta.onboarding.forced[]. Treated as done so the guide can graduate.
+  // Force-complete overrides: a member can force a step done via the onboarding guide's
+  // obscured escape hatch (forceOnboardingStep). Stored in profiles.meta.onboarding.forced[].
   const meta = (profileRes.data?.meta ?? null) as { onboarding?: { forced?: string[] } } | null
-  const forced = new Set(meta?.onboarding?.forced ?? [])
-  for (const s of steps) if (forced.has(s.key)) s.done = true
+  for (const key of meta?.onboarding?.forced ?? []) {
+    if (key in done) done[key as OnboardingStepKey] = true
+  }
+
+  // Operator-authored slides (only those tagged with a criterion) override the copy/order;
+  // an unauthored / inactive / empty walkthrough yields the shipped default funnel.
+  const slides = authored?.active ? authored.steps : []
+  const steps: OnboardingStep[] = buildOnboardingSteps(slides, done)
 
   const todo = steps.filter((s) => !s.done)
   const doneCount = steps.length - todo.length
