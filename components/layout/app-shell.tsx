@@ -223,7 +223,7 @@ function ProfileCard({
   const open = manualOpen
 
   return (
-    <div className="border-t border-border">
+    <div>
       {/* Compact identity bar — matched in height to the right stats bar.
           Stays on top; the quick actions fill in underneath it. */}
       <div className="flex items-center gap-2.5 px-3 py-3.5">
@@ -1381,7 +1381,10 @@ export default function AppShell({
                 </nav>
                 {/* Mirrors the right rail's stats dock: sticky to the column bottom, rises
                     on scroll, no longer fixed to the viewport. */}
-                <div className="sticky bottom-0 z-10 bg-[var(--color-canvas)]">
+                {/* Bottom-left profile card — the admin canvas corner-tab skin (rounded top,
+                    hairline, canvas-tinted blur), sticky to the column bottom like the right
+                    stats dock. Mirrors components/admin/admin-profile-card.tsx's wrapper. */}
+                <div className="sticky bottom-0 z-10 rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-1.5 pt-1 backdrop-blur-sm">
                   {!hideAppNav && role === 'member' && <UpgradeCrew />}
                   <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
                 </div>
