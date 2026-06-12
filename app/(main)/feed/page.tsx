@@ -199,6 +199,9 @@ export default async function FeedPage({
         ? <JourneyBoard
             practices={practicesToLog}
             streak={practiceStreak?.current ?? streak}
+            zaps={progress?.standing.seasonZaps ?? 0}
+            gems={progress?.standing.lifetimeGems ?? 0}
+            rank={progress?.rank.rank}
             atRisk={practiceStreak?.atRisk ?? false}
             loggedToday={practiceStreak?.loggedToday ?? false}
             freezeTokens={practiceStreak?.freezeTokens ?? 0}
