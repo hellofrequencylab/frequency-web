@@ -268,9 +268,9 @@ export default async function ProfilePage({
   const ownerActions = (
     <Link
       href="/settings/profile"
-      className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+      className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
     >
-      <Pencil className="h-3.5 w-3.5" />
+      <Pencil className="h-3 w-3" />
       Edit Profile
     </Link>
   )
@@ -346,7 +346,7 @@ export default async function ProfilePage({
         {/* Identity + actions. The avatar overlaps the cover by ~50%. */}
         <div className="flex flex-col gap-4 px-1 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <div className="-mt-14 sm:-mt-16">{avatarNode}</div>
+            <div className="relative z-10 -mt-14 sm:-mt-16">{avatarNode}</div>
             <div className="mt-3 flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl sm:text-3xl font-bold text-text break-words">{profile.display_name}</h1>
               {badges}
@@ -374,15 +374,16 @@ export default async function ProfilePage({
           </div>
         </div>
 
-        {/* Owner-only QR & Links — opens a panel into the body (not a popover). */}
-        {isOwner && (
-          <div className="mt-3 px-1">
+        {/* The rule that closes the hero. For the owner the "QR & Links" disclosure
+            rides ON this rule as a single text link (its panel opens into the body
+            below); everyone else just gets the plain divider. */}
+        {isOwner ? (
+          <div className="mt-5 px-1">
             <ProfileShareDisclosure url={profileUrl} pathname={profilePath} vcardHref={vcardHref} />
           </div>
+        ) : (
+          <hr className="mt-5 border-border" />
         )}
-
-        {/* The rule under the hero (moved down here, per spec). */}
-        <hr className="mt-5 border-border" />
       </section>
 
       {/* ── UPPER BOX — the Frequency Signature centerpiece beside the compact
