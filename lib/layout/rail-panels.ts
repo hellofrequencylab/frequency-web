@@ -27,9 +27,10 @@ const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
     test: (p) => ['/journeys', '/practices', '/library'].some((s) => p === s || p.startsWith(s + '/')),
     panels: ['leaderboard', 'online'],
   },
-  // Home (feed / Around You) — the community pulse: broadcasts · who's active ·
-  // board · the newest circles to discover.
-  { test: (p) => p === '/feed' || p === '/broadcast' || p.startsWith('/broadcast/'), panels: ['dispatches', 'activenow', 'leaderboard', 'newcircles'] },
+  // Home (feed / Around You) — the community pulse. Each panel self-falls-back so
+  // the rail is always full: events (yours → community), people (active → newest),
+  // circles (new → popular), plus recent broadcasts.
+  { test: (p) => p === '/feed' || p === '/broadcast' || p.startsWith('/broadcast/'), panels: ['events', 'activenow', 'dispatches', 'newcircles'] },
 ]
 
 // The baseline for any page not matched above: the community pulse.
