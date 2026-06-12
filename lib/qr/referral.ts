@@ -82,6 +82,13 @@ export async function applyReferralAttribution(newProfileId: string): Promise<vo
 // signals, so fake/self signups that never engage never trigger a payout.
 const ACTIVATION_EVENTS = ['circle.joined', 'practice.adopted', 'practice.verified']
 
+// Anti-farming rate cap: a referrer is paid at most this many referral rewards per
+// rolling 24h. It is a RATE LIMIT, not a loss — over the cap, the payout is skipped
+// this run and retried later (the cron reprocesses activated-but-unpaid referrals),
+// so a held reward lands once older payouts age out of the window. A real human in a
+// local beta never hits it; an automated farm does. Layered on the activation gate.
+const REFERRAL_DAILY_CAP = 25
+
 /** Pay the referrer for `referredProfileId` IFF that member has activated and the
  *  reward hasn't been granted yet. Idempotent (reward_grants is UNIQUE on rule_key +
  *  profile_id, so the payout is exactly-once per pair). Returns true only on a fresh
@@ -104,6 +111,17 @@ export async function releaseReferralReward(referredProfileId: string): Promise<
       .eq('actor_profile_id', referredProfileId)
       .in('event_type', ACTIVATION_EVENTS)
     if (!count) return false
+
+    // Rate cap (anti-farming): skip if the referrer has already hit the 24h payout
+    // cap. No grant is written, so it retries on a later run once payouts age out.
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { count: recentPaid } = await db
+      .from('reward_grants')
+      .select('rule_key', { count: 'exact', head: true })
+      .eq('profile_id', ref)
+      .like('rule_key', 'referral.activated:%')
+      .gte('granted_at', since)
+    if ((recentPaid ?? 0) >= REFERRAL_DAILY_CAP) return false
 
     // Claim-then-pay: the UNIQUE (rule_key, profile_id) index makes this payout
     // exactly-once for the (referrer, referred) pair.
