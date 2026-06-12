@@ -29,6 +29,7 @@ import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { communityHref } from '@/lib/community-href'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { getLiveData } from '@/lib/page-editor/live-data'
+import { getReferrer } from '@/lib/qr/referral'
 import type { LiveData, LiveEvent } from '@/components/marketing/blocks'
 
 // SEO title + description are operator-editable through the ADR-180 page-content
@@ -124,13 +125,18 @@ export default async function RootPage({
   // flagship splash is always the source of truth for `/` — no published draft
   // can shadow it.
   const live = await getLiveData(supabase)
-  return <Splash live={live} />
+  // Personalize the splash when arriving via a scanned personal code: the /q
+  // resolver dropped an fq_ref cookie, so we can name the inviter (research: a
+  // generic splash discards the inviter's social proof, the strongest referral
+  // lever). Read-only — the cookie is applied/cleared at signup.
+  const referrer = await getReferrer()
+  return <Splash live={live} referrer={referrer} />
 }
 
 // Splash narrative — Place → People → Path (ADR-078):
 //   the Lab leads as the emblem, community carries the "start anywhere" on-ramp,
 //   and the Quest closes the feature arc before the CTA.
-function Splash({ live }: { live: LiveData }) {
+function Splash({ live, referrer }: { live: LiveData; referrer: { displayName: string; handle: string; avatarUrl: string | null } | null }) {
   const posts = live.posts as PostPreviewRow[]
   const postsCurated = live.postsCurated
   const memberCount = live.memberCount
@@ -172,7 +178,27 @@ function Splash({ live }: { live: LiveData }) {
           </>
         }
       >
-        <div className="flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center gap-4">
+          {referrer && (
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white shadow-sm backdrop-blur-sm">
+              {referrer.avatarUrl ? (
+                <Image
+                  src={referrer.avatarUrl}
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 rounded-full object-cover ring-2 ring-white/30"
+                />
+              ) : (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
+                  {getInitials(referrer.displayName)}
+                </span>
+              )}
+              <span>
+                <span className="font-semibold">{referrer.displayName}</span> invited you to Frequency
+              </span>
+            </div>
+          )}
           <Button href={BETA_CTA_HREF}>
             {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
           </Button>

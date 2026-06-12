@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/referral-release",
+      "schedule": "*/30 * * * *"
+    },
+    {
       "path": "/api/cron/journey-prompt",
       "schedule": "0 13 * * *"
     },
