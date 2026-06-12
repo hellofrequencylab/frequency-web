@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
 import {
-  TRIGGERS, CADENCES, LAYOUTS, ACCENTS,
+  AVAILABLE_TRIGGERS, CADENCES, LAYOUTS, ACCENTS,
   TRIGGER_LABELS, CADENCE_LABELS, LAYOUT_LABELS, ACCENT_TOKENS,
   blankStep,
   type Walkthrough, type WalkthroughStep, type StepLayout,
@@ -199,7 +199,8 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
               <div>
                 <label className={lbl}>Trigger <span className="font-normal text-subtle/70">· when it fires</span></label>
                 <select className={field} value={wt.trigger} onChange={(e) => setMeta('trigger', e.target.value as Walkthrough['trigger'])}>
-                  {TRIGGERS.map((t) => (
+                  {/* Offer only wired triggers; keep a legacy/unwired current value visible so the select never blanks. */}
+                  {(AVAILABLE_TRIGGERS.includes(wt.trigger) ? AVAILABLE_TRIGGERS : [wt.trigger, ...AVAILABLE_TRIGGERS]).map((t) => (
                     <option key={t} value={t}>{TRIGGER_LABELS[t]}</option>
                   ))}
                 </select>
