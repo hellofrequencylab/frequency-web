@@ -44,7 +44,7 @@ import {
   ROLE_LABEL,
   roleBadgeStyle,
 } from '@/lib/community-roles'
-import { NAV_AREAS, meetsAccess, meetsStaff, type NavAccess } from '@/lib/nav-areas'
+import { NAV_AREAS, meetsAccess, meetsStaff, type NavAccess, type NavArea } from '@/lib/nav-areas'
 import type { AccessLevel } from '@/lib/core/access-matrix'
 import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
@@ -108,6 +108,18 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
 // admin menu). Sections and their order are derived entirely from NAV_AREAS (no
 // hardcoded section list). The desktop rail and mobile drawer render the same set.
 const NAV_SECTIONS = buildSections([...NAV_AREAS])
+
+// Build the rail from an operator-resolved key order (the GLOBAL menu config —
+// /admin/menu). Hidden items are already filtered out upstream (orderedVisibleAreas),
+// so this only reorders + drops unknown keys; an empty/missing list falls back to the
+// full code rail so the rail is NEVER empty. Per-role gating is unchanged — it still
+// runs over these items via `permissions` / `navAccess`.
+const AREA_BY_KEY = new Map(NAV_AREAS.map((a) => [a.key, a]))
+function sectionsFromKeys(keys: string[] | undefined): NavSectionGroup[] {
+  if (!keys || keys.length === 0) return NAV_SECTIONS
+  const areas = keys.map((k) => AREA_BY_KEY.get(k)).filter((a): a is NavArea => !!a)
+  return areas.length > 0 ? buildSections(areas) : NAV_SECTIONS
+}
 
 // The Manage sections TELESCOPE: an item the viewer can't reach is hidden (not
 // muted), and a group with nothing reachable is skipped entirely (header included)
@@ -724,6 +736,7 @@ function MobileLeftDrawer({
   permissions,
   navAccess,
   staffRole = null,
+  sections = NAV_SECTIONS,
 }: {
   open: boolean
   onClose: () => void
@@ -738,6 +751,8 @@ function MobileLeftDrawer({
   permissions?: Record<string, NavAccess>
   navAccess?: Record<string, AccessLevel>
   staffRole?: StaffRole | null
+  /** The operator-ordered, visibility-filtered rail sections (GLOBAL menu config). */
+  sections?: NavSectionGroup[]
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -831,7 +846,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={NAV_SECTIONS} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={sections} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -1080,6 +1095,7 @@ export default function AppShell({
   extraSections,
   hideAppNav = false,
   permissions,
+  menuAreaKeys,
   navAccess,
   staffRole = null,
   demoMode = false,
@@ -1105,6 +1121,11 @@ export default function AppShell({
   hideAppNav?: boolean
   /** Per-area access overrides (janitor-set); merged over code defaults. */
   permissions?: Record<string, NavAccess>
+  /** The GLOBAL menu order (janitor-set from /admin/menu), already ordered + with
+   *  hidden items removed. Drives the rail's order + visibility for EVERYONE. Empty
+   *  / omitted falls back to the full code rail (NAV_AREAS). Per-role gating is
+   *  unchanged — it still runs over these items via `permissions` / `navAccess`. */
+  menuAreaKeys?: string[]
   /** Server-resolved access matrix per nav key — drives matrix-driven nav visibility
    *  (an item shows if the viewer has any access to its surface). */
   navAccess?: Record<string, AccessLevel>
@@ -1118,6 +1139,9 @@ export default function AppShell({
   hasDemoContent?: boolean
 }) {
   const pathname = usePathname()
+  // The rail's sections, built from the operator's GLOBAL order + visibility
+  // (menuAreaKeys). Same set everywhere; per-role gating still filters within it.
+  const navSections = sectionsFromKeys(menuAreaKeys)
   const role = (profile.community_role ?? 'member') as CommunityRole
   const effectiveRealRole = realRole ?? role
   // Nav gating role: a visitor preview gates as a logged-out visitor (null).
@@ -1377,7 +1401,7 @@ export default function AppShell({
                     the profile card sits at the bottom of the column, revealed as you reach
                     the end of the page — like the right rail's dock. */}
                 <nav className="flex-1 px-3 py-3 space-y-1">
-                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} />
+                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={navSections} />
                 </nav>
                 {/* Mirrors the right rail's stats dock: sticky to the column bottom, rises
                     on scroll, no longer fixed to the viewport. */}
@@ -1474,6 +1498,7 @@ export default function AppShell({
         permissions={permissions}
         navAccess={navAccess}
         staffRole={staffRole}
+        sections={navSections}
       />
 
     </div>

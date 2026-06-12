@@ -61,6 +61,7 @@ import {
   Contact,
   ContactRound,
   Briefcase,
+  Menu,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
@@ -291,6 +292,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     related: ['vera-ai'],
     links: [
       // ── Platform ──
+      { href: '/admin/menu', label: 'Menu manager', desc: 'Order and hide the one shared nav menu; set who reaches each item.', Icon: Menu, min: 'janitor', section: 'Platform' },
       { href: '/pages', label: 'Pages', desc: 'Edit public pages and content blocks.', Icon: FileText, min: 'janitor', section: 'Platform' },
       { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor', section: 'Platform' },
       // ── System ──
