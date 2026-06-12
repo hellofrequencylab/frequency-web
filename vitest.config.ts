@@ -5,7 +5,13 @@ import { fileURLToPath } from 'node:url'
 // tsconfig so imports resolve. DB-touching code is tested with mocks separately.
 export default defineConfig({
   resolve: {
-    alias: { '@': fileURLToPath(new URL('.', import.meta.url)) },
+    alias: {
+      '@': fileURLToPath(new URL('.', import.meta.url)),
+      // `server-only` is a Next.js build-time guard with no runtime package, so it
+      // can't resolve under vitest. Stub it to an empty module so server-only files
+      // (e.g. lib/walkthroughs/runtime.ts) can still be unit-tested for their pure parts.
+      'server-only': fileURLToPath(new URL('./test/stubs/server-only.ts', import.meta.url)),
+    },
   },
   test: {
     environment: 'node',

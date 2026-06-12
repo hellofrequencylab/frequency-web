@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -9,6 +10,7 @@ import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
 import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
+import { FeedWalkthrough } from '@/components/walkthroughs/feed-walkthrough'
 import { nextStepsEnabled } from '@/lib/onboarding/status'
 import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
@@ -182,6 +184,14 @@ export default async function FeedPage({
           streak box graduates into the JourneyBoard, which takes the top spot, fronted
           by the stage strip (and a one-time celebration when the stage advances). */}
       {nextSteps && onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
+
+      {/* Walkthroughs (Phase B): a gentle, dismissible in-feed card — pull-based, so the
+          right member sees the right card next load. Never blocks the shell. */}
+      {myProfileId && (
+        <Suspense fallback={null}>
+          <FeedWalkthrough profileId={myProfileId} />
+        </Suspense>
+      )}
 
       {progress?.justAdvanced && progress.newlyUnlocked && (
         <StageCelebration
