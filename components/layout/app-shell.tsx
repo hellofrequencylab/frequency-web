@@ -1345,7 +1345,7 @@ export default function AppShell({
           data-feed-scroll
           className="flex-1 min-w-0 pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0"
         >
-          <div className="flex items-stretch min-h-[calc(100vh-3.5rem)]">
+          <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-3.5rem)]">
 
             {/* Left nav — NEVER scrolls out of view. Pinned under the header
                 (sticky top-14) with its window ending exactly where the fixed
@@ -1355,10 +1355,19 @@ export default function AppShell({
                 INTERNALLY instead of riding the page. */}
             {showLeftRail && (
               <aside className="hidden md:flex w-48 shrink-0 flex-col">
-                {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
-                <nav className="sticky top-14 max-h-[calc(100vh-3.5rem-8rem)] self-start overflow-y-auto px-3 py-3 space-y-1">
+                {/* The menu + profile footer live in NORMAL FLOW and scroll WITH the page
+                    (no sticky pin, no inner scrollbar): the menu rides up as you scroll and
+                    the profile card sits at the bottom of the column, revealed as you reach
+                    the end of the page — like the right rail's dock. */}
+                <nav className="flex-1 px-3 py-3 space-y-1">
                   <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} />
                 </nav>
+                {/* Mirrors the right rail's stats dock: sticky to the column bottom, rises
+                    on scroll, no longer fixed to the viewport. */}
+                <div className="sticky bottom-0 z-10 bg-[var(--color-canvas)]">
+                  {!hideAppNav && role === 'member' && <UpgradeCrew />}
+                  <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
+                </div>
               </aside>
             )}
 
@@ -1372,7 +1381,7 @@ export default function AppShell({
                   rails. The page-admin "Settings" bar now renders INSIDE each page
                   template's header (on the divider under the title), fed by this
                   provider — not floating above the page. */}
-              <main className="flex-1 min-w-0 px-6 py-6 sm:px-8 lg:px-10" data-tour-anchor="content">
+              <main className="flex-1 min-w-0 py-6" data-tour-anchor="content">
                 <Breadcrumbs />
                 <PageAdminProvider value={{ role: gateRole, staffRole }}>
                   {children}
@@ -1386,23 +1395,13 @@ export default function AppShell({
                 into view as you near the end; its left border is a full-height
                 divider. */}
             {showSidebar && (
-              <aside className="hidden lg:flex flex-col w-80 shrink-0 px-4 py-6">
+              <aside className="hidden lg:flex flex-col w-80 shrink-0 py-6">
                 {sidebar}
               </aside>
             )}
           </div>
         </div>
 
-        {/* Pinned bottom-left footer — the Upgrade tab + profile card stay fixed to
-            the viewport while the nav above scrolls with the page. Desktop only;
-            matches the left rail's width + chrome. Suppressed on workspace routes
-            (/admin/*) where the admin sidebar owns the left column. */}
-        {showLeftRail && (
-          <div className="hidden md:flex fixed bottom-0 left-0 z-20 w-48 flex-col border-t border-border bg-[var(--color-canvas)]/95 backdrop-blur-sm">
-            {!hideAppNav && role === 'member' && <UpgradeCrew />}
-            <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
-          </div>
-        )}
       </div>
       </DockRevealProvider>
 
