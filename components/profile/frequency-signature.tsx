@@ -126,7 +126,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
           ? 'Empty Frequency Signature'
           : `Frequency Signature: dominant ${PILLARS[dominant].label}, ${signature.spread} of 4 Pillars active`
       }
-      className={compact ? '' : 'mx-auto'}
+      className={compact ? '' : stacked ? 'h-full w-full' : 'mx-auto'}
     >
       {/* Concentric grid rings — neutral border token so they read as structure. */}
       {gridLevels.map((lvl) => (
@@ -201,8 +201,12 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
   return (
     <div className={`rounded-2xl border border-border bg-surface p-5 shadow-sm ${className ?? ''}`}>
       <div className={`flex flex-col items-center gap-5 ${stacked ? '' : 'sm:flex-row sm:items-center sm:gap-6'}`}>
-        {/* The constellation, with axis labels positioned at the four cardinals. */}
-        <div className="relative shrink-0" style={{ width: size, height: size }}>
+        {/* The constellation, with axis labels positioned at the four cardinals.
+            Stacked (narrow sidebar): a responsive square that shrinks to fit. */}
+        <div
+          className={stacked ? 'relative mx-auto aspect-square w-full max-w-[210px]' : 'relative shrink-0'}
+          style={stacked ? undefined : { width: size, height: size }}
+        >
           {svg}
           <AxisLabel pillar="mind" pos="top" dominant={dominant} />
           <AxisLabel pillar="body" pos="right" dominant={dominant} />
