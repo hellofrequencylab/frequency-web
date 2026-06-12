@@ -8,7 +8,6 @@ import { IndexTemplate } from '@/components/templates'
 import { PageContents } from '@/components/templates/page-contents'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StatInline } from '@/components/ui/stat-inline'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CirclesToolbar } from '@/components/circles/circles-toolbar'
 import { demoModeEnabled } from '@/lib/platform-flags'
@@ -187,14 +186,6 @@ export default async function CirclesPage({
   }
   const nexuses = [...nexusMap.values()].sort((a, b) => b.count - a.count).slice(0, 8)
 
-  // Network stats for the header strip
-  const stats = {
-    circles: all.length,
-    members: all.reduce((s, c) => s + (c.member_count ?? 0), 0),
-    cities: nexusMap.size,
-    interests: interestChips.length,
-  }
-
   // Table-of-contents filter: All + each Channel (with a circle count). Tapping a
   // Channel drills into just its circles via ?channel=<slug>.
   const channelLinks = [
@@ -208,15 +199,6 @@ export default async function CirclesPage({
         active: channel === d.slug,
       })),
   ]
-
-  const statStrip = (
-    <div className="flex items-center gap-x-6">
-      <StatInline value={stats.circles} label="Circles" />
-      <StatInline value={stats.members} label="Members" />
-      <StatInline value={stats.cities} label="Cities" />
-      <StatInline value={stats.interests} label="Channels" />
-    </div>
-  )
 
   return (
     <IndexTemplate
@@ -263,9 +245,10 @@ export default async function CirclesPage({
         />
       )}
 
-      {/* Table of contents — filter circles by Channel — with the network stats
-          parked at its right (no divider rule). */}
-      <PageContents links={channelLinks} divider={false} rightSlot={statStrip} />
+      {/* Table of contents — filter circles by Channel. Counts ride quietly on each
+          chip (gamified-stat law: member/city counts are inline context, never KPI
+          tiles — MEMBER-DESIGN-SYSTEM §2). */}
+      <PageContents links={channelLinks} divider={false} />
 
       <MapZone circles={locatableCircles}>
         {/* Find-near-me opens the map; the stats moved up beside the filter menu and
