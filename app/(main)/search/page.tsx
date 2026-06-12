@@ -1,8 +1,8 @@
-import Link from 'next/link'
-import { Search, Users, FileText, CalendarDays, MapPin } from 'lucide-react'
+import { Search, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { IndexTemplate } from '@/components/templates'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { PersonCard } from '@/components/cards/person-card'
@@ -164,37 +164,15 @@ export default async function SearchPage({
       }
     >
       {/* ── Tabs ─────────────────────────────────────────────── */}
-      <div className="flex gap-1 mb-6 border-b border-border">
-        {TABS.map((t) => {
-          const icons = { people: Users, posts: FileText, events: CalendarDays }
-          const Icon = icons[t]
-          const isActive = tab === t
-          return (
-            <Link
-              key={t}
-              href={`/search?q=${encodeURIComponent(query)}&tab=${t}`}
-              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors capitalize ${
-                isActive
-                  ? 'border-primary text-text'
-                  : 'border-transparent text-subtle hover:text-text'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {t}
-              {query.length >= 2 && resultCount[t] > 0 && (
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded-md font-medium tabular-nums ${
-                    isActive
-                      ? 'bg-primary-bg text-primary-strong'
-                      : 'bg-surface-elevated text-muted'
-                  }`}
-                >
-                  {resultCount[t]}
-                </span>
-              )}
-            </Link>
-          )
-        })}
+      <div className="mb-6">
+        <UnderlineTabs
+          activeHref={`/search?q=${encodeURIComponent(query)}&tab=${tab}`}
+          tabs={TABS.map((t) => ({
+            href: `/search?q=${encodeURIComponent(query)}&tab=${t}`,
+            label: t.charAt(0).toUpperCase() + t.slice(1),
+            count: query.length >= 2 && resultCount[t] > 0 ? resultCount[t] : undefined,
+          }))}
+        />
       </div>
 
       {/* ── Empty / prompt states ────────────────────────────── */}
