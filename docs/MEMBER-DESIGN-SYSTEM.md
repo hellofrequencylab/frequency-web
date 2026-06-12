@@ -136,16 +136,21 @@ Rail is registered once per route in `lib/layout/page-chrome.ts` (`global`/`scop
 ## 5. Component grammar (compose these)
 
 - **`PageHeading`** — the one header (title · eyebrow · description · actions · back).
-- **`EntityCard` / `PersonCard`** — the one browse card (avatar/icon anchor · title ·
-  one-line context · description · meta). Retire every bespoke "circle card"/"offer
-  card"/"your-practices row" → `EntityCard` (add a compact **`RowCard`** variant for dense
-  list rows like practices/contacts).
+- **`EntityCard` / `PersonCard` / `RowCard`** — the browse cards. `EntityCard`/`PersonCard`
+  for the grid (avatar/icon anchor · title · one-line context · description · meta);
+  **`RowCard`** for dense list rows (offers, "your practices", discover) — link-row mode
+  (whole row anchors, passive trailing chip) or actions mode (title links, controls sit
+  right, never nested in an anchor). Every bespoke "circle/offer card" or "your-practices
+  row" is retired onto these.
 - **`SectionHeader`** — titled section within a page (title · count · action).
-- **`UnderlineTabs`** — the ONE tab vocabulary for Detail (and any tabbed page). Retire the
-  pill/button tab variants on network/library so tabs read the same everywhere.
-- **Standing kit (game tiles):** `StandingTiles` (the four counts, §2) · `StreakStrip`
-  (flame + shields) · `StatCard` (a single game tile) · `JourneyBoard` (the feed's
-  graduated home). These are the only "tiles with numbers" a member sees.
+- **`UnderlineTabs`** — the ONE tab vocabulary for Detail (and any tabbed page: profile,
+  search, network contacts, library, market). No pill/button tab variants anywhere.
+- **Standing kit (game tiles):** **`StandingHero`** (the dashboard centerpiece — rank crest +
+  the four counts as feature tiles + the climb ladder, §2; the member analog of the admin
+  KPI hero) · `StandingTiles` (the compact four-count render for the feed/rail) · `StreakStrip`
+  (flame + shields) · `StatCard` (a single game tile) · `JourneyBoard` (the feed's graduated
+  home). Rank ALWAYS from `lib/season-ranks`. These are the only "tiles with numbers" a member
+  sees.
 - **`EmptyState`** — never a blank pane; teach the next step + one CTA. Fill the gaps
   (on-air/dispatches, library/review, support, some detail sub-pages).
 - **`RoleActions`** — the resolver-fed header action menu (primary + overflow, gate-aware);
@@ -181,23 +186,30 @@ unification backlog stays in `DESIGN-LANGUAGE.md`.
 
 ---
 
-## 8. Conformance rollout (close the gaps)
+## 8. Rollout — SHIPPED (ADR-241)
 
-The kit is adopted; this is a finishing pass. Per-page definition of done: on a shared
-template; composes the kit (no bespoke header/card/tab/empty); canvas headers + white tiles;
-warm type + tabular game numerals; tokens only; gamified-stat law (§2) honored; states
-handled; AA. Phased like admin (one PR per cluster):
+What ADR-240 framed as a finishing pass became the full member visual redesign (the
+owner's admin-style treatment). Run like admin: foundation first, then parallel agents per
+cluster, each merged to production as it went green. Per-page definition of done held: on a
+shared template; composes the kit (no bespoke header/card/tab/empty); canvas headers + white
+tiles; warm type + tabular game numerals; tokens only; gamified-stat law (§2) honored;
+states handled; AA.
 
-| Phase | Cluster | The work |
+| Phase | Cluster | Outcome |
 |---|---|---|
-| **1 · Standing** | gamification | Promote `StandingTiles`; unify rank on `season-ranks` (retire `people/[handle]` `RANK_TIERS`); de-scatter the four counts; recolor profile chips to tokens. |
-| **2 · Onboarding** | `/onboarding/*` | Fold the bespoke wizards/modals onto Focus + the Wizard pattern. |
-| **3 · Browse parity** | network, library, market, partners | `IndexTemplate` + URL-as-state filters; `EntityCard`/`RowCard` everywhere (retire bespoke cards); `UnderlineTabs`. |
-| **4 · Detail parity** | market/[id], partners/[slug], journey detail, profile | Full `DetailTemplate` spine + `RoleActions` + cross-links (market→author, etc.). |
-| **5 · Polish sweep** | cross-cutting | Empty-state gaps; retire `text-[9px]`/hex; one tab vocabulary; per-section Suspense on heavy reads. |
+| **0 · Foundation** | gamification | `StandingHero` built + flagship Quest home (#646). |
+| **1 · Standing** | profile + feed | `StandingHero`/`StandingTiles` everywhere; rank unified on `season-ranks` (`RANK_TIERS` retired); four counts de-scattered (#648, #651). |
+| **2 · Onboarding** | `/onboarding/*` | Folded onto Focus + the Wizard pattern (shipped earlier). |
+| **3 · Browse parity** | circles/events/channels, network, library, market, partners | `IndexTemplate` + URL-as-state; `EntityCard`/`RowCard`; `UnderlineTabs`; §2 stat-strip cleanup (#649). |
+| **4 · Detail parity** | market/[id], partners/[slug], journey detail, profile | `DetailTemplate` spine + cross-links (market→author, journey→author/streak, partner→city/scan) (#650, #652). |
+| **5 · Polish sweep** | search, broadcast, messages | search→`UnderlineTabs`; `text-[9px]`→token; messages discover→`EntityCard` (#653). |
 
-Do-not-touch (already on-grammar): the five templates, `EntityCard`/`PersonCard`/`StatCard`,
-`StreakStrip`/`GamificationPanel`/`JourneyBoard`, and the ~70 conforming pages.
+Deliberate exceptions (intentionally NOT folded): the chat-thread headers
+(`messages/[id]`, `messages/r/[roomId]`) stay bespoke takeover chrome (like on-air);
+`library`'s `LibraryCard` keeps its shell (two in-card controls `EntityCard` can't nest).
+
+Do-not-touch (on-grammar): the five templates, `EntityCard`/`PersonCard`/`RowCard`/`StatCard`,
+`StandingHero`/`StandingTiles`/`StreakStrip`/`GamificationPanel`/`JourneyBoard`.
 
 ---
 
