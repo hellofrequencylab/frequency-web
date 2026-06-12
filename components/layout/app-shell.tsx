@@ -932,7 +932,7 @@ function MobileTabBar({
       {!hideAppNav && (
         <span
           aria-hidden
-          className="pointer-events-none absolute bottom-full left-1/2 -mb-px h-9 w-[4.5rem] -translate-x-1/2 rounded-t-full border-x border-t border-border bg-surface"
+          className="pointer-events-none absolute bottom-full left-1/2 -mb-px h-[30px] w-[4.5rem] -translate-x-1/2 rounded-t-full border-x border-t border-border bg-surface"
         />
       )}
 
@@ -961,11 +961,11 @@ function MobileTabBar({
           aria-label="Zap, capture a moment"
           className="relative flex flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-3xs font-semibold text-primary-strong"
         >
-          {/* The circle is pinned to the bar's top edge (center exactly on the
-              line), so it always sits concentric in the arch with an even 12px
-              margin — alignment by geometry, not by flow guesswork. */}
-          <span aria-hidden className="h-[22px] w-[22px]" />
-          <span className="absolute left-1/2 top-0 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary shadow-pop">
+          {/* The circle sits a touch lower than dead-center on the bar's top edge so
+              it reads balanced against the flat tabs (its center is 6px below the
+              line); the arch above drops to match, keeping the even 12px margin. */}
+          <span aria-hidden className="h-[26px] w-[22px]" />
+          <span className="absolute left-1/2 top-0 flex h-12 w-12 -translate-x-1/2 -translate-y-[18px] items-center justify-center rounded-full bg-primary shadow-pop">
             {/* the catch behind the glyph — a soft shadow under the bolt (flips with
                 the glyph so the carve always reads) */}
             <Zap
