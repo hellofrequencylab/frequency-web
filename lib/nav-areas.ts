@@ -76,6 +76,15 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'messageBoards', href: '/messages',  label: 'Message Boards', section: 'Community', defaultAccess: 'member', surface: 'messageBoards' },
   { key: 'people',        href: '/network',   label: 'Community',    section: 'Community', defaultAccess: 'member',  surface: 'people' },
 
+  // ── Lead → the network-scoped LEADER surface (host+ on the trust ladder), the
+  // member-side home for community leaders after /admin became staff-only. Its OWN
+  // one-item section so it never lands in the staff-gated "Admin" group. The `lead`
+  // surface (access-matrix) resolves to 'full' for host/guide/mentor (+ staff) and
+  // 'none' for member/visitor, so the shell's `itemAccess` reads it straight from the
+  // matrix — and because "Lead" is a TELESCOPE_SECTION, the item is HIDDEN (not
+  // ghosted) for anyone below host. `defaultAccess: 'host'` mirrors the same floor. ──
+  { key: 'lead',          href: '/lead',      label: 'Lead',         section: 'Lead',      defaultAccess: 'host', surface: 'lead' },
+
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
   { key: 'journeys',  href: '/journeys',   label: 'Journeys',  section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },

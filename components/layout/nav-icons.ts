@@ -35,6 +35,7 @@ import {
   Gamepad2,
   SlidersHorizontal,
   TrendingUp,
+  Flag,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -43,6 +44,7 @@ import {
 // icon, add its key here.
 export const AREA_ICONS: Record<string, ElementType> = {
   feed: Home,
+  lead: Flag,
   circles: Users,
   channels: Radio,
   events: CalendarDays,

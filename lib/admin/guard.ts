@@ -87,6 +87,28 @@ export async function requireAdminFloor(): Promise<AdminContext> {
   return { profileId: profile.id, role: profile.community_role, webRole: profile.webRole, staffRole }
 }
 
+/** The /lead entry floor: COMMUNITY LEADERS only (host+ on the trust ladder —
+ *  host/guide/mentor). This is the network-scoped leader surface that sits OUTSIDE
+ *  /admin (which is now staff-only, requireAdminFloor above): a community leader is
+ *  not a platform operator, so they get a consolidated dashboard of the circles they
+ *  lead, NOT the admin workspace. The gate is the trust ladder only — staff standing
+ *  does NOT open /lead (a staffer with no circles has nothing to lead here), and the
+ *  /admin staff floor is never relaxed by this. getCallerProfile is view-as aware, so
+ *  a steward previewing a downgrade below 'host' is faithfully redirected to /feed.
+ *  Pages below this still scope every read to the caller's own circles. */
+export async function requireLeadFloor(): Promise<AdminContext> {
+  const profile = await getCallerProfile()
+  if (!profile) redirect('/')
+  if (!atLeastRole(profile.community_role, 'host')) redirect('/feed')
+  const staff = await getStaffMember().catch(() => null)
+  return {
+    profileId: profile.id,
+    role: profile.community_role,
+    webRole: profile.webRole,
+    staffRole: staff?.role ?? null,
+  }
+}
+
 /**
  * Authorize a server ACTION (mutation): returns the (non-null) caller if `min` is
  * met — the COMMUNITY ladder for host/guide/mentor, or the STAFF axis (web_role,
