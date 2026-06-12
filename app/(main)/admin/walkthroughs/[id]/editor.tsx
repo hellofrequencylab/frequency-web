@@ -15,6 +15,12 @@ import {
   type Walkthrough, type WalkthroughStep, type StepLayout,
 } from '@/lib/walkthroughs'
 import { WalkthroughSlide, STEP_ICONS, ACCENT_CLASSES } from '@/components/walkthroughs/slide'
+import {
+  ONBOARDING_CRITERIA,
+  ONBOARDING_WALKTHROUGH_SLUG,
+  CRITERION_LABELS,
+  type OnboardingStepKey,
+} from '@/lib/onboarding/steps'
 import { updateWalkthrough, setWalkthroughActive } from '../actions'
 
 // The clever editor (Phase A centerpiece). A SPLIT layout: LEFT = controls (sequence
@@ -354,6 +360,28 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                   onChange={(e) => setStep(selected, { body: e.target.value })}
                 />
               </div>
+
+              {/* Activation step — ONLY on the reserved Next Steps funnel. Tags this slide
+                  to a real milestone; the funnel's done-detection keys off it. */}
+              {wt.slug === ONBOARDING_WALKTHROUGH_SLUG && (
+                <div>
+                  <label className={lbl}>
+                    Activation step <span className="font-normal text-subtle/70">· which milestone this slide stands for</span>
+                  </label>
+                  <select
+                    className={field}
+                    value={step.criterion ?? ''}
+                    onChange={(e) =>
+                      setStep(selected, { criterion: (e.target.value || undefined) as OnboardingStepKey | undefined })
+                    }
+                  >
+                    <option value="">None (slide ignored by the funnel)</option>
+                    {ONBOARDING_CRITERIA.map((c) => (
+                      <option key={c} value={c}>{CRITERION_LABELS[c]}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Accent picker — SEMANTIC token swatches (never a hex field) */}
               <div>

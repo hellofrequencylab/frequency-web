@@ -3,11 +3,12 @@
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
-import { Copy, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Copy, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
 import {
   createWalkthrough,
+  editOnboardingWalkthrough,
   setWalkthroughActive,
   duplicateWalkthrough,
   deleteWalkthrough,
@@ -27,6 +28,22 @@ export function NewWalkthroughButton() {
       onClick={() => start(() => void createWalkthrough())}
     >
       <Plus className="h-4 w-4" aria-hidden /> {pending ? 'Creating…' : 'New walkthrough'}
+    </Button>
+  )
+}
+
+/** Opens (seeding on first use) the reserved Next Steps activation funnel. */
+export function EditNextStepsButton() {
+  const [pending, start] = useTransition()
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      size="sm"
+      disabled={pending}
+      onClick={() => start(() => void editOnboardingWalkthrough())}
+    >
+      <ListChecks className="h-4 w-4" aria-hidden /> {pending ? 'Opening…' : 'Edit Next Steps'}
     </Button>
   )
 }
