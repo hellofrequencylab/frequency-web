@@ -175,6 +175,50 @@ Resolver: `resolveTier(member, circle, item)` in `lib/journey-plans.ts` — pure
 
 ---
 
+## 5A. Lessons & blocks — the e-learning layer (net-new, ADR-244)
+
+> **The shift.** Everything above treats a Journey as a *practice-rhythm engine* — adopt
+> practices, log them, progress is derived. ADR-244 layers an **instructional course** on
+> top of that engine so a Journey can also teach: header video, video lessons, readings,
+> knowledge checks, and members checking lessons off. The practice loop is untouched; it
+> becomes *one block type among several*. This is Frequency's edge — most courses are all
+> theory and no application; we keep the application loop inside the course.
+
+**The block model.** `journey_plan_items` was one practice per row. It generalizes to a
+typed **block**:
+
+| `block_type` | What it is | Progress |
+|---|---|---|
+| `practice` | An existing real-world practice (keeps cadence, tier, all rewards). The default; existing rows backfill to this. | Derived from `practice_logs` (unchanged) |
+| `lesson` | Title + markdown body, optional **video** + images + attachments. The unit a member checks off. | `journey_lesson_progress` row |
+| `resource` | A download / external link. | Optional check-off |
+| `check` | A knowledge check or reflection prompt; can gate the next block. | `journey_lesson_progress` row |
+| `section` | A structural header; blocks point at it via `parent_id` → **Course → Modules → Lessons**. | n/a |
+
+A practice block must carry a `practice_id`; a non-practice block must not (`CHECK`). The
+old `UNIQUE(plan_id, practice_id)` becomes a **partial** index (practices still can't
+duplicate; lessons can repeat). The plan gains `intro_video` (a hero video to pair with
+`intro`) and `sequential` (off = open navigation; on = unlock-next-on-complete).
+
+**Two independent completion tracks.** The decision (ADR-244) keeps them un-entangled:
+
+- **Course complete** = every `required` lesson/`check` block has a completion row for the
+  member → pays `completion_gems` + a badge **once**, idempotency key
+  `journey.course.complete:<profile>:<plan>` (no season token — lessons aren't seasonal).
+- **Season complete** (the practice/quest clock, §4/§6) keeps firing exactly as today, on
+  its own clock. A Journey with both lessons and practices can pay on both tracks.
+
+**The one net-new progress store.** Practices stay derived; lesson check-offs need
+persistence → `journey_lesson_progress (profile_id, plan_id, item_id, completed_at,
+last_position)`, member-owned RLS. `last_position` powers "resume where you left off"
+(e.g. video seconds). That is the *only* new progress table — the two clocks are unchanged.
+
+**Authoring is unchanged (§12).** Any member authors their own journey including lessons;
+Guide/Mentor or community-ops staff publish official + link a Quest; member public
+submissions still pass review. No new permission concepts.
+
+---
+
 ## 6. The reward stack + firing rules
 
 Currency follows **ADR-139**: real-world acts → **Zaps**; on-platform acts → **Gems**. Practice
@@ -189,6 +233,7 @@ trigger. **Idempotency is non-negotiable** — every bonus is keyed in `reward_g
 | All today's steps logged | **+25 Zaps** (Full Day) | `fullday:<profile>:<date>` | 🔴 wire |
 | All steps on track this bucket | **+50 Zaps** (Weekly Rhythm) | `rhythm:<profile>:<plan>:<season>:<bucket>` | 🔴 wire |
 | Qualifying weeks ≥ target | **+30 Gems** + badge (Journey complete) | `journeycomplete:<profile>:<plan>:<season>` | 🔴 wire |
+| All `required` lesson/check blocks done | **`completion_gems` + badge** (Course complete — ADR-244) | `journey.course.complete:<profile>:<plan>` | 🔴 wire |
 | Challenge complete | 15–200 Zaps/Gems by act type | existing | ✅ |
 | Streak milestone | bonus Zaps + permanent badge | existing | ✅ |
 | Season end | Zaps → Gems at rank rate + **trophy** | `reset_season()` | ✅ |
@@ -343,8 +388,10 @@ cadence/note), pillar meter, visibility radios + publish celebration. **Net-new 
 
 | Section | Adds |
 |---|---|
+| **Outline — blocks** (ADR-244) | Add/reorder/nest typed blocks: **Lesson** (markdown + video/images/files), **Reading**, **Resource**, **Knowledge check**, **Practice**, **Section**. Per-block inspector; sections group blocks (`parent_id`). |
 | **Path — per step** | **Default depth tier** (Initiate/Adept/Master), required-vs-optional toggle, log type. |
-| **Completion rules** | `min_practices_per_day` (1/2/3), `target_weeks` (6/8/10/13), `season_locked`. |
+| **Identity — hero video** (ADR-244) | `intro_video` header video to pair with the story. |
+| **Completion rules** | `min_practices_per_day` (1/2/3), `target_weeks` (6/8/10/13), `season_locked`; `sequential` gating (ADR-244); course-completion is lessons-done (separate from the season clock). |
 | **Rewards** | `completion_gems` (10–100, default 30); per-practice Zap override (Mentor/Admin only). |
 | **Page layout** | The `page_config` widget toggles + drag-reorder (mirrors the rail framework). |
 | **Visibility & publishing** | Private/Unlisted/Public; `status` (draft/pending/approved/rejected). |
@@ -392,6 +439,11 @@ kill the motivation to publish.
    `season_locked`, `completion_gems`.
 6. `seasons`: ensure `starts_at` set + 91-day `ends_at` convention.
 7. *(Phase 2)* `circle_coops` — co-op formation/trophy record.
+9. **Lesson blocks (ADR-244, migration `20260617000000`):** `journey_plan_items` gains
+   `block_type`, `parent_id` (section nesting), `title`, `body`, `media`, `settings`,
+   `required`, `est_minutes`; `practice_id` → nullable + partial unique. `journey_plans`
+   gains `intro_video`, `sequential`. New `journey_lesson_progress` (member-owned RLS) is
+   the only net-new progress store — practices stay derived.
 8. **Done (ADR-152 Phase B3):** the legacy action-chain engine + the `quest_outcomes()` RPC
    are dropped (migration `20260609104000`); `database.types.ts` regenerated.
 
@@ -436,6 +488,16 @@ Sequenced so a playable, addicting loop lands first; "everything in the briefs" 
 | **P4 — Official program + review** | `status` workflow; official flag + `quest_id` linkage; seed the 4 Pillar Journeys (one per Pillar) for the active season. *(legacy action-chain engine retirement already done — mig `20260609104000`.)* | Season-1 official content. |
 | **P5 — Signature bets** | Co-op · Frequency Signature · variable/secret rewards · season-drop moment. | Go-big, on top of a proven loop. |
 | **P6 — Notifications** | Daily next-step prompt at local morning (timezone-aware): "[Journey]: [Practice]. [time]." | Fogg prompt — Ability already high. |
+
+**Lesson-layer phases (ADR-244), sequenced independently of P0–P6 above:**
+
+| Phase | Ships |
+|---|---|
+| **L0 — Schema** | Migration `20260617000000` (block columns, `journey_lesson_progress`, hero video, `sequential`); backfill items → `practice`; surface the block fields in `JourneyPlanItem`/a `JourneyBlock` union + `PLAN_COLS`/`ITEM_COLS`. Unit tests. |
+| **L1 — Render + check-off** | Member journey page renders blocks (video, readings, sections), persists check-offs, shows %-complete + resume; a syllabus/lessons page widget. |
+| **L2 — Course-completion reward** | Fire the course-complete bonus (`journey.course.complete:*`, idempotent) → `completion_gems` + badge when all `required` lessons are done; practice rewards untouched. |
+| **L3 — Block editor** | Block-based outline in `JourneyBuilder` (+ the admin variant): add/reorder/nest, per-block inspector, live preview. Register the editor route's chrome in `lib/layout/page-chrome.ts`. |
+| **L4 — E-learning polish** | `sequential` gating, knowledge-check blocks, transcripts/captions, total-time, optional drip. |
 
 ---
 
