@@ -5,6 +5,15 @@ import { getMemberPractices } from '@/lib/practices'
 // hero (the persistent onboarding guide) and any sidebar nudge read this, so they
 // can never disagree. The funnel ends at the North-Star moment: a verified practice.
 
+// Master switch for the legacy hardcoded Next Steps prompts — the feed onboarding
+// card (FeedOnboardingGuide) and the left "Next Steps"/chores edge pill + its popup
+// (ChoresOverlay). Shipped OFF: the operator-authored Walkthroughs suite (Acquisition
+// → Onboarding) is taking over this surface, so the old hardcoded nudges are dark
+// until that lands. The status computation below still runs (other code reads
+// `complete`/`current` for stage gating); only the visible prompts are gated. Flip
+// this to `true` to restore the old Next Steps cards and popups everywhere at once.
+export const NEXT_STEPS_ENABLED = false
+
 export type OnboardingStepKey = 'avatar' | 'circle' | 'practice' | 'log'
 
 export interface OnboardingStep {

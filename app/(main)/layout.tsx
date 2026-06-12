@@ -28,7 +28,7 @@ import { viewerHidesDemo } from '@/lib/demo-preference'
 import { getSearchIndex } from '@/lib/help/content'
 import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
-import { getOnboardingStatus } from '@/lib/onboarding/status'
+import { getOnboardingStatus, NEXT_STEPS_ENABLED } from '@/lib/onboarding/status'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
@@ -254,7 +254,7 @@ export default async function MainLayout({
       {/* Invite — the app-wide "invite friends, earn zaps" modal; opened from the
           account menu / anywhere via the 'open-invite' event. */}
       <InviteLauncher />
-      {chores && (!chores.complete || !chores.rewarded || coachNext) && (
+      {NEXT_STEPS_ENABLED && chores && (!chores.complete || !chores.rewarded || coachNext) && (
         <ChoresOverlay chores={chores} nextAction={coachNext} />
       )}
       <PageViewTracker />
