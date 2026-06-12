@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Transient agent worktrees (parallel Claude sandboxes): stale copies of
+    // repo files that double-report fixed warnings. Never lint them.
+    ".claude/worktrees/**",
   ]),
 ]);
 
