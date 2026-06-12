@@ -1,4 +1,4 @@
-import { listFlagEvents, type FlagEvent } from '@/lib/platform-flags'
+import { listFlagEvents, getPlatformSetting, type FlagEvent } from '@/lib/platform-flags'
 import { nextStepsEnabled } from '@/lib/onboarding/status'
 import { autoPopupsEnabled } from '@/lib/onboarding/flags'
 import { referralsEnabled } from '@/lib/platform-flags'
@@ -38,7 +38,7 @@ async function resolveNames(events: FlagEvent[]): Promise<OnboardingSwitchEvent[
 
 export async function getOnboardingControlsData() {
   const admin = createAdminClient()
-  const [nextSteps, autoPopups, referrals, nextStepsEvents, autoPopupsEvents, referralsEvents, reward] =
+  const [nextSteps, autoPopups, referrals, nextStepsEvents, autoPopupsEvents, referralsEvents, reward, landing] =
     await Promise.all([
       nextStepsEnabled(),
       autoPopupsEnabled(),
@@ -47,6 +47,7 @@ export async function getOnboardingControlsData() {
       listFlagEvents('auto_popups_enabled', 10),
       listFlagEvents('referrals_enabled', 10),
       admin.from('zap_config').select('zaps_amount, is_active').eq('action_type', 'invite_accepted').maybeSingle(),
+      getPlatformSetting('personal_code_landing', '/'),
     ])
 
   const [nextStepsAudit, autoPopupsAudit, referralsAudit] = await Promise.all([
@@ -68,5 +69,6 @@ export async function getOnboardingControlsData() {
       amount: rewardRow?.zaps_amount ?? null,
       active: rewardRow?.is_active ?? false,
     },
+    landing,
   }
 }
