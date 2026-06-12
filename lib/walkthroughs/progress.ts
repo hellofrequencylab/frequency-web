@@ -14,6 +14,16 @@ import { readProgressMap, type WalkthroughProgress } from '@/lib/walkthroughs/ru
 
 type Meta = Record<string, Json>
 
+// A walkthrough slug is a GENERATED slug (lib/qr/codes generateSlug + the editor's
+// slugify): lowercase alphanumerics + hyphens. Validate it against that allowlist
+// before ever using it as a property KEY, so a crafted value can never inject into or
+// pollute profiles.meta (remote property injection / prototype pollution, e.g.
+// __proto__ / constructor / prototype). An unsafe slug is a no-op everywhere below.
+const SAFE_SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/i
+function isSafeSlug(slug: string): boolean {
+  return SAFE_SLUG.test(slug) && slug !== '__proto__' && slug !== 'constructor' && slug !== 'prototype'
+}
+
 /** Read profiles.meta for one member (best-effort). */
 async function readMeta(
   admin: ReturnType<typeof createAdminClient>,
@@ -26,6 +36,7 @@ async function readMeta(
 
 /** Merge a timestamp patch into meta.walkthroughs[slug] and write it back. */
 async function patchProgress(profileId: string, slug: string, patch: WalkthroughProgress): Promise<void> {
+  if (!isSafeSlug(slug)) return
   try {
     const admin = createAdminClient()
     const meta = await readMeta(admin, profileId)
@@ -57,6 +68,7 @@ export async function dismissWalkthrough(profileId: string, slug: string): Promi
  * skip both the write and the award, so finishing twice never double-pays.
  */
 export async function completeWalkthrough(profileId: string, slug: string): Promise<void> {
+  if (!isSafeSlug(slug)) return
   try {
     const admin = createAdminClient()
     const meta = await readMeta(admin, profileId)
