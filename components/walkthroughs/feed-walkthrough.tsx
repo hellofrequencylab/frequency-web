@@ -2,6 +2,8 @@ import type { Walkthrough } from '@/lib/walkthroughs'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { selectWalkthroughForMember } from '@/lib/walkthroughs/runtime'
 import { markWalkthroughSeen } from '@/lib/walkthroughs/progress'
+import { getStewardships } from '@/lib/stewardships'
+import { getCurrentSeason } from '@/lib/seasons'
 import { WalkthroughCard } from '@/components/walkthroughs/walkthrough-card'
 
 // Walkthroughs Phase B — the feed entry point (Server Component). Reads the member's
@@ -24,10 +26,24 @@ async function resolveWalkthrough(profileId: string): Promise<Walkthrough | null
       .maybeSingle()
     if (!profile) return null
 
+    // The two Slice 2 signals — computed best-effort so a read failure simply means the
+    // member doesn't qualify for those triggers (never breaks the feed). leadsCircle = an
+    // active stewardship edge on any circle; seasonStartedAt = the active season's launch.
+    const [leadsCircle, seasonStartedAt] = await Promise.all([
+      getStewardships(profileId)
+        .then((edges) => edges.some((e) => e.scopeType === 'circle' && (e.state ?? 'active') === 'active'))
+        .catch(() => false),
+      getCurrentSeason()
+        .then((season) => season?.starts_at ?? null)
+        .catch(() => null),
+    ])
+
     const walkthrough = await selectWalkthroughForMember({
       role: profile.community_role ?? 'member',
       createdAt: profile.created_at ?? null,
       meta: profile.meta,
+      leadsCircle,
+      seasonStartedAt,
     })
     if (!walkthrough) return null
 
