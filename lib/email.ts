@@ -76,14 +76,18 @@ export async function enqueueEmail(payload: EmailPayload): Promise<void> {
 export async function sendWelcomeEmail(params: {
   to: string
   displayName: string
+  /** When the member joined through someone's personal code, name the inviter so
+   *  the welcome connects them to a real person (research: referred users activate
+   *  better with an inviter-led welcome). Utility framing, never "you both earn". */
+  inviterName?: string | null
 }) {
-  const { to, displayName } = params
+  const { to, displayName, inviterName } = params
 
   await enqueueEmail({
     to,
     subject: `Welcome to Frequency, ${displayName} 👋`,
-    html:    welcomeHtml({ displayName }),
-    text:    welcomeText({ displayName }),
+    html:    welcomeHtml({ displayName, inviterName: inviterName ?? null }),
+    text:    welcomeText({ displayName, inviterName: inviterName ?? null }),
   })
 }
 
@@ -559,11 +563,13 @@ function emailShell(content: string, footer?: string): string {
 
 // Welcome ─────────────────────────────────────────────────────────────────────
 
-function welcomeHtml({ displayName }: { displayName: string }): string {
+function welcomeHtml({ displayName, inviterName }: { displayName: string; inviterName?: string | null }): string {
   const name = escapeHtml(displayName)
   const link = `color:#9A5E12;text-decoration:none;font-weight:600;`
+  const inviter = inviterName ? escapeHtml(inviterName) : null
   return emailShell(`
     <h1 style="${h1Style}">Welcome to Frequency, ${name}.</h1>
+    ${inviter ? `<p style="margin:0 0 18px;padding:11px 14px;border-radius:10px;background:#FBEFD9;font-size:14px;line-height:1.5;color:#9A5E12;font-weight:600;">${inviter} invited you in. Find them in your people and say hi when you're settled.</p>` : ''}
     <p style="${pStyle}">
       You're in. Your profile is live, you're connected to your community, and the
       whole place is yours to explore. Here's where to start.
@@ -592,9 +598,9 @@ function welcomeHtml({ displayName }: { displayName: string }): string {
   `)
 }
 
-function welcomeText({ displayName }: { displayName: string }): string {
+function welcomeText({ displayName, inviterName }: { displayName: string; inviterName?: string | null }): string {
   return `Welcome to Frequency, ${displayName}.
-
+${inviterName ? `\n${inviterName} invited you in. Find them in your people and say hi when you're settled.\n` : ''}
 You're in. Your profile is live, you're connected to your community, and the whole place is yours to explore.
 
 Open your feed: ${BASE_URL}/feed
