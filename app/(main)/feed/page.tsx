@@ -9,10 +9,10 @@ import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
 import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
-import { NEXT_STEPS_ENABLED } from '@/lib/onboarding/status'
+import { nextStepsEnabled } from '@/lib/onboarding/status'
 import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
-import { AUTO_POPUPS_ENABLED } from '@/lib/onboarding/flags'
+import { autoPopupsEnabled } from '@/lib/onboarding/flags'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { getPracticesToLogToday } from '@/lib/practices'
 import { getMemberProgress } from '@/lib/member-progress'
@@ -127,6 +127,9 @@ export default async function FeedPage({
   // Amplitude level-up moment (Rewards v2) — one cheap read, exactly-once banner.
   const amplitudeMoment = myProfileId ? await getAmplitudeCelebration(myProfileId) : null
   const onboarding = progress?.onboarding ?? null
+  // Operator switches (platform_flags, /admin/onboarding-controls). Both default off.
+  const nextSteps = await nextStepsEnabled()
+  const autoPopups = await autoPopupsEnabled()
   const practiceStreak = progress?.streakState ?? null
   const stageIndex = progress?.stage.index ?? 0
 
@@ -164,7 +167,7 @@ export default async function FeedPage({
 
   return (
     <div className="max-w-2xl mx-auto w-full">
-      {AUTO_POPUPS_ENABLED && veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} startInChat={veraStartInChat} />}
+      {autoPopups && veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} startInChat={veraStartInChat} />}
       <StreamTemplate
         eyebrow={today}
         title={greeting}
@@ -178,7 +181,7 @@ export default async function FeedPage({
           the streak box (if any) rides below it. Complete → the guide is gone and the
           streak box graduates into the JourneyBoard, which takes the top spot, fronted
           by the stage strip (and a one-time celebration when the stage advances). */}
-      {NEXT_STEPS_ENABLED && onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
+      {nextSteps && onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
 
       {progress?.justAdvanced && progress.newlyUnlocked && (
         <StageCelebration

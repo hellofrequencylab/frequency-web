@@ -14,6 +14,7 @@ import {
 import { joinCircle } from '@/app/(main)/circles/actions'
 import { checkInEvent } from '@/app/(main)/events/actions'
 import { listActiveVariants, pickVariant } from '@/lib/entry-points/ab'
+import { referralsEnabled } from '@/lib/platform-flags'
 
 export const dynamic = 'force-dynamic'
 
@@ -96,7 +97,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   // credit their owner: drop the referral cookie for an ANONYMOUS scanner so a later
   // signup is attributed at onboarding (app/onboarding/actions.ts). A signed-in
   // member is already here, so there's nothing to attribute.
-  const creditOwner = !profileId && !!code.owner_profile_id
+  // The referral master switch (platform_flags.referrals_enabled, operator control at
+  // /admin/onboarding-controls) gates ONLY the attribution cookie: with referrals off
+  // we still log the scan and redirect, we just don't drop fq_ref, so no new referral
+  // credit accrues (existing rewards untouched). Defaults on; off cleanly stops attribution.
+  const creditOwner = !profileId && !!code.owner_profile_id && (await referralsEnabled())
   const hasFirstTouch = (request.headers.get('cookie') ?? '').includes(`${FIRST_TOUCH_COOKIE}=`)
   const withReferral = (res: NextResponse) => {
     // Mark the channel for any anonymous scan (ADR-095) — attribution at signup.
