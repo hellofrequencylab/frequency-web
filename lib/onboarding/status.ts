@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMemberPractices } from '@/lib/practices'
 
@@ -11,8 +12,23 @@ import { getMemberPractices } from '@/lib/practices'
 // → Onboarding) is taking over this surface, so the old hardcoded nudges are dark
 // until that lands. The status computation below still runs (other code reads
 // `complete`/`current` for stage gating); only the visible prompts are gated. Flip
-// this to `true` to restore the old Next Steps cards and popups everywhere at once.
-export const NEXT_STEPS_ENABLED = false
+// the platform_flags.next_steps_enabled row (operator control at /admin/onboarding-controls)
+// to restore the old Next Steps cards and popups everywhere at once. Defaults to FALSE
+// on a missing row or read failure — matches the current shipped state. Cached per
+// request (React cache) so the surfaces that gate on it share one round trip.
+export const nextStepsEnabled = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'next_steps_enabled')
+      .maybeSingle()
+    return data?.value ?? false
+  } catch {
+    return false
+  }
+})
 
 export type OnboardingStepKey = 'avatar' | 'circle' | 'practice' | 'log'
 

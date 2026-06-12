@@ -28,8 +28,8 @@ import { viewerHidesDemo } from '@/lib/demo-preference'
 import { getSearchIndex } from '@/lib/help/content'
 import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
-import { getOnboardingStatus, NEXT_STEPS_ENABLED } from '@/lib/onboarding/status'
-import { AUTO_POPUPS_ENABLED } from '@/lib/onboarding/flags'
+import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
+import { autoPopupsEnabled } from '@/lib/onboarding/flags'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
@@ -179,6 +179,9 @@ export default async function MainLayout({
   // oath justifies the friction); retires once everything's done + rewarded. Off at
   // launch with the induction flag (back to the non-blocking model).
   const chores = BETA_INDUCTION_ACTIVE ? await getProfileChores(profile.id) : null
+  // Operator switches (platform_flags, /admin/onboarding-controls). Both default off.
+  const nextSteps = await nextStepsEnabled()
+  const autoPopups = await autoPopupsEnabled()
   // Once chores are done, Vera keeps coaching (build item 1.3, folded into the same
   // surface — no competing card): surface the single next activation step.
   let coachNext = chores?.complete ? (await getOnboardingStatus(profile.id)).current : null
@@ -255,13 +258,13 @@ export default async function MainLayout({
       {/* Invite — the app-wide "invite friends, earn zaps" modal; opened from the
           account menu / anywhere via the 'open-invite' event. */}
       <InviteLauncher />
-      {NEXT_STEPS_ENABLED && chores && (!chores.complete || !chores.rewarded || coachNext) && (
+      {nextSteps && chores && (!chores.complete || !chores.rewarded || coachNext) && (
         <ChoresOverlay chores={chores} nextAction={coachNext} />
       )}
       <PageViewTracker />
       <ObserveProvider />
-      {AUTO_POPUPS_ENABLED && <DailyCheckIn />}
-      {AUTO_POPUPS_ENABLED && <TourProvider initialState={tourState} satisfied={tourSatisfied} />}
+      {autoPopups && <DailyCheckIn />}
+      {autoPopups && <TourProvider initialState={tourState} satisfied={tourSatisfied} />}
     </AppShell>
   )
 }

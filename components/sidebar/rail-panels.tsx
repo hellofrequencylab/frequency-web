@@ -6,7 +6,7 @@ import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_LABELS, seasonRankStyle, rankForZaps, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
 import { isOnline, ONLINE_MS, RECENT_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
-import { getOnboardingStatus, NEXT_STEPS_ENABLED } from '@/lib/onboarding/status'
+import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
 
@@ -278,13 +278,14 @@ export async function LeaderboardPanel() {
 // a gems nudge) when there's one, else a keep-climbing line, plus live rank progress
 // and the streak. Pinned to the TOP of the rail on every page (right-sidebar.tsx).
 export async function ControlCenterPanel({ profileId }: { profileId: string }) {
-  const [status, prof] = await Promise.all([
+  const [status, prof, showNextSteps] = await Promise.all([
     getOnboardingStatus(profileId).catch(() => null),
     createAdminClient()
       .from('profiles')
       .select('current_season_zaps, current_season_gems, current_streak')
       .eq('id', profileId)
       .maybeSingle(),
+    nextStepsEnabled(),
   ])
   const p = prof.data as {
     current_season_zaps?: number; current_season_gems?: number; current_streak?: number
@@ -300,7 +301,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
   const pct = next && next.minZaps > curMin ? Math.round(((zaps - curMin) / (next.minZaps - curMin)) * 100) : 100
   // Next Steps prompts are shipped off (see lib/onboarding/status.ts) while the
   // Walkthroughs suite takes over; the Quest cockpit (rank/standing/streak) stays.
-  const nextStep = NEXT_STEPS_ENABLED ? (status?.current ?? null) : null
+  const nextStep = showNextSteps ? (status?.current ?? null) : null
 
   return (
     <WidgetCard title="Your Quest">
@@ -380,7 +381,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
       )}
 
       {/* The rest of the setup steps as tight progress cards. */}
-      {NEXT_STEPS_ENABLED && status && status.todo.length > 1 && (
+      {showNextSteps && status && status.todo.length > 1 && (
         <div className="mt-2 space-y-1">
           {status.todo.slice(1, 4).map((s) => (
             <Link
