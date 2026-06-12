@@ -25,6 +25,7 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
   return (
     <div className="mx-auto w-full max-w-2xl">
       <DetailTemplate
+        back={{ href: '/market', label: 'Market' }}
         title={listing.title}
         subtitle={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
