@@ -12,12 +12,12 @@ import { ProfilePosts } from '@/components/feed/profile-posts'
 import { type ProfileTab } from './profile-tabs'
 import { getInitials } from '@/lib/utils'
 import { isEndorsed, rankProgress, seasonRankStyle } from '@/lib/season-ranks'
-import { StandingHero } from '@/components/gamification/standing-hero'
+import { StandingTiles } from '@/components/gamification/standing-tiles'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Users, MapPin, Settings, Trophy, Star, Contact, Heart } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
@@ -41,6 +41,8 @@ import { PrivateContactPanel } from '@/components/connections/private-contact-pa
 import { PracticeShelf } from '@/components/profile/practice-shelf'
 import { GiveAwardButton } from './give-award-button'
 import { giveableAwards } from './award-actions'
+import { connectUrl } from '@/lib/qr/links'
+import { ProfileShareDisclosure } from './profile-share-disclosure'
 
 export default async function ProfilePage({
   params,
@@ -226,107 +228,99 @@ export default async function ProfilePage({
     .sort((a, b) => Number(b.earned) - Number(a.earned) || b.ratio - a.ratio)
   const rewardsEarned = rewards.filter((r) => r.earned).length
 
-  // The avatar node, sized to sit inline with the name in the Detail band.
+  // The absolute profile URL the QR encodes + the page route, for the owner's
+  // "QR & Links" disclosure (PageShareKit) and the vCard download.
+  const profileUrl = connectUrl(profile.handle as string)
+  const profilePath = `/people/${profile.handle as string}`
+  const vcardHref = vcardEnabled ? `${profilePath}/vcard` : null
+
+  // The large overlapping hero avatar (social-profile convention): pulled up over
+  // the cover with a negative margin, ring-4 so it reads as a cut-out.
   const avatarNode = profile.avatar_url ? (
     <Image
       src={profile.avatar_url}
       alt={profile.display_name}
-      width={56}
-      height={56}
-      className={`h-14 w-14 rounded-full object-cover ring-2 ring-surface ${isDemo ? 'grayscale-[0.5]' : ''}`}
+      width={128}
+      height={128}
+      className={`h-28 w-28 sm:h-32 sm:w-32 rounded-full object-cover ring-4 ring-surface ${isDemo ? 'grayscale-[0.5]' : ''}`}
     />
   ) : (
-    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-bg text-primary-strong text-xl font-semibold ring-2 ring-surface">
+    <span className="flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center rounded-full bg-primary-bg text-primary-strong text-4xl font-semibold ring-4 ring-surface">
       {initials}
     </span>
   )
 
+  // Badges — shared by the hero identity block.
+  const badges = (
+    <span className="flex items-center gap-2 flex-wrap">
+      {/* The system voice (Vera, ADR-231) shows "Moderator" — never the web role. */}
+      <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-xs leading-tight" />
+      {isSupporter && <SupporterBadge />}
+      {rankEndorsed && (
+        <span className="rank-badge text-xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
+      )}
+      {isDemo && <DemoBadge />}
+    </span>
+  )
+
+  // The relocated action row — same controls + gating as before, just moved into
+  // the hero. Owner gets Edit Profile + the QR & Links disclosure; a signed-in
+  // non-owner gets the full friend/contact/message/tip/award/block/moderate set.
+  const ownerActions = (
+    <Link
+      href="/settings/profile"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+    >
+      <Pencil className="h-3.5 w-3.5" />
+      Edit Profile
+    </Link>
+  )
+
+  const viewerActions = user ? (
+    <>
+      {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
+      {vcardEnabled && (
+        <a
+          href={`${profilePath}/vcard`}
+          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <Contact className="w-3.5 h-3.5" />
+          Save contact
+        </a>
+      )}
+      {!isBlocked && friendState.kind === 'accepted' && (
+        <form action={startConversation.bind(null, profileId)}>
+          <button
+            type="submit"
+            className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg transition-colors"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Message
+          </button>
+        </form>
+      )}
+      {!isBlocked && canTipRecipient && (
+        <TipButton toProfileId={profileId} recipientName={firstName} />
+      )}
+      {/* Witnessed awards — the quiet give, only when the viewer has one left. */}
+      {!isBlocked && giveable.length > 0 && (
+        <GiveAwardButton recipientId={profileId} giveable={giveable} />
+      )}
+      {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
+      {canModerateProfile && (
+        <ModerateProfileButton
+          profileId={profileId}
+          initialName={profile.display_name}
+          initialBio={profile.bio ?? ''}
+        />
+      )}
+    </>
+  ) : null
+
   return (
     <DetailTemplate
-      title={
-        <span className="inline-flex items-center gap-3 align-middle">
-          {avatarNode}
-          <span className="min-w-0 break-words">{profile.display_name}</span>
-        </span>
-      }
-      subtitle={
-        <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="font-medium">@{profile.handle as string}</span>
-          {regionName && (
-            <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
-          )}
-          <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
-          {circles.length > 0 && (
-            <Link
-              href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
-              className="flex items-center gap-1 transition-colors hover:text-text"
-            >
-              <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
-            </Link>
-          )}
-        </span>
-      }
-      badges={
-        <span className="flex items-center gap-2 flex-wrap">
-          {/* The system voice (Vera, ADR-231) shows "Moderator" — never the web role. */}
-          <RoleBadge role={profile.is_system ? 'moderator' : role} className="text-xs leading-tight" />
-          {isSupporter && <SupporterBadge />}
-          {rankEndorsed && (
-            <span className="rank-badge text-xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
-          )}
-          {isDemo && <DemoBadge />}
-        </span>
-      }
-      actions={
-        isOwner ? (
-          <Link
-            href="/settings/profile"
-            className="flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
-          >
-            <Settings className="w-3.5 h-3.5" />
-            Settings
-          </Link>
-        ) : user ? (
-          <>
-            {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
-            {vcardEnabled && (
-              <a
-                href={`/people/${profile.handle}/vcard`}
-                className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
-                <Contact className="w-3.5 h-3.5" />
-                Save contact
-              </a>
-            )}
-            {!isBlocked && friendState.kind === 'accepted' && (
-              <form action={startConversation.bind(null, profileId)}>
-                <button
-                  type="submit"
-                  className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg transition-colors"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  Message
-                </button>
-              </form>
-            )}
-            {!isBlocked && canTipRecipient && (
-              <TipButton toProfileId={profileId} recipientName={firstName} />
-            )}
-            {/* Witnessed awards — the quiet give, only when the viewer has one left. */}
-            {!isBlocked && giveable.length > 0 && (
-              <GiveAwardButton recipientId={profileId} giveable={giveable} />
-            )}
-            {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
-            {canModerateProfile && (
-              <ModerateProfileButton
-                profileId={profileId}
-                initialName={profile.display_name}
-                initialBio={profile.bio ?? ''}
-              />
-            )}
-          </>
-        ) : null
-      }
+      title=""
+      back={{ href: '/people', label: 'Directory' }}
     >
       {tippedCents !== null && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-primary-bg bg-primary-bg/40 px-4 py-2.5 text-sm font-semibold text-primary-strong">
@@ -335,10 +329,11 @@ export default async function ProfilePage({
         </div>
       )}
 
-      {/* ── Cover image + bio + gamification (the identity hero, now in the body) ─── */}
-      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
+      {/* ── HERO — cover + overlapping avatar + identity + actions (ADR-173, moved
+          into the body so the top profile information rides under the header image). ── */}
+      <section className="mb-6">
         {/* Cover — the member's header image when set, else the default gradient. */}
-        <div className="relative h-32 sm:h-44 bg-gradient-to-br from-primary via-signal to-signal-strong">
+        <div className="relative h-40 sm:h-56 overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-signal to-signal-strong">
           {headerImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={headerImageUrl} alt="" className={`absolute inset-0 h-full w-full object-cover ${isDemo ? 'grayscale-[0.5]' : ''}`} />
@@ -347,47 +342,95 @@ export default async function ProfilePage({
           )}
         </div>
 
-        <div className="relative px-6 pb-5 pt-5">
-          {/* Bio — inline-editable for the owner (name + bio autosave). */}
-          <EditableIdentity
-            isOwner={isOwner}
-            displayName={profile.display_name}
-            handle={profile.handle as string}
-            bio={profile.bio ?? ''}
+        {/* Identity + actions. The avatar overlaps the cover by ~50%. */}
+        <div className="flex flex-col gap-4 px-1 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="-mt-14 sm:-mt-16">{avatarNode}</div>
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl font-bold text-text break-words">{profile.display_name}</h1>
+              {badges}
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+              <span className="font-medium">@{profile.handle as string}</span>
+              {regionName && (
+                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
+              )}
+              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
+              {circles.length > 0 && (
+                <Link
+                  href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
+                  className="flex items-center gap-1 transition-colors hover:text-text"
+                >
+                  <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* Actions — right-aligned on sm+, below identity on mobile. */}
+          <div className="flex items-center gap-2 flex-wrap sm:shrink-0 sm:justify-end">
+            {isOwner ? ownerActions : viewerActions}
+          </div>
+        </div>
+
+        {/* Owner-only QR & Links — opens a panel into the body (not a popover). */}
+        {isOwner && (
+          <div className="mt-3 px-1">
+            <ProfileShareDisclosure url={profileUrl} pathname={profilePath} vcardHref={vcardHref} />
+          </div>
+        )}
+
+        {/* The rule under the hero (moved down here, per spec). */}
+        <hr className="mt-5 border-border" />
+      </section>
+
+      {/* ── UPPER BOX — the Frequency Signature centerpiece beside the compact
+          standing + achievements (game stats present but secondary). ── */}
+      <div className="mb-6 grid gap-5 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:grid-cols-3">
+        {/* Left (main) — the Signature as the profile's identity centerpiece. */}
+        <div className="min-w-0 sm:col-span-2">
+          <SectionHeader title="Frequency Signature" />
+          <FrequencySignature
+            signature={signature}
+            variant="full"
+            name={isOwner ? undefined : firstName}
           />
+        </div>
 
-          {/* ── Gamification: the standing hero (rank crest, the four gamified
-              counts, the climb ladder) + achievements ─── */}
-          <div className="mt-5 border-t border-border pt-4">
-            {/* The member's standing, featured the same way it is on the Crew home.
-                Endorsed only on the paid tier (ADR-141); no links, since this is
-                another member's standing, not the viewer's own Quest. */}
-            {rankEndorsed && (
-              <StandingHero zaps={totalZaps} gems={gems} streak={currentStreak} rank={rank} />
-            )}
-
-            <div className="mt-4">
-              <p className="mb-2 text-xs font-bold tracking-tight text-text">
-                Achievements <span className="font-medium text-subtle">· {rewardsEarned}/{rewards.length}</span>
+        {/* Right (side) — standing kept compact, then achievements. */}
+        <div className="min-w-0 space-y-4">
+          {rankEndorsed && (
+            <div className="space-y-2.5">
+              <p className="flex items-center gap-2 text-sm font-bold tracking-tight text-text">
+                Standing
+                <span className="rank-badge text-2xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
               </p>
-              <div className="flex flex-wrap gap-2">
-                {rewards.map((r) => (
-                  <AchievementChip key={r.label} icon={r.icon} label={r.label} earned={r.earned} current={r.current} target={r.target} milestone={r.milestone} />
-                ))}
-              </div>
+              {/* The compact three-up (Zaps · Gems · Streak), much smaller than the
+                  StandingHero. No links — this is another member's standing. */}
+              <StandingTiles zaps={totalZaps} gems={gems} streak={currentStreak} rank={rank} variant="compact" />
+            </div>
+          )}
+
+          <div>
+            <p className="mb-2 text-sm font-bold tracking-tight text-text">
+              Achievements <span className="font-medium text-subtle">· {rewardsEarned}/{rewards.length}</span>
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {rewards.map((r) => (
+                <AchievementChip key={r.label} icon={r.icon} label={r.label} earned={r.earned} current={r.current} target={r.target} milestone={r.milestone} />
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Frequency Signature — the member's evolving visual identity across the
-          four Pillars (Mind/Body/Spirit/Expression), the profile centerpiece (JOURNEYS §9.2). ── */}
+      {/* ── Bio — inline-editable for the owner, the bio text for everyone else. ── */}
       <div className="mb-6">
-        <SectionHeader title="Frequency Signature" />
-        <FrequencySignature
-          signature={signature}
-          variant="full"
-          name={isOwner ? undefined : firstName}
+        <EditableIdentity
+          isOwner={isOwner}
+          displayName={profile.display_name}
+          handle={profile.handle as string}
+          bio={profile.bio ?? ''}
         />
       </div>
 
