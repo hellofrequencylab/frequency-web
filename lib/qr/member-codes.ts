@@ -1,12 +1,16 @@
-// Per-member code provisioning. Each member owns ONE persistent profile code (the
-// `connect` purpose) — destination_type 'url' → their public profile. Because any
-// owner-owned code now credits its owner when a scanner signs up, this single code
-// IS the referral code too. (The earlier referral / gift_zap codes are retired; any
-// already minted keep working but aren't re-provisioned.) Server-only.
+// Per-member code provisioning. Each member owns ONE persistent personal code (the
+// `connect` purpose) — destination_type 'url' → the home SPLASH (the beta front
+// door). Because any owner-owned code credits its owner when a scanner signs up,
+// this single code IS the referral code: scanning routes through `/q`, which logs
+// the scan and drops the owner's referral cookie, then lands on the splash. If the
+// scanner signs up for the beta, the owner earns zaps (invite_accepted). The
+// destination is one constant (personalCodeTargetUrl) so it can be retargeted later
+// with no reprint. (The earlier referral / gift_zap codes are retired; any already
+// minted keep working but aren't re-provisioned.) Server-only.
 
 import { createClient } from '@/lib/supabase/server'
 import { generateSlug } from './codes'
-import { connectUrl } from './links'
+import { personalCodeTargetUrl } from './links'
 import { STYLE_PRESETS, DEFAULT_STYLE, type QrStyle } from './style'
 
 export type MemberCodePurpose = 'connect' | 'referral' | 'gift_zap'
@@ -28,7 +32,7 @@ function preset(key: string): QrStyle {
 }
 
 const SPEC: Record<MemberCodePurpose, { title: string; destination_type: string; style: QrStyle }> = {
-  connect: { title: 'My profile code', destination_type: 'url', style: preset('sunset') },
+  connect: { title: 'My personal code', destination_type: 'url', style: preset('sunset') },
   referral: { title: 'Invite to Frequency', destination_type: 'action', style: preset('forest') },
   gift_zap: { title: 'Gift me a zap', destination_type: 'action', style: preset('midnight') },
 }
@@ -36,6 +40,10 @@ const SPEC: Record<MemberCodePurpose, { title: string; destination_type: string;
 /** Return the member's personal codes (currently just `connect`), creating any that don't exist yet. */
 export async function ensureMemberCodes(profileId: string, handle: string): Promise<MemberCodeRow[]> {
   const db = await createClient()
+  // `handle` is retained in the signature for call-site compatibility — the personal
+  // code now lands on the splash (personalCodeTargetUrl), so the handle is no longer
+  // baked into the destination.
+  void handle
 
   const { data: existing } = await db
     .from('qr_codes')
@@ -51,7 +59,7 @@ export async function ensureMemberCodes(profileId: string, handle: string): Prom
       slug: generateSlug(),
       title: SPEC[purpose].title,
       destination_type: SPEC[purpose].destination_type,
-      target_url: purpose === 'connect' ? connectUrl(handle) : null,
+      target_url: purpose === 'connect' ? personalCodeTargetUrl() : null,
       purpose,
       owner_profile_id: profileId,
       created_by: profileId,
