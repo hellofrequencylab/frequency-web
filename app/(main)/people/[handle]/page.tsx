@@ -9,10 +9,11 @@ import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
 import { ProfileFeed } from '@/components/feed/profile-feed'
 import { ProfilePosts } from '@/components/feed/profile-posts'
-import { ProfileTabs, type ProfileTab } from './profile-tabs'
+import { type ProfileTab } from './profile-tabs'
 import { getInitials } from '@/lib/utils'
 import { isEndorsed, rankProgress, seasonRankStyle } from '@/lib/season-ranks'
-import { StandingTiles } from '@/components/gamification/standing-tiles'
+import { StandingHero } from '@/components/gamification/standing-hero'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
@@ -194,7 +195,7 @@ export default async function ProfilePage({
 
   // Rank, next tier, and progress come from the one canonical source (season-ranks),
   // so the profile shows the same ladder as the feed, crew home, and leaderboard.
-  const { rank, def: rankDef, next: nextRankDef, pct: progress, zapsToNext } = rankProgress(totalZaps)
+  const { rank, def: rankDef } = rankProgress(totalZaps)
   // Rank is *endorsed* (shown publicly) only on the paid tier (Crew/Supporter); a
   // free member earns it but it stays in their own Vault, not on their public
   // profile (ADR-141, PB.1i: tier, not role). Inert in Beta (everyone is comped Crew).
@@ -256,7 +257,12 @@ export default async function ProfilePage({
           )}
           <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
           {circles.length > 0 && (
-            <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}</span>
+            <Link
+              href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
+              className="flex items-center gap-1 transition-colors hover:text-text"
+            >
+              <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
+            </Link>
           )}
         </span>
       }
@@ -350,25 +356,15 @@ export default async function ProfilePage({
             bio={profile.bio ?? ''}
           />
 
-          {/* ── Gamification: rank · core stats · achievements ─── */}
+          {/* ── Gamification: the standing hero (rank crest, the four gamified
+              counts, the climb ladder) + achievements ─── */}
           <div className="mt-5 border-t border-border pt-4">
+            {/* The member's standing, featured the same way it is on the Crew home.
+                Endorsed only on the paid tier (ADR-141); no links, since this is
+                another member's standing, not the viewer's own Quest. */}
             {rankEndorsed && (
-              <>
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <span className="rank-badge text-xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
-                  <span className="text-xs text-subtle">
-                    {nextRankDef ? <>{zapsToNext.toLocaleString()} zaps to <span className="font-medium text-muted">{nextRankDef.label}</span></> : 'Max rank reached'}
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-elevated">
-                  <div className={`h-full rounded-full transition-all ${rankDef.color}`} style={{ width: `${progress}%` }} />
-                </div>
-              </>
+              <StandingHero zaps={totalZaps} gems={gems} streak={currentStreak} rank={rank} />
             )}
-
-            <div className="mt-4">
-              <StandingTiles zaps={totalZaps} gems={gems} streak={currentStreak} rank={rank} showRank={false} />
-            </div>
 
             <div className="mt-4">
               <p className="mb-2 text-xs font-bold tracking-tight text-text">
@@ -436,7 +432,17 @@ export default async function ProfilePage({
         }
         count={activeTab === 'posts' ? postCount : undefined}
       />
-      <ProfileTabs handle={profile.handle as string} active={activeTab} />
+      {/* The one tab vocabulary (UnderlineTabs). Tabs are ?tab=-driven, so the active
+          one is set explicitly via activeHref rather than pathname matching. */}
+      <div className="mb-4">
+        <UnderlineTabs
+          activeHref={activeTab === 'posts' ? `/people/${profile.handle}?tab=posts` : `/people/${profile.handle}`}
+          tabs={[
+            { href: `/people/${profile.handle}`, label: 'Activity' },
+            { href: `/people/${profile.handle}?tab=posts`, label: 'Posts', count: postCount },
+          ]}
+        />
+      </div>
       {activeTab === 'posts' ? (
         <ProfilePosts
           profileId={profileId}
