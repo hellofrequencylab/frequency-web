@@ -86,16 +86,21 @@ export const NAV_AREAS: readonly NavArea[] = [
   // ── Admin → the operator world (admin + studio + platform rolled into ONE
   // category, mirroring the back-end admin menu). Telescopes: only the items a
   // role/staff axis can reach are shown; the rest are hidden, not ghosted. ───────
-  { key: 'admin-home',       href: '/admin',            label: 'Home',        section: 'Admin', defaultAccess: 'host', surface: 'studioOverview' },
-  { key: 'admin-programs',   href: '/admin/programs',   label: 'Programs',    section: 'Admin', defaultAccess: 'host', staffDomain: 'community', surface: 'status' },
-  { key: 'admin-operations', href: '/admin/operations', label: 'Operations',  section: 'Admin', defaultAccess: 'host', staffDomain: 'community', surface: 'platformManage' },
+  // Admin Home + the operator areas are STAFF-ADMIN gated (owner: "only Admin sees Admin
+  // Home / sensitive settings"). They map to `platformManage` (admin/janitor full; everyone
+  // else 'none'), so a visitor/member/paid/host never sees them. Network-scoped admin for
+  // the volunteer leader roles (host/guide/mentor) is a separate future surface (see notes).
+  { key: 'admin-home',       href: '/admin',            label: 'Home',        section: 'Admin', defaultAccess: 'admin', surface: 'platformManage' },
+  { key: 'admin-programs',   href: '/admin/programs',   label: 'Programs',    section: 'Admin', defaultAccess: 'admin', staffDomain: 'community', surface: 'platformManage' },
+  { key: 'admin-operations', href: '/admin/operations', label: 'Operations',  section: 'Admin', defaultAccess: 'admin', staffDomain: 'community', surface: 'platformManage' },
   { key: 'admin-growth',     href: '/admin/growth',     label: 'Growth',      section: 'Admin', defaultAccess: 'host', staffDomain: 'marketing', surface: 'growthStudio' },
   { key: 'website',         href: '/coming-soon?feature=website',     label: 'Website',       section: 'Admin', defaultAccess: 'admin', surface: 'website', comingSoon: true },
   { key: 'hook-network',    href: '/coming-soon?feature=hook',        label: 'Hook Network',  section: 'Admin', defaultAccess: 'admin', surface: 'hookNetwork', comingSoon: true },
   { key: 'earnings',        href: '/coming-soon?feature=finances',    label: 'Finances',      section: 'Admin', defaultAccess: 'admin', surface: 'earnings', comingSoon: true },
   { key: 'admin-qr',        href: '/admin/qr',      label: 'QR Studio',     section: 'Admin', defaultAccess: 'member', previewBelowAccess: true, surface: 'qrStudio' },
-  { key: 'settings',        href: '/settings',      label: 'Settings',      section: 'Admin', defaultAccess: 'member', surface: 'settings' },
   { key: 'financials',     href: '/coming-soon?feature=financials', label: 'Financial', section: 'Admin', defaultAccess: 'janitor', surface: 'financialDashboard', comingSoon: true },
+  // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
+  // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".
 ] as const
 
 /** Quick lookup of an area's baseline access by key. */
