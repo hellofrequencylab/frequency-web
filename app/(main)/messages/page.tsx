@@ -13,6 +13,7 @@ import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-actio
 import { IndexTemplate } from '@/components/templates/index-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { EntityCard } from '@/components/cards/entity-card'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import type { ProfileIdentity } from '@/lib/types/profile'
 
@@ -413,23 +414,23 @@ export default async function MessagesPage({
             <SectionHeader title="Discover rooms" count={discoverRooms.length} />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {discoverRooms.map(room => (
-                <Link
+                <EntityCard
                   key={room.id}
                   href={`/messages/r/${room.id}`}
-                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
-                    <Hash className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-bold leading-tight text-text">{room.name}</p>
-                    <p className="mt-1 flex items-center gap-1 truncate text-xs text-subtle">
+                  anchor={
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+                      <Hash className="h-5 w-5" />
+                    </span>
+                  }
+                  title={room.name}
+                  context={
+                    <span className="flex items-center gap-1">
                       <Users className="h-3 w-3 shrink-0" />
                       {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
-                      {room.description && <> &middot; {room.description}</>}
-                    </p>
-                  </div>
-                </Link>
+                    </span>
+                  }
+                  description={room.description ?? undefined}
+                />
               ))}
             </div>
           </section>
