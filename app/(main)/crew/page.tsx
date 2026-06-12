@@ -1,22 +1,22 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, CheckCircle, Zap, Award, Flame, Target, Map, TrendingUp, Gem, ShoppingBag, CalendarDays, ArrowRight, Compass } from 'lucide-react'
+import { Star, CheckCircle, Zap, Award, Flame, Target, Map, TrendingUp, ShoppingBag, CalendarDays, ArrowRight, Compass } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getPracticesToLogToday } from '@/lib/practices'
-import { SEASON_RANKS, getRankDef, rankForZaps, type SeasonRank } from '@/lib/season-ranks'
+import { getRankDef, rankForZaps, type SeasonRank } from '@/lib/season-ranks'
 import { CompleteButton } from './complete-button'
 import { getInitials } from '@/lib/utils'
 import { getCurrentSeason } from '@/lib/seasons'
 import { SeasonBanner } from './season-banner'
-import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ModuleCard } from '@/components/modules/module-card'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { DashboardTemplate } from '@/components/templates'
+import { StandingHero } from '@/components/gamification/standing-hero'
 import { CircleTasksSection } from './circle-tasks-section'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -40,7 +40,7 @@ export default async function CrewPage() {
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, display_name, handle, community_role, avatar_url, current_season_rank, current_season_zaps, season_challenges_complete, lifetime_gems, is_crew_lead')
+    .select('id, display_name, handle, community_role, avatar_url, current_season_rank, current_season_zaps, season_challenges_complete, lifetime_gems, current_streak, is_crew_lead')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -54,16 +54,7 @@ export default async function CrewPage() {
   const currentSeasonRank: SeasonRank = rankForZaps(currentSeasonZaps)
   const challengesComplete: boolean = (profile as { season_challenges_complete: boolean }).season_challenges_complete ?? false
   const lifetimeGems: number = (profile as { lifetime_gems: number }).lifetime_gems ?? 0
-  const rankDef = getRankDef(currentSeasonRank)
-
-  // Next rank for progress bar
-  const rankIdx  = SEASON_RANKS.findIndex(r => r.rank === currentSeasonRank)
-  const nextRank = rankIdx < SEASON_RANKS.length - 1 ? SEASON_RANKS[rankIdx + 1] : null
-  const rankProgress = nextRank
-    ? Math.min(100, Math.round(
-        ((currentSeasonZaps - rankDef.minZaps) / (nextRank.minZaps - rankDef.minZaps)) * 100
-      ))
-    : 100
+  const currentStreak: number = (profile as { current_streak: number }).current_streak ?? 0
 
   // Active season for the member-facing banner. End date is preformatted here
   // (server) so the client banner has no locale/timezone hydration mismatch.
@@ -109,16 +100,6 @@ export default async function CrewPage() {
     if (!completionsByTask[c.task_id]) completionsByTask[c.task_id] = []
     completionsByTask[c.task_id]!.push(c)
   })
-
-  const completedTaskCount = new Set((completions ?? []).map((c) => c.task_id)).size
-
-  // Dynamic signal: tasks completed in the last 7 days (accurate from completions).
-  const weekAgo = new Date()
-  weekAgo.setDate(weekAgo.getDate() - 7)
-  const weekAgoIso = weekAgo.toISOString()
-  const tasksThisWeek = (completions ?? []).filter(
-    (c) => c.completed_at && (c.completed_at as string) >= weekAgoIso,
-  ).length
 
   // My first active circle membership
   const { data: membership } = await admin
@@ -193,20 +174,23 @@ export default async function CrewPage() {
             )}
           </>
         }
-        stats={
-          <>
-            <StatCard label="Season rank" value={rankDef.label} icon={Star} href="/crew/achievements" />
-            <StatCard label="Zaps" value={currentSeasonZaps.toLocaleString()} icon={Zap} href="/crew/leaderboard" />
-            <StatCard label="Gems" value={lifetimeGems.toLocaleString()} icon={Gem} href="/crew/store" />
-            <StatCard
-              label="Tasks done"
-              value={String(completedTaskCount)}
-              icon={CheckCircle}
-              delta={tasksThisWeek > 0 ? { label: `+${tasksThisWeek} this week`, trend: 'up' } : undefined}
-            />
-          </>
-        }
       >
+        {/* ── The standing hero — rank crest, the four gamified counts, the climb
+            ladder. The member dashboard's centerpiece (redesign foundation). ── */}
+        <StandingHero
+          zaps={currentSeasonZaps}
+          gems={lifetimeGems}
+          streak={currentStreak}
+          rank={currentSeasonRank}
+          seasonName={season?.name}
+          links={{
+            zaps: '/crew/leaderboard',
+            rank: '/crew/achievements',
+            streak: '/crew/streaks',
+            gems: '/crew/store',
+          }}
+        />
+
         {/* ── Season banner + live countdown ──────────── */}
         {season && (
         <SeasonBanner
@@ -254,67 +238,14 @@ export default async function CrewPage() {
         <ArrowRight className="hidden h-4 w-4 shrink-0 text-subtle sm:block" />
       </Link>
 
-      {/* ── Season Progress (full width, top) ────────── */}
-      <section>
-        <SectionHeader title="Season progress" />
-        <div className="rounded-2xl bg-surface-elevated/60 px-5 py-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-text">
-              {currentSeasonRank === 'luminary'
-                ? 'Maximum rank achieved'
-                : currentSeasonRank === 'conduit' && !challengesComplete
-                ? `Progress to Luminary`
-                : nextRank
-                ? `Progress to ${nextRank.label}`
-                : 'Max rank'}
-            </span>
-            {nextRank && currentSeasonRank !== 'conduit' && (
-              <span className="text-xs text-subtle">
-                {currentSeasonZaps.toLocaleString()} / {nextRank.minZaps.toLocaleString()}
-              </span>
-            )}
-          </div>
-
-          <div className="h-2.5 rounded-full bg-surface-elevated overflow-hidden mb-4">
-            <div
-              className={`h-full rounded-full transition-all ${rankDef.color}`}
-              style={{ width: `${rankProgress}%` }}
-            />
-          </div>
-
-          <div className="flex justify-between">
-            {SEASON_RANKS.map((r) => {
-              const achieved = currentSeasonZaps >= r.minZaps &&
-                (r.rank !== 'luminary' || challengesComplete)
-              const isCurrent = r.rank === currentSeasonRank
-              return (
-                <div key={r.rank} className="flex flex-col items-center gap-1">
-                  <div
-                    className={`w-2.5 h-2.5 rounded-full ring-2 transition-all ${
-                      isCurrent
-                        ? `${r.color} ring-current ring-offset-1`
-                        : achieved
-                        ? `${r.color} ring-transparent`
-                        : 'bg-border-strong ring-transparent'
-                    }`}
-                  />
-                  <span className={`text-xs font-semibold leading-none ${
-                    isCurrent ? r.text : 'text-subtle'
-                  }`}>
-                    {r.label}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-
-          {currentSeasonRank === 'conduit' && !challengesComplete && (
-            <p className="mt-3 text-xs text-subtle text-center">
-              Complete all season challenges to unlock Luminary rank.
-            </p>
-          )}
-        </div>
-      </section>
+      {/* The standing ladder lives in the hero now; the one rule it can't show is
+          the Luminary challenge gate, so keep that nudge when it applies. */}
+      {currentSeasonRank === 'conduit' && !challengesComplete && (
+        <p className="flex items-center gap-2 rounded-2xl bg-surface-elevated/60 px-5 py-3 text-sm text-muted">
+          <Target className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+          Complete all season challenges to unlock <span className="font-semibold text-text">Luminary</span> rank.
+        </p>
+      )}
 
       {/* ── Main content: left column (tasks) + right column (quick links + leaderboard) */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
