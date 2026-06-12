@@ -9,7 +9,7 @@ import {
 
 const articles = [
   { category: 'getting-started', slug: 'join-a-circle', title: 'Join a Circle', body: 'How to join.' },
-  { category: 'the-game', slug: 'zaps-and-gems', title: 'Zaps & gems', body: 'About zaps.' },
+  { category: 'the-quest', slug: 'zaps-and-gems', title: 'Zaps & gems', body: 'About zaps.' },
 ]
 
 describe('buildAutodocMessages', () => {
@@ -47,13 +47,13 @@ describe('formatAdvisoryComment', () => {
     const c = formatAdvisoryComment(
       [
         { category: 'getting-started', slug: 'join-a-circle', needsUpdate: true, note: 'cap changed' },
-        { category: 'the-game', slug: 'zaps-and-gems', needsUpdate: false, note: '' },
+        { category: 'the-quest', slug: 'zaps-and-gems', needsUpdate: false, note: '' },
       ],
       ['app/(main)/circles/page.tsx'],
     )
     expect(c).toContain(AUTODOC_MARKER)
     expect(c).toContain('- [ ] `content/help/getting-started/join-a-circle.md` — cap changed')
-    expect(c).toContain('Checked, likely fine: the-game/zaps-and-gems')
+    expect(c).toContain('Checked, likely fine: the-quest/zaps-and-gems')
   })
   it('says nothing needs updating when nothing is flagged', () => {
     const c = formatAdvisoryComment([{ category: 'a', slug: 'b', needsUpdate: false, note: '' }], [])

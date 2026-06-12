@@ -38,7 +38,7 @@ describe('affectedFeatureKeys', () => {
 describe('affectedArticles', () => {
   const articles = [
     { category: 'getting-started', slug: 'join-a-circle', featureKeys: ['circles', 'memberships'] },
-    { category: 'the-game', slug: 'zaps-and-gems', featureKeys: ['zaps', 'gems'] },
+    { category: 'the-quest', slug: 'zaps-and-gems', featureKeys: ['zaps', 'gems'] },
     { category: 'safety', slug: 'reporting', featureKeys: ['moderation'] },
   ]
   it('returns articles whose featureKeys intersect the change', () => {

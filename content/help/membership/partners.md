@@ -38,5 +38,5 @@ community, so the perk lives in the real world too:
    phone's own camera works too.
 3. You claim the offer at the counter and pick up **Zaps** for showing up.
 
-See [QR codes & checking in](/help/the-game/qr-check-ins) for how scanning works in
+See [QR codes & checking in](/help/the-quest/qr-check-ins) for how scanning works in
 general. Partner codes reward you with the offer rather than a verified practice.
