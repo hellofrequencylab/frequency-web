@@ -11,13 +11,12 @@ import { ProfileFeed } from '@/components/feed/profile-feed'
 import { ProfilePosts } from '@/components/feed/profile-posts'
 import { type ProfileTab } from './profile-tabs'
 import { getInitials } from '@/lib/utils'
-import { isEndorsed, rankProgress, seasonRankStyle } from '@/lib/season-ranks'
-import { StandingTiles } from '@/components/gamification/standing-tiles'
+import { isEndorsed, rankProgress, seasonRankStyle, type RankDef, type SeasonRank } from '@/lib/season-ranks'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
@@ -196,7 +195,7 @@ export default async function ProfilePage({
 
   // Rank, next tier, and progress come from the one canonical source (season-ranks),
   // so the profile shows the same ladder as the feed, crew home, and leaderboard.
-  const { rank, def: rankDef } = rankProgress(totalZaps)
+  const { rank, def: rankDef, next: rankNext, pct: rankPct, zapsToNext } = rankProgress(totalZaps)
   // Rank is *endorsed* (shown publicly) only on the paid tier (Crew/Supporter); a
   // free member earns it but it stays in their own Vault, not on their public
   // profile (ADR-141, PB.1i: tier, not role). Inert in Beta (everyone is comped Crew).
@@ -386,35 +385,115 @@ export default async function ProfilePage({
         )}
       </section>
 
-      {/* ── UPPER BOX — the Frequency Signature centerpiece beside the compact
-          standing + achievements (game stats present but secondary). ── */}
-      <div className="mb-6 grid gap-5 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:grid-cols-3">
-        {/* Left (main) — the Signature as the profile's identity centerpiece. */}
-        <div className="min-w-0 sm:col-span-2">
-          <SectionHeader title="Frequency Signature" />
-          <FrequencySignature
-            signature={signature}
-            variant="full"
-            name={isOwner ? undefined : firstName}
+      {/* ── BODY — a social-profile split: the person's content on the left (2/3),
+          their standing + Frequency Signature in an interior sidebar on the right
+          (1/3). The page is 'scoped' (lib/layout/page-chrome), so the viewer's global
+          "Your Quest" rail (about THEM, not the person on screen) is suppressed and
+          this in-body sidebar takes its place. On mobile the sidebar rides up first
+          as a quick standing + signature summary, then the content follows. ── */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* MAIN (2/3) — bio, practice, the relationship panels, composer, timeline. */}
+        <div className="order-2 min-w-0 space-y-6 lg:order-1 lg:col-span-2">
+          {/* Bio — inline-editable for the owner, read-only for everyone else. */}
+          <EditableIdentity
+            isOwner={isOwner}
+            displayName={profile.display_name}
+            handle={profile.handle as string}
+            bio={profile.bio ?? ''}
           />
-        </div>
 
-        {/* Right (side) — standing kept compact, then achievements. */}
-        <div className="min-w-0 space-y-4">
-          {rankEndorsed && (
-            <div className="space-y-2.5">
-              <p className="flex items-center gap-2 text-sm font-bold tracking-tight text-text">
-                Standing
-                <span className="rank-badge text-2xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
-              </p>
-              {/* The compact three-up (Zaps · Gems · Streak), much smaller than the
-                  StandingHero. No links — this is another member's standing. */}
-              <StandingTiles zaps={totalZaps} gems={gems} streak={currentStreak} rank={rank} variant="compact" />
-            </div>
+          {/* Practice Shelf — per-practice consistency + depth awards, plus any
+              Witnessed awards (Rewards v2). Hidden until something is earned. */}
+          <Suspense fallback={null}>
+            <PracticeShelf profileId={profileId} isOwner={isOwner} firstName={firstName} />
+          </Suspense>
+
+          {/* Your private contact card — only the viewer who merged their own
+              personal contact with this member sees this (their own logged data). */}
+          {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}
+
+          {/* How you're connected — the viewer's private read of their own tie (ADR-186). */}
+          {!isOwner && !!user && !isBlocked && (
+            <ConnectionPanel
+              profileId={profileId}
+              firstName={firstName}
+              friendAction={friendState.kind === 'none' ? <FriendButton targetProfileId={profileId} state={friendState} /> : undefined}
+            />
+          )}
+
+          {/* Staff-only: this member's support history, wired into the console. */}
+          {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
+
+          {/* Composer + timeline. */}
+          {myProfileId && (
+            <Composer
+              scopeId={profileId}
+              visibility="public"
+              placeholder={isOwner ? 'What’s on your mind?' : `Leave something for ${firstName}…`}
+            />
           )}
 
           <div>
-            <p className="mb-2 text-sm font-bold tracking-tight text-text">
+            <SectionHeader
+              title={
+                activeTab === 'posts'
+                  ? isOwner ? 'Your posts' : `${firstName}’s posts`
+                  : isOwner ? 'Your timeline' : `${firstName}’s timeline`
+              }
+              count={activeTab === 'posts' ? postCount : undefined}
+            />
+            {/* The one tab vocabulary (UnderlineTabs), ?tab=-driven. */}
+            <div className="mb-4">
+              <UnderlineTabs
+                activeHref={activeTab === 'posts' ? `/people/${profile.handle}?tab=posts` : `/people/${profile.handle}`}
+                tabs={[
+                  { href: `/people/${profile.handle}`, label: 'Activity' },
+                  { href: `/people/${profile.handle}?tab=posts`, label: 'Posts', count: postCount },
+                ]}
+              />
+            </div>
+            {activeTab === 'posts' ? (
+              <ProfilePosts
+                profileId={profileId}
+                firstName={firstName}
+                isOwner={isOwner}
+                myProfileId={myProfileId}
+                viewerRole={myRole}
+              />
+            ) : (
+              <ProfileFeed
+                profileId={profileId}
+                profileHandle={profile.handle as string}
+                myProfileId={myProfileId}
+                viewerRole={myRole}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* SIDEBAR (1/3) — the gamification stats as menu items (top), then the
+            Frequency Signature. Sticky on desktop; rides up first on mobile. */}
+        <aside className="order-1 min-w-0 space-y-5 self-start lg:order-2 lg:col-span-1 lg:sticky lg:top-20">
+          {/* Standing — Zaps · Gems · Streak · Rank as a tidy menu; the owner's rows
+              link into the Quest, a visitor's are read-only. Shown when the rank is
+              endorsed (public) or to the owner on their own page. */}
+          {(rankEndorsed || isOwner) && (
+            <ProfileStandingCard
+              isOwner={isOwner}
+              rank={rank}
+              rankDef={rankDef}
+              next={rankNext}
+              pct={rankPct}
+              zapsToNext={zapsToNext}
+              zaps={totalZaps}
+              gems={gems}
+              streak={currentStreak}
+            />
+          )}
+
+          {/* Achievements — the earned / nearly-earned chips. */}
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+            <p className="mb-3 text-sm font-bold tracking-tight text-text">
               Achievements <span className="font-medium text-subtle">· {rewardsEarned}/{rewards.length}</span>
             </p>
             <div className="flex flex-wrap gap-2">
@@ -423,88 +502,95 @@ export default async function ProfilePage({
               ))}
             </div>
           </div>
-        </div>
+
+          {/* Frequency Signature — the identity constellation, stacked for the column. */}
+          <div>
+            <SectionHeader title="Frequency Signature" />
+            <FrequencySignature
+              signature={signature}
+              variant="full"
+              layout="stack"
+              name={isOwner ? undefined : firstName}
+              className="mt-2"
+            />
+          </div>
+        </aside>
       </div>
-
-      {/* ── Bio — inline-editable for the owner, the bio text for everyone else. ── */}
-      <div className="mb-6">
-        <EditableIdentity
-          isOwner={isOwner}
-          displayName={profile.display_name}
-          handle={profile.handle as string}
-          bio={profile.bio ?? ''}
-        />
-      </div>
-
-      {/* ── Practice Shelf — per-practice consistency + depth awards, plus any
-          Witnessed awards (Rewards Economy v2). Hidden until something is earned. ── */}
-      <Suspense fallback={null}>
-        <PracticeShelf profileId={profileId} isOwner={isOwner} firstName={firstName} />
-      </Suspense>
-
-      {/* ── Your private contact card — only the viewer who merged their own
-          personal contact with this member sees this (their own logged data). ── */}
-      {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}
-
-      {/* ── How you're connected — the viewer's private read of their own tie (ADR-186) ── */}
-      {!isOwner && !!user && !isBlocked && (
-        <ConnectionPanel
-          profileId={profileId}
-          firstName={firstName}
-          friendAction={friendState.kind === 'none' ? <FriendButton targetProfileId={profileId} state={friendState} /> : undefined}
-        />
-      )}
-
-      {/* ── Staff-only: this member's support history, wired into the console ── */}
-      {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
-
-      {/* ── Composer + timeline (single column; the global rail is on the right) ── */}
-      {myProfileId && (
-        <div className="mb-5">
-          <Composer
-            scopeId={profileId}
-            visibility="public"
-            placeholder={isOwner ? 'What’s on your mind?' : `Leave something for ${firstName}…`}
-          />
-        </div>
-      )}
-
-      <SectionHeader
-        title={
-          activeTab === 'posts'
-            ? isOwner ? 'Your posts' : `${firstName}’s posts`
-            : isOwner ? 'Your timeline' : `${firstName}’s timeline`
-        }
-        count={activeTab === 'posts' ? postCount : undefined}
-      />
-      {/* The one tab vocabulary (UnderlineTabs). Tabs are ?tab=-driven, so the active
-          one is set explicitly via activeHref rather than pathname matching. */}
-      <div className="mb-4">
-        <UnderlineTabs
-          activeHref={activeTab === 'posts' ? `/people/${profile.handle}?tab=posts` : `/people/${profile.handle}`}
-          tabs={[
-            { href: `/people/${profile.handle}`, label: 'Activity' },
-            { href: `/people/${profile.handle}?tab=posts`, label: 'Posts', count: postCount },
-          ]}
-        />
-      </div>
-      {activeTab === 'posts' ? (
-        <ProfilePosts
-          profileId={profileId}
-          firstName={firstName}
-          isOwner={isOwner}
-          myProfileId={myProfileId}
-          viewerRole={myRole}
-        />
-      ) : (
-        <ProfileFeed
-          profileId={profileId}
-          profileHandle={profile.handle as string}
-          myProfileId={myProfileId}
-          viewerRole={myRole}
-        />
-      )}
     </>
+  )
+}
+
+// The profile's standing as a compact MENU — Zaps · Gems · Streak · Rank as rows
+// (the owner's link into the Quest; a visitor's are read-only), under a rank header
+// with a slim progress bar to the next tier. This is the gamification summary that
+// opens the profile's interior sidebar, above the Frequency Signature.
+function ProfileStandingCard({
+  isOwner, rank, rankDef, next, pct, zapsToNext, zaps, gems, streak,
+}: {
+  isOwner: boolean
+  rank: SeasonRank
+  rankDef: RankDef
+  next: RankDef | null
+  pct: number
+  zapsToNext: number
+  zaps: number
+  gems: number
+  streak: number
+}) {
+  const rows: { icon: React.ElementType; label: string; value: string; href: string | null }[] = [
+    { icon: Zap, label: 'Zaps', value: zaps.toLocaleString(), href: isOwner ? '/crew/leaderboard' : null },
+    { icon: Gem, label: 'Gems', value: gems.toLocaleString(), href: isOwner ? '/crew/store' : null },
+    { icon: Flame, label: 'Streak', value: `${streak} ${streak === 1 ? 'day' : 'days'}`, href: isOwner ? '/crew/streaks' : null },
+    { icon: Trophy, label: 'Rank', value: rankDef.label, href: isOwner ? '/crew/leaderboard' : null },
+  ]
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-bold tracking-tight text-text">Standing</p>
+        <span className="rank-badge text-2xs font-medium" style={seasonRankStyle(rank)}>{rankDef.label}</span>
+      </div>
+
+      {next ? (
+        <div className="mt-3 space-y-1.5">
+          <div className="flex items-center justify-between gap-2 text-2xs">
+            <span className="font-semibold text-text">Climbing to {next.label}</span>
+            <span className="tabular-nums text-subtle">{zapsToNext.toLocaleString()} ⚡ to go</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-warning-bg/60">
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+      ) : (
+        <p className="mt-3 text-2xs font-semibold text-primary-strong">Top rank reached</p>
+      )}
+
+      <div className="mt-3 space-y-0.5">
+        {rows.map((r) => {
+          const Icon = r.icon
+          const body = (
+            <>
+              <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+              <span className="min-w-0 flex-1 text-sm font-medium text-text">{r.label}</span>
+              <span className="shrink-0 text-sm font-semibold tabular-nums text-muted">{r.value}</span>
+            </>
+          )
+          return r.href ? (
+            <Link
+              key={r.label}
+              href={r.href}
+              className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-elevated"
+            >
+              {body}
+              <ArrowRight className="h-3 w-3 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
+            </Link>
+          ) : (
+            <div key={r.label} className="flex items-center gap-2.5 px-2 py-1.5">
+              {body}
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 

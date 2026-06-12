@@ -47,13 +47,18 @@ interface Props {
   /** `full` = profile centerpiece (labelled, with legend). `compact` = a small
    *  inline badge (the shape only, for a card or row). */
   variant?: 'full' | 'compact'
+  /** `auto` (default) lays the full variant out side-by-side on sm+. `stack` keeps
+   *  the constellation above the legend at every width and shrinks the radar a
+   *  touch — for a narrow column (the profile's interior sidebar). */
+  layout?: 'auto' | 'stack'
   /** Whose signature this is — tunes the empty-state copy ('you' vs a name). */
   name?: string
   className?: string
 }
 
-export function FrequencySignature({ signature, variant = 'full', name, className }: Props) {
+export function FrequencySignature({ signature, variant = 'full', layout = 'auto', name, className }: Props) {
   const compact = variant === 'compact'
+  const stacked = layout === 'stack'
 
   // Empty state — no shape yet. Keep it warm and inviting, not a dead box.
   if (signature.total === 0) {
@@ -84,10 +89,10 @@ export function FrequencySignature({ signature, variant = 'full', name, classNam
 
   // Geometry. A square viewBox; the constellation lives inside an inset so axis
   // labels have room (full variant).
-  const size = compact ? 56 : 240
+  const size = compact ? 56 : stacked ? 210 : 240
   const cx = size / 2
   const cy = size / 2
-  const pad = compact ? 6 : 46
+  const pad = compact ? 6 : stacked ? 40 : 46
   const maxR = cx - pad
 
   // Each axis is scaled by signature.axes[pillar] (0..1 of the peak pillar). A small
@@ -195,7 +200,7 @@ export function FrequencySignature({ signature, variant = 'full', name, classNam
   // reads the balance + dominant pillar and the per-pillar shares.
   return (
     <div className={`rounded-2xl border border-border bg-surface p-5 shadow-sm ${className ?? ''}`}>
-      <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-6">
+      <div className={`flex flex-col items-center gap-5 ${stacked ? '' : 'sm:flex-row sm:items-center sm:gap-6'}`}>
         {/* The constellation, with axis labels positioned at the four cardinals. */}
         <div className="relative shrink-0" style={{ width: size, height: size }}>
           {svg}
