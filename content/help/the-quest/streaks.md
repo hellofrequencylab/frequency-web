@@ -1,7 +1,7 @@
 ---
 title: Streaks
 description: How your daily practice streak works, freezes, and the rewards for keeping it.
-category: the-game
+category: the-quest
 order: 5
 updated: 2026-06-11
 audience: member

@@ -35,4 +35,4 @@ go from browsing to belonging.
 - You can be in more than one Circle. Most people settle into one home Circle and
   visit others.
 
-Next: learn how showing up earns [zaps and gems](/help/the-game/zaps-and-gems).
+Next: learn how showing up earns [zaps and gems](/help/the-quest/zaps-and-gems).

@@ -1,7 +1,7 @@
 ---
 title: Season ranks
 description: How Zaps move you up the ranks each season.
-category: the-game
+category: the-quest
 order: 2
 updated: 2026-06-11
 audience: member
@@ -9,7 +9,7 @@ featureKeys: [ranks]
 status: published
 ---
 
-Ranks are your standing in the current season of **The Quest**, earned by showing up, especially in person. They're driven by **Zaps** (see [Zaps & Gems](/help/the-game/zaps-and-gems)).
+Ranks are your standing in the current season of **The Quest**, earned by showing up, especially in person. They're driven by **Zaps** (see [Zaps & Gems](/help/the-quest/zaps-and-gems)).
 
 ## The ranks
 
@@ -32,4 +32,4 @@ A season runs for a stretch, then resets so everyone gets a fresh start. When it
 
 Your season rank goes back to Ghost each reset, but every Zap you've ever earned feeds **Amplitude**, your lifetime total. It only ever goes up. Hosting-class acts (hosting, running a program, founding or activating a circle) count double toward it. You'll see it next to your rank, like "Beacon · 14,200", and crossing big totals (1,000, then 5,000, and beyond) mints a permanent Award into your Vault.
 
-Want to know what counts? See [Zaps & Gems](/help/the-game/zaps-and-gems).
+Want to know what counts? See [Zaps & Gems](/help/the-quest/zaps-and-gems).

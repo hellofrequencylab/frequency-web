@@ -16,10 +16,10 @@ other. One number, owned by everyone.
 ## How it builds
 
 - **Showing up.** Every time a member checks in at one of the circle's gatherings
-  (a verified check-in, see [QR codes & checking in](/help/the-game/qr-check-ins)),
+  (a verified check-in, see [QR codes & checking in](/help/the-quest/qr-check-ins)),
   the circle's Current builds by **10**.
 - **Finishing shared challenges.** When your host has adopted a
-  [season challenge](/help/the-game/season-challenges) for the circle and a member
+  [season challenge](/help/the-quest/season-challenges) for the circle and a member
   completes it, the Current builds by **25**. A finished challenge is a bigger lift
   than a single check-in, so it counts for more.
 

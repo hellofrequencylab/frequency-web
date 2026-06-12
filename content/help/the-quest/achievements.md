@@ -1,7 +1,7 @@
 ---
 title: Achievements & badges
 description: The permanent badges you collect for showing up: tiers, categories, and the secret ones.
-category: the-game
+category: the-quest
 order: 7
 updated: 2026-06-10
 audience: member
@@ -54,6 +54,6 @@ surprise is the point.
 ## Where your badges show
 
 Your badge count rides with you. It shows on the
-[leaderboard](/help/the-game/leaderboard) next to your Zaps and streak, and recent
+[leaderboard](/help/the-quest/leaderboard) next to your Zaps and streak, and recent
 badges appear on your Quest dashboard. Collecting them is never required; they're
 a record, not homework.

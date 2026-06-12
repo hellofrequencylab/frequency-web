@@ -82,6 +82,10 @@ const nextConfig: NextConfig = {
       { source: '/marketing', destination: '/admin/marketing', permanent: false },
       { source: '/marketing/:path*', destination: '/admin/marketing/:path*', permanent: false },
       { source: '/growth', destination: '/admin/growth', permanent: false },
+      // The Quest help category was renamed from the-game -> the-quest (naming canon:
+      // the year-round game is "The Quest"). Redirect old help links + bookmarks.
+      { source: '/help/the-game', destination: '/help/the-quest', permanent: false },
+      { source: '/help/the-game/:path*', destination: '/help/the-quest/:path*', permanent: false },
     ]
   },
   images: {

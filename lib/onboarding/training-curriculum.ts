@@ -45,8 +45,8 @@ export const TRAINING: Partial<Record<CommunityRole, TrainingDef>> = {
     steps: [
       { label: 'Join a local circle', href: '/help/getting-started/join-a-circle' },
       { label: 'Adopt a practice', href: '/help/getting-started/practices' },
-      { label: 'Follow a Journey', href: '/help/the-game/your-journey' },
-      { label: 'Earn zaps & gems', href: '/help/the-game/zaps-and-gems' },
+      { label: 'Follow a Journey', href: '/help/the-quest/your-journey' },
+      { label: 'Earn zaps & gems', href: '/help/the-quest/zaps-and-gems' },
     ],
     reward: 15,
   },

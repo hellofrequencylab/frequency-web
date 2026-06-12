@@ -1,7 +1,7 @@
 ---
 title: Zaps and Gems explained
 description: The two currencies, how you earn them, and what they are for.
-category: the-game
+category: the-quest
 order: 1
 updated: 2026-06-11
 audience: member
@@ -71,5 +71,5 @@ activating a circle) count double toward it. You'll see it next to your rank, li
 
 ## The one thing to remember
 
-The game is not the point; it is the nudge. Everything of real value rewards the
+The Quest is not the point; it is the nudge. Everything of real value rewards the
 same thing: showing up for your people in the real world.
