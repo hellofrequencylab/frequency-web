@@ -8,19 +8,20 @@
 // 20260617000000), `buildCourse` gains a richer source but the player keeps reading
 // this same shape — the UI never has to change.
 
-import type { JourneyProgress, JourneyProgressItem } from '@/lib/journey-plans'
+import type { JourneyProgress, JourneyProgressItem, JourneyPlanItem } from '@/lib/journey-plans'
 
 export type LessonStatus = 'done' | 'current' | 'todo'
 
 export interface CourseLesson {
-  /** Stable id (the journey_plan_items.id today). */
+  /** Stable id (the journey_plan_items.id). */
   id: string
+  /** A practice block "completes" by LOGGING; a lesson/check block by CHECK-OFF. */
+  kind: 'practice' | 'lesson'
   title: string
   /** Markdown lesson body / practice instructions (tier content, then practice copy). */
   body: string | null
   estMinutes: number | null
-  /** The practice this lesson logs, when it's a practice block (today: always set).
-   *  Null for future pure-lesson blocks, which complete via check-off, not a log. */
+  /** The practice this lesson logs, for a practice block. Null for lesson/check blocks. */
   practiceId: string | null
   status: LessonStatus
   /** Human cadence label for practice lessons ("Daily", "Weekly"…). */
@@ -50,53 +51,82 @@ export interface Course {
 
 const SINGLE_SECTION_ID = 'section:path'
 
-/** Map a practice step's resolved content to a lesson body + title. Tier content
- *  (the depth the viewer sees) wins; the practice's own copy is the fallback. */
-function lessonFromStep(step: JourneyProgressItem, status: LessonStatus): CourseLesson {
-  const title = step.tierContent?.title ?? step.practice?.title ?? 'Practice'
-  const body = step.tierContent?.body ?? step.practice?.description ?? null
-  const cadenceLabel = step.cadence ?? step.practice?.cadence ?? null
+function blockType(b: JourneyPlanItem): NonNullable<JourneyPlanItem['block_type']> {
+  return b.block_type ?? 'practice'
+}
+
+/** A practice block → lesson. Tier content (the depth the viewer sees) wins for the
+ *  title/body; the practice's own copy is the fallback. Progress fills the meter. */
+function practiceLesson(
+  b: JourneyPlanItem,
+  prog: JourneyProgressItem | null,
+  status: LessonStatus,
+): CourseLesson {
   return {
-    id: step.id,
-    title,
-    body,
-    estMinutes: step.tierContent?.est_minutes ?? null,
-    practiceId: step.practice_id,
+    id: b.id,
+    kind: 'practice',
+    title: prog?.tierContent?.title ?? b.practice?.title ?? b.title ?? 'Practice',
+    body: prog?.tierContent?.body ?? b.practice?.description ?? b.body ?? null,
+    estMinutes: prog?.tierContent?.est_minutes ?? b.est_minutes ?? null,
+    practiceId: b.practice_id,
     status,
-    cadenceLabel,
-    loggedThisWeek: step.loggedThisWeek,
-    target: step.target,
+    cadenceLabel: b.cadence ?? b.practice?.cadence ?? null,
+    loggedThisWeek: prog?.loggedThisWeek ?? 0,
+    target: prog?.target ?? 0,
   }
 }
 
-/** Build the course view from a member's live Journey progress.
- *
- *  Status rule (practice lessons): a step that has met its weekly cadence is `done`;
- *  the first not-yet-met step, in order, is `current`; the rest are `todo`. This
- *  mirrors `getActiveJourneyProgress`'s "current step" so the syllabus and the
- *  Next-Step card always agree. */
-export function buildCourse(progress: Pick<JourneyProgress, 'items' | 'nextItem'>): Course {
-  const currentId = progress.nextItem?.id ?? null
-  let currentAssigned = false
+/** A lesson / resource / check block → lesson. Completes via check-off, not a log. */
+function contentLesson(b: JourneyPlanItem, status: LessonStatus): CourseLesson {
+  return {
+    id: b.id,
+    kind: 'lesson',
+    title: b.title ?? 'Lesson',
+    body: b.body ?? null,
+    estMinutes: b.est_minutes ?? null,
+    practiceId: null,
+    status,
+    cadenceLabel: null,
+    loggedThisWeek: 0,
+    target: 0,
+  }
+}
 
-  const lessons: CourseLesson[] = progress.items.map((step) => {
-    let status: LessonStatus
-    if (step.met) {
-      status = 'done'
-    } else if ((currentId && step.id === currentId) || (!currentId && !currentAssigned)) {
-      status = 'current'
-      currentAssigned = true
-    } else {
-      status = 'todo'
-    }
-    return lessonFromStep(step, status)
+/** Build the course view from a Journey's blocks + the viewer's live state.
+ *
+ *  Status (unified across block kinds): a PRACTICE block is `done` once it meets its
+ *  weekly cadence (from `progress`); a LESSON/CHECK block is `done` once it has a
+ *  check-off row (`completedLessonIds`). The first not-done block, in author order, is
+ *  `current`; the rest `todo`. Section blocks are skipped in this flat v1 (they group
+ *  in a later pass). */
+export function buildCourse(input: {
+  blocks: JourneyPlanItem[]
+  progress: Pick<JourneyProgress, 'items'>
+  completedLessonIds?: ReadonlySet<string>
+}): Course {
+  const completed = input.completedLessonIds ?? new Set<string>()
+  const progressById = new Map(input.progress.items.map((p) => [p.id, p]))
+
+  const renderable = [...input.blocks]
+    .filter((b) => blockType(b) !== 'section')
+    .sort((a, b) => a.sort_order - b.sort_order)
+
+  const isDone = (b: JourneyPlanItem): boolean =>
+    blockType(b) === 'practice' ? progressById.get(b.id)?.met ?? false : completed.has(b.id)
+
+  const firstOpenId = renderable.find((b) => !isDone(b))?.id ?? null
+
+  const lessons: CourseLesson[] = renderable.map((b) => {
+    const status: LessonStatus = isDone(b) ? 'done' : b.id === firstOpenId ? 'current' : 'todo'
+    return blockType(b) === 'practice'
+      ? practiceLesson(b, progressById.get(b.id) ?? null, status)
+      : contentLesson(b, status)
   })
 
   const doneCount = lessons.filter((l) => l.status === 'done').length
   const totalCount = lessons.length
   const percent = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100)
 
-  // Default selection: the current lesson, else the first todo, else the first lesson.
   const currentLessonId =
     lessons.find((l) => l.status === 'current')?.id ??
     lessons.find((l) => l.status === 'todo')?.id ??
@@ -129,6 +159,7 @@ export interface CourseDraftLesson {
 export function previewCourse(lessons: CourseDraftLesson[]): Course {
   const courseLessons: CourseLesson[] = lessons.map((l, i) => ({
     id: l.id,
+    kind: 'lesson',
     title: l.title || 'Untitled lesson',
     body: l.body,
     estMinutes: l.estMinutes ?? null,

@@ -79,10 +79,15 @@ export interface JourneyPlan {
   completion_gems: number
 }
 
+/** Block kinds an item can be (ADR-244). Existing rows are 'practice'. */
+export type BlockType = 'practice' | 'lesson' | 'resource' | 'check' | 'section'
+
 export interface JourneyPlanItem {
   id: string
-  plan_id: string
+  /** The practice for a 'practice' block. Empty/unused for non-practice blocks — read
+   *  `block_type` first; never deref this for a lesson/section block. */
   practice_id: string
+  plan_id: string
   domain_id: string | null
   sort_order: number
   note: string | null
@@ -90,6 +95,22 @@ export interface JourneyPlanItem {
   cadence: string | null
   /** The author's default intensity tier for this step (ADR-198). */
   default_tier: IntensityTier
+  // ── Block model (ADR-244). Optional + defaulted so pre-block code is unaffected. ──
+  /** Defaults to 'practice' for legacy rows that predate the column. */
+  block_type?: BlockType
+  /** Section nesting (a block under a 'section' block). */
+  parent_id?: string | null
+  /** Lesson title (non-practice blocks). */
+  title?: string | null
+  /** Lesson markdown body (non-practice blocks). */
+  body?: string | null
+  /** Lesson media: { video, images[], files[] }. */
+  media?: Record<string, unknown> | null
+  /** Type-specific extras (quiz options, gating, …). */
+  settings?: Record<string, unknown> | null
+  /** Does this block count toward course completion? Defaults true. */
+  required?: boolean
+  est_minutes?: number | null
   practice:
     | {
         id: string
@@ -109,6 +130,8 @@ const PLAN_COLS =
 
 const ITEM_COLS =
   'id, plan_id, practice_id, domain_id, sort_order, note, cadence, default_tier, ' +
+  // Block model (ADR-244). Existing rows are block_type='practice' with these null/default.
+  'block_type, parent_id, title, body, media, settings, required, est_minutes, ' +
   'practice:practices(id, title, description, domain_id, cadence, ' +
   'tiers:practice_tiers(tier, title, body, est_minutes))'
 
@@ -736,7 +759,11 @@ export async function getActiveJourneyProgress(
   }
 
   return plans.map((plan) => {
-    const planItems = allItems.filter((it) => it.plan_id === plan.id)
+    // Only PRACTICE blocks drive the rhythm/quest math; lesson/section blocks (ADR-244)
+    // are course content, not loggable practices, and are handled by the course builder.
+    const planItems = allItems.filter(
+      (it) => it.plan_id === plan.id && (it.block_type ?? 'practice') === 'practice',
+    )
     const planPracticeIds = new Set(planItems.map((it) => it.practice_id))
     const anchor = anchorByPlan.get(plan.id) as SeasonAnchor
     const tierOverride = tierOverrideByPlan.get(plan.id) ?? null
@@ -828,6 +855,32 @@ function resolveAnchor(
   return { start, token: start ? `ev:${start}` : `ev:${plan.id}` }
 }
 
+// --- Lesson completion (ADR-244) ------------------------------------------
+// Practices stay DERIVED from practice_logs; lesson/check blocks need real persistence,
+// so their check-offs live in journey_lesson_progress (member-owned).
+
+/** The set of lesson/check block ids a member has completed for a plan. */
+export async function getCompletedLessonIds(profileId: string, planId: string): Promise<Set<string>> {
+  const { data } = await db()
+    .from('journey_lesson_progress')
+    .select('item_id')
+    .eq('profile_id', profileId)
+    .eq('plan_id', planId)
+  return new Set(((data as { item_id: string }[] | null) ?? []).map((r) => r.item_id))
+}
+
+/** Mark a lesson/check block complete for a member (idempotent on profile+item). */
+export async function completeLesson(profileId: string, planId: string, itemId: string): Promise<void> {
+  await db()
+    .from('journey_lesson_progress')
+    .upsert({ profile_id: profileId, plan_id: planId, item_id: itemId }, { onConflict: 'profile_id,item_id' })
+}
+
+/** Undo a lesson completion (toggle off). */
+export async function uncompleteLesson(profileId: string, itemId: string): Promise<void> {
+  await db().from('journey_lesson_progress').delete().eq('profile_id', profileId).eq('item_id', itemId)
+}
+
 /** Everything the Journey page needs for one plan by slug: the plan + items (discovery), plus
  *  the viewer's live progress when they've adopted it (active mode). Null if the plan is gone. */
 export interface JourneyView {
@@ -835,6 +888,8 @@ export interface JourneyView {
   items: JourneyPlanItem[]
   adopted: boolean
   progress: JourneyProgress | null
+  /** Lesson/check block ids the viewer has completed (ADR-244); empty if not adopted. */
+  completedLessonIds: Set<string>
 }
 
 export async function getJourneyView(
@@ -846,12 +901,17 @@ export async function getJourneyView(
   if (!base) return null
   let adopted = false
   let progress: JourneyProgress | null = null
+  let completedLessonIds = new Set<string>()
   if (profileId) {
     adopted = await isPlanAdopted(profileId, base.plan.id)
     if (adopted) {
-      const all = await getActiveJourneyProgress(profileId, { withCompanions: true, circleId: opts.circleId })
+      const [all, completed] = await Promise.all([
+        getActiveJourneyProgress(profileId, { withCompanions: true, circleId: opts.circleId }),
+        getCompletedLessonIds(profileId, base.plan.id),
+      ])
       progress = all.find((p) => p.plan.id === base.plan.id) ?? null
+      completedLessonIds = completed
     }
   }
-  return { plan: base.plan, items: base.items, adopted, progress }
+  return { plan: base.plan, items: base.items, adopted, progress, completedLessonIds }
 }
