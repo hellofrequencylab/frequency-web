@@ -18,7 +18,7 @@ import { recordPracticeStreak } from '@/lib/practice-streak'
 import type { JourneyRewardResult } from '@/lib/journey-grants'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export interface Practice {

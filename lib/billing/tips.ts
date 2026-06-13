@@ -22,7 +22,7 @@ export const TIP_MIN_CENTS = 100 // $1
 export const TIP_MAX_CENTS = 50000 // $500 — a sane ceiling for a single tip
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export interface TipResult {

@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { CaptureBar } from '@/components/feed/capture-bar'
@@ -70,7 +69,7 @@ export default async function FeedPage({
 
       // Member geo (ADR-088) — read through an untyped handle since the new columns
       // aren't in the generated types yet (cast pattern, per lib/practices.ts).
-      const { data: geoRow } = await (admin as unknown as SupabaseClient)
+      const { data: geoRow } = await (admin)
         .from('profiles')
         .select('home_lat, home_lng, feed_radius_m')
         .eq('id', profile.id)

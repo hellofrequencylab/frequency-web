@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { Plus, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { bucketFriendships, type FriendshipRpcRow, type FriendEntry } from '@/lib/friendships-map'
@@ -53,7 +52,7 @@ export default async function FriendsPage({
 
   // Pending request buckets always come from my_friendships (incoming/outgoing live
   // outside the orbit, which only returns ACCEPTED friends).
-  const { data } = await (supabase as unknown as SupabaseClient).rpc('my_friendships')
+  const { data } = await (supabase).rpc('my_friendships')
   const { incoming, outgoing, accepted } = bucketFriendships(
     (data as FriendshipRpcRow[] | null) ?? [],
   )

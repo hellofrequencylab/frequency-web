@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -22,7 +21,7 @@ export async function saveHomeSeo(fd: FormData): Promise<{ ok: boolean; error?: 
   const description = ((fd.get('description') as string) ?? '').trim().slice(0, MAX_DESCRIPTION) || null
 
   // `page_content` predates the generated types — untyped-client cast (convention).
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { error } = await db.from('page_content').upsert({
     route: '/',
     title,

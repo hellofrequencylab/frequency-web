@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { listEntryTemplates, type EntryTemplate } from './templates'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** template_id → enabled. Absent keys mean enabled (default-on). */

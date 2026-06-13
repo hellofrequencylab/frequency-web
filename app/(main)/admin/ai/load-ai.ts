@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { aiEnabledFlag, listFlagEvents } from '@/lib/platform-flags'
 import { aiEnabled as envAiReady } from '@/lib/ai/client'
 import { FEATURE_DAILY_CAP_USD, dailyCapFor } from '@/lib/ai/budget'
@@ -15,7 +14,7 @@ export async function getAiControlsData() {
   const [enabled, events] = await Promise.all([aiEnabledFlag(), listFlagEvents('ai_enabled', 15)])
   const envReady = envAiReady()
 
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const since = new Date()
   since.setUTCHours(0, 0, 0, 0)
   const { data: usageRows } = await admin

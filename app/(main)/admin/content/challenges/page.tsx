@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { Trophy, Target, Flame, CheckCircle2 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -32,7 +31,7 @@ const DIFFICULTY_TONE: Record<string, { tone: 'success' | 'info' | 'warning' | '
 export default async function AdminContentChallengesPage() {
   await requireAdmin('host', { staff: 'community' })
 
-  const ub = createAdminClient() as unknown as SupabaseClient
+  const ub = createAdminClient()
   const [season, completion, { data: challengeRows }] = await Promise.all([
     getCurrentSeason(),
     challengeCompletionRates(),

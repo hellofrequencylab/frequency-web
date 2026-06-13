@@ -13,7 +13,7 @@ import { embedText } from '@/lib/ai/embed'
 import { aiAvailable } from '@/lib/ai/usage'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** pgvector wants a bracketed literal for a vector parameter over PostgREST. */

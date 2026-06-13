@@ -8,11 +8,10 @@
 // through the untyped admin handle (repo convention, cf. lib/events/event-drafts.ts).
 
 import { cache } from 'react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPosterQuality, type PosterBand, type PosterQuality } from '@/lib/events/poster-quality'
 
-const db = () => createAdminClient() as unknown as SupabaseClient
+const db = () => createAdminClient()
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 

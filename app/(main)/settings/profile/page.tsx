@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { FocusTemplate } from '@/components/templates'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
@@ -32,7 +31,7 @@ export default async function ProfileSettingsPage() {
   const qrSvg = connect ? renderStyledQrSvg(qrLink, parseStyle(connect.style), 320) : null
 
   // header_image_url isn't in the generated types yet (new column) — read via cast.
-  const { data: hdr } = await (supabase as unknown as SupabaseClient)
+  const { data: hdr } = await (supabase)
     .from('profiles')
     .select('header_image_url')
     .eq('auth_user_id', user.id)

@@ -82,7 +82,7 @@ export async function createEntryPoint(input: EntryPointInput): Promise<ActionRe
   const row = clean(input)
   if (typeof row === 'string') return fail(row)
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   // Optional campaign (admin builder) — only set it if it really exists.
   const campaignId = input.campaignId && (await campaignExists(input.campaignId)) ? input.campaignId : null
@@ -144,7 +144,7 @@ export async function updateEntryPoint(id: string, input: EntryPointInput): Prom
   const row = clean(input)
   if (typeof row === 'string') return fail(row)
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   if (!(await ownEntryPoint(db, id, crew.id))) return fail('That isn’t your entry point.')
 
   const campaignId = input.campaignId && (await campaignExists(input.campaignId)) ? input.campaignId : undefined
@@ -172,7 +172,7 @@ export async function deleteEntryPoint(id: string): Promise<ActionResult> {
   const crew = await requireCrew()
   if (typeof crew === 'string') return fail(crew)
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   if (!(await ownEntryPoint(db, id, crew.id))) return fail('That isn’t your entry point.')
 
   const { error } = await db.from('qr_codes').delete().eq('id', id)

@@ -29,7 +29,7 @@ import { withVoice } from './voice'
 import { getPosterQuality, type PosterQuality } from '@/lib/events/poster-quality'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 const FEATURE = 'poster-observer'

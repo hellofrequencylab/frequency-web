@@ -20,7 +20,7 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { PRACTICE_STREAK_WEEKS } from '@/lib/practice-shelf'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 // How far back logs feed the walk. 20 weeks comfortably covers a 13-week Full

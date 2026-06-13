@@ -526,7 +526,7 @@ export function previewPlan(plan: AreaPlan) {
 
 // ── Commit ───────────────────────────────────────────────────────────────────
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 async function channelId(d: SupabaseClient, slug: string): Promise<string | null> {
   const { data } = await d.from('topical_channels').select('id').eq('slug', slug).maybeSingle()

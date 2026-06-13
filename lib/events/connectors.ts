@@ -30,7 +30,7 @@ export interface ConnectorSuggestion {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /**

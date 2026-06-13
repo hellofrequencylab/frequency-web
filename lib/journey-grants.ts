@@ -11,7 +11,7 @@ import { getActiveJourneyProgress } from '@/lib/journey-plans'
 import { evaluateLogRewards, type RewardBonus } from '@/lib/journey-rewards'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export interface JourneyRewardResult {

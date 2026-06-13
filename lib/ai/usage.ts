@@ -5,7 +5,6 @@
 // (see components/feed/feed-list.tsx) we cast to an untyped client for them rather
 // than regenerate the whole generated types file. platform_flags IS typed.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { aiEnabled } from './client'
 import { withinBudget, dailyCapFor, type TokenUsage } from './budget'
@@ -36,7 +35,7 @@ export async function recordAiUsage(input: {
   profileId?: string | null
 }): Promise<void> {
   try {
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
     await admin.from('ai_usage').insert({
       feature: input.feature,
       model: input.model,
@@ -53,7 +52,7 @@ export async function recordAiUsage(input: {
 /** Has a feature spent past its daily cap today? Fails open=false on error. */
 export async function featureOverBudget(feature: string): Promise<boolean> {
   try {
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
     const since = new Date()
     since.setUTCHours(0, 0, 0, 0)
     const { data } = await admin
@@ -80,7 +79,7 @@ export async function logHelpQuery(input: {
   profileId?: string | null
 }): Promise<void> {
   try {
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
     await admin.from('ai_help_queries').insert({
       question: input.question.slice(0, 500),
       confidence: input.confidence,

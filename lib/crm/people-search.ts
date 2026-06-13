@@ -9,12 +9,11 @@
 // then a network capture only surfaces to a viewer in the same locality. Email is
 // withheld from network hits — discovery routes through the capturing steward.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { canViewLead, type LeadReason } from './visibility'
 
 function db() {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export type LeadHit = {

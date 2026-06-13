@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // CRM pipeline data layer (ADR-102). The crm_* tables aren't in the generated DB
@@ -7,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // gate on host+ (see app/(main)/admin/crm/actions.ts requireCrm()).
 
 function db() {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export type StageKind = 'open' | 'won' | 'lost'

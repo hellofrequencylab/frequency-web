@@ -17,7 +17,7 @@ export { TRAINING } from './training-curriculum'
 // `training_paths` is newer than the generated DB types — read/write through a
 // loosely-typed client (the same escape hatch the feed RPCs use).
 function tdb(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Assign the training Journey for a role on promotion (idempotent). */

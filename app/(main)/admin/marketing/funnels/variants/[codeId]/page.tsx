@@ -2,7 +2,6 @@
 // point and read per-variant scans / conversions / rate. In /marketing (admin/staff).
 
 import { notFound } from 'next/navigation'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { AdminTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
@@ -16,7 +15,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function VariantsPage({ params }: { params: Promise<{ codeId: string }> }) {
   const { codeId } = await params
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data: code } = await db
     .from('qr_codes')
     .select('id, slug, title, target_url, template_id')

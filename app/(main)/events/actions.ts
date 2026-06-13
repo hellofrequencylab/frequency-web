@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -77,7 +76,7 @@ export async function createEvent(formData: FormData) {
   // Cast: capacity/visibility/category/energy_tag are newer than the generated
   // DB types (lib/database.types.ts) — repo convention for not-yet-regenerated
   // columns (see lib/billing/*).
-  const { data: inserted, error } = await (supabase as unknown as SupabaseClient)
+  const { data: inserted, error } = await (supabase)
     .from('events').insert({
       title,
       description,
@@ -333,7 +332,7 @@ export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' |
     // maybe / not_going: a soft state, no email, no capacity consumed.
     // `plus_ones` isn't in the generated DB types yet → untyped cast (repo
     // convention for not-yet-regenerated columns; see lib/events/capacity.ts).
-    const db = supabase as unknown as SupabaseClient
+    const db = supabase
     if (existing) {
       if (existing.status !== intent) {
         // plus_ones only mean anything for a confirmed seat — clear on stepping back.
@@ -389,7 +388,7 @@ export async function setRsvpPlusOnes(eventId: string, plusOnes: number) {
 
   // `plus_ones` isn't in the generated DB types yet → untyped cast (repo
   // convention for not-yet-regenerated columns; see lib/events/capacity.ts).
-  await (supabase as unknown as SupabaseClient)
+  await (supabase)
     .from('event_rsvps')
     .update({ plus_ones: n })
     .eq('id', existing.id)

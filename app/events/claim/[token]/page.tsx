@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { CalendarDays, MapPin, Zap } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
@@ -21,7 +20,7 @@ export default async function ClaimEventPage({ params }: { params: Promise<{ tok
   const { token } = await params
   if (!token || token.length < 8) notFound()
 
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { data } = await admin
     .from('events')
     .select(

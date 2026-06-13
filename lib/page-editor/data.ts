@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Data } from '@measured/puck'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -47,7 +46,7 @@ export interface PageRow {
 const SELECT = 'slug, title, data, published_data, status, updated_at, published_at'
 
 export async function getPage(slug: string): Promise<PageRow | null> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db.from('pages').select(SELECT).eq('slug', slug).maybeSingle()
   return (data as PageRow | null) ?? null
 }
@@ -60,7 +59,7 @@ export async function getPublishedData(slug: string): Promise<Data | null> {
 }
 
 export async function listPages(): Promise<Record<string, PageRow>> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db.from('pages').select(SELECT)
   const map: Record<string, PageRow> = {}
   for (const r of (data as PageRow[]) ?? []) map[r.slug] = r

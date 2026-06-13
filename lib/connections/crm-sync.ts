@@ -3,7 +3,6 @@
 // lower(email); links the personal `network_contacts` row back via
 // linked_contact_id. Server-only (contacts is service-role).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /** Upsert the scanned contact into `contacts` and link it to the personal card.
@@ -18,7 +17,7 @@ export async function syncScanToCrm(input: {
   const email = input.email.trim().toLowerCase()
   if (!email) return null
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const now = new Date().toISOString()
 
   const { data: existing } = await db

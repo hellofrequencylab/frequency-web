@@ -217,7 +217,7 @@ export function blankWalkthrough(partial: Partial<Walkthrough> = {}): Walkthroug
 
 // `walkthrough` predates the generated types — loosely-typed admin client.
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 interface WalkthroughRow {

@@ -17,7 +17,7 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { grantStoreItem } from '@/lib/awards/cosmetics'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export const COOP_SYNCHRONY_DAYS = 30

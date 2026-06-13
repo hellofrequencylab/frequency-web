@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Data } from '@measured/puck'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -14,7 +13,7 @@ export async function publishPage(slug: string, data: Data): Promise<void> {
   if (!isEditableSlug(slug)) return
   const meta = EDITABLE_PAGES.find((p) => p.slug === slug)!
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const now = new Date().toISOString()
   await db.from('pages').upsert(
     {
@@ -39,7 +38,7 @@ export async function savePageDraft(slug: string, data: Data): Promise<void> {
   const janitor = await requireJanitor()
   if (!isEditableSlug(slug)) return
   const meta = EDITABLE_PAGES.find((p) => p.slug === slug)!
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   await db.from('pages').upsert(
     { slug, title: meta.title, data, updated_at: new Date().toISOString(), updated_by: janitor.profileId },
     { onConflict: 'slug' },
@@ -53,7 +52,7 @@ export async function unpublishPage(slug: string): Promise<void> {
   const janitor = await requireJanitor()
   if (!isEditableSlug(slug)) return
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   await db
     .from('pages')
     .update({

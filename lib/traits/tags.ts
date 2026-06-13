@@ -23,7 +23,7 @@ export interface AssignTagOptions {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Assign a tag to a member. Idempotent (no-op if already present). Throws on an

@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -117,7 +116,7 @@ export default async function EventDetailPage({
     details: EventDetailsWithMedia | null
     poster_path: string | null
   }
-  const { data: rawPosterMeta } = await (admin as unknown as SupabaseClient)
+  const { data: rawPosterMeta } = await (admin)
     .from('events')
     .select('posted_by_profile_id, claimed_at, organizer_name, details, poster_path')
     .eq('id', event.id)
@@ -281,7 +280,7 @@ export default async function EventDetailPage({
     sold: number
     member_only: boolean
   }
-  const { data: rawTiers } = await (admin as unknown as SupabaseClient)
+  const { data: rawTiers } = await (admin)
     .from('event_ticket_types')
     .select(
       'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, active, sort_order, created_at',
@@ -337,7 +336,7 @@ export default async function EventDetailPage({
   }
   let soldTickets: SoldTicketRow[] = []
   if (canManage && isPaidEvent) {
-    const { data: rawSold } = await (admin as unknown as SupabaseClient)
+    const { data: rawSold } = await (admin)
       .from('event_tickets')
       .select('id, amount_cents, qty, status, buyer:profiles!buyer_profile_id ( display_name, handle )')
       .eq('event_id', event.id)
@@ -404,7 +403,7 @@ export default async function EventDetailPage({
     created_at: string
     author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   }
-  const { data: rawActivity } = await (admin as unknown as SupabaseClient)
+  const { data: rawActivity } = await (admin)
     .from('event_posts')
     .select('id, body, image_url, created_at, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
     .eq('event_id', event.id)
@@ -424,7 +423,7 @@ export default async function EventDetailPage({
   let recapPhotos: RecapPhoto[] = []
   if (hasEnded) {
     type RawMedia = { id: string; image_url: string; caption: string | null; profile_id: string }
-    const { data: rawMedia } = await (admin as unknown as SupabaseClient)
+    const { data: rawMedia } = await (admin)
       .from('event_media')
       .select('id, image_url, caption, profile_id')
       .eq('event_id', event.id)

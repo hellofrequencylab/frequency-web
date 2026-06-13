@@ -24,7 +24,7 @@ function toVariant(r: VariantRow): EntryVariant {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /**

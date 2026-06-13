@@ -8,7 +8,6 @@
 // fails or returns nothing valid, the current featured set is left untouched so
 // the section never wipes itself.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { completeText } from '../complete'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '../usage'
@@ -89,7 +88,7 @@ export async function refreshFeaturedPosts(): Promise<RefreshResult> {
     return { status: 'skipped', featuredIds: [], reason: 'ai-unavailable-or-over-budget' }
   }
 
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
 
   // Pull recent candidates.
   let candidates: Candidate[] = []
@@ -168,7 +167,7 @@ export async function refreshFeaturedPosts(): Promise<RefreshResult> {
 export async function unfeaturePost(postId: string): Promise<boolean> {
   if (!postId) return false
   try {
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
     const { error } = await admin.from('posts').update({ featured_at: null }).eq('id', postId)
     return !error
   } catch {

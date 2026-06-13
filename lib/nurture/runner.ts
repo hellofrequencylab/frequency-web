@@ -3,7 +3,6 @@
 // queued via the durable email outbox) and advance — or complete/cancel. Called from
 // /api/cron/nurture. Server-only; never sends inline (enqueueEmail).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
@@ -41,7 +40,7 @@ function toStep(r: StepRow): NurtureStep {
 }
 
 export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const nowIso = new Date().toISOString()
 
   const { data: dueRows } = await db

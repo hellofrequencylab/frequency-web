@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { isJanitor } from '@/lib/core/roles'
@@ -53,7 +52,7 @@ export async function seedArea(spec: AreaSpec) {
 export async function purgeArea(centerLat: number, centerLng: number, radiusMi: number) {
   await requireJanitor()
   // Untyped cast: hubs.is_demo isn't in the generated types yet (cast pattern).
-  const d = createAdminClient() as unknown as SupabaseClient
+  const d = createAdminClient()
   const dLat = radiusMi * 0.0145
   const dLng = dLat / Math.max(0.2, Math.cos((centerLat * Math.PI) / 180))
 

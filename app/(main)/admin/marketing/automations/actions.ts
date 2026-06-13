@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStaffMember, staffCan } from '@/lib/staff'
 
@@ -22,7 +21,7 @@ export async function createRule(input: {
   const name = input.name.trim()
   if (!name || !input.triggerEvent) return { ok: false, error: 'Name and trigger are required.' }
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { error } = await db.from('automation_rules').insert({
     name,
     trigger_event: input.triggerEvent,
@@ -41,7 +40,7 @@ export async function toggleRule(id: string, enabled: boolean): Promise<void> {
   const staff = await getStaffMember()
   if (!staff || !staffCan(staff.role, 'marketing')) return
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   await db.from('automation_rules').update({ enabled }).eq('id', id)
   revalidatePath('/admin/marketing/automations')
 }

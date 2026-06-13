@@ -3,7 +3,6 @@
 // Server-only. The funnel math is pure + unit-tested. RPCs aren't in database.types
 // (cast, repo convention).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics, type PracticeMetrics } from './practice'
 
@@ -67,7 +66,7 @@ function mapProps(data: unknown): PropCount[] {
 }
 
 export async function getEngagementDashboard(windowDays = 30): Promise<EngagementDashboard> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const [practice, byTypeRes, pagesRes, featuresRes] = await Promise.all([
     getPracticeMetrics(),
     db.rpc('engagement_event_counts', { _days: windowDays }),

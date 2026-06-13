@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { MessageCircleQuestion, ShieldX, CheckCircle2 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -20,7 +19,7 @@ export default async function HelpGapsPage() {
   const admin = createAdminClient()
   const since = new Date()
   since.setDate(since.getDate() - 30)
-  const db = admin as unknown as SupabaseClient
+  const db = admin
   const { data } = await db
     .from('ai_help_queries')
     .select('question, deflected, confidence, created_at')

@@ -4,7 +4,6 @@
 // campaign_id) aren't in the generated DB types until `supabase gen types` is re-run,
 // so we read through an untyped handle (repo convention — see lib/zaps.ts). Server-only.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
@@ -65,7 +64,7 @@ const COLS = 'id, slug, title, target_url, template_id, flyer, style, scan_count
  *  still surface here. Templateless rows render with the default template, and the
  *  first edit claims ownership (see updateEntryPoint). */
 export async function listMyEntryPoints(ownerId: string): Promise<EntryPoint[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('qr_codes')
     .select(COLS)
@@ -76,7 +75,7 @@ export async function listMyEntryPoints(ownerId: string): Promise<EntryPoint[]> 
 
 /** How many entry points a member already has (drives the create-reward cap). */
 export async function countMyEntryPoints(ownerId: string): Promise<number> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { count } = await db
     .from('qr_codes')
     .select('id', { count: 'exact', head: true })
@@ -87,7 +86,7 @@ export async function countMyEntryPoints(ownerId: string): Promise<number> {
 
 /** Every entry point in a campaign (any owner) — the admin campaign view. */
 export async function listEntryPointsByCampaign(campaignId: string): Promise<EntryPoint[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('qr_codes')
     .select(COLS)
@@ -104,7 +103,7 @@ export interface EntryPointWithOwner extends EntryPoint {
 
 /** Campaign entry points with their owner (for the admin assign-to-crew view). */
 export async function listEntryPointsByCampaignWithOwner(campaignId: string): Promise<EntryPointWithOwner[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('qr_codes')
     .select(`${COLS}, owner_profile_id`)
@@ -136,7 +135,7 @@ export interface AssignableMember {
  *  tier) or stewards (host+). Crew = the paid TIER, not a role (PB.1/ADR-207). */
 export async function listAssignableMembers(limit = 200): Promise<AssignableMember[]> {
   const hostPlus = ROLE_HIERARCHY.slice(ROLE_HIERARCHY.indexOf('host')) as readonly string[]
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('profiles')
     .select('id, display_name, community_role')
@@ -155,7 +154,7 @@ export async function listAssignableMembers(limit = 200): Promise<AssignableMemb
 /** True when `profileId` is assignable: active and paid (tier) or a steward (host+). */
 export async function isAssignableMember(profileId: string): Promise<boolean> {
   const hostPlus = ROLE_HIERARCHY.slice(ROLE_HIERARCHY.indexOf('host')) as readonly string[]
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('profiles')
     .select('community_role, membership_tier, is_active, is_system')
@@ -170,7 +169,7 @@ export async function isAssignableMember(profileId: string): Promise<boolean> {
 
 /** One entry point by id, only if `ownerId` owns it. */
 export async function getMyEntryPoint(id: string, ownerId: string): Promise<EntryPoint | null> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('qr_codes')
     .select(`${COLS}, owner_profile_id, template_id`)

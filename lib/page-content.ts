@@ -1,6 +1,5 @@
 import { cache } from 'react'
 import type { Metadata } from 'next'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Operator-editable page content, keyed by route (ADR-180/182). A coded page reads
@@ -39,7 +38,7 @@ type PageContentRow = {
 
 export const getPageContent = cache(async (route: string): Promise<PageContent | null> => {
   try {
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
     // `select('*')` rather than a column list so the read keeps working before the
     // hero/CTA migration (20260612050000) is applied — not-yet-existing columns
     // simply come back undefined instead of erroring the whole row away.

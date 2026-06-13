@@ -3,7 +3,6 @@ import { Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
@@ -100,7 +99,7 @@ export default async function ProfilePage({
   }
 
   // header_image_url isn't in the generated types yet (new column) — read via cast.
-  const { data: hdrRow } = await (admin as unknown as SupabaseClient)
+  const { data: hdrRow } = await (admin)
     .from('profiles')
     .select('header_image_url')
     .eq('id', profile.id)

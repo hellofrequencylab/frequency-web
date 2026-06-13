@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireStaffCap } from '@/lib/staff'
@@ -13,7 +12,7 @@ export async function setContactConsent(
   state: 'subscribed' | 'unsubscribed',
 ): Promise<void> {
   await requireStaffCap('marketing')
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   await db
     .from('contacts')
     .update({ consent_state: state, updated_at: new Date().toISOString() })
