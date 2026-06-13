@@ -12,6 +12,7 @@ import {
   PERSONA_STATE_META,
   type PersonaQueueRow,
 } from '@/lib/personas'
+import { getGlobalTrustScores } from '@/lib/trust'
 import { PersonaControls } from './persona-controls'
 
 export const dynamic = 'force-dynamic'
@@ -23,7 +24,7 @@ const STATE_TONE: Record<'pending' | 'success' | 'muted', StatusTone> = {
   muted: 'neutral',
 }
 
-function PersonaRow({ row }: { row: PersonaQueueRow }) {
+function PersonaRow({ row, trust }: { row: PersonaQueueRow; trust?: number }) {
   const meta = PERSONA_META[row.persona]
   const stateMeta = PERSONA_STATE_META[row.state]
   return (
@@ -44,6 +45,10 @@ function PersonaRow({ row }: { row: PersonaQueueRow }) {
           </p>
         </div>
       </Link>
+      {/* Operator-only trust readout (ADR-247) — context for the verify decision. */}
+      <span className="text-xs font-medium text-subtle tabular-nums" title="Global trust score">
+        Trust {trust ?? 0}
+      </span>
       <StatusChip tone={STATE_TONE[stateMeta.tone]}>{stateMeta.label}</StatusChip>
       <PersonaControls profileId={row.profileId} persona={row.persona} state={row.state} />
     </li>
@@ -56,6 +61,11 @@ export default async function AdminPersonasPage() {
   await requireAdmin('janitor', { staff: 'profiles' })
 
   const queue = await getPersonaQueue()
+  // Operator-only trust readout for the verify decision (ADR-247). One batched read;
+  // safe zeros until the trust_signals table is applied / signals accrue.
+  const trustByProfile = await getGlobalTrustScores(queue.map((r) => r.profileId)).catch(
+    () => new Map<string, number>(),
+  )
   const pending = queue.filter((r) => r.state === 'claimed')
   const rest = queue.filter((r) => r.state !== 'claimed')
 
@@ -75,7 +85,7 @@ export default async function AdminPersonasPage() {
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
             {pending.map((r) => (
-              <PersonaRow key={`${r.profileId}-${r.persona}`} row={r} />
+              <PersonaRow key={`${r.profileId}-${r.persona}`} row={r} trust={trustByProfile.get(r.profileId)} />
             ))}
           </ul>
         )}
@@ -85,7 +95,7 @@ export default async function AdminPersonasPage() {
         <AdminSection title="All personas" description="Verified, active, and suspended claims.">
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
             {rest.map((r) => (
-              <PersonaRow key={`${r.profileId}-${r.persona}`} row={r} />
+              <PersonaRow key={`${r.profileId}-${r.persona}`} row={r} trust={trustByProfile.get(r.profileId)} />
             ))}
           </ul>
         </AdminSection>
