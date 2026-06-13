@@ -7,7 +7,7 @@
 // them through the untyped admin handle (repo convention, cf. lib/studio/contacts.ts).
 // The private `network-contacts` bucket is read via short-lived signed URLs.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type {
   NetworkContact,
@@ -27,7 +27,7 @@ const BUCKET = 'network-contacts'
 const COLS =
   'id, owner_id, visibility, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, details, card_front_path, card_back_path, logo_path, linked_profile_id, created_at, updated_at'
 
-const db = () => createAdminClient() as unknown as SupabaseClient
+const db = () => createAdminClient()
 const emptyToNull = (v: string | null | undefined): string | null => {
   const s = (v ?? '').trim()
   return s.length ? s : null
@@ -141,7 +141,7 @@ export async function createContact(ownerId: string, input: CreateContactInput):
       card_back_path: input.cardBackPath ?? null,
       logo_path: input.logoPath ?? null,
       extraction: input.extraction ?? {},
-    })
+    } as Database['public']['Tables']['network_contacts']['Insert'])
     .select('id')
     .maybeSingle()
   if (error || !data) return null
@@ -187,7 +187,7 @@ export async function updateContact(
   if (patch.cardFrontPath !== undefined) u.card_front_path = patch.cardFrontPath
   if (patch.cardBackPath !== undefined) u.card_back_path = patch.cardBackPath
   if (patch.logoPath !== undefined) u.logo_path = patch.logoPath
-  const { error } = await db().from('network_contacts').update(u).eq('id', id).eq('owner_id', ownerId)
+  const { error } = await db().from('network_contacts').update(u as Database['public']['Tables']['network_contacts']['Update']).eq('id', id).eq('owner_id', ownerId)
   return !error
 }
 

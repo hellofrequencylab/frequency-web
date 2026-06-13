@@ -1,5 +1,4 @@
 import { CalendarRange } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { seasonAct } from '@/lib/journey-quest-clock'
 
@@ -21,7 +20,7 @@ export async function SeasonContext({
   let seasonName: string | null = null
   let theme: string | null = null
   try {
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
     const { data: q } = await admin.from('quests').select('season, name').eq('id', questId).maybeSingle()
     const qr = q as { season: number | null; name: string | null } | null
     seasonName = qr?.name ?? null

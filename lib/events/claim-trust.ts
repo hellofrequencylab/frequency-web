@@ -25,6 +25,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+// eslint-disable-next-line no-restricted-syntax -- dynamic table name can't be statically typed
 const db = () => createAdminClient() as unknown as SupabaseClient
 
 /** A freshly-minted account is suspect within this window of its creation. */

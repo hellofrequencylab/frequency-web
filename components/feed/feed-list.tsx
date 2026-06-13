@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { MessageSquare, Megaphone, Zap, ArrowRight, CalendarDays, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -66,7 +65,7 @@ export async function FeedList({
       // visibility (a non-member sees only the scope's PUBLIC posts, not its
       // members-only 'group' posts) while still returning a member's group/cluster
       // posts that the crew+ posts RLS policy would otherwise drop.
-      const supabase = (await createClient()) as unknown as SupabaseClient
+      const supabase = (await createClient())
       const { data } = await supabase.rpc('scoped_feed_for_viewer', {
         _scope_ids: circleIds,
         _sort: fetchSort,
@@ -80,7 +79,7 @@ export async function FeedList({
       // DEFINER RPC, enforced in the DB and run on the user-scoped client. It
       // returns the author's public fields + reactions safely (so it works for
       // members too, whom the crew+ posts policy would otherwise limit to public).
-      const supabase = (await createClient()) as unknown as SupabaseClient
+      const supabase = (await createClient())
       // The 'nearby' lens passes the member's coords + radius so the reconciled
       // feed_for_viewer (geo + demo-aware) returns the closest activity first.
       const rpcArgs: Record<string, unknown> = { _sort: fetchSort, _limit: 40 }

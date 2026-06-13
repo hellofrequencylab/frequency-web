@@ -1,6 +1,6 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Json } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuppressed } from '@/lib/suppression'
 import { resolveAcquisition } from '@/lib/attribution/server'
@@ -33,7 +33,7 @@ export async function requestBetaAccess(input: {
 
   // `contacts` isn't in the generated DB types yet (untyped client view, same as
   // lib/studio/contacts.ts). Cast to the generic client.
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const nowIso = new Date().toISOString()
 
   // Look up any existing contact (case-insensitive; email is stored lowercased
@@ -66,7 +66,7 @@ export async function requestBetaAccess(input: {
     double_optin: 'pending',
     requested_at: nowIso,
     acquisition,
-  }
+  } as unknown as Json
 
   try {
     if (existing?.id) {
