@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildCourse, courseLessonOrder, previewCourse } from '@/lib/journey-course'
-import type { JourneyProgressItem } from '@/lib/journey-plans'
+import type { JourneyProgressItem, JourneyPlanItem } from '@/lib/journey-plans'
 
 // Minimal practice-step factory — only the fields buildCourse reads.
 function step(
@@ -43,9 +43,40 @@ function step(
   } as JourneyProgressItem
 }
 
+// A non-practice content block (lesson/resource/check).
+function lessonBlock(
+  id: string,
+  opts: { title?: string; body?: string | null; sortOrder?: number; estMinutes?: number | null } = {},
+): JourneyPlanItem {
+  return {
+    id,
+    plan_id: 'plan',
+    practice_id: '',
+    domain_id: null,
+    sort_order: opts.sortOrder ?? 0,
+    note: null,
+    cadence: null,
+    default_tier: 'adept',
+    block_type: 'lesson',
+    parent_id: null,
+    title: opts.title ?? null,
+    body: opts.body ?? null,
+    media: {},
+    settings: {},
+    required: true,
+    est_minutes: opts.estMinutes ?? null,
+    practice: null,
+  }
+}
+
+// A section/grouping block (skipped by the flat v1 builder).
+function sectionBlock(id: string, title: string): JourneyPlanItem {
+  return { ...lessonBlock(id, { title }), block_type: 'section' }
+}
+
 describe('buildCourse', () => {
   it('returns an empty course for no steps', () => {
-    const c = buildCourse({ items: [], nextItem: null })
+    const c = buildCourse({ blocks: [], progress: { items: [] } })
     expect(c.sections).toEqual([])
     expect(c.totalCount).toBe(0)
     expect(c.percent).toBe(0)
@@ -54,15 +85,15 @@ describe('buildCourse', () => {
 
   it('maps each practice step to a lesson in one implicit section', () => {
     const items = [step('a'), step('b'), step('c')]
-    const c = buildCourse({ items, nextItem: items[0] })
+    const c = buildCourse({ blocks: items, progress: { items } })
     expect(c.sections).toHaveLength(1)
     expect(c.sections[0].title).toBeNull()
     expect(courseLessonOrder(c)).toHaveLength(3)
   })
 
-  it('marks met steps done, the nextItem current, the rest todo', () => {
+  it('marks met steps done, the first not-done current, the rest todo', () => {
     const items = [step('a', { met: true }), step('b'), step('c')]
-    const c = buildCourse({ items, nextItem: items[1] })
+    const c = buildCourse({ blocks: items, progress: { items } })
     const [a, b, cc] = courseLessonOrder(c)
     expect(a.status).toBe('done')
     expect(b.status).toBe('current')
@@ -72,7 +103,7 @@ describe('buildCourse', () => {
 
   it('computes percent from done / total', () => {
     const items = [step('a', { met: true }), step('b', { met: true }), step('c'), step('d')]
-    const c = buildCourse({ items, nextItem: items[2] })
+    const c = buildCourse({ blocks: items, progress: { items } })
     expect(c.doneCount).toBe(2)
     expect(c.totalCount).toBe(4)
     expect(c.percent).toBe(50)
@@ -80,17 +111,46 @@ describe('buildCourse', () => {
 
   it('all-done course is 100% and defaults selection to the first lesson', () => {
     const items = [step('a', { met: true }), step('b', { met: true })]
-    const c = buildCourse({ items, nextItem: null })
+    const c = buildCourse({ blocks: items, progress: { items } })
     expect(c.percent).toBe(100)
     expect(c.currentLessonId).toBe('a')
   })
 
-  it('falls back to the first not-met step as current when nextItem is null', () => {
+  it('the first not-done block is current regardless of position', () => {
     const items = [step('a', { met: true }), step('b'), step('c')]
-    const c = buildCourse({ items, nextItem: null })
+    const c = buildCourse({ blocks: items, progress: { items } })
     const [, b] = courseLessonOrder(c)
     expect(b.status).toBe('current')
     expect(c.currentLessonId).toBe('b')
+  })
+
+  it('renders lesson blocks beside practices; done only when checked off', () => {
+    const items: JourneyPlanItem[] = [
+      step('p1', { met: true }),
+      lessonBlock('L1', { title: 'Watch this', body: 'video notes', sortOrder: 1 }),
+      lessonBlock('L2', { title: 'Read this', sortOrder: 2 }),
+    ]
+    const progress = { items: [items[0] as JourneyProgressItem] } // only the practice has progress
+    const done = buildCourse({ blocks: items, progress, completedLessonIds: new Set(['L1']) })
+    const [p1, l1, l2] = courseLessonOrder(done)
+    expect(p1.kind).toBe('practice')
+    expect(p1.status).toBe('done')
+    expect(l1.kind).toBe('lesson')
+    expect(l1.title).toBe('Watch this')
+    expect(l1.status).toBe('done') // checked off
+    expect(l1.practiceId).toBeNull()
+    expect(l2.status).toBe('current') // first not-done
+    expect(done.percent).toBe(67) // 2 of 3
+  })
+
+  it('skips section blocks in the flat v1', () => {
+    const items: JourneyPlanItem[] = [
+      sectionBlock('S1', 'Module 1'),
+      lessonBlock('L1', { title: 'Lesson', sortOrder: 1 }),
+    ]
+    const c = buildCourse({ blocks: items, progress: { items: [] } })
+    expect(courseLessonOrder(c)).toHaveLength(1)
+    expect(courseLessonOrder(c)[0].id).toBe('L1')
   })
 
   it('prefers tier content for the lesson title + body, else the practice copy', () => {
@@ -98,7 +158,7 @@ describe('buildCourse', () => {
       step('a', { title: 'Tiered title', body: 'Tiered body', estMinutes: 15 }),
       step('b'),
     ]
-    const c = buildCourse({ items, nextItem: items[0] })
+    const c = buildCourse({ blocks: items, progress: { items } })
     const [a, b] = courseLessonOrder(c)
     expect(a.title).toBe('Tiered title')
     expect(a.body).toBe('Tiered body')
