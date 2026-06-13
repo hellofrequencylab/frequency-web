@@ -111,6 +111,9 @@ mobile.
 - [DECISIONS](docs/DECISIONS.md) — architecture decision records (ADRs).
   [DOCS-PROTOCOL](docs/DOCS-PROTOCOL.md) — how docs are routed (**technical → git,
   instructional → Notion**). Follow it on every change.
+- [BASELINE-ASSESSMENT](docs/BASELINE-ASSESSMENT.md) — the 2026-06 senior systems review
+  (front-end/theming, role-based admin, security, code health, data architecture) + the
+  phased cleanup roadmap to a hand-off-ready, dual-entity-scalable baseline (ADR-246).
 - [ROADMAP](ROADMAP.md) — product feature roadmap (P0–P7).
   [SEO-AEO-PLAN](SEO-AEO-PLAN.md) — discovery layer.
 
