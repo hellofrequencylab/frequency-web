@@ -113,3 +113,36 @@ export function buildCourse(progress: Pick<JourneyProgress, 'items' | 'nextItem'
 export function courseLessonOrder(course: Course): CourseLesson[] {
   return course.sections.flatMap((s) => s.lessons)
 }
+
+/** Minimal draft lesson, for the EDITOR's live preview (no progress, no logging). */
+export interface CourseDraftLesson {
+  id: string
+  title: string
+  body: string | null
+  cadenceLabel: string | null
+  estMinutes?: number | null
+}
+
+/** Build a Course from an author's draft for the editor's live preview. Every lesson
+ *  carries `practiceId: null`, so the player renders a non-interactive CTA (no log
+ *  fires) — a true preview. The first lesson reads as `current`, the rest `todo`. */
+export function previewCourse(lessons: CourseDraftLesson[]): Course {
+  const courseLessons: CourseLesson[] = lessons.map((l, i) => ({
+    id: l.id,
+    title: l.title || 'Untitled lesson',
+    body: l.body,
+    estMinutes: l.estMinutes ?? null,
+    practiceId: null,
+    status: i === 0 ? 'current' : 'todo',
+    cadenceLabel: l.cadenceLabel,
+    loggedThisWeek: 0,
+    target: 0,
+  }))
+  return {
+    sections: courseLessons.length === 0 ? [] : [{ id: SINGLE_SECTION_ID, title: null, lessons: courseLessons }],
+    totalCount: courseLessons.length,
+    doneCount: 0,
+    percent: 0,
+    currentLessonId: courseLessons[0]?.id ?? null,
+  }
+}
