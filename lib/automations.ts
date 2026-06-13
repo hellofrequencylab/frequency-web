@@ -32,7 +32,7 @@ export interface AutomationRule {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export async function listRules(): Promise<AutomationRule[]> {

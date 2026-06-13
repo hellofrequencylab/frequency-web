@@ -6,7 +6,6 @@
 // only (admin client). The `profile_personas` table isn't in the generated types yet, so
 // the queries use the untyped-client cast (repo convention, see broadcast/actions.ts).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PartnerPersona } from '@/lib/core/access-matrix'
 
@@ -101,7 +100,7 @@ export function canStaffTransition(from: PersonaState, to: PersonaState): boolea
 /** Personas whose surfaces are LIVE (verified/active) — the matrix inputs. A bare
  *  `claimed` is pending and does NOT light surfaces; `suspended` is off. */
 export async function getActivePersonas(profileId: string): Promise<PartnerPersona[]> {
-  const { data } = await (createAdminClient() as unknown as SupabaseClient)
+  const { data } = await (createAdminClient())
     .from('profile_personas')
     .select('persona, state')
     .eq('profile_id', profileId)
@@ -114,7 +113,7 @@ export async function getPersonaStates(profileId: string): Promise<Record<Partne
   const out: Record<PartnerPersona, PersonaState | null> = {
     collaborator: null, practitioner: null, business: null, organization: null,
   }
-  const { data } = await (createAdminClient() as unknown as SupabaseClient)
+  const { data } = await (createAdminClient())
     .from('profile_personas')
     .select('persona, state')
     .eq('profile_id', profileId)
@@ -141,7 +140,7 @@ export interface PersonaQueueRow {
 /** Every claimed persona with its member, for the staff verification surface.
  *  Newest claim first; pending (claimed) naturally floats to the operator's eye. */
 export async function getPersonaQueue(): Promise<PersonaQueueRow[]> {
-  const { data } = await (createAdminClient() as unknown as SupabaseClient)
+  const { data } = await (createAdminClient())
     .from('profile_personas')
     .select('persona, state, notes, created_at, verified_at, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
     .order('created_at', { ascending: false })

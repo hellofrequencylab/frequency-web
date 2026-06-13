@@ -26,7 +26,7 @@ import {
 } from '@/lib/journey-quest-clock'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 const todayStr = () => new Date().toISOString().slice(0, 10)

@@ -18,7 +18,6 @@ import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { DashboardTemplate } from '@/components/templates'
 import { StandingHero } from '@/components/gamification/standing-hero'
 import { CircleTasksSection } from './circle-tasks-section'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -73,7 +72,7 @@ export default async function CrewPage() {
   // Available GLOBAL catalogue tasks (circle_id IS NULL). Circle-scoped tasks
   // render in their own claim-aware section below. Untyped handle: circle_id
   // isn't in database.types yet (repo convention; see lib/crew/circle-tasks.ts).
-  const { data: tasksData } = await (admin as unknown as SupabaseClient)
+  const { data: tasksData } = await (admin)
     .from('crew_tasks')
     .select('id, name, task_type, zaps_value, is_repeatable, requires_verification')
     .is('circle_id', null)

@@ -1,5 +1,4 @@
 import { cache } from 'react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import type { ProximityBand, LocationBand, DiscoverableBy } from '@/lib/connections/location'
@@ -38,7 +37,7 @@ export const CONNECTION_DEFAULTS: ConnectionSettings = {
 /** Platform connection-layer config (the admin-tuned singleton), with safe defaults. */
 export const getConnectionSettings = cache(async (): Promise<ConnectionSettings> => {
   try {
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
     const { data } = await db.from('connection_settings').select('*').eq('id', true).maybeSingle()
     if (!data) return CONNECTION_DEFAULTS
     const r = data as Record<string, unknown>
@@ -78,7 +77,7 @@ export interface MyConnectionPrefs {
 export async function getMyConnectionPrefs(): Promise<MyConnectionPrefs | null> {
   const me = await getCallerProfile()
   if (!me) return null
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('profiles')
     .select('directory_visible, discoverable_by, location_band, discovery_radius_m, ghost_mode, home_lat, location_mode, live_updated_at')
@@ -115,7 +114,7 @@ export async function membersNear(
   radiusM = 40000,
   limit = 60,
 ): Promise<NearbyMember[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data, error } = await db.rpc('members_near', {
     _lat: lat,
     _lng: lng,

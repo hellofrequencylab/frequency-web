@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NAV_AREA_DEFAULTS } from '@/lib/nav-areas'
@@ -30,7 +29,7 @@ export async function setMenuOrder(order: string[]) {
     .map((key, position) => ({ area_key: key, position, updated_at: now, updated_by: caller.id }))
   if (rows.length === 0) return
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   // Upsert positions; `hidden` keeps its existing value (column omitted from the
   // payload, so an existing row's flag is preserved and a new row defaults to false).
   const { error } = await db.from('menu_config').upsert(rows, { onConflict: 'area_key' })
@@ -44,7 +43,7 @@ export async function setMenuVisibility(areaKey: string, hidden: boolean) {
   const caller = await requireJanitor()
   if (!(areaKey in NAV_AREA_DEFAULTS)) throw new Error('Unknown area')
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { error } = await db
     .from('menu_config')
     .upsert(
@@ -60,7 +59,7 @@ export async function setMenuVisibility(areaKey: string, hidden: boolean) {
 export async function resetMenuConfig() {
   await requireJanitor()
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   // Delete all rows. The `.neq` is a no-op match-all that satisfies the client's
   // "must have a filter" guard while clearing the whole override store.
   const { error } = await db.from('menu_config').delete().neq('area_key', '')

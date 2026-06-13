@@ -10,7 +10,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import type { ContentType } from '@/lib/library'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 const slugify = (s: string) =>

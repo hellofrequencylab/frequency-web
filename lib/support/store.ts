@@ -21,7 +21,7 @@ const SCREENSHOT_BUCKET = 'support'
 const SIGNED_URL_TTL = 60 * 30 // 30 minutes
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 interface TicketRow {

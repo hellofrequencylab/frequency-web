@@ -23,7 +23,7 @@ async function requireMarketer(): Promise<{ id: string } | string> {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 function cleanWeight(w: number): number {

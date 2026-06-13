@@ -53,7 +53,7 @@ const COLS =
   'stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted, email, display_name'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Map a profile row (or null) to the derived payout status. Pure — no I/O. */

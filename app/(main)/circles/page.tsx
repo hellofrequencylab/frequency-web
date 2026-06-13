@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Users, Compass, Sparkles } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { MapZone, MapPreview, MapBanner, FindNearMeButton } from '@/components/circles/circles-map'
@@ -96,7 +95,7 @@ export default async function CirclesPage({
     }
   }
 
-  let circlesQuery = (supabase as unknown as SupabaseClient)
+  let circlesQuery = (supabase)
     .from('circles')
     .select(
       `id, name, slug, about, type, member_count, member_cap, status, created_at,
@@ -121,7 +120,7 @@ export default async function CirclesPage({
 
   // Channels (Pillars) drive the table-of-contents filter: group circles by the
   // Pillar their practice belongs to, so tapping one drills into that Channel.
-  const { data: domainRows } = await (supabase as unknown as SupabaseClient)
+  const { data: domainRows } = await (supabase)
     .from('pillars').select('id, slug, name, display_order').eq('is_active', true)
     .order('display_order', { ascending: true })
   const domains = (domainRows ?? []) as { id: string; slug: string; name: string; display_order: number }[]

@@ -7,7 +7,6 @@
 // the server gates AI on availability + budget, runs ONE vision call, and every
 // write is owner-scoped. The engine (lib/events/event-drafts.ts) owns the rows.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getCachedUser, getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -262,7 +261,7 @@ export async function deleteDraft(id: string): Promise<{ ok: true } | { error: s
   if (!draft) return { error: 'Draft not found.' }
   if (draft.status !== 'draft') return { error: 'Published events cannot be deleted here.' }
 
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { error } = await admin
     .from('events')
     .delete()

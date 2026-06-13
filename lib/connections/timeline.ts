@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 
 // The auto interaction timeline (ADR-186, P3) — the caller's private, event-derived
@@ -15,7 +14,7 @@ export interface TimelineItem {
 }
 
 export async function getRelationshipTimeline(otherId: string, limit = 50): Promise<TimelineItem[]> {
-  const supabase = (await createClient()) as unknown as SupabaseClient
+  const supabase = (await createClient())
   const { data, error } = await supabase.rpc('relationship_timeline', { _other: otherId, _limit: limit })
   if (error || !Array.isArray(data)) return []
   return (data as Record<string, unknown>[]).map((r) => ({

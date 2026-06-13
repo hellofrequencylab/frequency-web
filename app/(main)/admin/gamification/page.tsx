@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { Award, Target, Flame, Trophy, Zap, Users } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -88,7 +87,7 @@ export default async function AdminGamificationPage() {
   let zapRewards: RewardRow[] = []
   let gemRewards: RewardRow[] = []
   if (isJanitor) {
-    const cfg = admin as unknown as SupabaseClient
+    const cfg = admin
     const [{ data: zapRows }, { data: gemRows }] = await Promise.all([
       cfg.from('zap_config').select('action_type, zaps_amount, daily_cap, is_active, description').order('action_type'),
       cfg.from('gem_config').select('action_type, gems_amount, daily_cap, is_active, description').order('action_type'),

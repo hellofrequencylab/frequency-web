@@ -25,7 +25,7 @@ async function requireMarketer(): Promise<{ id: string } | string> {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Create a persona's sequence (one per persona) seeded with a starter welcome step. */

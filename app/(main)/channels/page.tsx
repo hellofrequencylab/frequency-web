@@ -3,7 +3,6 @@ import {
   Sparkles, Activity, Heart, MessagesSquare, Megaphone, Palette, Briefcase, Radio, Users, Circle as CircleIcon,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from './channel-toggle'
@@ -84,11 +83,11 @@ export default async function ChannelsPage() {
   }
 
   const [{ data: pillarsData }, { data: channels }] = await Promise.all([
-    (admin as unknown as SupabaseClient).from('pillars')
+    (admin).from('pillars')
       .select('id, slug, name, description, accent, cover_image, display_order')
       .eq('is_active', true)
       .order('display_order', { ascending: true }),
-    (admin as unknown as SupabaseClient).from('topical_channels')
+    (admin).from('topical_channels')
       .select('id, name, slug, category, description, cover_image, display_order, pillar_id')
       .eq('is_active', true)
       .order('display_order', { ascending: true }),

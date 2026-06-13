@@ -8,7 +8,6 @@
 // FOUNDATION ONLY: nothing consumes these reads yet (getViewerHats / load-capabilities
 // still read the leader FKs + community_role). Reads flip in P1.6 (the unified resolver).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   type CommunityLevel,
@@ -39,7 +38,7 @@ function isScopeType(v: string): v is ScopeType {
 /** Every stewardship edge a profile holds. Unknown roles/scopes (future enum values not
  *  yet known to this build) are filtered out, fail-closed. */
 export async function getStewardships(profileId: string): Promise<StewardshipEdge[]> {
-  const { data } = await (createAdminClient() as unknown as SupabaseClient)
+  const { data } = await (createAdminClient())
     .from('stewardships')
     .select('role, scope_type, scope_id, state')
     .eq('profile_id', profileId)

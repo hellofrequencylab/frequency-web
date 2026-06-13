@@ -4,7 +4,6 @@
 // Idempotent: skips anyone already attributed. Honest: members we can't infer are
 // left untagged (they show as "unattributed" in the rollup, not mislabeled 'direct').
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { assignTag } from '@/lib/traits/tags'
 import { ACQUISITION_CHANNELS, channelTag, type AcquisitionChannel } from './channels'
@@ -66,7 +65,7 @@ export interface BackfillResult {
 
 /** Backfill acquisition for all members. Idempotent; safe to re-run. */
 export async function backfillAcquisition(): Promise<BackfillResult> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   // Who's already attributed (any source_* tag)?
   const tagKeys = ACQUISITION_CHANNELS.map(channelTag)

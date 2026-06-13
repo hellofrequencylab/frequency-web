@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
@@ -204,7 +203,7 @@ export async function createTopicalChannel(formData: FormData): Promise<void> {
   // assignment can never point at a stale or non-existent Pillar.
   let resolvedPillarId: string | null = null
   if (domainId) {
-    const { data: pillar } = await (admin as unknown as SupabaseClient)
+    const { data: pillar } = await (admin)
       .from('pillars')
       .select('id')
       .eq('id', domainId)
@@ -213,7 +212,7 @@ export async function createTopicalChannel(formData: FormData): Promise<void> {
     resolvedPillarId = pillar?.id ?? null
   }
 
-  const { data: created, error } = await (admin as unknown as SupabaseClient)
+  const { data: created, error } = await (admin)
     .from('topical_channels')
     .insert({ name, slug, category, description, pillar_id: resolvedPillarId, is_active: true })
     .select('id, slug')

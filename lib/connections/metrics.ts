@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 
 // Connection metrics reads (ADR-186, P6). your_impact is keyed to auth.uid() so it
@@ -17,7 +16,7 @@ export interface YourImpact {
 }
 
 export async function getYourImpact(): Promise<YourImpact | null> {
-  const supabase = (await createClient()) as unknown as SupabaseClient
+  const supabase = (await createClient())
   const { data, error } = await supabase.rpc('your_impact')
   if (error || !Array.isArray(data) || data.length === 0) return null
   const r = data[0] as Record<string, unknown>
@@ -39,7 +38,7 @@ export interface CircleMomentum {
 }
 
 export async function getCircleMomentum(circleId: string): Promise<CircleMomentum | null> {
-  const supabase = (await createClient()) as unknown as SupabaseClient
+  const supabase = (await createClient())
   const { data, error } = await supabase.rpc('circle_momentum', { _circle: circleId })
   if (error || !Array.isArray(data) || data.length === 0) return null
   const r = data[0] as Record<string, unknown>

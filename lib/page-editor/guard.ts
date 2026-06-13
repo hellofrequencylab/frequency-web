@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStaffMember, staffCan } from '@/lib/staff'
@@ -17,7 +16,7 @@ export async function getJanitor(): Promise<{ profileId: string } | null> {
   if (!user) return null
 
   // Page management is the Executive-Admin (janitor) web_role now (ADR-208).
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { data } = await admin
     .from('profiles')
     .select('id, web_role')
@@ -44,7 +43,7 @@ export async function canAccessGrowthStudio(): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return false
 
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { data } = await admin
     .from('profiles')
     .select('web_role')

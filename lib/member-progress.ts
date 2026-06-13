@@ -6,7 +6,6 @@
 // areas (owner decision, 2026-06-06).
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getOnboardingStatus, type OnboardingStatus } from '@/lib/onboarding/status'
 import { getPracticeStreak, type PracticeStreakState } from '@/lib/practice-streak'
 import { getActiveJourneyProgress, type JourneyProgress } from '@/lib/journey-plans'
@@ -213,7 +212,7 @@ export async function acknowledgeStage(profileId: string, stageIndex: number): P
   const meta = (profile?.meta ?? {}) as Record<string, unknown>
   const seen = Number((meta.progressStage as number | undefined) ?? -1)
   if (stageIndex <= seen) return
-  await (admin as unknown as SupabaseClient)
+  await (admin)
     .from('profiles')
     .update({ meta: { ...meta, progressStage: stageIndex } })
     .eq('id', profileId)

@@ -21,7 +21,7 @@ export interface Season {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export async function getCurrentSeason(): Promise<Season | null> {

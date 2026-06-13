@@ -20,7 +20,7 @@ export function isExpired(expiresAt: string | null, now: number): boolean {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Delete data past its window: expired member tags + raw interaction_events older than

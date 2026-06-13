@@ -18,7 +18,7 @@ import { resolveTier, type IntensityTier } from '@/lib/journey-tiers'
 import { currentSeasonWeek, qualifyingWeeks, DEFAULT_TARGET_WEEKS } from '@/lib/journey-quest-clock'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export type PlanVisibility = 'private' | 'unlisted' | 'public'

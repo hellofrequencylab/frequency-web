@@ -4,7 +4,6 @@
 // retrieval is weak, or the model call fails. Server-only.
 
 import { after } from 'next/server'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { helpHref } from '@/lib/help/content'
 import { completeText } from './complete'
@@ -57,7 +56,7 @@ export async function retrieveHelpChunks(
   if (!q) return []
   try {
     const embedding = await embedText(q)
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
     const { data } = await admin.rpc('match_help_chunks', {
       query_embedding: `[${embedding.join(',')}]`,
       match_count: opts.matchCount ?? MATCH_COUNT,

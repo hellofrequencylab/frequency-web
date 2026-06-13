@@ -109,7 +109,7 @@ export function describeSegment(def: SegmentDefinition): string {
 // ── DB layer ────────────────────────────────────────────────────────────────
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Pull the registry-typed value out of a member_traits row. */

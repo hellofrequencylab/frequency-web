@@ -3,7 +3,6 @@
 // types regenerate. v1 targets member contacts (so the profile-based unsubscribe
 // works); lead/non-member segments come with a contact-based unsubscribe later.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSegmentProfileIds, listSegmentChoices } from '@/lib/traits/segments'
 
@@ -47,7 +46,7 @@ export interface Recipient {
  *  send). Trait segments (`seg:<slug>`) resolve via the Member Data Platform, then map
  *  to member contacts; built-ins query contacts directly. */
 export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const parsed = parseSegmentKey(segment)
 
   if (parsed.kind === 'trait') {
@@ -87,7 +86,7 @@ export interface CampaignRow {
 }
 
 export async function listCampaigns(limit = 50): Promise<CampaignRow[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('campaigns')
     .select('id, subject, segment, status, recipient_count, sent_at, created_at')

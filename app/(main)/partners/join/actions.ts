@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { PARTNER_PERSONAS, type PartnerPersona } from '@/lib/personas'
@@ -16,7 +15,7 @@ export async function setPersona(persona: PartnerPersona, claim: boolean): Promi
   if (!me) return fail('Sign in first.')
   if (!PARTNER_PERSONAS.includes(persona)) return fail('Unknown program.')
 
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   if (claim) {
     // Claim (or re-claim a suspended one): back to pending review, clearing any
     // prior verification so it's re-vetted.

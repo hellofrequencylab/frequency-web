@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { logAdminAction } from '@/lib/admin/audit'
@@ -46,7 +45,7 @@ export async function purgeDemoContent() {
   const callerId = caller.id
 
   // Untyped cast: hubs.is_demo isn't in the generated types yet (cast pattern).
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   // Demo journeys have no is_demo flag and author_id is ON DELETE SET NULL, so
   // remove plans by their demo author BEFORE the profiles go (items + adoptions
   // cascade from the plan).

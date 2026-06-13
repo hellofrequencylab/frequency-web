@@ -4,7 +4,6 @@
 // lib/qr/referral.releaseReferralReward once the referred member activates), and the
 // invite_accepted zap_transactions (zaps paid). Server-only, best-effort.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface ReferrerRow {
@@ -46,7 +45,7 @@ const EMPTY: ReferralStats = {
 
 export async function getReferralStats(): Promise<ReferralStats> {
   try {
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
 
     const [referredRes, grantsRes, zapRes] = await Promise.all([
       db.from('profiles').select('referred_by_profile_id').not('referred_by_profile_id', 'is', null),
