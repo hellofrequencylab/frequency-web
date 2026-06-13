@@ -1,23 +1,24 @@
 import type { Vertical } from './registry'
 
 // Marketplace — the first vertical migrated onto the descriptor (ADR-248/250). A local
-// goods/services marketplace on the for-profit (Labs) rail. Today its UI is hand-wired
-// (lib/marketplace.ts, app/(main)/market, the 'market' nav literal in lib/nav-areas.ts);
-// this descriptor is the single authoritative declaration of the vertical's surface, which
-// the registry composes. A test (registry.test.ts) guards the declared nav against the live
-// NAV_AREAS literal until the shell is flipped to source nav from here — a safe follow-up
-// (the shell groups nav by consecutive section runs, so composing needs anchored ordering).
+// goods/services marketplace on the for-profit (Labs) rail. This descriptor is now the
+// single source of the vertical's nav: lib/nav-areas.ts composes it into NAV_AREAS at the
+// anchored position (`after: 'events'`), so the area sits in its exact spot in the Community
+// section. The marketplace UI (lib/marketplace.ts, app/(main)/market) still owns the pages.
 export const market: Vertical = {
   id: 'market',
   entity: 'labs',
   nav: [
     {
-      key: 'market',
-      href: '/market',
-      label: 'Marketplace',
-      section: 'Community',
-      defaultAccess: 'visitor',
-      surface: 'market',
+      after: 'events',
+      area: {
+        key: 'market',
+        href: '/market',
+        label: 'Marketplace',
+        section: 'Community',
+        defaultAccess: 'visitor',
+        surface: 'market',
+      },
     },
   ],
   capabilities: [
