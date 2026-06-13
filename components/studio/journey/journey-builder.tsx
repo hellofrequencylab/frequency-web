@@ -17,7 +17,10 @@ import {
   saveJourneyMeta, addPracticeToJourney, removeJourneyStep, reorderJourneySteps,
   setJourneyStep, setJourneyVisibility, setJourneyStepTier, setJourneyCompletionRules,
   setJourneyRewards, setJourneyPageConfig, setJourneyOfficial, loadJourneyOfficialContext,
+  addJourneyLesson, updateJourneyLesson, removeJourneyLesson,
 } from '@/app/(main)/journeys/actions'
+import { isError } from '@/lib/action-result'
+import { LessonsSection, type BuilderBlock } from './lessons-section'
 import type { IntensityTier } from '@/lib/journey-tiers'
 import type { PlanStatus, PageWidgetConfig } from '@/lib/journey-plans'
 import { editorPageConfig } from '@/lib/journey-page-config'
@@ -59,6 +62,8 @@ interface Props {
   initialAccent: string | null
   initialVisibility: Visibility
   initialItems: BuilderItem[]
+  /** Lesson/section blocks (ADR-244). Optional; defaults to none. */
+  initialBlocks?: BuilderBlock[]
   available: AvailablePractice[]
   pillars: PillarLite[]
   // ── New editor sections (docs/JOURNEYS.md §11). All optional + defaulted so the
@@ -176,6 +181,28 @@ export function JourneyBuilder(props: Props) {
   }
 
   const { itemProps, move, isDragging, isOver } = useSortable(items, (i) => i.practiceId, commitOrder)
+
+  // --- Lesson/section blocks (ADR-244) — id-keyed, optimistic ----------------
+  const [blocks, setBlocks] = useState<BuilderBlock[]>(props.initialBlocks ?? [])
+  const [addingBlock, setAddingBlock] = useState(false)
+  const addBlock = async (kind: 'lesson' | 'section') => {
+    setAddingBlock(true)
+    const res = await addJourneyLesson(props.planId, { kind })
+    setAddingBlock(false)
+    if (isError(res)) { router.refresh(); return }
+    setBlocks((b) => [...b, { id: res.data.id, blockType: kind, title: '', body: '' }])
+  }
+  const changeBlock = (id: string, patch: Partial<BuilderBlock>) =>
+    setBlocks((b) => b.map((x) => (x.id === id ? { ...x, ...patch } : x)))
+  const saveBlock = (id: string) => {
+    const blk = blocks.find((x) => x.id === id)
+    if (!blk) return
+    void run(() => updateJourneyLesson(props.planId, id, { title: blk.title, body: blk.body }))
+  }
+  const deleteBlock = (id: string) => {
+    setBlocks((b) => b.filter((x) => x.id !== id))
+    void run(() => removeJourneyLesson(props.planId, id))
+  }
 
   const changeVisibility = async (v: Visibility) => {
     const prev = visibility
@@ -355,7 +382,7 @@ export function JourneyBuilder(props: Props) {
       {/* ── Live preview — the e-learning course player, rendered from the current
             draft (docs/JOURNEYS.md §5A). Non-interactive (no logging); it's how the
             adopted page will read. Collapsed by default so it never crowds the tools. ── */}
-      {items.length > 0 && (
+      {(items.length > 0 || blocks.length > 0) && (
         <details className="group mt-6 rounded-2xl border border-border bg-surface/60">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3">
             <span className="inline-flex items-center gap-2 text-sm font-bold text-text">
@@ -366,14 +393,17 @@ export function JourneyBuilder(props: Props) {
           </summary>
           <div className="border-t border-border p-4">
             <CoursePlayer
-              course={previewCourse(
-                items.map((it) => ({
+              course={previewCourse([
+                ...items.map((it) => ({
                   id: it.practiceId,
                   title: it.title,
                   body: it.description,
                   cadenceLabel: it.cadence ?? it.practiceCadence,
-                }))
-              )}
+                })),
+                ...blocks
+                  .filter((b) => b.blockType === 'lesson')
+                  .map((b) => ({ id: b.id, title: b.title, body: b.body || null, cadenceLabel: null })),
+              ])}
               planTitle={title || 'Your Journey'}
               accent={accent}
             />
@@ -525,6 +555,16 @@ export function JourneyBuilder(props: Props) {
           )}
         </div>
       </div>
+
+      {/* ── Lessons (the e-learning blocks, ADR-244) ─────────────── */}
+      <LessonsSection
+        blocks={blocks}
+        busy={addingBlock}
+        onAdd={addBlock}
+        onChange={changeBlock}
+        onSave={saveBlock}
+        onDelete={deleteBlock}
+      />
 
       {/* ── Completion rules ─────────────────────────────────────── */}
       <CompletionRulesSection

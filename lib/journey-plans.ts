@@ -403,6 +403,58 @@ export async function removeItem(planId: string, practiceId: string): Promise<vo
   await client.from('journey_plans').update(touch()).eq('id', planId)
 }
 
+// --- Lesson/section blocks (ADR-244) — keyed by item id, not practice ---------
+// Non-practice blocks (a lesson, a reading, a section header) carry no practice, so
+// they're addressed by their row id. v1 appends them at the end (sort_order = max+1);
+// reordering/interleaving with practices is a follow-up.
+
+/** Append a non-practice block (lesson/section/resource/check). Returns its id. */
+export async function addBlock(
+  planId: string,
+  input: { blockType: Exclude<BlockType, 'practice'>; title?: string | null; body?: string | null },
+): Promise<string | null> {
+  const client = db()
+  const { data: last } = await client
+    .from('journey_plan_items')
+    .select('sort_order')
+    .eq('plan_id', planId)
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const nextOrder = ((last as { sort_order: number } | null)?.sort_order ?? -1) + 1
+  const { data } = await client
+    .from('journey_plan_items')
+    .insert({
+      plan_id: planId,
+      block_type: input.blockType,
+      title: input.title?.trim() || null,
+      body: input.body?.trim() || null,
+      sort_order: nextOrder,
+    })
+    .select('id')
+    .single()
+  await client.from('journey_plans').update(touch()).eq('id', planId)
+  return (data as { id: string } | null)?.id ?? null
+}
+
+/** Edit a block's title/body. */
+export async function updateBlock(
+  itemId: string,
+  patch: { title?: string | null; body?: string | null },
+): Promise<void> {
+  const client = db()
+  const update: Record<string, unknown> = {}
+  if (patch.title !== undefined) update.title = patch.title?.trim() || null
+  if (patch.body !== undefined) update.body = patch.body?.trim() || null
+  if (Object.keys(update).length === 0) return
+  await client.from('journey_plan_items').update(update).eq('id', itemId)
+}
+
+/** Delete a block by id. */
+export async function removeBlock(itemId: string): Promise<void> {
+  await db().from('journey_plan_items').delete().eq('id', itemId)
+}
+
 /** Persist a new order (array of practice ids in the desired sequence). */
 export async function reorderItems(planId: string, practiceIdsInOrder: string[]): Promise<void> {
   const client = db()

@@ -18,6 +18,9 @@ import {
   adoptPlan,
   forkPlan,
   completeLesson,
+  addBlock,
+  updateBlock,
+  removeBlock,
   getPlan,
   planAuthorId,
   planMeta,
@@ -222,6 +225,32 @@ export async function addPracticeToJourney(
 export async function removeJourneyStep(planId: string, practiceId: string): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   await removeItem(planId, practiceId)
+  return ok()
+}
+
+// --- Lesson/section block authoring (ADR-244) — owner-only -------------------
+export async function addJourneyLesson(
+  planId: string,
+  input: { kind: 'lesson' | 'section'; title?: string; body?: string },
+): Promise<ActionResult<{ id: string }>> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  const id = await addBlock(planId, { blockType: input.kind, title: input.title, body: input.body })
+  return id ? ok({ id }) : fail('Could not add it.')
+}
+
+export async function updateJourneyLesson(
+  planId: string,
+  itemId: string,
+  patch: { title?: string | null; body?: string | null },
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await updateBlock(itemId, patch)
+  return ok()
+}
+
+export async function removeJourneyLesson(planId: string, itemId: string): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await removeBlock(itemId)
   return ok()
 }
 
