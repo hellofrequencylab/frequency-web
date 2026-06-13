@@ -57,12 +57,14 @@ what's already designed.
 - `labs.*` tenant schema (lab_spaces, locations, staff, members, services/classes, schedules, bookings, packages/memberships, entitlements, payments/POS, payroll) with tenant RLS.
 - Foundation↔Labs linked by an **entitlement bridge** — money stays partitioned by `entity`; shared points are already entity-blind.
 
-## ⚠️ Open decision — the home of "Labs"
-The docs define Labs two ways: an **in-house module in the same database** (PLATFORM-VISION §4)
+## ✅ Resolved — the home of "Labs" (ADR-249, [docs/SPACES.md](SPACES.md))
+The docs defined Labs two ways: an **in-house module in the same database** (PLATFORM-VISION §4)
 vs. **"Hook," a separate product/DB integrated by API contract** (`docs/HOOK-FEDERATION-ARCHITECTURE.md`).
-Leaning recommendation: **same Postgres project + a dedicated `labs` schema** (so a community
-member who's also a gym member is one `profiles` row), with the separate-product path as an
-escape hatch. **Must be settled before any Labs table is written** (a Phase-5 gate, not today).
+**Settled:** the **Space** is the tenancy primitive — a white-label tenant of the *one* app/DB
+(`space_id` + RLS, its own brand/skin/domain/entity + a `network_connected` switch). **Native
+Space in one Postgres is the default** (so a community member who's also a gym member and a Hook
+client is one `profiles` row); **federation (Hook, ADR-158) is the escape hatch** for an
+already-separate or self-hosted product. Hook is one Space among many, not a separate category.
 
 ## Parked (with trigger)
 Full environment isolation (Supabase Pro + branching, staging) and the one-time migration-history

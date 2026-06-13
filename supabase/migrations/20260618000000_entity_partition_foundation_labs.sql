@@ -1,8 +1,10 @@
 -- Entity partition: Foundation (nonprofit) vs Labs (for-profit) — the load-bearing
 -- money-partition seam (PLATFORM-VISION §1/§9, ADR-246, docs/BASELINE-ASSESSMENT.md Phase 2).
 --
--- ⚠️ REVIEW-ONLY DRAFT — NOT yet applied. Apply via the Supabase dashboard / MCP once the
--- connector is reconnected, then regenerate lib/database.types.ts. Additive + idempotent.
+-- Applied to production via the Supabase SQL Editor (the repo's migration-history baseline
+-- predates `db push` being safe here — see docs/WORKFLOW.md), and lib/database.types.ts was
+-- regenerated against the live schema afterward. This file is the canonical record of the
+-- change, not the apply mechanism. Additive + idempotent, so safe to re-run.
 --
 -- Why now: today this is one additive migration. After money volume, partitioning the
 -- nonprofit/for-profit boundary becomes a compliance retrofit across live financial rows.

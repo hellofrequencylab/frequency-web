@@ -333,7 +333,10 @@ persona axis.** Everything else is modules and tiers on the graph you already ha
 
 ## 10. Open decisions (you + advisors: architecture supports either)
 
-Captured so they are **not lost** and **not guessed**:
+Captured so they are **not lost** and **not guessed**. (The **tenancy / "home of Labs"**
+question — in-house module vs. separate product — is now **resolved** by ADR-249: the
+white-label **Space** in one app/DB is the primitive, federation is the escape hatch; see
+[SPACES.md](SPACES.md). The items below are legal/product calls that stay open.)
 
 1. **Which entity sells the paid membership tier** (the UBI/charitable-purpose line, §3).
    Recommended frame: a **Foundation membership** (dues) + pay-what-you-want **donation**
