@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { logAdminAction } from '@/lib/admin/audit'
 import { isJanitor } from '@/lib/core/roles'
 import type { Database } from '@/lib/database.types'
+import { parseInput, z, uuid, positiveIntAmount, requiredText } from '@/lib/validation'
 
 // Shared auth guard — janitor-only for manual economy adjustments. Crown-jewel gate:
 // the STAFF axis (web_role janitor, ADR-208), read via the untyped cast (column not
@@ -29,6 +30,14 @@ async function requireJanitor(): Promise<{ id: string }> {
 
 const MAX_GRANT = 100_000
 
+// Manual gem/zap adjustment input — mirrors the prior hand-rolled guard exactly
+// (Math.floor, 0 < n ≤ MAX_GRANT, non-empty reason) plus a uuid check on the target.
+const economyAdjustment = z.object({
+  profileId: uuid,
+  amount: positiveIntAmount(MAX_GRANT),
+  reason: requiredText('Reason is required'),
+})
+
 // ── Gems ──────────────────────────────────────────────────────────────────────
 
 /**
@@ -41,16 +50,18 @@ export async function grantGems(
   reason: string,
 ): Promise<void> {
   const caller = await requireJanitor()
-  const n = Math.floor(amount)
-  if (!Number.isFinite(n) || n <= 0 || n > MAX_GRANT) throw new Error('Invalid amount')
-  if (!reason.trim()) throw new Error('Reason is required')
+  const { profileId: pid, amount: n, reason: cleanReason } = parseInput(economyAdjustment, {
+    profileId,
+    amount,
+    reason,
+  })
 
   const admin = createAdminClient()
   const { error } = await admin.from('gem_transactions').insert({
-    profile_id: profileId,
+    profile_id: pid,
     action_type: 'manual',
     amount: n,
-    metadata: { reason: reason.trim(), granted_by: caller.id } as
+    metadata: { reason: cleanReason, granted_by: caller.id } as
       Database['public']['Tables']['gem_transactions']['Insert']['metadata'],
   })
   if (error) throw new Error(error.message)
@@ -59,8 +70,8 @@ export async function grantGems(
     actorId: caller.id,
     action: 'economy.gems.grant',
     targetType: 'profile',
-    targetId: profileId,
-    detail: { amount: n, reason: reason.trim() },
+    targetId: pid,
+    detail: { amount: n, reason: cleanReason },
   })
 
   revalidatePath('/admin/members')
@@ -77,16 +88,18 @@ export async function revokeGems(
   reason: string,
 ): Promise<void> {
   const caller = await requireJanitor()
-  const n = Math.floor(amount)
-  if (!Number.isFinite(n) || n <= 0 || n > MAX_GRANT) throw new Error('Invalid amount')
-  if (!reason.trim()) throw new Error('Reason is required')
+  const { profileId: pid, amount: n, reason: cleanReason } = parseInput(economyAdjustment, {
+    profileId,
+    amount,
+    reason,
+  })
 
   const admin = createAdminClient()
   const { error } = await admin.from('gem_transactions').insert({
-    profile_id: profileId,
+    profile_id: pid,
     action_type: 'manual',
     amount: -n,
-    metadata: { reason: reason.trim(), revoked_by: caller.id } as
+    metadata: { reason: cleanReason, revoked_by: caller.id } as
       Database['public']['Tables']['gem_transactions']['Insert']['metadata'],
   })
   if (error) throw new Error(error.message)
@@ -95,8 +108,8 @@ export async function revokeGems(
     actorId: caller.id,
     action: 'economy.gems.revoke',
     targetType: 'profile',
-    targetId: profileId,
-    detail: { amount: n, reason: reason.trim() },
+    targetId: pid,
+    detail: { amount: n, reason: cleanReason },
   })
 
   revalidatePath('/admin/members')
@@ -115,16 +128,18 @@ export async function grantZaps(
   reason: string,
 ): Promise<void> {
   const caller = await requireJanitor()
-  const n = Math.floor(amount)
-  if (!Number.isFinite(n) || n <= 0 || n > MAX_GRANT) throw new Error('Invalid amount')
-  if (!reason.trim()) throw new Error('Reason is required')
+  const { profileId: pid, amount: n, reason: cleanReason } = parseInput(economyAdjustment, {
+    profileId,
+    amount,
+    reason,
+  })
 
   const admin = createAdminClient()
   const { error } = await admin.from('zap_transactions').insert({
-    profile_id: profileId,
+    profile_id: pid,
     action_type: 'manual',
     amount: n,
-    metadata: { reason: reason.trim(), granted_by: caller.id } as
+    metadata: { reason: cleanReason, granted_by: caller.id } as
       Database['public']['Tables']['zap_transactions']['Insert']['metadata'],
   })
   if (error) throw new Error(error.message)
@@ -133,8 +148,8 @@ export async function grantZaps(
     actorId: caller.id,
     action: 'economy.zaps.grant',
     targetType: 'profile',
-    targetId: profileId,
-    detail: { amount: n, reason: reason.trim() },
+    targetId: pid,
+    detail: { amount: n, reason: cleanReason },
   })
 
   revalidatePath('/admin/members')
@@ -150,16 +165,18 @@ export async function revokeZaps(
   reason: string,
 ): Promise<void> {
   const caller = await requireJanitor()
-  const n = Math.floor(amount)
-  if (!Number.isFinite(n) || n <= 0 || n > MAX_GRANT) throw new Error('Invalid amount')
-  if (!reason.trim()) throw new Error('Reason is required')
+  const { profileId: pid, amount: n, reason: cleanReason } = parseInput(economyAdjustment, {
+    profileId,
+    amount,
+    reason,
+  })
 
   const admin = createAdminClient()
   const { error } = await admin.from('zap_transactions').insert({
-    profile_id: profileId,
+    profile_id: pid,
     action_type: 'manual',
     amount: -n,
-    metadata: { reason: reason.trim(), revoked_by: caller.id } as
+    metadata: { reason: cleanReason, revoked_by: caller.id } as
       Database['public']['Tables']['zap_transactions']['Insert']['metadata'],
   })
   if (error) throw new Error(error.message)
@@ -168,8 +185,8 @@ export async function revokeZaps(
     actorId: caller.id,
     action: 'economy.zaps.revoke',
     targetType: 'profile',
-    targetId: profileId,
-    detail: { amount: n, reason: reason.trim() },
+    targetId: pid,
+    detail: { amount: n, reason: cleanReason },
   })
 
   revalidatePath('/admin/members')
