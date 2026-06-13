@@ -149,6 +149,22 @@ export function modulesForSurface(
   return modulesFor(scope, caps).filter((m) => m.surface === surface)
 }
 
+/**
+ * Registry-driven SELECTION by scope kind, independent of a resolved capability set
+ * (ADR-250 step 1). The page admin dock is a client surface without the server-resolved
+ * caps, but the fine gate already lives server-side — every module's action returns null
+ * unless the caller holds `requiredCapability` — so the dock selects which modules *exist*
+ * for a scope kind from the catalog and lets each self-gate. This is what lets the dock
+ * stop dispatching by hardcoded pathname regex: register a module here and it appears.
+ * When resolved caps are threaded through (a later refinement), the dock switches to the
+ * caps-aware `modulesForSurface(scope, caps, surface)` above with no change to the catalog.
+ */
+export function modulesForScopeKind(kind: ScopeKind, surface?: AdminSurface): AdminModule[] {
+  return ADMIN_MODULES.filter(
+    (m) => m.scopes.includes(kind) && (surface === undefined || m.surface === surface),
+  ).sort((a, b) => a.order - b.order)
+}
+
 /** Look a module up by id (modules use this for their own label/icon/desc). */
 export function moduleById(id: string): AdminModule | undefined {
   return ADMIN_MODULES.find((m) => m.id === id)
