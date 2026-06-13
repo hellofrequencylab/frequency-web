@@ -2,13 +2,14 @@
 // (docs/JOURNEYS.md §5A, ADR-244). Pure + unit-tested: no IO, no React.
 //
 // A Journey renders as a COURSE: Sections → Lessons, with overall progress and a
-// per-lesson status (done / current / todo). Today the only block type in the
-// schema is the practice step, so `buildCourse` maps each practice step to a lesson
-// inside one implicit Section. When the lesson/section block model lands (migration
-// 20260617000000), `buildCourse` gains a richer source but the player keeps reading
-// this same shape — the UI never has to change.
+// per-lesson status (done / current / todo). `buildCourse` maps the plan's blocks
+// (practice steps + lesson/section blocks, ADR-244) onto this shape: practice + lesson
+// blocks become lessons, section blocks open syllabus modules that group the lessons
+// after them, and a lesson body's video link is parsed into an inline player. The
+// player keeps reading this same shape — the UI never has to change.
 
 import type { JourneyProgress, JourneyProgressItem, JourneyPlanItem } from '@/lib/journey-plans'
+import { parseVideoEmbed, type VideoEmbed } from '@/lib/video-embed'
 
 export type LessonStatus = 'done' | 'current' | 'todo'
 
@@ -20,6 +21,8 @@ export interface CourseLesson {
   title: string
   /** Markdown lesson body / practice instructions (tier content, then practice copy). */
   body: string | null
+  /** A YouTube/Vimeo/file link found in the body, parsed into an inline player. Null if none. */
+  video: VideoEmbed | null
   estMinutes: number | null
   /** The practice this lesson logs, for a practice block. Null for lesson/check blocks. */
   practiceId: string | null
@@ -62,11 +65,13 @@ function practiceLesson(
   prog: JourneyProgressItem | null,
   status: LessonStatus,
 ): CourseLesson {
+  const body = prog?.tierContent?.body ?? b.practice?.description ?? b.body ?? null
   return {
     id: b.id,
     kind: 'practice',
     title: prog?.tierContent?.title ?? b.practice?.title ?? b.title ?? 'Practice',
-    body: prog?.tierContent?.body ?? b.practice?.description ?? b.body ?? null,
+    body,
+    video: parseVideoEmbed(body),
     estMinutes: prog?.tierContent?.est_minutes ?? b.est_minutes ?? null,
     practiceId: b.practice_id,
     status,
@@ -83,6 +88,7 @@ function contentLesson(b: JourneyPlanItem, status: LessonStatus): CourseLesson {
     kind: 'lesson',
     title: b.title ?? 'Lesson',
     body: b.body ?? null,
+    video: parseVideoEmbed(b.body),
     estMinutes: b.est_minutes ?? null,
     practiceId: null,
     status,
@@ -96,9 +102,13 @@ function contentLesson(b: JourneyPlanItem, status: LessonStatus): CourseLesson {
  *
  *  Status (unified across block kinds): a PRACTICE block is `done` once it meets its
  *  weekly cadence (from `progress`); a LESSON/CHECK block is `done` once it has a
- *  check-off row (`completedLessonIds`). The first not-done block, in author order, is
- *  `current`; the rest `todo`. Section blocks are skipped in this flat v1 (they group
- *  in a later pass). */
+ *  check-off row (`completedLessonIds`). The first not-done lesson, in author order, is
+ *  `current`; the rest `todo`.
+ *
+ *  Grouping: SECTION blocks become syllabus modules — each section header opens a new
+ *  group that collects the lessons after it. Lessons before the first section fall into
+ *  a leading untitled "path" group. Sections with no lessons are dropped. Counts +
+ *  progress are computed across the flattened lesson order. */
 export function buildCourse(input: {
   blocks: JourneyPlanItem[]
   progress: Pick<JourneyProgress, 'items'>
@@ -107,22 +117,40 @@ export function buildCourse(input: {
   const completed = input.completedLessonIds ?? new Set<string>()
   const progressById = new Map(input.progress.items.map((p) => [p.id, p]))
 
-  const renderable = [...input.blocks]
-    .filter((b) => blockType(b) !== 'section')
-    .sort((a, b) => a.sort_order - b.sort_order)
+  const ordered = [...input.blocks].sort((a, b) => a.sort_order - b.sort_order)
 
   const isDone = (b: JourneyPlanItem): boolean =>
     blockType(b) === 'practice' ? progressById.get(b.id)?.met ?? false : completed.has(b.id)
 
-  const firstOpenId = renderable.find((b) => !isDone(b))?.id ?? null
+  // The first not-done renderable (non-section) block, in order, is the "current" lesson.
+  const firstOpenId = ordered.find((b) => blockType(b) !== 'section' && !isDone(b))?.id ?? null
 
-  const lessons: CourseLesson[] = renderable.map((b) => {
+  const toLesson = (b: JourneyPlanItem): CourseLesson => {
     const status: LessonStatus = isDone(b) ? 'done' : b.id === firstOpenId ? 'current' : 'todo'
     return blockType(b) === 'practice'
       ? practiceLesson(b, progressById.get(b.id) ?? null, status)
       : contentLesson(b, status)
-  })
+  }
 
+  // Walk in order, opening a new group at each section header. The leading group (lessons
+  // before any section) is the untitled "path". Empty groups never make it into `sections`.
+  const sections: CourseSection[] = []
+  let group: CourseSection | null = null
+  const flush = () => {
+    if (group && group.lessons.length > 0) sections.push(group)
+  }
+  for (const b of ordered) {
+    if (blockType(b) === 'section') {
+      flush()
+      group = { id: b.id, title: b.title ?? null, lessons: [] }
+    } else {
+      if (!group) group = { id: SINGLE_SECTION_ID, title: null, lessons: [] }
+      group.lessons.push(toLesson(b))
+    }
+  }
+  flush()
+
+  const lessons = sections.flatMap((s) => s.lessons)
   const doneCount = lessons.filter((l) => l.status === 'done').length
   const totalCount = lessons.length
   const percent = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100)
@@ -132,9 +160,6 @@ export function buildCourse(input: {
     lessons.find((l) => l.status === 'todo')?.id ??
     lessons[0]?.id ??
     null
-
-  const sections: CourseSection[] =
-    totalCount === 0 ? [] : [{ id: SINGLE_SECTION_ID, title: null, lessons }]
 
   return { sections, totalCount, doneCount, percent, currentLessonId }
 }
@@ -162,6 +187,7 @@ export function previewCourse(lessons: CourseDraftLesson[]): Course {
     kind: 'lesson',
     title: l.title || 'Untitled lesson',
     body: l.body,
+    video: parseVideoEmbed(l.body),
     estMinutes: l.estMinutes ?? null,
     practiceId: null,
     status: i === 0 ? 'current' : 'todo',
