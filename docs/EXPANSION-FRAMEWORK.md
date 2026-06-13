@@ -132,10 +132,12 @@ hand-wiring, defeating the framework.
    + selectors. **Marketplace migrated** to `lib/verticals/market.ts`; `NAV_AREAS` now composes its
    nav at the anchored position. A descriptor-contract test enforces the §6 guardrail in CI.
 5. ⏳ **Engagement/trust source-adapter front door** — ✅ the `trust_signals` ledger + `trust_scores`
-   projection (ADR-247), the derived recompute (`lib/trust`: emit → replay → score), and the
-   `trustSource(id).signal(...)` adapter (the module hook). Persona verification emits the first
-   real signal. Remaining: the consented/explainable read RPC, and routing the other emit points
-   (moderation, marketplace deals, in-person check-ins) + the engagement-emission cleanup.
+   projection (ADR-247), the derived recompute (`lib/trust`: emit → replay → score), the
+   `trustSource(id).signal(...)` adapter (the module hook), and an operator readout (the global
+   score on the verification queue). Emit points wired: persona verification + in-person capture
+   (`community.in_person_checkin`). Remaining: the consented/explainable member-facing read RPC +
+   display (a product/voice decision), more emit points (moderation, marketplace deals), and the
+   engagement-emission cleanup.
 6. ⏳ **The Space layer (lateral)** — ✅ the `spaces` table (applied) + `lib/spaces` resolver +
    the spaces↔verticals join, and the `(main)` layout resolves the active Space (by host, root
    fallback) → `data-skin` on the shell root **and** hides vertical nav the Space hasn't switched
