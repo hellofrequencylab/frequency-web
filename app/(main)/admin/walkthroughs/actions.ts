@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
-  TRIGGERS,
+  AVAILABLE_TRIGGERS,
   CADENCES,
   type Walkthrough,
   type WalkthroughStep,
@@ -54,7 +54,9 @@ async function uniqueSlug(base: string): Promise<string> {
   return `${root}-${i}`
 }
 
-const TRIGGER_SET = new Set<string>(TRIGGERS)
+// Gate saves on wired triggers only — an unwired trigger (e.g. `project`) is dropped from
+// the patch rather than persisted, so the editor can't ship a walkthrough that never fires.
+const TRIGGER_SET = new Set<string>(AVAILABLE_TRIGGERS)
 const CADENCE_SET = new Set<string>(CADENCES)
 
 /** Coerce + sanitize an editor patch into the DB column shape (drops unknown keys,

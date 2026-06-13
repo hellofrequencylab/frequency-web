@@ -145,6 +145,18 @@ export const ACCENT_TOKENS: Record<StepAccent, { label: string; swatch: string }
 }
 
 export const TRIGGERS = Object.keys(TRIGGER_LABELS) as WalkthroughTrigger[]
+
+/** Triggers whose runtime qualifier is NOT wired yet. `project` has no project entity on
+ *  this model (see lib/walkthroughs/runtime.ts `triggerQualifies` + ADR-243), so a
+ *  walkthrough set to it would silently never show. It stays in the union + labels so any
+ *  legacy row still renders its chip — it's just never offered as a choice. Wire the
+ *  qualifier, then drop it from here to light it up. */
+export const UNWIRED_TRIGGERS = new Set<WalkthroughTrigger>(['project'])
+
+/** The triggers an operator can author against today — every wired trigger. Both the
+ *  editor dropdown and the save action gate on this so no one can ship a dead trigger. */
+export const AVAILABLE_TRIGGERS = TRIGGERS.filter((t) => !UNWIRED_TRIGGERS.has(t))
+
 export const CADENCES = Object.keys(CADENCE_LABELS) as WalkthroughCadence[]
 export const LAYOUTS = Object.keys(LAYOUT_LABELS) as StepLayout[]
 export const ACCENTS = Object.keys(ACCENT_TOKENS) as StepAccent[]
