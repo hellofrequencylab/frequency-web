@@ -11,7 +11,7 @@ import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { JourneyBuilder, type BuilderItem } from '@/components/studio/journey/journey-builder'
-import { adoptPlanAction, forkPlanAction } from '../actions'
+import { adoptPlanAction, forkPlanAction, completeLessonAction } from '../actions'
 import { enabledWidgets, type WidgetId } from '@/lib/journey-page-config'
 import { buildCourse } from '@/lib/journey-course'
 import { CoursePlayer } from '@/components/journey/course/course-player'
@@ -94,7 +94,7 @@ export default async function JourneyPlanPage({
   // practice library + pillars too, so it loads those alongside.
   const view = await getJourneyView(profileId, slug)
   if (!view) notFound()
-  const { plan, items, adopted, progress } = view
+  const { plan, items, adopted, progress, completedLessonIds } = view
 
   const isAuthor = !!profileId && plan.author_id === profileId
   if (!isAuthor && plan.visibility === 'private') notFound()
@@ -203,9 +203,11 @@ export default async function JourneyPlanPage({
     >
       {isActive && progress ? (
         <CoursePlayer
-          course={buildCourse(progress)}
+          course={buildCourse({ blocks: items, progress, completedLessonIds })}
           planTitle={plan.title}
           accent={plan.accent}
+          planId={plan.id}
+          completeLessonAction={completeLessonAction}
           railExtras={<ActiveRail profileId={profileId as string} plan={plan} progress={progress} />}
           tierControl={
             <TierControl
