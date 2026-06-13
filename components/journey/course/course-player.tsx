@@ -1,8 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Check, Circle, Clock, ChevronLeft, ChevronRight, PlayCircle } from 'lucide-react'
+import { useMemo, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { Check, Circle, Clock, ChevronLeft, ChevronRight, PlayCircle, Loader2 } from 'lucide-react'
 import { accentColor, accentTint } from '@/lib/studio/accents'
+import { isError, type ActionResult } from '@/lib/action-result'
 import { JourneyLogButton } from '@/components/journey/journey-log-button'
 import { courseLessonOrder, type Course, type CourseLesson } from '@/lib/journey-course'
 
@@ -23,15 +25,23 @@ export function CoursePlayer({
   course,
   planTitle,
   accent,
+  planId,
+  completeLessonAction,
   railExtras,
   tierControl,
 }: {
   course: Course
   planTitle: string
   accent: string | null
+  /** The plan id — required (with `completeLessonAction`) to check off lesson blocks. */
+  planId?: string
+  /** Server action to mark a lesson/check block complete. Omitted = preview (no-op). */
+  completeLessonAction?: (planId: string, itemId: string) => Promise<ActionResult>
   railExtras?: React.ReactNode
   tierControl?: React.ReactNode
 }) {
+  const router = useRouter()
+  const [completing, startComplete] = useTransition()
   const order = useMemo(() => courseLessonOrder(course), [course])
   const [selectedId, setSelectedId] = useState<string | null>(course.currentLessonId)
 
@@ -42,6 +52,22 @@ export function CoursePlayer({
 
   const tint = accentTint(accent, 16)
   const fill = accentColor(accent)
+
+  // Check off a lesson/check block, then refresh server state + advance. In preview
+  // (no action wired) it just advances — a true non-interactive preview.
+  function completeLesson(lessonId: string, nextId: string | null) {
+    if (!completeLessonAction || !planId) {
+      if (nextId) setSelectedId(nextId)
+      return
+    }
+    startComplete(async () => {
+      const res = await completeLessonAction(planId, lessonId)
+      if (!isError(res)) {
+        router.refresh()
+        if (nextId) setSelectedId(nextId)
+      }
+    })
+  }
 
   return (
     <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
@@ -101,7 +127,9 @@ export function CoursePlayer({
             tint={tint}
             prev={prev}
             next={next}
+            completing={completing}
             onGo={(id) => setSelectedId(id)}
+            onComplete={() => completeLesson(lesson.id, next?.id ?? null)}
           />
         ) : (
           <p className="rounded-2xl border border-border bg-surface p-6 text-sm text-muted">
@@ -209,7 +237,9 @@ function LessonPane({
   tint,
   prev,
   next,
+  completing,
   onGo,
+  onComplete,
 }: {
   lesson: CourseLesson
   n: number
@@ -219,7 +249,9 @@ function LessonPane({
   tint: string
   prev: CourseLesson | null
   next: CourseLesson | null
+  completing: boolean
   onGo: (id: string) => void
+  onComplete: () => void
 }) {
   return (
     <article className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
@@ -250,10 +282,11 @@ function LessonPane({
         <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-text">{lesson.body}</div>
       )}
 
-      {/* Complete & continue — for a practice lesson this LOGS the practice (firing the
-          rewards) and advances to the next lesson. */}
+      {/* Complete & continue. A PRACTICE lesson LOGS the practice (firing rewards) and
+          advances; a LESSON/CHECK block checks off (journey_lesson_progress) and advances.
+          In preview there's no practice + no action, so it's just a non-interactive walk. */}
       <div className="mt-6 border-t border-border pt-5">
-        {lesson.practiceId ? (
+        {lesson.kind === 'practice' && lesson.practiceId ? (
           <div className="space-y-3">
             <JourneyLogButton
               practiceId={lesson.practiceId}
@@ -263,26 +296,31 @@ function LessonPane({
               onLogged={() => next && onGo(next.id)}
             />
             {lesson.status === 'done' && next && (
-              <button
-                type="button"
-                onClick={() => onGo(next.id)}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-2xl px-5 py-3 text-sm font-semibold transition-colors"
-                style={{ backgroundColor: tint, color: fill }}
-              >
-                Continue to next lesson <ChevronRight className="h-4 w-4" aria-hidden />
-              </button>
+              <ContinueButton tint={tint} fill={fill} onClick={() => onGo(next.id)} />
             )}
           </div>
-        ) : (
-          next && (
-            <button
-              type="button"
-              onClick={() => onGo(next.id)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-base font-bold text-on-primary transition-colors hover:bg-primary-hover"
-            >
-              <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden /> Complete &amp; continue
-            </button>
+        ) : lesson.status === 'done' ? (
+          next ? (
+            <ContinueButton tint={tint} fill={fill} onClick={() => onGo(next.id)} />
+          ) : (
+            <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+              <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden /> Completed
+            </p>
           )
+        ) : (
+          <button
+            type="button"
+            disabled={completing}
+            onClick={onComplete}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-base font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          >
+            {completing ? (
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+            ) : (
+              <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+            )}
+            {completing ? 'Saving…' : 'Complete & continue'}
+          </button>
         )}
       </div>
 
@@ -292,6 +330,19 @@ function LessonPane({
         <NavButton dir="next" lesson={next} onGo={onGo} />
       </div>
     </article>
+  )
+}
+
+function ContinueButton({ tint, fill, onClick }: { tint: string; fill: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex w-full items-center justify-center gap-1.5 rounded-2xl px-5 py-3 text-sm font-semibold transition-colors"
+      style={{ backgroundColor: tint, color: fill }}
+    >
+      Continue to next lesson <ChevronRight className="h-4 w-4" aria-hidden />
+    </button>
   )
 }
 

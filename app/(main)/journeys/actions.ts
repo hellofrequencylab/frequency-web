@@ -17,6 +17,7 @@ import {
   setPlanOfficial,
   adoptPlan,
   forkPlan,
+  completeLesson,
   getPlan,
   planAuthorId,
   planMeta,
@@ -152,6 +153,15 @@ export async function forkPlanAction(formData: FormData) {
   const planId = String(formData.get('planId') ?? '')
   const fork = await forkPlan(profileId, planId)
   if (fork) redirect(`/journeys/${fork.slug}`)
+}
+
+/** Check off a lesson/check block for the caller (ADR-244). Idempotent; member-owned
+ *  via RLS. The client refreshes to pick up the new completion + course progress. */
+export async function completeLessonAction(planId: string, itemId: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to track lessons.')
+  await completeLesson(profileId, planId, itemId)
+  return ok()
 }
 
 // --- Studio (client builder) actions — JSON args, return ActionResult ---------
