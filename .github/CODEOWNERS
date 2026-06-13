@@ -1,0 +1,16 @@
+# CODEOWNERS — who is auto-requested to review a PR that touches matching paths.
+# Docs: https://docs.github.com/articles/about-code-owners
+#
+# Solo today, so this is intentionally a template (all lines commented = no required
+# owners, no false "unknown owner" warnings). When you add developers:
+#   1. set your team's GitHub handles below,
+#   2. turn on "Require review from Code Owners" in the `main` branch ruleset,
+#   3. bump required approvals to >= 1.
+#
+# Everything:
+# *                       @your-github-username
+#
+# Examples for when the team grows:
+# /supabase/migrations/   @your-db-owner
+# /docs/                  @your-docs-owner
+# /lib/ai/                @your-ai-owner
