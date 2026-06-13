@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       achievements: {
@@ -2981,6 +3006,55 @@ export type Database = {
           },
         ]
       }
+      journey_lesson_progress: {
+        Row: {
+          completed_at: string
+          id: string
+          item_id: string
+          last_position: number | null
+          plan_id: string
+          profile_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          item_id: string
+          last_position?: number | null
+          plan_id: string
+          profile_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          item_id?: string
+          last_position?: number | null
+          plan_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_lesson_progress_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plan_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_lesson_progress_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_lesson_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_plan_adoptions: {
         Row: {
           active: boolean
@@ -3025,34 +3099,58 @@ export type Database = {
       }
       journey_plan_items: {
         Row: {
+          block_type: string
+          body: string | null
           cadence: string | null
           default_tier: string
           domain_id: string | null
+          est_minutes: number | null
           id: string
+          media: Json
           note: string | null
+          parent_id: string | null
           plan_id: string
-          practice_id: string
+          practice_id: string | null
+          required: boolean
+          settings: Json
           sort_order: number
+          title: string | null
         }
         Insert: {
+          block_type?: string
+          body?: string | null
           cadence?: string | null
           default_tier?: string
           domain_id?: string | null
+          est_minutes?: number | null
           id?: string
+          media?: Json
           note?: string | null
+          parent_id?: string | null
           plan_id: string
-          practice_id: string
+          practice_id?: string | null
+          required?: boolean
+          settings?: Json
           sort_order?: number
+          title?: string | null
         }
         Update: {
+          block_type?: string
+          body?: string | null
           cadence?: string | null
           default_tier?: string
           domain_id?: string | null
+          est_minutes?: number | null
           id?: string
+          media?: Json
           note?: string | null
+          parent_id?: string | null
           plan_id?: string
-          practice_id?: string
+          practice_id?: string | null
+          required?: boolean
+          settings?: Json
           sort_order?: number
+          title?: string | null
         }
         Relationships: [
           {
@@ -3060,6 +3158,13 @@ export type Database = {
             columns: ["domain_id"]
             isOneToOne: false
             referencedRelation: "pillars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_items_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plan_items"
             referencedColumns: ["id"]
           },
           {
@@ -3099,6 +3204,7 @@ export type Database = {
           forked_count: number
           id: string
           intro: string | null
+          intro_video: string | null
           min_practices_per_day: number
           official: boolean
           page_config: Json | null
@@ -3107,6 +3213,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           season_locked: boolean
+          sequential: boolean
           slug: string
           status: string
           summary: string | null
@@ -3128,6 +3235,7 @@ export type Database = {
           forked_count?: number
           id?: string
           intro?: string | null
+          intro_video?: string | null
           min_practices_per_day?: number
           official?: boolean
           page_config?: Json | null
@@ -3136,6 +3244,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           season_locked?: boolean
+          sequential?: boolean
           slug: string
           status?: string
           summary?: string | null
@@ -3157,6 +3266,7 @@ export type Database = {
           forked_count?: number
           id?: string
           intro?: string | null
+          intro_video?: string | null
           min_practices_per_day?: number
           official?: boolean
           page_config?: Json | null
@@ -3165,6 +3275,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           season_locked?: boolean
+          sequential?: boolean
           slug?: string
           status?: string
           summary?: string | null
@@ -3462,6 +3573,38 @@ export type Database = {
           {
             foreignKeyName: "memberships_profile_id_fkey"
             columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_config: {
+        Row: {
+          area_key: string
+          hidden: boolean
+          position: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          area_key: string
+          hidden?: boolean
+          position?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          area_key?: string
+          hidden?: boolean
+          position?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_config_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -4734,6 +4877,61 @@ export type Database = {
           },
           {
             foreignKeyName: "practice_logs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_sessions: {
+        Row: {
+          ended_at: string
+          id: string
+          mode: string
+          pattern: string | null
+          practice_id: string | null
+          profile_id: string
+          seconds: number
+          started_at: string | null
+        }
+        Insert: {
+          ended_at?: string
+          id?: string
+          mode?: string
+          pattern?: string | null
+          practice_id?: string | null
+          profile_id: string
+          seconds?: number
+          started_at?: string | null
+        }
+        Update: {
+          ended_at?: string
+          id?: string
+          mode?: string
+          pattern?: string | null
+          practice_id?: string | null
+          profile_id?: string
+          seconds?: number
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_sessions_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_sessions_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_sessions_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -6857,6 +7055,109 @@ export type Database = {
           },
         ]
       }
+      vera_dispatches: {
+        Row: {
+          action_href: string | null
+          copy: string
+          created_at: string
+          day: string
+          id: string
+          kind: string
+          payload: Json
+          profile_id: string
+        }
+        Insert: {
+          action_href?: string | null
+          copy: string
+          created_at?: string
+          day: string
+          id?: string
+          kind: string
+          payload?: Json
+          profile_id: string
+        }
+        Update: {
+          action_href?: string | null
+          copy?: string
+          created_at?: string
+          day?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vera_dispatches_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      walkthrough: {
+        Row: {
+          active: boolean
+          audience: string | null
+          cadence: string
+          created_at: string
+          description: string | null
+          ends_at: string | null
+          id: string
+          name: string
+          priority: number
+          slug: string
+          starts_at: string | null
+          steps: Json
+          trigger: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          audience?: string | null
+          cadence?: string
+          created_at?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          name: string
+          priority?: number
+          slug: string
+          starts_at?: string | null
+          steps?: Json
+          trigger?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          audience?: string | null
+          cadence?: string
+          created_at?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          name?: string
+          priority?: number
+          slug?: string
+          starts_at?: string | null
+          steps?: Json
+          trigger?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "walkthrough_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       welcomes: {
         Row: {
           created_at: string
@@ -8634,7 +8935,7 @@ export type Database = {
         | "janitor"
       group_status: "forming" | "active" | "inactive" | "archived"
       membership_status: "active" | "pending" | "inactive"
-      post_type: "feed" | "blog" | "announcement" | "recap"
+      post_type: "feed" | "blog" | "announcement" | "recap" | "note" | "system"
       post_visibility: "public" | "region" | "cluster" | "group"
       season_rank_enum:
         | "ghost"
@@ -8783,6 +9084,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       achievement_category: [
@@ -8810,7 +9114,7 @@ export const Constants = {
       ],
       group_status: ["forming", "active", "inactive", "archived"],
       membership_status: ["active", "pending", "inactive"],
-      post_type: ["feed", "blog", "announcement", "recap"],
+      post_type: ["feed", "blog", "announcement", "recap", "note", "system"],
       post_visibility: ["public", "region", "cluster", "group"],
       season_rank_enum: [
         "ghost",
