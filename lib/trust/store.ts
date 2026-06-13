@@ -102,6 +102,22 @@ export interface TrustScore {
   byContext: Record<string, number>
 }
 
+/** Batch-read the GLOBAL trust score for many profiles → Map(profileId → score). For
+ *  operator lists (e.g. the verification queue) — one query, missing profiles read 0. */
+export async function getGlobalTrustScores(profileIds: string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>()
+  if (!profileIds.length) return out
+  const { data } = await createAdminClient()
+    .from('trust_scores')
+    .select('profile_id, score')
+    .eq('context', 'global')
+    .in('profile_id', profileIds)
+  for (const r of (data ?? []) as { profile_id: string; score: number }[]) {
+    out.set(r.profile_id, r.score)
+  }
+  return out
+}
+
 /** Read a profile's score projection as { global, byContext }. */
 export async function getTrustScore(profileId: string): Promise<TrustScore> {
   const { data } = await createAdminClient()
