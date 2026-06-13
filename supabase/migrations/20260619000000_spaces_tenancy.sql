@@ -5,9 +5,10 @@
 -- migration stands up the tenancy SPINE only; it does NOT retrofit space_id onto the
 -- existing single-tenant graph (all of which belongs to the seeded root space).
 --
--- ⚠️ NOT yet applied. Apply via the Supabase SQL Editor (the repo's migration-history
--- baseline predates `db push` being safe here — see docs/WORKFLOW.md), then regenerate
--- lib/database.types.ts against the live schema. Additive + idempotent, so safe to re-run.
+-- Applied to production via the Supabase SQL Editor (the repo's migration-history baseline
+-- predates `db push` being safe here — see docs/WORKFLOW.md); the seeded root space verified
+-- present. lib/database.types.ts carries the spaces types (hand-added to match this schema;
+-- regenerate to refresh canonically). This file is the canonical record. Additive + idempotent.
 
 -- ── The spaces registry ────────────────────────────────────────────────────────────────
 create table if not exists public.spaces (

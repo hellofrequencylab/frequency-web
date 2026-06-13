@@ -106,7 +106,7 @@ The good bones exist; four composition points are still hand-authored. This is t
 | **Capability union** | ✅ | core stays closed; `lib/verticals` resolves namespaced module capabilities | done (step 3) |
 | **Vertical registry** | ✅ | `lib/verticals/registry.ts` descriptor + selectors; Marketplace migrated | done (step 4) |
 | **Engagement emission** | 🔴 | ~15 action files call `processGamificationEvent` inline | route through `recordEngagementEvent` via adapters (step 5) |
-| **Spaces / skin** | 🔴 | none | `spaces` table + `space_id` RLS + `[data-skin]` resolver (step 6) |
+| **Spaces / skin** | ⏳ | `spaces` table (applied) + `lib/spaces` resolver; `(main)` layout resolves the active Space → `data-skin` on the shell root | remaining: per-skin token sets (DAWN), custom-domain content-routing, `space_members`, per-Space `space_id` RLS on new vertical tables |
 
 **Marketplace is the cautionary example:** it exists (`lib/marketplace.ts`, `app/(main)/market/`,
 nav key `market`) but is hand-wired at *every* seam — no admin module, no capability, no rail panel,
@@ -134,8 +134,11 @@ hand-wiring, defeating the framework.
 5. 🔴 **Engagement/trust source-adapter front door** — formalize `SourceAdapter`; route emissions
    through `recordEngagementEvent`; add the `trust_signals` ledger + projection (ADR-247) so each
    vertical emits trust from day one.
-6. 🔴 **The Space layer (lateral)** — `spaces` table + `space_id` RLS + `[data-skin]` resolver +
-   `network_connected` switch + domain routing; a Space selects registered verticals.
+6. ⏳ **The Space layer (lateral)** — ✅ the `spaces` table (applied) + `lib/spaces` resolver +
+   the spaces↔verticals join, and the `(main)` layout resolves the active Space (by host, root
+   fallback) → `data-skin` on the shell root. Remaining: per-skin token sets (DAWN),
+   custom-domain content-routing, `space_members`, and per-Space `space_id` RLS on new vertical
+   tables as they ship.
 
 **Steps 1-4 are done — a vertical is now a descriptor.** After step 6, **a sub-brand is a row.**
 

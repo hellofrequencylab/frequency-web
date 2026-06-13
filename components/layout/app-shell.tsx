@@ -1101,6 +1101,7 @@ export default function AppShell({
   demoMode = false,
   demoHidden = false,
   hasDemoContent = true,
+  skin = 'default',
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -1137,6 +1138,10 @@ export default function AppShell({
   demoHidden?: boolean
   /** Whether any seeded demo content actually exists — the toggle hides when none. */
   hasDemoContent?: boolean
+  /** The active Space's skin token set (ADR-249/250 step 6). Sets `[data-skin]` on the
+   *  shell root so per-Space token overrides can scope to the in-app surface. 'default' is
+   *  the current look (a no-op until skin token sets are authored). */
+  skin?: string
 }) {
   const pathname = usePathname()
   // The rail's sections, built from the operator's GLOBAL order + visibility
@@ -1242,7 +1247,7 @@ export default function AppShell({
     // The document itself scrolls (not an inner pane) so the whole page renders in
     // normal flow — full-page screenshot tools capture everything, and Next's native
     // scroll restoration works. The header + side rails stay put via `sticky`.
-    <div className="flex min-h-screen flex-col bg-canvas">
+    <div data-skin={skin} className="flex min-h-screen flex-col bg-canvas">
 
       {/* ── Top bar ───────────────────────────────────────── */}
       <header className="sticky top-0 h-14 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30">
