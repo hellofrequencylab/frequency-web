@@ -93,9 +93,8 @@ mobile.
   the priority ladder + the PX extension-opportunities track live here.
 - [**OVERVIEW**](docs/OVERVIEW.md) — **north star.** The whole picture: IA,
   page framework, gamification, and the lock-in-resistant architecture.
-- [**START-HERE**](docs/START-HERE.md) — **go-live runbook.** Ordered steps to apply
-  migrations, regenerate types, run & QA, then continue development. Open this first
-  at a computer.
+- [**START-HERE**](docs/START-HERE.md) — **new-developer orientation.** Run it locally,
+  what to read in order, and how to ship a change. Open this first.
 - [**BUILD-PHASES**](docs/BUILD-PHASES.md) — **the working tracker.** Phase-by-phase
   checklist (0→5), dependencies, and definition-of-done.
 - [**CHECKLIST**](docs/CHECKLIST.md) — owner action items: decisions + tech debt.
