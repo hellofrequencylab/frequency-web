@@ -21,6 +21,8 @@ import {
 import type { IntensityTier } from '@/lib/journey-tiers'
 import type { PlanStatus, PageWidgetConfig } from '@/lib/journey-plans'
 import { editorPageConfig } from '@/lib/journey-page-config'
+import { previewCourse } from '@/lib/journey-course'
+import { CoursePlayer } from '@/components/journey/course/course-player'
 import {
   TierPicker, CompletionRulesSection, RewardsSection, PageLayoutSection,
   OfficialSection, StatusChip,
@@ -348,6 +350,35 @@ export function JourneyBuilder(props: Props) {
             )
           })}
         </div>
+      )}
+
+      {/* ── Live preview — the e-learning course player, rendered from the current
+            draft (docs/JOURNEYS.md §5A). Non-interactive (no logging); it's how the
+            adopted page will read. Collapsed by default so it never crowds the tools. ── */}
+      {items.length > 0 && (
+        <details className="group mt-6 rounded-2xl border border-border bg-surface/60">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3">
+            <span className="inline-flex items-center gap-2 text-sm font-bold text-text">
+              <Eye className="h-4 w-4 text-primary-strong" /> Live preview
+              <span className="font-normal text-subtle">· how learners see it</span>
+            </span>
+            <ChevronDown className="h-4 w-4 text-subtle transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
+          <div className="border-t border-border p-4">
+            <CoursePlayer
+              course={previewCourse(
+                items.map((it) => ({
+                  id: it.practiceId,
+                  title: it.title,
+                  body: it.description,
+                  cadenceLabel: it.cadence ?? it.practiceCadence,
+                }))
+              )}
+              planTitle={title || 'Your Journey'}
+              accent={accent}
+            />
+          </div>
+        </details>
       )}
 
       {/* ── The path ─────────────────────────────────────────────── */}
