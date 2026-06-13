@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import { resolveSpaceForHost } from '@/lib/spaces'
+import { resolveSpaceForHost, activeVerticalsForSpace } from '@/lib/spaces'
+import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
 import RightSidebar, { MobileGameStats } from '@/components/sidebar/right-sidebar'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
@@ -227,14 +228,23 @@ export default async function MainLayout({
   )
 
   // Resolve the active Space for this host (a custom domain → that Space, otherwise the
-  // root) so the shell can apply its skin (ADR-249/250 step 6). Resilient: any failure
-  // falls back to the default skin, which is the current look (no visual change).
+  // root) so the shell can apply its skin AND hide vertical nav the Space hasn't switched
+  // on (ADR-249/250 step 6). Resilient: any failure falls back to the default skin + no
+  // vertical filtering (the current look). The root space enables every vertical, so this
+  // filtering is a no-op there — it only narrows nav for a non-root sub-brand Space.
   let activeSkin = 'default'
   try {
     const space = await resolveSpaceForHost((await headers()).get('host'))
-    if (space) activeSkin = space.skin
+    if (space) {
+      activeSkin = space.skin
+      const enabled = new Set(activeVerticalsForSpace(space).map((v) => v.id))
+      for (const v of VERTICALS) {
+        if (enabled.has(v.id)) continue
+        for (const p of v.nav ?? []) navAccess[p.area.key] = 'none' // hide its nav for this Space
+      }
+    }
   } catch {
-    /* pre-migration / lookup failure → default skin */
+    /* pre-migration / lookup failure → default skin, no filtering */
   }
 
   return (
