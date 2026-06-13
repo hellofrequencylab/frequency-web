@@ -61,6 +61,12 @@ authorization MUST be enforced in application code.** Every server action that
 uses the admin client is responsible for its own authz check. Do not assume the
 database will stop an unauthorized write — it won't.
 
+> **Enforced in CI (ADR-246).** `scripts/check-authz-guards.mjs` (`pnpm check:authz`,
+> run by the `ci` workflow) fails the build if a `'use server'` file uses
+> `createAdminClient()` without establishing the caller / checking a capability /
+> verifying a signed token. A genuinely public action opts out with `// authz-ok: <reason>`
+> or the script's allowlist. This converts the rule above from convention into a gate.
+
 **RLS convergence is underway (ADR-042).** Own-row and public reads are moving
 back onto the session client (`createClient()`) so RLS enforces them — including
 the caller-identity helpers below, which now read the caller's own profile via
