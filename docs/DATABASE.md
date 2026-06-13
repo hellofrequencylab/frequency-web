@@ -208,6 +208,14 @@ ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_me
 
 > *(`spatial_ref_sys` is PostGIS's reference table — not ours, no RLS by design.)*
 
+**Entity partition (Foundation ⊕ Labs — ADR-246, migration `20260618000000`)**
+`entities` is the two-row legal-entity registry (`foundation` nonprofit / `labs` for-profit) —
+the partition key for **all money**. `event_tickets.entity_id` tags each ticket's revenue
+(defaults to Foundation). `financial_transactions` is the append-only, entity-partitioned
+ledger every dollar flow writes to (`revenue_type ∈ dues|donation|commerce|payout|transfer|refund`);
+points (gems/zaps) stay separate and entity-blind. `profile_personas.entity_id` is now FK'd to
+`entities`. Full rationale: [PLATFORM-VISION](PLATFORM-VISION.md) §1, [BASELINE-ASSESSMENT](BASELINE-ASSESSMENT.md) Phase 2.
+
 ## The `profiles` table — universal entity record
 
 `profiles` is the single identity row for **every** entity, not just logged-in
