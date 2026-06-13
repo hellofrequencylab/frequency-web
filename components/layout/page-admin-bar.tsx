@@ -1,19 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ComponentType } from 'react'
 import { usePathname } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
 import { PageQrManager, PageShareKit } from '@/components/qr/page-qr-manager'
 import { meetsAccess } from '@/lib/nav-areas'
-import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
 import { CircleQuestModule } from '@/components/admin/modules/circle-quest-module'
 import { CircleRailModule } from '@/components/admin/modules/circle-rail-module'
-import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
-import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
-import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
-import { ChannelSettingsModule } from '@/components/admin/modules/channel-settings-module'
-import { PersonSettingsModule } from '@/components/admin/modules/person-settings-module'
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
+import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
+import { modulesForScopeKind, type ScopeKind } from '@/lib/admin/modules/registry'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
 
@@ -45,16 +41,31 @@ function isShareable(pathname: string): boolean {
   return (SHAREABLE_PREFIXES as readonly string[]).includes(m[1])
 }
 
-// The page-specific settings module, if this path has one. Modules self-resolve from
-// the pathname (same as admin-console.tsx), so they take no props.
-function settingsModuleFor(pathname: string) {
-  if (/^\/circles\/[^/]+/.test(pathname)) return <CircleSettingsModule />
-  if (/^\/hubs\/[^/]+/.test(pathname)) return <HubSettingsModule />
-  if (/^\/nexuses\/[^/]+/.test(pathname)) return <NexusSettingsModule />
-  if (/^\/events\/[^/]+/.test(pathname)) return <EventSettingsModule />
-  if (/^\/channels\/[^/]+/.test(pathname)) return <ChannelSettingsModule />
-  if (/^\/people\/[^/]+/.test(pathname)) return <PersonSettingsModule />
-  return null
+// Which scope kind an entity-detail path represents — the bridge from a URL to the
+// admin-module registry (ADR-250 step 1). The dock no longer hardcodes a module per
+// path; it asks the registry which modules exist for this scope kind.
+const PATH_SCOPE_KINDS: readonly { prefix: RegExp; kind: ScopeKind }[] = [
+  { prefix: /^\/circles\/[^/]+/, kind: 'circle' },
+  { prefix: /^\/hubs\/[^/]+/, kind: 'hub' },
+  { prefix: /^\/nexuses\/[^/]+/, kind: 'nexus' },
+  { prefix: /^\/events\/[^/]+/, kind: 'event' },
+  { prefix: /^\/channels\/[^/]+/, kind: 'channel' },
+  { prefix: /^\/people\/[^/]+/, kind: 'profile' },
+]
+
+function scopeKindForPath(pathname: string): ScopeKind | null {
+  return PATH_SCOPE_KINDS.find((e) => e.prefix.test(pathname))?.kind ?? null
+}
+
+// The sidebar ("manage") modules to render for this path, resolved from the registry.
+// Each module self-resolves from the pathname and re-gates server-side, so selection
+// here is by scope kind; an unauthorized viewer simply sees an empty module.
+function settingsModulesFor(pathname: string): ComponentType[] {
+  const kind = scopeKindForPath(pathname)
+  if (!kind) return []
+  return modulesForScopeKind(kind, 'sidebar')
+    .map((m) => MODULE_COMPONENTS[m.id])
+    .filter((C): C is ComponentType => !!C)
 }
 
 // The right-quadrant module (e.g. "Circle Quest" on a circle). Sits opposite the
@@ -91,7 +102,8 @@ export function PageAdminBar() {
   if (!manager && !shareable) return null
 
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
-  const settingsModule = manager ? settingsModuleFor(pathname) : null
+  const settingsModules = manager ? settingsModulesFor(pathname) : []
+  const hasSettings = settingsModules.length > 0
   const questModule = manager ? questModuleFor(pathname) : null
   // Operator page-content editing (ADR-180) on configured routes — admin+ only.
   const contentModule =
@@ -100,13 +112,27 @@ export function PageAdminBar() {
       : null
 
   // Nothing to administer or share here — render nothing.
-  if (!shareable && !settingsModule && !questModule && !contentModule) return null
+  if (!shareable && !hasSettings && !questModule && !contentModule) return null
 
   // The bottom row: page settings (left) + quest / content (right). Only drawn
   // when at least one of those modules exists.
-  const hasBottomRow = !!(settingsModule || questModule || contentModule)
+  const hasBottomRow = hasSettings || !!questModule || !!contentModule
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const url = `${origin}${pathname}`
+
+  // The page-settings column — the registry-selected sidebar modules for this scope,
+  // stacked, under the shared "Page settings" label. Used in both the circle and the
+  // generic layout below.
+  const settingsBlock = hasSettings ? (
+    <div className="min-w-0">
+      <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
+      <div className="space-y-6">
+        {settingsModules.map((ModuleComponent, i) => (
+          <ModuleComponent key={i} />
+        ))}
+      </div>
+    </div>
+  ) : null
 
   return (
     <div className="-mt-3 mb-5 sm:mb-6">
@@ -137,12 +163,7 @@ export function PageAdminBar() {
             {hasBottomRow && isCircle && (
               <div className="space-y-6">
                 {/* Circle settings — full width across the top. */}
-                {settingsModule && (
-                  <div className="min-w-0">
-                    <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
-                    {settingsModule}
-                  </div>
-                )}
+                {settingsBlock}
                 {/* Quest (2/3) + rail layout (1/3) below. */}
                 <div className="gap-y-6 lg:grid lg:grid-cols-3 lg:gap-x-8">
                   {questModule && <div className="min-w-0 lg:col-span-2">{questModule}</div>}
@@ -155,12 +176,7 @@ export function PageAdminBar() {
 
             {hasBottomRow && !isCircle && (
               <div className="grid gap-x-8 gap-y-6 lg:grid-cols-2">
-                {settingsModule && (
-                  <div className="min-w-0">
-                    <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
-                    {settingsModule}
-                  </div>
-                )}
+                {settingsBlock}
                 {questModule && <div className="min-w-0">{questModule}</div>}
                 {contentModule && <div className="min-w-0 lg:col-span-2">{contentModule}</div>}
               </div>

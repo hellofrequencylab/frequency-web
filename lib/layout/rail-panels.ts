@@ -4,6 +4,10 @@
 // page panels this registry returns for the current path. To give a route different
 // panels, edit the map here — that is the whole API (mirrors page-chrome.ts for the
 // rail's CONTENT the way page-chrome decides the rail's PRESENCE).
+//
+// This file owns WHICH keys a route shows; what each key RENDERS (its data needs + gate)
+// lives in the rail WidgetSlot registry, components/sidebar/rail-registry.tsx (ADR-250
+// step 2). A new vertical's rail panel = a key here + an entry there.
 
 export type PanelKey =
   | 'dispatches' | 'events' | 'members' | 'leaderboard' | 'online' | 'circles'

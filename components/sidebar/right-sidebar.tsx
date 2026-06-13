@@ -7,10 +7,8 @@ import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } fro
 import { getActiveJourneyProgress } from '@/lib/journey-plans'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
 import { pageRailPanels } from '@/lib/layout/rail-panels'
-import {
-  DispatchesPanel, EventsPanel, MembersPanel, LeaderboardPanel, WhoOnlinePanel, CirclesPanel,
-  NewCirclesPanel, ActiveNowPanel, ControlCenterPanel, PanelSkeleton,
-} from '@/components/sidebar/rail-panels'
+import { ControlCenterPanel, PanelSkeleton } from '@/components/sidebar/rail-panels'
+import { RAIL_PANELS } from '@/components/sidebar/rail-registry'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -115,10 +113,9 @@ async function PagePanels({ profileId, role }: RightSidebarProps) {
   const keys = pageRailPanels(pathname)
   const isCrew = ['crew', 'host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)
 
-  // The members/events/broadcasts/circles panels need the viewer's circles; fetch once.
-  const needsCircles =
-    keys.includes('events') || keys.includes('members') || keys.includes('dispatches') ||
-    keys.includes('circles') || keys.includes('newcircles')
+  // Prefetch the viewer's active circles once iff any selected panel declares it needs
+  // them (the registry owns that fact, so the rail never re-lists panel keys here).
+  const needsCircles = keys.some((key) => RAIL_PANELS[key]?.needsCircles)
   let circleIds: string[] = []
   if (needsCircles) {
     const { data } = await createAdminClient()
@@ -129,20 +126,17 @@ async function PagePanels({ profileId, role }: RightSidebarProps) {
     circleIds = (data ?? []).map((m: { circle_id: string }) => m.circle_id as string)
   }
 
+  const ctx = { profileId, circleIds, isCrew }
   return (
     <>
       {keys.map((key) => {
-        const node =
-          key === 'dispatches' ? <DispatchesPanel profileId={profileId} circleIds={circleIds} />
-          : key === 'events' ? <EventsPanel circleIds={circleIds} />
-          : key === 'members' ? <MembersPanel profileId={profileId} circleIds={circleIds} />
-          : key === 'online' ? <WhoOnlinePanel profileId={profileId} />
-          : key === 'circles' ? <CirclesPanel circleIds={circleIds} />
-          : key === 'newcircles' ? <NewCirclesPanel circleIds={circleIds} />
-          : key === 'activenow' ? <ActiveNowPanel profileId={profileId} />
-          : key === 'leaderboard' ? (isCrew ? <LeaderboardPanel /> : null)
-          : null
-        return node ? <Suspense key={key} fallback={<PanelSkeleton />}>{node}</Suspense> : null
+        const def = RAIL_PANELS[key]
+        if (!def || (def.gate && !def.gate(ctx))) return null
+        return (
+          <Suspense key={key} fallback={<PanelSkeleton />}>
+            {def.render(ctx)}
+          </Suspense>
+        )
       })}
     </>
   )
