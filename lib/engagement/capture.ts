@@ -11,6 +11,7 @@ import { awardZaps } from '@/lib/zaps'
 import { verifyCapture, type CaptureAttempt, type VerifyReason } from './verify'
 import { recordEngagementEvent } from './events'
 import { currencyForSource } from './currency'
+import { trustSource } from '@/lib/trust'
 import type { EngagementSource } from './events'
 
 // node.type → engagement source. Ghost nodes are a geo source.
@@ -101,6 +102,19 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
       context: { nodeId: attempt.nodeId, kind: 'node_practice' },
       verifiedAt: new Date(),
     }).catch(() => {})
+
+    // A proximity-verified, non-commercial capture is genuine in-person presence — a
+    // community trust signal (ADR-247). Idempotent per (node, actor); best-effort so it
+    // never blocks the capture, and a safe no-op until trust_signals is applied.
+    await trustSource('community')
+      .signal({
+        profileId: attempt.actorProfileId,
+        signalType: 'in_person_checkin',
+        context: 'community',
+        idempotencyKey: `checkin:${attempt.nodeId}:${attempt.actorProfileId}`,
+        meta: { nodeId: attempt.nodeId },
+      })
+      .catch(() => {})
   }
 
   // 5) Partner plaque → log a redemption + surface the unlocked offer.
