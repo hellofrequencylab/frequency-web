@@ -24,14 +24,23 @@ export interface ModuleScope {
 /** Resolves a vertical's namespaced capabilities for the viewer in one of its scopes. */
 export type ModuleCapabilityResolver = (viewer: Viewer, scope: ModuleScope) => Set<string>
 
+/** A nav area plus where to place it. `after` names the nav key it follows so the area
+ *  lands in its exact spot — the shell groups nav by *consecutive* section runs, so a
+ *  vertical's area must sit inside its section's run, not be appended to the end. */
+export interface NavPlacement {
+  area: NavArea
+  /** Insert immediately after this nav key; omitted ⇒ appended (end of the list). */
+  after?: string
+}
+
 /** The full declaration of a vertical — its entire public surface. */
 export interface Vertical {
   /** Stable id, also the capability/table namespace ('market', 'store', …). */
   id: string
   /** Money partition for this vertical's commerce, if any (PLATFORM-VISION §1). */
   entity: 'foundation' | 'labs' | 'partner' | 'shared'
-  /** Left-nav area(s) this vertical contributes. */
-  nav?: readonly NavArea[]
+  /** Left-nav area(s) this vertical contributes, with placement. */
+  nav?: readonly NavPlacement[]
   /** Admin-dock modules this vertical contributes (merged into the admin registry). */
   adminModules?: readonly AdminModule[]
   /** Capability resolvers for this vertical's own scope kind(s). */
@@ -47,9 +56,15 @@ export function verticalById(id: string): Vertical | undefined {
   return VERTICALS.find((v) => v.id === id)
 }
 
-/** All vertical-contributed nav areas (the descriptor is authoritative; see the test). */
-export function verticalNavAreas(): NavArea[] {
+/** All vertical-contributed nav placements (area + where it goes). nav-areas.ts composes
+ *  these into NAV_AREAS, so the descriptor is the single source of a vertical's nav. */
+export function verticalNavPlacements(): NavPlacement[] {
   return VERTICALS.flatMap((v) => (v.nav ? [...v.nav] : []))
+}
+
+/** Just the nav areas (placement dropped) — for consumers that only need the areas. */
+export function verticalNavAreas(): NavArea[] {
+  return verticalNavPlacements().map((p) => p.area)
 }
 
 /** All vertical-contributed admin modules (mergeable into the admin registry by scope). */

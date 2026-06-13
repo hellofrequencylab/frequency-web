@@ -96,16 +96,17 @@ The good bones exist; four composition points are still hand-authored. This is t
 
 | Seam | State | Where | Gap to close |
 |---|---|---|---|
-| Capability policy core | ✅ | `lib/core/capabilities.ts` `resolveCapabilities` (pure) | extend for module-contributed resolvers |
-| Admin module catalog + filter | ⏳ | `lib/admin/modules/registry.ts` `modulesFor` (correct, **zero render consumers**) | the dock must render from it |
-| Nav as data | ⏳ | `lib/nav-areas.ts` `NAV_AREAS` | icon map (`nav-icons.ts`) is a second hand-edit; let a descriptor carry both |
+| Capability policy core | ✅ | `lib/core/capabilities.ts` `resolveCapabilities` (pure) | stays closed; verticals extend via the registry below |
+| Admin module catalog + filter | ✅ | `lib/admin/modules/registry.ts` `modulesFor` / `modulesForScopeKind` | the dock now renders from it (step 1) |
+| Nav as data | ✅ | `lib/nav-areas.ts` `NAV_AREAS` composes `verticalNavPlacements()` | a vertical's nav comes from its descriptor (step 4); the icon stays in the icon map by design (nav-areas is icon-free) |
 | Admin nav as data | ✅ | `app/(main)/admin/sections.ts` `ADMIN_GROUPS` | module-contributed admin links |
-| Engagement ledger | ✅ | `lib/engagement/events.ts` `recordEngagementEvent` (append-only, idempotent) | a `SourceAdapter` front door + trust-signal hook |
-| **Page admin dock** | 🔴 | `components/layout/page-admin-bar.tsx` dispatches by **pathname regex**, ignores `modulesFor` | render `modulesFor(scope, caps)` (the "@admin slot") |
-| **Right rail** | 🔴 | `components/sidebar/right-sidebar.tsx` hardcoded `key === …` switch + `lib/layout/rail-panels.ts` union | generalize into a `WidgetSlot` registry (PAGE-FRAMEWORK §4.4) |
-| **Capability union** | 🔴 | closed string union + one big `switch (scope.kind)` | a registry of per-scope resolvers a module joins |
-| **Engagement emission** | 🔴 | ~15 action files call `processGamificationEvent` inline | route through `recordEngagementEvent` via adapters |
-| **Spaces / skin** | 🔴 | none | `spaces` table + `space_id` RLS + `[data-skin]` resolver |
+| Engagement ledger | ✅ | `lib/engagement/events.ts` `recordEngagementEvent` (append-only, idempotent) | a `SourceAdapter` front door + trust-signal hook (step 5) |
+| **Page admin dock** | ✅ | `components/layout/page-admin-bar.tsx` selects via `modulesForScopeKind` + an id→component map | done (step 1) |
+| **Right rail** | ✅ | `components/sidebar/rail-registry.tsx` `RAIL_PANELS` WidgetSlot; `right-sidebar.tsx` maps it | done (step 2) |
+| **Capability union** | ✅ | core stays closed; `lib/verticals` resolves namespaced module capabilities | done (step 3) |
+| **Vertical registry** | ✅ | `lib/verticals/registry.ts` descriptor + selectors; Marketplace migrated | done (step 4) |
+| **Engagement emission** | 🔴 | ~15 action files call `processGamificationEvent` inline | route through `recordEngagementEvent` via adapters (step 5) |
+| **Spaces / skin** | 🔴 | none | `spaces` table + `space_id` RLS + `[data-skin]` resolver (step 6) |
 
 **Marketplace is the cautionary example:** it exists (`lib/marketplace.ts`, `app/(main)/market/`,
 nav key `market`) but is hand-wired at *every* seam — no admin module, no capability, no rail panel,
@@ -120,29 +121,33 @@ Each step is independently shippable; later steps depend on earlier ones. This i
 ADR-248/249 require — build a vertical or Space before the registry is load-bearing and it accretes
 hand-wiring, defeating the framework.
 
-1. **Wire the admin dock to `modulesFor`** (highest leverage, smallest change). Add a `Component`
-   reference to `AdminModule`; have `page-admin-bar.tsx` render `modulesFor(scope, caps)` instead of
-   the pathname regex. Deletes the hardcoded imports + branch; makes `requiredCapability` actually
-   gate. *This is the "@admin slot."*
-2. **Generalize the rail switch into a `WidgetSlot` registry** — `{ id, slot, scopes, gate, Component }`;
-   `right-sidebar.tsx` maps the slot instead of branching.
-3. **Make the capability resolver extensible** — keep the built-in core, add a registry of per-scope
-   resolver functions a module joins; `load-capabilities.ts` composes built-in + module results.
-4. **Create `lib/verticals/registry.ts` + `index.ts`** — the single `registerVertical(v)` that feeds
-   all four seams. **Migrate Marketplace into `lib/verticals/market.ts`** as proof.
-5. **Engagement/trust source-adapter front door** — formalize `SourceAdapter`; route emissions
+1. ✅ **Wire the admin dock to the registry.** `page-admin-bar.tsx` selects modules via
+   `modulesForScopeKind` (client surface, no resolved caps; each module re-gates server-side) + an
+   id→component map at the render boundary (keeps the catalog pure). Replaces the pathname regex.
+2. ✅ **Generalize the rail switch into a `WidgetSlot` registry** — `components/sidebar/rail-registry.tsx`
+   `RAIL_PANELS` ({ needsCircles, gate, render }); `right-sidebar.tsx` maps it instead of branching.
+3. ✅ **Make capabilities extensible** — the core resolver stays pure and closed; `lib/verticals`
+   resolves namespaced module capabilities for a vertical's own scope kind, unioned across verticals.
+4. ✅ **`lib/verticals/registry.ts` + `index.ts`** — the `Vertical` descriptor + static `VERTICALS`
+   + selectors. **Marketplace migrated** to `lib/verticals/market.ts`; `NAV_AREAS` now composes its
+   nav at the anchored position. A descriptor-contract test enforces the §6 guardrail in CI.
+5. 🔴 **Engagement/trust source-adapter front door** — formalize `SourceAdapter`; route emissions
    through `recordEngagementEvent`; add the `trust_signals` ledger + projection (ADR-247) so each
    vertical emits trust from day one.
-6. **The Space layer (lateral)** — `spaces` table + `space_id` RLS + `[data-skin]` resolver +
+6. 🔴 **The Space layer (lateral)** — `spaces` table + `space_id` RLS + `[data-skin]` resolver +
    `network_connected` switch + domain routing; a Space selects registered verticals.
 
-After step 4, **a vertical = a descriptor.** After step 6, **a sub-brand = a row.**
+**Steps 1-4 are done — a vertical is now a descriptor.** After step 6, **a sub-brand is a row.**
 
 ---
 
 ## 6. The guardrails (so the contract can't quietly rot)
 
-CI enforces the framework the way `check:authz` enforces the authz contract today:
+CI enforces the framework the way `check:authz` enforces the authz contract today. ✅ The
+**descriptor-contract guardrail** is live as a test (`lib/verticals/registry.test.ts`): it fails the
+build if a vertical's id isn't namespace-safe, its capabilities/engagement event-types aren't prefixed
+with its id, its entity is unknown, or its declared nav doesn't compose into `NAV_AREAS`. The remaining
+checks below are the follow-on:
 
 - **No-core-edit check:** a `lib/verticals/*` descriptor may not be added in the same change that
   edits the shell/nav/rail/admin-bar/capability core, except the registry seams themselves.
