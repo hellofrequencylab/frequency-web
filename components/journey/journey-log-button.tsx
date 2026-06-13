@@ -32,6 +32,7 @@ export function JourneyLogButton({
   planTitle,
   label = 'Log today',
   full = false,
+  onLogged,
 }: {
   practiceId: string
   circleId?: string | null
@@ -40,6 +41,9 @@ export function JourneyLogButton({
   label?: string
   /** Render as a big, full-width tap target (the Next-Step card's primary action). */
   full?: boolean
+  /** Fired after a successful log — lets a host (e.g. the course player) advance to
+   *  the next lesson once this practice is complete. */
+  onLogged?: () => void
 }) {
   const [done, setDone] = useState(false)
   const [pending, start] = useTransition()
@@ -69,6 +73,7 @@ export function JourneyLogButton({
           const res = await logPracticeAction(practiceId, circleId)
           if (isError(res)) return
           setDone(true)
+          onLogged?.()
           const { logged, zapsAwarded } = res.data
           const journey = (res.data as { journey?: JourneyReward }).journey
 

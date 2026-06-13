@@ -55,7 +55,14 @@ const FOCUS_PATTERNS: RegExp[] = [
 // rail — the site's right rail is always present. A profile's own standing +
 // Frequency Signature live in its interior content column, not a rail. Re-add a
 // prefix here only if a section grows a genuine in-body rail.
-const SCOPED_PREFIXES: string[] = []
+const SCOPED_PREFIXES: string[] = [
+  // A Journey DETAIL page (/journeys/<slug>) renders its own in-body chrome: when
+  // adopted it is the e-learning COURSE PLAYER whose left SYLLABUS is the scope rail
+  // (docs/JOURNEYS.md §5A, ADR-244), so the global community rail is suppressed to
+  // avoid the double-rail trap. The index (/journeys) is unaffected — the prefix has a
+  // trailing slash, so it only matches a specific journey.
+  '/journeys/',
+]
 
 // The admin WORKSPACE (Phase 4, ADR-228): under /admin/* the global member LEFT
 // rail is suppressed (the admin layout mounts a sticky top-nav menubar instead of a

@@ -13,9 +13,8 @@ import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons
 import { JourneyBuilder, type BuilderItem } from '@/components/studio/journey/journey-builder'
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets, type WidgetId } from '@/lib/journey-page-config'
-import { NextStepCard } from '@/components/journey/next-step-card'
-import { SeasonProgress } from '@/components/journey/season-progress'
-import { StepChecklist, type ChecklistRow } from '@/components/journey/step-checklist'
+import { buildCourse } from '@/lib/journey-course'
+import { CoursePlayer } from '@/components/journey/course/course-player'
 import { CoopMeter } from '@/components/journey/coop-meter'
 import { SeasonContext } from '@/components/journey/season-context'
 import { TierControl } from '@/components/journey/tier-control'
@@ -29,7 +28,6 @@ import {
   SocialProofBlock,
   RewardPreviewBlock,
   CompletionRuleBlock,
-  PracticeGuideBlock,
   AdoptRemixBlock,
 } from '@/components/journey/discovery-widgets'
 
@@ -151,8 +149,8 @@ export default async function JourneyPlanPage({
 
   const isActive = adopted && !!progress
 
-  // The widget order for the active mode comes from the plan's page_config (or the default).
-  const activeWidgets = enabledWidgets(plan.page_config, 'active').map((w) => w.id)
+  // The ACTIVE face is the e-learning course player (docs/JOURNEYS.md §5A); only the
+  // DISCOVERY face still composes a page_config widget stack.
   const discoveryWidgets = enabledWidgets(plan.page_config, 'discovery').map((w) => w.id)
 
   const header = (
@@ -204,12 +202,18 @@ export default async function JourneyPlanPage({
       }
     >
       {isActive && progress ? (
-        <ActiveMode
-          widgets={activeWidgets}
-          plan={plan}
-          progress={progress}
-          profileId={profileId as string}
-          pillars={pillars}
+        <CoursePlayer
+          course={buildCourse(progress)}
+          planTitle={plan.title}
+          accent={plan.accent}
+          railExtras={<ActiveRail profileId={profileId as string} plan={plan} progress={progress} />}
+          tierControl={
+            <TierControl
+              planId={plan.id}
+              slug={plan.slug}
+              resolvedTier={progress.items[0]?.resolvedTier ?? 'adept'}
+            />
+          }
         />
       ) : (
         <DiscoveryMode
@@ -226,7 +230,7 @@ export default async function JourneyPlanPage({
   )
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className={`mx-auto w-full ${isActive ? 'max-w-5xl' : 'max-w-2xl'}`}>
       <JourneyCelebrationStage />
 
       {isAuthor && preview && (
@@ -246,91 +250,34 @@ export default async function JourneyPlanPage({
   )
 }
 
-// ── Active mode — composed per the resolved widget order ──────────────────────
-function ActiveMode({
-  widgets,
+// ── Active rail — the gamification + context panels that flank the course player
+//    (docs/JOURNEYS.md §5A). Server component: each panel streams behind its own
+//    Suspense so a slow await never blocks the player. The course player hosts these
+//    in its syllabus rail; the Next-Step / progress / checklist they used to sit beside
+//    are now the player itself. ──
+function ActiveRail({
+  profileId,
   plan,
   progress,
-  profileId,
-  pillars,
 }: {
-  widgets: WidgetId[]
+  profileId: string
   plan: import('@/lib/journey-plans').JourneyPlan
   progress: import('@/lib/journey-plans').JourneyProgress
-  profileId: string
-  pillars: import('@/lib/pillars').Pillar[]
 }) {
-  const accent = plan.accent
-  const checklistRows: ChecklistRow[] = progress.items.map((it) => ({
-    key: it.id,
-    practiceId: it.practice?.id ?? null,
-    title: it.tierContent?.title ?? it.practice?.title ?? 'Practice',
-    cadence: it.cadence ?? it.practice?.cadence ?? null,
-    target: it.target,
-    loggedThisWeek: it.loggedThisWeek,
-    met: it.met,
-    resolvedTier: it.resolvedTier,
-  }))
-  const resolvedTier = progress.items[0]?.resolvedTier ?? 'adept'
-
-  const node = (id: WidgetId): React.ReactNode => {
-    switch (id) {
-      case 'next-step':
-        return <NextStepCard progress={progress} accent={accent} />
-      case 'progress':
-        return <SeasonProgress progress={progress} accent={accent} />
-      case 'checklist':
-        return checklistRows.length > 0 ? (
-          <section>
-            <h2 className="mb-3 text-sm font-bold tracking-tight text-text">The full path</h2>
-            <StepChecklist rows={checklistRows} planTitle={plan.title} />
-          </section>
-        ) : null
-      case 'gamification':
-        return (
-          <Suspense fallback={<PanelSkeleton rows={1} />}>
-            <GamificationPanel profileId={profileId} />
-          </Suspense>
-        )
-      case 'streak':
-        return (
-          <Suspense fallback={<PanelSkeleton rows={1} />}>
-            <StreakStrip profileId={profileId} />
-          </Suspense>
-        )
-      case 'companions':
-        return (
-          <Suspense fallback={<PanelSkeleton rows={1} />}>
-            <CoopMeter profileId={profileId} planId={plan.id} fallbackCompanions={progress.circleCompanions} />
-          </Suspense>
-        )
-      case 'practice-guide':
-        return <PracticeGuideBlock intro={plan.intro} />
-      case 'season-context':
-        return (
-          <Suspense fallback={<PanelSkeleton rows={1} />}>
-            <SeasonContext questId={plan.quest_id} seasonWeek={progress.seasonWeek} />
-          </Suspense>
-        )
-      default:
-        return null
-    }
-  }
-
   return (
-    <div className="space-y-5">
-      {widgets.map((id) => {
-        const el = node(id)
-        return el ? <div key={id}>{el}</div> : null
-      })}
-
-      {/* The member tier-override control — always available in active mode (not a layout
-          widget; it's a per-member setting that travels with the page, not the plan). */}
-      <TierControl planId={plan.id} slug={plan.slug} resolvedTier={resolvedTier} />
-
-      <p className="text-center text-xs text-subtle">
-        Pillars: {pillars.filter((p) => progress.items.some((it) => (it.domain_id ?? it.practice?.domain_id) === p.id)).map((p) => p.name).join(' · ') || 'none yet'}
-      </p>
+    <div className="space-y-4">
+      <Suspense fallback={<PanelSkeleton rows={1} />}>
+        <StreakStrip profileId={profileId} />
+      </Suspense>
+      <Suspense fallback={<PanelSkeleton rows={1} />}>
+        <CoopMeter profileId={profileId} planId={plan.id} fallbackCompanions={progress.circleCompanions} />
+      </Suspense>
+      <Suspense fallback={<PanelSkeleton rows={1} />}>
+        <SeasonContext questId={plan.quest_id} seasonWeek={progress.seasonWeek} />
+      </Suspense>
+      <Suspense fallback={<PanelSkeleton rows={1} />}>
+        <GamificationPanel profileId={profileId} />
+      </Suspense>
     </div>
   )
 }
