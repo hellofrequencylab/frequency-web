@@ -13,6 +13,7 @@ import {
   type PersonaState,
 } from '@/lib/personas'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { trustSource } from '@/lib/trust'
 
 // Staff verification queue (P2.7). A 'profiles'-domain operator (or community janitor)
 // runs the claimed → verified → active ladder and can suspend/reinstate. Every move is
@@ -60,6 +61,22 @@ export async function transitionPersona(
 
   // Audit the verification decision (P8). Best-effort.
   await logAdminAction({ actorId: caller!.id, action: `persona.${to}`, targetType: 'profile', targetId: profileId, detail: { persona, from } })
+
+  // A verified persona is a trust signal (ADR-247). Emit once per (profile, persona) so
+  // suspend→reinstate cycling can't farm it. Best-effort — trust never blocks verification,
+  // and this is a safe no-op until the trust_signals table is applied.
+  if (to === 'verified') {
+    try {
+      await trustSource('verification').signal({
+        profileId,
+        signalType: 'persona_verified',
+        idempotencyKey: `persona-verified:${profileId}:${persona}`,
+        meta: { persona },
+      })
+    } catch {
+      /* trust emit is best-effort */
+    }
+  }
 
   // Personas feed the capability resolver — refresh the member's shell + this queue.
   revalidatePath('/', 'layout')
