@@ -34,7 +34,7 @@ export interface CircleQuestAdoptions {
 // from lib/practices.ts / lib/journey-plans.ts. The capability gate in the caller is
 // the authority either way.
 function untyped(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Load what this circle has adopted, honestly sourced from the real schema:

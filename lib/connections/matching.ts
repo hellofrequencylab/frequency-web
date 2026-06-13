@@ -6,11 +6,10 @@
 // the original logged contact fields are left untouched, so your notes survive and
 // the member's live profile info is shown alongside. Server-only, owner-scoped.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { signedUrl } from './store'
 
-const db = () => createAdminClient() as unknown as SupabaseClient
+const db = () => createAdminClient()
 
 /** A member-profile summary used to populate a merged contact card. */
 export interface MatchedProfile {

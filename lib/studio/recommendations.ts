@@ -195,7 +195,7 @@ export function deterministicSummary(recs: StudioRec[]): string {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Gather the live signal from every banked source. Best-effort per source. */

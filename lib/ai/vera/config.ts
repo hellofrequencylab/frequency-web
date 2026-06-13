@@ -51,7 +51,7 @@ export const DEFAULT_VERA_CONFIG: VeraConfig = {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Current config, merged over defaults. Never throws (defaults on any failure). */

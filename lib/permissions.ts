@@ -4,7 +4,6 @@
 // default in lib/nav-areas.ts. Service-role read so it works regardless of the
 // caller's RLS context; the values are non-sensitive (they drive menu muting).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NAV_AREA_DEFAULTS, type NavAccess } from '@/lib/nav-areas'
@@ -25,7 +24,7 @@ export async function getAreaPermissions(): Promise<Record<string, NavAccess>> {
   try {
     // `area_permissions` isn't in the generated types yet — cast through the
     // base client to query it untyped.
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
     const { data } = await db.from('area_permissions').select('area_key, min_role')
     const out: Record<string, NavAccess> = {}
     for (const row of (data ?? []) as { area_key: string; min_role: string }[]) {
@@ -54,7 +53,7 @@ const ACCESS_SET = new Set<Access>(STAFF_ACCESS_LEVELS)
 /** All persisted capability overrides, shaped as role → domain → access. {} on error. */
 export const getCapabilityOverrides = cache(async (): Promise<CapabilityOverrides> => {
   try {
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
     const { data } = await db.from('capability_permissions').select('role, domain, access')
     const out: CapabilityOverrides = {}
     for (const row of (data ?? []) as { role: string; domain: string; access: string }[]) {

@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { Check, X } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -11,7 +10,7 @@ export const metadata: Metadata = {
 }
 
 async function confirm(email: string): Promise<boolean> {
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const nowIso = new Date().toISOString()
   const { data: existing } = await admin
     .from('contacts')

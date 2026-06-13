@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { getMyProfileId } from '@/lib/auth'
 import {
@@ -24,7 +23,7 @@ export async function getMyNotifications(): Promise<NotificationItem[]> {
   const profileId = await getMyProfileId()
   if (!profileId) return []
 
-  const supabase = (await createClient()) as unknown as SupabaseClient
+  const supabase = (await createClient())
   const { data } = await supabase.rpc('my_notifications', { _limit: 30 })
 
   return ((data as NotificationRpcRow[] | null) ?? []).map(mapNotificationRow)
@@ -59,7 +58,7 @@ export async function getUnreadCount(): Promise<number> {
   const profileId = await getMyProfileId()
   if (!profileId) return 0
 
-  const supabase = (await createClient()) as unknown as SupabaseClient
+  const supabase = (await createClient())
   const { data } = await supabase.rpc('my_unread_notification_count')
 
   return (data as number | null) ?? 0

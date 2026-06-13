@@ -3,7 +3,6 @@
 // No new table/RPC: the tags already hold first-touch origin, so a grouped read is
 // all the "analytics" the distribution view needs.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ACQUISITION_CHANNELS, CHANNEL_LABEL, channelTag, type AcquisitionChannel } from './channels'
 
@@ -27,7 +26,7 @@ export interface AcquisitionRollup {
 }
 
 export async function getAcquisitionRollup(): Promise<AcquisitionRollup> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const since = Date.now() - 30 * 24 * 60 * 60 * 1000
   const tagKeys = ACQUISITION_CHANNELS.map(channelTag)
 

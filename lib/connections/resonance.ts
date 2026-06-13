@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 
 // Orbits & Resonance reads (ADR-186, P2). The my_orbit / near_misses RPCs are
@@ -28,7 +27,7 @@ export interface OrbitMember {
 export async function getMyOrbit(limit = 100): Promise<OrbitMember[]> {
   // my_orbit/near_misses aren't in the generated types yet → untyped cast (repo
   // convention), but still the AUTHED client so auth.uid() resolves to the caller.
-  const supabase = (await createClient()) as unknown as SupabaseClient
+  const supabase = (await createClient())
   const { data, error } = await supabase.rpc('my_orbit', { _limit: limit })
   if (error || !Array.isArray(data)) return []
   return (data as Record<string, unknown>[]).map((r) => ({
@@ -60,7 +59,7 @@ export interface NearMiss {
 /** People the caller keeps crossing paths with but hasn't connected to — the
  *  serendipity to close (respects discoverability tiers). */
 export async function getNearMisses(limit = 20): Promise<NearMiss[]> {
-  const supabase = (await createClient()) as unknown as SupabaseClient
+  const supabase = (await createClient())
   const { data, error } = await supabase.rpc('near_misses', { _limit: limit })
   if (error || !Array.isArray(data)) return []
   return (data as Record<string, unknown>[]).map((r) => ({

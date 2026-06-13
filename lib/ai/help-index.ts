@@ -6,7 +6,6 @@
 // AI admin (button) or the nightly cron (app/api/cron/embed-help). Server-only.
 
 import { createHash } from 'node:crypto'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAllArticles, type HelpArticle } from '@/lib/help/content'
 import { embedText } from './embed'
@@ -50,7 +49,7 @@ export interface ReindexResult {
 /** (Re)build the help_chunks index from the published help articles. Embeds only
  *  new/changed chunks (content-hash), removes chunks that no longer exist. */
 export async function reindexHelpChunks(): Promise<ReindexResult> {
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const articles = (await getAllArticles()).filter((a) => a.status === 'published')
   // Fail loud rather than silently building an empty index. getAllCategories()
   // swallows fs errors and returns [] — so if the content/help Markdown isn't

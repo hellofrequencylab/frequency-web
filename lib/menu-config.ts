@@ -9,7 +9,6 @@
 // migration) or the query errors, we return empty config and callers fall back to
 // the code defaults (NAV_AREAS order, nothing hidden) — the app never breaks.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NAV_AREA_DEFAULTS, NAV_AREAS, type NavArea } from '@/lib/nav-areas'
 
@@ -31,7 +30,7 @@ export async function getMenuConfig(): Promise<MenuConfig> {
   try {
     // `menu_config` isn't in the generated types yet — cast through the base client
     // to query it untyped, exactly as getAreaPermissions does for area_permissions.
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
     const { data, error } = await db
       .from('menu_config')
       .select('area_key, position, hidden')

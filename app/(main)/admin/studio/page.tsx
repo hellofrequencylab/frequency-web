@@ -1,5 +1,4 @@
 import { Lightbulb, Sparkles, History } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -28,7 +27,7 @@ interface ChangeRow {
 }
 
 async function recentChanges(): Promise<ChangeRow[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('studio_site_changes')
     .select('id, action_key, params, status, detail, created_at, actor:profiles!actor_id ( display_name )')

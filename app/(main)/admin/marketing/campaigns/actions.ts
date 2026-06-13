@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStaffMember, staffCan } from '@/lib/staff'
 import { resolveSegment, campaignEmail, type SegmentKey } from '@/lib/studio/campaigns'
@@ -33,7 +32,7 @@ export async function sendCampaign(input: {
   if (!subject || !body) return { ok: false, error: 'Subject and body are required.' }
 
   const recipients = await resolveSegment(input.segment)
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   const { data: campaign } = await db
     .from('campaigns')

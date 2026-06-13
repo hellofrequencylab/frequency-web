@@ -11,7 +11,6 @@
 // empty state instead of throwing.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface QuestJourneyCard {
   slug: string
@@ -52,7 +51,7 @@ interface JourneyRow {
 /** Active Quests, each with its official Journeys (slug/title/identity +
  *  practice count). Empty array if the B1 migration isn't applied yet. */
 export async function getSeasonalQuests(): Promise<SeasonalQuestView[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   try {
     const { data: questData, error } = await db
       .from('quests')

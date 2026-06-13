@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireStaffCap } from '@/lib/staff'
@@ -21,7 +20,7 @@ export async function drainQueueNow(): Promise<void> {
 // Admit a confirmed beta signup: mark invited + email them the "you're in" link.
 export async function admitBetaSignup(id: string): Promise<void> {
   await requireStaffCap('marketing')
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   const { data: c } = await db
     .from('contacts')
@@ -53,7 +52,7 @@ export async function admitBetaSignup(id: string): Promise<void> {
 // Re-queue the double opt-in confirm email for a pending signup.
 export async function resendBetaConfirm(id: string): Promise<void> {
   await requireStaffCap('marketing')
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   const { data: c } = await db.from('contacts').select('email').eq('id', id).maybeSingle()
   if (!c) return

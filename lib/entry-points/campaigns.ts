@@ -30,7 +30,7 @@ interface CampaignRow {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Aggregate entry-point counts + scans for the given campaign ids. */

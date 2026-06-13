@@ -3,7 +3,6 @@
 // the unique (sequence_id, contact_id) constraint: a re-captured lead won't double
 // enroll. Server-only.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSequenceByPersona } from '@/lib/nurture/store'
 import { firstStep, runAtFrom } from '@/lib/nurture/schedule'
@@ -19,7 +18,7 @@ export async function enrollInNurture(input: {
     const start = firstStep(seq.steps)
     if (!start) return // sequence has no sendable steps yet
 
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
     await db
       .from('nurture_enrollments')
       .upsert(

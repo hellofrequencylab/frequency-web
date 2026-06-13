@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   Map,
   BookOpen,
@@ -37,7 +36,7 @@ export default async function AdminContentPage() {
   const janitor = isJanitor(webRole)
 
   const admin = createAdminClient()
-  const ub = admin as unknown as SupabaseClient
+  const ub = admin
 
   const [
     season,

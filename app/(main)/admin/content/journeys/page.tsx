@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { Map, BookOpen, Users, Inbox, ExternalLink } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -33,7 +32,7 @@ export default async function AdminContentJourneysPage() {
   await requireAdmin('host', { staff: 'community' })
 
   const admin = createAdminClient()
-  const ub = admin as unknown as SupabaseClient
+  const ub = admin
 
   const [journeys, { count: officialCount }, { count: adoptionCount }, { data: questRows }] =
     await Promise.all([

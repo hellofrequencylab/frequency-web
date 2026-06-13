@@ -1,6 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { ExternalLink } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -14,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 async function loadEvent(id: string) {
   // price_cents isn't in the generated types yet — untyped cast (repo convention).
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { data } = await admin
     .from('events')
     .select(
@@ -30,7 +29,7 @@ async function loadEvent(id: string) {
 // Ticket tiers for the editor (EVENTS-SYSTEM §2.2). `event_ticket_types` isn't in
 // the generated types yet — untyped cast (repo convention). `sold` is read-only here.
 async function loadTiers(eventId: string) {
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { data } = await admin
     .from('event_ticket_types')
     .select(

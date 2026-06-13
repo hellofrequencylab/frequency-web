@@ -27,7 +27,7 @@ function toVectorLiteral(v: number[]): string {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Deterministic, zero-cost fallback (and the path for un-embedded rooms). */

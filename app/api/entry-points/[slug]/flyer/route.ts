@@ -4,7 +4,6 @@
 //
 //   GET /api/entry-points/<slug>/flyer[?format=png][&size=1080]
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseStyle } from '@/lib/qr/style'
@@ -22,7 +21,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const url = new URL(req.url)
   const format = url.searchParams.get('format') === 'png' ? 'png' : 'svg'
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('qr_codes')
     .select('slug, title, owner_profile_id, template_id, flyer, style')

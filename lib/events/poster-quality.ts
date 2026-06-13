@@ -23,11 +23,10 @@
 // A ring of reciprocal/sockpuppet claims therefore moves the band ZERO. The band
 // thresholds/multipliers below are unchanged; they just read the hardened counts.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
 
-const db = () => createAdminClient() as unknown as SupabaseClient
+const db = () => createAdminClient()
 
 export type PosterBand = 'new' | 'trusted' | 'neutral' | 'watch' | 'throttled'
 

@@ -11,7 +11,6 @@
 // parametrised with Database), so .rpc()/.from() return loosely-typed data —
 // we cast to the explicit row shapes below.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createPublicClient } from '@/lib/supabase/public'
 
 // ── Row shapes (mirror the RPC RETURNS TABLE columns) ─────────────────────────
@@ -167,7 +166,7 @@ export async function getTopicalChannelBySlug(slug: string): Promise<TopicalChan
 // never expose anything the anon layer can't already see.
 
 export async function getChannelsWithTopics(): Promise<DomainWithTopics[]> {
-  const supabase = createPublicClient() as unknown as SupabaseClient
+  const supabase = createPublicClient()
 
   const [domainsRes, topicsRes, circles] = await Promise.all([
     supabase

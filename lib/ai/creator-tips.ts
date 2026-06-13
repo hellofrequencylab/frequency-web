@@ -17,7 +17,7 @@ import { withVoice } from './voice'
 import { rankedJourneys, rankedPractices } from '@/lib/admin/content-signals'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export type TipStatus = 'draft' | 'approved' | 'sent' | 'dismissed'

@@ -2,7 +2,6 @@
 // side: members who hold an active Collaborator persona, with a count of the public
 // Journeys they've authored, for the browse directory. Server-only.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface CollaboratorCard {
@@ -17,7 +16,7 @@ export async function listCollaborators(): Promise<CollaboratorCard[]> {
   const admin = createAdminClient()
 
   // Active Collaborator personas (profile_personas isn't in the generated types yet).
-  const { data: rows } = await (admin as unknown as SupabaseClient)
+  const { data: rows } = await (admin)
     .from('profile_personas')
     .select('profile_id')
     .eq('persona', 'collaborator')

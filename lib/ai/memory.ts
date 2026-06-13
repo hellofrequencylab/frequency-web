@@ -46,7 +46,7 @@ export function mergeFacts(existing: MemberFacts, incoming: Partial<MemberFacts>
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Read a member's context (service role). Null if none yet. Never throws. */

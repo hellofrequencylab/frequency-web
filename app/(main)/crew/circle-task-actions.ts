@@ -22,7 +22,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export interface CircleTaskActionResult {

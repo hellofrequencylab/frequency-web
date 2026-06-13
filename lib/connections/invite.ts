@@ -7,7 +7,6 @@
 // Gates (all must pass): operator flag on · email present · not already invited ·
 // the linked lead hasn't unsubscribed. Best-effort — never throws into the caller.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { shortLinkUrl } from '@/lib/qr/links'
@@ -46,7 +45,7 @@ export async function maybeSendScanIntro(input: {
     if (!(await scanInviteEnabled())) return { sent: false, reason: 'disabled' }
 
     // network_contacts isn't in the generated types yet — untyped admin handle.
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
 
     // Guard: only one intro per contact, ever.
     const { data: nc } = await db

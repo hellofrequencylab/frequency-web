@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
@@ -51,7 +50,7 @@ export async function getEditablePageContent(
   const me = await getCallerProfile()
   if (!me || !atLeastRole(me.community_role, MIN_ROLE)) return null
   if (!isEditableRoute(route)) return null
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   // `select('*')` so the read keeps working before the hero/CTA migration
   // (20260612050000) lands — missing columns just come back undefined.
   const { data } = await db
@@ -88,7 +87,7 @@ export async function savePageContent(route: string, fd: FormData): Promise<Acti
     return fail('Links must start with “/” or “http(s)://”.')
   }
   const cta_label = ((fd.get('cta_label') as string) ?? '').trim().slice(0, MAX_CTA_LABEL) || null
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { error } = await db
     .from('page_content')
     .upsert({
@@ -116,7 +115,7 @@ export async function uploadPageHero(
   if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
   if (file.size > 8 * 1024 * 1024) return { error: 'Image must be under 8MB.' }
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const slug = route.replace(/^\/+|\/+$/g, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'home'
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
   const path = `page-hero/${slug}/${Date.now()}.${ext}`
@@ -146,7 +145,7 @@ export async function removePageHero(route: string): Promise<void> {
   if (!me || !atLeastRole(me.community_role, MIN_ROLE)) throw new Error('Not allowed.')
   if (!isEditableRoute(route)) throw new Error('That page isn’t editable.')
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { error } = await db
     .from('page_content')
     .upsert({

@@ -3,7 +3,6 @@
 // into member_traits. Driven by the nightly cron (app/api/cron/refresh-traits).
 // member_traits / the RPC aren't in database.types yet, so we cast (repo convention).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   computeTraits,
@@ -57,7 +56,7 @@ function toRow(profileId: string, c: ComputedTrait, computedAt: string) {
 /** Recompute every member's traits from the ledger and upsert them. Idempotent;
  *  safe to run on any schedule. Returns counts for logging. */
 export async function refreshMemberTraits(now: Date = new Date()): Promise<{ members: number; traits: number }> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data, error } = await db.rpc('member_engagement_stats')
   if (error || !data) return { members: 0, traits: 0 }
 

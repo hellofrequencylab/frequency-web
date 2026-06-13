@@ -15,7 +15,6 @@
 //    `practice_logs.logged_for` — one shared day boundary across the system.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { awardZaps } from '@/lib/zaps'
 import { STREAK_MILESTONES, STREAK_FREEZE_CAP, FULL_DAYS_PER_FREEZE, streakProgress } from '@/lib/streak'
 import { postSystemLine } from '@/lib/system-line'
@@ -290,7 +289,7 @@ export async function recordPracticeStreak(profileId: string): Promise<void> {
   // Write through an untyped handle: `meta` is jsonb and the current_streak /
   // longest_streak columns are the headline mirror (cast pattern per
   // lib/practices.ts / feed/page.tsx).
-  await (admin as unknown as SupabaseClient)
+  await (admin)
     .from('profiles')
     .update({ meta: nextMeta, current_streak: current, longest_streak: longest })
     .eq('id', profileId)

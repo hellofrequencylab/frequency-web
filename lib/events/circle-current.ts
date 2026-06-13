@@ -28,7 +28,7 @@ export const CIRCLE_CURRENT_AWARD = 10
 export const CIRCLE_CURRENT_CHALLENGE_AWARD = 25
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /**

@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
@@ -27,7 +26,7 @@ export interface WelcomeTarget {
 
 /** Newcomers in the caller's circles they haven't welcomed yet (authed RPC). */
 export async function getWelcomeTargets(limit = 12): Promise<WelcomeTarget[]> {
-  const supabase = (await createClient()) as unknown as SupabaseClient
+  const supabase = (await createClient())
   const { data, error } = await supabase.rpc('welcome_targets', { _days: WINDOW_DAYS, _limit: limit })
   if (error || !Array.isArray(data)) return []
   return (data as Record<string, unknown>[]).map((r) => ({
@@ -52,7 +51,7 @@ export async function recordWelcome(newcomerId: string): Promise<WelcomeResult> 
   if (!me) return { awarded: false, gems: 0, error: 'Sign in first.' }
   if (newcomerId === me.id) return { awarded: false, gems: 0, error: 'You can’t welcome yourself.' }
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   // Validate: a genuine recent newcomer who shares one of my active circles.
   const { data: target } = await db

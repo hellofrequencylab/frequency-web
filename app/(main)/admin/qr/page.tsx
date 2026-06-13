@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { QrCode, ChartNoAxesColumn } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminTemplate } from '@/components/templates'
@@ -46,7 +45,7 @@ export default async function QrStudioPage() {
 
   // Per-page folder key (ADR-179). `page_path` isn't in the generated DB types yet,
   // so read it through an untyped client and join it back by id.
-  const { data: folderRows } = await (db as unknown as SupabaseClient)
+  const { data: folderRows } = await (db)
     .from('qr_codes')
     .select('id, page_path')
   const pagePathById = new Map<string, string | null>(

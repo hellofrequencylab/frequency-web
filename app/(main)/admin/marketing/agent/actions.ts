@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStaffMember, staffCan } from '@/lib/staff'
 import { proposeWinbacks, executeAction } from '@/lib/studio/agent'
@@ -28,7 +27,7 @@ export async function generateContentDrafts(): Promise<void> {
 export async function approveAction(id: string): Promise<void> {
   const staff = await gate()
   if (!staff) return
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   await db
     .from('agent_actions')
     .update({ status: 'approved', decided_by: staff.profileId, decided_at: new Date().toISOString() })
@@ -40,7 +39,7 @@ export async function approveAction(id: string): Promise<void> {
 export async function dismissAction(id: string): Promise<void> {
   const staff = await gate()
   if (!staff) return
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   await db
     .from('agent_actions')
     .update({ status: 'dismissed', decided_by: staff.profileId, decided_at: new Date().toISOString() })

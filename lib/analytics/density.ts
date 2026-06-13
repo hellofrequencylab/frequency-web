@@ -9,7 +9,6 @@
 // the expansion call is auditable. Server-only; admin-gated at the page.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 /** One city's grounded facts, straight from the RPC. */
 export interface DensityCityRow {
@@ -111,7 +110,7 @@ export function buildDensitySignal(rows: DensityCityRow[]): DensitySignal {
  *  density_by_city RPC is new, so we call it through an untyped handle until
  *  `supabase gen types` is re-run (repo convention — see lib/marketplace.ts). */
 export async function getDensitySignal(): Promise<DensitySignal> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db.rpc('density_by_city')
   return buildDensitySignal((data ?? []) as DensityCityRow[])
 }

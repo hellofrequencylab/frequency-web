@@ -2,7 +2,6 @@ import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronLeft, LogOut, UsersRound } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { MessageThread, type Message } from '@/components/messages/thread'
 import { getInitials } from '@/lib/utils'
@@ -57,7 +56,7 @@ export default async function ConversationPage({
     .eq('conversation_id', conversationId)
 
   type PeerProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
-  const { data: peerRows } = await (supabase as unknown as SupabaseClient).rpc('message_peer_profiles')
+  const { data: peerRows } = await (supabase).rpc('message_peer_profiles')
   const peerMap = new Map(((peerRows ?? []) as PeerProfile[]).map(p => [p.id, p]))
 
   const participants = ((partRows ?? []) as { profile_id: string }[])

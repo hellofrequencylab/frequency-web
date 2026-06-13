@@ -1,7 +1,6 @@
 // Studio CRM contact reads. Server-only; `contacts` lands in 20240221000000,
 // untyped client view until types regenerate.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface ContactRow {
@@ -31,7 +30,7 @@ function mapRow(c: Record<string, unknown>): ContactRow {
 }
 
 export async function listContacts(limit = 100): Promise<ContactRow[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('contacts')
     .select(SELECT)
@@ -42,7 +41,7 @@ export async function listContacts(limit = 100): Promise<ContactRow[]> {
 
 // Subscribed contacts (the marketing list — confirmed opt-ins).
 export async function listSubscribers(limit = 500): Promise<ContactRow[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('contacts')
     .select(SELECT)

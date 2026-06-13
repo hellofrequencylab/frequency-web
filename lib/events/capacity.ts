@@ -19,7 +19,7 @@ export interface CapacityInfo {
 }
 
 function untyped(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export async function getCapacityInfo(eventId: string): Promise<CapacityInfo> {

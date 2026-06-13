@@ -3,7 +3,6 @@
 // `team_members` lands in 20240221000000; untyped client view until types regen.
 
 import { redirect } from 'next/navigation'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { readViewAsTarget } from '@/lib/view-as'
@@ -42,7 +41,7 @@ export async function getStaffMember(): Promise<StaffMember | null> {
   const profileId = await getMyProfileId()
   if (!profileId) return null
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('team_members')
     .select('role')

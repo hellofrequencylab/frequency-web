@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NAV_AREA_DEFAULTS, ACCESS_LEVELS, type NavAccess } from '@/lib/nav-areas'
@@ -25,7 +24,7 @@ export async function setAreaPermission(areaKey: string, minRole: NavAccess) {
   if (!(areaKey in NAV_AREA_DEFAULTS)) throw new Error('Unknown area')
   if (!ACCESS_LEVELS.includes(minRole)) throw new Error('Invalid access level')
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { error } = await db
     .from('area_permissions')
     .upsert(
@@ -46,7 +45,7 @@ export async function setStaffRole(profileId: string, role: StaffRole | null) {
   const caller = await getCallerProfile()
   if (!caller || caller.community_role !== 'janitor') throw new Error('Unauthorized')
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   if (role === null) {
     const { error } = await db.from('team_members').delete().eq('profile_id', profileId)
     if (error) throw new Error(error.message)
@@ -69,7 +68,7 @@ export async function addStaffMember(handle: string, role: StaffRole): Promise<{
   const h = handle.trim().replace(/^@/, '')
   if (!h) return { ok: false, error: 'Enter a member @handle.' }
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data: prof } = await db.from('profiles').select('id').eq('handle', h).maybeSingle()
   if (!prof?.id) return { ok: false, error: `No member found for @${h}.` }
 
@@ -95,7 +94,7 @@ export async function setCapabilityPermission(role: StaffRole, domain: StaffDoma
   if (!STAFF_DOMAINS.includes(domain)) throw new Error('Unknown domain')
   if (!STAFF_ACCESS_LEVELS.includes(access)) throw new Error('Invalid access level')
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   // Back to default ⇒ delete the override (keep the store sparse + behavior-preserving).
   if (access === staffDomainDefault(role, domain)) {

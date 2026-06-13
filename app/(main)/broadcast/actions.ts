@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
@@ -73,7 +72,7 @@ export async function createAndPublishDispatch(fd: FormData) {
 
   // audience_id is nullable for global in the DB (dispatch_global_tier migration)
   // but not yet in the generated types — cast to the untyped client (repo convention).
-  const { data: dispatch, error } = await (admin as unknown as SupabaseClient)
+  const { data: dispatch, error } = await (admin)
     .from('dispatches')
     .insert({
       title,

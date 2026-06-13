@@ -9,7 +9,6 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasConsent } from '@/lib/consent/consent'
 import { normalizeBatch } from '@/lib/analytics/interaction-events'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,7 +49,7 @@ export async function POST(req: NextRequest) {
   }))
 
   // Service-role bulk insert (RLS blocks client writes). Fire-and-forget.
-  await (createAdminClient() as unknown as SupabaseClient)
+  await (createAdminClient())
     .from('interaction_events')
     .insert(rows)
     .then(undefined, () => {})
