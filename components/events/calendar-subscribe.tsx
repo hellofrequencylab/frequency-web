@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { SITE_URL } from '@/lib/site'
 import { CalendarSubscribeMenu } from './calendar-subscribe-menu'
@@ -11,7 +10,7 @@ import { CalendarSubscribeMenu } from './calendar-subscribe-menu'
 // menu for the copy / Google / Apple actions. Renders nothing for signed-out
 // visitors. The URL is a per-member secret, so we never log or expose it elsewhere.
 export async function CalendarSubscribe() {
-  const supabase = (await createClient()) as unknown as SupabaseClient
+  const supabase = (await createClient())
   const { data: token, error } = await supabase.rpc('ensure_calendar_token')
   if (error || !token || typeof token !== 'string') return null
 

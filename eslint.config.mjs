@@ -16,6 +16,22 @@ const eslintConfig = defineConfig([
     // repo files that double-report fixed warnings. Never lint them.
     ".claude/worktrees/**",
   ]),
+  // ADR-246: ban the untyped admin-client cast. Use the typed `createAdminClient()`
+  // and cast the specific payload/value if a column/table needs it. Genuinely-untyped
+  // cases (a dynamic table name, or a table not yet in the generated types) may opt out
+  // with `// eslint-disable-next-line no-restricted-syntax -- <reason>`.
+  {
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "TSAsExpression > TSTypeReference > Identifier[name='SupabaseClient']",
+          message:
+            "Don't cast the admin client to untyped SupabaseClient (ADR-246). Use typed createAdminClient() and cast the specific payload/value. Genuinely-untyped cases may eslint-disable with a reason.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -131,6 +131,7 @@ export async function setPlatformFlag(
   if (error) throw new Error(error.message)
 
   try {
+    // eslint-disable-next-line no-restricted-syntax -- platform_settings table not in generated types yet
     const db = admin as unknown as SupabaseClient
     await db.from('platform_flag_events').insert({
       flag_key: key,
@@ -152,6 +153,7 @@ export async function setPlatformFlag(
 export const getPlatformSetting = cache(async (key: string, fallback: string): Promise<string> => {
   try {
     // platform_settings isn't in the generated types yet (new table) — untyped handle.
+    // eslint-disable-next-line no-restricted-syntax -- platform_settings table not in generated types yet
     const admin = createAdminClient() as unknown as SupabaseClient
     const { data } = await admin.from('platform_settings').select('value').eq('key', key).maybeSingle()
     return ((data?.value as string | undefined) ?? fallback) || fallback
@@ -162,6 +164,7 @@ export const getPlatformSetting = cache(async (key: string, fallback: string): P
 
 /** Set a TEXT platform setting (operator-gated paths only). */
 export async function setPlatformSetting(key: string, value: string, changedBy?: string | null): Promise<void> {
+  // eslint-disable-next-line no-restricted-syntax -- platform_settings table not in generated types yet
   const admin = createAdminClient() as unknown as SupabaseClient
   const { error } = await admin.from('platform_settings').upsert({
     key,
@@ -175,6 +178,7 @@ export async function setPlatformSetting(key: string, value: string, changedBy?:
 /** Recent toggle history for a flag (newest first). Operator-only. */
 export async function listFlagEvents(key: string, limit = 20): Promise<FlagEvent[]> {
   try {
+    // eslint-disable-next-line no-restricted-syntax -- platform_settings table not in generated types yet
     const db = createAdminClient() as unknown as SupabaseClient
     const { data } = await db
       .from('platform_flag_events')

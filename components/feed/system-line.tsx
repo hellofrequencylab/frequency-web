@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Zap } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // One quiet line in the stream (ADR-231): Vera's system announcements ("X joined
@@ -15,7 +14,7 @@ export async function SystemLine({ body }: { body: string | null }) {
   const handles = [...body.matchAll(/@([a-zA-Z0-9_]+)/g)].map((m) => m[1])
   let zapsByHandle = new Map<string, number>()
   if (handles.length > 0) {
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
     const { data } = await admin
       .from('profiles')
       .select('handle, current_season_zaps')

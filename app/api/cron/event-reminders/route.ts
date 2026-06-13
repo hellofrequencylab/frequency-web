@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import {
   sendEventReminderEmail,
   enqueueEmail,
@@ -71,10 +71,10 @@ function sentColumnFor(lead: ReminderLead): string {
 // three reminder columns (including the new one) is accepted. The same now()
 // stamp closes idempotency for all three touches identically.
 async function stampReminder(rsvpId: string, sentColumn: string): Promise<void> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   await db
     .from('event_rsvps')
-    .update({ [sentColumn]: new Date().toISOString() })
+    .update({ [sentColumn]: new Date().toISOString() } as Database['public']['Tables']['event_rsvps']['Update'])
     .eq('id', rsvpId)
 }
 

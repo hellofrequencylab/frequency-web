@@ -3,7 +3,7 @@
 // so there are no autonomous writes, and no writes at all without `ai_memory` consent.
 // Server-only.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validateToolCall } from './tools'
 import { hasConsent } from '@/lib/consent/consent'
@@ -46,8 +46,8 @@ export async function executeConfirmedTool(
     case 'set_profile_field': {
       const field = String(args.field)
       if (!SETTABLE_FIELDS.has(field)) return { ok: false, error: `"${field}" can't be set here.` }
-      const db = createAdminClient() as unknown as SupabaseClient
-      await db.from('profiles').update({ [field]: String(args.value) }).eq('id', profileId)
+      const db = createAdminClient()
+      await db.from('profiles').update({ [field]: String(args.value) } as Database['public']['Tables']['profiles']['Update']).eq('id', profileId)
       return { ok: true }
     }
     case 'draft_intro':
