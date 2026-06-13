@@ -11,6 +11,7 @@ import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { JourneyBuilder, type BuilderItem } from '@/components/studio/journey/journey-builder'
+import type { BuilderBlock } from '@/components/studio/journey/lessons-section'
 import { adoptPlanAction, forkPlanAction, completeLessonAction } from '../actions'
 import { enabledWidgets, type WidgetId } from '@/lib/journey-page-config'
 import { buildCourse } from '@/lib/journey-course'
@@ -102,16 +103,28 @@ export default async function JourneyPlanPage({
   // ── AUTHOR → the Studio builder (left exactly as it was). ─────────────────
   if (isAuthor && !preview) {
     const [library, pillars] = await Promise.all([listPublicPractices(), getPillars()])
-    const builderItems: BuilderItem[] = items.map((it) => ({
-      practiceId: it.practice_id,
-      title: it.practice?.title ?? 'Practice',
-      description: it.practice?.description ?? null,
-      domainId: it.domain_id ?? it.practice?.domain_id ?? null,
-      note: it.note,
-      cadence: it.cadence,
-      practiceCadence: it.practice?.cadence ?? null,
-      defaultTier: it.default_tier,
-    }))
+    // Split the blocks: PRACTICE blocks feed the path builder; lesson/section blocks
+    // feed the Lessons section (ADR-244).
+    const builderItems: BuilderItem[] = items
+      .filter((it) => (it.block_type ?? 'practice') === 'practice')
+      .map((it) => ({
+        practiceId: it.practice_id,
+        title: it.practice?.title ?? 'Practice',
+        description: it.practice?.description ?? null,
+        domainId: it.domain_id ?? it.practice?.domain_id ?? null,
+        note: it.note,
+        cadence: it.cadence,
+        practiceCadence: it.practice?.cadence ?? null,
+        defaultTier: it.default_tier,
+      }))
+    const builderBlocks: BuilderBlock[] = items
+      .filter((it) => it.block_type === 'lesson' || it.block_type === 'section')
+      .map((it) => ({
+        id: it.id,
+        blockType: it.block_type as 'lesson' | 'section',
+        title: it.title ?? '',
+        body: it.body ?? '',
+      }))
     const available = library
       .filter((p) => p.is_public)
       .map((p) => ({ id: p.id, title: p.title, description: p.description, domainId: p.domain_id }))
@@ -127,6 +140,7 @@ export default async function JourneyPlanPage({
         initialAccent={plan.accent}
         initialVisibility={plan.visibility}
         initialItems={builderItems}
+        initialBlocks={builderBlocks}
         available={available}
         pillars={pillars.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))}
         initialStatus={plan.status}
