@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { ADMIN_MODULES, modulesFor, modulesForSurface, showsAdminPanel, moduleById } from './registry'
+import {
+  ADMIN_MODULES,
+  modulesFor,
+  modulesForSurface,
+  modulesForScopeKind,
+  showsAdminPanel,
+  moduleById,
+} from './registry'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 // The engine is pure: which modules a tier sees is (scope kind × capabilities),
@@ -70,5 +77,17 @@ describe('admin module registry', () => {
     expect(modulesForSurface(circleScope, caps, 'sidebar').map((m) => m.id)).toContain('circle.settings')
     expect(modulesForSurface(circleScope, caps, 'inline')).toHaveLength(0)
     expect(ADMIN_MODULES.every((m) => m.surface === 'inline' || m.surface === 'sidebar')).toBe(true)
+  })
+
+  // ADR-250 step 1: registry-driven selection by scope kind (the page admin dock has no
+  // resolved caps; it selects by kind and each module self-gates server-side).
+  it('selects modules by scope kind, filtered by surface, ordered', () => {
+    expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual(['circle.settings'])
+    expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual(['event.settings'])
+    expect(modulesForScopeKind('profile', 'sidebar').map((m) => m.id)).toEqual(['person.settings'])
+    // No sidebar leakage across kinds, and inline surface is empty today.
+    expect(modulesForScopeKind('circle', 'inline')).toHaveLength(0)
+    // Without a surface filter, returns every module valid on the kind.
+    expect(modulesForScopeKind('hub').map((m) => m.id)).toEqual(['hub.settings'])
   })
 })
