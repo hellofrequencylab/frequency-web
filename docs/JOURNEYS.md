@@ -193,12 +193,18 @@ typed **block**:
 | `lesson` | Title + markdown body, optional **video** + images + attachments. The unit a member checks off. | `journey_lesson_progress` row |
 | `resource` | A download / external link. | Optional check-off |
 | `check` | A knowledge check or reflection prompt; can gate the next block. | `journey_lesson_progress` row |
-| `section` | A structural header; blocks point at it via `parent_id` → **Course → Modules → Lessons**. | n/a |
+| `section` | A structural header that opens a **Module**. Shipped grouping is *positional* — a section opens a module collecting the blocks that follow it until the next section (ADR-245); `parent_id` is reserved for explicit nesting later. → **Course → Modules → Lessons**. | n/a |
 
 A practice block must carry a `practice_id`; a non-practice block must not (`CHECK`). The
 old `UNIQUE(plan_id, practice_id)` becomes a **partial** index (practices still can't
 duplicate; lessons can repeat). The plan gains `intro_video` (a hero video to pair with
 `intro`) and `sequential` (off = open navigation; on = unlock-next-on-complete).
+
+> **Shipped video (interim, ADR-245).** A lesson's video is currently parsed from a
+> YouTube/Vimeo/file link in its `body` (`lib/video-embed.ts`) and embedded inline in the
+> course player — matching the editor's "paste a video link" prompt. Native upload to the
+> `media` jsonb (and a dedicated video field) is the eventual model; the `body`-link path
+> needs no editor change or migration to work today.
 
 **Two independent completion tracks.** The decision (ADR-244) keeps them un-entangled:
 
