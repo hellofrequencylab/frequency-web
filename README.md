@@ -212,3 +212,4 @@ Mirror, don't duplicate, the Git docs — translate them into human language:
 - **Community policy** — moderation, safety (incl. physical-node safety).
 
 *(Ask before scaffolding — needs the target Notion workspace.)*
+# energetics
