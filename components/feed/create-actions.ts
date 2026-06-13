@@ -24,7 +24,9 @@ export const CREATE_ITEMS: CreateItem[] = [
   { href: '/messages?compose=dm', label: 'New Conversation', hint: 'Direct or group message', Icon: MessageSquare, roles: ['member', ...CREW_PLUS] },
   { href: '/events/new', label: 'New Event', hint: 'Gathering, ride, meetup', Icon: CalendarDays, roles: CREW_PLUS },
   { href: '/messages?compose=room', label: 'New Room', hint: 'Topic-based chat space', Icon: Hash, roles: HOST_PLUS },
-  { href: '/circles/new', label: 'New Circle', hint: 'Place-based practice group', Icon: Users, roles: HOST_PLUS },
+  // The Circles page hosts the "Start a circle" compose modal — there is no /circles/new
+  // route (that link 404'd). Point at /circles where the create affordance lives.
+  { href: '/circles', label: 'New Circle', hint: 'Place-based practice group', Icon: Users, roles: HOST_PLUS },
   { href: '/broadcast', label: 'New Broadcast', hint: 'Dispatch to the wider community', Icon: Radio, roles: HOST_PLUS },
 ]
 
