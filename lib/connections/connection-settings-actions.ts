@@ -1,6 +1,6 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
@@ -55,8 +55,8 @@ export async function saveMyConnectionPrefs(input: MyPrefsInput): Promise<Action
 
   if (Object.keys(patch).length === 0) return ok()
 
-  const db = createAdminClient() as unknown as SupabaseClient
-  const { error } = await db.from('profiles').update(patch).eq('id', me.id)
+  const db = createAdminClient()
+  const { error } = await db.from('profiles').update(patch as Database['public']['Tables']['profiles']['Update']).eq('id', me.id)
   if (error) return fail(error.message)
   revalidatePath('/settings')
   revalidatePath('/network')
@@ -73,7 +73,7 @@ export async function setLiveLocation(input: {
 }): Promise<ActionResult> {
   const me = await getCallerProfile()
   if (!me) return fail('Sign in to change your settings.')
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   if (!input.enabled) {
     const { error } = await db
@@ -148,8 +148,8 @@ export async function saveConnectionSettings(input: SettingsInput): Promise<Acti
     }
   }
 
-  const db = createAdminClient() as unknown as SupabaseClient
-  const { error } = await db.from('connection_settings').update(patch).eq('id', true)
+  const db = createAdminClient()
+  const { error } = await db.from('connection_settings').update(patch as Database['public']['Tables']['connection_settings']['Update']).eq('id', true)
   if (error) return fail(error.message)
   revalidatePath('/network')
   return ok()

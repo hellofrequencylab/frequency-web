@@ -10,6 +10,7 @@
 
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { getCallerProfile } from '@/lib/auth'
 import { authorizeAction } from '@/lib/admin/guard'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
@@ -33,7 +34,7 @@ import { generatePosterReviews, resolveFlag } from '@/lib/ai/poster-observer'
 import { AiUnavailableError } from '@/lib/ai/complete'
 
 function ub(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 async function requireCurator() {
@@ -138,10 +139,10 @@ export async function setAllPracticeFlagsAction(
   }
   if (ids.length === 0) return ok()
   try {
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
     const { error } = await admin
       .from('practices')
-      .update({ [flag]: value })
+      .update({ [flag]: value } as Database['public']['Tables']['practices']['Update'])
       .in('id', ids.slice(0, 500))
     if (error) return fail(error.message)
   } catch (e) {

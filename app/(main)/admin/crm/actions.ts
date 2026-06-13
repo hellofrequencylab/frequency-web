@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
@@ -18,7 +18,7 @@ async function requireCrm(): Promise<string> {
 }
 
 function db() {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 async function firstStageId(): Promise<string | null> {
@@ -132,7 +132,7 @@ export async function updateDeal(
   if (patch.expectedCloseDate !== undefined) row.expected_close_date = patch.expectedCloseDate || null
   if (patch.source !== undefined) row.source = patch.source?.trim() || null
 
-  const { error } = await db().from('crm_deals').update(row).eq('id', dealId)
+  const { error } = await db().from('crm_deals').update(row as Database['public']['Tables']['crm_deals']['Update']).eq('id', dealId)
   if (error) return fail(error.message)
   revalidatePath('/admin/crm')
   revalidatePath(`/admin/crm/deals/${dealId}`)

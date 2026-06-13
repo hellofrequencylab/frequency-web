@@ -13,7 +13,7 @@
 
 import 'server-only'
 import { randomBytes } from 'node:crypto'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/utils'
 import { awardZapsForAction } from '@/lib/zaps'
@@ -23,7 +23,7 @@ import { scaledPostReward } from './poster-quality'
 import { isValidClaim } from './claim-trust'
 import type { DomainSlug, ExtractedEvent, EventDetails } from './types'
 
-const db = () => createAdminClient() as unknown as SupabaseClient
+const db = () => createAdminClient()
 
 const COLS =
   'id, title, description, location, starts_at, ends_at, slug, status, source, ' +
@@ -213,7 +213,7 @@ export async function createEventDraft(
       organizer_contact: emptyToNull(input.organizerContact),
       details: input.details ?? {},
       slug: await mintSlug(title, input.startsAt ?? null),
-    })
+    } as Database['public']['Tables']['events']['Insert'])
     .select('id')
     .maybeSingle()
 
@@ -277,7 +277,7 @@ export async function updateEventDraft(
 
   const { error } = await db()
     .from('events')
-    .update(u)
+    .update(u as Database['public']['Tables']['events']['Update'])
     .eq('id', id)
     .eq('posted_by_profile_id', posterProfileId)
     .eq('status', 'draft')

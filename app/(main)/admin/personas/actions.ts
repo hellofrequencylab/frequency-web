@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { authorizeAction } from '@/lib/admin/guard'
@@ -31,7 +31,7 @@ export async function transitionPersona(
   }
   if (!PARTNER_PERSONAS.includes(persona)) return fail('Unknown program.')
 
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
 
   // Read the current state to validate the transition (fail-closed).
   const { data: row } = await admin
@@ -53,7 +53,7 @@ export async function transitionPersona(
 
   const { error } = await admin
     .from('profile_personas')
-    .update(patch)
+    .update(patch as Database['public']['Tables']['profile_personas']['Update'])
     .eq('profile_id', profileId)
     .eq('persona', persona)
   if (error) return fail(error.message)

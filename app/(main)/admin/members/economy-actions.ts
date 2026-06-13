@@ -1,11 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { logAdminAction } from '@/lib/admin/audit'
-import { isJanitor } from '@/lib/core/roles'
+import { isJanitor, type WebRole } from '@/lib/core/roles'
 import type { Database } from '@/lib/database.types'
 import { parseInput, z, uuid, positiveIntAmount, requiredText } from '@/lib/validation'
 
@@ -17,12 +16,12 @@ async function requireJanitor(): Promise<{ id: string }> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not signed in')
   const admin = createAdminClient()
-  const { data: profile } = await (admin as unknown as SupabaseClient)
+  const { data: profile } = await (admin)
     .from('profiles')
     .select('id, web_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
-  if (!profile || !isJanitor(profile.web_role)) {
+  if (!profile || !isJanitor(profile.web_role as WebRole | null)) {
     throw new Error('Janitor only')
   }
   return { id: profile.id as string }
