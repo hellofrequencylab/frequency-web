@@ -39,3 +39,5 @@ jobs:
         run: pnpm lint
       - name: Test
         run: pnpm test
+      - name: Authz-contract check
+        run: pnpm check:authz
