@@ -11,6 +11,9 @@ import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 // The staff model is client-safe (lib/core/staff-roles), so nav-areas can use the
 // capability check directly. (lib/staff is the server-only wrapper.)
 import { staffCan, type StaffRole, type StaffDomain } from '@/lib/core/staff-roles'
+// The vertical registry contributes nav areas (e.g. Marketplace). Type-only on the way
+// back (verticals imports NavArea as a type), so this is a one-way runtime dependency.
+import { verticalNavPlacements } from '@/lib/verticals'
 
 // Access levels, lowest → highest. 'visitor' = everyone (even logged-out); the
 // rest map onto the community-role ladder.
@@ -65,14 +68,15 @@ export type NavArea = {
 // worlds — Community · The Quest · Studio · Platform. `surface` ties each item to the
 // access matrix (the function-level permission view); `defaultAccess` is the live nav
 // visibility gate. Items whose page isn't built yet carry `comingSoon`.
-export const NAV_AREAS: readonly NavArea[] = [
+const BASE_NAV_AREAS: readonly NavArea[] = [
   // ── Community ────────────────────────────────────────────────────────────────
   { key: 'feed',          href: '/feed',      label: 'Feed',         section: 'Community', defaultAccess: 'visitor', surface: 'feed' },
   { key: 'broadcast',     href: '/broadcast', label: 'Around You',   section: 'Community', defaultAccess: 'visitor', surface: 'broadcast' },
   { key: 'circles',       href: '/circles',   label: 'Circles',      section: 'Community', defaultAccess: 'visitor', surface: 'circles' },
   { key: 'channels',      href: '/channels',  label: 'Channels',     section: 'Community', defaultAccess: 'visitor', surface: 'channels' },
   { key: 'events',        href: '/events',    label: 'Events',       section: 'Community', defaultAccess: 'visitor', surface: 'events' },
-  { key: 'market',        href: '/market',    label: 'Marketplace',  section: 'Community', defaultAccess: 'visitor', surface: 'market' },
+  // 'market' is contributed by the Marketplace vertical and composed in below
+  // (after 'events') — see composeNavAreas. It is intentionally NOT a literal here.
   { key: 'messageBoards', href: '/messages',  label: 'Message Boards', section: 'Community', defaultAccess: 'member', surface: 'messageBoards' },
   { key: 'people',        href: '/network',   label: 'Community',    section: 'Community', defaultAccess: 'member',  surface: 'people' },
 
@@ -111,6 +115,25 @@ export const NAV_AREAS: readonly NavArea[] = [
   // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
   // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".
 ] as const
+
+// Compose the base areas with the vertical-contributed ones (ADR-250 step 4). Each
+// vertical placement is spliced in immediately after its `after` key, so a vertical's nav
+// lands inside its section's consecutive run (the shell groups nav by consecutive section,
+// so a naive append would fork a second section header). Adding a vertical with nav = its
+// descriptor declares the area; nothing here changes.
+function composeNavAreas(): NavArea[] {
+  const areas: NavArea[] = [...BASE_NAV_AREAS]
+  for (const { area, after } of verticalNavPlacements()) {
+    if (areas.some((a) => a.key === area.key)) continue // a base literal already provides it
+    const at = after ? areas.findIndex((a) => a.key === after) : -1
+    if (at >= 0) areas.splice(at + 1, 0, area)
+    else areas.push(area)
+  }
+  return areas
+}
+
+/** The full nav (base + vertical-contributed), the single source the shell + grid read. */
+export const NAV_AREAS: readonly NavArea[] = composeNavAreas()
 
 /** Quick lookup of an area's baseline access by key. */
 export const NAV_AREA_DEFAULTS: Record<string, NavAccess> = Object.fromEntries(
