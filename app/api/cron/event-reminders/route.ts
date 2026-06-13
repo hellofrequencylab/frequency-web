@@ -65,11 +65,9 @@ function sentColumnFor(lead: ReminderLead): string {
   return 'reminder_2h_sent_at'
 }
 
-// reminder_7d_sent_at is newer than the generated DB types, so the typed client
-// rejects it in an Update payload. Stamp through an untyped client — the
-// `as unknown as SupabaseClient` convention from lib/billing/* — so any of the
-// three reminder columns (including the new one) is accepted. The same now()
-// stamp closes idempotency for all three touches identically.
+// `sentColumn` is one of the three reminder timestamp columns (a dynamic key), so the
+// patch is cast to the typed Update. The same now() stamp closes idempotency for all
+// three reminder touches identically.
 async function stampReminder(rsvpId: string, sentColumn: string): Promise<void> {
   const db = createAdminClient()
   await db
