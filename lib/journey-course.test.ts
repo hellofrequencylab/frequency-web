@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildCourse, courseLessonOrder } from '@/lib/journey-course'
+import { buildCourse, courseLessonOrder, previewCourse } from '@/lib/journey-course'
 import type { JourneyProgressItem } from '@/lib/journey-plans'
 
 // Minimal practice-step factory — only the fields buildCourse reads.
@@ -104,5 +104,32 @@ describe('buildCourse', () => {
     expect(a.body).toBe('Tiered body')
     expect(a.estMinutes).toBe(15)
     expect(b.title).toBe('Practice b')
+  })
+})
+
+describe('previewCourse', () => {
+  it('is empty for no draft lessons', () => {
+    const c = previewCourse([])
+    expect(c.sections).toEqual([])
+    expect(c.currentLessonId).toBeNull()
+  })
+
+  it('renders the first draft lesson current, the rest todo, never logging (practiceId null)', () => {
+    const c = previewCourse([
+      { id: '1', title: 'Intro', body: 'b', cadenceLabel: 'Daily' },
+      { id: '2', title: 'Next', body: null, cadenceLabel: null },
+    ])
+    const [a, b] = courseLessonOrder(c)
+    expect(a.status).toBe('current')
+    expect(b.status).toBe('todo')
+    expect(a.practiceId).toBeNull()
+    expect(b.practiceId).toBeNull()
+    expect(c.percent).toBe(0)
+    expect(c.currentLessonId).toBe('1')
+  })
+
+  it('falls back to a placeholder title for an untitled draft lesson', () => {
+    const c = previewCourse([{ id: '1', title: '', body: null, cadenceLabel: null }])
+    expect(courseLessonOrder(c)[0].title).toBe('Untitled lesson')
   })
 })
