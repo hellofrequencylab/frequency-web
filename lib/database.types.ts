@@ -1975,6 +1975,54 @@ export type Database = {
         }
         Relationships: []
       }
+      spaces: {
+        Row: {
+          created_at: string
+          domain: string | null
+          enabled_verticals: string[]
+          entity_id: string
+          id: string
+          name: string
+          network_connected: boolean
+          owner_profile_id: string | null
+          skin: string
+          slug: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          enabled_verticals?: string[]
+          entity_id: string
+          id?: string
+          name: string
+          network_connected?: boolean
+          owner_profile_id?: string | null
+          skin?: string
+          slug: string
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          enabled_verticals?: string[]
+          entity_id?: string
+          id?: string
+          name?: string
+          network_connected?: boolean
+          owner_profile_id?: string | null
+          skin?: string
+          slug?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       entry_campaigns: {
         Row: {
           created_at: string
