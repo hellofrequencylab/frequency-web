@@ -208,7 +208,22 @@ build order lives in [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md); the money/commerc
 | **The Collective** | labs | members apply to contribute and host **paid** meditations/courses (Insight-Timer model); Connect payouts; **digital-vs-physical fulfillment flag** (§7) |
 | Affiliate program | labs | referral attribution → commission → payout ledger |
 | Donations / grants | foundation | nonprofit rail; recurring (if dues, §3) |
-| **Lab Spaces** | labs | gym-style SaaS for a worldwide facility network: packages, subscriptions, booking, marketing. **Lab membership** lives here and **rolls in** the website paid tier (ADR-035). |
+| **Lab Spaces** | labs | gym-style SaaS for a worldwide facility network: packages, subscriptions, booking, marketing. **Lab membership** lives here and **rolls in** the website paid tier (ADR-035). Physical presence is the **flagship → franchise** tenancy (`lab_spaces.tenant_kind`, franchise revenue-share); ADR-248. |
+| **Online Store** | labs | first-party branded goods/merch; in-app payment on the Labs rail; physical-fulfilment flag (§7). |
+| **Organizations** | shared (own rail via Hook) | nonprofits + groups with their own presence, often **hosted via the Hook network**; members affiliate; can run Programs/Events. |
+| **Business Partners** | partner | businesses with loyalty programs; their loyalty events **bridge into the game via a source adapter** (ADR-248); offers/redemptions. |
+| **Practitioners** | labs / partner | individual providers hosting paid offerings/sessions (Collective-adjacent or own Hook site); Connect payouts; trust-gated. |
+| **Events Listings** | shared | discoverable event directory beyond circle events; poster-scan + organizer claim; rides the events graph. |
+| **Roommate / House finder** | shared | matching on identity + PostGIS location + the connection layer; **ID-verified + high-trust gated** (safety, ADR-247). |
+| **Sponsor-a-membership** | foundation | a donor funds another member's membership; money is a donation, access is an **entitlement** granted in the shared graph (ADR-248). |
+
+> **All of the above follow the §4 module recipe** — none edit the core. The physical
+> **flagship/franchise** tenancy, **donate-a-membership sponsorship**, and **partner-loyalty**
+> seams are specified in **ADR-248**; and every commerce/connection vertical reads the unified
+> **Trust Score** (**ADR-247**, §5) rather than its own rating silo. **Prerequisite:** the
+> module/WidgetSlot registry (ADR-033) must be *activated* (it's specced but not yet wired —
+> see `BASELINE-ASSESSMENT.md`) before these land, or each vertical hand-wires and the clean
+> scaling promise breaks.
 
 ---
 
@@ -227,6 +242,12 @@ raises the safety bar beyond today's moderation queue + janitor. Required seams 
   per-user block + per-content report for any UGC app.** See ADR-036.
 - **Ratings / reviews / disputes** for The Collective's paid offerings (a payout that's been
   disputed is a real ledger state, ties to §1).
+- **Unified, derived Trust Score (ADR-247).** Ratings, disputes, verifications, endorsements,
+  and community behavior are all *signals* into **one** event-sourced reputation read — a
+  `global` score + per-context sub-scores (`marketplace`, `host`, `roommate`, `practitioner`…) —
+  consumed by every commerce/connection vertical and portable across the Hook federation with
+  consent. Verticals **emit trust signals** the way they emit engagement events; they do **not**
+  build per-vertical rating silos. Trust is reputation, never currency, never money.
 
 ---
 
