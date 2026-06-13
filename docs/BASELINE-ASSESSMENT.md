@@ -29,7 +29,8 @@ what's already designed.
 
 ### Phase 0 — Urgent
 - ✅ Remove committed member PII (`supabase/backups/posts_wipe_20260605.json`) + gitignore — PR #702.
-- 🔴 **Owed (deliberate op):** scrub git history (`git filter-repo`) so the PII leaves past commits; review/rotate the exposed storage URLs.
+- ✅ **Git-history scrub (ADR-251):** `git filter-repo --path … --invert-paths` rewrote all history; the file is gone from `main` (force-pushed, verified: 0 commits on `main` touch it). **URL review:** the only URLs were **public-bucket** objects (`/storage/v1/object/public/posts/…`) + one short-link domain — **no secrets/signed URLs/credentials, so nothing to rotate.** The snapshot was content of *already-deleted* posts (taken "before wipe").
+- ⏳ **Optional residual (owner-run):** the file still exists in ~271 stale **merged** branches (private repo). Low-severity; prune them from a dev machine (`git push origin --delete …`) to fully purge — doubles as the long-owed merged-branch cleanup. The cloud env's git proxy can't delete branches.
 
 ### Phase 1 — Lock the hand-off baseline *(free, low-risk)*
 - ✅ Protected `main`, PR→preview→merge flow, onboarding docs (#701), regenerated types (#700).
