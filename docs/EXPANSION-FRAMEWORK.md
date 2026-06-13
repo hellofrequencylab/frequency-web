@@ -136,9 +136,10 @@ hand-wiring, defeating the framework.
    vertical emits trust from day one.
 6. ⏳ **The Space layer (lateral)** — ✅ the `spaces` table (applied) + `lib/spaces` resolver +
    the spaces↔verticals join, and the `(main)` layout resolves the active Space (by host, root
-   fallback) → `data-skin` on the shell root. Remaining: per-skin token sets (DAWN),
-   custom-domain content-routing, `space_members`, and per-Space `space_id` RLS on new vertical
-   tables as they ship.
+   fallback) → `data-skin` on the shell root **and** hides vertical nav the Space hasn't switched
+   on (via `activeVerticalsForSpace` → `navAccess`; a no-op for the root space). Remaining:
+   per-skin token sets (DAWN), custom-domain content-routing, `space_members`, and per-Space
+   `space_id` RLS on new vertical tables as they ship.
 
 **Steps 1-4 are done — a vertical is now a descriptor.** After step 6, **a sub-brand is a row.**
 
