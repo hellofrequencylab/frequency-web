@@ -1951,6 +1951,30 @@ export type Database = {
           },
         ]
       }
+      entities: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          kind: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          key: string
+          kind: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          kind?: string
+          name?: string
+        }
+        Relationships: []
+      }
       entry_campaigns: {
         Row: {
           created_at: string
@@ -2433,6 +2457,7 @@ export type Database = {
           buyer_profile_id: string | null
           created_at: string
           currency: string
+          entity_id: string
           event_id: string
           id: string
           platform_fee_cents: number
@@ -2449,6 +2474,7 @@ export type Database = {
           buyer_profile_id?: string | null
           created_at?: string
           currency?: string
+          entity_id?: string
           event_id: string
           id?: string
           platform_fee_cents?: number
@@ -2465,6 +2491,7 @@ export type Database = {
           buyer_profile_id?: string | null
           created_at?: string
           currency?: string
+          entity_id?: string
           event_id?: string
           id?: string
           platform_fee_cents?: number
@@ -2482,6 +2509,13 @@ export type Database = {
             columns: ["buyer_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_tickets_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
             referencedColumns: ["id"]
           },
           {
@@ -2643,6 +2677,69 @@ export type Database = {
           {
             foreignKeyName: "events_posted_by_profile_id_fkey"
             columns: ["posted_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transactions: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          entity_id: string
+          id: string
+          idempotency_key: string | null
+          occurred_at: string
+          profile_id: string | null
+          revenue_type: string
+          source_id: string | null
+          source_table: string | null
+          stripe_account_id: string | null
+          stripe_payment_intent_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          entity_id: string
+          id?: string
+          idempotency_key?: string | null
+          occurred_at?: string
+          profile_id?: string | null
+          revenue_type: string
+          source_id?: string | null
+          source_table?: string | null
+          stripe_account_id?: string | null
+          stripe_payment_intent_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          entity_id?: string
+          id?: string
+          idempotency_key?: string | null
+          occurred_at?: string
+          profile_id?: string | null
+          revenue_type?: string
+          source_id?: string | null
+          source_table?: string | null
+          stripe_account_id?: string | null
+          stripe_payment_intent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -5329,6 +5426,13 @@ export type Database = {
           verified_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profile_personas_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profile_personas_profile_id_fkey"
             columns: ["profile_id"]
