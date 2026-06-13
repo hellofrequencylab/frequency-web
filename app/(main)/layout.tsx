@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { resolveSpaceForHost } from '@/lib/spaces'
 import AppShell from '@/components/layout/app-shell'
 import RightSidebar, { MobileGameStats } from '@/components/sidebar/right-sidebar'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
@@ -224,8 +226,20 @@ export default async function MainLayout({
     </Suspense>
   )
 
+  // Resolve the active Space for this host (a custom domain → that Space, otherwise the
+  // root) so the shell can apply its skin (ADR-249/250 step 6). Resilient: any failure
+  // falls back to the default skin, which is the current look (no visual change).
+  let activeSkin = 'default'
+  try {
+    const space = await resolveSpaceForHost((await headers()).get('host'))
+    if (space) activeSkin = space.skin
+  } catch {
+    /* pre-migration / lookup failure → default skin */
+  }
+
   return (
     <AppShell
+      skin={activeSkin}
       profile={{ ...profile, community_role: effectiveRole }}
       realRole={realRole}
       previewVisitor={previewVisitor}
