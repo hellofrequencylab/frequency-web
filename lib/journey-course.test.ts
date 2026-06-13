@@ -69,7 +69,7 @@ function lessonBlock(
   }
 }
 
-// A section/grouping block (skipped by the flat v1 builder).
+// A section/grouping block — opens a syllabus module that collects the lessons after it.
 function sectionBlock(id: string, title: string): JourneyPlanItem {
   return { ...lessonBlock(id, { title }), block_type: 'section' }
 }
@@ -143,14 +143,56 @@ describe('buildCourse', () => {
     expect(done.percent).toBe(67) // 2 of 3
   })
 
-  it('skips section blocks in the flat v1', () => {
+  it('groups lessons under their section header into a titled module', () => {
     const items: JourneyPlanItem[] = [
       sectionBlock('S1', 'Module 1'),
       lessonBlock('L1', { title: 'Lesson', sortOrder: 1 }),
     ]
     const c = buildCourse({ blocks: items, progress: { items: [] } })
+    expect(c.sections).toHaveLength(1)
+    expect(c.sections[0].title).toBe('Module 1')
+    expect(c.sections[0].id).toBe('S1')
     expect(courseLessonOrder(c)).toHaveLength(1)
     expect(courseLessonOrder(c)[0].id).toBe('L1')
+  })
+
+  it('puts lessons before the first section into a leading untitled path module', () => {
+    const items: JourneyPlanItem[] = [
+      step('p1'),
+      sectionBlock('S1', 'Deep dive'),
+      lessonBlock('L1', { title: 'Reading', sortOrder: 2 }),
+      lessonBlock('L2', { title: 'Watch', sortOrder: 3 }),
+    ]
+    const c = buildCourse({ blocks: items, progress: { items: [items[0] as JourneyProgressItem] } })
+    expect(c.sections).toHaveLength(2)
+    expect(c.sections[0].title).toBeNull()
+    expect(c.sections[0].lessons.map((l) => l.id)).toEqual(['p1'])
+    expect(c.sections[1].title).toBe('Deep dive')
+    expect(c.sections[1].lessons.map((l) => l.id)).toEqual(['L1', 'L2'])
+    expect(c.totalCount).toBe(3)
+  })
+
+  it('drops a section with no lessons under it', () => {
+    const items: JourneyPlanItem[] = [
+      sectionBlock('S1', 'Empty module'),
+      sectionBlock('S2', 'Real module'),
+      lessonBlock('L1', { title: 'Lesson', sortOrder: 2 }),
+    ]
+    const c = buildCourse({ blocks: items, progress: { items: [] } })
+    expect(c.sections.map((s) => s.title)).toEqual(['Real module'])
+  })
+
+  it('parses a video link in a lesson body into an inline embed', () => {
+    const items: JourneyPlanItem[] = [
+      lessonBlock('L1', { title: 'Watch', body: 'https://youtu.be/abc123' }),
+    ]
+    const c = buildCourse({ blocks: items, progress: { items: [] } })
+    const [l1] = courseLessonOrder(c)
+    expect(l1.video).toEqual({
+      provider: 'youtube',
+      url: 'https://youtu.be/abc123',
+      src: 'https://www.youtube.com/embed/abc123',
+    })
   })
 
   it('prefers tier content for the lesson title + body, else the practice copy', () => {

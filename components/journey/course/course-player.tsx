@@ -7,6 +7,7 @@ import { accentColor, accentTint } from '@/lib/studio/accents'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { JourneyLogButton } from '@/components/journey/journey-log-button'
 import { courseLessonOrder, type Course, type CourseLesson } from '@/lib/journey-course'
+import type { VideoEmbed } from '@/lib/video-embed'
 
 // The course player (docs/JOURNEYS.md §5A, ADR-244) — the e-learning face of an
 // ADOPTED Journey. A two-pane "classic course player": a left SYLLABUS rail (overall
@@ -278,7 +279,10 @@ function LessonPane({
         )}
       </div>
 
-      {lesson.body && (
+      {lesson.video && <LessonVideo video={lesson.video} title={lesson.title} />}
+
+      {/* The body text, unless it is only the video link (then the player stands alone). */}
+      {lesson.body && !(lesson.video && lesson.body.trim() === lesson.video.url) && (
         <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-text">{lesson.body}</div>
       )}
 
@@ -330,6 +334,33 @@ function LessonPane({
         <NavButton dir="next" lesson={next} onGo={onGo} />
       </div>
     </article>
+  )
+}
+
+// ── Inline lesson video ── A YouTube/Vimeo link embeds in a 16:9 iframe; a direct
+// media file plays in a native <video>. Source is parsed from the lesson body upstream.
+function LessonVideo({ video, title }: { video: VideoEmbed; title: string }) {
+  if (video.provider === 'file') {
+    return (
+      <video
+        controls
+        src={video.src}
+        className="mt-4 w-full overflow-hidden rounded-xl border border-border bg-black"
+        aria-label={title}
+      />
+    )
+  }
+  return (
+    <div className="relative mt-4 aspect-video w-full overflow-hidden rounded-xl border border-border bg-black">
+      <iframe
+        src={video.src}
+        title={title}
+        className="absolute inset-0 h-full w-full"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        loading="lazy"
+      />
+    </div>
   )
 }
 
