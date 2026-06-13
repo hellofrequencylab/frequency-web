@@ -17,6 +17,7 @@ import { stripe, STRIPE_WEBHOOK_SECRET } from '@/lib/billing/stripe'
 import { persistAccount } from '@/lib/billing/connect'
 import { recordTipFromSession } from '@/lib/billing/tips'
 import { recordTicketFromSession, recordTicketRefundFromCharge } from '@/lib/billing/tickets'
+import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,6 +50,12 @@ export async function POST(req: Request) {
         const session = event.data.object as Stripe.Checkout.Session
         await recordTipFromSession(session)
         await recordTicketFromSession(session)
+        break
+      }
+      case 'invoice.paid': {
+        // A membership subscription invoice was paid (first payment or a renewal).
+        // Record it as Foundation dues on the partitioned ledger (idempotent per invoice).
+        await recordMembershipDuesFromInvoice(event.data.object as Stripe.Invoice)
         break
       }
       case 'charge.refunded': {

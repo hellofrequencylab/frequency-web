@@ -15,6 +15,7 @@ import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
 import { platformFeeCents } from './fees'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 
 /** Suggested tip amounts (cents) shown as quick-pick chips. */
 export const TIP_PRESETS_CENTS = [300, 500, 1000] as const
@@ -106,11 +107,36 @@ export async function recordTipFromSession(session: Stripe.Checkout.Session): Pr
   const paymentIntentId =
     typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null
   // Only advance pending → succeeded (idempotent; a redelivered event is a no-op).
-  await db()
+  // `.select()` returns the rows we actually flipped, so the ledger append below runs
+  // exactly once per tip.
+  const { data: updated } = await db()
     .from('tips')
     .update({ status: 'succeeded', succeeded_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
+    .select('id, platform_fee_cents, from_profile_id, currency')
+  const rows = (updated ?? []) as {
+    id: string
+    platform_fee_cents: number
+    from_profile_id: string | null
+    currency: string
+  }[]
+  for (const row of rows) {
+    // A tip is a Connect destination charge — the gross transfers to the recipient; the
+    // entity's (Labs, for-profit) revenue is the platform application fee. Idempotent per
+    // tip; best-effort so a ledger hiccup never fails the webhook.
+    await recordFinancialTransaction({
+      entityId: ENTITY_ID.labs,
+      revenueType: 'commerce',
+      amountCents: row.platform_fee_cents ?? 0,
+      profileId: row.from_profile_id,
+      currency: row.currency,
+      stripePaymentIntentId: paymentIntentId,
+      sourceTable: 'tips',
+      sourceId: row.id,
+      idempotencyKey: `tip:${row.id}`,
+    }).catch(() => {})
+  }
 }
 
 /** Webhook-independent reconcile on the success redirect — retrieves the session

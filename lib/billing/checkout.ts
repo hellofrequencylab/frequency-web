@@ -9,6 +9,7 @@
 import type Stripe from 'stripe'
 import { stripe, priceFor, membershipAmount, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 
 type PaidTier = Exclude<EntitlementTier, 'free'>
@@ -78,6 +79,50 @@ export async function confirmCheckout(sessionId: string, profileId: string): Pro
     .update({ membership_tier: tier, ...(customerId ? { stripe_customer_id: customerId } : {}) })
     .eq('id', profileId)
   return tier
+}
+
+/**
+ * Record a paid membership invoice as Foundation DUES on the entity-partitioned ledger
+ * (ADR-037/246). Driven by the `invoice.paid` webhook, so it captures the first payment
+ * AND every renewal. Idempotent per invoice. Membership is a direct platform subscription
+ * (not a Connect charge), so the full amount is the Foundation's revenue.
+ *
+ * The dues-vs-donation split above the membership floor is an open legal decision
+ * (ADR-037); the whole amount is recorded as 'dues' until counsel sets that line.
+ */
+export async function recordMembershipDuesFromInvoice(invoice: Stripe.Invoice): Promise<void> {
+  const amount = invoice.amount_paid ?? 0
+  if (amount <= 0) return
+  // Memberships are the only subscriptions; a non-subscription invoice isn't dues.
+  // Stripe 22 carries the subscription (and a snapshot of its metadata) under
+  // invoice.parent.subscription_details — so profile_id is on the invoice, no retrieve.
+  const subDetails = invoice.parent?.subscription_details
+  if (!subDetails) return
+
+  // Resolve the member: the subscription metadata snapshot (authoritative), else by customer.
+  let profileId: string | null = (subDetails.metadata?.profile_id as string | undefined) ?? null
+  if (!profileId) {
+    const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? null
+    if (customerId) {
+      const { data } = await createAdminClient()
+        .from('profiles')
+        .select('id')
+        .eq('stripe_customer_id', customerId)
+        .maybeSingle()
+      profileId = (data as { id: string } | null)?.id ?? null
+    }
+  }
+
+  await recordFinancialTransaction({
+    entityId: ENTITY_ID.foundation,
+    revenueType: 'dues',
+    amountCents: amount,
+    profileId,
+    currency: invoice.currency ?? 'usd',
+    sourceTable: 'memberships',
+    sourceId: invoice.id ?? null,
+    idempotencyKey: invoice.id ? `invoice:${invoice.id}` : undefined,
+  })
 }
 
 /** Open the Stripe billing portal for a member to manage/cancel; returns the URL. */

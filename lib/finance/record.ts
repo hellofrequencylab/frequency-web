@@ -6,6 +6,13 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
+// The seeded entity ids (supabase/migrations/20260618000000_entity_partition_foundation_labs.sql).
+// Fixed reference data, so referencing the constants avoids a lookup on every money event.
+export const ENTITY_ID = {
+  foundation: 'f0000000-0000-4000-a000-000000000001',
+  labs: '1ab50000-0000-4000-a000-000000000002',
+} as const
+
 export type RevenueType = 'dues' | 'donation' | 'commerce' | 'payout' | 'transfer' | 'refund'
 
 export interface RecordFinancialTxnInput {
