@@ -2023,6 +2023,66 @@ export type Database = {
         }
         Relationships: []
       }
+      trust_signals: {
+        Row: {
+          context: string
+          created_at: string
+          id: string
+          idempotency_key: string | null
+          meta: Json
+          profile_id: string
+          signal_type: string
+          source: string
+          weight: number
+        }
+        Insert: {
+          context?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          meta?: Json
+          profile_id: string
+          signal_type: string
+          source: string
+          weight?: number
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          meta?: Json
+          profile_id?: string
+          signal_type?: string
+          source?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      trust_scores: {
+        Row: {
+          context: string
+          profile_id: string
+          score: number
+          signal_count: number
+          updated_at: string
+        }
+        Insert: {
+          context: string
+          profile_id: string
+          score?: number
+          signal_count?: number
+          updated_at?: string
+        }
+        Update: {
+          context?: string
+          profile_id?: string
+          score?: number
+          signal_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       entry_campaigns: {
         Row: {
           created_at: string
