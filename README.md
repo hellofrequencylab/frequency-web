@@ -122,23 +122,67 @@ mobile.
 
 ## Getting started (developers)
 
+**Prerequisites:** Node 20+ and **pnpm 10.33.0** — pinned via the `packageManager`
+field, so let corepack manage it (don't `npm i -g pnpm`).
+
 ```bash
-npm install
-npm run dev          # Next.js dev server (Turbopack)  → http://localhost:3000
-npx tsc --noEmit     # type check — the project's main correctness gate
-npx eslint <paths>   # lint
-npm test             # Vitest unit suite (lib/**/*.test.ts)
+corepack enable                  # use the exact pnpm version this repo pins
+pnpm install
+pnpm approve-builds              # first time only: allow sharp + unrs-resolver to build
+cp .env.example .env.local       # then fill in the values below
+pnpm dev                         # Next.js dev server (Turbopack) → http://localhost:3000
 ```
 
-Tests run on **Vitest** (`npm test`) — currently a focused unit suite over the
-pure-logic seams (`lib/**/*.test.ts`: capabilities, currency, the outbox queue,
-suppression, webhook verification). They complement, not replace, the primary
-gates: `npx tsc --noEmit` (the main correctness gate) + ESLint + manual
-verification. Schema source of truth is
-`supabase/migrations/`; see [ARCHITECTURE](docs/ARCHITECTURE.md) for the migration
-workflow and the **authorization model you must follow** (the admin client
-bypasses RLS — authz is enforced in application code today, converging on RLS +
-RPCs per the strategy).
+**Environment variables (`.env.local`).** `vercel env pull` does *not* help here —
+the Vercel vars are marked **Sensitive**, so they pull back blank. Fill these by hand
+(the minimum to boot the app):
+
+| Var | Where to get it |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API → **publishable** key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → **secret** key (server-only) |
+| `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` |
+
+Feature keys (Stripe, Resend, AI, KV/Redis, VAPID) only matter when you exercise those
+features — leave them blank otherwise.
+
+**Quality gates** (run before you push):
+
+```bash
+pnpm exec tsc --noEmit   # the project's main correctness gate
+pnpm lint
+pnpm test                # Vitest unit suite (lib/**/*.test.ts)
+```
+
+Tests are a focused unit suite over the pure-logic seams (`lib/**/*.test.ts`:
+capabilities, currency, the outbox queue, suppression, webhook verification). They
+complement, not replace, `tsc --noEmit` + ESLint + manual verification. Schema source
+of truth is `supabase/migrations/`; see [ARCHITECTURE](docs/ARCHITECTURE.md) for the
+**authorization model you must follow** (the admin client bypasses RLS — authz is
+enforced in application code today, converging on RLS + RPCs per the strategy).
+
+### Shipping a change
+
+`main` is **protected** — every change goes through a pull request (you cannot push to
+`main` directly).
+
+```bash
+git checkout main && git pull
+git checkout -b feature/your-change
+# ...edit, run pnpm dev + the gates, commit...
+git push -u origin feature/your-change
+```
+
+Open a PR → Vercel builds a **preview URL** → CI + preview must be green → **merge
+deploys to production**. The full workflow (local + on-the-go, and the path to a
+team-grade setup) lives in [docs/WORKFLOW.md](docs/WORKFLOW.md).
+
+> ⚠️ **One shared database (for now).** Local, preview, and production all point at the
+> same Supabase project. Develop freely, but **never run destructive or migration
+> commands against it** — in particular, do **not** run `supabase db push` until the
+> migration baseline is established. See
+> [WORKFLOW.md → Scaling to a team](docs/WORKFLOW.md#scaling-to-a-team).
 
 ---
 
