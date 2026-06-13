@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { CalendarDays, MapPin, Users } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -229,7 +228,7 @@ export default async function EventsPage({
   // category / energy_tag / capacity are newer than the generated DB types — read
   // them through an untyped client (repo convention for not-yet-regenerated
   // columns; see lib/billing/* and lib/events/capacity.ts).
-  let eventsQuery = (admin as unknown as SupabaseClient)
+  let eventsQuery = (admin)
     .from('events')
     .select(
       `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,

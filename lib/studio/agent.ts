@@ -22,7 +22,7 @@ import {
 const DAY = 24 * 60 * 60 * 1000
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export interface AgentActionRow {

@@ -16,7 +16,7 @@ import { getOrCreateDispatch } from '@/lib/vera-dispatch'
 import type { OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export interface CompleteSessionInput {

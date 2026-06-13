@@ -20,7 +20,7 @@ import {
 } from '@/lib/frequency-signature'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 // Row shape from practice_logs ⨝ practices: we only need the practice's domain_id to

@@ -2,7 +2,6 @@ import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronLeft, Users, Hash, Lock, LogIn, LogOut } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials } from '@/lib/utils'
 import { joinRoom, leaveRoom } from '../../rooms/actions'
@@ -79,7 +78,7 @@ export default async function RoomPage({
   // Members + their public profiles via the DEFINER RPC (visible only if I can
   // see the room). Authors of messages are members, so this map hydrates both.
   type MemberProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
-  const { data: memberRows } = await (supabase as unknown as SupabaseClient)
+  const { data: memberRows } = await (supabase)
     .rpc('visible_room_member_profiles', { _room_id: roomId })
 
   const members = ((memberRows ?? []) as {
@@ -110,7 +109,7 @@ export default async function RoomPage({
     // (public fields) rather than from the room-member map.
     if (isChannel && rawMsgs.length > 0) {
       const authorIds = [...new Set(rawMsgs.map(m => m.author_id))]
-      const { data: authorRows } = await (supabase as unknown as SupabaseClient)
+      const { data: authorRows } = await (supabase)
         .from('profiles')
         .select('id, display_name, handle, avatar_url')
         .in('id', authorIds)

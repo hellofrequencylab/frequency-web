@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, STRIPE_WEBHOOK_SECRET, tierForPrice } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -33,7 +32,7 @@ export async function POST(req: Request) {
   // event was already processed (a Stripe retry or in-tolerance replay) — ack without
   // re-running. Any other claim error is transient → fall through and process anyway
   // (re-processing is safe; the handlers set the tier to a fixed value).
-  const claim = await (admin as unknown as SupabaseClient)
+  const claim = await (admin)
     .from('stripe_webhook_events')
     .insert({ event_id: event.id, type: event.type })
   if (claim.error?.code === '23505') {

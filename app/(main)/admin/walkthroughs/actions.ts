@@ -36,7 +36,7 @@ async function gate(): Promise<string> {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 function slugify(s: string): string {

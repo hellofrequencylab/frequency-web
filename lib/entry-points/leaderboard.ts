@@ -4,7 +4,6 @@
 // Tiers recognise cumulative signups. The pure bits (recruiterTier, rankRecruiters)
 // are unit-tested; listEntryPointLeaderboard does the I/O. Server-only.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface RecruiterTier {
@@ -59,7 +58,7 @@ export function rankRecruiters(rows: RecruiterRow[]): RecruiterRow[] {
 
 /** The recruiter leaderboard: every crew member who owns an entry point, ranked. */
 export async function listEntryPointLeaderboard(limit = 50): Promise<RecruiterRow[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   // 1. Aggregate entry-point count + scans per owner.
   const { data: codes } = await db

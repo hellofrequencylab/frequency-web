@@ -2,7 +2,6 @@ import { Fragment, Suspense } from 'react'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { ArrowUpRight, Users } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { dashCookie, sanitizeDashOrder } from '../dash-sections'
 import { RelatedAreas } from '@/components/admin/related-areas'
@@ -78,7 +77,7 @@ async function TrustSafetyArea() {
     ticketStatusCounts(),
     // profile_personas isn't in the generated types yet (repo convention: untyped cast).
     // A `claimed` persona is pending the staff verify queue (lib/personas.ts).
-    (admin as unknown as SupabaseClient)
+    (admin)
       .from('profile_personas')
       .select('id', { count: 'exact', head: true })
       .eq('state', 'claimed'),

@@ -21,7 +21,6 @@ import {
   type StaffDomain,
   type StaffRole,
 } from '@/lib/core/staff-roles'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,7 +50,7 @@ export default async function AdminRolesPage() {
 
   // Current team / operations members (ADR-127). team_members is untyped in the
   // generated types, so query through an untyped handle.
-  const db = admin as unknown as SupabaseClient
+  const db = admin
   const { data: teamRows } = await db
     .from('team_members')
     .select('role, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')

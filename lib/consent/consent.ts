@@ -26,7 +26,7 @@ export function latestByScope(records: ConsentRecord[]): Map<string, boolean> {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Record a consent choice (append-only). */

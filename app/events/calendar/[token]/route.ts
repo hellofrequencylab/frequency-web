@@ -13,7 +13,6 @@
 // event set through the event_calendar_feed RPC.
 
 import { NextRequest, NextResponse } from 'next/server'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
@@ -103,7 +102,7 @@ export async function GET(
     return new NextResponse('Not found', { status: 404 })
   }
 
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { data, error } = await admin.rpc('event_calendar_feed', { _token: token })
 
   // Unknown token → 404 (never reveal whether a token exists for some other state).

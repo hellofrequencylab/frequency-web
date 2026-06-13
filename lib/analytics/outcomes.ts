@@ -11,7 +11,6 @@
 // the journey_plans spine (qualifying-weeks ≥ target) are derived from
 // practice_logs and will land on this surface in a follow-up.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface ChallengeOutcome {
@@ -55,7 +54,7 @@ export function fillRate(count: number, cap: number | null): number | null {
 }
 
 export async function getOutcomeReport(): Promise<OutcomeReport> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const [chRes, circlesRes] = await Promise.all([
     db.rpc('challenge_outcomes'),
     db.from('circles').select('name, member_count, member_cap, status, is_demo').eq('is_demo', false),

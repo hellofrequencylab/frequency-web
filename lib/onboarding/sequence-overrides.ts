@@ -8,7 +8,7 @@ import type { SequenceSplash, BetaSequence } from './beta-sequences'
 // is kept in sync for the original splash-only reader. `sequence_overrides` predates
 // the generated types — loosely-typed client.
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Any subset of a sequence the owner has overridden (or authored, for a new version).

@@ -19,7 +19,7 @@ import { withVoice } from './voice'
 const FEATURE = 'event-blurb'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 function utcDayKey(): string {

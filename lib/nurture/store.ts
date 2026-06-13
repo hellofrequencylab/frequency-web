@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { NurtureSequence, NurtureStep } from '@/lib/nurture/schedule'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 interface SeqRow { id: string; persona: string; name: string; enabled: boolean; created_at: string | null }

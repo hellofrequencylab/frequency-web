@@ -3,7 +3,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { ChevronLeft, CalendarPlus } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createPublicClient } from '@/lib/supabase/public'
 import type { PublicEvent } from '@/lib/discover'
 import { EventRow, SignInCta } from '@/components/discover/cards'
@@ -66,7 +65,7 @@ function toPublicEvent(r: OrganizerRow): PublicEvent {
 }
 
 async function getOrganizer(handle: string): Promise<Organizer | null> {
-  const supabase = createPublicClient() as unknown as SupabaseClient
+  const supabase = createPublicClient()
   const { data, error } = await supabase.rpc('public_organizer_events', { _handle: handle })
   if (error || !Array.isArray(data) || data.length === 0) return null
 

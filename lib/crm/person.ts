@@ -12,11 +12,10 @@
 // Grouping is by email at READ time, so it works even before the stitch migration
 // backfills the FK links.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 function db() {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 type Acquisition = { channel?: string; source?: string; campaign?: string; code?: string } | null

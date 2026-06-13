@@ -67,7 +67,7 @@ async function janitorDb(): Promise<{ db: SupabaseClient } | { error: string }> 
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Not signed in' }
   if (!isJanitor(caller.webRole)) return { error: 'Janitor only' }
-  return { db: createAdminClient() as unknown as SupabaseClient }
+  return { db: createAdminClient() }
 }
 
 /** Bulk-save edits to existing rows (amount, daily cap, on/off). */

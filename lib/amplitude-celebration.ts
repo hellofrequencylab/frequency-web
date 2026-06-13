@@ -15,7 +15,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { amplitudeLevel, AMPLITUDE_MILESTONES, AMPLITUDE_MILESTONE_LABELS } from '@/lib/amplitude'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export interface AmplitudeCelebration {

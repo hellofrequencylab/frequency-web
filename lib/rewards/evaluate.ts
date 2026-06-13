@@ -28,7 +28,7 @@ export interface RewardRunResult {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Build every member's durable snapshot from profiles + member_traits + member_tags. */

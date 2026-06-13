@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { ArrowRight } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
@@ -57,7 +56,7 @@ export default async function DraftEditorPage({ params }: { params: Promise<{ id
   // The pillar select needs the slug, not the id (drafts store domain_id).
   let domainSlug = ''
   if (draft.domainId) {
-    const { data } = await (createAdminClient() as unknown as SupabaseClient)
+    const { data } = await (createAdminClient())
       .from('pillars')
       .select('slug')
       .eq('id', draft.domainId)

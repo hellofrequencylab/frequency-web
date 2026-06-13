@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getStaffMember, staffCan } from '@/lib/staff'
 import { isStaff, asWebRole } from '@/lib/core/roles'
 
@@ -21,7 +20,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
 
   // Staff access is the web_role axis now (ADR-208). web_role isn't in the stale
   // generated types yet, so read it through the untyped cast (repo convention).
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
     .select('web_role')

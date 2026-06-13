@@ -16,7 +16,7 @@ export interface AdminAuditEntry {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Record a sensitive admin action. Best-effort — never throws. */

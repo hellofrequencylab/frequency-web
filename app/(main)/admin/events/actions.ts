@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { isStaff } from '@/lib/core/roles'
@@ -83,7 +82,7 @@ export async function updateEvent(id: string, fd: FormData) {
   const priceCents = Number.isFinite(priceNum) && priceNum > 0 ? Math.round(priceNum * 100) : null
 
   // price_cents isn't in the generated types yet — untyped cast (repo convention).
-  const { error } = await (admin as unknown as SupabaseClient).from('events').update({
+  const { error } = await (admin).from('events').update({
     title:       (fd.get('title') as string).trim(),
     description: (fd.get('description') as string)?.trim() || null,
     location:    (fd.get('location') as string)?.trim() || null,
@@ -201,7 +200,7 @@ async function refundAndNotifyForCancelledEvent(eventId: string): Promise<void> 
   // ── 1. Refund every succeeded ticket (idempotent + frees inventory) ──────────
   // `event_tickets` isn't in the generated DB types yet → untyped-client cast
   // (the lib/billing/* convention).
-  const { data: ticketData } = await (admin as unknown as SupabaseClient)
+  const { data: ticketData } = await (admin)
     .from('event_tickets')
     .select('id, buyer_profile_id')
     .eq('event_id', eventId)
@@ -316,7 +315,7 @@ function dollarsToCents(raw: FormDataEntryValue | null): number | null {
 /** Create a ticket tier on an event. The caller must be able to edit the event. */
 export async function createTicketTier(eventId: string, slug: string, fd: FormData) {
   await requireEventEditor(eventId)
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
 
   const name = (fd.get('name') as string)?.trim()
   if (!name) throw new Error('A tier name is required.')
@@ -356,7 +355,7 @@ export async function createTicketTier(eventId: string, slug: string, fd: FormDa
 /** Edit a tier's catalog fields. Never touches `sold` (billing-owned). */
 export async function updateTicketTier(tierId: string, eventId: string, slug: string, fd: FormData) {
   await requireEventEditor(eventId)
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
 
   const name = (fd.get('name') as string)?.trim()
   if (!name) throw new Error('A tier name is required.')
@@ -400,7 +399,7 @@ export async function setTicketTierActive(
   active: boolean,
 ) {
   await requireEventEditor(eventId)
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { error } = await admin
     .from('event_ticket_types')
     .update({ active })

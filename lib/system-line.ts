@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // One quiet Vera line in the public feed (ADR-231 / ADR-239): a `system` post,
@@ -11,7 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export async function postSystemLine(body: string): Promise<void> {
   try {
     // post_type 'system' (20260616100000) isn't in the generated types yet.
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
     const { data: system } = await admin
       .from('profiles')
       .select('id')

@@ -1,5 +1,4 @@
 import type { MetadataRoute } from "next";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { SITE_URL } from "@/lib/site";
 import {
   getTopicalChannels,
@@ -15,7 +14,7 @@ import { getAllArticles, getAllCategories } from "@/lib/help/content";
 // never enumerates hosts of circle_only/private events (Events B-4).
 async function getOrganizerRoutes(now: Date): Promise<MetadataRoute.Sitemap> {
   try {
-    const supabase = createPublicClient() as unknown as SupabaseClient;
+    const supabase = createPublicClient();
     const { data } = await supabase.rpc("public_organizer_handles", { _limit: 500 });
     if (!Array.isArray(data)) return [];
     return (data as { handle: string; next_starts: string | null }[]).map((h) => ({

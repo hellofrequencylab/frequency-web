@@ -5,7 +5,6 @@ import { CrewTasksClient } from './crew-tasks-client'
 import { CircleTasksPanel, type HostedCircleTasks } from './circle-tasks-panel'
 import { NewTaskCompose } from '@/components/compose/new-task-compose'
 import { listCircleTasks } from '@/lib/crew/circle-tasks'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 
 export default async function AdminCrewTasksPage() {
@@ -17,7 +16,7 @@ export default async function AdminCrewTasksPage() {
     // Global catalogue only (circle_id IS NULL) — circle-scoped tasks live in
     // the per-circle panel below. Untyped handle: circle_id isn't in
     // database.types yet (repo convention; see lib/crew/circle-tasks.ts).
-    (admin as unknown as SupabaseClient)
+    (admin)
       .from('crew_tasks')
       .select('id, name, task_type, zaps_value, is_repeatable, requires_verification')
       .is('circle_id', null)

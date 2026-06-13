@@ -11,7 +11,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { randomBytes } from 'node:crypto'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { authorizeAction } from '@/lib/admin/guard'
@@ -21,7 +20,7 @@ import { isValidClaim } from '@/lib/events/claim-trust'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 
-const db = () => createAdminClient() as unknown as SupabaseClient
+const db = () => createAdminClient()
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 

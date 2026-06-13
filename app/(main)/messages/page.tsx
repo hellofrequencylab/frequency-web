@@ -2,7 +2,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { MessageSquare, Hash, Lock, Users } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isOnline } from '@/lib/presence'
@@ -101,7 +100,7 @@ export default async function MessagesPage({
     STEWARD_ROLES.includes(myProfile.community_role ?? '')
 
   // Public profile fields for everyone I share a DM / room with (caller-scoped).
-  const { data: peerRows } = await (supabase as unknown as SupabaseClient).rpc('message_peer_profiles')
+  const { data: peerRows } = await (supabase).rpc('message_peer_profiles')
   const peerMap = new Map(((peerRows ?? []) as Profile[]).map(p => [p.id, p]))
 
   // Liveness (Phase D): who among my DM peers is active now. last_seen_at is a
@@ -151,13 +150,13 @@ export default async function MessagesPage({
   // Channel open rooms for the channels I'm tuned into (Phase B). Read-open to
   // anyone; posting requires tune-in. Untyped client (scope_id / topical_channel_*
   // not in generated types).
-  const { data: myTuned } = await (supabase as unknown as SupabaseClient)
+  const { data: myTuned } = await (supabase)
     .from('topical_channel_memberships')
     .select('topical_channel_id')
     .eq('profile_id', myProfileId)
   const tunedChannelIds = ((myTuned ?? []) as { topical_channel_id: string }[]).map(c => c.topical_channel_id)
   const { data: channelRoomsData } = tunedChannelIds.length > 0
-    ? await (supabase as unknown as SupabaseClient)
+    ? await (supabase)
         .from('rooms')
         .select('id, name, description, visibility, member_count, last_message_at')
         .eq('visibility', 'channel')
@@ -171,7 +170,7 @@ export default async function MessagesPage({
   // Migrated group threads now live as private rooms; filter them out so they
   // don't double-show (conversation copy + room copy). `migrated_to_room_id`
   // isn't in the generated types yet, so read through the untyped client.
-  const { data: myPartsRaw } = await (supabase as unknown as SupabaseClient)
+  const { data: myPartsRaw } = await (supabase)
     .from('conversation_participants')
     .select('conversation_id, last_read_at, conversations!conversation_id(id, name, created_at, migrated_to_room_id)')
     .eq('profile_id', myProfileId)

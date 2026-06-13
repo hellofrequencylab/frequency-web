@@ -15,7 +15,7 @@
 // query instead of repeating them.
 
 import { cache } from 'react'
-import type { SupabaseClient, User } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { applyViewAs } from '@/lib/view-as'
@@ -66,7 +66,7 @@ const resolveCaller = cache(
     // session client suffices (no service-role bypass). web_role + community_level
     // are selected via the untyped cast (columns not yet in the generated types).
     const supabase = await createClient()
-    const { data } = await (supabase as unknown as SupabaseClient)
+    const { data } = await (supabase)
       .from('profiles')
       .select('id, community_role, community_level, web_role, membership_tier')
       .eq('auth_user_id', user.id)

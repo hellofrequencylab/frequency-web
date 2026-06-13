@@ -5,7 +5,6 @@
 // client renders a static fallback instantly and swaps when this arrives.
 
 import { NextResponse } from 'next/server'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -24,7 +23,7 @@ export async function GET() {
   const profileId = await getMyProfileId()
   if (!profileId) return NextResponse.json({ line: null }, { status: 401 })
 
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const day = new Date().toISOString().slice(0, 10)
 
   // Reuse today's Dispatch verbatim when it exists — never generate from here.

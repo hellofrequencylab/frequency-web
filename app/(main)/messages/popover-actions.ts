@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 
 export interface MessagesSummary {
@@ -38,7 +37,7 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
 
   const myProfileId = myProfile.id as string
 
-  const { data: peerRows } = await (supabase as unknown as SupabaseClient).rpc('message_peer_profiles')
+  const { data: peerRows } = await (supabase).rpc('message_peer_profiles')
   const peerMap = new Map(
     ((peerRows ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null }[])
       .map(p => [p.id, p]),
@@ -83,7 +82,7 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
 
   // ── DMs (top 5 by recent activity) — 1:1 only (Phase B) ────────────
   // Exclude migrated group threads (they live as private rooms now).
-  const { data: myPartsRaw } = await (supabase as unknown as SupabaseClient)
+  const { data: myPartsRaw } = await (supabase)
     .from('conversation_participants')
     .select('conversation_id, last_read_at, conversations!conversation_id(id, name, migrated_to_room_id)')
     .eq('profile_id', myProfileId)

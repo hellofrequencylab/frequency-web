@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardZapsForAction } from '@/lib/zaps'
 import { postSystemLine } from '@/lib/system-line'
@@ -9,7 +8,7 @@ import { postSystemLine } from '@/lib/system-line'
 // through reward_grants (UNIQUE rule_key + profile_id), so both onboarding paths
 // can call this and a member is never paid twice. Best-effort; never blocks.
 export async function grantJoinZaps(memberId: string): Promise<void> {
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   try {
     const { error: claimErr } = await admin.from('reward_grants').insert({
       rule_key: 'join.welcome',
@@ -53,7 +52,7 @@ export async function postWelcomeForMember(
   handle: string,
 ): Promise<void> {
   // post_type 'system' (20260616100000) isn't in the generated types yet — untyped handle.
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
 
   await grantJoinZaps(memberId)
 

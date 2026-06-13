@@ -43,7 +43,7 @@ export interface ScoredEvent {
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** pgvector comes back over PostgREST as a "[a,b,c]" string. Tolerant parse. */

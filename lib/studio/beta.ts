@@ -2,7 +2,6 @@
 // source='beta_waitlist'; status is derived from consent_state + meta.
 // Server-only. `contacts` is untyped in generated types -> cast.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export type BetaStatus = 'pending' | 'confirmed' | 'invited' | 'unsubscribed'
@@ -26,7 +25,7 @@ function deriveStatus(consent: string | null, meta: Record<string, unknown> | nu
 }
 
 export async function listBetaSignups(): Promise<BetaSignup[]> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data } = await db
     .from('contacts')
     .select('id, email, display_name, consent_state, meta, created_at')
@@ -52,7 +51,7 @@ export async function listBetaSignups(): Promise<BetaSignup[]> {
 // admin can flush them manually if the cron isn't draining (e.g. CRON_SECRET
 // unset).
 export async function pendingEmailCount(): Promise<number> {
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { count } = await db
     .from('notification_queue')
     .select('id', { count: 'exact', head: true })

@@ -9,7 +9,6 @@ import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SeasonCreateForm } from './season-create'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 // The season calendar. Entity-Detail template (ADR-233 §3.4): the active season as
 // the entity context band, all seasons in a DataTable below. Status vocabulary via
@@ -41,7 +40,7 @@ export default async function AdminSeasonsPage() {
   const { webRole } = await requireAdmin('host', { staff: 'community' })
   const janitor = isJanitor(webRole)
 
-  const ub = createAdminClient() as unknown as SupabaseClient
+  const ub = createAdminClient()
   const { data: seasons } = await ub
     .from('seasons')
     .select('id, season_number, name, theme, starts_at, ends_at, status')

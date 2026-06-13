@@ -46,7 +46,7 @@ export function dedupeByHook(items: ContentDraftItem[], existingHooks: Iterable<
 }
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Propose Market-Read content drafts into the Action Queue (idempotent by hook). */

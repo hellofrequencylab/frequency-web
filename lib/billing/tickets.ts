@@ -33,7 +33,7 @@ export const TICKET_MAX_QTY = 10
 export type PricingMode = 'fixed' | 'free' | 'pwyc' | 'sliding_scale' | 'donation'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 /** Gross charge for a quantity of tickets at a unit price. Pure (no I/O). */
@@ -271,7 +271,7 @@ export async function hasTicket(eventId: string, profileId: string): Promise<boo
  *  RPC, so concurrent webhooks can't lose an increment (audit M1). */
 async function adjustTierSold(ticketTypeId: string, delta: number): Promise<void> {
   if (!ticketTypeId || delta === 0) return
-  await (db() as unknown as SupabaseClient).rpc('adjust_ticket_sold', {
+  await (db()).rpc('adjust_ticket_sold', {
     p_tier_id: ticketTypeId,
     p_delta: delta,
   })

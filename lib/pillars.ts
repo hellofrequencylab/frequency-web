@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMemberPractices } from '@/lib/practices'
 
@@ -23,7 +22,7 @@ export interface Pillar {
 
 /** The four pillars in display order. Small + static — cheap to read per request. */
 export async function getPillars(): Promise<Pillar[]> {
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { data } = await admin
     .from('pillars')
     .select('id, slug, name, description, accent, display_order')

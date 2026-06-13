@@ -4,7 +4,6 @@
 // confirmation page; POST = RFC 8058 one-click from the mailbox provider.
 
 import { NextResponse } from 'next/server'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyLeadUnsubToken } from '@/lib/connections/lead-unsub'
 
@@ -13,7 +12,7 @@ export const dynamic = 'force-dynamic'
 async function unsubscribe(contactId: string | null, token: string | null): Promise<boolean> {
   if (!contactId || !token || !verifyLeadUnsubToken(contactId, token)) return false
   try {
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
     await db
       .from('contacts')
       .update({ consent_state: 'unsubscribed', updated_at: new Date().toISOString() })

@@ -21,7 +21,7 @@ import { completeText } from '@/lib/ai/complete'
 import { withVoice } from '@/lib/ai/voice'
 
 function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 export interface VeraDispatch {
