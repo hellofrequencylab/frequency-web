@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -16,7 +16,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
   const admin = createAdminClient()
   // season_id / expires_at lag the generated Database types (repo pattern: untyped
   // handle until `supabase gen types` is re-run).
-  const db = admin as unknown as SupabaseClient
+  const db = admin
 
   const [{ data: itemRow }, { data: profile }, { data: spends }] = await Promise.all([
     db.from('store_items')
@@ -117,7 +117,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
     item_id: itemId,
     gems_spent: item.gem_cost,
     metadata: item.metadata ?? {},
-  })
+  } as Database['public']['Tables']['store_redemptions']['Insert'])
 
   if (error) return fail(error.message)
 

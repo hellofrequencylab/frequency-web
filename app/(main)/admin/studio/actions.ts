@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { authorizeAction } from '@/lib/admin/guard'
@@ -56,7 +56,7 @@ export async function revertStudioChange(logId: string): Promise<ActionResult<vo
     return fail('Not authorized.')
   }
 
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const { data: row } = await admin
     .from('studio_site_changes')
     .select('id, action_key, params, status')
@@ -105,7 +105,7 @@ async function logChange(
   detail: string,
 ): Promise<void> {
   try {
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
     await admin.from('studio_site_changes').insert({
       action_key: actionKey,
       params,
@@ -113,7 +113,7 @@ async function logChange(
       actor_id: actorId,
       status,
       detail: detail.slice(0, 500),
-    })
+    } as Database['public']['Tables']['studio_site_changes']['Insert'])
   } catch {
     /* audit is best-effort; never block the action */
   }

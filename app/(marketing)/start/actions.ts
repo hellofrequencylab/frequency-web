@@ -8,7 +8,7 @@
 // upsert in (marketing)/beta/actions.ts but does NOT send an email (no persona
 // nurture series exists yet — see ADR-125 follow-ups), so we never mis-mail.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Json } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuppressed } from '@/lib/suppression'
 import { resolveAcquisition } from '@/lib/attribution/server'
@@ -47,7 +47,7 @@ export async function captureLead(input: {
 
   // `contacts` isn't in the generated DB types yet (untyped view, repo convention —
   // see (marketing)/beta/actions.ts + lib/studio/contacts.ts). Cast to the generic.
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
   const nowIso = new Date().toISOString()
 
   const { data: existing } = await admin
@@ -66,7 +66,7 @@ export async function captureLead(input: {
     lead_flow: flow,
     persona_captured_at: nowIso,
     acquisition,
-  }
+  } as unknown as Json
 
   let contactId: string | null = existing?.id ?? null
   try {

@@ -33,7 +33,7 @@ import { generatePosterReviews, resolveFlag } from '@/lib/ai/poster-observer'
 import { AiUnavailableError } from '@/lib/ai/complete'
 
 function ub(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 async function requireCurator() {
@@ -138,10 +138,13 @@ export async function setAllPracticeFlagsAction(
   }
   if (ids.length === 0) return ok()
   try {
-    const admin = createAdminClient() as unknown as SupabaseClient
+    const admin = createAdminClient()
+    // Build the patch by branch (no computed key): the flag union isn't enforced at
+    // runtime, so a literal object per case avoids remote property injection (CodeQL).
+    const patch = flag === 'is_public' ? { is_public: value } : { is_template: value }
     const { error } = await admin
       .from('practices')
-      .update({ [flag]: value })
+      .update(patch)
       .in('id', ids.slice(0, 500))
     if (error) return fail(error.message)
   } catch (e) {

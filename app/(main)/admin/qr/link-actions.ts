@@ -19,7 +19,7 @@ import {
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { summarizePageScans, type ScanRow } from '@/lib/qr/analytics'
 import type { Json } from '@/lib/database.types'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
 export interface LinkInput {
   title: string
@@ -218,7 +218,7 @@ export async function createPageQr(
 
   const style = parseStyle(input.style) as unknown as Json
   // Untyped client so we can write the not-yet-typed `page_path` column.
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   for (let attempt = 0; attempt < 6; attempt++) {
     const slug = generateSlug()
@@ -232,7 +232,7 @@ export async function createPageQr(
         page_path: pagePath,
         style,
         created_by: profileId,
-      } as Record<string, unknown>)
+      } as Database['public']['Tables']['qr_codes']['Insert'])
       .select('id, slug')
       .single()
     if (!error && data) {
@@ -252,7 +252,7 @@ export async function listPageQrCodes(pagePath: string): Promise<ActionResult<Pa
   const path = pagePath.trim()
   if (!path.startsWith('/')) return ok<PageQrCode[]>([])
 
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data, error } = await db
     .from('qr_codes')
     .select('id, slug, title, style, scan_count')
@@ -299,7 +299,7 @@ export async function getPageQrScanStats(pagePath: string): Promise<ActionResult
   if (!path.startsWith('/')) return ok(EMPTY_PAGE_QR_STATS)
 
   // Untyped client: filtering on the not-yet-typed `page_path` column (ADR-179).
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
   const { data: codes, error } = await db
     .from('qr_codes')
     .select('id, slug, title')
