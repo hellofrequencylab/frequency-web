@@ -27,6 +27,7 @@ import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
 import { platformFeeCents } from './fees'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { recordFinancialTransaction } from '@/lib/finance/record'
 
 export const TICKET_MAX_QTY = 10
 
@@ -293,10 +294,33 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
     .update({ status: 'succeeded', succeeded_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
-    .select('id, ticket_type_id, qty')
-  const rows = (updated ?? []) as { id: string; ticket_type_id: string | null; qty: number }[]
+    .select('id, ticket_type_id, qty, entity_id, platform_fee_cents, buyer_profile_id, currency')
+  const rows = (updated ?? []) as {
+    id: string
+    ticket_type_id: string | null
+    qty: number
+    entity_id: string
+    platform_fee_cents: number
+    buyer_profile_id: string | null
+    currency: string
+  }[]
   for (const row of rows) {
     if (row.ticket_type_id) await adjustTierSold(row.ticket_type_id, row.qty ?? 1)
+    // Record the ENTITY's revenue on the partitioned ledger (ADR-246). A ticket is a
+    // Connect destination charge: the gross goes to the host's account; the platform's
+    // (entity's) revenue is the application fee. Idempotent per ticket; best-effort so a
+    // ledger hiccup never fails the webhook (Stripe would redeliver and we'd dedupe).
+    await recordFinancialTransaction({
+      entityId: row.entity_id,
+      revenueType: 'commerce',
+      amountCents: row.platform_fee_cents ?? 0,
+      profileId: row.buyer_profile_id,
+      currency: row.currency,
+      stripePaymentIntentId: paymentIntentId,
+      sourceTable: 'event_tickets',
+      sourceId: row.id,
+      idempotencyKey: `ticket:${row.id}`,
+    }).catch(() => {})
   }
 }
 
@@ -387,10 +411,31 @@ export async function recordTicketRefund(paymentIntentId: string | null): Promis
     .update({ status: 'refunded', refunded_at: new Date().toISOString() })
     .eq('stripe_payment_intent_id', paymentIntentId)
     .eq('status', 'succeeded')
-    .select('id, ticket_type_id, qty')
-  const rows = (updated ?? []) as { id: string; ticket_type_id: string | null; qty: number }[]
+    .select('id, ticket_type_id, qty, entity_id, platform_fee_cents, buyer_profile_id, currency')
+  const rows = (updated ?? []) as {
+    id: string
+    ticket_type_id: string | null
+    qty: number
+    entity_id: string
+    platform_fee_cents: number
+    buyer_profile_id: string | null
+    currency: string
+  }[]
   for (const row of rows) {
     if (row.ticket_type_id) await adjustTierSold(row.ticket_type_id, -(row.qty ?? 1))
+    // Reverse the entity's recorded revenue (a negative 'refund' row). Idempotent per
+    // ticket; best-effort. Keeps the ledger an accurate net of the partition.
+    await recordFinancialTransaction({
+      entityId: row.entity_id,
+      revenueType: 'refund',
+      amountCents: -(row.platform_fee_cents ?? 0),
+      profileId: row.buyer_profile_id,
+      currency: row.currency,
+      stripePaymentIntentId: paymentIntentId,
+      sourceTable: 'event_tickets',
+      sourceId: row.id,
+      idempotencyKey: `ticket-refund:${row.id}`,
+    }).catch(() => {})
   }
 }
 
