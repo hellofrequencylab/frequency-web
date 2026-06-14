@@ -293,6 +293,16 @@
 >    `/sync-docs`, and re-run the Supabase security + performance advisors after the migrations apply.
 > Post-Pro build backlog (small, unblocked once typed): rotating/Wallet ticket passes, recurring-event
 > RRULE, host analytics depth, Typesense only if typo-tolerant search becomes a growth lever.
+>
+> **FINALIZE STATUS (2026-06-14):** the typed cutover was **attempted and is on hold** — Supabase
+> branching returned `PaymentRequiredException` (Pro not yet active on the org), and the founder chose to
+> **wait for Pro** rather than apply to prod directly. No prod changes were made; no branch/cost incurred.
+> Events remains coded-but-not-live. **Finalize runbook (run the moment Pro is active):**
+> ① `create_branch` (events-finalize) → ② `apply_migration` the 8 files `20260625000000`–`20260626010000`
+> in order on the branch → ③ `generate_typescript_types` from the branch → overwrite `lib/database.types.ts`
+> → ④ remove the temp untyped-handle/`as unknown as` casts in `lib/events/*` (+ `components/feed/feed-list.tsx`,
+> the `manage/` reads) now that the columns are typed → ⑤ `pnpm tsc`/`lint`/`test`, then `merge_branch`
+> to prod (go-live), `get_advisors` (security + perf), `delete_branch`; finally `/sync-docs` for member help.
 
 ---
 
