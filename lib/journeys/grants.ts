@@ -1,7 +1,7 @@
 // Journeys v2 — milestone reward grants (ADR-252, J3, JOURNEYS.md §4). Given the reward events
 // the engine produced (rewards.ts) on a lesson completion, grant the Gems for each phase/journey
 // milestone EXACTLY ONCE via the same claim-then-pay reward_grants idempotency the rest of the
-// journey system uses (lib/journey-grants.ts). Gems are the on-platform reward; the celebration
+// journey system uses. Gems are the on-platform reward; the celebration
 // (the player) is the trophy moment. Server-only; best-effort (never blocks the check-off).
 
 import { createAdminClient } from '@/lib/supabase/admin'

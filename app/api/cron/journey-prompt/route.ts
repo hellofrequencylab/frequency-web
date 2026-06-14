@@ -1,9 +1,9 @@
 /**
  * Daily Journey-prompt cron (docs/JOURNEYS.md §15 P6). Runs once daily via Vercel Cron. For
- * every member with an active Journey adoption and a not-yet-on-track next step, sends the one
- * prompt naming the next thing to do: an in-app notification (defaults on) plus a push for
- * members who opted in (gated by their preferences, lifecycle category). Voice canon: a fact
- * plus an invitation, never guilt.
+ * every member enrolled in a Journey with a not-yet-done next lesson, sends the one prompt naming
+ * the next thing to do: an in-app notification (defaults on) plus a push for members who opted in
+ * (gated by their preferences, lifecycle category). Voice canon: a fact plus an invitation, never
+ * guilt. (v2; ADR-253 — candidates come from journey_enrollments, not the retired adoptions clock.)
  *
  * Once-per-day idempotency rides the daily schedule (the cron fires once a day); the push tag is
  * date-stamped so a device shows at most one per day. Timezone-aware local morning is a follow-up
@@ -17,6 +17,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { sendPushToProfile } from '@/lib/push'
 import { getDailyJourneyPrompt, formatJourneyPrompt } from '@/lib/journey-prompt'
+import { listEnrolledMemberIds } from '@/lib/journeys/progress'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -28,12 +29,8 @@ export async function GET(req: NextRequest) {
   const admin = createAdminClient()
   const day = new Date().toISOString().slice(0, 10)
 
-  // Every member with at least one active Journey adoption.
-  const { data: adoptions } = await admin
-    .from('journey_plan_adoptions')
-    .select('profile_id')
-    .eq('active', true)
-  const memberIds = [...new Set(((adoptions ?? []) as { profile_id: string }[]).map((a) => a.profile_id))]
+  // Every member with at least one active (not-yet-completed) Journey enrollment.
+  const memberIds = await listEnrolledMemberIds()
 
   let inapp = 0
   let push = 0

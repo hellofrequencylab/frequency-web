@@ -270,7 +270,7 @@ Status legend: 🔴 not started · ⏳ partial · ✅ done. Each row is one PR-s
 | 3 | **Module layer in the editor** | The block model + player support Program → Phase → **Module** → Lesson, but the editor only authors Phase → Lesson (modules are skipped, not creatable). | Lets long Journeys group lessons within a phase. | ✅ | M |
 | 4 | **AI outline assist** | The "blank-with-prompts" generate-an-outline path from J4 isn't built; templates exist, AI generation does not. | Kills the blank-page problem for authors (highest-leverage authoring feature). | ✅ | M |
 | 5 | **Meetups wiring** | `journey_runs.kickoff_event_id` exists but isn't set/used in a flow; no per-phase check-in event links (a `run_phase_events` map) and no built-in "schedule the kickoff" affordance. | Weekly live touchpoints are a large, evidence-backed completion lift; the vision calls them "built-in & encouraged". | ⏳ | M |
-| 6 | **Cleanup / tech-debt** | Drop the deprecated season columns (`season_locked`, `min_practices_per_day`, `target_weeks`) + retire `journey_plan_adoptions` once nothing reads them; regenerate `lib/database.types.ts` so `journey_runs`/`journey_enrollments`/new plan columns are typed (v2 code uses untyped handles today); give `docs/NAMING.md` a v2 pass (it still says "Co-op = 3+ on same Journey", predates ADR-252). | Keeps the schema + canon honest; removes the untyped-handle workaround. | ⏳ | S |
+| 6 | **Cleanup / tech-debt** | ✅ Legacy season reward/progress engine retired (ADR-253): grant firing removed from `lib/practices.ts`, displays repointed to the v2 reader `lib/journeys/progress.ts`, the engine libs deleted, the season columns (`season_locked` / `min_practices_per_day` / `target_weeks`) dropped by migration `20260624000000` (applies on merge), `lib/database.types.ts` regenerated, and the `runs.ts`/`store.ts`/editor admin handles switched to typed. NAMING v2 pass ✅ done (ADR-252). **Remaining:** retire `journey_plan_adoptions` (still referenced by content-signals, coop-pulse, circles/admin-actions, the prompt cron, demo engine — a separate later assessment). | Keeps the schema + canon honest; removes the untyped-handle workaround. | ⏳ | S |
 | 7 | **Polish** | Settings-card visuals (accent dots read as a single faint ring), spacing/empty-state density, and the "Untitled" empty-title lesson UX (prompt or placeholder instead of a bare "Untitled"). | First-impression quality of the editor + player. | ✅ | S |
 
 Recommended order: **#1** (the cadence is the product), then **#7** (cheap first-impression win), then #2 / #4 (engagement + authoring), then #3 / #5, with #6 folded in opportunistically.
@@ -281,15 +281,19 @@ Recommended order: **#1** (the cadence is the product), then **#7** (cheap first
 > header hero, readable measure). Plus the foundation: `docs/JOURNEYS-DESIGN.md` (cited research spec), the
 > official Journeys loaded with real curriculum + covers, and the interior-page redesign onto the kit.
 >
-> **#6 is partly done and partly blocked.** The `docs/NAMING.md` v2 pass is ✅ done (Co-op reframed to the
-> cohort **Run**, ADR-252). The **season-column drop is BLOCKED**: `season_locked` /
-> `min_practices_per_day` / `target_weeks` are still read by the **live legacy season reward + progress
-> code** (`lib/journey-rewards.ts`, `lib/journey-coop-rewards.ts`, `lib/journey-quest-clock.ts`,
-> `lib/journey-grants.ts`, and the season-completion derivation in `lib/journey-plans.ts` that the right
-> rail calls). Per the backlog's own "once nothing reads them" gate, the columns can only be dropped after
-> that season model is retired and replaced by the v2 phase/program completion — a separate,
-> behaviour-affecting refactor (touches reward grants), not a mechanical cleanup. The `lib/database.types.ts`
-> regen is deferred with it: the v2 tables (`journey_runs`/`journey_enrollments`) use deliberately untyped
-> admin handles, so the regen only pays off alongside switching those handles to typed — also its own
-> refactor. **Remaining:** retire the legacy season model → then drop the columns + regen types; plus the
-> per-phase check-in links (`run_phase_events`) from #5 (needs a new table).
+> **#6 (2026-06-14, ADR-253):** ✅ **The legacy season reward/progress engine is retired.** Daily practice
+> logs no longer grant journey/co-op/season rewards (v2 rewards come solely from completing lessons/phases
+> in a Run; practices still pay their own Zaps per ADR-139). The work, in five verified steps: (1) removed
+> the `fireJourneyRewardsForLog` + `fireCoopRewardsForLog` firing from `lib/practices.ts` (preserving the
+> Surprises/Quiet-Ones toast bonuses); (2) built the v2 progress reader `lib/journeys/progress.ts` and
+> repointed every member-facing display (right rail, `/crew/journey`, member-stage signals + feed board,
+> vera-dispatch, the journey-prompt cron) off the season derivation onto enrolled-Journey phase/program
+> completion + next-lesson; (3) deleted the engine libs (`journey-rewards`, `journey-coop-rewards`,
+> `journey-grants`, `journey-quest-clock`, `journey-coop` + tests), the season derivation/fields/patch-writers
+> in `lib/journey-plans.ts`, the `setJourneyCompletionRules` action, and the `'completion-rule'` widget;
+> (4) authored migration `20260624000000` dropping `season_locked` / `min_practices_per_day` /
+> `target_weeks` (applies on merge); (5) regenerated `lib/database.types.ts` and switched the `runs.ts` /
+> `store.ts` / journey-editor admin handles to typed. The `docs/NAMING.md` v2 pass was already ✅ done
+> (ADR-252). **Remaining:** retire `journey_plan_adoptions` (deliberately kept — still referenced by
+> content-signals, coop-pulse, circles/admin-actions, the prompt cron, the demo engine); plus the per-phase
+> check-in links (`run_phase_events`) from #5 (needs a new table).

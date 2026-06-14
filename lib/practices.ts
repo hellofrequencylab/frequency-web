@@ -15,7 +15,6 @@ import { track } from '@/lib/analytics/track'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordStreakActivity, processGamificationEvent } from '@/lib/achievements'
 import { recordPracticeStreak } from '@/lib/practice-streak'
-import type { JourneyRewardResult } from '@/lib/journey-grants'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -700,12 +699,22 @@ export async function getPracticesToLogToday(profileId: string): Promise<Practic
 
 // --- The North-Star emitter ----------------------------------------------
 
+/** Generic bonus container plumbed into the practice-log toast. Journey/season rewards
+ *  were retired (ADR-253) — daily logs no longer grant journey/co-op rewards — so this now
+ *  carries only the surviving daily-loop bonuses (Surprises + The Quiet Ones). Kept under the
+ *  `journey` key for a stable toast/action contract (on-air/actions → reveal.tsx). */
+export interface LogBonusResult {
+  bonuses: { label: string; kind: 'zaps' | 'gems'; amount: number }[]
+  zaps: number
+  gems: number
+}
+
 export interface LogPracticeResult {
   /** false = already logged this practice today (idempotent). */
   logged: boolean
   zapsAwarded: number
-  /** Journey bonuses this log unlocked (Full Day / Weekly Rhythm / completion), for the toast. */
-  journey?: JourneyRewardResult
+  /** Daily-loop bonuses this log unlocked (Surprises / The Quiet Ones), for the toast. */
+  journey?: LogBonusResult
   /** First log after a 7+ day gap: render the warm re-entry state (one line —
    *  good to see you + one small next step). NEVER broken-streak shame UI. */
   welcomeBack?: boolean
@@ -818,38 +827,16 @@ export async function logPractice(input: {
   // break the log (processGamificationEvent already swallows internally too).
   await processGamificationEvent({ type: 'practice_log', profileId }).catch(() => {})
 
-  // Journey rewards (ADR-200; docs/JOURNEYS.md §6): a fresh log may complete the day
-  // (Full Day), the week (Weekly Rhythm), or the Journey itself. Best-effort + dynamic
-  // import — neither a reward failure nor the journey layer may break the practice log.
-  let journey: JourneyRewardResult | undefined
-  try {
-    const { fireJourneyRewardsForLog } = await import('@/lib/journey-grants')
-    journey = await fireJourneyRewardsForLog(profileId, day)
-  } catch {
-    // never let journey reward firing break the log
-  }
-
-  // Co-op rewards (ADR-199): a fresh log may push the member's circle Co-op into rhythm for the
-  // week, or over the line to a shared completion. Best-effort + dynamic import; merged into the
-  // journey result for the toast.
-  try {
-    const { fireCoopRewardsForLog } = await import('@/lib/journey-coop-rewards')
-    const coop = await fireCoopRewardsForLog(profileId, day)
-    if (coop.bonuses.length > 0) {
-      const base = journey ?? { bonuses: [], zaps: 0, gems: 0 }
-      journey = {
-        bonuses: [...base.bonuses, ...coop.bonuses],
-        zaps: base.zaps + coop.zaps,
-        gems: base.gems + coop.gems,
-      }
-    }
-  } catch {
-    // never let co-op reward firing break the log
-  }
+  // Daily-loop bonus container for the toast. Journey/season + co-op rewards were retired
+  // (ADR-253): a daily practice log no longer grants journey rewards (journey rewards now come
+  // solely from completing lessons/phases in a Run; practices still pay their own Zaps per
+  // ADR-139). The blocks below populate this with the surviving daily-loop bonuses only —
+  // Surprises and The Quiet Ones.
+  let journey: LogBonusResult | undefined
 
   // Surprises (ADR-210): a variable, unannounced bonus on the daily loop — at most
   // once per day, gems-only so a lucky roll never distorts season rank. Best-effort
-  // + dynamic import; merged into the same toast as the journey/co-op bonuses.
+  // + dynamic import; merged into the toast bonus container.
   try {
     const { fireSurpriseForLog } = await import('@/lib/surprises')
     const surprise = await fireSurpriseForLog(profileId, day)

@@ -1,23 +1,20 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Compass, Check, ArrowRight, Users } from 'lucide-react'
+import { Compass, ArrowRight, Users, CheckCircle2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { IndexTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
-import { LogPracticeButton } from '@/components/practice/log-practice-button'
-import { getActiveJourneyProgress, planPillarMap } from '@/lib/journey-plans'
-import { getPillars, pillarsById } from '@/lib/pillars'
+import { getMemberJourneyProgress } from '@/lib/journeys/progress'
 import { rankForZaps } from '@/lib/season-ranks'
 
-// "Your Journey" — the Active-Journey progress tab of the Dashboard. Shows the
-// member's adopted seasonal journey(s) as an ordered checklist across the four
-// domains, with the current step front-and-centre, and ties the practice log to
-// the game: logging a journey's practice is what advances it AND earns the
-// zaps / rank / streak shown up top. Derived progress, no schema (see
-// getActiveJourneyProgress).
+// "Your Journey" — the member's enrolled Journeys with v2 phase/program completion (ADR-253;
+// docs/JOURNEYS.md §4). Replaces the retired season qualifying-weeks checklist: completion now
+// derives from finished lessons/phases in a Run (journey_lesson_progress + the block tree), not
+// a daily-cadence clock. Logging earns the Zaps/rank/streak shown up top; finishing lessons in
+// the player advances the Journey.
 export default async function JourneyPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -37,16 +34,13 @@ export default async function JourneyPage() {
 
   const rank = rankForZaps(seasonZaps)
 
-  const [journeys, pillars] = await Promise.all([
-    getActiveJourneyProgress(profile.id, { withCompanions: true }),
-    getPillars(),
-  ])
-  const byId = pillarsById(pillars)
+  // All enrolled Journeys (including finished ones, so a completed Journey still shows its trophy).
+  const journeys = await getMemberJourneyProgress(profile.id, { activeOnly: false })
 
   return (
     <IndexTemplate
       title="Your Journey"
-      description="Your season's practices across Mind · Body · Spirit · Expression. Keep each one on its cadence this week. Logging is the one move that advances your Journey and earns the rank, streak, and Gems."
+      description="The guided programs you're moving through, solo or with your Circle. Finish each phase's lessons to advance, earn your trophies, and complete the program."
     >
       {/* Your standing — the four counts the practice log drives (the one way a
           member's standing renders, §2). */}
@@ -64,7 +58,7 @@ export default async function JourneyPage() {
         <EmptyState
           icon={Compass}
           title="You haven't started a Journey yet"
-          description="Journeys are seasonal sets of practices you move through, solo or with your circle. Adopt one to fill your days with something for each part of a whole life."
+          description="Journeys are guided programs your Circle runs together — bite-sized lessons in weekly phases. Enroll in one to start moving through it."
           action={
             <Link
               href="/journeys"
@@ -75,93 +69,48 @@ export default async function JourneyPage() {
           }
         />
       ) : (
-        <div className="space-y-10">
+        <div className="space-y-6">
           {journeys.map((j) => (
-            <section key={j.plan.id}>
+            <section key={j.planId} className="rounded-2xl border border-border bg-surface p-5">
               <SectionHeader
-                title={j.plan.title}
+                title={j.title}
                 action={
                   <span className="text-xs font-semibold tabular-nums text-subtle">
-                    {j.done} / {j.total} on track · {j.percent}%
+                    {j.complete ? 'Complete' : `${j.percent}%`}
                   </span>
                 }
               />
-              {j.plan.summary && <p className="-mt-2 mb-3 text-sm text-muted">{j.plan.summary}</p>}
 
-              {/* Doing it with your circle — companions on the same journey (Path A). */}
-              {j.circleCompanions > 0 && (
+              {j.inCohort && (
                 <p className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-signal-bg px-2 py-1 text-xs font-medium text-signal-strong">
                   <Users className="h-3.5 w-3.5" />
-                  {j.circleCompanions} in your circle doing this too
+                  Running with your Circle
                 </p>
               )}
 
-              {/* Progress bar */}
-              <div className="mb-4 h-2 overflow-hidden rounded-full bg-surface-elevated">
+              {/* Program progress bar. */}
+              <div className="mb-3 h-2 overflow-hidden rounded-full bg-surface-elevated">
                 <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${j.percent}%` }} />
               </div>
 
-              {/* Pillar coverage — the four domains this journey touches. */}
-              <div className="mb-5 flex flex-wrap gap-2">
-                {planPillarMap(j.items).map((slice) => {
-                  const p = slice.domainId ? byId.get(slice.domainId) : null
-                  return (
-                    <span
-                      key={slice.domainId ?? 'none'}
-                      className="inline-flex items-center gap-1.5 rounded-md bg-surface-elevated px-2 py-1 text-xs font-medium text-muted"
-                    >
-                      {p?.accent ? (
-                        <span className="h-2 w-2 rounded-full" style={{ background: p.accent }} />
-                      ) : (
-                        <span className="h-2 w-2 rounded-full bg-border-strong" />
-                      )}
-                      {p?.name ?? 'Unsorted'} · {slice.count}
-                    </span>
-                  )
-                })}
-              </div>
+              {j.phasesTotal > 0 && (
+                <p className="mb-4 text-xs font-medium text-muted">
+                  {j.phasesComplete} of {j.phasesTotal} {j.phasesTotal === 1 ? 'phase' : 'phases'} complete
+                </p>
+              )}
 
-              {/* The ordered steps — cadence met ✓ this week, the current step highlighted. */}
-              <ol className="space-y-2">
-                {j.items.map((it, idx) => {
-                  const isNext = j.nextItem?.id === it.id
-                  return (
-                    <li
-                      key={it.id}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
-                        isNext ? 'bg-primary-bg' : 'bg-surface-elevated/60'
-                      }`}
-                    >
-                      <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-2xs font-bold ${
-                          it.met
-                            ? 'bg-success text-on-primary'
-                            : isNext
-                              ? 'bg-primary text-on-primary'
-                              : 'bg-surface text-subtle ring-1 ring-border'
-                        }`}
-                      >
-                        {it.met ? <Check className="h-3.5 w-3.5" /> : idx + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className={`truncate text-sm font-medium ${it.met ? 'text-muted' : 'text-text'}`}>
-                          {it.practice?.title ?? 'Practice'}
-                        </p>
-                        <p className="text-xs">
-                          {it.met ? (
-                            <span className="font-semibold text-success">On track · {it.loggedThisWeek}/{it.target} this week</span>
-                          ) : isNext ? (
-                            <span className="font-semibold text-primary-strong">Your next step · {it.loggedThisWeek}/{it.target} this week</span>
-                          ) : (
-                            <span className="text-subtle">{it.loggedThisWeek}/{it.target} this week</span>
-                          )}
-                        </p>
-                      </div>
-                      {!it.met && <LogPracticeButton practiceId={it.practice_id} label="Log" />}
-                    </li>
-                  )
-                })}
-              </ol>
+              {j.complete ? (
+                <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+                  <CheckCircle2 className="h-4 w-4" /> You finished this Journey
+                </p>
+              ) : (
+                <Link
+                  href={j.nextLesson?.href ?? `/journeys/${j.slug}/learn`}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                >
+                  {j.nextLesson ? `Continue: ${j.nextLesson.title}` : 'Open Journey'} <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
             </section>
           ))}
         </div>

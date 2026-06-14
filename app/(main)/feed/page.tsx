@@ -141,15 +141,15 @@ export default async function FeedPage({
     ? await getMemberPillarBalance(myProfileId)
     : undefined
 
-  // Top active journey → a slim "current step" line on the graduated board.
+  // Top enrolled journey → a slim "current step" line on the graduated board (v2; ADR-253).
   const journeyProgress = progress?.journeys ?? []
   const activeJourney = journeyProgress[0]
     ? {
-        title: journeyProgress[0].plan.title,
+        title: journeyProgress[0].title,
         href: '/crew/journey',
-        done: journeyProgress[0].done,
-        total: journeyProgress[0].total,
-        nextStepTitle: journeyProgress[0].nextItem?.practice?.title ?? null,
+        done: journeyProgress[0].phasesComplete,
+        total: journeyProgress[0].phasesTotal,
+        nextStepTitle: journeyProgress[0].nextLesson?.title ?? null,
       }
     : undefined
 

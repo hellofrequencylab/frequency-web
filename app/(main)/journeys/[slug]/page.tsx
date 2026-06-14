@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { Globe, Lock, Link2, Pencil, Sparkles, Flame } from 'lucide-react'
+import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
@@ -9,15 +9,19 @@ import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { adoptPlanAction, forkPlanAction } from '../actions'
-import { enabledWidgets, type WidgetId } from '@/lib/journey-page-config'
+import { enabledWidgets } from '@/lib/journey-page-config'
 import {
   StoryBlock,
+  OutcomesBlock,
   PathBlock,
   PillarBalanceBlock,
-  SocialProofBlock,
-  RewardPreviewBlock,
-  CompletionRuleBlock,
-  AdoptRemixBlock,
+  InstructorBlock,
+  JourneyFaq,
+  JourneyStatChips,
+  AtAGlanceCard,
+  EnrollCta,
+  journeyFacts,
+  primaryPillar,
 } from '@/components/journey/discovery-widgets'
 
 export const dynamic = 'force-dynamic'
@@ -25,11 +29,12 @@ export const dynamic = 'force-dynamic'
 // The one Journey page (docs/JOURNEYS.md §10). It flips between three faces:
 //   • AUTHOR    → redirects to the v2 editor at /journeys/[slug]/edit (identity + delivery +
 //                 publish settings and the Phase → Module → Lesson structure tree, ADR-252 J5).
-//   • DISCOVERY → not adopted / visitor: the story, the path, pillar balance, social proof,
-//                 reward + completion rule, adopt/remix CTA.
-//   • ACTIVE    → adopted: redirects to the v2 lesson player at /journeys/[slug]/learn
-//                 (ADR-252, J5 cutover). The legacy season course-player + Studio builder are retired.
-// Discovery composes widgets in the order resolved by normalizePageConfig(page_config, mode).
+//   • DISCOVERY → not enrolled / visitor: an info-rich header (badge + Pillar + stat chips +
+//                 a persistent CTA), a two-column body (story · outcomes · the path accordion ·
+//                 pillar balance · instructor · FAQ) and an interior sticky "At a glance" rail.
+//   • ACTIVE    → enrolled: redirects to the v2 lesson player at /journeys/[slug]/learn.
+// The retired season engine + the bottom CTA/reward dump are gone; the facts ride the header
+// and the rail (no bottom dump). Voice is v2 (Run / Phase / enroll), no em dashes.
 
 const VISIBILITY = {
   public: { Icon: Globe, label: 'Public' },
@@ -50,7 +55,7 @@ export async function generateMetadata({
   const { plan } = loaded
   const title = plan.title
   const description =
-    plan.summary ?? 'A seasonal set of practices to move through, on your own or with your Circle.'
+    plan.summary ?? 'A guided set of phases to move through, on your own or with your Circle.'
   return {
     title,
     description,
@@ -83,7 +88,7 @@ export default async function JourneyPlanPage({
   // Single data load for the read-only page (the contract).
   const view = await getJourneyView(profileId, slug)
   if (!view) notFound()
-  const { plan, items, adopted, progress } = view
+  const { plan, items, adopted } = view
 
   const isAuthor = !!profileId && plan.author_id === profileId
   if (!isAuthor && plan.visibility === 'private') notFound()
@@ -98,14 +103,31 @@ export default async function JourneyPlanPage({
   const accent = plan.accent
   const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
 
-  // ACTIVE → the v2 lesson player (ADR-252, J5). An adopted learner goes straight to the
+  // ACTIVE → the v2 lesson player (ADR-252, J5). An enrolled learner goes straight to the
   // player; a previewing author stays on the discovery view.
-  if (adopted && progress && !preview) redirect(`/journeys/${plan.slug}/learn`)
+  if (adopted && !preview) redirect(`/journeys/${plan.slug}/learn`)
 
-  // Only the DISCOVERY face composes a page_config widget stack.
-  const discoveryWidgets = enabledWidgets(plan.page_config, 'discovery').map((w) => w.id)
+  // Derive the at-a-glance facts ONCE; the header chips, the path accordion, and the rail
+  // "what's included" list all read from this (so the numbers can never drift).
+  const facts = journeyFacts(items)
+  const topPillar = primaryPillar(items, byId)
+  const canStart = facts.lessonCount > 0
 
-  const header = (
+  // Which discovery widgets the author enabled (still honours page_config order/toggles for
+  // the optional blocks: story, pillar balance, social proof are opt-out-able).
+  const enabled = new Set(enabledWidgets(plan.page_config, 'discovery').map((w) => w.id))
+
+  const enrollProps = {
+    planId: plan.id,
+    slug: plan.slug,
+    enrolled: adopted,
+    canStart,
+    isAuthor,
+    enrollAction: adoptPlanAction,
+    forkAction: forkPlanAction,
+  }
+
+  const page = (
     <DetailTemplate
       hero={
         plan.cover_image ? (
@@ -125,8 +147,8 @@ export default async function JourneyPlanPage({
         </span>
       }
       subtitle={
-        <span className="block space-y-1.5">
-          {plan.summary && <span className="block leading-relaxed">{plan.summary}</span>}
+        <span className="block space-y-2">
+          {plan.summary && <span className="block leading-relaxed text-text">{plan.summary}</span>}
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
             {author && (
               <Link
@@ -143,6 +165,18 @@ export default async function JourneyPlanPage({
               <Flame className="h-3 w-3 shrink-0" aria-hidden />
               Keep your streak in the Quest
             </Link>
+            <a
+              href="#the-path"
+              className="inline-flex items-center gap-1 text-primary-strong hover:underline"
+            >
+              <Layers className="h-3 w-3 shrink-0" aria-hidden />
+              The path
+            </a>
+          </span>
+          {/* Stat-chip row — quiet, tokenized facts (gamified-stat law: only gems reads
+              as a reward; the rest is calm context). */}
+          <span className="block pt-0.5">
+            <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />
           </span>
         </span>
       }
@@ -156,20 +190,57 @@ export default async function JourneyPlanPage({
           <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
             <vis.Icon className="h-3 w-3" /> {vis.label}
           </span>
+          {topPillar && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+              {topPillar.name}
+            </span>
+          )}
         </span>
       }
+      actions={
+        <EnrollCta {...enrollProps} layout="inline" />
+      }
     >
-      {/* Reading content at a comfortable measure (docs/JOURNEYS-DESIGN.md §1, rule 2). */}
-      <div className="max-w-2xl">
-        <DiscoveryMode
-          widgets={discoveryWidgets}
-          plan={plan}
-          items={items}
-          pillars={pillars}
-          pillarsById={byId}
-          adopted={adopted}
-          isAuthor={isAuthor}
-        />
+      {/* Two-column body: a readable main column + an interior STICKY rail (distinct from
+          the global app rail). Below lg the rail stacks RIGHT AFTER the header so the
+          at-a-glance/CTA stays above the long curriculum on mobile. */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
+        {/* Interior rail — first in source order so it leads on mobile; pinned right on lg+. */}
+        <aside className="mb-6 lg:order-2 lg:mb-0 lg:sticky lg:top-6 lg:self-start">
+          <AtAGlanceCard
+            plan={plan}
+            slug={plan.slug}
+            facts={facts}
+            enrolled={adopted}
+            canStart={canStart}
+            isAuthor={isAuthor}
+            progress={null}
+            enrollAction={adoptPlanAction}
+            forkAction={forkPlanAction}
+          />
+        </aside>
+
+        {/* Main column — capped to a comfortable reading measure. */}
+        <div className="min-w-0 max-w-2xl space-y-8 lg:order-1">
+          {enabled.has('story') && <StoryBlock intro={plan.intro} />}
+          <OutcomesBlock summary={plan.summary} />
+          <div id="the-path" className="scroll-mt-6">
+            <PathBlock items={items} pillarsById={byId} accent={accent} facts={facts} />
+          </div>
+          {enabled.has('pillar-balance') && <PillarBalanceBlock items={items} pillars={pillars} />}
+          <InstructorBlock author={author} />
+          <JourneyFaq plan={plan} />
+
+          {/* The repeat CTA closes the page (no bottom dump of rewards/rules). */}
+          {!isAuthor && (
+            <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+              <p className="mb-3 text-sm font-semibold text-text">
+                Start it solo, or run it with your Circle.
+              </p>
+              <EnrollCta {...enrollProps} layout="inline" />
+            </div>
+          )}
+        </div>
       </div>
     </DetailTemplate>
   )
@@ -188,68 +259,7 @@ export default async function JourneyPlanPage({
         </div>
       )}
 
-      {header}
+      {page}
     </>
-  )
-}
-
-// ── Discovery mode — composed per the resolved widget order ───────────────────
-function DiscoveryMode({
-  widgets,
-  plan,
-  items,
-  pillars,
-  pillarsById,
-  adopted,
-  isAuthor,
-}: {
-  widgets: WidgetId[]
-  plan: import('@/lib/journey-plans').JourneyPlan
-  items: import('@/lib/journey-plans').JourneyPlanItem[]
-  pillars: import('@/lib/pillars').Pillar[]
-  pillarsById: Map<string, import('@/lib/pillars').Pillar>
-  adopted: boolean
-  isAuthor: boolean
-}) {
-  const accent = plan.accent
-
-  const node = (id: WidgetId): React.ReactNode => {
-    switch (id) {
-      case 'story':
-        return <StoryBlock intro={plan.intro} />
-      case 'path':
-        return <PathBlock items={items} pillarsById={pillarsById} accent={accent} />
-      case 'pillar-balance':
-        return <PillarBalanceBlock items={items} pillars={pillars} />
-      case 'social-proof':
-        return <SocialProofBlock count={plan.adopt_count} />
-      case 'reward-preview':
-        return <RewardPreviewBlock gems={plan.completion_gems} />
-      case 'completion-rule':
-        return <CompletionRuleBlock targetWeeks={plan.target_weeks} />
-      default:
-        return null
-    }
-  }
-
-  return (
-    <div className="space-y-5">
-      {widgets.map((id) => {
-        const el = node(id)
-        return el ? <div key={id}>{el}</div> : null
-      })}
-
-      {/* Adopt / Remix — the discovery CTA (shown to everyone but the author's own editor). */}
-      {!isAuthor && (
-        <AdoptRemixBlock
-          planId={plan.id}
-          slug={plan.slug}
-          adopted={adopted}
-          canAdopt={items.length > 0}
-          adoptAction={adoptPlanAction}
-          forkAction={forkPlanAction}
-        />
-      )}
-    </div>
   )
 }

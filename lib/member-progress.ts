@@ -8,7 +8,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getOnboardingStatus, type OnboardingStatus } from '@/lib/onboarding/status'
 import { getPracticeStreak, type PracticeStreakState } from '@/lib/practice-streak'
-import { getActiveJourneyProgress, type JourneyProgress } from '@/lib/journey-plans'
+import { getMemberJourneyProgress, type MemberJourneyProgress } from '@/lib/journeys/progress'
 import { rankForZaps, getRankDef, SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 
 // --- the ladder ------------------------------------------------------------
@@ -128,8 +128,8 @@ export interface MemberProgress {
   newlyUnlocked: MemberStage | null
   /** The raw activation status (reused by the home feed — fetched here once). */
   onboarding: OnboardingStatus
-  /** The member's active Journey plans (reused by the home feed). */
-  journeys: JourneyProgress[]
+  /** The member's enrolled Journeys with v2 progress (reused by the home feed). */
+  journeys: MemberJourneyProgress[]
 }
 
 /**
@@ -145,7 +145,7 @@ export async function getMemberProgress(profileId: string): Promise<MemberProgre
     await Promise.all([
       getOnboardingStatus(profileId),
       getPracticeStreak(profileId),
-      getActiveJourneyProgress(profileId),
+      getMemberJourneyProgress(profileId),
       admin.from('profiles').select('current_season_zaps, lifetime_gems, meta').eq('id', profileId).maybeSingle(),
       admin
         .from('memberships')
