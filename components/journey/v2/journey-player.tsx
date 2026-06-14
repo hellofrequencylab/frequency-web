@@ -8,10 +8,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronLeft, ChevronRight, Trophy } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
 import { completeJourneyLessonAction } from '@/app/(main)/journeys/[slug]/learn/actions'
+import { TrophyCelebration, type TrophyMilestone } from './trophy-celebration'
 import type { JourneyTree } from '@/lib/journeys/tree'
 import type { LessonContent } from '@/lib/journeys/store'
 
@@ -21,15 +22,17 @@ interface Props {
   emoji?: string | null
   tree: JourneyTree
   lessonsById: Record<string, LessonContent>
+  /** Show a printable certificate on Journey completion (plan opt-in). */
+  certificateEnabled?: boolean
 }
 
-export function JourneyPlayer({ slug, title, emoji, tree, lessonsById }: Props) {
+export function JourneyPlayer({ slug, title, emoji, tree, lessonsById, certificateEnabled = false }: Props) {
   const router = useRouter()
   const [pending, start] = useTransition()
 
   const order = tree.lessonOrder
   const [selectedId, setSelectedId] = useState<string | null>(tree.currentLessonId ?? order[0] ?? null)
-  const [celebration, setCelebration] = useState<string | null>(null)
+  const [milestone, setMilestone] = useState<TrophyMilestone | null>(null)
 
   // Per-lesson title/status from the tree (content bodies come from lessonsById).
   const statusOf = new Map<string, { title: string; done: boolean }>()
@@ -51,9 +54,8 @@ export function JourneyPlayer({ slug, title, emoji, tree, lessonsById }: Props) 
         const j = ev.find((e) => e.kind === 'journey_complete')
         const ph = ev.find((e) => e.kind === 'phase_complete')
         const gems = res.data.granted.reduce((s, g) => s + g.gems, 0)
-        const gemStr = gems ? ` +${gems} Gems` : ''
-        if (j) setCelebration(`🎉 You finished ${title}!${gemStr}`)
-        else if (ph) setCelebration(`🏆 Phase complete: ${ph.phaseTitle ?? 'done'}!${gemStr}`)
+        if (j) setMilestone({ kind: 'journey', title, gems, certificate: certificateEnabled })
+        else if (ph) setMilestone({ kind: 'phase', title: ph.phaseTitle ?? 'Phase complete', gems })
         if (nextId) setSelectedId(nextId)
         router.refresh()
       }
@@ -62,15 +64,7 @@ export function JourneyPlayer({ slug, title, emoji, tree, lessonsById }: Props) 
 
   return (
     <div data-skin="default" className="space-y-4">
-      {celebration && (
-        <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary-bg px-4 py-3 text-sm font-semibold text-primary-strong">
-          <Trophy className="h-4 w-4 shrink-0" />
-          {celebration}
-          <button type="button" onClick={() => setCelebration(null)} className="ml-auto text-xs text-muted hover:text-text">
-            Dismiss
-          </button>
-        </div>
-      )}
+      {milestone && <TrophyCelebration milestone={milestone} onDismiss={() => setMilestone(null)} />}
 
       {/* Progress header — never-empty bar (endowed-progress effect). */}
       <div className="rounded-xl border border-border bg-surface p-4">
