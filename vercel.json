@@ -67,6 +67,10 @@
     {
       "path": "/api/cron/practice-streaks",
       "schedule": "10 1 * * *"
+    },
+    {
+      "path": "/api/cron/summarize-vera-memory",
+      "schedule": "35 3 * * *"
     }
   ]
 }
