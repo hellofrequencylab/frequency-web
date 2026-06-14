@@ -1105,6 +1105,8 @@ export default function AppShell({
   brandName = null,
   brandLogoUrl = null,
   chromeOverrides,
+  generation = 'balanced',
+  occasion = 'none',
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -1151,6 +1153,10 @@ export default function AppShell({
   brandLogoUrl?: string | null
   /** Operator route -> rail overrides (page_chrome_overrides), merged over the code chrome map. */
   chromeOverrides?: ChromeOverrides
+  /** The active generation/style preset id; sets `data-generation` on the shell root. */
+  generation?: string
+  /** The active occasion id; sets `data-occasion` on the shell root ('none' = omitted). */
+  occasion?: string
 }) {
   const pathname = usePathname()
   // The rail's sections, built from the operator's GLOBAL order + visibility
@@ -1259,7 +1265,12 @@ export default function AppShell({
     // The document itself scrolls (not an inner pane) so the whole page renders in
     // normal flow — full-page screenshot tools capture everything, and Next's native
     // scroll restoration works. The header + side rails stay put via `sticky`.
-    <div data-skin={skin} className="flex min-h-screen flex-col bg-canvas">
+    <div
+      data-skin={skin}
+      data-generation={generation}
+      data-occasion={occasion === 'none' ? undefined : occasion}
+      className="flex min-h-screen flex-col bg-canvas"
+    >
 
       {/* ── Top bar ───────────────────────────────────────── */}
       <header className="sticky top-0 h-14 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30">

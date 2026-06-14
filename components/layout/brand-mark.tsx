@@ -25,7 +25,7 @@ export function BrandMark({
     return (
       <Link href="/feed" aria-label={`${name ?? 'Home'}, home feed`} className={linkClass}>
         {/* eslint-disable-next-line @next/next/no-img-element -- operator-supplied Space logo URL, not a build-time asset */}
-        <img src={logoUrl} alt={name ?? ''} className="h-[22px] md:h-8 w-auto object-contain" />
+        <img src={logoUrl} alt={name ?? ''} className="h-[22px] md:h-8 w-auto max-w-[160px] object-contain" />
       </Link>
     )
   }

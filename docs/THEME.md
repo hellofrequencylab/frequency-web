@@ -222,7 +222,7 @@ generation, occasion }`) that the shell sets as the three data-attributes.
 3. **System / time default** — `DEFAULT_*` for skin and generation; for occasion, the **calendar
    window**, since occasion has no Space default unless the member pins one.
 
-**Occasion is now scheduled end-to-end.** The root layout ([`app/layout.tsx`](../app/layout.tsx))
+**Occasion is now scheduled end-to-end.** The in-app shell layout ([`app/(main)/layout.tsx`](<../app/(main)/layout.tsx>))
 prefers a **pin** first (a non-`none` occasion `resolveTheme()` already settled from the member
 cookie or a code-registry window match); only when nothing is pinned does it auto-schedule from the
 DB by calling [`resolveActiveOccasionSlug(now)`](../lib/theme/server/themes.ts), which scans the
@@ -372,15 +372,19 @@ save, not a deploy.
    (`;{}<>`, `url(`, comments, escapes, newlines), is **dropped**, never stored. Only the
    sanitized subset is saved.
 3. **Store.** The sanitized `{ light, dark, feel }` lands in the row's `tokens` (JSONB).
-4. **Inject (per request).** The root layout ([`app/layout.tsx`](../app/layout.tsx)) calls
+4. **Inject (per request, in-app only).** The **in-app shell layout**
+   ([`app/(main)/layout.tsx`](<../app/(main)/layout.tsx>)) calls
    [`loadActiveThemeCss`](../lib/theme/server/themes.ts), which loads the active `skin` theme
    matched to the resolved `data-skin` (and the active `occasion`), **re-validates** every row,
    and renders it through [`themeToCss`](../lib/theme/css.ts) into a scoped
-   `<style id="fx-theme">`. Each kind is rendered against the **attribute the shell actually
-   sets**: `themeToCss('data-skin', …)` for a skin, `themeToCss('data-occasion', …)` for an
-   occasion overlay (this fixed a bug where occasion themes emitted `[data-skin]` rules and so
-   never matched). The selectors are deliberately higher-specificity
-   (`html[<attr>="<slug>"]` / `html.dark[<attr>="<slug>"]`, `(0,1,2)`) than the code skin /
+   `<style id="fx-theme">`. This and the personal `fxtheme` cookie read live in the in-app shell,
+   **not** the root layout, so the public marketing/discover pages stay static/prerendered (the
+   root layout has no per-request reads). Each kind is rendered against the **attribute the shell
+   actually sets**: `themeToCss('data-skin', …)` for a skin, `themeToCss('data-occasion', …)` for
+   an occasion overlay (this fixed a bug where occasion themes emitted `[data-skin]` rules and so
+   never matched). The `data-*` axis attributes are set on the **shell root** (a `:root`
+   descendant), and the selectors are deliberately higher-specificity
+   (`:root[<attr>="<slug>"]` / `:root [<attr>="<slug>"]`, `(0,2,0)+`) than the code skin /
    occasion rules (single attribute, `(0,1,0)`), so the DB theme wins regardless of stylesheet
    order.
 
@@ -461,7 +465,7 @@ links home, no operator string reaches a style or script.
 - **Store:** [`lib/spaces/store.ts`](../lib/spaces/store.ts) reads the brand columns onto `Space`.
 - **Action:** `updateSpaceBranding` ([`app/(main)/admin/spaces/actions.ts`](<../app/(main)/admin/spaces/actions.ts>))
   is **janitor-gated** and validates every field server-side before the write, then revalidates the
-  admin list **and** the root layout (a skin change repaints every Space surface).
+  admin list **and** the in-app shell (a skin change repaints every Space surface).
 
 ### Status
 
@@ -520,7 +524,7 @@ and the operator layer is a fail-safe **merge over** them, never a replacement. 
 | Page-layout **live shell adoption** (shell merges the override into its rail) | ✅ shipped — `app-shell.tsx` uses `mergeChrome(railFor, chromeOverrides, pathname)` (§13) |
 | The **generation / demographic** axis as editable data | 🅿️ deferred (the code axis stands; Theme Studio does not yet manage it) |
 | Per-Space theme assignment | ✅ shipped (it is the existing `spaces.skin`, now set from `/admin/spaces`, §12) |
-| Occasion auto-resolution from the DB `MM-DD` windows | ✅ shipped (`resolveActiveOccasionSlug`, wired in the root layout, §§1, 6) |
+| Occasion auto-resolution from the DB `MM-DD` windows | ✅ shipped (`resolveActiveOccasionSlug`, wired in the in-app shell, §§1, 6) |
 | Template-per-page (a theme scoped to a page template) | 🔴 not built |
 | Client `ThemeProvider` / View-Transitions switch + `generations`/`occasions` guardrail tests | ⏳ tracked in §§2, 7 |
 
