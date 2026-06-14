@@ -293,6 +293,16 @@
 >    `/sync-docs`, and re-run the Supabase security + performance advisors after the migrations apply.
 > Post-Pro build backlog (small, unblocked once typed): rotating/Wallet ticket passes, recurring-event
 > RRULE, host analytics depth, Typesense only if typo-tolerant search becomes a growth lever.
+>
+> **2026-06-14:** **Adaptive theming completeness audit** ([`THEME.md`](THEME.md); spec owned there).
+> The four-axis chain (mode · skin · occasion · generation) + the data-driven theme manager + the
+> page-chrome map are wired end-to-end and live: DAWN renders, a Space's skin/brand + a DB skin/occasion
+> theme + the time-scheduled occasion all reach the page, and the shell reads the page-chrome override
+> live (`mergeChrome`). Remaining connections are catalogued in **BACKLOG §V "Theme & template system"**:
+> the generation axis is latent (CSS+registry+resolver present, but no member switch / `fxtheme` cookie
+> writer and no `spaces.generation` column), `structureFor` has zero template consumers, the
+> `page_chrome_overrides` types need regen (currently cast), and occasion seeding + multi-Space membership
+> + cross-axis visual-regression + W3C-token native export are open.
 
 ---
 
