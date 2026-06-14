@@ -7,6 +7,8 @@ import { resolveAcquisition } from '@/lib/attribution/server'
 import { sendBetaConfirmEmail } from '@/lib/email'
 import { buildBetaConfirmUrl } from '@/lib/beta-tokens'
 import { SITE_URL } from '@/lib/site'
+import { headers } from 'next/headers'
+import { rateLimitOk } from '@/lib/rate-limit'
 
 export type BetaResult =
   | { ok: true; already?: boolean }
@@ -29,6 +31,14 @@ export async function requestBetaAccess(input: {
 
   if (!EMAIL_RE.test(email)) {
     return { ok: false, error: 'Please enter a valid email address.' }
+  }
+
+  // Throttle this open, unauthenticated endpoint per IP (abuse / address
+  // enumeration guard). No-ops when Upstash isn't configured (lib/rate-limit.ts).
+  const hdrs = await headers()
+  const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown'
+  if (!(await rateLimitOk('beta', ip, 5, '10 m'))) {
+    return { ok: false, error: 'Too many requests. Please try again in a few minutes.' }
   }
 
   // `contacts` isn't in the generated DB types yet (untyped client view, same as

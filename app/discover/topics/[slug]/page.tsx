@@ -73,7 +73,7 @@ export default async function TopicPage({
         data={[
           breadcrumbSchema([
             { name: 'Discover', path: '/discover' },
-            { name: 'Topics', path: '/discover' },
+            { name: 'Topics', path: '/discover/topics' },
             { name: channel.name, path: `/discover/topics/${channel.slug}` },
           ]),
           circleListSchema(circles, `${channel.name} circles`),
