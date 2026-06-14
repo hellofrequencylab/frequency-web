@@ -45,6 +45,14 @@ const FOCUS_PATTERNS: RegExp[] = [
   /^\/events\/new$/, // create an event
   /^\/events\/scan$/, // capture an event poster (scan-confirm flow)
   /^\/events\/drafts(\/.+)?$/, // captured-event drafts + the draft editor
+  // The event Invite page (/events/[slug]) owns its own two-column interior (wide
+  // Post area + sticky Join aside); the global rail is suppressed to avoid the
+  // double-rail trap (EVENTS-DESIGN §1). NOT a Focus form — a Detail page that
+  // simply needs the full width. [^/]+ keeps it to the single slug segment, so
+  // /events/[slug]/event.ics and a future /events/[slug]/manage are NOT matched
+  // and keep their own treatment; the negative lookahead re-excludes the sibling
+  // Focus routes above it belt-and-suspenders.
+  /^\/events\/(?!new$|scan$|drafts(\/|$))[^/]+$/,
   /^\/practices\/[^/]+\/edit$/, // edit a practice
   /^\/connections\/.+/, // a contact editor / new contact (the index keeps the rail)
 ]

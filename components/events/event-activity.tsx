@@ -3,12 +3,19 @@
 import { useState, useTransition, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ImagePlus, X, Trash2 } from 'lucide-react'
+import { ImagePlus, X, Trash2, Film, Radio, Smile } from 'lucide-react'
 import { createEventPost, deleteEventPost } from '@/app/(main)/events/[slug]/social-actions'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
+
+// Boops — the Partiful-style reaction set (EVENTS-DESIGN §2.2/§8). A small set of
+// real faces a guest taps on a post. Optimistic + local: it reflects YOUR own boop
+// (a real fact — you booped), never a fabricated aggregate count (Law 1: a number
+// is real or it's absent). There is no event-post reaction table to ride yet, so we
+// don't invent a shared tally.
+const BOOPS = ['👋', '🔥', '🎉', '❤️', '😂'] as const
 
 export type ActivityPost = {
   id: string
@@ -21,6 +28,11 @@ export type ActivityPost = {
     handle: string
     avatarUrl: string | null
   } | null
+  /** Host-authored Event Dispatch (ADR-255) → renders with an event badge so it
+   *  reads as "a Dispatch with an event badge," not a plain comment. */
+  isDispatch?: boolean
+  /** Optional title on a Dispatch update. */
+  title?: string | null
 }
 
 function timeAgo(iso: string): string {
@@ -58,6 +70,9 @@ export function EventActivity({
   const [body, setBody] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [gifUrl, setGifUrl] = useState<string | null>(null)
+  const [showGifInput, setShowGifInput] = useState(false)
+  const [gifDraft, setGifDraft] = useState('')
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -87,6 +102,26 @@ export function EventActivity({
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  // A GIF is just an image URL — it persists via the same image_url path. We accept
+  // a direct GIF link (the lightweight picker) and clear any uploaded file so the
+  // two image sources never collide.
+  function applyGif() {
+    const url = gifDraft.trim()
+    if (!/^https:\/\/.+\.(gif|webp)(\?.*)?$/i.test(url)) {
+      setError('Paste a direct GIF link (it should end in .gif).')
+      return
+    }
+    clearImage()
+    setGifUrl(url)
+    setGifDraft('')
+    setShowGifInput(false)
+    setError('')
+  }
+
+  function clearGif() {
+    setGifUrl(null)
+  }
+
   async function uploadImage(): Promise<string | null> {
     if (!imageFile) return null
     const supabase = createClient()
@@ -110,9 +145,9 @@ export function EventActivity({
 
   function submit() {
     const trimmed = body.trim()
-    if ((!trimmed && !imageFile) || pending) return
+    if ((!trimmed && !imageFile && !gifUrl) || pending) return
     startTransition(async () => {
-      let imageUrl: string | null = null
+      let imageUrl: string | null = gifUrl
       if (imageFile) {
         imageUrl = await uploadImage()
         if (!imageUrl) return
@@ -120,11 +155,12 @@ export function EventActivity({
       await createEventPost(eventId, slug, trimmed, imageUrl)
       setBody('')
       clearImage()
+      clearGif()
       setError('')
     })
   }
 
-  const canSubmit = (!!body.trim() || !!imageFile) && !pending
+  const canSubmit = (!!body.trim() || !!imageFile || !!gifUrl) && !pending
 
   return (
     <section>
@@ -149,13 +185,14 @@ export function EventActivity({
             className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-text/90 placeholder:text-subtle outline-none disabled:opacity-60"
           />
 
-          {imagePreview && (
+          {(imagePreview || gifUrl) && (
             <div className="relative mt-2 inline-block">
-              {/* Local blob preview of the file being uploaded; next/image with
-                  `unoptimized` passes the object URL straight through. */}
+              {/* Local blob preview of the file being uploaded, or the chosen GIF;
+                  next/image with `unoptimized` passes object URLs / GIFs straight
+                  through (no optimization of animated frames). */}
               <Image
-                src={imagePreview}
-                alt="Upload preview"
+                src={imagePreview ?? gifUrl!}
+                alt={gifUrl ? 'GIF preview' : 'Upload preview'}
                 width={160}
                 height={160}
                 unoptimized
@@ -163,30 +200,70 @@ export function EventActivity({
               />
               <button
                 type="button"
-                onClick={clearImage}
-                aria-label="Remove image"
+                onClick={() => (gifUrl ? clearGif() : clearImage())}
+                aria-label={gifUrl ? 'Remove GIF' : 'Remove image'}
                 className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
+
+          {showGifInput && (
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="url"
+                value={gifDraft}
+                onChange={(e) => setGifDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') applyGif()
+                }}
+                placeholder="Paste a GIF link"
+                disabled={pending}
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+              />
+              <button
+                type="button"
+                onClick={applyGif}
+                disabled={pending}
+                className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+          )}
+
           {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
 
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={pickImage} />
 
           <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={pending}
-              aria-label="Attach image"
-              className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
-                imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-              }`}
-            >
-              <ImagePlus className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={pending}
+                aria-label="Attach image"
+                className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                  imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                }`}
+              >
+                <ImagePlus className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowGifInput((v) => !v)}
+                disabled={pending}
+                aria-label="Add a GIF"
+                className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                  gifUrl || showGifInput
+                    ? 'bg-primary-bg text-primary-strong'
+                    : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                }`}
+              >
+                <Film className="h-4 w-4" />
+              </button>
+            </div>
             <button
               type="button"
               onClick={submit}
@@ -209,7 +286,10 @@ export function EventActivity({
         <ul className="space-y-3">
           {posts.map((post) => {
             const a = post.author
-            const canDelete = canModerate || (myProfileId != null && a?.id === myProfileId)
+            // Dispatch entries are event_dispatches rows, not event_posts, so the
+            // event_posts delete action doesn't apply — no trash on them here.
+            const canDelete =
+              !post.isDispatch && (canModerate || (myProfileId != null && a?.id === myProfileId))
             return (
               <li key={post.id} className="flex gap-3">
                 {a?.avatarUrl ? (
@@ -219,9 +299,13 @@ export function EventActivity({
                     {a ? getInitials(a.displayName) : '?'}
                   </div>
                 )}
-                <div className="min-w-0 flex-1 rounded-2xl border border-border bg-surface px-3 py-2">
+                <div
+                  className={`min-w-0 flex-1 rounded-2xl border px-3 py-2 ${
+                    post.isDispatch ? 'border-primary-bg bg-primary-bg/20' : 'border-border bg-surface'
+                  }`}
+                >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                       {a ? (
                         <Link href={`/people/${a.handle}`} className="text-sm font-semibold text-text hover:underline">
                           {a.displayName}
@@ -229,12 +313,21 @@ export function EventActivity({
                       ) : (
                         <span className="text-sm font-semibold text-text">A member</span>
                       )}
-                      <span className="ml-2 text-2xs text-subtle">{timeAgo(post.createdAt)}</span>
+                      {post.isDispatch && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-3xs font-semibold text-primary-strong">
+                          <Radio className="h-3 w-3" />
+                          Event Dispatch
+                        </span>
+                      )}
+                      <span className="text-2xs text-subtle">{timeAgo(post.createdAt)}</span>
                     </div>
                     {canDelete && (
                       <DeletePostButton postId={post.id} slug={slug} />
                     )}
                   </div>
+                  {post.isDispatch && post.title && (
+                    <p className="mt-0.5 text-sm font-bold text-text">{post.title}</p>
+                  )}
                   {post.body && (
                     <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-text/90">{post.body}</p>
                   )}
@@ -244,9 +337,13 @@ export function EventActivity({
                       alt="Shared photo"
                       width={480}
                       height={360}
+                      unoptimized
                       className="mt-2 max-h-72 w-auto rounded-xl border border-border object-cover"
                     />
                   )}
+                  {/* Boops — tap a face to react. Disabled (with a sign-in nudge on
+                      hover) for signed-out viewers. */}
+                  <BoopBar disabled={!myProfileId} />
                 </div>
               </li>
             )
@@ -254,6 +351,64 @@ export function EventActivity({
         </ul>
       )}
     </section>
+  )
+}
+
+// A small reaction bar per post. Optimistic + local: it reflects YOUR boop (a real
+// fact), and shows no fabricated shared count (there's no event-post reaction store
+// to ride yet — Law 1: a number is real or it's absent).
+function BoopBar({ disabled }: { disabled: boolean }) {
+  const [mine, setMine] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
+
+  if (mine) {
+    return (
+      <div className="mt-2">
+        <button
+          type="button"
+          onClick={() => setMine(null)}
+          aria-label="Remove your boop"
+          className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2.5 py-1 text-2xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+        >
+          <span className="text-sm leading-none">{mine}</span>
+          You booped
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-2">
+      {open ? (
+        <div className="inline-flex items-center gap-0.5 rounded-full border border-border bg-surface px-1 py-0.5">
+          {BOOPS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => {
+                setMine(emoji)
+                setOpen(false)
+              }}
+              aria-label={`Boop with ${emoji}`}
+              className="rounded-full px-1.5 py-0.5 text-base leading-none transition-transform hover:scale-125"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          disabled={disabled}
+          title={disabled ? 'Sign in to boop' : undefined}
+          className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-2xs font-medium text-subtle transition-colors hover:border-border-strong hover:text-muted disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Smile className="h-3.5 w-3.5" />
+          Boop
+        </button>
+      )}
+    </div>
   )
 }
 

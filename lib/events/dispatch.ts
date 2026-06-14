@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueue } from '@/lib/queue/outbox'
 import type { PushPayload } from '@/lib/push'
+import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
 
 // Event Dispatches data layer (ADR-255 / EVENTS-REWORK A2).
 //
@@ -141,26 +142,27 @@ export async function composeEventDispatch(
 }
 
 /**
- * Enqueue a push job per guest who should hear about this event and hasn't muted
- * it. Audience = RSVP rows with status going/maybe/waitlist and muted=false.
- * Returns the number enqueued. Best-effort — a single bad recipient never aborts
- * the batch.
+ * Enqueue a push job per member who should hear about this Event Dispatch.
+ *
+ * PUSH audience (ADR-255 owner rule, resolved by resolveEventDispatchAudience):
+ *   • event guests — RSVP going/maybe/waitlist, muted=false (per-event mute honoured),
+ *   • the hosting Circle's active members.
+ * The "surrounding area" bleed is deliberately NOT pushed: it is a passive FEED
+ * surface, gated on resonance (the owner's rule — "the feed of people close by who
+ * have resonance"), handled in components/feed by viewerInEventDispatchArea. Pushing
+ * unsolicited to nearby strangers would be spam; nearby resonant members discover it
+ * in their feed instead.
+ *
+ * Deduplicated across both. Each member's notification prefs / quiet hours /
+ * consent are applied downstream by the send-gate at drain time, so this only
+ * resolves WHO, never WHETHER. Returns the number enqueued. Best-effort — a single
+ * bad recipient never aborts the batch.
  */
 export async function fanOutEventPush(
   eventId: string,
   payload: PushPayload,
 ): Promise<number> {
-  const admin = untyped()
-  const { data } = await admin
-    .from('event_rsvps')
-    .select('profile_id')
-    .eq('event_id', eventId)
-    .eq('muted', false)
-    .in('status', ['going', 'maybe', 'waitlist'])
-
-  const recipients = ((data ?? []) as unknown as { profile_id: string }[]).map(
-    (r) => r.profile_id,
-  )
+  const recipients = await resolveEventDispatchAudience(eventId)
 
   let enqueued = 0
   for (const profileId of recipients) {
