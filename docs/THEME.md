@@ -11,7 +11,7 @@
 > style choice. Section 3 has the evidence; the names are an optional friendly on-ramp, not a
 > claim about who you are.
 
-Status legend: ✅ built · ⏳ partial · ⚠️ needs attention · 🔴 gated / not built.
+Status legend: ✅ built · ⏳ partial · ⚠️ needs attention · 🔴 gated / not built · 🅿️ deferred (parked).
 
 Canonical record: [ADR-257](DECISIONS.md). Source of truth is the running code:
 [`app/globals.css`](../app/globals.css) (the CSS) + [`lib/theme/`](../lib/theme/) (the typed
@@ -30,7 +30,7 @@ value for that subtree, so the axes never need to know about each other.
 |---|---|---|---|---|
 | **Mode** | `class="dark"` on `<html>` | light vs dark | member toggle (a pre-paint inline script reads `localStorage` `freq-theme`) | ✅ built |
 | **Skin** | `data-skin` on shell root | white-label palette + base feel | the active Space (server-resolved); a `freq-skin` preview override exists for design | ✅ built (`default` \| `midnight`) |
-| **Occasion** | `data-occasion` on shell root | a light, time-boxed seasonal accent overlay | the calendar window, or a member pin via cookie | ⏳ axis + resolver built; auto-scheduling onto the DOM pending |
+| **Occasion** | `data-occasion` on shell root | a light, time-boxed seasonal accent overlay | the calendar window, or a member pin via cookie | ✅ built end-to-end (DB-scheduled; a pin wins) |
 | **Generation** | `data-generation` on shell root | the "feel": type scale, density, radius, motion, ornament, contrast floor, tap floor | the member's chosen preference, with a Space default | ⏳ axis + resolver built; client switch + Space-default column pending |
 
 **Why three of them carry a registry.** Skin, occasion, and generation each have a typed
@@ -220,8 +220,16 @@ generation, occasion }`) that the shell sets as the three data-attributes.
 1. **Member `fxtheme` cookie** — the explicit personal override.
 2. **Space default** — `spaces.skin` / `spaces.generation` (the operator's choice).
 3. **System / time default** — `DEFAULT_*` for skin and generation; for occasion, the **calendar
-   window** (`resolveOccasionForDate`), since occasion has no Space default unless the member pins
-   one.
+   window**, since occasion has no Space default unless the member pins one.
+
+**Occasion is now scheduled end-to-end.** The root layout ([`app/layout.tsx`](../app/layout.tsx))
+prefers a **pin** first (a non-`none` occasion `resolveTheme()` already settled from the member
+cookie or a code-registry window match); only when nothing is pinned does it auto-schedule from the
+DB by calling [`resolveActiveOccasionSlug(now)`](../lib/theme/server/themes.ts), which scans the
+active `kind='occasion'` theme rows and returns the first whose inclusive `MM-DD` window contains
+today (**year-wrap aware**, e.g. `12-20`..`01-05`). It is request-cached and **fail-safe**
+(`'none'` on any error or a missing table), so it never blocks render. When the result is `'none'`
+the `data-occasion` attribute is simply omitted, so the baseline renders untouched.
 
 The cookie helper [`lib/theme/cookie.ts`](../lib/theme/cookie.ts) is deliberately client-safe (no
 `server-only`, no `next/headers` import) so the client writer and the server reader share one
@@ -323,11 +331,11 @@ move is a planned step, not a retrofit.
 > operator creates, edits, and activates brand themes as **data** (DB-backed token overrides
 > rendered as a scoped `<style>` over the code skins), with **no code deploy**.
 
-> ⚠️ **Migration dependency (read this first).** Theme Studio does nothing until the
-> [`supabase/migrations/20260625000000_themes.sql`](../supabase/migrations/20260625000000_themes.sql)
-> migration is applied to the database. Until then the reader returns `''` and the app keeps
-> rendering the **code skins** (`app/globals.css`) unchanged. The system is dormant and
-> fail-safe by design, not broken.
+> ✅ **Migrations applied (2026-06-14, Frequency Community).** Theme Studio and the other
+> readers go live once the theming migrations are applied; they were applied to the Frequency
+> Community project on 2026-06-14. The readers are fail-safe by design: before a migration is
+> applied (e.g. a fresh environment) the reader returns `''` / empty and the app keeps rendering
+> the **code skins** (`app/globals.css`) unchanged, so the system is dormant, not broken.
 
 ### What an operator can do
 
@@ -368,9 +376,13 @@ save, not a deploy.
    [`loadActiveThemeCss`](../lib/theme/server/themes.ts), which loads the active `skin` theme
    matched to the resolved `data-skin` (and the active `occasion`), **re-validates** every row,
    and renders it through [`themeToCss`](../lib/theme/css.ts) into a scoped
-   `<style id="fx-theme">`. The selectors are deliberately higher-specificity
-   (`html[data-skin="<slug>"]` / `html.dark[data-skin="<slug>"]`, `(0,1,2)`) than the code skin
-   rules (single attribute, `(0,1,0)`), so the DB theme wins regardless of stylesheet order.
+   `<style id="fx-theme">`. Each kind is rendered against the **attribute the shell actually
+   sets**: `themeToCss('data-skin', …)` for a skin, `themeToCss('data-occasion', …)` for an
+   occasion overlay (this fixed a bug where occasion themes emitted `[data-skin]` rules and so
+   never matched). The selectors are deliberately higher-specificity
+   (`html[<attr>="<slug>"]` / `html.dark[<attr>="<slug>"]`, `(0,1,2)`) than the code skin /
+   occasion rules (single attribute, `(0,1,0)`), so the DB theme wins regardless of stylesheet
+   order.
 
 ### The security boundary
 
@@ -386,7 +398,7 @@ table's RLS exposes only `status='active'` rows to reads. The studio itself is *
 |---|---|
 | A skin theme renders for its `data-skin` | `status='active'` **and** its `slug` matches the resolved skin |
 | The global default skin | `is_default=true` (only one row may hold it) |
-| An occasion theme renders | `kind='occasion'`, `status='active'`, slug matches the active `data-occasion` |
+| An occasion theme renders | `kind='occasion'`, `status='active'`, slug matches the active `data-occasion` (auto-scheduled from the row's `MM-DD` window via `resolveActiveOccasionSlug`, unless a member/code pin already set the occasion) |
 | Nothing matches | Reader returns `''` → the **code skins** render unchanged (fail-safe) |
 
 ### Server actions
@@ -394,15 +406,92 @@ table's RLS exposes only `status='active'` rows to reads. The studio itself is *
 Create / update / `setStatus` / `setDefault` / delete are server actions, janitor-gated, that
 revalidate the layout so a change shows on the next request.
 
-### Still TODO
+---
+
+## 12. Per-Space branding (admin)
+
+> **In one line.** An operator assigns each Space its theme and brand metadata from
+> `/admin/spaces` (janitor-gated). The theme **assignment is the existing `spaces.skin`** axis;
+> this work added the visual brand fields beside it. ✅ data + admin shipped; ⏳ the header
+> visual (logo / name in the chrome) is a deliberate follow-up.
+
+### What an operator can do
+
+From the Space branding editor (`/admin/spaces/<id>`), an operator sets:
+
+| Field | What it holds | Validation (server-side) |
+|---|---|---|
+| **Theme** (`spaces.skin`) | the `[data-skin]` token set the Space renders | must be a **known active skin theme** or a built-in (`default` \| `midnight`) |
+| `brand_name` | display name (falls back to `spaces.name`) | trimmed, length-capped, or cleared |
+| `brand_logo_url` | the Space's logo | **same-origin** (root-relative `/…`) **or** an `https` URL |
+| `brand_accent` | a reference accent swatch | a safe **hex** or strictly-numeric `rgb`/`hsl` (CSS break-outs rejected) |
+
+The palette still comes from the assigned theme (`spaces.skin`); `brand_accent` is a reference
+swatch, not the live palette.
+
+### Data model + flow
+
+- **Migration:** [`20260626000000_space_brand.sql`](../supabase/migrations/20260626000000_space_brand.sql)
+  adds `spaces.brand_name` / `brand_logo_url` / `brand_accent` (additive, idempotent).
+- **Store:** [`lib/spaces/store.ts`](../lib/spaces/store.ts) reads the brand columns onto `Space`.
+- **Action:** `updateSpaceBranding` ([`app/(main)/admin/spaces/actions.ts`](<../app/(main)/admin/spaces/actions.ts>))
+  is **janitor-gated** and validates every field server-side before the write, then revalidates the
+  admin list **and** the root layout (a skin change repaints every Space surface).
+
+### Status
 
 | Item | Status |
 |---|---|
-| Migration applied in production | ⚠️ required for Theme Studio to take effect at all |
-| Per-Space theme assignment (a Space picks its theme row) | 🔴 not built |
-| Occasion auto-resolution from the DB `MM-DD` windows | 🔴 not built (windows are stored, not yet scheduled onto the DOM) |
+| `brand_*` columns + store reads | ✅ shipped (migration apply pending, see below) |
+| Janitor-gated branding editor + validated action | ✅ shipped |
+| **Header brand visual** (logo / name shown in the chrome) | ⏳ deliberate follow-up (left out to avoid app-shell churn during the events redesign) |
+
+---
+
+## 13. Page layout manager (admin)
+
+> **In one line.** An operator overrides any route's **right rail** from `/admin/page-layout`
+> (janitor-gated), stored as a fail-safe DB layer **over** the code chrome map. ✅ management +
+> storage + resolver shipped; ⏳ the **live shell** reading the override is a flagged follow-up,
+> so today an override stores intent without yet changing the visible rail.
+
+### How it composes with the code map
+
+The code chrome map ([`lib/layout/page-chrome.ts`](../lib/layout/page-chrome.ts)) stays the source
+of truth and is **unchanged**: the live shell still calls `railFor` / `leftRailFor` synchronously
+and reads the same answer it always has (PAGE-FRAMEWORK §3/§8). This work is **additive**:
+
+- **Migration:** [`20260626100000_page_chrome_overrides.sql`](../supabase/migrations/20260626100000_page_chrome_overrides.sql)
+  adds `page_chrome_overrides` (`route` → `rail`, RLS on, world-readable, service-role writes).
+- **Resolver:** `loadChromeOverrides` (request-cached, **fail-safe** `{}` on any error / missing
+  table) + the pure `mergeChrome` (an exact-route override wins over the code default) +
+  `resolvePageChrome` (the async, override-aware twin of `railFor`).
+- **Admin:** the manager (`/admin/page-layout`) lists the curated `MANAGED_ROUTES` with each
+  route's current effective rail and sets an override; the actions are **janitor-gated** and
+  validate `route` / `rail` (`isSafeRoute` / `isRail`) before any write.
+
+### Status
+
+| Item | Status |
+|---|---|
+| Override table + janitor-gated manager | ✅ shipped (migration apply pending, see below) |
+| `loadChromeOverrides` + `mergeChrome` + `resolvePageChrome` (fail-safe) | ✅ shipped |
+| **Live shell adoption** (the shell reading `resolvePageChrome`) | ⏳ flagged follow-up (the app-shell monolith + the nearby events rewire make changing the live read risky now) |
+
+---
+
+## 14. Still pending (whole theming system)
+
+| Item | Status |
+|---|---|
+| The three migrations (`20260625000000_themes`, `20260626000000_space_brand`, `20260626100000_page_chrome_overrides`) | ✅ applied to Frequency Community (2026-06-14). Fail-safe before apply in any fresh environment (code skins, branding columns absent, chrome overrides `{}`) |
+| Per-Space **header brand visual** (logo / name in the chrome) | ⏳ follow-up (§12) |
+| Page-layout **live shell adoption** (shell reads `resolvePageChrome`) | ⏳ follow-up (§13) |
+| The **generation / demographic** axis as editable data | 🅿️ deferred (the code axis stands; Theme Studio does not yet manage it) |
+| Per-Space theme assignment | ✅ shipped (it is the existing `spaces.skin`, now set from `/admin/spaces`, §12) |
+| Occasion auto-resolution from the DB `MM-DD` windows | ✅ shipped (`resolveActiveOccasionSlug`, wired in the root layout, §§1, 6) |
 | Template-per-page (a theme scoped to a page template) | 🔴 not built |
-| The generation / demographic axis as editable data | 🔴 deferred (the code axis stands; Theme Studio does not yet manage it) |
+| Client `ThemeProvider` / View-Transitions switch + `generations`/`occasions` guardrail tests | ⏳ tracked in §§2, 7 |
 
 ---
 
@@ -413,6 +502,7 @@ revalidate the layout so a change shows on the next request.
   cookie (`cookie.ts`), the server resolver (`server/resolve.ts`).
 - [`docs/SPACES.md`](SPACES.md) — Spaces own the skin (and the per-Space generation default).
 - [`docs/DESIGN.md`](DESIGN.md) — the DAWN design language the `balanced` / `default` baseline encodes.
-- [`docs/DECISIONS.md`](DECISIONS.md) — [ADR-257](DECISIONS.md) (the four-axis model) and
-  [ADR-258](DECISIONS.md) (Theme Studio: themes as operator-editable data).
+- [`docs/DECISIONS.md`](DECISIONS.md) — [ADR-257](DECISIONS.md) (the four-axis model),
+  [ADR-258](DECISIONS.md) (Theme Studio: themes as operator-editable data), and
+  [ADR-259](DECISIONS.md) (occasion scheduling fix + per-Space branding + page-chrome overrides).
 </content>
