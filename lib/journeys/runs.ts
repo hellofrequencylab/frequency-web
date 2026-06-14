@@ -86,6 +86,55 @@ export async function getRun(runId: string): Promise<JourneyRun | null> {
   return data ? mapRun(data as Record<string, unknown>) : null
 }
 
+export interface KickoffEvent {
+  id: string
+  slug: string
+  title: string
+  startsAt: string
+}
+
+/** Schedule the kickoff meetup for a Run (build item §11.1 #5): create a Circle Event and link
+ *  it on the run (journey_runs.kickoff_event_id). Weekly live touchpoints are a large completion
+ *  lift (JOURNEYS.md §3/§10). Returns the event id, or null on failure. */
+export async function scheduleKickoff(input: {
+  runId: string
+  circleId: string
+  hostId: string
+  startsAt: string
+  journeyTitle: string
+}): Promise<string | null> {
+  const admin = db()
+  const slug = `kickoff-${input.runId.slice(0, 8)}-${Math.random().toString(36).slice(2, 6)}`
+  const { data, error } = await admin
+    .from('events')
+    .insert({
+      title: `${input.journeyTitle}: kickoff meetup`,
+      description: 'The opening meetup for this Journey. Meet your Circle, set the pace, and start together.',
+      scope_id: input.circleId,
+      scope_type: 'circle',
+      starts_at: new Date(input.startsAt).toISOString(),
+      host_id: input.hostId,
+      slug,
+    })
+    .select('id')
+    .maybeSingle()
+  if (error || !data) return null
+  const eventId = String((data as { id: string }).id)
+  await admin.from('journey_runs').update({ kickoff_event_id: eventId }).eq('id', input.runId)
+  return eventId
+}
+
+/** The kickoff Event linked to a Run (for the player banner), or null. */
+export async function getKickoffEvent(runId: string): Promise<KickoffEvent | null> {
+  const { data: run } = await db().from('journey_runs').select('kickoff_event_id').eq('id', runId).maybeSingle()
+  const eventId = (run as { kickoff_event_id: string | null } | null)?.kickoff_event_id
+  if (!eventId) return null
+  const { data: ev } = await db().from('events').select('id, slug, title, starts_at').eq('id', eventId).maybeSingle()
+  if (!ev) return null
+  const e = ev as { id: string; slug: string; title: string; starts_at: string }
+  return { id: e.id, slug: e.slug, title: e.title, startsAt: e.starts_at }
+}
+
 /** The Run a member is enrolled in for a plan (their cohort), or null (solo / no run). */
 export async function getMemberRunForPlan(profileId: string, planId: string): Promise<JourneyRun | null> {
   const { data } = await db()
