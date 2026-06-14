@@ -1,15 +1,13 @@
 // Journeys v2 — the Run data layer (ADR-252, docs/JOURNEYS.md §3). A Run is one Circle going
 // through one Journey together: create it, enroll the Circle, and read the shared cohort
-// progress (aggregateCohort). Server-only. Uses the journey system's untyped admin handle
-// (journey_runs / journey_enrollments aren't in the generated types yet — same pattern as
-// lib/journey-plans.ts; map rows by hand).
+// progress (aggregateCohort). Server-only — typed admin handle (journey_runs / journey_enrollments
+// are in the generated types as of ADR-253 step 5).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildJourneyTree, type BlockRow } from './tree'
 import { aggregateCohort, type MemberCompletion, type CohortProgress } from './cohort'
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 

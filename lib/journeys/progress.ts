@@ -3,14 +3,13 @@
 // (getActiveJourneyProgress): a member's enrolled Journeys with phase/program completion derived
 // from journey_lesson_progress + the block tree (lib/journeys/tree.ts). One read powers the right
 // rail "current track", the crew/journey page, member-stage signals, and the next-lesson nudges
-// (vera-dispatch / journey-prompt). Server-only (admin client; journey_enrollments isn't in the
-// generated types yet — same untyped-handle pattern as lib/journeys/runs.ts).
+// (vera-dispatch / journey-prompt). Server-only — typed admin handle (journey_enrollments is in
+// the generated types as of ADR-253 step 5).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildJourneyTree, leafTitle, type BlockRow } from './tree'
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 

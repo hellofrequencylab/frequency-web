@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       achievements: {
@@ -1975,114 +1950,6 @@ export type Database = {
         }
         Relationships: []
       }
-      spaces: {
-        Row: {
-          created_at: string
-          domain: string | null
-          enabled_verticals: string[]
-          entity_id: string
-          id: string
-          name: string
-          network_connected: boolean
-          owner_profile_id: string | null
-          skin: string
-          slug: string
-          status: string
-          type: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          domain?: string | null
-          enabled_verticals?: string[]
-          entity_id: string
-          id?: string
-          name: string
-          network_connected?: boolean
-          owner_profile_id?: string | null
-          skin?: string
-          slug: string
-          status?: string
-          type: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          domain?: string | null
-          enabled_verticals?: string[]
-          entity_id?: string
-          id?: string
-          name?: string
-          network_connected?: boolean
-          owner_profile_id?: string | null
-          skin?: string
-          slug?: string
-          status?: string
-          type?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      trust_signals: {
-        Row: {
-          context: string
-          created_at: string
-          id: string
-          idempotency_key: string | null
-          meta: Json
-          profile_id: string
-          signal_type: string
-          source: string
-          weight: number
-        }
-        Insert: {
-          context?: string
-          created_at?: string
-          id?: string
-          idempotency_key?: string | null
-          meta?: Json
-          profile_id: string
-          signal_type: string
-          source: string
-          weight?: number
-        }
-        Update: {
-          context?: string
-          created_at?: string
-          id?: string
-          idempotency_key?: string | null
-          meta?: Json
-          profile_id?: string
-          signal_type?: string
-          source?: string
-          weight?: number
-        }
-        Relationships: []
-      }
-      trust_scores: {
-        Row: {
-          context: string
-          profile_id: string
-          score: number
-          signal_count: number
-          updated_at: string
-        }
-        Insert: {
-          context: string
-          profile_id: string
-          score?: number
-          signal_count?: number
-          updated_at?: string
-        }
-        Update: {
-          context?: string
-          profile_id?: string
-          score?: number
-          signal_count?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       entry_campaigns: {
         Row: {
           created_at: string
@@ -3211,6 +3078,58 @@ export type Database = {
           },
         ]
       }
+      journey_enrollments: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          plan_id: string
+          profile_id: string
+          run_id: string | null
+          started_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          plan_id: string
+          profile_id: string
+          run_id?: string | null
+          started_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          plan_id?: string
+          profile_id?: string
+          run_id?: string | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_enrollments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_enrollments_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_enrollments_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "journey_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_lesson_progress: {
         Row: {
           completed_at: string
@@ -3400,9 +3319,11 @@ export type Database = {
           accent: string | null
           adopt_count: number
           author_id: string | null
+          certificate_enabled: boolean
           completion_gems: number
           cover_image: string | null
           created_at: string
+          drip_interval_days: number
           emoji: string | null
           featured_at: string | null
           fork_of: string | null
@@ -3431,9 +3352,11 @@ export type Database = {
           accent?: string | null
           adopt_count?: number
           author_id?: string | null
+          certificate_enabled?: boolean
           completion_gems?: number
           cover_image?: string | null
           created_at?: string
+          drip_interval_days?: number
           emoji?: string | null
           featured_at?: string | null
           fork_of?: string | null
@@ -3462,9 +3385,11 @@ export type Database = {
           accent?: string | null
           adopt_count?: number
           author_id?: string | null
+          certificate_enabled?: boolean
           completion_gems?: number
           cover_image?: string | null
           created_at?: string
+          drip_interval_days?: number
           emoji?: string | null
           featured_at?: string | null
           fork_of?: string | null
@@ -3516,6 +3441,74 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_runs: {
+        Row: {
+          circle_id: string
+          created_at: string
+          drip_interval_days: number
+          host_id: string | null
+          id: string
+          kickoff_event_id: string | null
+          plan_id: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string
+          drip_interval_days?: number
+          host_id?: string | null
+          id?: string
+          kickoff_event_id?: string | null
+          plan_id: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string
+          drip_interval_days?: number
+          host_id?: string | null
+          id?: string
+          kickoff_event_id?: string | null
+          plan_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_runs_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_runs_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_runs_kickoff_event_id_fkey"
+            columns: ["kickoff_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_runs_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -6646,6 +6639,69 @@ export type Database = {
           },
         ]
       }
+      spaces: {
+        Row: {
+          created_at: string
+          domain: string | null
+          enabled_verticals: string[]
+          entity_id: string
+          id: string
+          name: string
+          network_connected: boolean
+          owner_profile_id: string | null
+          skin: string
+          slug: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          enabled_verticals?: string[]
+          entity_id: string
+          id?: string
+          name: string
+          network_connected?: boolean
+          owner_profile_id?: string | null
+          skin?: string
+          slug: string
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          enabled_verticals?: string[]
+          entity_id?: string
+          id?: string
+          name?: string
+          network_connected?: boolean
+          owner_profile_id?: string | null
+          skin?: string
+          slug?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spaces_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -7224,6 +7280,82 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "training_paths_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trust_scores: {
+        Row: {
+          context: string
+          profile_id: string
+          score: number
+          signal_count: number
+          updated_at: string
+        }
+        Insert: {
+          context: string
+          profile_id: string
+          score?: number
+          signal_count?: number
+          updated_at?: string
+        }
+        Update: {
+          context?: string
+          profile_id?: string
+          score?: number
+          signal_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trust_scores_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trust_signals: {
+        Row: {
+          context: string
+          created_at: string
+          id: string
+          idempotency_key: string | null
+          meta: Json
+          profile_id: string
+          signal_type: string
+          source: string
+          weight: number
+        }
+        Insert: {
+          context?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          meta?: Json
+          profile_id: string
+          signal_type: string
+          source: string
+          weight?: number
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          meta?: Json
+          profile_id?: string
+          signal_type?: string
+          source?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trust_signals_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -9325,9 +9457,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       achievement_category: [

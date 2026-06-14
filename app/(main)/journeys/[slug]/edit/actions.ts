@@ -5,17 +5,19 @@
 // delete (children cascade via the parent_id FK). Direct admin-client writes behind the
 // author guard; the v2 block types (phase/module + leaf types) need the J0 migration applied.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan } from '@/lib/journey-plans'
 import { draftJourneyOutline } from '@/lib/ai/journey-outline'
 
-// Untyped admin handle: the v2 block columns (block_type/parent_id/body) and dynamic patch
-// objects aren't in the generated types yet — same pattern as lib/journeys/runs.ts.
-function db(): SupabaseClient {
+type BlockUpdate = Database['public']['Tables']['journey_plan_items']['Update']
+
+// Typed admin handle — the v2 block columns (block_type/parent_id/body) are in the generated
+// types as of ADR-253 step 5.
+function db() {
   return createAdminClient()
 }
 
@@ -30,7 +32,7 @@ async function authorPlan(slug: string): Promise<{ planId: string; profileId: st
 }
 
 async function nextSortOrder(
-  admin: SupabaseClient,
+  admin: ReturnType<typeof createAdminClient>,
   planId: string,
   parentId: string | null,
 ): Promise<number> {
@@ -176,7 +178,7 @@ export async function updateBlockAction(
 ): Promise<ActionResult> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
-  const update: Record<string, unknown> = {}
+  const update: BlockUpdate = {}
   if (patch.title !== undefined) update.title = patch.title.slice(0, 200)
   if (patch.body !== undefined) update.body = patch.body.slice(0, 20000)
   if (patch.required !== undefined) update.required = patch.required

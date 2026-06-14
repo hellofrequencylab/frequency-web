@@ -6609,7 +6609,7 @@ The editor dropdown maps over `AVAILABLE_TRIGGERS` (keeping a legacy/unwired cur
 
 ## ADR-253: Retire the legacy season reward/progress engine — v2 completion-only rewards
 
-**Status:** Accepted (decision, owner 2026-06-14) · unblocks the remaining half of build-list [JOURNEYS.md §11.1](JOURNEYS.md) #6 (season-column drop + `database.types.ts` regen) · follows ADR-252.
+**Status:** ✅ Implemented (2026-06-14) — all 5 steps shipped: grant firing stopped, displays repointed to the v2 reader `lib/journeys/progress.ts`, the season engine deleted, the season columns dropped by migration `20260624000000` (applies on merge), and `database.types.ts` regenerated + the v2 admin handles typed. Unblocked the remaining half of build-list [JOURNEYS.md §11.1](JOURNEYS.md) #6 · follows ADR-252. (Tail: `journey_plan_adoptions` deliberately kept — still referenced elsewhere.)
 **Context:** ADR-252 rebuilt Journeys around phase/program completion, but the v1 **season reward + progress engine still runs live in parallel** — which is why "drop `season_locked` / `min_practices_per_day` / `target_weeks` once nothing reads them" stayed blocked. A trace (2026-06-14) found it is **not** dead code:
 - `lib/practices.ts` fires `fireJourneyRewardsForLog` (`lib/journey-grants.ts`) + `fireCoopRewardsForLog` (`lib/journey-coop-rewards.ts`) on **every practice log**, granting Gems/Zaps from season completion computed off `target_weeks` / `min_practices_per_day` (`lib/journey-rewards.ts`, `lib/journey-quest-clock.ts`).
 - `getActiveJourneyProgress` (the season qualifying-weeks derivation in `lib/journey-plans.ts`) drives the **right rail**, `app/(main)/crew/journey`, `lib/member-progress.ts`, `lib/vera-dispatch.ts`, and `lib/journey-prompt.ts`.
