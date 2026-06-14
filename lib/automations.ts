@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import { enqueue } from '@/lib/queue/outbox'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 
@@ -20,6 +21,24 @@ export const AUTOMATION_TRIGGERS = [
   'post_create',
   'event_attend',
 ] as const
+
+// Actions a rule can fire. `email_actor` emails the event's actor (consent-checked,
+// queued, unsubscribe-stamped). `push_actor` sends a web push to the actor (gated
+// inside sendPushToProfile; fails dark without VAPID keys). action_type is a free-text
+// column in the DB (no enum/CHECK), so adding a value needs no migration.
+export const AUTOMATION_ACTION_TYPES = ['email_actor', 'push_actor'] as const
+export type AutomationActionType = (typeof AUTOMATION_ACTION_TYPES)[number]
+
+export function isAutomationActionType(value: unknown): value is AutomationActionType {
+  return typeof value === 'string' && (AUTOMATION_ACTION_TYPES as readonly string[]).includes(value)
+}
+
+/** Shape of action_config for the push_actor action. `url` is an optional deep-link path. */
+export interface PushActionConfig {
+  title: string
+  body: string
+  url?: string
+}
 
 export interface AutomationRule {
   id: string
@@ -95,6 +114,21 @@ export async function runAutomationsForEvent(
         text: `${cfg.body || ''}\n\nUnsubscribe: ${unsubscribeUrl}`,
         headers: listUnsubscribeHeaders(unsubscribeUrl),
       })
+    } else if (rule.action_type === 'push_actor') {
+      // Push to the same actor via the durable outbox (kind 'push'), mirroring how
+      // the email branch enqueues rather than sends inline. This is deliberate, not
+      // just for durability: automations.ts is client-reachable (capture-launcher →
+      // analytics → engagement/events → here), and lib/push pulls in web-push, a
+      // node-only dep (net/tls/dns) that breaks `next build` if it lands in a client
+      // bundle. Enqueue is a plain DB write; the queue handler sends server-side and
+      // runs the full send-gate (push preference + consent, fails dark without VAPID).
+      const cfg = (rule.action_config ?? {}) as Partial<PushActionConfig>
+      if (!cfg.title || !cfg.body) continue
+      await enqueue('push', {
+        profileId: actorProfileId,
+        payload: { title: cfg.title, body: cfg.body, url: cfg.url || '/' },
+        category: 'lifecycle',
+      }).catch(() => {})
     }
   }
 }

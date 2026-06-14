@@ -4,6 +4,19 @@ import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import type { AutomationRule } from '@/lib/automations'
 import { toggleRule } from './actions'
 
+// Operator-facing verb for each action type. Falls back to the raw type for any
+// value the table doesn't recognize yet.
+function actionLabel(actionType: string): string {
+  switch (actionType) {
+    case 'email_actor':
+      return 'email'
+    case 'push_actor':
+      return 'push'
+    default:
+      return actionType
+  }
+}
+
 // Automation rules as the canonical operator table (ADR-233 §3 Index/Table). The
 // enabled toggle is a server-action form in the actions column (the old inline pill
 // styling is retired in favor of a tokenized switch button).
@@ -15,7 +28,7 @@ export function AutomationsTable({ rules }: { rules: AutomationRule[] }) {
       header: 'Trigger',
       render: (r) => (
         <span className="text-muted">
-          on <code className="rounded bg-surface-elevated px-1 py-0.5 text-xs text-text">{r.triggerEvent}</code> · email member
+          on <code className="rounded bg-surface-elevated px-1 py-0.5 text-xs text-text">{r.triggerEvent}</code> · {actionLabel(r.actionType)} member
         </span>
       ),
     },
