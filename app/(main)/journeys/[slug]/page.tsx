@@ -153,6 +153,15 @@ export default async function JourneyPlanPage({
         </span>
       }
     >
+      {/* Cover hero (docs/JOURNEYS-DESIGN.md §3: 16:9 photographic, framing only). */}
+      {plan.cover_image && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={plan.cover_image}
+          alt=""
+          className="mb-5 h-48 w-full rounded-2xl border border-border object-cover sm:h-64"
+        />
+      )}
       <DiscoveryMode
         widgets={discoveryWidgets}
         plan={plan}

@@ -1,22 +1,18 @@
 import Link from 'next/link'
-import { Clock, Gem, Trophy, Users, Target, BookOpen } from 'lucide-react'
+import { Gem, Trophy, Users, Target, BookOpen } from 'lucide-react'
 import type { JourneyPlanItem } from '@/lib/journey-plans'
 import { planPillarMap } from '@/lib/journey-plans'
 import { accentColor, accentTint } from '@/lib/studio/accents'
-import { TIER_META } from '@/components/journey/tier-meta'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { Pillar } from '@/lib/pillars'
+import { buildJourneyTree, type BlockRow } from '@/lib/journeys/tree'
 
 // Discovery-mode content blocks (docs/JOURNEYS.md §10) — the visitor / not-adopted face.
 // Each is a small Server Component the page composes per the normalized layout. Token colors
 // only; no hand-rolled headers (SectionHeader / EmptyState from the kit).
 
 const SEASON_WEEKS = 13
-
-function itemCadence(it: JourneyPlanItem): string | null {
-  return it.cadence ?? it.practice?.cadence ?? null
-}
 
 /** The Story — the intro markdown ("why this journey"). */
 export function StoryBlock({ intro }: { intro: string | null }) {
@@ -34,53 +30,60 @@ export function StoryBlock({ intro }: { intro: string | null }) {
 /** The Path — ordered steps with cadence, note, and the author's default tier. */
 export function PathBlock({
   items,
-  pillarsById,
   accent,
 }: {
   items: JourneyPlanItem[]
   pillarsById: Map<string, Pillar>
   accent: string | null
 }) {
+  // Build the Phase -> Module -> Lesson tree so the preview reads as a real curriculum,
+  // not a flat list (docs/JOURNEYS-DESIGN.md §2: curriculum preview as skimmable Phases).
+  // A practice item's name falls back to its linked practice's title.
+  const blocks: BlockRow[] = items.map((i) => ({
+    id: i.id,
+    parent_id: i.parent_id ?? null,
+    block_type: i.block_type ?? 'practice',
+    sort_order: i.sort_order ?? 0,
+    title: i.title ?? i.practice?.title ?? null,
+    required: i.required ?? true,
+    est_minutes: i.est_minutes ?? null,
+    practice_id: i.practice_id || null,
+  }))
+  const tree = buildJourneyTree(blocks, [])
+  const lessonsIn = (p: (typeof tree.phases)[number]) => p.modules.reduce((s, m) => s + m.lessons.length, 0)
+  const total = tree.phases.reduce((s, p) => s + lessonsIn(p), 0)
+
   return (
     <section>
-      <SectionHeader title="The path" count={items.length} />
-      {items.length === 0 ? (
-        <EmptyState icon={Target} title="No practices yet" description="This journey hasn’t mapped its steps." />
+      <SectionHeader title="The path" count={total} />
+      {total === 0 ? (
+        <EmptyState icon={Target} title="No steps yet" description="This journey hasn’t mapped its path." />
       ) : (
-        <ol className="space-y-2">
-          {items.map((it, i) => {
-            const pid = it.domain_id ?? it.practice?.domain_id ?? null
-            const pillar = pid ? pillarsById.get(pid) : null
-            const cadence = itemCadence(it)
-            const tier = TIER_META[it.default_tier]
+        <ol className="space-y-3">
+          {tree.phases.map((p, i) => {
+            const n = lessonsIn(p)
             return (
-              <li key={it.id} className="rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">
-                <div className="flex min-w-0 items-start gap-3">
+              <li key={p.id} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+                <div className="flex items-center gap-3">
                   <span
-                    className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums"
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums"
                     style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
                   >
                     {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-text">{it.practice?.title ?? 'Practice'}</span>
-                      <span className="text-xs text-subtle" title={tier.blurb}>
-                        {tier.glyph} {tier.label}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted">
-                      {pillar && <span className="font-medium text-subtle">{pillar.name}</span>}
-                      {cadence && (
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {cadence}
-                        </span>
-                      )}
-                    </div>
-                    {it.note && <p className="mt-1 text-xs leading-relaxed text-muted">{it.note}</p>}
+                    <p className="truncate text-sm font-semibold text-text">{p.title || `Phase ${i + 1}`}</p>
+                    <p className="text-xs text-muted">{n} {n === 1 ? 'step' : 'steps'}</p>
                   </div>
                 </div>
+                <ul className="mt-3 space-y-1 border-t border-border pt-3">
+                  {p.modules.flatMap((m) => m.lessons).map((l) => (
+                    <li key={l.id} className="flex items-center gap-2 text-sm">
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-border-strong" />
+                      <span className="min-w-0 truncate text-text">{l.title}</span>
+                    </li>
+                  ))}
+                </ul>
               </li>
             )
           })}
