@@ -349,6 +349,17 @@ export async function setJourneyRewards(
   return ok()
 }
 
+/** Delivery section (ADR-252): the completion certificate + the Run phase-drip interval. */
+export async function setJourneyDelivery(
+  planId: string,
+  patch: { certificateEnabled?: boolean; dripIntervalDays?: number },
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await updatePlan(planId, patch)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
 /** Page-layout section: the ordered widget toggle/reorder config. */
 export async function setJourneyPageConfig(
   planId: string,
