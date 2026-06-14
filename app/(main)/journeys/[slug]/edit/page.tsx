@@ -4,6 +4,7 @@ import { getPlan } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
 import { JourneyEditor, type EditorBlock, type EditorPractice } from '@/components/journey/v2/journey-editor'
 import { JourneySettings } from '@/components/journey/v2/journey-settings'
+import { JourneyAdvanced } from '@/components/journey/v2/journey-advanced'
 
 // Journeys v2 — the author-only structure editor route (ADR-252, J4b). Loads the plan's
 // block tree and hands it to the client editor. Only the author may open it; everyone else
@@ -52,6 +53,12 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
         initialDripIntervalDays={plan.drip_interval_days}
       />
       <JourneyEditor slug={slug} title={plan.title} blocks={blocks} practices={practices} />
+      <JourneyAdvanced
+        planId={plan.id}
+        initialPageConfig={plan.page_config}
+        initialOfficial={plan.official}
+        initialQuestId={plan.quest_id}
+      />
     </div>
   )
 }
