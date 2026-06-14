@@ -1,27 +1,29 @@
 -- =============================================================================
--- Entitlement tier (billing axis) — Free → Member (paid) → Supporter
+-- Entitlement tier (billing axis) — Free → Crew (paid) → Supporter
 -- ADR-163 · docs/ROLES.md "Entitlement" · master build list P2.1
 --
 -- Additive + backfilled, NON-BREAKING. Adds profiles.membership_tier — the billing
 -- entitlement that is ORTHOGONAL to the community role (the ✋→✅ gate in the access
--- matrix). Until billing (P2.2) wires real upgrades, the app keeps reading the
--- crew-or-above proxy via lib/core/entitlement.ts `deriveTier`; this column is the
--- forward home the read path switches to once applied. The backfill preserves
--- today's behavior exactly: anyone above plain 'member' (the old crew-as-paid proxy)
--- starts on the paid 'member' tier.
+-- matrix). The vocabulary is free | **crew** (paid) | supporter, matching the live
+-- schema and lib/core/entitlement.ts (`ENTITLEMENT_TIERS = ['free','crew','supporter']`,
+-- `deriveTier` reads this column). The backfill preserves today's behavior: anyone above
+-- plain 'member' community_role (the old crew-as-paid proxy) starts on the paid 'crew' tier.
 --
--- Apply with `supabase db push`, then regenerate database.types.ts and flip
--- `deriveTier` / getViewerHats to read the column (a one-liner — see entitlement.ts).
+-- CORRECTION (2026-06-14): this file originally specced the paid tier as 'member'. The
+-- schema that actually shipped — and the code — settled on **'crew'** (live CHECK is
+-- `free|crew|supporter`); the file is corrected to match so a fresh `db push` produces the
+-- real schema instead of a 'member' column the code would misread. Idempotent on the live
+-- DB (the column already exists).
 -- =============================================================================
 
 alter table public.profiles
   add column if not exists membership_tier text not null default 'free'
-    check (membership_tier in ('free', 'member', 'supporter'));
+    check (membership_tier in ('free', 'crew', 'supporter'));
 
--- Preserve today's isCrew (= community_role <> 'member') as the paid 'member' tier.
+-- Preserve today's isCrew (= community_role <> 'member') as the paid 'crew' tier.
 update public.profiles
-  set membership_tier = 'member'
+  set membership_tier = 'crew'
   where community_role <> 'member' and membership_tier = 'free';
 
 comment on column public.profiles.membership_tier is
-  'Billing entitlement (ADR-163): free | member (paid) | supporter. Orthogonal to community_role; read via lib/core/entitlement.ts.';
+  'Billing entitlement (ADR-163): free | crew (paid) | supporter. Orthogonal to community_role; read via lib/core/entitlement.ts.';
