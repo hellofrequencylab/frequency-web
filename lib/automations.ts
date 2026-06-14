@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import { sendPushToProfile } from '@/lib/push'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 
@@ -20,6 +21,24 @@ export const AUTOMATION_TRIGGERS = [
   'post_create',
   'event_attend',
 ] as const
+
+// Actions a rule can fire. `email_actor` emails the event's actor (consent-checked,
+// queued, unsubscribe-stamped). `push_actor` sends a web push to the actor (gated
+// inside sendPushToProfile; fails dark without VAPID keys). action_type is a free-text
+// column in the DB (no enum/CHECK), so adding a value needs no migration.
+export const AUTOMATION_ACTION_TYPES = ['email_actor', 'push_actor'] as const
+export type AutomationActionType = (typeof AUTOMATION_ACTION_TYPES)[number]
+
+export function isAutomationActionType(value: unknown): value is AutomationActionType {
+  return typeof value === 'string' && (AUTOMATION_ACTION_TYPES as readonly string[]).includes(value)
+}
+
+/** Shape of action_config for the push_actor action. `url` is an optional deep-link path. */
+export interface PushActionConfig {
+  title: string
+  body: string
+  url?: string
+}
 
 export interface AutomationRule {
   id: string
@@ -95,6 +114,17 @@ export async function runAutomationsForEvent(
         text: `${cfg.body || ''}\n\nUnsubscribe: ${unsubscribeUrl}`,
         headers: listUnsubscribeHeaders(unsubscribeUrl),
       })
+    } else if (rule.action_type === 'push_actor') {
+      // Push to the same actor. sendPushToProfile runs the full send-gate
+      // (push preference + consent) and fails dark without VAPID keys, so
+      // there's no extra gate here and no owner config can block the path.
+      const cfg = (rule.action_config ?? {}) as Partial<PushActionConfig>
+      if (!cfg.title || !cfg.body) continue
+      await sendPushToProfile(
+        actorProfileId,
+        { title: cfg.title, body: cfg.body, url: cfg.url || '/' },
+        'lifecycle',
+      ).catch(() => 0)
     }
   }
 }
