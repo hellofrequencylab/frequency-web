@@ -248,10 +248,13 @@ findings the design is built on:
 | **J2 — The Run (cohort)** | Host starts a Run for a Circle; weekly phase drip; shared cohort meter + social proof; kickoff/check-in meetups via Events; group trophies (co-op). | ✅ Run start on the Circle + cohort meter |
 | **J3 — Rewards + completion** | Wire lesson/phase/journey Gems + trophies + certificate, idempotent; streak reuse; celebration surfaces. | ✅ Gems grant (claim-then-pay); trophy + certificate celebration |
 | **J4 — The editor** | Template/blank-with-prompts + AI outline; structure-first Program→Phase→Module→Lesson tree; block inspectors; live preview; Run settings. | ✅ template/blank create + structure editor at `/edit` (AI outline + block inspectors: follow-up) |
-| **J5 — Cutover + strip** | Adopted learners go to the v2 player; the legacy season course-player is retired from the learner face and the orphaned season widgets removed. | ✅ learner cutover + dead-widget strip · ⏳ migrate Studio author face onto the v2 editor; help-doc refresh |
+| **J5 — Cutover + strip** | Adopted learners go to the v2 player; the author face redirects to the v2 editor; the legacy season course-player + Studio `JourneyBuilder` are retired. | ✅ learner + author cutover; v2 editor now owns identity/delivery/publish settings + structure; season widgets + builder stripped · ⏳ help-doc refresh |
 
-> The Studio author face (`JourneyBuilder`) is intentionally kept: it still owns plan settings
-> (visibility, publish, official, gems, page-config) that the structure editor doesn't yet cover,
-> and it shares the legacy `CoursePlayer`/`journey-course` preview. Retiring those is gated on
-> moving settings into the v2 editor. `/admin/quests` is a harmless redirect stub (ADR-211), not
-> legacy to delete.
+> **Author face = the v2 editor** (`/journeys/[slug]/edit`): a Settings panel (identity, completion
+> Gems, certificate toggle, phase-drip interval, visibility/publish) above the Phase → Module →
+> Lesson structure tree. It reuses the owner-checked plan actions (`saveJourneyMeta`,
+> `setJourneyVisibility`, `setJourneyRewards`, `setJourneyDelivery`). Retired with the season model:
+> `JourneyBuilder`, `CoursePlayer`/`journey-course`, the practice-path picker, completion-rule +
+> page-layout + official sections. Follow-ups: a `practice` leaf in the editor (practices as an
+> optional block), and surfacing official/page-config if still needed. `/admin/quests` is a harmless
+> redirect stub (ADR-211), not legacy to delete.
