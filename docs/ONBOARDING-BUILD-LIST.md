@@ -34,7 +34,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **2.4** | Warm up seeded demo content (§S9) + demo box → action links (§S4) | First scroll feels alive | M | 📋 |
 | **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M–L | 🔴 gated |
 | **5.2** | Member-tier personal contacts + quick-add capture (ungate) | Real-life contacts, kept | S | ✅ shipped |
-| **5.1** | Rename Directory → **Network** + merge `/people` + `/connections` into one member tab | Findable as a product | S–M | 📋 next |
+| **5.1** | Rename Directory → **Network** + merge `/people` + `/connections` into one member tab | Findable as a product | S–M | ✅ **done (ADR-172)** — `/network` hub w/ CommunityTabs; `/people`→`/network`, `/connections`→`/network/contacts` redirect in; nav item is "Community"→`/network` |
 | **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
 | **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1–3 shipped |
 | **7** | **Role-advancement training** — a training Journey per role transition | Onboarding never ends; every role is taught | L | ⏳ spine shipped (7.1–7.2) |
@@ -208,7 +208,7 @@ harness** exists (BACKLOG §D). Build the harness first; then:
 
 ---
 
-## Section 5 — Network (consolidate Contacts / Directory) — 📋 (ADR-154)
+## Section 5 — Network (consolidate Contacts / Directory) — ✅ done (ADR-172, built on ADR-154)
 
 The "make real-life contacts and keep them" product. Full design:
 [`NETWORK-CRM.md`](NETWORK-CRM.md) § *The Network rework*. The 3-entity data model + AI
