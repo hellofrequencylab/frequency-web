@@ -9,7 +9,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Trash2, ChevronUp, ChevronDown, Eye, Layers, Search, Dumbbell, X, Check } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Eye, Layers, Search, Dumbbell, X, Check, Sparkles } from 'lucide-react'
 import {
   addPhaseAction,
   addModuleAction,
@@ -18,8 +18,57 @@ import {
   updateBlockAction,
   removeBlockAction,
   moveBlockAction,
+  draftOutlineAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
+import { isError } from '@/lib/action-result'
 import type { CheckConfig } from '@/lib/journeys/store'
+
+// Vera's "draft my outline" panel (build item §11.1 #4): describe the Journey in a sentence and
+// Vera drafts the Phase -> Lesson structure. Shown on the blank-start path; the author edits from
+// there. Self-contained state; the action inserts the blocks and the editor re-renders on refresh.
+function VeraOutline({ slug }: { slug: string }) {
+  const router = useRouter()
+  const [pending, start] = useTransition()
+  const [desc, setDesc] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const draft = () => {
+    setError(null)
+    start(async () => {
+      const res = await draftOutlineAction(slug, desc)
+      if (isError(res)) setError(res.error ?? 'Vera could not draft an outline.')
+      else {
+        setDesc('')
+        router.refresh()
+      }
+    })
+  }
+  return (
+    <div className="rounded-2xl border border-dashed border-primary/40 bg-primary-bg/30 p-4">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-primary-strong" />
+        <p className="text-sm font-semibold text-text">Draft an outline with Vera</p>
+      </div>
+      <p className="mt-1 text-sm text-muted">Describe the Journey in a sentence or two. Vera drafts the Phases and lessons; you edit from there.</p>
+      <textarea
+        value={desc}
+        disabled={pending}
+        onChange={(e) => setDesc(e.target.value)}
+        rows={2}
+        placeholder="e.g. A 3-week reset for people who want to read more and scroll less."
+        className="mt-2 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
+      />
+      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+      <button
+        type="button"
+        disabled={pending || !desc.trim()}
+        onClick={draft}
+        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
+      >
+        <Sparkles className="h-4 w-4" /> {pending ? 'Drafting…' : 'Draft with Vera'}
+      </button>
+    </div>
+  )
+}
 
 export interface EditorBlock {
   id: string
@@ -299,6 +348,8 @@ export function JourneyEditor({
           {stepTools(null, LOOSE_KEY)}
         </section>
       )}
+
+      {empty && <VeraOutline slug={slug} />}
 
       {phases.map((p) => (
         <section key={p.id} className="rounded-2xl border border-border bg-surface p-4">
