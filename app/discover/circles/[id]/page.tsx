@@ -56,7 +56,7 @@ export default async function CirclePage({
       <JsonLd
         data={breadcrumbSchema([
           { name: 'Discover', path: '/discover' },
-          { name: 'Circles', path: '/discover' },
+          { name: 'Circles', path: '/discover/circles' },
           { name: circle.name, path: `/discover/circles/${circle.id}` },
         ])}
       />
