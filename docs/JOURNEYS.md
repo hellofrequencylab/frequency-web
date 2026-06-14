@@ -247,14 +247,30 @@ findings the design is built on:
 | **J1 — Learner player** | The clean lesson player on the new tree: syllabus + progress, one-next-action, knowledge-check feedback, resume, phase/journey celebrations. | ✅ player at `/journeys/[slug]/learn` |
 | **J2 — The Run (cohort)** | Host starts a Run for a Circle; weekly phase drip; shared cohort meter + social proof; kickoff/check-in meetups via Events; group trophies (co-op). | ✅ Run start on the Circle + cohort meter |
 | **J3 — Rewards + completion** | Wire lesson/phase/journey Gems + trophies + certificate, idempotent; streak reuse; celebration surfaces. | ✅ Gems grant (claim-then-pay); trophy + certificate celebration |
-| **J4 — The editor** | Template/blank-with-prompts + AI outline; structure-first Program→Phase→Module→Lesson tree; block inspectors; live preview; Run settings. | ✅ template/blank create + structure editor at `/edit` (AI outline + block inspectors: follow-up) |
-| **J5 — Cutover + strip** | Adopted learners go to the v2 player; the author face redirects to the v2 editor; the legacy season course-player + Studio `JourneyBuilder` are retired. | ✅ learner + author cutover; v2 editor now owns identity/delivery/publish settings + structure; season widgets + builder stripped · ⏳ help-doc refresh |
+| **J4 — The editor** | Template/blank-with-prompts + AI outline; structure-first Program→Phase→Module→Lesson tree; block inspectors; live preview; Run settings. | ✅ template/blank create + structure editor at `/edit`; identity/delivery/publish Settings; practices as an optional block; official + discovery-layout (Advanced) · ⏳ AI outline · ⏳ module layer · ⏳ block inspectors |
+| **J5 — Cutover + strip** | Adopted learners go to the v2 player; the author face redirects to the v2 editor; the legacy season course-player + Studio `JourneyBuilder` are retired. | ✅ learner + author cutover; v2 editor owns identity/delivery/publish + structure; season widgets + builder stripped; help docs refreshed; global rail restored on journey routes |
 
 > **Author face = the v2 editor** (`/journeys/[slug]/edit`): a Settings panel (identity, completion
 > Gems, certificate toggle, phase-drip interval, visibility/publish) above the Phase → Module →
-> Lesson structure tree. It reuses the owner-checked plan actions (`saveJourneyMeta`,
-> `setJourneyVisibility`, `setJourneyRewards`, `setJourneyDelivery`). Retired with the season model:
-> `JourneyBuilder`, `CoursePlayer`/`journey-course`, the practice-path picker, completion-rule +
-> page-layout + official sections. Follow-ups: a `practice` leaf in the editor (practices as an
-> optional block), and surfacing official/page-config if still needed. `/admin/quests` is a harmless
-> redirect stub (ADR-211), not legacy to delete.
+> Lesson structure tree, with an **Advanced** section (discovery-page layout + official program).
+> It reuses the owner-checked plan actions (`saveJourneyMeta`, `setJourneyVisibility`,
+> `setJourneyRewards`, `setJourneyDelivery`, `setJourneyPageConfig`, `setJourneyOfficial`). Retired
+> with the season model: `JourneyBuilder`, `CoursePlayer`/`journey-course`, the practice-path
+> builder, completion-rule + page-layout Studio sections. `/admin/quests` is a harmless redirect
+> stub (ADR-211), not legacy to delete.
+
+## 11.1 Backlog — remaining work
+
+Status legend: 🔴 not started · ⏳ partial · ✅ done. Each row is one PR-sized chunk.
+
+| # | Item | What's missing | Why it matters | Status | Size |
+|---|---|---|---|---|---|
+| 1 | **Phase-drip locking in the player** | `lib/journeys/schedule.ts` (unlock math) is built + unit-tested but **no runtime page imports it** — the player shows every phase unlocked. Wire `isPhaseUnlocked` into the player (and Run anchor date) to lock future phases and show "unlocks in N days". | The "one phase a week" cadence is the core of the cohort pitch; without it a Journey is just a flat lesson list. | 🔴 | M |
+| 2 | **Knowledge checks / retrieval** | `check` blocks are "mark complete" only — no question/answer or self-check interaction in the player; no per-block quiz settings in the editor. | Retrieval practice is a top, evidence-backed completion + retention lever (JOURNEYS.md §evidence). | 🔴 | M |
+| 3 | **Module layer in the editor** | The block model + player support Program → Phase → **Module** → Lesson, but the editor only authors Phase → Lesson (modules are skipped, not creatable). | Lets long Journeys group lessons within a phase. | 🔴 | M |
+| 4 | **AI outline assist** | The "blank-with-prompts" generate-an-outline path from J4 isn't built; templates exist, AI generation does not. | Kills the blank-page problem for authors (highest-leverage authoring feature). | 🔴 | M |
+| 5 | **Meetups wiring** | `journey_runs.kickoff_event_id` exists but isn't set/used in a flow; no per-phase check-in event links (a `run_phase_events` map) and no built-in "schedule the kickoff" affordance. | Weekly live touchpoints are a large, evidence-backed completion lift; the vision calls them "built-in & encouraged". | 🔴 | M |
+| 6 | **Cleanup / tech-debt** | Drop the deprecated season columns (`season_locked`, `min_practices_per_day`, `target_weeks`) + retire `journey_plan_adoptions` once nothing reads them; regenerate `lib/database.types.ts` so `journey_runs`/`journey_enrollments`/new plan columns are typed (v2 code uses untyped handles today); give `docs/NAMING.md` a v2 pass (it still says "Co-op = 3+ on same Journey", predates ADR-252). | Keeps the schema + canon honest; removes the untyped-handle workaround. | 🔴 | S |
+| 7 | **Polish** | Settings-card visuals (accent dots read as a single faint ring), spacing/empty-state density, and the "Untitled" empty-title lesson UX (prompt or placeholder instead of a bare "Untitled"). | First-impression quality of the editor + player. | 🔴 | S |
+
+Recommended order: **#1** (the cadence is the product), then **#7** (cheap first-impression win), then #2 / #4 (engagement + authoring), then #3 / #5, with #6 folded in opportunistically.
