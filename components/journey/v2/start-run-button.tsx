@@ -21,6 +21,7 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
   const router = useRouter()
   const [pending, start] = useTransition()
   const [planId, setPlanId] = useState(journeys[0]?.id ?? '')
+  const [kickoff, setKickoff] = useState('')
   const [msg, setMsg] = useState<{ ok: boolean; text: string; slug?: string } | null>(null)
 
   if (journeys.length === 0) {
@@ -31,12 +32,16 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
   function go() {
     if (!planId) return
     start(async () => {
-      const res = await startJourneyRunAction({ planId, circleId })
+      const res = await startJourneyRunAction({ planId, circleId, kickoffAt: kickoff || null, journeyTitle: selected?.title })
       if (isError(res)) {
         setMsg({ ok: false, text: res.error })
         return
       }
-      setMsg({ ok: true, text: `Run started. Your circle is enrolled.`, slug: selected?.slug })
+      setMsg({
+        ok: true,
+        text: kickoff ? 'Run started, kickoff meetup scheduled. Your circle is enrolled.' : 'Run started. Your circle is enrolled.',
+        slug: selected?.slug,
+      })
       router.refresh()
     })
   }
@@ -58,6 +63,15 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
           </option>
         ))}
       </select>
+      <label className="mb-2 block">
+        <span className="mb-1 block text-2xs font-medium text-subtle">Kickoff meetup (optional)</span>
+        <input
+          type="datetime-local"
+          value={kickoff}
+          onChange={(e) => setKickoff(e.target.value)}
+          className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-sm text-text"
+        />
+      </label>
       <button
         type="button"
         onClick={go}

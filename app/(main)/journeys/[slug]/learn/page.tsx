@@ -1,9 +1,9 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Pencil } from 'lucide-react'
+import { Pencil, CalendarClock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
-import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart } from '@/lib/journeys/runs'
+import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, type KickoffEvent } from '@/lib/journeys/runs'
 import { JourneyPlayer } from '@/components/journey/v2/journey-player'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
 import { DetailTemplate } from '@/components/templates'
@@ -43,6 +43,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const { plan } = view
   const planDrip = (plan as { drip_interval_days?: number }).drip_interval_days ?? 7
   let cohort: CohortProgress | null = null
+  let kickoff: KickoffEvent | null = null
   let anchorStart: string | null = null
   let dripIntervalDays = planDrip
   try {
@@ -51,6 +52,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
       cohort = await getCohortProgress(run.id, view.plan.id)
       anchorStart = run.startedAt
       dripIntervalDays = run.dripIntervalDays
+      kickoff = await getKickoffEvent(run.id)
     } else {
       anchorStart = await getSoloEnrollmentStart(profileId, view.plan.id)
     }
@@ -93,6 +95,18 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         ) : undefined
       }
     >
+      {kickoff && (
+        <Link
+          href={`/events/${kickoff.slug}`}
+          className="mb-4 flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm transition-colors hover:border-primary"
+        >
+          <CalendarClock className="h-4 w-4 shrink-0 text-primary-strong" />
+          <span className="font-medium text-text">Kickoff meetup</span>
+          <span className="text-muted">
+            {new Date(kickoff.startsAt).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+          </span>
+        </Link>
+      )}
       {cohort && (
         <div className="mb-4">
           <CohortMeter progress={cohort} />

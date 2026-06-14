@@ -7,12 +7,15 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
-import { startRun } from '@/lib/journeys/runs'
+import { startRun, scheduleKickoff } from '@/lib/journeys/runs'
 
 export async function startJourneyRunAction(input: {
   planId: string
   circleId: string
   dripIntervalDays?: number
+  /** Optional kickoff meetup date (ISO/local datetime) — schedules a Circle Event (§11.1 #5). */
+  kickoffAt?: string | null
+  journeyTitle?: string
 }): Promise<ActionResult<{ runId: string }>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Sign in first.')
@@ -35,6 +38,18 @@ export async function startJourneyRunAction(input: {
     dripIntervalDays: input.dripIntervalDays,
   })
   if (!runId) return fail('Could not start the run.')
+
+  // Schedule the kickoff meetup if the host picked a date (build item §11.1 #5). Best-effort:
+  // a failed kickoff event doesn't fail the run itself.
+  if (input.kickoffAt) {
+    await scheduleKickoff({
+      runId,
+      circleId: input.circleId,
+      hostId: caller.id,
+      startsAt: input.kickoffAt,
+      journeyTitle: input.journeyTitle?.trim() || 'Your journey',
+    })
+  }
 
   revalidatePath(`/circles/${c.slug}`)
   return ok({ runId })
