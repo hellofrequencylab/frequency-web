@@ -64,6 +64,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         emoji={view.plan.emoji}
         tree={view.tree}
         lessonsById={view.lessonsById}
+        certificateEnabled={view.plan.certificate_enabled}
       />
     </div>
   )

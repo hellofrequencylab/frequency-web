@@ -77,6 +77,10 @@ export interface JourneyPlan {
   season_locked: boolean
   /** Gems granted on completion (default 30). */
   completion_gems: number
+  /** Days between phase unlocks in a Run (default weekly). ADR-252. */
+  drip_interval_days: number
+  /** Show a printable certificate on Journey completion. ADR-252. */
+  certificate_enabled: boolean
 }
 
 /** Block kinds an item can be (ADR-244). Existing rows are 'practice'. */
@@ -126,7 +130,8 @@ export interface JourneyPlanItem {
 const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, visibility, fork_of, ' +
   'forked_count, adopt_count, cover_image, created_at, updated_at, published_at, ' +
-  'quest_id, official, status, page_config, min_practices_per_day, target_weeks, season_locked, completion_gems'
+  'quest_id, official, status, page_config, min_practices_per_day, target_weeks, season_locked, completion_gems, ' +
+  'drip_interval_days, certificate_enabled'
 
 const ITEM_COLS =
   'id, plan_id, practice_id, domain_id, sort_order, note, cadence, default_tier, ' +
