@@ -317,6 +317,95 @@ move is a planned step, not a retrofit.
 
 ---
 
+## 11. Theme Studio (back-end management)
+
+> **In one line.** Theme Studio is a janitor-gated back-end at `/admin/appearance` where an
+> operator creates, edits, and activates brand themes as **data** (DB-backed token overrides
+> rendered as a scoped `<style>` over the code skins), with **no code deploy**.
+
+> ⚠️ **Migration dependency (read this first).** Theme Studio does nothing until the
+> [`supabase/migrations/20260625000000_themes.sql`](../supabase/migrations/20260625000000_themes.sql)
+> migration is applied to the database. Until then the reader returns `''` and the app keeps
+> rendering the **code skins** (`app/globals.css`) unchanged. The system is dormant and
+> fail-safe by design, not broken.
+
+### What an operator can do
+
+| Action | Effect |
+|---|---|
+| Create / edit a theme | Write color tokens (light + dark) and feel tokens with a live preview |
+| Activate | Flip a theme's `status` to `active` so the runtime can render it |
+| Set default | Mark the single global default skin theme (`is_default`) |
+| Archive / delete | Take a theme out of rotation, or remove it |
+
+A theme is one row, not a code change. Editing brand color, radius, motion, or density is a
+save, not a deploy.
+
+### The data model (`themes` table)
+
+| Field | What it holds |
+|---|---|
+| `slug` | Unique id, matched against the resolved `data-skin` (or `data-occasion`); validated by `isSafeSlug` before it ever builds a selector |
+| `name` | Operator-facing label |
+| `kind` | `skin` (palette + feel bound to a `data-skin`) or `occasion` (seasonal overlay) |
+| `tokens` | `{ light, dark, feel }` blocks of token-name → value |
+| `status` | `draft` · `active` · `archived` |
+| `is_default` | The single global default skin theme (partial unique index enforces one) |
+| `window_start` / `window_end` | Inclusive `MM-DD` window for `kind='occasion'` (ignored for skins) |
+| `created_by` / `created_at` / `updated_at` | Authorship + audit |
+
+### The flow: editor → validate → store → inject
+
+1. **Editor.** The operator sets color tokens (light + dark) and feel tokens (radius, motion,
+   density, type-scale, ornament, tap-min) with a live preview.
+2. **Validate (on save).** Every token name and value passes
+   [`validateThemeTokens`](../lib/theme/validate.ts): an allowlist of token names plus strict
+   per-type value validators. Anything not allowlisted, and any value carrying a CSS break-out
+   (`;{}<>`, `url(`, comments, escapes, newlines), is **dropped**, never stored. Only the
+   sanitized subset is saved.
+3. **Store.** The sanitized `{ light, dark, feel }` lands in the row's `tokens` (JSONB).
+4. **Inject (per request).** The root layout ([`app/layout.tsx`](../app/layout.tsx)) calls
+   [`loadActiveThemeCss`](../lib/theme/server/themes.ts), which loads the active `skin` theme
+   matched to the resolved `data-skin` (and the active `occasion`), **re-validates** every row,
+   and renders it through [`themeToCss`](../lib/theme/css.ts) into a scoped
+   `<style id="fx-theme">`. The selectors are deliberately higher-specificity
+   (`html[data-skin="<slug>"]` / `html.dark[data-skin="<slug>"]`, `(0,1,2)`) than the code skin
+   rules (single attribute, `(0,1,0)`), so the DB theme wins regardless of stylesheet order.
+
+### The security boundary
+
+Operator-entered values get written verbatim into a server `<style>`, so validation is the
+hard line. It is enforced **twice**: once on save (`validateThemeTokens`) and again at render
+time before the row reaches the page (the DB is never trusted to be clean). The slug is
+re-guarded by `isSafeSlug` before it builds any selector. Writes are service-role only; the
+table's RLS exposes only `status='active'` rows to reads. The studio itself is **janitor-gated**.
+
+### Activation rules
+
+| Outcome | What it takes |
+|---|---|
+| A skin theme renders for its `data-skin` | `status='active'` **and** its `slug` matches the resolved skin |
+| The global default skin | `is_default=true` (only one row may hold it) |
+| An occasion theme renders | `kind='occasion'`, `status='active'`, slug matches the active `data-occasion` |
+| Nothing matches | Reader returns `''` → the **code skins** render unchanged (fail-safe) |
+
+### Server actions
+
+Create / update / `setStatus` / `setDefault` / delete are server actions, janitor-gated, that
+revalidate the layout so a change shows on the next request.
+
+### Still TODO
+
+| Item | Status |
+|---|---|
+| Migration applied in production | ⚠️ required for Theme Studio to take effect at all |
+| Per-Space theme assignment (a Space picks its theme row) | 🔴 not built |
+| Occasion auto-resolution from the DB `MM-DD` windows | 🔴 not built (windows are stored, not yet scheduled onto the DOM) |
+| Template-per-page (a theme scoped to a page template) | 🔴 not built |
+| The generation / demographic axis as editable data | 🔴 deferred (the code axis stands; Theme Studio does not yet manage it) |
+
+---
+
 ## See also
 
 - [`app/globals.css`](../app/globals.css) — the CSS axes, source-order precedence, `@theme inline` bridge.
@@ -324,5 +413,6 @@ move is a planned step, not a retrofit.
   cookie (`cookie.ts`), the server resolver (`server/resolve.ts`).
 - [`docs/SPACES.md`](SPACES.md) — Spaces own the skin (and the per-Space generation default).
 - [`docs/DESIGN.md`](DESIGN.md) — the DAWN design language the `balanced` / `default` baseline encodes.
-- [`docs/DECISIONS.md`](DECISIONS.md) — [ADR-257](DECISIONS.md), the canonical decision.
+- [`docs/DECISIONS.md`](DECISIONS.md) — [ADR-257](DECISIONS.md) (the four-axis model) and
+  [ADR-258](DECISIONS.md) (Theme Studio: themes as operator-editable data).
 </content>
