@@ -50,22 +50,58 @@ export function breadcrumbSchema(items: { name: string; path: string }[]) {
 }
 
 // ── Event ─────────────────────────────────────────────────────────────────────
-// City-level location only. Past events are marked EventScheduled still, but we
-// keep the data honest with start/end. Google requires `location` and
-// `startDate`; we provide a Place with addressLocality (city) or a generic
-// placeholder so we never omit the field nor expose the venue.
+// City-level location only (addressLocality + city-level region/country; never a
+// street/venue/geo point — ADR-186). Google requires `location` and `startDate`.
+// For online events we emit a schema.org VirtualLocation pointing at the PUBLIC
+// event page (never the members-only join link). Optional B1 enrichment
+// (attendance_mode / is_cancelled / category / region / country) drives
+// eventAttendanceMode + eventStatus + a richer Place; without it we fall back to
+// today's "scheduled, offline" defaults so existing callers keep working.
 
-export function eventSchema(event: PublicEvent) {
-  const location = event.city
+// The fields layered onto a PublicEvent by app/discover/events/_data.ts. Kept
+// structurally typed (not imported) so lib/jsonld stays dependency-light.
+type EventSchemaEnrichment = {
+  attendance_mode?: 'in_person' | 'online' | 'hybrid' | null
+  is_cancelled?: boolean | null
+  category?: string | null
+  region?: string | null
+  country?: string | null
+}
+
+const ATTENDANCE_MODE_URL: Record<'in_person' | 'online' | 'hybrid', string> = {
+  in_person: 'https://schema.org/OfflineEventAttendanceMode',
+  online: 'https://schema.org/OnlineEventAttendanceMode',
+  hybrid: 'https://schema.org/MixedEventAttendanceMode',
+}
+
+export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
+  const mode: 'in_person' | 'online' | 'hybrid' = event.attendance_mode ?? 'in_person'
+  const url = abs(`/discover/events/${event.slug}`)
+
+  // City-level Place: addressLocality + optional city-level region/country. We
+  // never include streetAddress, venue name, or coordinates.
+  const place = event.city
     ? {
         '@type': 'Place',
         name: event.city,
-        address: { '@type': 'PostalAddress', addressLocality: event.city },
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: event.city,
+          ...(event.region ? { addressRegion: event.region } : {}),
+          ...(event.country ? { addressCountry: event.country } : {}),
+        },
       }
-    : {
-        '@type': 'Place',
-        name: 'Location shared with members',
-      }
+    : { '@type': 'Place', name: 'Location shared with members' }
+
+  // VirtualLocation for the online side. The URL is the public event page (where
+  // a member signs in to get the real join link), never the members-only
+  // online_url — that stays private.
+  const virtual = { '@type': 'VirtualLocation', url }
+
+  // Online → VirtualLocation; hybrid → both (schema.org allows an array);
+  // in_person → the city-level Place.
+  const location =
+    mode === 'online' ? virtual : mode === 'hybrid' ? [place, virtual] : place
 
   return {
     '@context': 'https://schema.org',
@@ -73,15 +109,17 @@ export function eventSchema(event: PublicEvent) {
     name: event.title,
     startDate: event.starts_at,
     ...(event.ends_at ? { endDate: event.ends_at } : {}),
-    eventStatus: 'https://schema.org/EventScheduled',
-    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    eventStatus: event.is_cancelled
+      ? 'https://schema.org/EventCancelled'
+      : 'https://schema.org/EventScheduled',
+    eventAttendanceMode: ATTENDANCE_MODE_URL[mode],
     // Google lists `image` as required for Event rich results — the per-event
     // dynamic OG image (app/discover/events/[slug]/opengraph-image.tsx), with
     // the site image as a secondary.
     image: [abs(`/discover/events/${event.slug}/opengraph-image`), abs('/opengraph-image')],
     ...(event.description ? { description: event.description } : {}),
     location,
-    url: abs(`/discover/events/${event.slug}`),
+    url,
     ...(event.circle_name
       ? { organizer: { '@type': 'Organization', name: event.circle_name } }
       : {}),
@@ -92,8 +130,10 @@ export function eventSchema(event: PublicEvent) {
       '@type': 'Offer',
       price: event.price_cents && event.price_cents > 0 ? (event.price_cents / 100).toFixed(2) : '0.00',
       priceCurrency: 'USD',
-      availability: 'https://schema.org/InStock',
-      url: abs(`/discover/events/${event.slug}`),
+      availability: event.is_cancelled
+        ? 'https://schema.org/SoldOut'
+        : 'https://schema.org/InStock',
+      url,
       validFrom: event.starts_at,
     },
   }

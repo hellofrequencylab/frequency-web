@@ -1,14 +1,26 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ImagePlus, X, Trash2 } from 'lucide-react'
+import { ImagePlus, X, Trash2, Film, Radio, Smile } from 'lucide-react'
 import { createEventPost, deleteEventPost } from '@/app/(main)/events/[slug]/social-actions'
+import { getEventPostReactions, toggleEventPostReaction } from '@/lib/events/reactions'
+import type { BoopKind, PostReactions } from '@/lib/events/reactions'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
+
+// Boops — the Partiful-style reaction set (EVENTS-DESIGN §2.2/§8). A small set of
+// real faces a guest taps on a post. Now PERSISTED: the bar shows real aggregate
+// counts (lib/events/reactions.ts + event_post_reactions) and the viewer's own
+// booped faces — real numbers only, never a fabricated tally (Law 1: a number is
+// real or it's absent). This array MUST stay in lockstep with the server-side
+// BOOP_KINDS in lib/events/reactions.ts (a `'use server'` module can only export
+// async functions, so the set can't be shared as a value — only these faces are
+// accepted server-side).
+const BOOPS: readonly BoopKind[] = ['👋', '🔥', '🎉', '❤️', '😂']
 
 export type ActivityPost = {
   id: string
@@ -21,6 +33,11 @@ export type ActivityPost = {
     handle: string
     avatarUrl: string | null
   } | null
+  /** Host-authored Event Dispatch (ADR-255) → renders with an event badge so it
+   *  reads as "a Dispatch with an event badge," not a plain comment. */
+  isDispatch?: boolean
+  /** Optional title on a Dispatch update. */
+  title?: string | null
 }
 
 function timeAgo(iso: string): string {
@@ -58,9 +75,47 @@ export function EventActivity({
   const [body, setBody] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [gifUrl, setGifUrl] = useState<string | null>(null)
+  const [showGifInput, setShowGifInput] = useState(false)
+  const [gifDraft, setGifDraft] = useState('')
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Real Boop counts per post (event_post_reactions). Only comment posts carry
+  // reactions — Dispatch entries are event_dispatches rows (id `dispatch:…`), not
+  // event_posts, so they have nothing to react to. Loaded once on mount + after a
+  // post is added; the BoopBar updates its own post in place when you toggle, so we
+  // never refetch the whole set on a single tap.
+  const [reactions, setReactions] = useState<Record<string, PostReactions>>({})
+
+  const commentPostIds = posts.filter((p) => !p.isDispatch).map((p) => p.id)
+  // Stable key so the effect only refetches when the actual set of post ids changes.
+  const commentPostIdsKey = commentPostIds.join(',')
+
+  useEffect(() => {
+    const ids = commentPostIdsKey ? commentPostIdsKey.split(',') : []
+    if (ids.length === 0) return
+    let active = true
+    // Fetch happens off the render path; state is only set in the async resolve, so
+    // this never triggers a synchronous cascading render. Stale entries for posts
+    // that disappeared are harmless — the render only reads the visible posts' keys.
+    getEventPostReactions(eventId, ids)
+      .then((map) => {
+        if (active) setReactions(map)
+      })
+      .catch(() => {
+        // A reactions read miss just leaves the bars in their unbooped state.
+      })
+    return () => {
+      active = false
+    }
+  }, [eventId, commentPostIdsKey])
+
+  // Replace one post's reactions with the fresh, server-returned state after a toggle.
+  function applyReactions(postId: string, next: PostReactions) {
+    setReactions((prev) => ({ ...prev, [postId]: next }))
+  }
 
   function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -87,6 +142,26 @@ export function EventActivity({
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  // A GIF is just an image URL — it persists via the same image_url path. We accept
+  // a direct GIF link (the lightweight picker) and clear any uploaded file so the
+  // two image sources never collide.
+  function applyGif() {
+    const url = gifDraft.trim()
+    if (!/^https:\/\/.+\.(gif|webp)(\?.*)?$/i.test(url)) {
+      setError('Paste a direct GIF link (it should end in .gif).')
+      return
+    }
+    clearImage()
+    setGifUrl(url)
+    setGifDraft('')
+    setShowGifInput(false)
+    setError('')
+  }
+
+  function clearGif() {
+    setGifUrl(null)
+  }
+
   async function uploadImage(): Promise<string | null> {
     if (!imageFile) return null
     const supabase = createClient()
@@ -110,9 +185,9 @@ export function EventActivity({
 
   function submit() {
     const trimmed = body.trim()
-    if ((!trimmed && !imageFile) || pending) return
+    if ((!trimmed && !imageFile && !gifUrl) || pending) return
     startTransition(async () => {
-      let imageUrl: string | null = null
+      let imageUrl: string | null = gifUrl
       if (imageFile) {
         imageUrl = await uploadImage()
         if (!imageUrl) return
@@ -120,11 +195,12 @@ export function EventActivity({
       await createEventPost(eventId, slug, trimmed, imageUrl)
       setBody('')
       clearImage()
+      clearGif()
       setError('')
     })
   }
 
-  const canSubmit = (!!body.trim() || !!imageFile) && !pending
+  const canSubmit = (!!body.trim() || !!imageFile || !!gifUrl) && !pending
 
   return (
     <section>
@@ -149,13 +225,14 @@ export function EventActivity({
             className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-text/90 placeholder:text-subtle outline-none disabled:opacity-60"
           />
 
-          {imagePreview && (
+          {(imagePreview || gifUrl) && (
             <div className="relative mt-2 inline-block">
-              {/* Local blob preview of the file being uploaded; next/image with
-                  `unoptimized` passes the object URL straight through. */}
+              {/* Local blob preview of the file being uploaded, or the chosen GIF;
+                  next/image with `unoptimized` passes object URLs / GIFs straight
+                  through (no optimization of animated frames). */}
               <Image
-                src={imagePreview}
-                alt="Upload preview"
+                src={imagePreview ?? gifUrl!}
+                alt={gifUrl ? 'GIF preview' : 'Upload preview'}
                 width={160}
                 height={160}
                 unoptimized
@@ -163,30 +240,70 @@ export function EventActivity({
               />
               <button
                 type="button"
-                onClick={clearImage}
-                aria-label="Remove image"
+                onClick={() => (gifUrl ? clearGif() : clearImage())}
+                aria-label={gifUrl ? 'Remove GIF' : 'Remove image'}
                 className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
+
+          {showGifInput && (
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="url"
+                value={gifDraft}
+                onChange={(e) => setGifDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') applyGif()
+                }}
+                placeholder="Paste a GIF link"
+                disabled={pending}
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+              />
+              <button
+                type="button"
+                onClick={applyGif}
+                disabled={pending}
+                className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+          )}
+
           {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
 
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={pickImage} />
 
           <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={pending}
-              aria-label="Attach image"
-              className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
-                imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-              }`}
-            >
-              <ImagePlus className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={pending}
+                aria-label="Attach image"
+                className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                  imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                }`}
+              >
+                <ImagePlus className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowGifInput((v) => !v)}
+                disabled={pending}
+                aria-label="Add a GIF"
+                className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                  gifUrl || showGifInput
+                    ? 'bg-primary-bg text-primary-strong'
+                    : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                }`}
+              >
+                <Film className="h-4 w-4" />
+              </button>
+            </div>
             <button
               type="button"
               onClick={submit}
@@ -209,7 +326,10 @@ export function EventActivity({
         <ul className="space-y-3">
           {posts.map((post) => {
             const a = post.author
-            const canDelete = canModerate || (myProfileId != null && a?.id === myProfileId)
+            // Dispatch entries are event_dispatches rows, not event_posts, so the
+            // event_posts delete action doesn't apply — no trash on them here.
+            const canDelete =
+              !post.isDispatch && (canModerate || (myProfileId != null && a?.id === myProfileId))
             return (
               <li key={post.id} className="flex gap-3">
                 {a?.avatarUrl ? (
@@ -219,9 +339,13 @@ export function EventActivity({
                     {a ? getInitials(a.displayName) : '?'}
                   </div>
                 )}
-                <div className="min-w-0 flex-1 rounded-2xl border border-border bg-surface px-3 py-2">
+                <div
+                  className={`min-w-0 flex-1 rounded-2xl border px-3 py-2 ${
+                    post.isDispatch ? 'border-primary-bg bg-primary-bg/20' : 'border-border bg-surface'
+                  }`}
+                >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                       {a ? (
                         <Link href={`/people/${a.handle}`} className="text-sm font-semibold text-text hover:underline">
                           {a.displayName}
@@ -229,12 +353,21 @@ export function EventActivity({
                       ) : (
                         <span className="text-sm font-semibold text-text">A member</span>
                       )}
-                      <span className="ml-2 text-2xs text-subtle">{timeAgo(post.createdAt)}</span>
+                      {post.isDispatch && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-3xs font-semibold text-primary-strong">
+                          <Radio className="h-3 w-3" />
+                          Event Dispatch
+                        </span>
+                      )}
+                      <span className="text-2xs text-subtle">{timeAgo(post.createdAt)}</span>
                     </div>
                     {canDelete && (
                       <DeletePostButton postId={post.id} slug={slug} />
                     )}
                   </div>
+                  {post.isDispatch && post.title && (
+                    <p className="mt-0.5 text-sm font-bold text-text">{post.title}</p>
+                  )}
                   {post.body && (
                     <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-text/90">{post.body}</p>
                   )}
@@ -244,7 +377,19 @@ export function EventActivity({
                       alt="Shared photo"
                       width={480}
                       height={360}
+                      unoptimized
                       className="mt-2 max-h-72 w-auto rounded-xl border border-border object-cover"
+                    />
+                  )}
+                  {/* Boops — tap a face to react. Real persisted counts; only on
+                      comment posts (Dispatch entries have no reaction row). Disabled
+                      (with a sign-in nudge on hover) for signed-out viewers. */}
+                  {!post.isDispatch && (
+                    <BoopBar
+                      postId={post.id}
+                      reactions={reactions[post.id]}
+                      onToggled={applyReactions}
+                      disabled={!myProfileId}
                     />
                   )}
                 </div>
@@ -254,6 +399,99 @@ export function EventActivity({
         </ul>
       )}
     </section>
+  )
+}
+
+// A small reaction bar per post. Shows REAL persisted counts (event_post_reactions
+// via lib/events/reactions.ts) plus which faces the viewer booped, and toggles them
+// through the server. Real numbers only: a face with zero reactions is simply
+// absent, never shown as "0" (Law 1: a number is real or it's absent).
+function BoopBar({
+  postId,
+  reactions,
+  onToggled,
+  disabled,
+}: {
+  postId: string
+  reactions: PostReactions | undefined
+  onToggled: (postId: string, next: PostReactions) => void
+  disabled: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [pending, startTransition] = useTransition()
+
+  const counts = reactions?.counts ?? {}
+  const mine = reactions?.mine ?? []
+  // The faces that actually have at least one boop, in the canonical set order.
+  const reacted = BOOPS.filter((k) => (counts[k] ?? 0) > 0)
+  const hasAny = reacted.length > 0
+
+  function toggle(kind: BoopKind) {
+    if (disabled || pending) return
+    setOpen(false)
+    startTransition(async () => {
+      const res = await toggleEventPostReaction(postId, kind)
+      if (res.ok) onToggled(postId, res.reactions)
+    })
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      {/* Existing reactions — one chip per face that has real boops. The chip the
+          viewer booped is highlighted; tapping it un-boops. */}
+      {reacted.map((kind) => {
+        const isMine = mine.includes(kind)
+        return (
+          <button
+            key={kind}
+            type="button"
+            onClick={() => toggle(kind)}
+            disabled={disabled || pending}
+            aria-pressed={isMine}
+            aria-label={isMine ? `Remove your ${kind} boop` : `Boop with ${kind}`}
+            title={disabled ? 'Sign in to boop' : undefined}
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              isMine
+                ? 'border-primary bg-primary-bg text-primary-strong hover:bg-primary-bg/70'
+                : 'border-border text-muted hover:border-border-strong hover:text-text'
+            }`}
+          >
+            <span className="text-sm leading-none">{kind}</span>
+            {counts[kind]}
+          </button>
+        )
+      })}
+
+      {/* Add-a-boop: the face picker, or the trigger when closed. */}
+      {open ? (
+        <div className="inline-flex items-center gap-0.5 rounded-full border border-border bg-surface px-1 py-0.5">
+          {BOOPS.map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              onClick={() => toggle(kind)}
+              disabled={disabled || pending}
+              aria-label={`Boop with ${kind}`}
+              className="rounded-full px-1.5 py-0.5 text-base leading-none transition-transform hover:scale-125 disabled:opacity-50"
+            >
+              {kind}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          disabled={disabled || pending}
+          title={disabled ? 'Sign in to boop' : undefined}
+          aria-label="Add a boop"
+          className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-2xs font-medium text-subtle transition-colors hover:border-border-strong hover:text-muted disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Smile className="h-3.5 w-3.5" />
+          {hasAny ? '' : 'Boop'}
+        </button>
+      )}
+    </div>
   )
 }
 

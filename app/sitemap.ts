@@ -8,6 +8,7 @@ import {
 import { listPublicJourneys } from "@/lib/journey-plans";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
+import { getCityCategoryHubs } from "@/app/discover/events/_data";
 
 // Organizer profiles (/discover/events/organizer/[handle]) — one URL per host with
 // at least one upcoming public/unlisted event. Reads the redaction-safe RPC, which
@@ -85,15 +86,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Best-effort dynamic entries — never let a data hiccup break the sitemap.
   let dynamicRoutes: MetadataRoute.Sitemap = [];
   let organizerRoutes: MetadataRoute.Sitemap = [];
+  let hubRoutes: MetadataRoute.Sitemap = [];
   try {
-    const [channels, circles, events, journeys, organizers] = await Promise.all([
+    const [channels, circles, events, journeys, organizers, hubs] = await Promise.all([
       getTopicalChannels(),
       getPublicCircles(200),
       getPublicEvents(200),
       listPublicJourneys(),
       getOrganizerRoutes(now),
+      // City × category hubs — only pairs that actually have upcoming public
+      // events (empty/low-value facets never get a URL, so they stay out of crawl).
+      getCityCategoryHubs().catch(() => []),
     ]);
     organizerRoutes = organizers;
+
+    hubRoutes = hubs.map((h) => ({
+      url: `${SITE_URL}/discover/events/${h.citySlug}/${h.category.slug}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.6,
+    }));
 
     const topicRoutes: MetadataRoute.Sitemap = channels.map((c) => ({
       url: `${SITE_URL}/discover/topics/${c.slug}`,
@@ -109,11 +121,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
+    // Only UPCOMING events are listed: getPublicEvents (public_events RPC) filters
+    // starts_at >= now(), so expired events are isolated OUT of the sitemap by
+    // construction (they go noindex,follow on the page until pruned). Each entry
+    // carries its dynamic per-event OG image for the image sitemap.
     const eventRoutes: MetadataRoute.Sitemap = events.map((e) => ({
       url: `${SITE_URL}/discover/events/${e.slug}`,
       lastModified: new Date(e.starts_at),
       changeFrequency: "daily",
       priority: 0.6,
+      images: [`${SITE_URL}/discover/events/${e.slug}/opengraph-image`],
     }));
 
     const journeyRoutes: MetadataRoute.Sitemap = journeys.map((j) => ({
@@ -123,7 +140,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-    dynamicRoutes = [...topicRoutes, ...circleRoutes, ...eventRoutes, ...journeyRoutes];
+    dynamicRoutes = [
+      ...topicRoutes,
+      ...circleRoutes,
+      ...eventRoutes,
+      ...hubRoutes,
+      ...journeyRoutes,
+    ];
   } catch {
     // Fall back to static routes only.
   }

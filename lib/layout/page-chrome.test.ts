@@ -57,6 +57,10 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/g/abc123',
       '/n/node-7',
       '/events/new',
+      // The event Invite (/events/[slug]) owns its own two-column interior, so the
+      // global rail is suppressed (EVENTS-DESIGN §1 — avoids the double-rail trap).
+      '/events/sunrise-sit',
+      '/events/some-slug',
       '/practices/42/edit',
       '/connections/new',
       '/connections/c_123',
@@ -65,6 +69,13 @@ describe('railFor — the single source of truth for page chrome', () => {
     ]) {
       expect(railFor(p), p).toBe('none')
     }
+  })
+
+  it('keeps the global rail on the events index and the slug ICS sub-route (only the bare Invite slug is no-rail)', () => {
+    // The Invite slug is no-rail, but the index keeps the global rail and the
+    // single-segment regex never swallows /events or a deeper /events/[slug]/* path.
+    expect(railFor('/events')).toBe('global')
+    expect(railFor('/events/sunrise-sit/event.ics')).toBe('global')
   })
 })
 

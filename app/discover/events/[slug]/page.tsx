@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CalendarDays, MapPin, Lock, ChevronLeft } from 'lucide-react'
 import { getPublicEventBySlug, formatEventDateTime, hasEventEnded } from '@/lib/discover'
+import { getEventEnrichment } from '../_data'
 import { SignInCta } from '@/components/discover/cards'
 import { FrequencyArcs } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
@@ -28,10 +29,15 @@ export async function generateMetadata({
   // Search snippets truncate around 155 chars — keep the meta description tight.
   const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
   const ogTitle = `${event.title} · ${SITE_NAME}`
+  // Expired events keep their links and share card but drop out of the index
+  // (noindex, follow). They're isolated in the sitemap too. The page itself stays
+  // live until it's pruned, so an old shared link never 404s a real reader.
+  const ended = hasEventEnded(event)
   return {
     title: event.title,
     description,
     alternates: { canonical: `/discover/events/${event.slug}` },
+    ...(ended ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       title: ogTitle,
       description,
@@ -51,6 +57,10 @@ export default async function EventPage({
   const event = await getPublicEventBySlug(slug)
   if (!event) notFound()
 
+  // Privacy-safe B1 enrichment (attendance mode, city-level region/country) for
+  // the schema.org Event. Best-effort: the page renders fully without it.
+  const enrichment = await getEventEnrichment(slug)
+
   const hasEnded = hasEventEnded(event)
 
   return (
@@ -62,7 +72,7 @@ export default async function EventPage({
       />
       <JsonLd
         data={[
-          eventSchema(event),
+          eventSchema({ ...event, ...(enrichment ?? {}) }),
           breadcrumbSchema([
             { name: 'Discover', path: '/discover' },
             { name: 'Events', path: '/discover/events' },

@@ -1,12 +1,25 @@
 'use client'
 
-import { useTransition } from 'react'
-import { Check, Clock, Star, Minus, Plus } from 'lucide-react'
+import { useEffect, useState, useTransition } from 'react'
+import { Check, Clock, Star, Minus, Plus, UserPlus, X } from 'lucide-react'
 import { setRsvpStatus, setRsvpPlusOnes } from '@/app/(main)/events/actions'
+import { setEventRsvpDepth } from '@/app/(main)/events/[slug]/social-actions'
+import {
+  loadGuestQuestionnaire,
+  saveGuestAnswer,
+  type GuestQuestionnaire,
+} from '@/app/(main)/events/[slug]/manage/questionnaire-actions'
+import type { EventQuestion } from '@/lib/events/questions'
 
 // Detail-page RSVP controls (event Detail template). Three warm states a member
 // can move between — Going · Interested (maybe) · (Join waitlist when full) —
 // plus a small "bringing guests" stepper once they're confirmed going.
+//
+// EVENTS-REWORK A1 depth (added): optional +1 NAMES (the host may require them),
+// and "Request to join" for APPROVAL-REQUIRED events (invited guests skip the
+// queue). Both ride the frozen rsvp-depth data layer via setEventRsvpDepth; the
+// simple three-state toggle keeps using the existing lean actions so its capacity /
+// email side-effects are untouched.
 //
 // Capacity-honest, never pushy (EVENTS-SYSTEM §4): the server decides full /
 // waitlist and the page passes it in; this control never fetches. plus_ones is an
@@ -19,32 +32,90 @@ type Status = 'going' | 'maybe' | 'waitlist' | 'not_going'
 
 export function RsvpControls({
   eventId,
+  slug,
   status,
   plusOnes,
   isFull,
+  requireNames = false,
+  plusOneNames = [],
+  requiresApproval = false,
+  approvalStatus = 'none',
 }: {
   eventId: string
+  /** Needed for revalidation on the depth actions; optional for the lean toggle. */
+  slug?: string
   /** The viewer's current RSVP status (null = no RSVP yet → 'not_going'). */
   status: Status | null
   /** Guests the viewer is bringing (only meaningful when going). */
   plusOnes: number
   /** Event is at capacity — a fresh "Going" joins the waitlist instead. */
   isFull: boolean
+  /** Host requires the names of any +1s (A1). */
+  requireNames?: boolean
+  /** The viewer's saved +1 names (prefill). */
+  plusOneNames?: string[]
+  /** Event needs host approval to join (A1). Invited guests skip the queue. */
+  requiresApproval?: boolean
+  /** The viewer's approval state ('pending' shows the calm "request sent" line). */
+  approvalStatus?: 'none' | 'pending' | 'approved'
 }) {
   const [pending, startTransition] = useTransition()
+  const [names, setNames] = useState<string[]>(plusOneNames)
   const current: Status = status ?? 'not_going'
   const isGoing = current === 'going'
   const isMaybe = current === 'maybe'
   const isWaitlisted = current === 'waitlist'
+  const isPending = requiresApproval && approvalStatus === 'pending'
+
+  // A1 questionnaire: once the guest has expressed any interest, surface the host's
+  // questions and let them answer (saved per question via setAnswer). Self-loaded so
+  // the host page doesn't need to thread questions through — the action returns an
+  // empty set for events with no questionnaire, so this stays invisible otherwise.
+  const hasResponded = isGoing || isMaybe || isWaitlisted || isPending
+  const [questionnaire, setQuestionnaire] = useState<GuestQuestionnaire | null>(null)
+  useEffect(() => {
+    if (!hasResponded) return
+    let active = true
+    loadGuestQuestionnaire(eventId).then((q) => {
+      if (active) setQuestionnaire(q)
+    })
+    return () => {
+      active = false
+    }
+  }, [hasResponded, eventId])
+  const questionnaireBlock =
+    questionnaire && questionnaire.questions.length > 0 ? (
+      <EventQuestionnaire
+        eventId={eventId}
+        slug={slug ?? ''}
+        questions={questionnaire.questions}
+        initialAnswers={questionnaire.answers}
+      />
+    ) : null
 
   const go = (intent: 'going' | 'maybe' | 'not_going') =>
     startTransition(() => {
       setRsvpStatus(eventId, intent)
     })
 
+  // Approval-required join → write a 'pending' RSVP through the depth layer.
+  const requestToJoin = () =>
+    startTransition(() => {
+      setEventRsvpDepth(eventId, slug ?? '', { status: 'going', approvalStatus: 'pending' })
+    })
+
   const setGuests = (n: number) =>
     startTransition(() => {
       setRsvpPlusOnes(eventId, n)
+    })
+
+  // Save +1 names through the depth layer (keeps plus_ones in sync = names.length).
+  const saveNames = (next: string[]) =>
+    startTransition(() => {
+      setEventRsvpDepth(eventId, slug ?? '', {
+        status: 'going',
+        plusOneNames: next.filter((n) => n.trim().length > 0),
+      })
     })
 
   // The "Going" segment doubles as the waitlist CTA when the event is full and
@@ -62,6 +133,38 @@ export function RsvpControls({
   // Tapping the active segment again steps back out (toggle off) to 'not_going'.
   const onGoing = () => go(isGoing || isWaitlisted ? 'not_going' : 'going')
   const onMaybe = () => go(isMaybe ? 'not_going' : 'maybe')
+
+  // ── Approval-required, not yet in: a single "Request to join" button ──
+  if (requiresApproval && !isGoing && !isWaitlisted && !isMaybe && !isPending) {
+    return (
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={requestToJoin}
+          disabled={pending}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        >
+          <UserPlus className="h-4 w-4" />
+          Request to join
+        </button>
+        <p className="text-2xs text-subtle">The host approves who joins this one.</p>
+      </div>
+    )
+  }
+
+  if (isPending) {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl border border-border bg-surface px-4 py-3">
+          <p className="flex items-center gap-2 text-sm font-medium text-text">
+            <Clock className="h-4 w-4 text-subtle" />
+            Request sent. The host will confirm.
+          </p>
+        </div>
+        {questionnaireBlock}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">
@@ -112,8 +215,11 @@ export function RsvpControls({
       )}
 
       {/* Plus-ones: only a confirmed attendee can bring guests (informational
-          headcount for the host; doesn't take seats). */}
-      {isGoing && (
+          headcount for the host; doesn't take seats). With names required, the
+          stepper is replaced by a name list so the count tracks the names. */}
+      {isGoing && requireNames ? (
+        <PlusOneNames pending={pending} names={names} setNames={setNames} onSave={saveNames} />
+      ) : isGoing ? (
         <div className="inline-flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2">
           <span className="text-sm font-medium text-muted">
             Bringing {plusOnes > 0 ? `+${plusOnes}` : 'no'} {plusOnes === 1 ? 'guest' : 'guests'}
@@ -142,6 +248,255 @@ export function RsvpControls({
             </button>
           </div>
         </div>
+      ) : null}
+
+      {questionnaireBlock}
+    </div>
+  )
+}
+
+// The host's questionnaire, shown to a guest who has RSVP'd (EVENTS-REWORK A1).
+// Each answer saves on blur (text/number) or change (choice/yes-no) via setAnswer,
+// so partial answers persist. Six types: short/long text, pick one (dropdown),
+// pick several (multi-select), yes or no, and number. Self-authorized server-side.
+function EventQuestionnaire({
+  eventId,
+  slug,
+  questions,
+  initialAnswers,
+}: {
+  eventId: string
+  slug: string
+  questions: EventQuestion[]
+  initialAnswers: Record<string, string>
+}) {
+  const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers)
+  const [saving, setSaving] = useState<string | null>(null)
+  const [savedId, setSavedId] = useState<string | null>(null)
+
+  const save = (questionId: string, value: string) => {
+    setSaving(questionId)
+    saveGuestAnswer(eventId, slug, questionId, value).finally(() => {
+      setSaving((s) => (s === questionId ? null : s))
+      setSavedId(questionId)
+    })
+  }
+
+  const setLocal = (questionId: string, value: string) =>
+    setAnswers((a) => ({ ...a, [questionId]: value }))
+
+  return (
+    <div className="space-y-4 rounded-xl border border-border bg-surface p-4">
+      <p className="text-sm font-semibold text-text">A few questions from the host</p>
+      {questions.map((q) => {
+        const value = answers[q.id] ?? ''
+        const labelId = `q-${q.id}`
+        return (
+          <div key={q.id} className="space-y-1.5">
+            <label htmlFor={labelId} className="block text-sm font-medium text-text">
+              {q.prompt}
+              {q.required && <span className="ml-1 text-xs text-danger">required</span>}
+            </label>
+
+            {q.type === 'long_text' ? (
+              <textarea
+                id={labelId}
+                value={value}
+                onChange={(e) => setLocal(q.id, e.target.value)}
+                onBlur={(e) => save(q.id, e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+              />
+            ) : q.type === 'number' ? (
+              <input
+                id={labelId}
+                type="number"
+                value={value}
+                onChange={(e) => setLocal(q.id, e.target.value)}
+                onBlur={(e) => save(q.id, e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+              />
+            ) : q.type === 'boolean' ? (
+              <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-surface p-1">
+                {(['yes', 'no'] as const).map((opt) => {
+                  const selected = value === opt
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setLocal(q.id, opt)
+                        save(q.id, opt)
+                      }}
+                      aria-pressed={selected}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-semibold capitalize transition-colors ${
+                        selected
+                          ? 'bg-primary-bg text-primary-strong'
+                          : 'text-muted hover:bg-surface-elevated hover:text-text'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : q.type === 'dropdown' ? (
+              <select
+                id={labelId}
+                value={value}
+                onChange={(e) => {
+                  setLocal(q.id, e.target.value)
+                  save(q.id, e.target.value)
+                }}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+              >
+                <option value="">Choose one</option>
+                {q.options.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            ) : q.type === 'multi_select' ? (
+              <MultiSelectAnswer
+                options={q.options}
+                value={value}
+                onChange={(next) => {
+                  setLocal(q.id, next)
+                  save(q.id, next)
+                }}
+              />
+            ) : (
+              <input
+                id={labelId}
+                type="text"
+                value={value}
+                onChange={(e) => setLocal(q.id, e.target.value)}
+                onBlur={(e) => save(q.id, e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+              />
+            )}
+
+            {saving === q.id ? (
+              <p className="text-2xs text-subtle">Saving…</p>
+            ) : savedId === q.id ? (
+              <p className="inline-flex items-center gap-1 text-2xs text-success">
+                <Check className="h-3 w-3" />
+                Saved
+              </p>
+            ) : null}
+          </div>
+        )
+      })}
+      <p className="text-2xs text-subtle">Only the host sees your answers.</p>
+    </div>
+  )
+}
+
+// Multi-select answer stored as a comma-joined string (the answer column is text).
+function MultiSelectAnswer({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[]
+  value: string
+  onChange: (next: string) => void
+}) {
+  const selected = value ? value.split(',').map((s) => s.trim()).filter(Boolean) : []
+  const toggle = (opt: string) => {
+    const next = selected.includes(opt)
+      ? selected.filter((s) => s !== opt)
+      : [...selected, opt]
+    onChange(next.join(', '))
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const on = selected.includes(opt)
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => toggle(opt)}
+            aria-pressed={on}
+            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+              on
+                ? 'bg-primary-bg text-primary-strong'
+                : 'border border-border text-muted hover:bg-surface-elevated hover:text-text'
+            }`}
+          >
+            {opt}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// +1 names editor (shown when the host requires names). The +1 count IS the number
+// of non-empty names, so the host always knows who is coming. Capped at MAX_PLUS_ONES.
+function PlusOneNames({
+  pending,
+  names,
+  setNames,
+  onSave,
+}: {
+  pending: boolean
+  names: string[]
+  setNames: (n: string[]) => void
+  onSave: (n: string[]) => void
+}) {
+  const update = (i: number, value: string) => {
+    const next = [...names]
+    next[i] = value
+    setNames(next)
+  }
+  const remove = (i: number) => {
+    const next = names.filter((_, idx) => idx !== i)
+    setNames(next)
+    onSave(next)
+  }
+  const add = () => {
+    if (names.length >= MAX_PLUS_ONES) return
+    setNames([...names, ''])
+  }
+
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+      <p className="text-xs font-medium text-muted">Who are you bringing? The host needs names.</p>
+      {names.map((name, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => update(i, e.target.value)}
+            onBlur={() => onSave(names)}
+            placeholder={`Guest ${i + 1}`}
+            disabled={pending}
+            className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+          />
+          <button
+            type="button"
+            onClick={() => remove(i)}
+            aria-label="Remove guest"
+            disabled={pending}
+            className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ))}
+      {names.length < MAX_PLUS_ONES && (
+        <button
+          type="button"
+          onClick={add}
+          disabled={pending}
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline disabled:opacity-40"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add a guest
+        </button>
       )}
     </div>
   )

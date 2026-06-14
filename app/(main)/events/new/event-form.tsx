@@ -50,6 +50,14 @@ const ENERGY_OPTIONS: { value: string; label: string }[] = [
   { value: 'ceremonial',      label: 'Ceremonial'       },
 ]
 
+// How people attend. in_person events resolve to a map point from the address
+// below; online events carry a link instead; hybrid carries both.
+const ATTENDANCE_OPTIONS: { value: 'in_person' | 'online' | 'hybrid'; label: string }[] = [
+  { value: 'in_person', label: 'In person' },
+  { value: 'online',    label: 'Online'    },
+  { value: 'hybrid',    label: 'Both'      },
+]
+
 export function EventForm({ groups }: { groups: Group[] }) {
   const [isPending, startTransition] = useTransition()
   const [title, setTitle] = useState('')
@@ -64,6 +72,14 @@ export function EventForm({ groups }: { groups: Group[] }) {
   const [visibility, setVisibility] = useState('circle_only')
   const [category, setCategory] = useState('gathering')
   const [energyTag, setEnergyTag] = useState('')
+  const [attendanceMode, setAttendanceMode] = useState<'in_person' | 'online' | 'hybrid'>('in_person')
+  const [onlineUrl, setOnlineUrl] = useState('')
+  const [venueName, setVenueName] = useState('')
+  const [street, setStreet] = useState('')
+  const [city, setCity] = useState('')
+  const [region, setRegion] = useState('')
+  const [postalCode, setPostalCode] = useState('')
+  const [country, setCountry] = useState('')
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -85,6 +101,21 @@ export function EventForm({ groups }: { groups: Group[] }) {
     fd.set('visibility', visibility)
     if (capacity.trim()) fd.set('capacity', capacity.trim())
     if (energyTag) fd.set('energyTag', energyTag)
+
+    // Geolocation (EVENTS-REWORK B1). Attendance mode drives whether the address
+    // geocodes; the structured fields resolve to a map point on save, online events
+    // carry a join link instead. All optional — a blank address simply leaves the
+    // event without a point until it's filled in later.
+    fd.set('attendanceMode', attendanceMode)
+    if (attendanceMode !== 'in_person' && onlineUrl.trim()) fd.set('onlineUrl', onlineUrl.trim())
+    if (attendanceMode !== 'online') {
+      if (venueName.trim()) fd.set('venueName', venueName.trim())
+      if (street.trim()) fd.set('street', street.trim())
+      if (city.trim()) fd.set('city', city.trim())
+      if (region.trim()) fd.set('region', region.trim())
+      if (postalCode.trim()) fd.set('postalCode', postalCode.trim())
+      if (country.trim()) fd.set('country', country.trim())
+    }
 
     startTransition(async () => {
       await createEvent(fd)
@@ -233,6 +264,108 @@ export function EventForm({ groups }: { groups: Group[] }) {
           disabled={isPending}
         />
       </div>
+
+      {/* How people attend */}
+      <div className="space-y-1.5">
+        <Label className="text-sm text-text">How do people attend?</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {ATTENDANCE_OPTIONS.map(({ value, label }) => {
+            const active = attendanceMode === value
+            return (
+              <button
+                type="button"
+                key={value}
+                onClick={() => setAttendanceMode(value)}
+                disabled={isPending}
+                className={`rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                  active
+                    ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
+                    : 'border-border bg-surface text-text hover:border-border-strong'
+                } disabled:opacity-60`}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Online join link (online / hybrid only) */}
+      {attendanceMode !== 'in_person' && (
+        <div className="space-y-1.5">
+          <Label className="text-sm text-text">
+            Join link <span className="text-2xs font-normal text-subtle">(optional)</span>
+          </Label>
+          <Input
+            type="url"
+            value={onlineUrl}
+            onChange={(e) => setOnlineUrl(e.target.value)}
+            placeholder="https://…"
+            disabled={isPending}
+          />
+        </div>
+      )}
+
+      {/* Structured address (in person / hybrid). Used to place the event on the
+          map. Leave blank to skip the map; the event still saves. */}
+      {attendanceMode !== 'online' && (
+        <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-4">
+          <div className="space-y-1">
+            <Label className="text-sm text-text">
+              Address <span className="text-2xs font-normal text-subtle">(optional, for the map)</span>
+            </Label>
+            <p className="text-2xs text-muted">
+              Fill in what you have. We place the event on the map so people nearby can find it.
+            </p>
+          </div>
+          <Input
+            type="text"
+            value={venueName}
+            onChange={(e) => setVenueName(e.target.value)}
+            placeholder="Venue name"
+            disabled={isPending}
+          />
+          <Input
+            type="text"
+            value={street}
+            onChange={(e) => setStreet(e.target.value)}
+            placeholder="Street address"
+            disabled={isPending}
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="City"
+              disabled={isPending}
+            />
+            <Input
+              type="text"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              placeholder="State or province"
+              disabled={isPending}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input
+              type="text"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+              placeholder="Postal code"
+              disabled={isPending}
+            />
+            <Input
+              type="text"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="Country"
+              disabled={isPending}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Capacity */}
       <div className="space-y-1.5">
