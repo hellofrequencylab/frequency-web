@@ -8,7 +8,6 @@ import {
   StoryBlock,
   PathBlock,
   PillarBalanceBlock,
-  CompletionRuleBlock,
   RewardPreviewBlock,
 } from '@/components/journey/discovery-widgets'
 import { SignInCta } from '@/components/discover/cards'
@@ -129,10 +128,7 @@ export default async function DiscoverJourneyPage({
 
           <PillarBalanceBlock items={items} pillars={pillars} />
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <CompletionRuleBlock targetWeeks={plan.target_weeks} />
-            <RewardPreviewBlock gems={plan.completion_gems} />
-          </div>
+          <RewardPreviewBlock gems={plan.completion_gems} />
 
           <SignInCta
             title="Start this Journey"

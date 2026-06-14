@@ -35,7 +35,6 @@ export const WIDGET_IDS = [
   'pillar-balance', // the Pillar coverage meter
   'social-proof', // "47 on this journey" adopt-count proof
   'reward-preview', // completion reward preview (Gems + badge)
-  'completion-rule', // the completion rule (target_weeks of 13)
 ] as const
 
 export type WidgetId = (typeof WIDGET_IDS)[number]
@@ -60,7 +59,7 @@ export const REQUIRED_WIDGETS: Record<JourneyPageMode, readonly WidgetId[]> = {
  *  leads with the story and the path. Every id present here is enabled by default. */
 export const DEFAULT_LAYOUT: Record<JourneyPageMode, readonly WidgetId[]> = {
   active: ['next-step', 'progress', 'season-context', 'checklist', 'gamification', 'streak', 'companions', 'practice-guide'],
-  discovery: ['story', 'path', 'pillar-balance', 'social-proof', 'reward-preview', 'completion-rule'],
+  discovery: ['story', 'path', 'pillar-balance', 'social-proof', 'reward-preview'],
 }
 
 /** A normalized, render-ready widget descriptor: a known id + its resolved enabled flag +
@@ -160,7 +159,6 @@ export const WIDGET_META: Record<WidgetId, { label: string; hint: string; mode: 
   'pillar-balance': { label: 'Pillar balance', hint: 'How the path spreads across the four Pillars.', mode: 'discovery' },
   'social-proof': { label: 'Social proof', hint: 'How many people have adopted this Journey.', mode: 'discovery' },
   'reward-preview': { label: 'Reward preview', hint: 'What completing the Journey pays out (Gems + badge).', mode: 'discovery' },
-  'completion-rule': { label: 'Completion rule', hint: 'The completion bar: N qualifying weeks of 13.', mode: 'discovery' },
 }
 
 /**

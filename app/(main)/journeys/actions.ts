@@ -327,17 +327,6 @@ export async function setJourneyStepTier(
   return ok()
 }
 
-/** Completion-rules section: min practices/day, target weeks, season-locked. */
-export async function setJourneyCompletionRules(
-  planId: string,
-  patch: { minPracticesPerDay?: number; targetWeeks?: number; seasonLocked?: boolean },
-): Promise<ActionResult> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await updatePlan(planId, patch)
-  revalidatePath('/journeys', 'layout')
-  return ok()
-}
-
 /** Rewards section: completion Gems (10–100, clamped in updatePlan). */
 export async function setJourneyRewards(
   planId: string,

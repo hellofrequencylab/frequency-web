@@ -89,9 +89,10 @@ export async function sweepRankCosmetics(): Promise<{ granted: number }> {
 
 /**
  * Sweep: journey badges for completed OFFICIAL Journeys. A completion is a
- * reward_grants row keyed journey.complete:<planId>:<season> (lib/journey-rewards);
- * the badge's pillar is the dominant domain_id across the plan's items. All four
- * pillar badges grant Full Spectrum. Defensive: unknown pillars grant nothing.
+ * reward_grants row keyed journey.complete:<planId>:<season> (legacy season grants; the
+ * season engine is retired per ADR-253, so this only re-sweeps historical completions).
+ * The badge's pillar is the dominant domain_id across the plan's items. All four pillar
+ * badges grant Full Spectrum. Defensive: unknown pillars grant nothing.
  */
 export async function sweepJourneyBadges(): Promise<{ granted: number }> {
   const admin = db()

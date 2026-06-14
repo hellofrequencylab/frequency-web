@@ -12,8 +12,6 @@ import { buildJourneyTree, type BlockRow } from '@/lib/journeys/tree'
 // Each is a small Server Component the page composes per the normalized layout. Token colors
 // only; no hand-rolled headers (SectionHeader / EmptyState from the kit).
 
-const SEASON_WEEKS = 13
-
 /** The Story — the intro markdown ("why this journey"). */
 export function StoryBlock({ intro }: { intro: string | null }) {
   if (!intro) return null
@@ -149,24 +147,6 @@ export function RewardPreviewBlock({ gems }: { gems: number }) {
             <Gem className="h-4 w-4" /> {gems} gems
           </span>
           · a permanent completion badge
-        </p>
-      </div>
-    </section>
-  )
-}
-
-/** The completion rule — bank target_weeks qualifying weeks of 13. */
-export function CompletionRuleBlock({ targetWeeks }: { targetWeeks: number }) {
-  return (
-    <section className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-elevated text-muted">
-        <Target className="h-5 w-5" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-sm font-bold text-text">How you complete it</p>
-        <p className="mt-0.5 text-sm leading-relaxed text-muted">
-          Show up on a practice in <strong className="font-semibold text-text">{targetWeeks}</strong> of the season’s{' '}
-          {SEASON_WEEKS} weeks. Forgiving by design. A few hard weeks won’t end your run.
         </p>
       </div>
     </section>

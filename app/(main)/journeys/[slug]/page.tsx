@@ -16,7 +16,6 @@ import {
   PillarBalanceBlock,
   SocialProofBlock,
   RewardPreviewBlock,
-  CompletionRuleBlock,
   AdoptRemixBlock,
 } from '@/components/journey/discovery-widgets'
 
@@ -83,7 +82,7 @@ export default async function JourneyPlanPage({
   // Single data load for the read-only page (the contract).
   const view = await getJourneyView(profileId, slug)
   if (!view) notFound()
-  const { plan, items, adopted, progress } = view
+  const { plan, items, adopted } = view
 
   const isAuthor = !!profileId && plan.author_id === profileId
   if (!isAuthor && plan.visibility === 'private') notFound()
@@ -100,7 +99,7 @@ export default async function JourneyPlanPage({
 
   // ACTIVE → the v2 lesson player (ADR-252, J5). An adopted learner goes straight to the
   // player; a previewing author stays on the discovery view.
-  if (adopted && progress && !preview) redirect(`/journeys/${plan.slug}/learn`)
+  if (adopted && !preview) redirect(`/journeys/${plan.slug}/learn`)
 
   // Only the DISCOVERY face composes a page_config widget stack.
   const discoveryWidgets = enabledWidgets(plan.page_config, 'discovery').map((w) => w.id)
@@ -225,8 +224,6 @@ function DiscoveryMode({
         return <SocialProofBlock count={plan.adopt_count} />
       case 'reward-preview':
         return <RewardPreviewBlock gems={plan.completion_gems} />
-      case 'completion-rule':
-        return <CompletionRuleBlock targetWeeks={plan.target_weeks} />
       default:
         return null
     }

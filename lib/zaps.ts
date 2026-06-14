@@ -67,6 +67,12 @@ export function practiceLogAction(weightClass: string | null | undefined): ZapAc
   return 'practice_logged'
 }
 
+/** The per-log Zap value for a practice's weight class — the display fallback (the award path
+ *  reads the live amount from zap_config via practiceLogAction). One source for the value. */
+export function practiceLogZaps(weightClass: string | null | undefined): number {
+  return ZAP_AMOUNTS[practiceLogAction(weightClass)]
+}
+
 export type ZapAction = keyof typeof ZAP_AMOUNTS
 
 export interface ZapAwardResult {
