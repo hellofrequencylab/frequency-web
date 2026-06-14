@@ -6,6 +6,7 @@ import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { resolveTheme } from "@/lib/theme/server/resolve";
+import { loadActiveThemeCss } from "@/lib/theme/server/themes";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
@@ -116,6 +117,13 @@ export default async function RootLayout({
   // bytes of attributes vary per request. We deliberately do NOT cache around it in this change.
   const theme = await resolveTheme();
 
+  // Data-driven themes (docs/THEME.md): render the active DB skin/occasion theme as a scoped
+  // <style> whose higher-specificity selectors (html[data-skin] / html.dark[data-skin]) override
+  // the code DAWN/skin tokens for the active data-skin value. FAIL-SAFE: returns '' when the
+  // themes table/rows are absent, so the code CSS skins stay the fallback. Placed late in <head>
+  // (after the pre-paint themeScript) so source order plus specificity make it win.
+  const themeCss = await loadActiveThemeCss({ skin: theme.skin, occasion: theme.occasion });
+
   return (
     <html
       lang="en"
@@ -127,6 +135,11 @@ export default async function RootLayout({
       <head>
         {/* Theme script must run synchronously before any paint */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* Data-driven theme overrides. Empty (and inert) unless an active DB theme matches
+            the resolved skin/occasion; sits after the pre-paint script so it wins on order. */}
+        {themeCss ? (
+          <style id="fx-theme" dangerouslySetInnerHTML={{ __html: themeCss }} />
+        ) : null}
         {/* Site-wide structured data for search/answer engines */}
         <JsonLd data={[organizationSchema(), websiteSchema()]} />
         {/* GA4 — inert unless NEXT_PUBLIC_GA_MEASUREMENT_ID is set in production */}

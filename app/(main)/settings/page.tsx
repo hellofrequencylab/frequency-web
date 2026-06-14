@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { Moon, Sun, Monitor, Check, User, Shield, Bell, CreditCard, MapPin } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
-import { ThemeSwitcher } from '@/components/theme/theme-switcher'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -67,7 +66,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Appearance — light/dark mode plus the style preset. */}
+      {/* Appearance — light/dark mode. */}
       <section>
         <SectionHeader title="Appearance" />
         <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Mode</p>
@@ -104,9 +103,6 @@ export default function SettingsPage() {
             )
           })}
         </div>
-
-        <p className="text-xs font-medium text-muted uppercase tracking-wide mt-6 mb-2">Style</p>
-        <ThemeSwitcher />
       </section>
     </FocusTemplate>
   )

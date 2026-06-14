@@ -1,0 +1,48 @@
+// Theme → CSS — pure. Turns a validated token set into a scoped `<style>` body that
+// overrides the code DAWN/skin tokens for the matching `data-skin` value. The selectors are
+// deliberately MORE specific than the code skin rules (`html[data-skin="…"]` /
+// `html.dark[data-skin="…"]`, two element/attribute compounds = (0,1,2) vs the code skins'
+// single attribute (0,1,0)), so the DB theme wins reliably regardless of stylesheet order.
+//
+// SECURITY: this emits the slug and token values verbatim. It assumes its input is ALREADY
+// validated by lib/theme/validate.ts (allowlisted names, injection-safe values, safe slug),
+// and re-guards the slug via isSafeSlug as a belt-and-braces check before building any
+// selector. Pass only the output of validateThemeTokens here.
+
+import { isSafeSlug } from './validate'
+
+/** Emit `<name>: <value>;` pairs for an already-validated block (skips empty values). */
+function declarations(tokens: Record<string, string>): string {
+  let out = ''
+  for (const [name, value] of Object.entries(tokens)) {
+    if (!value) continue
+    out += `${name}:${value};`
+  }
+  return out
+}
+
+/**
+ * Build the scoped CSS for a theme. Returns '' for an unsafe/empty slug. Otherwise emits two
+ * rules selected by the theme's slug (the active `data-skin`/`data-occasion` value):
+ *
+ *   html[data-skin="<slug>"]{ <feel + light tokens> }
+ *   html.dark[data-skin="<slug>"]{ <dark tokens> }
+ *
+ * Feel + light tokens go on the base rule (feel is mode-agnostic); dark tokens go on the
+ * `.dark` rule so the cascade resolves correctly per mode. Empty rules are omitted.
+ */
+export function themeToCss(
+  slug: string,
+  tokens: { light: Record<string, string>; dark: Record<string, string>; feel: Record<string, string> },
+): string {
+  if (!isSafeSlug(slug)) return ''
+
+  // Feel tokens are mode-agnostic, so they ride the base (light) rule.
+  const base = declarations(tokens.feel) + declarations(tokens.light)
+  const dark = declarations(tokens.dark)
+
+  let css = ''
+  if (base) css += `html[data-skin="${slug}"]{${base}}`
+  if (dark) css += `html.dark[data-skin="${slug}"]{${dark}}`
+  return css
+}

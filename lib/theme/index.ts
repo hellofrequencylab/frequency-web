@@ -45,6 +45,18 @@ export {
   serializeThemeCookie,
 } from './cookie'
 
+// Data-driven theming (docs/THEME.md). Pure, client-safe utils only: the token allowlist +
+// validators and the CSS renderer. The SERVER reader `loadActiveThemeCss` is deliberately NOT
+// re-exported — it imports the service-role admin client + 'server-only'; the root layout
+// imports it directly from `@/lib/theme/server/themes`.
+export {
+  TOKEN_ALLOWLIST,
+  validateThemeTokens,
+  isSafeSlug,
+} from './validate'
+
+export { themeToCss } from './css'
+
 // Type-only re-export (no runtime code pulled in — stays client-safe). Consumers that
 // need to RESOLVE a theme import `resolveTheme` from `@/lib/theme/server/resolve` directly.
 export type { ResolvedTheme } from './server/resolve'
