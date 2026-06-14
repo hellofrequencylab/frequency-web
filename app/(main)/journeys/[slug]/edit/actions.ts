@@ -79,6 +79,40 @@ export async function addLessonAction(
   return ok({ id: String((data as { id: string }).id) })
 }
 
+/** Add a library practice as an optional block under a phase (ADR-252: practices demoted to
+ *  one block type). Pulls the practice's title for the step label; the player renders it like
+ *  any leaf, and check-offs use the same journey_lesson_progress as every other block. */
+export async function addPracticeBlockAction(
+  slug: string,
+  parentId: string,
+  practiceId: string,
+): Promise<ActionResult<{ id: string }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  if (!practiceId) return fail('No practice given.')
+  const admin = db()
+  const { data: pr } = await admin.from('practices').select('title, domain_id').eq('id', practiceId).maybeSingle()
+  const practice = pr as { title: string | null; domain_id: string | null } | null
+  const sort = await nextSortOrder(admin, a.planId, parentId)
+  const { data, error } = await admin
+    .from('journey_plan_items')
+    .insert({
+      plan_id: a.planId,
+      block_type: 'practice',
+      parent_id: parentId,
+      practice_id: practiceId,
+      domain_id: practice?.domain_id ?? null,
+      title: practice?.title ?? 'Practice',
+      sort_order: sort,
+      required: true,
+    })
+    .select('id')
+    .maybeSingle()
+  if (error || !data) return fail('Could not add the practice.')
+  done(slug)
+  return ok({ id: String((data as { id: string }).id) })
+}
+
 export async function updateBlockAction(
   slug: string,
   itemId: string,

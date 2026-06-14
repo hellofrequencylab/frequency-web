@@ -1,7 +1,8 @@
 import { notFound, redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { getPlan } from '@/lib/journey-plans'
-import { JourneyEditor, type EditorBlock } from '@/components/journey/v2/journey-editor'
+import { listPublicPractices } from '@/lib/practices'
+import { JourneyEditor, type EditorBlock, type EditorPractice } from '@/components/journey/v2/journey-editor'
 import { JourneySettings } from '@/components/journey/v2/journey-settings'
 
 // Journeys v2 — the author-only structure editor route (ADR-252, J4b). Loads the plan's
@@ -29,6 +30,11 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
   }))
 
   const { plan } = loaded
+  const practices: EditorPractice[] = (await listPublicPractices()).map((p) => ({
+    id: p.id,
+    title: p.title,
+    description: p.description,
+  }))
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
@@ -45,7 +51,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
         initialCertificateEnabled={plan.certificate_enabled}
         initialDripIntervalDays={plan.drip_interval_days}
       />
-      <JourneyEditor slug={slug} title={plan.title} blocks={blocks} />
+      <JourneyEditor slug={slug} title={plan.title} blocks={blocks} practices={practices} />
     </div>
   )
 }
