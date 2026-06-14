@@ -33,12 +33,12 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'The Lab',
   description:
-    'The Frequency Lab is a third space engineered for your nervous system. Somewhere to move, gather, cool down, and come back to yourself.',
+    'The Frequency Lab is a third space to move, gather, cool down, and switch off. Somewhere to come back to yourself in person, not on a screen.',
   alternates: { canonical: '/the-lab' },
   openGraph: {
     title: 'The Lab · Frequency',
     description:
-      'A third space built to be felt: movement studios, a thermal circuit, a cold pool, a connection bar, and an events floor.',
+      'A real third space you can walk into: movement studios, a thermal circuit, a cold pool, a connection bar, and an events floor.',
     url: '/the-lab',
   },
 }
@@ -47,7 +47,7 @@ const INSIDE = [
   {
     icon: Dumbbell,
     title: 'Movement studios',
-    body: 'Breathwork at sunrise, ecstatic dance after dark, strength in between, programmed for your nervous system, not a mirror.',
+    body: 'Breathwork at sunrise, ecstatic dance after dark, strength in between. Programmed to help you calm down, not to chase a mirror.',
   },
   {
     icon: Flame,
@@ -93,7 +93,7 @@ function LegacyTheLab() {
         focal="object-center"
         eyebrow="The Lab"
         title="A third space with a front door."
-        subtitle="Not home, not work. A real place you can walk into, dark wood, warm light, steam and greenery, engineered to bring your whole system back to baseline. The first one is taking root in North County San Diego."
+        subtitle="Not home, not work. A real place you can walk into, dark wood, warm light, steam and greenery, somewhere to finally switch off. The first one is taking root in North County San Diego."
       >
         <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
