@@ -55,7 +55,7 @@ import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
-import { railFor, leftRailFor } from '@/lib/layout/page-chrome'
+import { railFor, leftRailFor, mergeChrome, type ChromeOverrides } from '@/lib/layout/page-chrome'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
 
@@ -1102,6 +1102,9 @@ export default function AppShell({
   demoHidden = false,
   hasDemoContent = true,
   skin = 'default',
+  brandName = null,
+  brandLogoUrl = null,
+  chromeOverrides,
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -1142,6 +1145,12 @@ export default function AppShell({
    *  shell root so per-Space token overrides can scope to the in-app surface. 'default' is
    *  the current look (a no-op until skin token sets are authored). */
   skin?: string
+  /** The active Space's brand display name; replaces the default wordmark text when set. */
+  brandName?: string | null
+  /** The active Space's brand logo URL; rendered in the header in place of the wordmark. */
+  brandLogoUrl?: string | null
+  /** Operator route -> rail overrides (page_chrome_overrides), merged over the code chrome map. */
+  chromeOverrides?: ChromeOverrides
 }) {
   const pathname = usePathname()
   // The rail's sections, built from the operator's GLOBAL order + visibility
@@ -1217,7 +1226,10 @@ export default function AppShell({
   // for 'scoped' entity-detail pages (they render their own scope rail in-body, no
   // double-rail trap) and for 'none' Focus pages (compose/edit/settings/operator
   // workspaces that read best full-width). To reframe a route, edit page-chrome.ts.
-  const showSidebar = !!sidebar && railFor(pathname) === 'global'
+  // Effective right-rail mode: the operator's per-route override (page_chrome_overrides,
+  // loaded server-side and passed in) wins over the code chrome map; absent → code default.
+  const effectiveRail = mergeChrome(railFor(pathname), chromeOverrides ?? {}, pathname)
+  const showSidebar = !!sidebar && effectiveRail === 'global'
 
   // The global MEMBER left rail is swapped out on workspace routes (today: /admin/*),
   // which mount their OWN left nav in their layout (the admin sidebar). Suppressing
@@ -1231,7 +1243,7 @@ export default function AppShell({
   // surfaces (railFor → 'none': on-air/scan/settings/compose). Stream/Index/
   // Dashboard and scoped-detail pages all keep it. One declarative rule, read from
   // the same page-chrome map the rails use — pages never toggle it.
-  const showFooter = !hideAppNav && showLeftRail && railFor(pathname) !== 'none'
+  const showFooter = !hideAppNav && showLeftRail && effectiveRail !== 'none'
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
@@ -1254,7 +1266,7 @@ export default function AppShell({
 
         {/* Engraved, interactive wordmark. Leads the bar — on mobile the menu now
             lives in the bottom tab bar, so the wordmark anchors the top-left. */}
-        <BrandMark />
+        <BrandMark name={brandName} logoUrl={brandLogoUrl} />
 
         {/* Full-site browse nav (Discover + About dropdowns) beside the logo —
             the same component the splash/site uses. In the app shell we're in
