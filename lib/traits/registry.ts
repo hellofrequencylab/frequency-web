@@ -409,6 +409,11 @@ const BY_KEY = new Map(TRAIT_REGISTRY.map((t) => [t.key, t]))
 /** All registered tag definitions. */
 export const TAGS: readonly TraitDef[] = TRAIT_REGISTRY.filter((t) => t.kind === 'tag')
 
+/** Computed traits — the keys a value-comparison predicate can reference. The segment
+ *  builder reads this for its trait picker; `predicted` traits are also computed values
+ *  in storage, so they're included (the validator gates `kind === 'computed'`). */
+export const COMPUTED_TRAITS: readonly TraitDef[] = TRAIT_REGISTRY.filter((t) => t.kind === 'computed')
+
 /** Look up a trait/tag definition by key. */
 export function getTrait(key: string): TraitDef | undefined {
   return BY_KEY.get(key)
