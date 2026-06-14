@@ -18,6 +18,11 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/connections', // the index keeps the rail
       '/practices',
       '/journeys',
+      // Journey routes ride the global rail after the v2 rebuild (ADR-252): the old
+      // scoped course-player is retired, so detail/learn/edit keep the standard rail.
+      '/journeys/tune-in-b3fnjh',
+      '/journeys/tune-in-b3fnjh/learn',
+      '/journeys/tune-in-b3fnjh/edit',
       '/programs',
       '/partners',
       '/broadcast',
