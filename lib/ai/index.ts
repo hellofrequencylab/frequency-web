@@ -18,6 +18,22 @@ export {
   rememberFacts,
   eraseMemberContext,
   mergeFacts,
+  claimMembersDueForSummary,
+  writeDigest,
   type MemberFacts,
   type MemberContext,
+  type MemberContextForSummary,
 } from './memory'
+export {
+  needsCompression,
+  fallbackDigest,
+  coerceDigest,
+  countFacts,
+  stalenessOf,
+  compressMemberMemory,
+  summarizeVeraMemory,
+  SUMMARY_BATCH_LIMIT,
+  type MemoryDigest,
+  type MemoryStaleness,
+  type SummarizeResult,
+} from './memory-summary'
