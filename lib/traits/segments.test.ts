@@ -3,6 +3,7 @@ import {
   evaluateSegment,
   validateSegmentDefinition,
   describeSegment,
+  uniqueSegmentSlug,
   type MemberSnapshot,
   type SegmentDefinition,
 } from './segments'
@@ -60,6 +61,26 @@ describe('validateSegmentDefinition', () => {
     expect(validateSegmentDefinition({ combinator: 'all', predicates: [{ type: 'trait', key: 'wam_status', op: 'bogus', value: true }] })).toHaveLength(1)
     expect(validateSegmentDefinition({ combinator: 'sometimes', predicates: [{ type: 'tag', key: 'web_beta' }] })).toHaveLength(1)
     expect(validateSegmentDefinition({ combinator: 'all', predicates: [] })).toHaveLength(1)
+  })
+})
+
+describe('uniqueSegmentSlug', () => {
+  it('slugifies the name when free', () => {
+    expect(uniqueSegmentSlug('Active Founders', [])).toBe('active-founders')
+  })
+
+  it('appends a numeric suffix on collision, skipping taken suffixes', () => {
+    expect(uniqueSegmentSlug('Active Founders', ['active-founders'])).toBe('active-founders-2')
+    expect(uniqueSegmentSlug('Active Founders', ['active-founders', 'active-founders-2'])).toBe('active-founders-3')
+  })
+
+  it('ignores the row’s own current slug so an unchanged name keeps it', () => {
+    expect(uniqueSegmentSlug('Active Founders', ['active-founders'], 'active-founders')).toBe('active-founders')
+  })
+
+  it('falls back to "segment" when the name has no slug-able characters', () => {
+    expect(uniqueSegmentSlug('!!!', [])).toBe('segment')
+    expect(uniqueSegmentSlug('!!!', ['segment'])).toBe('segment-2')
   })
 })
 

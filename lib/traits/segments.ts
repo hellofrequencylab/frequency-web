@@ -8,6 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getTrait, isTagKey } from './registry'
+import { slugify } from '@/lib/utils'
 
 export type Combinator = 'all' | 'any'
 export type TraitOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte'
@@ -91,6 +92,20 @@ export function validateSegmentDefinition(def: unknown): string[] {
     }
   })
   return errors
+}
+
+/** A unique slug for `name`, avoiding collisions with `taken` (the slugs already in
+ *  use). Pure + unit-tested: slugifies the name, falls back to "segment" when the name
+ *  has no slug-able characters, and appends -2, -3… until it's free. `ignore` lets an
+ *  edit keep its OWN current slug without colliding with itself. */
+export function uniqueSegmentSlug(name: string, taken: Iterable<string>, ignore?: string): string {
+  const used = new Set(taken)
+  if (ignore) used.delete(ignore)
+  const base = slugify(name) || 'segment'
+  if (!used.has(base)) return base
+  let n = 2
+  while (used.has(`${base}-${n}`)) n++
+  return `${base}-${n}`
 }
 
 const OP_SYMBOL: Record<TraitOp, string> = { eq: '=', neq: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤' }
@@ -197,6 +212,78 @@ export async function resolveSegmentProfileIds(slug: string): Promise<string[]> 
 export async function listSegmentChoices(): Promise<Array<{ slug: string; name: string }>> {
   const { data } = await db().from('segments').select('slug, name').order('name')
   return ((data ?? []) as Array<{ slug: string; name: string }>).map((s) => ({ slug: s.slug, name: s.name }))
+}
+
+/** One saved segment by id (for the edit surface). null when it doesn't exist. */
+export async function getSegment(id: string): Promise<SegmentRow | null> {
+  const { data } = await db()
+    .from('segments')
+    .select('id, slug, name, description, definition, is_system')
+    .eq('id', id)
+    .maybeSingle()
+  return (data as SegmentRow | null) ?? null
+}
+
+/** Count members matching a definition right now — the live-preview entry point.
+ *  Loads the member snapshots once and evaluates in memory (same path as the index). */
+export async function previewSegmentCount(def: SegmentDefinition): Promise<number> {
+  const snapshots = await loadMemberSnapshots()
+  return snapshots.filter((m) => evaluateSegment(def, m)).length
+}
+
+/** Every slug currently in use (for collision-free slug generation). */
+async function takenSlugs(): Promise<string[]> {
+  const { data } = await db().from('segments').select('slug')
+  return ((data ?? []) as Array<{ slug: string }>).map((r) => r.slug)
+}
+
+export interface SegmentInput {
+  name: string
+  description?: string | null
+  definition: SegmentDefinition
+}
+
+/** Create a new (non-system) segment. The definition is assumed pre-validated by the
+ *  caller (the server action runs validateSegmentDefinition first). Returns the new id. */
+export async function createSegment(input: SegmentInput, createdBy: string): Promise<string> {
+  const slug = uniqueSegmentSlug(input.name, await takenSlugs())
+  const { data, error } = await db()
+    .from('segments')
+    .insert({
+      slug,
+      name: input.name.trim(),
+      description: input.description?.trim() || null,
+      definition: input.definition,
+      is_system: false,
+      created_by: createdBy,
+    })
+    .select('id')
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return (data as { id: string }).id
+}
+
+/** Update a saved segment. Re-slugs from the name (keeping its own slug stable when the
+ *  name is unchanged). The caller must have already refused system segments + validated. */
+export async function updateSegment(id: string, current: SegmentRow, input: SegmentInput): Promise<void> {
+  const slug = uniqueSegmentSlug(input.name, await takenSlugs(), current.slug)
+  const { error } = await db()
+    .from('segments')
+    .update({
+      slug,
+      name: input.name.trim(),
+      description: input.description?.trim() || null,
+      definition: input.definition,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+/** Delete a saved segment by id. The caller must have already refused system segments. */
+export async function deleteSegment(id: string): Promise<void> {
+  const { error } = await db().from('segments').delete().eq('id', id)
+  if (error) throw new Error(error.message)
 }
 
 /** Every segment with its live member count + a sample of matched members. Loads the
