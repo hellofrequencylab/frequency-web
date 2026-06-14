@@ -51,19 +51,24 @@ export function AccentPicker({
   onChange: (key: string) => void
   size?: 'sm' | 'lg'
 }) {
-  const dim = size === 'lg' ? 'h-6 w-6' : 'h-3.5 w-3.5'
+  const dim = size === 'lg' ? 'h-7 w-7' : 'h-5 w-5'
   return (
-    <div className="flex gap-1.5">
-      {STUDIO_ACCENTS.map((a) => (
-        <button
-          key={a.key}
-          type="button"
-          aria-label={a.label}
-          onClick={() => onChange(a.key)}
-          className={`${dim} rounded-full ring-offset-2 ring-offset-canvas transition-transform hover:scale-110 ${accent === a.key ? 'ring-2' : ''}`}
-          style={{ backgroundColor: accentColor(a.key), ['--tw-ring-color' as string]: accentColor(a.key) }}
-        />
-      ))}
+    <div className="flex flex-wrap gap-2">
+      {STUDIO_ACCENTS.map((a) => {
+        const selected = accent === a.key
+        return (
+          <button
+            key={a.key}
+            type="button"
+            aria-label={a.label}
+            aria-pressed={selected}
+            title={a.label}
+            onClick={() => onChange(a.key)}
+            className={`${dim} rounded-full ring-offset-2 ring-offset-canvas transition-transform hover:scale-110 ${selected ? 'scale-110 ring-2' : ''}`}
+            style={{ backgroundColor: accentColor(a.key), ['--tw-ring-color' as string]: 'var(--brand-mark)' }}
+          />
+        )
+      })}
     </div>
   )
 }
