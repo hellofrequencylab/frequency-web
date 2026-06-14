@@ -264,6 +264,36 @@
 > suite + sub-items**. Regrouping the catalog updated the sub-nav + launchpad for free; the sidebar
 > trim follows. The sidebar *tunes the page*; the suite *manages the domain*.
 
+> **2026-06-14:** **Events re-architecture** — the Events system rebuilt around two surfaces: the
+> **Invite** (Partiful/Luma — host↔guest) and the **Catalog** (Eventbrite/Meetup — geolocated
+> discovery). Spec [`EVENTS-REWORK.md`](EVENTS-REWORK.md) + design [`EVENTS-DESIGN.md`](EVENTS-DESIGN.md);
+> ADR-254 (hybrid scope: Circle + standalone public events), ADR-255 (host updates = **Event Dispatches**,
+> feed-badged off the `dispatches` rail), ADR-256 (SMS gated). Shipped across four waves (PRs #753–756):
+> **foundation** — 8 additive migrations (`20260625000000`–`050000`: event geo + `nearby_events` RPC,
+> standalone scope + visibility RLS, RSVP depth, questions, `event_dispatches`, cover/theme;
+> `20260626000000` Boops reactions; `20260626010000` SMS groundwork) + the `lib/events/` data layer;
+> **the Invite** — two-column detail interior (rail `'none'` on `/events/[slug]`), RSVP depth
+> (+1 names / approval / waitlist), host Event Dispatch compose, Boops + GIF, **Manage Dashboard** +
+> guest questionnaire; **the Catalog** — facets / sort / near-me / hybrid scope, a keyless geocoder
+> (Nominatim, graceful fallback) so events carry a real `geog`, `/discover` schema.org `Event` + indexable
+> city×category hubs + per-event OG; **Event Dispatch bleed** — push to guests + Circle, plus a passive
+> **resonance-gated** feed surface to nearby members (`getMyOrbit`; "the feed of people close by who have
+> resonance"). One CodeQL high (remote property injection via the Boops accumulator) found + fixed (#756).
+> Verified each wave: eslint + tsc clean on the events surface, 921 tests pass, Vercel previews green.
+>
+> **NEXT — Events go-live (founder-gated; the code is built, not yet live):**
+> 1. **Supabase Pro** → apply the 8 migrations on a preview branch, regenerate `lib/database.types.ts`,
+>    and drop the temp `as unknown as`/untyped-handle casts in `lib/events/*`. **This is the single step
+>    that takes Events from coded to live** (the migrations are additive + backward-compatible).
+> 2. **EIN / legal entity** → unblocks SMS ("text the group", ADR-256: A2P 10DLC brand + campaign) and
+>    Stripe Connect host payouts (`host_payouts_enabled`).
+> 3. **Standalone-events moderation policy** (ADR-254) → the gate before public, non-Circle events open
+>    to discovery.
+> 4. **On go-live:** update member help (`content/help/groups/events.md`, `circle-current.md`) via
+>    `/sync-docs`, and re-run the Supabase security + performance advisors after the migrations apply.
+> Post-Pro build backlog (small, unblocked once typed): rotating/Wallet ticket passes, recurring-event
+> RRULE, host analytics depth, Typesense only if typo-tolerant search becomes a growth lever.
+
 ---
 
 ## Mission (locked)
