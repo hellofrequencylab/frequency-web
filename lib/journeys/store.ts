@@ -6,6 +6,28 @@
 import { getPlan, getCompletedLessonIds, type JourneyPlan } from '@/lib/journey-plans'
 import { buildJourneyTree, leafTitle, type BlockRow, type JourneyTree, type LeafType } from './tree'
 
+/** An interactive knowledge-check (build item §11.1 #2): a multiple-choice question with
+ *  instant feedback + retries (the testing effect; low-stakes, never gates progression).
+ *  Stored on a `check` block's `settings.check`. */
+export interface CheckConfig {
+  question: string
+  options: string[]
+  /** Index of the correct option. */
+  answer: number
+  explanation: string | null
+}
+
+/** Parse `settings.check` into a CheckConfig, or null if absent/malformed (then the
+ *  player falls back to a plain mark-complete check). */
+export function parseCheck(settings: unknown): CheckConfig | null {
+  const c = (settings as { check?: unknown } | null)?.check as Record<string, unknown> | undefined
+  if (!c || typeof c.question !== 'string' || !Array.isArray(c.options)) return null
+  const options = c.options.filter((o): o is string => typeof o === 'string')
+  if (options.length < 2) return null
+  const answer = typeof c.answer === 'number' ? Math.min(Math.max(0, Math.floor(c.answer)), options.length - 1) : 0
+  return { question: c.question, options, answer, explanation: typeof c.explanation === 'string' ? c.explanation : null }
+}
+
 export interface LessonContent {
   id: string
   type: LeafType
@@ -16,6 +38,8 @@ export interface LessonContent {
   estMinutes: number | null
   practiceId: string | null
   required: boolean
+  /** Interactive knowledge-check config (check blocks only), else null. */
+  check: CheckConfig | null
 }
 
 export interface JourneyPlayerView {
@@ -59,6 +83,7 @@ export async function getJourneyPlayerView(slug: string, profileId: string): Pro
       estMinutes: i.est_minutes ?? null,
       practiceId: i.practice_id || null,
       required: i.required ?? true,
+      check: bt === 'check' ? parseCheck((i as { settings?: unknown }).settings) : null,
     }
   }
 

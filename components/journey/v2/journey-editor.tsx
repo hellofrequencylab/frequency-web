@@ -9,7 +9,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Trash2, ChevronUp, ChevronDown, Eye, Layers, Search, Dumbbell, X } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Eye, Layers, Search, Dumbbell, X, Check } from 'lucide-react'
 import {
   addPhaseAction,
   addLessonAction,
@@ -18,6 +18,7 @@ import {
   removeBlockAction,
   moveBlockAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
+import type { CheckConfig } from '@/lib/journeys/store'
 
 export interface EditorBlock {
   id: string
@@ -26,6 +27,52 @@ export interface EditorBlock {
   title: string
   body: string
   sortOrder: number
+  /** Knowledge-check config for `check` blocks (build item §11.1 #2), else null. */
+  check: CheckConfig | null
+}
+
+// The authoring inspector for a `check` block: question + options (tap the circle to mark the
+// correct one) + explanation. Members get instant feedback + retries in the player. Local state;
+// onSave persists the whole config (settings.check) via updateBlockAction.
+function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | null; disabled: boolean; onSave: (c: CheckConfig) => void }) {
+  const [cfg, setCfg] = useState<CheckConfig>(() => initial ?? { question: '', options: ['', ''], answer: 0, explanation: '' })
+  const commit = (next: CheckConfig) => { setCfg(next); onSave(next) }
+  const inputCls = 'w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none'
+  return (
+    <div className="mt-2 space-y-2 rounded-lg border border-border bg-surface p-2.5">
+      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Knowledge check</p>
+      <input value={cfg.question} disabled={disabled} onChange={(e) => setCfg({ ...cfg, question: e.target.value })} onBlur={() => onSave(cfg)} placeholder="Question" className={inputCls} />
+      <div className="space-y-1.5">
+        {cfg.options.map((opt, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => commit({ ...cfg, answer: i })}
+              aria-label="Mark as the correct answer"
+              title="Correct answer"
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-2xs font-bold ${cfg.answer === i ? 'border-success text-success' : 'border-border text-subtle hover:border-text'}`}
+            >
+              {cfg.answer === i ? <Check className="h-3.5 w-3.5" /> : String.fromCharCode(65 + i)}
+            </button>
+            <input value={opt} disabled={disabled} onChange={(e) => { const o = [...cfg.options]; o[i] = e.target.value; setCfg({ ...cfg, options: o }) }} onBlur={() => onSave(cfg)} placeholder={`Option ${i + 1}`} className={inputCls} />
+            {cfg.options.length > 2 && (
+              <button type="button" disabled={disabled} onClick={() => { const o = cfg.options.filter((_, j) => j !== i); commit({ ...cfg, options: o, answer: Math.min(cfg.answer, o.length - 1) }) }} aria-label="Remove option" className="rounded p-1 text-subtle hover:text-danger">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      {cfg.options.length < 6 && (
+        <button type="button" disabled={disabled} onClick={() => commit({ ...cfg, options: [...cfg.options, ''] })} className="inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline">
+          <Plus className="h-3.5 w-3.5" /> Add option
+        </button>
+      )}
+      <input value={cfg.explanation ?? ''} disabled={disabled} onChange={(e) => setCfg({ ...cfg, explanation: e.target.value })} onBlur={() => onSave(cfg)} placeholder="Why (shown after they answer)" className={inputCls} />
+      <p className="text-2xs text-subtle">Tap the circle to mark the correct option. Members get instant feedback and can retry.</p>
+    </div>
+  )
 }
 
 export interface EditorPractice {
@@ -117,6 +164,13 @@ export function JourneyEditor({
           placeholder={isPractice ? 'A note for this practice step (optional).' : 'Lesson content (markdown). Paste a YouTube/Vimeo/video link to embed it.'}
           className="mt-2 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
         />
+        {l.blockType === 'check' && (
+          <CheckEditor
+            initial={l.check}
+            disabled={pending}
+            onSave={(cfg) => run(() => updateBlockAction(slug, l.id, { check: cfg }))}
+          />
+        )}
       </li>
     )
   }

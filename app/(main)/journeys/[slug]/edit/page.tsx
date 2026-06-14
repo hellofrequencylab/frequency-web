@@ -3,6 +3,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getPlan } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
 import { JourneyEditor, type EditorBlock, type EditorPractice } from '@/components/journey/v2/journey-editor'
+import { parseCheck } from '@/lib/journeys/store'
 import { JourneySettings } from '@/components/journey/v2/journey-settings'
 import { JourneyAdvanced } from '@/components/journey/v2/journey-advanced'
 
@@ -28,6 +29,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
     title: i.title ?? '',
     body: i.body ?? '',
     sortOrder: i.sort_order ?? 0,
+    check: parseCheck((i as { settings?: unknown }).settings),
   }))
 
   const { plan } = loaded
