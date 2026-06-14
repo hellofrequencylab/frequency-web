@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { Suspense } from 'react'
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Globe, Lock, Link2, Pencil, Sparkles, Flame } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
@@ -12,16 +11,8 @@ import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { JourneyBuilder, type BuilderItem } from '@/components/studio/journey/journey-builder'
 import type { BuilderBlock } from '@/components/studio/journey/lessons-section'
-import { adoptPlanAction, forkPlanAction, completeLessonAction } from '../actions'
+import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets, type WidgetId } from '@/lib/journey-page-config'
-import { buildCourse } from '@/lib/journey-course'
-import { CoursePlayer } from '@/components/journey/course/course-player'
-import { CoopMeter } from '@/components/journey/coop-meter'
-import { SeasonContext } from '@/components/journey/season-context'
-import { TierControl } from '@/components/journey/tier-control'
-import { GamificationPanel } from '@/components/journey/gamification-panel'
-import { StreakStrip } from '@/components/journey/streak-strip'
-import { JourneyCelebrationStage } from '@/components/journey/journey-celebration'
 import {
   StoryBlock,
   PathBlock,
@@ -35,12 +26,13 @@ import {
 export const dynamic = 'force-dynamic'
 
 // The one Journey page (docs/JOURNEYS.md §10). It flips between three faces:
-//   • AUTHOR    → the Studio <JourneyBuilder> (kept exactly as-is).
+//   • AUTHOR    → the Studio <JourneyBuilder> (settings + structure; the v2 structure editor
+//                 lives at /journeys/[slug]/edit).
 //   • DISCOVERY → not adopted / visitor: the story, the path, pillar balance, social proof,
 //                 reward + completion rule, adopt/remix CTA.
-//   • ACTIVE    → adopted: the Next-Step card, season progress, checklist, gamification +
-//                 streak (behind Suspense — never blocks the shell), co-op, tier control.
-// Both modes compose widgets in the order resolved by normalizePageConfig(page_config, mode).
+//   • ACTIVE    → adopted: redirects to the v2 lesson player at /journeys/[slug]/learn
+//                 (ADR-252, J5 cutover). The legacy season course-player is retired.
+// Discovery composes widgets in the order resolved by normalizePageConfig(page_config, mode).
 
 const VISIBILITY = {
   public: { Icon: Globe, label: 'Public' },
@@ -95,7 +87,7 @@ export default async function JourneyPlanPage({
   // practice library + pillars too, so it loads those alongside.
   const view = await getJourneyView(profileId, slug)
   if (!view) notFound()
-  const { plan, items, adopted, progress, completedLessonIds } = view
+  const { plan, items, adopted, progress } = view
 
   const isAuthor = !!profileId && plan.author_id === profileId
   if (!isAuthor && plan.visibility === 'private') notFound()
@@ -161,10 +153,11 @@ export default async function JourneyPlanPage({
   const accent = plan.accent
   const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
 
-  const isActive = adopted && !!progress
+  // ACTIVE → the v2 lesson player (ADR-252, J5). An adopted learner goes straight to the
+  // player; a previewing author stays on the discovery view.
+  if (adopted && progress && !preview) redirect(`/journeys/${plan.slug}/learn`)
 
-  // The ACTIVE face is the e-learning course player (docs/JOURNEYS.md §5A); only the
-  // DISCOVERY face still composes a page_config widget stack.
+  // Only the DISCOVERY face composes a page_config widget stack.
   const discoveryWidgets = enabledWidgets(plan.page_config, 'discovery').map((w) => w.id)
 
   const header = (
@@ -215,40 +208,20 @@ export default async function JourneyPlanPage({
         </span>
       }
     >
-      {isActive && progress ? (
-        <CoursePlayer
-          course={buildCourse({ blocks: items, progress, completedLessonIds })}
-          planTitle={plan.title}
-          accent={plan.accent}
-          planId={plan.id}
-          completeLessonAction={completeLessonAction}
-          railExtras={<ActiveRail profileId={profileId as string} plan={plan} progress={progress} />}
-          tierControl={
-            <TierControl
-              planId={plan.id}
-              slug={plan.slug}
-              resolvedTier={progress.items[0]?.resolvedTier ?? 'adept'}
-            />
-          }
-        />
-      ) : (
-        <DiscoveryMode
-          widgets={discoveryWidgets}
-          plan={plan}
-          items={items}
-          pillars={pillars}
-          pillarsById={byId}
-          adopted={adopted}
-          isAuthor={isAuthor}
-        />
-      )}
+      <DiscoveryMode
+        widgets={discoveryWidgets}
+        plan={plan}
+        items={items}
+        pillars={pillars}
+        pillarsById={byId}
+        adopted={adopted}
+        isAuthor={isAuthor}
+      />
     </DetailTemplate>
   )
 
   return (
-    <div className={`mx-auto w-full ${isActive ? 'max-w-5xl' : 'max-w-2xl'}`}>
-      <JourneyCelebrationStage />
-
+    <div className="mx-auto w-full max-w-2xl">
       {isAuthor && preview && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-2.5">
           <span className="text-sm text-muted">Preview. How others see your Journey.</span>
@@ -262,38 +235,6 @@ export default async function JourneyPlanPage({
       )}
 
       {header}
-    </div>
-  )
-}
-
-// ── Active rail — the gamification + context panels that flank the course player
-//    (docs/JOURNEYS.md §5A). Server component: each panel streams behind its own
-//    Suspense so a slow await never blocks the player. The course player hosts these
-//    in its syllabus rail; the Next-Step / progress / checklist they used to sit beside
-//    are now the player itself. ──
-function ActiveRail({
-  profileId,
-  plan,
-  progress,
-}: {
-  profileId: string
-  plan: import('@/lib/journey-plans').JourneyPlan
-  progress: import('@/lib/journey-plans').JourneyProgress
-}) {
-  return (
-    <div className="space-y-4">
-      <Suspense fallback={<PanelSkeleton rows={1} />}>
-        <StreakStrip profileId={profileId} />
-      </Suspense>
-      <Suspense fallback={<PanelSkeleton rows={1} />}>
-        <CoopMeter profileId={profileId} planId={plan.id} fallbackCompanions={progress.circleCompanions} />
-      </Suspense>
-      <Suspense fallback={<PanelSkeleton rows={1} />}>
-        <SeasonContext questId={plan.quest_id} seasonWeek={progress.seasonWeek} />
-      </Suspense>
-      <Suspense fallback={<PanelSkeleton rows={1} />}>
-        <GamificationPanel profileId={profileId} />
-      </Suspense>
     </div>
   )
 }
@@ -355,16 +296,6 @@ function DiscoveryMode({
           forkAction={forkPlanAction}
         />
       )}
-    </div>
-  )
-}
-
-function PanelSkeleton({ rows }: { rows: number }) {
-  return (
-    <div className="space-y-2.5" aria-hidden>
-      {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/60" />
-      ))}
     </div>
   )
 }

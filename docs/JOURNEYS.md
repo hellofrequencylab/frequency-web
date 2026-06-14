@@ -241,11 +241,17 @@ findings the design is built on:
 
 ## 11. Build phases
 
-| Phase | Ships |
-|---|---|
-| **J0 — Schema + foundation** | The v2 migration (phase/module block types, `journey_runs`, `journey_enrollments`, plan/field changes); the drip-schedule + phase/program-completion pure helpers + unit tests. |
-| **J1 — Learner player** | The clean lesson player on the new tree: syllabus + progress, one-next-action, knowledge-check feedback, resume, phase/journey celebrations. |
-| **J2 — The Run (cohort)** | Host starts a Run for a Circle; weekly phase drip; shared cohort meter + social proof; kickoff/check-in meetups via Events; group trophies (co-op). |
-| **J3 — Rewards + completion** | Wire lesson/phase/journey Gems + trophies + certificate, idempotent; streak reuse; celebration surfaces. |
-| **J4 — The editor** | Template/blank-with-prompts + AI outline; structure-first Program→Phase→Module→Lesson tree; block inspectors; live preview; Run settings. |
-| **J5 — Discovery + migrate** | Public discovery on the new model; migrate/seed templates; retire `/admin/quests` + the old season code; consolidate widgets. |
+| Phase | Ships | Status |
+|---|---|---|
+| **J0 — Schema + foundation** | The v2 migration (phase/module block types, `journey_runs`, `journey_enrollments`, plan/field changes); the drip-schedule + phase/program-completion pure helpers + unit tests. | ✅ migration applied; helpers + tests shipped |
+| **J1 — Learner player** | The clean lesson player on the new tree: syllabus + progress, one-next-action, knowledge-check feedback, resume, phase/journey celebrations. | ✅ player at `/journeys/[slug]/learn` |
+| **J2 — The Run (cohort)** | Host starts a Run for a Circle; weekly phase drip; shared cohort meter + social proof; kickoff/check-in meetups via Events; group trophies (co-op). | ✅ Run start on the Circle + cohort meter |
+| **J3 — Rewards + completion** | Wire lesson/phase/journey Gems + trophies + certificate, idempotent; streak reuse; celebration surfaces. | ✅ Gems grant (claim-then-pay); trophy + certificate celebration |
+| **J4 — The editor** | Template/blank-with-prompts + AI outline; structure-first Program→Phase→Module→Lesson tree; block inspectors; live preview; Run settings. | ✅ template/blank create + structure editor at `/edit` (AI outline + block inspectors: follow-up) |
+| **J5 — Cutover + strip** | Adopted learners go to the v2 player; the legacy season course-player is retired from the learner face and the orphaned season widgets removed. | ✅ learner cutover + dead-widget strip · ⏳ migrate Studio author face onto the v2 editor; help-doc refresh |
+
+> The Studio author face (`JourneyBuilder`) is intentionally kept: it still owns plan settings
+> (visibility, publish, official, gems, page-config) that the structure editor doesn't yet cover,
+> and it shares the legacy `CoursePlayer`/`journey-course` preview. Retiring those is gated on
+> moving settings into the v2 editor. `/admin/quests` is a harmless redirect stub (ADR-211), not
+> legacy to delete.
