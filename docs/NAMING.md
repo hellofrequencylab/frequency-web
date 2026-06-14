@@ -84,7 +84,9 @@
   leaderboard, suggestions, and operator assignment lists.
 - **Pillars** = Mind / Body / Spirit / Expression ("Domains" retired; `domains` table
   → `pillars`). Pillars are NEVER called Channels.
-- **Co-op** = 3+ active circle members on the same Journey (replaces Chorus, ADR-199).
+- **Co-op / Run** = a Circle going through a Journey together as a cohort — a **Run** (ADR-252;
+  supersedes the v1 "3+ on the same Journey" framing). The Circle earns **group trophies** when it
+  completes phases / the whole Journey together; cooperative only, never a global leaderboard.
 - Internal-only timers: **rhythm clock** (rolling streak/cadence) and **quest clock**
   (13-week season). Never member-facing — UI says "streak" and "season."
 
@@ -165,7 +167,7 @@ Phase-6 zero-hits grep carves them out:
 - **"channels"**: forum feature only; any Pillar-as-channel framing is renamed.
 - **"tune"**: "tune in" = the Channels verb; "tune out" / "tune back in" =
   Mindless (the On Air timer). Two dials, no collision.
-- **"co-op"**: one meaning only (shared Journey).
+- **"co-op"**: one meaning only — a Circle **Run** of a Journey (cohort, ADR-252).
 - **"task"**: `crew_tasks` IS the canon Task entity — no new entity, no collision.
 - **"live"/"static"**: retired only as the old status set; alive in live-location,
   Next.js static rendering, etc.

@@ -274,3 +274,22 @@ Status legend: 🔴 not started · ⏳ partial · ✅ done. Each row is one PR-s
 | 7 | **Polish** | Settings-card visuals (accent dots read as a single faint ring), spacing/empty-state density, and the "Untitled" empty-title lesson UX (prompt or placeholder instead of a bare "Untitled"). | First-impression quality of the editor + player. | 🔴 | S |
 
 Recommended order: **#1** (the cadence is the product), then **#7** (cheap first-impression win), then #2 / #4 (engagement + authoring), then #3 / #5, with #6 folded in opportunistically.
+
+> **Progress (2026-06-14):** ✅ **#1–#5 and #7 shipped** — phase-drip locking in the player, interactive
+> knowledge checks (player + editor + seeded), the editor module layer, Vera's "draft my outline" assist,
+> the kickoff-meetup wiring, and the polish (Untitled fallback, clearer accent picker, cover image as a
+> header hero, readable measure). Plus the foundation: `docs/JOURNEYS-DESIGN.md` (cited research spec), the
+> official Journeys loaded with real curriculum + covers, and the interior-page redesign onto the kit.
+>
+> **#6 is partly done and partly blocked.** The `docs/NAMING.md` v2 pass is ✅ done (Co-op reframed to the
+> cohort **Run**, ADR-252). The **season-column drop is BLOCKED**: `season_locked` /
+> `min_practices_per_day` / `target_weeks` are still read by the **live legacy season reward + progress
+> code** (`lib/journey-rewards.ts`, `lib/journey-coop-rewards.ts`, `lib/journey-quest-clock.ts`,
+> `lib/journey-grants.ts`, and the season-completion derivation in `lib/journey-plans.ts` that the right
+> rail calls). Per the backlog's own "once nothing reads them" gate, the columns can only be dropped after
+> that season model is retired and replaced by the v2 phase/program completion — a separate,
+> behaviour-affecting refactor (touches reward grants), not a mechanical cleanup. The `lib/database.types.ts`
+> regen is deferred with it: the v2 tables (`journey_runs`/`journey_enrollments`) use deliberately untyped
+> admin handles, so the regen only pays off alongside switching those handles to typed — also its own
+> refactor. **Remaining:** retire the legacy season model → then drop the columns + regen types; plus the
+> per-phase check-in links (`run_phase_events`) from #5 (needs a new table).
