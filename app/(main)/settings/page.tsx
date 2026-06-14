@@ -30,26 +30,26 @@ const THEME_OPTIONS: { value: Theme; label: string; description: string; Icon: t
 ]
 
 export default function SettingsPage() {
+  // Storage + apply logic mirror the in-app account-menu toggle in
+  // components/layout/app-shell.tsx (key `freq-theme`, values 'light' | 'dark' |
+  // 'system'), so the two toggles and the pre-paint script in app/layout.tsx stay
+  // in agreement. Initial state falls back to the legacy `theme` key (the same
+  // one-time migration the layout script does) so existing members aren't reset.
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window === 'undefined') return 'system'
-    const saved = localStorage.getItem('theme') as Theme | null
-    return saved === 'dark' || saved === 'light' ? saved : 'system'
+    const saved = (localStorage.getItem('freq-theme') ?? localStorage.getItem('theme')) as Theme | null
+    return saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'system'
   })
 
+  // Apply (mode → .dark class + meta theme-color) and persist to `freq-theme`.
   function applyTheme(next: Theme) {
     setThemeState(next)
-    const html = document.documentElement
-    if (next === 'dark') {
-      html.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else if (next === 'light') {
-      html.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-    } else {
-      localStorage.removeItem('theme')
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      html.classList.toggle('dark', prefersDark)
-    }
+    localStorage.setItem('freq-theme', next)
+    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const isDark = next === 'dark' || (next === 'system' && sysDark)
+    document.documentElement.classList.toggle('dark', isDark)
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', isDark ? '#16130E' : '#FBFAF6')
   }
 
   return (
@@ -66,9 +66,10 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Appearance */}
+      {/* Appearance — light/dark mode. */}
       <section>
         <SectionHeader title="Appearance" />
+        <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Mode</p>
         <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
           {THEME_OPTIONS.map(({ value, label, description, Icon }) => {
             const active = theme === value

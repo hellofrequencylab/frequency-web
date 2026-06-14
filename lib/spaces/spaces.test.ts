@@ -16,6 +16,9 @@ function makeSpace(over: Partial<Space>): Space {
     networkConnected: false,
     enabledVerticals: [],
     ownerProfileId: null,
+    brandName: null,
+    brandLogoUrl: null,
+    brandAccent: null,
     ...over,
   }
 }

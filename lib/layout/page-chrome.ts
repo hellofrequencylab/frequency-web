@@ -16,6 +16,9 @@
 // <DashboardTemplate>. Keep the two in sync — the chrome here and the template
 // there are two halves of the same decision (see docs/PAGE-FRAMEWORK.md §3).
 
+import { cache } from 'react'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
 export type Rail = 'global' | 'scoped' | 'none'
 
 // FOCUS — no right rail. Prefix match (covers the route and everything under it).
@@ -96,6 +99,14 @@ export function leftRailFor(pathname: string): LeftRail {
   return inWorkspace ? 'none' : 'global'
 }
 
+/** Whether `pathname` is a syntactically safe app path to use as an override key —
+ *  an absolute path of slug-ish segments (`/`, letters, digits, `-`, `_`). Guards the
+ *  override store so a route can never be an external URL, a query string, or anything
+ *  that isn't a normal in-app route. */
+export function isSafeRoute(pathname: string): boolean {
+  return typeof pathname === 'string' && /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?$/.test(pathname)
+}
+
 export function railFor(pathname: string): Rail {
   // The Leader surface (/lead/*) is a member-side CONSOLIDATED dashboard (not the
   // /admin operator workspace), so it rides the standard GLOBAL community right rail
@@ -125,4 +136,113 @@ export function railFor(pathname: string): Rail {
   if (isScopedDetail) return 'scoped'
 
   return 'global'
+}
+
+// ── Operator overrides (back-end chrome management) ────────────────────────────────────
+//
+// The block above is the CODE source of truth and is UNCHANGED — the live shell
+// (components/layout/app-shell.tsx) still calls `railFor` / `leftRailFor` synchronously
+// and reads the same answer it always has. What follows is ADDITIVE: a fail-safe layer
+// that lets an operator override a route's right rail from the back end
+// (/admin/page-layout → public.page_chrome_overrides), merged OVER the code default.
+//
+// Wiring the live shell to read `resolvePageChrome` is a deliberate FOLLOW-UP (flagged):
+// the app-shell is a monolith and the events agent is rewiring nearby, so today this
+// only STORES + RESOLVES intent. The visible effect lands when the shell adopts the
+// resolver. See docs/PAGE-FRAMEWORK.md §3/§8.
+
+/** The routes an operator can frame from /admin/page-layout. The code map keys off
+ *  PREFIXES + PATTERNS, so there is no finite list of every concrete path; this is the
+ *  curated catalog of the meaningful surfaces (and Focus exemplars) an operator manages,
+ *  each shown with its current effective rail. Adding a route here adds a manageable row;
+ *  an override can also be set on any other safe route via the resolver. */
+export interface ManagedRoute {
+  /** The override key + match path (an exact route or an area root). */
+  route: string
+  /** A short operator-facing label. */
+  label: string
+  /** Which area of the app this belongs to (groups the editor). */
+  area: 'Member' | 'Focus surfaces' | 'Operator'
+}
+
+export const MANAGED_ROUTES: readonly ManagedRoute[] = [
+  // ── Member surfaces (default GLOBAL community rail) ──
+  { route: '/feed', label: 'Home feed', area: 'Member' },
+  { route: '/circles', label: 'Circles', area: 'Member' },
+  { route: '/channels', label: 'Channels', area: 'Member' },
+  { route: '/events', label: 'Events', area: 'Member' },
+  { route: '/people', label: 'People', area: 'Member' },
+  { route: '/practices', label: 'Practices', area: 'Member' },
+  { route: '/journeys', label: 'Journeys', area: 'Member' },
+  { route: '/programs', label: 'Programs', area: 'Member' },
+  { route: '/messages', label: 'Messages (inbox)', area: 'Member' },
+  { route: '/connections', label: 'Connections (index)', area: 'Member' },
+  { route: '/friends', label: 'Friends', area: 'Member' },
+  { route: '/search', label: 'Search', area: 'Member' },
+  { route: '/broadcast', label: 'Broadcast', area: 'Member' },
+  { route: '/crew', label: 'Crew', area: 'Member' },
+  { route: '/outreach', label: 'Outreach', area: 'Member' },
+  { route: '/lead', label: 'Leader console', area: 'Member' },
+  // ── Focus surfaces (default NONE — full-width, no rail) ──
+  { route: '/settings', label: 'Settings', area: 'Focus surfaces' },
+  { route: '/settings/profile', label: 'Profile editor', area: 'Focus surfaces' },
+  { route: '/on-air', label: 'On Air (practice timer)', area: 'Focus surfaces' },
+  { route: '/scan', label: 'QR scanner', area: 'Focus surfaces' },
+  { route: '/codes', label: 'Personal codes / QR hub', area: 'Focus surfaces' },
+  { route: '/journal', label: 'Journal (Capture)', area: 'Focus surfaces' },
+  { route: '/training', label: 'Role training', area: 'Focus surfaces' },
+  { route: '/upgrade', label: 'Upgrade', area: 'Focus surfaces' },
+  // ── Operator workspace (default NONE — full-width admin) ──
+  { route: '/admin', label: 'Admin workspace', area: 'Operator' },
+] as const
+
+export type ChromeOverrides = Record<string, Rail>
+
+/** All operator chrome overrides as a plain map (route → rail). Service-role read so it
+ *  works regardless of the caller's RLS context; REQUEST-CACHED via React.cache so it
+ *  runs at most once per request. FAIL-SAFE: returns `{}` on ANY error (incl. a missing
+ *  table pre-migration), so the resolver always falls back to the code defaults and the
+ *  app never breaks. The dynamic import keeps this server-only dependency out of the
+ *  module's top level (railFor/leftRailFor stay pure, client-safe). */
+export const loadChromeOverrides = cache(async (): Promise<ChromeOverrides> => {
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    // `page_chrome_overrides` is genuinely untyped until the orchestrator regenerates
+    // lib/database.types.ts after this lands — so we read it through a narrow untyped
+    // client. The result payload is re-validated below (isSafeRoute/isRail) before use.
+    // eslint-disable-next-line no-restricted-syntax -- new table not yet in generated types (ADR-246 exemption)
+    const db = createAdminClient() as unknown as SupabaseClient
+    const { data, error } = await db.from('page_chrome_overrides').select('route, rail')
+    if (error) return {}
+    const out: ChromeOverrides = {}
+    for (const row of (data ?? []) as { route: string; rail: string }[]) {
+      if (isSafeRoute(row.route) && isRail(row.rail)) out[row.route] = row.rail
+    }
+    return out
+  } catch {
+    return {}
+  }
+})
+
+/** True if `value` is a valid Rail. */
+export function isRail(value: unknown): value is Rail {
+  return value === 'global' || value === 'scoped' || value === 'none'
+}
+
+/** Merge an operator override (exact-route match) over the code default. Pure — no
+ *  Supabase/React — so it is trivially testable: a DB override for the exact `route`
+ *  wins; otherwise the code answer (`codeRail`, i.e. railFor(route)) stands. */
+export function mergeChrome(codeRail: Rail, overrides: ChromeOverrides, route: string): Rail {
+  const override = overrides[route]
+  return override && isRail(override) ? override : codeRail
+}
+
+/** The EFFECTIVE rail for a route: the operator override if one exists, else the code
+ *  default (railFor). The async, override-aware twin of `railFor`. NOTE: the live shell
+ *  does not call this yet — adopting it is a flagged follow-up (see the note above); for
+ *  now it powers /admin/page-layout's "current effective rail" column and is the entry
+ *  point the shell will switch to. */
+export async function resolvePageChrome(route: string): Promise<Rail> {
+  const overrides = await loadChromeOverrides()
+  return mergeChrome(railFor(route), overrides, route)
 }

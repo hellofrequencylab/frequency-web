@@ -106,7 +106,7 @@ The good bones exist; four composition points are still hand-authored. This is t
 | **Capability union** | ✅ | core stays closed; `lib/verticals` resolves namespaced module capabilities | done (step 3) |
 | **Vertical registry** | ✅ | `lib/verticals/registry.ts` descriptor + selectors; Marketplace migrated | done (step 4) |
 | **Engagement emission** | 🔴 | ~15 action files call `processGamificationEvent` inline | route through `recordEngagementEvent` via adapters (step 5) |
-| **Spaces / skin** | ⏳ | `spaces` table (applied) + `lib/spaces` resolver; `(main)` layout resolves the active Space → `data-skin` on the shell root | remaining: per-skin token sets (DAWN), custom-domain content-routing, `space_members`, per-Space `space_id` RLS on new vertical tables |
+| **Spaces / skin** | ⏳ | `spaces` table (applied) + `lib/spaces` resolver; `(main)` layout resolves the active Space → `data-skin` on the shell root. The theme seam is now generalized to a **multi-axis `data-*` model** (mode × skin × occasion × generation) with typed registries + `resolve*` guards in `lib/theme/` and a `server-only` `resolveTheme()` (cookie precedence member > Space > system/time) — see [`docs/THEME.md`](THEME.md) (ADR-257). | remaining: per-skin token sets (DAWN), custom-domain content-routing, `space_members`, per-Space `space_id` RLS on new vertical tables; the `spaces.generation` default column, occasion auto-scheduling, the client switch, structural-variant rollout, and the 🔴 kids-exposure gate |
 
 **Marketplace is the cautionary example:** it exists (`lib/marketplace.ts`, `app/(main)/market/`,
 nav key `market`) but is hand-wired at *every* seam — no admin module, no capability, no rail panel,
@@ -141,9 +141,14 @@ hand-wiring, defeating the framework.
 6. ⏳ **The Space layer (lateral)** — ✅ the `spaces` table (applied) + `lib/spaces` resolver +
    the spaces↔verticals join, and the `(main)` layout resolves the active Space (by host, root
    fallback) → `data-skin` on the shell root **and** hides vertical nav the Space hasn't switched
-   on (via `activeVerticalsForSpace` → `navAccess`; a no-op for the root space). Remaining:
-   per-skin token sets (DAWN), custom-domain content-routing, `space_members`, and per-Space
-   `space_id` RLS on new vertical tables as they ship.
+   on (via `activeVerticalsForSpace` → `navAccess`; a no-op for the root space). ✅ The theme seam
+   is generalized to a **multi-axis `data-*` model** (mode × skin × occasion × generation) with
+   typed `lib/theme/` registries + `resolve*` guards, a `server-only` `resolveTheme()` (cookie
+   precedence member > Space > system/time), and the feel/generation axis tokenized — see
+   [`docs/THEME.md`](THEME.md) (ADR-257). Remaining: per-skin token sets (DAWN), custom-domain
+   content-routing, `space_members`, per-Space `space_id` RLS on new vertical tables; plus the
+   `spaces.generation` default column, occasion auto-scheduling, the client switch, structural
+   rollout to all templates, and the 🔴 kids-exposure gate (`docs/THEME.md` §9).
 
 **Steps 1-4 are done — a vertical is now a descriptor.** After step 6, **a sub-brand is a row.**
 

@@ -6641,6 +6641,9 @@ export type Database = {
       }
       spaces: {
         Row: {
+          brand_accent: string | null
+          brand_logo_url: string | null
+          brand_name: string | null
           created_at: string
           domain: string | null
           enabled_verticals: string[]
@@ -6656,6 +6659,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brand_accent?: string | null
+          brand_logo_url?: string | null
+          brand_name?: string | null
           created_at?: string
           domain?: string | null
           enabled_verticals?: string[]
@@ -6671,6 +6677,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brand_accent?: string | null
+          brand_logo_url?: string | null
+          brand_name?: string | null
           created_at?: string
           domain?: string | null
           enabled_verticals?: string[]
@@ -7101,6 +7110,59 @@ export type Database = {
             foreignKeyName: "team_members_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      themes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_default: boolean
+          kind: string
+          name: string
+          slug: string
+          status: string
+          tokens: Json
+          updated_at: string
+          window_end: string | null
+          window_start: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          kind?: string
+          name: string
+          slug: string
+          status?: string
+          tokens?: Json
+          updated_at?: string
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          kind?: string
+          name?: string
+          slug?: string
+          status?: string
+          tokens?: Json
+          updated_at?: string
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "themes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
