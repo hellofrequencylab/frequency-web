@@ -86,6 +86,19 @@ export async function getRun(runId: string): Promise<JourneyRun | null> {
   return data ? mapRun(data as Record<string, unknown>) : null
 }
 
+/** The Run a member is enrolled in for a plan (their cohort), or null (solo / no run). */
+export async function getMemberRunForPlan(profileId: string, planId: string): Promise<JourneyRun | null> {
+  const { data } = await db()
+    .from('journey_enrollments')
+    .select('run_id')
+    .eq('profile_id', profileId)
+    .eq('plan_id', planId)
+    .not('run_id', 'is', null)
+    .limit(1)
+  const runId = (data?.[0] as { run_id: string | null } | undefined)?.run_id
+  return runId ? getRun(runId) : null
+}
+
 /** Active Runs for a Circle (most recent first). */
 export async function listRunsForCircle(circleId: string): Promise<JourneyRun[]> {
   const { data } = await db()
