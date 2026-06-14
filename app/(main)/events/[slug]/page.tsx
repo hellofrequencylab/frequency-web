@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap, Video, Globe } from 'lucide-react'
+import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP } from '../actions'
@@ -784,6 +784,21 @@ export default async function EventDetailPage({
           </div>
         }
       >
+        {/* Host/cohost: a quiet door to the Manage Dashboard (roster, waitlist,
+            questionnaire, dispatches, analytics). Host-only; everyone else never
+            sees it. */}
+        {canManage && (
+          <div className="mb-6">
+            <Link
+              href={`/events/${event.slug}/manage`}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+            >
+              <LayoutDashboard className="h-4 w-4 text-subtle" />
+              Manage event
+            </Link>
+          </div>
+        )}
+
         {/* [A3] EventRewardStrip — calm gamification chips + warm proof. Hidden for
             a cancelled event (no rewards to dangle on a dead event). */}
         {!event.is_cancelled && (

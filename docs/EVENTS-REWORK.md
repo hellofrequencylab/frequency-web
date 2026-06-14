@@ -170,3 +170,28 @@ bulk rules); PostGIS + Supabase docs + Crunchy Data (geography vs geometry, `ST_
 hardened RPC); Sequin/Stacksync/GitLab (keyset pagination); Google Search Central + schema.org
 (Event structured data, faceted-nav crawl management); Next.js PPR/streaming. Full URL list held
 in the research record for this plan.
+
+## Implementation log
+
+### 2026-06-14 — Waves 1-3 (built by parallel agents, synthesized centrally)
+
+> All new columns/tables are read via the cast convention; **migrations are written but NOT
+> applied to prod**, and `lib/database.types.ts` is not yet regenerated. The typed cutover
+> (preview branch → regen types → drop casts) is gated on the Supabase **Pro** plan.
+
+- **Wave 1 — design + foundation** (merged, #753/#754): `docs/EVENTS-DESIGN.md` (listing + detail
+  interior); 6 additive migrations — `event_geolocation` (+ `nearby_events` RPC, SECURITY INVOKER),
+  `standalone_public_events` (ADR-254 RLS), `event_rsvp_depth`, `event_questions`, `event_dispatches`
+  (ADR-255), `event_cover_theme` — plus the `lib/events/` data layer.
+- **Wave 2 — build** (merged, #754): event detail two-column interior (rail `'none'` on `[slug]`),
+  catalog facets/sort/near-me/hybrid scope, and the **Event Dispatch feed bleed** — push to guests +
+  Circle, with the surrounding-area reach as a passive, **resonance-gated** feed surface
+  (`viewerInEventDispatchArea` + `getMyOrbit`; "the feed of people close by who have resonance").
+- **Wave 3 — depth**: host **Manage Dashboard** + questionnaire; `/discover/events` schema.org `Event`
+  enrichment (attendance mode / status / offers / location) + city×category hubs + per-event OG image;
+  a keyless **geocoder** (Nominatim, graceful fallback) wired into create/edit so events get a real
+  `geog`; persisted **Boops** (`event_post_reactions`); and **SMS groundwork** (`sms_groundwork`
+  migration + `sendSms()` guard, all gated OFF until A2P 10DLC).
+
+**Pending (founder-gated):** apply the migrations + regenerate types (Supabase Pro) and drop the casts;
+EIN/legal entity for SMS go-live + Stripe payouts; the standalone-events moderation policy (ADR-254).

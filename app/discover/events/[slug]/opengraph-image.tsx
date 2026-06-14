@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { getPublicEventBySlug } from '@/lib/discover'
+import { getEventEnrichment } from '../_data'
 import { SITE_NAME } from '@/lib/site'
 
 export const runtime = 'nodejs'
@@ -9,13 +10,16 @@ export const contentType = 'image/png'
 
 // Per-event dynamic OG image (BUILD-LIST P3) — the share card for
 // /discover/events/[slug] and the `image` in the Event JSON-LD. Same privacy
-// rules as the page: title, date, city, hosting circle — never the venue.
-// Brand-styled with plain CSS (Satori); no remote font fetch so this can never
-// slow or fail a crawl — the built-in font carries it.
+// rules as the page: title, date, city, hosting circle — never the venue or the
+// members-only join link. Brand-styled with plain CSS (Satori); no remote font
+// fetch so this can never slow or fail a crawl — the built-in font carries it.
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const event = await getPublicEventBySlug(slug)
+  const [event, enrichment] = await Promise.all([
+    getPublicEventBySlug(slug),
+    getEventEnrichment(slug),
+  ])
 
   const title = event?.title ?? `An event on ${SITE_NAME}`
   const when = event
@@ -28,6 +32,16 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     : null
   const where = event?.city ?? null
   const circle = event?.circle_name ?? null
+  const mode = enrichment?.attendance_mode ?? 'in_person'
+  // A small chip: cancelled wins, then the online/hybrid format flag. In-person
+  // events show no chip (it's the unremarkable default).
+  const chip = enrichment?.is_cancelled
+    ? 'Cancelled'
+    : mode === 'online'
+      ? 'Online'
+      : mode === 'hybrid'
+        ? 'In person + online'
+        : null
 
   // Visual language of the site OG image (app/opengraph-image.tsx): near-black
   // ground, the indigo brand bar (#6366f1 — Satori has no access to the CSS
@@ -52,6 +66,29 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {chip && (
+            <div
+              style={{
+                display: 'flex',
+                alignSelf: 'flex-start',
+                marginBottom: 20,
+                padding: '8px 18px',
+                borderRadius: 9999,
+                fontSize: 24,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                // Cancelled reads in a muted warning tone; format flags ride the
+                // indigo brand surface. Literals mirror the root OG image (Satori
+                // has no access to the CSS token system).
+                color: enrichment?.is_cancelled ? '#fca5a5' : '#c7d2fe',
+                backgroundColor: enrichment?.is_cancelled
+                  ? 'rgba(248,113,113,0.16)'
+                  : 'rgba(99,102,241,0.22)',
+              }}
+            >
+              {chip}
+            </div>
+          )}
           <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: '#6366f1', marginBottom: 28 }} />
           <div
             style={{
