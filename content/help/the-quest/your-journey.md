@@ -1,65 +1,53 @@
 ---
 title: Your Journey
-description: Adopt a seasonal set of practices, choose your depth, and follow your progress to completion.
+description: Take a guided program solo or with your Circle, move through it phase by phase, and earn trophies as you finish.
 category: the-quest
 order: 4
-updated: 2026-06-10
+updated: 2026-06-14
 audience: member
-featureKeys: [practices, crew]
+featureKeys: [journeys, circles]
 status: published
 ---
 
-A **Journey** is a seasonal set of practices (something for each part of a whole
-life: Mind, Body, Spirit, and Expression) that you move through over the season,
-on your own or alongside your circle.
+A **Journey** is a guided program you move through, on your own or with your Circle.
+Each one is built as **Phases**, and inside every Phase a handful of short **Lessons**:
+a video, a reading, an exercise, a reflection, or a quick check. Some Journeys also fold
+in a practice or two to do in the world.
 
 ## Start one
 
-Browse **Journeys** and adopt the one that fits. Adopting a Journey adds its
-practices to your daily log, so it plugs straight into the practice loop you already
-know. There's no separate tracker to keep. Adopting is always free.
+Browse **Journeys** and open the one that fits. You can take a Journey on your own, or
+your circle **Host** can launch a **Run** so the whole circle goes through it together.
+Starting a Journey is always free.
 
-## Choose your depth
+## How it opens up
 
-Every practice comes in three depths, so the same Journey works on your best week and
-your hardest one:
+A Journey unlocks one Phase at a time, about one a week (the author sets the pace).
+Finish this Phase and the next one opens. That keeps a circle moving in step and keeps
+the work to a size you can actually do.
 
-- **Initiate.** The 5 to 10 minute version. Low friction, for a hard day or a fresh start.
-- **Adept.** The standard form (the default).
-- **Master.** The full expression: longer, or with facilitation.
+## Move through it
 
-Your circle **Host** can set the right depth for the whole circle, and you can always
-set your own. Changing depth never changes the Zaps or streak you earn, only what you
-actually do in the world.
+Open a Journey to see the player:
 
-## Follow it on your dashboard
-
-Open **Your Journey** from your dashboard to see the whole thing at a glance:
-
-- Your **next step** stays highlighted with a quick **Log** button. On mobile, just
-  swipe a practice to log it.
-- An ordered checklist shows each step's rhythm. A step is **on track** once you've kept
-  its cadence this week: a daily practice wants most days, a weekly one just once.
-- A progress ring shows your progress through the season: **8 qualifying weeks of the 13** completes the
-  Journey. A qualifying week is any week you practised at least once, so a few hard
-  weeks won't end you.
-- A panel up top shows what the work earns: your season **Zaps and rank**, your
-  **streak**, and your **Gems**.
+- The **syllabus** lists every Phase and Lesson, with your progress marked.
+- One Lesson sits front and center with a single next action. Read it, watch it, or do
+  it, then **Mark complete** and move to the next.
+- A progress bar tracks how far you've come and **resumes where you left off**, so you
+  never have to find your place.
 
 ## What you earn
 
-- **Each practice** you log earns Zaps and keeps your streak alive.
-- Log **all of a day's steps** and a **Full Day** bonus fires.
-- Keep **every step on track for a week** and a **Weekly Rhythm** bonus fires.
-- **Complete the Journey** (8 of 13 weeks) for **Gems** and a permanent completion badge.
+- Finish a **Lesson** and your progress moves.
+- Finish a whole **Phase** and a trophy fires, with **Gems**.
+- Finish the whole **Journey** for more Gems, a completion trophy, and, if the author
+  turned it on, a **certificate** you can print.
 
-The current step also rides along on your home feed, so the next thing to do greets you
-when you arrive.
+Rewards are cooperative. In a Circle Run you finish together, and circles are never
+ranked against each other.
 
 ## Doing it with your circle
 
-If people in your circle have adopted the same Journey, you'll see them traveling it
-with you, and when **three or more** of you are on the same Journey, you form a
-**Co-op** and keep each other's rhythm. Journeys are made to be shared; the practice
-is better with company.
-</content>
+When your Host launches a Run, everyone in the circle is enrolled and you can see the
+group's shared progress as you go. Many Journeys include a kickoff and weekly check-in
+gathering, so you meet up while you work through it. The program is better with company.
