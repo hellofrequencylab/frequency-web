@@ -20,6 +20,8 @@ import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
 import { insightAffordance } from '@/lib/core/scoped-surface-ui'
 import { getCircleActivePractice, listPublicPractices } from '@/lib/practices'
+import { listPublicPlans } from '@/lib/journey-plans'
+import { StartRunButton } from '@/components/journey/v2/start-run-button'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { ModuleCard } from '@/components/modules/module-card'
@@ -343,9 +345,22 @@ export default async function CirclePage({
         </div>
       </ModuleCard>
     )
+
+    // Start a journey run for the circle (ADR-252) — the cohort moves through it together.
+    const runnableJourneys = (await listPublicPlans()).slice(0, 50).map((p) => ({
+      id: p.id,
+      title: p.title,
+      slug: p.slug,
+      emoji: p.emoji ?? null,
+    }))
+    railMap.journeyRun = (
+      <ModuleCard title="Start a journey run">
+        <StartRunButton circleId={circle.id} journeys={runnableJourneys} />
+      </ModuleCard>
+    )
   }
 
-  const DEFAULT_RAIL_ORDER = ['members', 'health', 'momentum', 'field', 'practice', 'events', 'map', 'invite']
+  const DEFAULT_RAIL_ORDER = ['members', 'health', 'momentum', 'field', 'practice', 'events', 'map', 'invite', 'journeyRun']
   const savedOrder = circle.sidebar_order ?? DEFAULT_RAIL_ORDER
   // Saved order first (only keys present in the map), then any new map keys the
   // saved order doesn't mention — so a freshly-added block never goes missing.
