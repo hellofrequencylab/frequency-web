@@ -18,7 +18,7 @@ import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
 import { completeJourneyLessonAction } from '@/app/(main)/journeys/[slug]/learn/actions'
 import { TrophyCelebration, type TrophyMilestone } from './trophy-celebration'
 import type { JourneyTree } from '@/lib/journeys/tree'
-import type { LessonContent } from '@/lib/journeys/store'
+import type { LessonContent, CheckConfig } from '@/lib/journeys/store'
 
 interface Props {
   slug: string
@@ -42,6 +42,57 @@ function unlockLabel(d: Date | null): string {
   if (days <= 0) return 'Unlocking now'
   if (days === 1) return 'Unlocks tomorrow'
   return `Unlocks in ${days} days`
+}
+
+// An interactive knowledge-check (build item §11.1 #2): pick an option → instant feedback +
+// retry. Low-stakes by design (testing effect, docs/JOURNEYS-DESIGN.md §1) — it never gates the
+// "Mark complete" action. Self-contained state; the player remounts it per lesson via `key`.
+function KnowledgeCheck({ config }: { config: CheckConfig }) {
+  const [picked, setPicked] = useState<number | null>(null)
+  const correct = picked !== null && picked === config.answer
+  return (
+    <div className="mt-5 max-w-prose space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-4">
+      <p className="text-sm font-semibold text-text">{config.question}</p>
+      <div className="space-y-2">
+        {config.options.map((opt, i) => {
+          const chosen = picked === i
+          const isAnswer = i === config.answer
+          let state = 'border-border bg-surface hover:bg-surface-elevated text-text'
+          if (picked !== null) {
+            if (isAnswer) state = 'border-success bg-surface text-success'
+            else if (chosen) state = 'border-danger bg-surface text-danger'
+            else state = 'border-border bg-surface text-muted opacity-70'
+          }
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setPicked(i)}
+              disabled={correct}
+              className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${state}`}
+            >
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current text-2xs font-bold">
+                {String.fromCharCode(65 + i)}
+              </span>
+              <span className="min-w-0 flex-1">{opt}</span>
+              {picked !== null && isAnswer && <Check className="h-4 w-4 shrink-0 text-success" />}
+            </button>
+          )
+        })}
+      </div>
+      {picked !== null && (
+        <div className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text">
+          <span className={`font-semibold ${correct ? 'text-success' : 'text-text'}`}>{correct ? 'Correct.' : 'Not quite.'}</span>
+          {config.explanation ? ` ${config.explanation}` : ''}
+          {!correct && (
+            <button type="button" onClick={() => setPicked(null)} className="ml-1.5 font-semibold text-primary-strong hover:underline">
+              Try again
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabled = false, anchorStart = null, dripIntervalDays = 7 }: Props) {
@@ -284,6 +335,9 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
               {lesson.body && !video && (
                 <div className="mt-4 max-w-prose whitespace-pre-wrap text-base leading-relaxed text-text">{lesson.body}</div>
               )}
+
+              {/* Interactive knowledge-check (build item §11.1 #2), when this check has a question. */}
+              {lesson.type === 'check' && lesson.check && <KnowledgeCheck key={selectedId} config={lesson.check} />}
 
               {/* One clear next action */}
               <div className="mt-6 flex items-center gap-2 border-t border-border pt-4">

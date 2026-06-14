@@ -116,7 +116,14 @@ export async function addPracticeBlockAction(
 export async function updateBlockAction(
   slug: string,
   itemId: string,
-  patch: { title?: string; body?: string; blockType?: string; required?: boolean },
+  patch: {
+    title?: string
+    body?: string
+    blockType?: string
+    required?: boolean
+    /** Knowledge-check config for `check` blocks (build item §11.1 #2); null clears it. */
+    check?: { question: string; options: string[]; answer: number; explanation?: string | null } | null
+  },
 ): Promise<ActionResult> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
@@ -125,6 +132,22 @@ export async function updateBlockAction(
   if (patch.body !== undefined) update.body = patch.body.slice(0, 20000)
   if (patch.required !== undefined) update.required = patch.required
   if (patch.blockType !== undefined && (LEAF_TYPES as readonly string[]).includes(patch.blockType)) update.block_type = patch.blockType
+  if (patch.check !== undefined) {
+    // `settings` on a check block holds only the check, so a whole-object write is safe here.
+    if (patch.check === null) update.settings = {}
+    else {
+      const options = patch.check.options.map((o) => String(o).slice(0, 300)).slice(0, 6)
+      const answer = Math.min(Math.max(0, Math.floor(patch.check.answer)), Math.max(0, options.length - 1))
+      update.settings = {
+        check: {
+          question: String(patch.check.question).slice(0, 500),
+          options,
+          answer,
+          explanation: patch.check.explanation ? String(patch.check.explanation).slice(0, 500) : null,
+        },
+      }
+    }
+  }
   if (Object.keys(update).length === 0) return ok()
   const { error } = await db().from('journey_plan_items').update(update).eq('id', itemId).eq('plan_id', a.planId)
   if (error) return fail('Could not save.')
