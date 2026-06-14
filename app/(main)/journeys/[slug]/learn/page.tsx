@@ -1,7 +1,10 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
+import { getMemberRunForPlan, getCohortProgress } from '@/lib/journeys/runs'
 import { JourneyPlayer } from '@/components/journey/v2/journey-player'
+import { CohortMeter } from '@/components/journey/v2/cohort-meter'
+import type { CohortProgress } from '@/lib/journeys/cohort'
 
 // Journeys v2 — the learner player route (ADR-252, J1b). The clean, focused "take this journey"
 // surface. Renders the Phase → Module → Lesson tree for the signed-in member. Works on existing
@@ -24,11 +27,23 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
     .maybeSingle()
   if (!profile) redirect('/onboarding')
 
-  const view = await getJourneyPlayerView(slug, (profile as { id: string }).id)
+  const profileId = (profile as { id: string }).id
+  const view = await getJourneyPlayerView(slug, profileId)
   if (!view) notFound()
 
+  // If the member is in a Circle Run of this Journey, show the shared cohort meter.
+  // Best-effort: hidden (and harmless) until the Runs tables are live.
+  let cohort: CohortProgress | null = null
+  try {
+    const run = await getMemberRunForPlan(profileId, view.plan.id)
+    if (run) cohort = await getCohortProgress(run.id, view.plan.id)
+  } catch {
+    /* Runs not enabled yet */
+  }
+
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6">
+    <div className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6">
+      {cohort && <CohortMeter progress={cohort} />}
       <JourneyPlayer
         slug={slug}
         title={view.plan.title}
