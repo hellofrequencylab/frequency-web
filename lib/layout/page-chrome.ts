@@ -56,12 +56,12 @@ const FOCUS_PATTERNS: RegExp[] = [
 // Frequency Signature live in its interior content column, not a rail. Re-add a
 // prefix here only if a section grows a genuine in-body rail.
 const SCOPED_PREFIXES: string[] = [
-  // A Journey DETAIL page (/journeys/<slug>) renders its own in-body chrome: when
-  // adopted it is the e-learning COURSE PLAYER whose left SYLLABUS is the scope rail
-  // (docs/JOURNEYS.md §5A, ADR-244), so the global community rail is suppressed to
-  // avoid the double-rail trap. The index (/journeys) is unaffected — the prefix has a
-  // trailing slash, so it only matches a specific journey.
-  '/journeys/',
+  // (Empty.) Journeys used to be SCOPED: the old course-player detail page rendered its
+  // own left syllabus as a scope rail, so the global rail was suppressed. After the v2
+  // rebuild (ADR-252) that player is retired — /journeys/<slug> redirects to the learner
+  // player (/learn) or the editor (/edit), and the player's syllabus is an in-content
+  // pane, not a shell rail. So journey routes now keep the standard GLOBAL community rail
+  // like the rest of the app. Re-add a prefix here only if a section grows a real in-body rail.
 ]
 
 // The admin WORKSPACE (Phase 4, ADR-228): under /admin/* the global member LEFT
