@@ -15,6 +15,18 @@ const LEAF_TYPES = new Set<string>([
   'lesson', 'video', 'reading', 'exercise', 'reflection', 'check', 'resource', 'practice', 'section',
 ])
 
+const LEAF_LABEL: Record<string, string> = {
+  video: 'Video', reading: 'Reading', exercise: 'Exercise', reflection: 'Reflection',
+  check: 'Knowledge check', resource: 'Resource', practice: 'Practice', lesson: 'Lesson',
+}
+
+/** A friendly fallback when a leaf has no title yet — its type, not a bare "Untitled"
+ *  (build item §11.1 #7). Shared by the tree + the player's per-lesson content. */
+export function leafTitle(title: string | null | undefined, type: string): string {
+  const t = title?.trim()
+  return t || LEAF_LABEL[type] || 'Lesson'
+}
+
 /** A raw block row (subset of journey_plan_items the tree needs). */
 export interface BlockRow {
   id: string
@@ -79,15 +91,18 @@ export function buildJourneyTree(blocks: readonly BlockRow[], completedIds: Iter
   }
   for (const list of childrenOf.values()) list.sort(bySort)
 
-  const toLesson = (b: BlockRow): Lesson => ({
-    id: b.id,
-    type: (LEAF_TYPES.has(b.block_type) ? (b.block_type === 'section' ? 'lesson' : b.block_type) : 'lesson') as LeafType,
-    title: b.title ?? 'Untitled',
-    required: b.required ?? true,
-    estMinutes: b.est_minutes,
-    practiceId: b.practice_id,
-    done: done.has(b.id),
-  })
+  const toLesson = (b: BlockRow): Lesson => {
+    const type = (LEAF_TYPES.has(b.block_type) ? (b.block_type === 'section' ? 'lesson' : b.block_type) : 'lesson') as LeafType
+    return {
+      id: b.id,
+      type,
+      title: leafTitle(b.title, type),
+      required: b.required ?? true,
+      estMinutes: b.est_minutes,
+      practiceId: b.practice_id,
+      done: done.has(b.id),
+    }
+  }
 
   // A phase's children are modules (containers) and/or loose leaves → wrap loose leaves in one
   // implicit module so the player has a uniform Phase → Module → Lesson shape.

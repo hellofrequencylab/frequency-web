@@ -2,17 +2,19 @@
 
 // Journeys v2 — the lesson player (ADR-252, J1b, JOURNEYS.md §5; design rules in
 // docs/JOURNEYS-DESIGN.md). A clean learning surface: a progressive-disclosure syllabus
-// (Phase accordion → Module → Lesson, with done/current states and per-phase counts) and
-// the active lesson with ONE clear next action. Reading content sits at a ~prose measure
-// (~65ch) in text-base for legibility; on mobile the syllabus collapses behind a Contents
-// drawer. Presentational + minimal client state (the selected lesson + which phases are open);
-// progress + completion come from the server tree.
+// (Phase accordion → Module → Lesson, with done/current/LOCKED states and per-phase counts)
+// and the active lesson with ONE clear next action. Phases drip on a schedule (build item
+// §11.1 #1): given a Run/solo anchor + interval, future Phases lock and show "unlocks in N days"
+// (lib/journeys/schedule.ts). Reading content sits at a ~prose measure in text-base; on mobile
+// the syllabus collapses behind a Contents drawer. Minimal client state (selected lesson + which
+// phases are open); progress + completion + the lock schedule come from the server.
 
 import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronLeft, ChevronRight, ChevronDown, List } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock } from 'lucide-react'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
+import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
 import { completeJourneyLessonAction } from '@/app/(main)/journeys/[slug]/learn/actions'
 import { TrophyCelebration, type TrophyMilestone } from './trophy-celebration'
 import type { JourneyTree } from '@/lib/journeys/tree'
@@ -27,19 +29,30 @@ interface Props {
   lessonsById: Record<string, LessonContent>
   /** Show a printable certificate on Journey completion (plan opt-in). */
   certificateEnabled?: boolean
+  /** Phase-drip anchor (ISO): the Run's start (cohort) or the member's enrollment start
+   *  (solo). null = no drip; every phase is open. */
+  anchorStart?: string | null
+  /** Days between phase unlocks (snapshot from the Run, else the plan default). */
+  dripIntervalDays?: number
 }
 
-export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabled = false }: Props) {
+function unlockLabel(d: Date | null): string {
+  if (!d) return 'Locked'
+  const days = Math.ceil((d.getTime() - Date.now()) / 86_400_000)
+  if (days <= 0) return 'Unlocking now'
+  if (days === 1) return 'Unlocks tomorrow'
+  return `Unlocks in ${days} days`
+}
+
+export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabled = false, anchorStart = null, dripIntervalDays = 7 }: Props) {
   const router = useRouter()
   const [pending, start] = useTransition()
 
   const order = tree.lessonOrder
-  const [selectedId, setSelectedId] = useState<string | null>(tree.currentLessonId ?? order[0] ?? null)
   const [milestone, setMilestone] = useState<TrophyMilestone | null>(null)
   const [mobileToc, setMobileToc] = useState(false)
 
-  // Per-lesson status (content bodies come from lessonsById) + which phase a lesson lives in,
-  // so navigating to a lesson can open its (collapsed) phase.
+  // Per-lesson status + which phase a lesson lives in (so navigating opens its phase).
   const { statusOf, phaseOfLesson } = useMemo(() => {
     const statusOf = new Map<string, { done: boolean }>()
     const phaseOfLesson = new Map<string, string>()
@@ -52,10 +65,34 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
     return { statusOf, phaseOfLesson }
   }, [tree])
 
+  // Phase lock schedule: phase i unlocks at anchor + i·interval. No anchor → nothing locks.
+  const phaseLock = useMemo(() => {
+    const a = anchorStart ? new Date(anchorStart) : null
+    const m = new Map<string, { locked: boolean; unlockAt: Date | null }>()
+    tree.phases.forEach((p, i) => {
+      if (!a) m.set(p.id, { locked: false, unlockAt: null })
+      else m.set(p.id, { locked: !isPhaseUnlocked(a, i, dripIntervalDays), unlockAt: phaseUnlockAt(a, i, dripIntervalDays) })
+    })
+    return m
+  }, [tree, anchorStart, dripIntervalDays])
+
+  const lessonLocked = (id: string | null) => {
+    if (!id) return false
+    const ph = phaseOfLesson.get(id)
+    return ph ? phaseLock.get(ph)?.locked ?? false : false
+  }
+
+  // Start on the first not-done lesson in an UNLOCKED phase; never a locked lesson.
+  const [selectedId, setSelectedId] = useState<string | null>(() => {
+    const firstOpenTodo = order.find((id) => !statusOf.get(id)?.done && !lessonLocked(id))
+    if (firstOpenTodo) return firstOpenTodo
+    for (let i = order.length - 1; i >= 0; i--) if (!lessonLocked(order[i])) return order[i]
+    return order[0] ?? null
+  })
+
   // The current phase starts expanded; a learner opens others as they go (progressive disclosure).
   const [openPhases, setOpenPhases] = useState<Set<string>>(() => {
-    const cur = tree.currentLessonId ?? order[0] ?? null
-    const ph = cur ? phaseOfLesson.get(cur) : null
+    const ph = selectedId ? phaseOfLesson.get(selectedId) : null
     return new Set(ph ? [ph] : tree.phases[0] ? [tree.phases[0].id] : [])
   })
 
@@ -64,7 +101,9 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
   const isDone = selectedId ? statusOf.get(selectedId)?.done ?? false : false
   const nextId = idx >= 0 && idx < order.length - 1 ? order[idx + 1] : null
   const prevId = idx > 0 ? order[idx - 1] : null
-  const video = lesson?.body ? parseVideoEmbed(lesson.body) : null
+  const nextLocked = lessonLocked(nextId)
+  const selectedLocked = lessonLocked(selectedId)
+  const video = lesson?.body && !selectedLocked ? parseVideoEmbed(lesson.body) : null
 
   function togglePhase(id: string) {
     setOpenPhases((prev) => {
@@ -85,7 +124,7 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
   }
 
   function complete() {
-    if (!selectedId) return
+    if (!selectedId || selectedLocked) return
     start(async () => {
       const res = await completeJourneyLessonAction(slug, selectedId)
       if (!isError(res)) {
@@ -95,7 +134,7 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
         const gems = res.data.granted.reduce((s, g) => s + g.gems, 0)
         if (j) setMilestone({ kind: 'journey', title, gems, certificate: certificateEnabled })
         else if (ph) setMilestone({ kind: 'phase', title: ph.phaseTitle ?? 'Phase complete', gems })
-        if (nextId) goTo(nextId)
+        if (nextId && !lessonLocked(nextId)) goTo(nextId)
         router.refresh()
       }
     })
@@ -134,6 +173,8 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
         <nav className={`${mobileToc ? 'block' : 'hidden'} space-y-2 lg:block lg:max-h-[72vh] lg:overflow-y-auto lg:pr-1`}>
           {tree.phases.map((p, pi) => {
             const open = openPhases.has(p.id)
+            const lock = phaseLock.get(p.id)
+            const locked = lock?.locked ?? false
             return (
               <div key={p.id} className="overflow-hidden rounded-xl border border-border bg-surface">
                 <button
@@ -143,8 +184,13 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
                   className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-surface-elevated"
                 >
                   <ChevronDown className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? '' : '-rotate-90'}`} />
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text">{p.title || `Phase ${pi + 1}`}</span>
-                  {p.complete ? (
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-text">{p.title || `Phase ${pi + 1}`}</span>
+                    {locked && <span className="block text-2xs font-medium text-subtle">{unlockLabel(lock?.unlockAt ?? null)}</span>}
+                  </span>
+                  {locked ? (
+                    <Lock className="h-4 w-4 shrink-0 text-subtle" />
+                  ) : p.complete ? (
                     <Check className="h-4 w-4 shrink-0 text-success" />
                   ) : (
                     <span className="shrink-0 tabular-nums text-2xs text-subtle">{p.doneRequired}/{p.totalRequired}</span>
@@ -160,6 +206,16 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
                         )}
                         <ul className="space-y-0.5">
                           {m.lessons.map((l) => {
+                            if (locked) {
+                              return (
+                                <li key={l.id}>
+                                  <div aria-disabled="true" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm text-subtle opacity-70">
+                                    <Lock className="h-3.5 w-3.5 shrink-0" />
+                                    <span className="min-w-0 truncate">{l.title}</span>
+                                  </div>
+                                </li>
+                              )
+                            }
                             const active = l.id === selectedId
                             return (
                               <li key={l.id}>
@@ -191,7 +247,17 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
 
         {/* Lesson pane — one idea, one action. Reading content at a ~prose measure (rule 2). */}
         <article className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
-          {lesson ? (
+          {!lesson ? (
+            <p className="text-sm text-muted">This journey has no lessons yet.</p>
+          ) : selectedLocked ? (
+            <div className="flex flex-col items-center gap-2 py-10 text-center">
+              <Lock className="h-6 w-6 text-subtle" />
+              <p className="text-sm font-semibold text-text">This phase is still locked</p>
+              <p className="max-w-prose text-sm text-muted">
+                {unlockLabel(phaseLock.get(phaseOfLesson.get(selectedId!) ?? '')?.unlockAt ?? null)}. One phase opens at a time, so the whole Circle moves together. Catch up on the current phase while you wait.
+              </p>
+            </div>
+          ) : (
             <>
               <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">
                 Lesson {idx + 1} of {order.length}{lesson.estMinutes ? ` · ${lesson.estMinutes} min` : ''}{lesson.required ? '' : ' · optional'}
@@ -228,7 +294,11 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
                 )}
                 <div className="ml-auto flex items-center gap-2">
                   {isDone ? (
-                    nextId ? (
+                    nextId && nextLocked ? (
+                      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-subtle">
+                        <Lock className="h-4 w-4" /> {unlockLabel(phaseLock.get(phaseOfLesson.get(nextId) ?? '')?.unlockAt ?? null)}
+                      </span>
+                    ) : nextId ? (
                       <button type="button" onClick={() => goTo(nextId)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover">
                         Continue <ChevronRight className="h-4 w-4" />
                       </button>
@@ -243,8 +313,6 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
                 </div>
               </div>
             </>
-          ) : (
-            <p className="text-sm text-muted">This journey has no lessons yet.</p>
           )}
         </article>
       </div>

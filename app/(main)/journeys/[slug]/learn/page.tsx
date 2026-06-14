@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
-import { getMemberRunForPlan, getCohortProgress } from '@/lib/journeys/runs'
+import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart } from '@/lib/journeys/runs'
 import { JourneyPlayer } from '@/components/journey/v2/journey-player'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
 import { DetailTemplate } from '@/components/templates'
@@ -38,16 +38,27 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
 
   // If the member is in a Circle Run of this Journey, show the shared cohort meter.
   // Best-effort: hidden (and harmless) until the Runs tables are live.
+  // We also resolve the phase-drip ANCHOR here (build item §11.1 #1): a cohort drips from the
+  // Run's start, a solo learner from their own enrollment start. null = no drip lock.
+  const { plan } = view
+  const planDrip = (plan as { drip_interval_days?: number }).drip_interval_days ?? 7
   let cohort: CohortProgress | null = null
+  let anchorStart: string | null = null
+  let dripIntervalDays = planDrip
   try {
     const run = await getMemberRunForPlan(profileId, view.plan.id)
-    if (run) cohort = await getCohortProgress(run.id, view.plan.id)
+    if (run) {
+      cohort = await getCohortProgress(run.id, view.plan.id)
+      anchorStart = run.startedAt
+      dripIntervalDays = run.dripIntervalDays
+    } else {
+      anchorStart = await getSoloEnrollmentStart(profileId, view.plan.id)
+    }
   } catch {
     /* Runs not enabled yet */
   }
 
   const isAuthor = view.plan.author_id === profileId
-  const { plan } = view
   const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
 
   return (
@@ -87,6 +98,8 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         tree={view.tree}
         lessonsById={view.lessonsById}
         certificateEnabled={plan.certificate_enabled}
+        anchorStart={anchorStart}
+        dripIntervalDays={dripIntervalDays}
       />
     </DetailTemplate>
   )
