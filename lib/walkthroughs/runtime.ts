@@ -26,6 +26,10 @@ export interface WalkthroughProgress {
   seenAt?: string
   dismissedAt?: string
   completedAt?: string
+  /** Set by assignRole when a role-promotion tour is GRANTED (lib/walkthroughs/role-promotion).
+   *  Ignored by the ambient feed-card runtime; it only gates the role-promotion surfacing,
+   *  so a promotion tour fires on an actual promotion rather than just holding the role. */
+  pendingAt?: string
 }
 
 /** Parse the whole meta.walkthroughs sub-object, tolerating any shape. */
