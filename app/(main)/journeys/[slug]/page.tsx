@@ -107,6 +107,12 @@ export default async function JourneyPlanPage({
 
   const header = (
     <DetailTemplate
+      hero={
+        plan.cover_image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={plan.cover_image} alt="" className="h-44 w-full rounded-2xl border border-border object-cover sm:h-56" />
+        ) : undefined
+      }
       title={
         <span className="inline-flex items-center gap-3 align-middle">
           <span
@@ -153,24 +159,18 @@ export default async function JourneyPlanPage({
         </span>
       }
     >
-      {/* Cover hero (docs/JOURNEYS-DESIGN.md §3: 16:9 photographic, framing only). */}
-      {plan.cover_image && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={plan.cover_image}
-          alt=""
-          className="mb-5 h-48 w-full rounded-2xl border border-border object-cover sm:h-64"
+      {/* Reading content at a comfortable measure (docs/JOURNEYS-DESIGN.md §1, rule 2). */}
+      <div className="max-w-2xl">
+        <DiscoveryMode
+          widgets={discoveryWidgets}
+          plan={plan}
+          items={items}
+          pillars={pillars}
+          pillarsById={byId}
+          adopted={adopted}
+          isAuthor={isAuthor}
         />
-      )}
-      <DiscoveryMode
-        widgets={discoveryWidgets}
-        plan={plan}
-        items={items}
-        pillars={pillars}
-        pillarsById={byId}
-        adopted={adopted}
-        isAuthor={isAuthor}
-      />
+      </div>
     </DetailTemplate>
   )
 
