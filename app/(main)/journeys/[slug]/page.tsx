@@ -5,12 +5,9 @@ import { Globe, Lock, Link2, Pencil, Sparkles, Flame } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
-import { listPublicPractices } from '@/lib/practices'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
-import { JourneyBuilder, type BuilderItem } from '@/components/studio/journey/journey-builder'
-import type { BuilderBlock } from '@/components/studio/journey/lessons-section'
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets, type WidgetId } from '@/lib/journey-page-config'
 import {
@@ -26,12 +23,12 @@ import {
 export const dynamic = 'force-dynamic'
 
 // The one Journey page (docs/JOURNEYS.md §10). It flips between three faces:
-//   • AUTHOR    → the Studio <JourneyBuilder> (settings + structure; the v2 structure editor
-//                 lives at /journeys/[slug]/edit).
+//   • AUTHOR    → redirects to the v2 editor at /journeys/[slug]/edit (identity + delivery +
+//                 publish settings and the Phase → Module → Lesson structure tree, ADR-252 J5).
 //   • DISCOVERY → not adopted / visitor: the story, the path, pillar balance, social proof,
 //                 reward + completion rule, adopt/remix CTA.
 //   • ACTIVE    → adopted: redirects to the v2 lesson player at /journeys/[slug]/learn
-//                 (ADR-252, J5 cutover). The legacy season course-player is retired.
+//                 (ADR-252, J5 cutover). The legacy season course-player + Studio builder are retired.
 // Discovery composes widgets in the order resolved by normalizePageConfig(page_config, mode).
 
 const VISIBILITY = {
@@ -83,8 +80,7 @@ export default async function JourneyPlanPage({
   const caller = await getCallerProfile()
   const profileId = caller?.id ?? null
 
-  // Single data load for the read-only page (the contract). The author branch needs the
-  // practice library + pillars too, so it loads those alongside.
+  // Single data load for the read-only page (the contract).
   const view = await getJourneyView(profileId, slug)
   if (!view) notFound()
   const { plan, items, adopted, progress } = view
@@ -92,60 +88,9 @@ export default async function JourneyPlanPage({
   const isAuthor = !!profileId && plan.author_id === profileId
   if (!isAuthor && plan.visibility === 'private') notFound()
 
-  // ── AUTHOR → the Studio builder (left exactly as it was). ─────────────────
-  if (isAuthor && !preview) {
-    const [library, pillars] = await Promise.all([listPublicPractices(), getPillars()])
-    // Split the blocks: PRACTICE blocks feed the path builder; lesson/section blocks
-    // feed the Lessons section (ADR-244).
-    const builderItems: BuilderItem[] = items
-      .filter((it) => (it.block_type ?? 'practice') === 'practice')
-      .map((it) => ({
-        practiceId: it.practice_id,
-        title: it.practice?.title ?? 'Practice',
-        description: it.practice?.description ?? null,
-        domainId: it.domain_id ?? it.practice?.domain_id ?? null,
-        note: it.note,
-        cadence: it.cadence,
-        practiceCadence: it.practice?.cadence ?? null,
-        defaultTier: it.default_tier,
-      }))
-    const builderBlocks: BuilderBlock[] = items
-      .filter((it) => it.block_type === 'lesson' || it.block_type === 'section')
-      .map((it) => ({
-        id: it.id,
-        blockType: it.block_type as 'lesson' | 'section',
-        title: it.title ?? '',
-        body: it.body ?? '',
-      }))
-    const available = library
-      .filter((p) => p.is_public)
-      .map((p) => ({ id: p.id, title: p.title, description: p.description, domainId: p.domain_id }))
-
-    return (
-      <JourneyBuilder
-        planId={plan.id}
-        slug={plan.slug}
-        initialTitle={plan.title}
-        initialSummary={plan.summary}
-        initialIntro={plan.intro}
-        initialEmoji={plan.emoji}
-        initialAccent={plan.accent}
-        initialVisibility={plan.visibility}
-        initialItems={builderItems}
-        initialBlocks={builderBlocks}
-        available={available}
-        pillars={pillars.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))}
-        initialStatus={plan.status}
-        initialMinPracticesPerDay={plan.min_practices_per_day}
-        initialTargetWeeks={plan.target_weeks}
-        initialSeasonLocked={plan.season_locked}
-        initialCompletionGems={plan.completion_gems}
-        initialPageConfig={plan.page_config}
-        initialOfficial={plan.official}
-        initialQuestId={plan.quest_id}
-      />
-    )
-  }
+  // ── AUTHOR → the v2 editor (ADR-252, J5): identity + delivery + publish settings
+  //    and the Phase → Module → Lesson structure tree, at /journeys/[slug]/edit. ──
+  if (isAuthor && !preview) redirect(`/journeys/${plan.slug}/edit`)
 
   const [pillars, author] = await Promise.all([getPillars(), getPlanAuthor(plan.author_id)])
   const byId = indexPillars(pillars)

@@ -379,6 +379,8 @@ export async function updatePlan(
     seasonLocked?: boolean
     completionGems?: number
     pageConfig?: PageWidgetConfig[] | null
+    dripIntervalDays?: number
+    certificateEnabled?: boolean
   },
 ): Promise<void> {
   const update: Record<string, unknown> = {}
@@ -398,6 +400,10 @@ export async function updatePlan(
   if (patch.completionGems !== undefined)
     update.completion_gems = Math.min(100, Math.max(0, Math.round(patch.completionGems)))
   if (patch.pageConfig !== undefined) update.page_config = patch.pageConfig
+  // Delivery (ADR-252): weekly-ish phase drip + completion certificate.
+  if (patch.dripIntervalDays !== undefined)
+    update.drip_interval_days = Math.min(30, Math.max(1, Math.round(patch.dripIntervalDays)))
+  if (patch.certificateEnabled !== undefined) update.certificate_enabled = patch.certificateEnabled
   if (Object.keys(update).length === 0) return
   await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
 }

@@ -59,7 +59,7 @@ export function NewJourneyButton({ className }: { className?: string }) {
       }
     >
       <p className="text-sm text-muted">
-        A Journey is a life-development track you share with the community, from a single daily practice to a full course. Give it a name and a face; you’ll add the practices next.
+        A Journey is a life-development track you share with the community, from a single daily practice to a full course. Give it a name and a face; you’ll build out the phases and lessons next.
       </p>
 
       <div className="mt-5 flex items-start gap-3">
