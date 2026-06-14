@@ -10,6 +10,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
 import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
 import { FeedWalkthrough } from '@/components/walkthroughs/feed-walkthrough'
+import { FeedRolePromotion } from '@/components/walkthroughs/feed-role-promotion'
 import { nextStepsEnabled } from '@/lib/onboarding/status'
 import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
@@ -189,6 +190,15 @@ export default async function FeedPage({
       {myProfileId && (
         <Suspense fallback={null}>
           <FeedWalkthrough profileId={myProfileId} />
+        </Suspense>
+      )}
+
+      {/* Role-promotion tours (P1.8): the code-shipped tour assignRole queued when this
+          member's trust role advanced. Same gentle card + lightbox; resolves to nothing
+          when no tour is pending. Never blocks the shell. */}
+      {myProfileId && (
+        <Suspense fallback={null}>
+          <FeedRolePromotion profileId={myProfileId} />
         </Suspense>
       )}
 

@@ -15,6 +15,8 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
 import { atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
 import { assignTraining } from '@/lib/onboarding/training'
+import { markWalkthroughPending } from '@/lib/walkthroughs/progress'
+import { promotionStepsCrossed, ROLE_PROMOTION_SLUG } from '@/lib/walkthroughs/role-promotion'
 import { authorizeAction } from '@/lib/admin/guard'
 import { logAdminAction } from '@/lib/admin/audit'
 import { getStaffMember } from '@/lib/staff'
@@ -77,11 +79,24 @@ export async function assignRole(profileId: string, role: CommunityRole) {
     throw new Error('Only an owner or janitor can grant admin or janitor.')
   }
   const admin = createAdminClient()
+  // Read the prior role first, so we know which trust rungs this grant CROSSES and can
+  // queue the matching role-promotion tour(s). Best-effort: a read miss just means no tour.
+  const { data: prior } = await admin
+    .from('profiles')
+    .select('community_role')
+    .eq('id', profileId)
+    .maybeSingle()
   const { error } = await admin.from('profiles').update({ community_role: role }).eq('id', profileId)
   if (error) throw new Error(error.message)
   processGamificationEvent({ type: 'role_change', profileId, role }).catch(() => {})
   // Assign the role's training Journey on promotion (ADR-157 §7.1). Best-effort.
   assignTraining(profileId, role).catch(() => {})
+  // Queue the role-promotion tour(s) for every rung this grant crossed (P1.8). The member
+  // sees the gentle tour card on their next feed visit. Best-effort — never blocks the
+  // grant or its audit. No email; pull-based surfacing only.
+  for (const step of promotionStepsCrossed(prior?.community_role ?? null, role)) {
+    markWalkthroughPending(profileId, ROLE_PROMOTION_SLUG[step]).catch(() => {})
+  }
   // Audit the role grant — a crown-jewel platform action (P8). Best-effort.
   await logAdminAction({ actorId: caller.id, action: 'role.assign', targetType: 'profile', targetId: profileId, detail: { role } })
   revalidatePath('/admin')
