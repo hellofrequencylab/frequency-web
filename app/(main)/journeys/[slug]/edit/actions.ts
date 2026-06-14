@@ -59,6 +59,23 @@ export async function addPhaseAction(slug: string): Promise<ActionResult<{ id: s
   return ok({ id: String((data as { id: string }).id) })
 }
 
+/** Add a Module container under a Phase (build item §11.1 #3) — lets long Journeys group
+ *  lessons into sessions within a phase. The player/tree already render Phase → Module → Lesson. */
+export async function addModuleAction(slug: string, phaseId: string): Promise<ActionResult<{ id: string }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const admin = db()
+  const sort = await nextSortOrder(admin, a.planId, phaseId)
+  const { data, error } = await admin
+    .from('journey_plan_items')
+    .insert({ plan_id: a.planId, block_type: 'module', parent_id: phaseId, title: 'New module', sort_order: sort, required: true })
+    .select('id')
+    .maybeSingle()
+  if (error || !data) return fail('Could not add the module.')
+  done(slug)
+  return ok({ id: String((data as { id: string }).id) })
+}
+
 export async function addLessonAction(
   slug: string,
   parentId: string | null,

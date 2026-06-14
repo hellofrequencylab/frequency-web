@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { Plus, Trash2, ChevronUp, ChevronDown, Eye, Layers, Search, Dumbbell, X, Check } from 'lucide-react'
 import {
   addPhaseAction,
+  addModuleAction,
   addLessonAction,
   addPracticeBlockAction,
   updateBlockAction,
@@ -109,6 +110,28 @@ export function JourneyEditor({
   const isLeaf = (b: EditorBlock) => b.blockType !== 'phase' && b.blockType !== 'module'
   const phases = sorted.filter((b) => b.blockType === 'phase' && b.parentId === null)
   const lessonsOf = (phaseId: string) => sorted.filter((b) => b.parentId === phaseId && isLeaf(b))
+  const modulesOf = (phaseId: string) => sorted.filter((b) => b.parentId === phaseId && b.blockType === 'module')
+
+  // A Module groups lessons into a session within a Phase (build item §11.1 #3). Own title +
+  // its leaves + the same add-step tools. The player/tree already render Phase → Module → Lesson.
+  const ModuleGroup = (m: EditorBlock) => (
+    <div key={m.id} className="rounded-xl border border-border bg-canvas p-3">
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-subtle">Module</span>
+        <input
+          defaultValue={m.title}
+          onBlur={(e) => run(() => updateBlockAction(slug, m.id, { title: e.target.value }))}
+          placeholder="Module title"
+          className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
+        />
+        <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'up'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
+        <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'down'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
+        <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, m.id))} className="rounded p-1 text-subtle hover:text-danger" aria-label="Delete module"><Trash2 className="h-3.5 w-3.5" /></button>
+      </div>
+      <ul className="mt-2 space-y-2">{lessonsOf(m.id).map(LeafRow)}</ul>
+      {stepTools(m.id, m.id)}
+    </div>
+  )
   // Pre-v2 journeys keep their steps at the top level (no phase parent). Show them so the
   // author can edit them and organize them into phases.
   const looseLeaves = sorted.filter((b) => b.parentId === null && isLeaf(b))
@@ -293,7 +316,16 @@ export function JourneyEditor({
           </div>
 
           <ul className="mt-3 space-y-2">{lessonsOf(p.id).map(LeafRow)}</ul>
+          {modulesOf(p.id).length > 0 && <div className="mt-2 space-y-2">{modulesOf(p.id).map(ModuleGroup)}</div>}
           {stepTools(p.id, p.id)}
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => run(() => addModuleAction(slug, p.id))}
+            className="mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated"
+          >
+            <Layers className="h-4 w-4" /> Add module
+          </button>
         </section>
       ))}
 
