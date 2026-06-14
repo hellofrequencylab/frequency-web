@@ -54,6 +54,13 @@
   replays never regenerate). **Collision guard:** distinct from broadcast
   **Dispatches** (`dispatches`, /broadcast) — both are transmissions in the same
   radio family; "Dispatch from Vera" / "Vera Dispatch" always carries the qualifier.
+- **Event Dispatch** (ADR-255) = a host's update about one event. The base action is
+  **post an update to the event page**; at post time the host may also **send it as a
+  Dispatch** and/or **text the group** (SMS, gated on A2P 10DLC). When sent as a
+  Dispatch it rides the existing `dispatches` rail and renders **in the feed as a
+  Dispatch with an event badge** (event-scoped, never the /broadcast leader ladder).
+  Third member of the Dispatch family; always carries the "event" qualifier. This
+  supersedes the never-built `event_blasts` concept named in EVENTS-SYSTEM.md.
 - **Season ranks: Ghost → Echo → Signal → Beacon → Conduit → Luminary.**
   Rename map: Runner→Echo, Operative→Signal, Agent→Beacon. Thresholds unchanged
   (0/100/300/750/1500/3000). Luminary stays double-gated.
