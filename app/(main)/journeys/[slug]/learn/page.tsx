@@ -6,6 +6,9 @@ import { getJourneyPlayerView } from '@/lib/journeys/store'
 import { getMemberRunForPlan, getCohortProgress } from '@/lib/journeys/runs'
 import { JourneyPlayer } from '@/components/journey/v2/journey-player'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
+import { DetailTemplate } from '@/components/templates'
+import { accentColor, accentTint } from '@/lib/studio/accents'
+import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import type { CohortProgress } from '@/lib/journeys/cohort'
 
 // Journeys v2 — the learner player route (ADR-252, J1b). The clean, focused "take this journey"
@@ -44,28 +47,47 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   }
 
   const isAuthor = view.plan.author_id === profileId
+  const { plan } = view
+  const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6">
-      {isAuthor && (
-        <div className="flex justify-end">
+    <DetailTemplate
+      back={{ href: '/journeys', label: 'Journeys' }}
+      title={
+        <span className="inline-flex items-center gap-3 align-middle">
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
+          >
+            <PlanIcon className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 break-words">{plan.title}</span>
+        </span>
+      }
+      subtitle={plan.summary ? <span className="block leading-relaxed">{plan.summary}</span> : undefined}
+      actions={
+        isAuthor ? (
           <Link
             href={`/journeys/${slug}/edit`}
             className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated"
           >
             <Pencil className="h-3.5 w-3.5" /> Edit journey
           </Link>
+        ) : undefined
+      }
+    >
+      {cohort && (
+        <div className="mb-4">
+          <CohortMeter progress={cohort} />
         </div>
       )}
-      {cohort && <CohortMeter progress={cohort} />}
       <JourneyPlayer
         slug={slug}
-        title={view.plan.title}
-        emoji={view.plan.emoji}
+        title={plan.title}
         tree={view.tree}
         lessonsById={view.lessonsById}
-        certificateEnabled={view.plan.certificate_enabled}
+        certificateEnabled={plan.certificate_enabled}
       />
-    </div>
+    </DetailTemplate>
   )
 }

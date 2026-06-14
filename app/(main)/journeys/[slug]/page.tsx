@@ -166,7 +166,7 @@ export default async function JourneyPlanPage({
   )
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <>
       {isAuthor && preview && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-2.5">
           <span className="text-sm text-muted">Preview. How others see your Journey.</span>
@@ -180,7 +180,7 @@ export default async function JourneyPlanPage({
       )}
 
       {header}
-    </div>
+    </>
   )
 }
 

@@ -131,6 +131,26 @@ pages (`events/new`, `practices/*/edit`, `upgrade`, `crm`, `outreach`, `codes`, 
 
 ---
 
+## Shipped status (2026-06-14) — journey interior containers on the kit
+
+The journey reader surfaces stopped hand-rolling `mx-auto max-w-Nxl px-/py-` wrappers that fought
+the shell. (`<main>` already supplies `py-6` and the global rail narrows the column, so a
+page-level `max-w + mx-auto` double-padded and floated the content away from the rail.) This is the
+follow-on to the `journeys/[slug]` header-only `DetailTemplate` adoption (2026-06-05) and pairs with
+the ADR-252 rail restore.
+
+- **Player** (`journeys/[slug]/learn`) → `DetailTemplate`: accent face + back-to-Journeys + author
+  Edit action in the header; cohort meter + player as the body. The player's progress card no longer
+  repeats the title (the header owns it now); lesson titles are `h2` under the page `h1`.
+- **Discovery** (`journeys/[slug]`) → dropped the `max-w-2xl` wrapper so `DetailTemplate` fills
+  beside the rail like every other detail page.
+- **Editor** (`journeys/[slug]/edit`) → removed the double padding; kept the constrained authoring
+  width (a sanctioned editor, not migrated to a generic template).
+
+Rail unchanged: journey routes keep the standard global community rail (ADR-252), always present.
+
+---
+
 ## Phased plan (reviewable PRs)
 
 **Phase 0 — Foundation kit** *(this is the backbone; ship first)*
