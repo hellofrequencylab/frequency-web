@@ -222,7 +222,7 @@ generation, occasion }`) that the shell sets as the three data-attributes.
 3. **System / time default** — `DEFAULT_*` for skin and generation; for occasion, the **calendar
    window**, since occasion has no Space default unless the member pins one.
 
-**Occasion is now scheduled end-to-end.** The root layout ([`app/layout.tsx`](../app/layout.tsx))
+**Occasion is now scheduled end-to-end.** The in-app shell layout ([`app/(main)/layout.tsx`](<../app/(main)/layout.tsx>))
 prefers a **pin** first (a non-`none` occasion `resolveTheme()` already settled from the member
 cookie or a code-registry window match); only when nothing is pinned does it auto-schedule from the
 DB by calling [`resolveActiveOccasionSlug(now)`](../lib/theme/server/themes.ts), which scans the
@@ -372,15 +372,19 @@ save, not a deploy.
    (`;{}<>`, `url(`, comments, escapes, newlines), is **dropped**, never stored. Only the
    sanitized subset is saved.
 3. **Store.** The sanitized `{ light, dark, feel }` lands in the row's `tokens` (JSONB).
-4. **Inject (per request).** The root layout ([`app/layout.tsx`](../app/layout.tsx)) calls
+4. **Inject (per request, in-app only).** The **in-app shell layout**
+   ([`app/(main)/layout.tsx`](<../app/(main)/layout.tsx>)) calls
    [`loadActiveThemeCss`](../lib/theme/server/themes.ts), which loads the active `skin` theme
    matched to the resolved `data-skin` (and the active `occasion`), **re-validates** every row,
    and renders it through [`themeToCss`](../lib/theme/css.ts) into a scoped
-   `<style id="fx-theme">`. Each kind is rendered against the **attribute the shell actually
-   sets**: `themeToCss('data-skin', …)` for a skin, `themeToCss('data-occasion', …)` for an
-   occasion overlay (this fixed a bug where occasion themes emitted `[data-skin]` rules and so
-   never matched). The selectors are deliberately higher-specificity
-   (`html[<attr>="<slug>"]` / `html.dark[<attr>="<slug>"]`, `(0,1,2)`) than the code skin /
+   `<style id="fx-theme">`. This and the personal `fxtheme` cookie read live in the in-app shell,
+   **not** the root layout, so the public marketing/discover pages stay static/prerendered (the
+   root layout has no per-request reads). Each kind is rendered against the **attribute the shell
+   actually sets**: `themeToCss('data-skin', …)` for a skin, `themeToCss('data-occasion', …)` for
+   an occasion overlay (this fixed a bug where occasion themes emitted `[data-skin]` rules and so
+   never matched). The `data-*` axis attributes are set on the **shell root** (a `:root`
+   descendant), and the selectors are deliberately higher-specificity
+   (`:root[<attr>="<slug>"]` / `:root [<attr>="<slug>"]`, `(0,2,0)+`) than the code skin /
    occasion rules (single attribute, `(0,1,0)`), so the DB theme wins regardless of stylesheet
    order.
 
@@ -412,8 +416,8 @@ revalidate the layout so a change shows on the next request.
 
 > **In one line.** An operator assigns each Space its theme and brand metadata from
 > `/admin/spaces` (janitor-gated). The theme **assignment is the existing `spaces.skin`** axis;
-> this work added the visual brand fields beside it. ✅ data + admin shipped; ⏳ the header
-> visual (logo / name in the chrome) is a deliberate follow-up.
+> this work added the visual brand fields beside it. ✅ data + admin shipped; ✅ the header
+> visual (logo / name in the chrome) is now live.
 
 ### What an operator can do
 
@@ -429,6 +433,31 @@ From the Space branding editor (`/admin/spaces/<id>`), an operator sets:
 The palette still comes from the assigned theme (`spaces.skin`); `brand_accent` is a reference
 swatch, not the live palette.
 
+### How the header visual works
+
+When a Space sets a brand, it leads the header in place of the default engraved Frequency
+wordmark, so a white-label Space looks like its own product. The prop flow is one straight line,
+all fail-safe:
+
+1. **Resolve (server).** [`(main)/layout.tsx`](<../app/(main)/layout.tsx>) resolves the Space for
+   the request host and reads `brand_name` / `brand_logo_url` off it, passing them to `AppShell`
+   as `brandName` / `brandLogoUrl`. The whole resolution sits inside a `try/catch` that falls
+   back to the default mark (no Space, a lookup failure, or a pre-migration environment all land
+   on the default), so the header never breaks.
+2. **Forward (shell).** [`app-shell.tsx`](../components/layout/app-shell.tsx) forwards both props
+   straight to `<BrandMark name={brandName} logoUrl={brandLogoUrl} />`.
+3. **Render (mark).** [`brand-mark.tsx`](../components/layout/brand-mark.tsx) picks, in order: a
+   **logo** (rendered via a guarded `<img>`) if `logoUrl` is set, else the **brand name** as
+   wordmark text if `name` is set, else the **default** engraved Frequency wordmark. The logo is
+   an operator-supplied URL (not a build-time asset), so it renders via a plain `<img>` like the
+   other operator covers, with the `next/image` lint suppressed for that one line.
+
+**The guarded `<img>` is safe because the URL is validated at write time.** `brand_logo_url` can
+only ever be a **same-origin** root-relative path or an `https` URL: `updateSpaceBranding`
+(`isSafeLogoUrl`) rejects anything else before it is stored, so the mark trusts a value the
+server already cleared. The render path is otherwise inert: it sets `alt` from the brand name and
+links home, no operator string reaches a style or script.
+
 ### Data model + flow
 
 - **Migration:** [`20260626000000_space_brand.sql`](../supabase/migrations/20260626000000_space_brand.sql)
@@ -436,7 +465,7 @@ swatch, not the live palette.
 - **Store:** [`lib/spaces/store.ts`](../lib/spaces/store.ts) reads the brand columns onto `Space`.
 - **Action:** `updateSpaceBranding` ([`app/(main)/admin/spaces/actions.ts`](<../app/(main)/admin/spaces/actions.ts>))
   is **janitor-gated** and validates every field server-side before the write, then revalidates the
-  admin list **and** the root layout (a skin change repaints every Space surface).
+  admin list **and** the in-app shell (a skin change repaints every Space surface).
 
 ### Status
 
@@ -444,7 +473,7 @@ swatch, not the live palette.
 |---|---|
 | `brand_*` columns + store reads | ✅ shipped (migration apply pending, see below) |
 | Janitor-gated branding editor + validated action | ✅ shipped |
-| **Header brand visual** (logo / name shown in the chrome) | ⏳ deliberate follow-up (left out to avoid app-shell churn during the events redesign) |
+| **Header brand visual** (logo / name shown in the chrome) | ✅ shipped — `BrandMark` renders the Space logo (guarded `<img>`) / name in place of the default wordmark; `(main)/layout.tsx` passes `brandName` / `brandLogoUrl`, fail-safe to the default mark (unblocked by the events redesign merge) |
 
 ---
 
@@ -452,20 +481,26 @@ swatch, not the live palette.
 
 > **In one line.** An operator overrides any route's **right rail** from `/admin/page-layout`
 > (janitor-gated), stored as a fail-safe DB layer **over** the code chrome map. ✅ management +
-> storage + resolver shipped; ⏳ the **live shell** reading the override is a flagged follow-up,
-> so today an override stores intent without yet changing the visible rail.
+> storage + resolver shipped; ✅ the **live shell** now reads the override, so an operator
+> override takes visible effect on the next request.
 
 ### How it composes with the code map
 
 The code chrome map ([`lib/layout/page-chrome.ts`](../lib/layout/page-chrome.ts)) stays the source
-of truth and is **unchanged**: the live shell still calls `railFor` / `leftRailFor` synchronously
-and reads the same answer it always has (PAGE-FRAMEWORK §3/§8). This work is **additive**:
+of truth: `railFor` / `leftRailFor` remain the pure, synchronous baseline (PAGE-FRAMEWORK §3/§8),
+and the operator layer is a fail-safe **merge over** them, never a replacement. This work is
+**additive**:
 
 - **Migration:** [`20260626100000_page_chrome_overrides.sql`](../supabase/migrations/20260626100000_page_chrome_overrides.sql)
   adds `page_chrome_overrides` (`route` → `rail`, RLS on, world-readable, service-role writes).
 - **Resolver:** `loadChromeOverrides` (request-cached, **fail-safe** `{}` on any error / missing
   table) + the pure `mergeChrome` (an exact-route override wins over the code default) +
   `resolvePageChrome` (the async, override-aware twin of `railFor`).
+- **Live shell:** [`(main)/layout.tsx`](<../app/(main)/layout.tsx>) loads the overrides once
+  server-side (`loadChromeOverrides`, fail-safe `{}`) and passes them to the client shell as
+  `chromeOverrides`; [`app-shell.tsx`](../components/layout/app-shell.tsx) then computes its right
+  rail as `mergeChrome(railFor(pathname), chromeOverrides, pathname)` instead of bare `railFor`,
+  so an operator override takes **visible** effect. The left rail (`leftRailFor`) is unchanged.
 - **Admin:** the manager (`/admin/page-layout`) lists the curated `MANAGED_ROUTES` with each
   route's current effective rail and sets an override; the actions are **janitor-gated** and
   validate `route` / `rail` (`isSafeRoute` / `isRail`) before any write.
@@ -476,7 +511,7 @@ and reads the same answer it always has (PAGE-FRAMEWORK §3/§8). This work is *
 |---|---|
 | Override table + janitor-gated manager | ✅ shipped (migration apply pending, see below) |
 | `loadChromeOverrides` + `mergeChrome` + `resolvePageChrome` (fail-safe) | ✅ shipped |
-| **Live shell adoption** (the shell reading `resolvePageChrome`) | ⏳ flagged follow-up (the app-shell monolith + the nearby events rewire make changing the live read risky now) |
+| **Live shell adoption** (the shell merges the override into its rail) | ✅ shipped — `app-shell.tsx` computes `mergeChrome(railFor(pathname), chromeOverrides, pathname)`; `(main)/layout.tsx` loads `loadChromeOverrides` server-side (fail-safe `{}`) and passes `chromeOverrides` (unblocked by the events redesign merge) |
 
 ---
 
@@ -485,11 +520,11 @@ and reads the same answer it always has (PAGE-FRAMEWORK §3/§8). This work is *
 | Item | Status |
 |---|---|
 | The three migrations (`20260625000000_themes`, `20260626000000_space_brand`, `20260626100000_page_chrome_overrides`) | ✅ applied to Frequency Community (2026-06-14). Fail-safe before apply in any fresh environment (code skins, branding columns absent, chrome overrides `{}`) |
-| Per-Space **header brand visual** (logo / name in the chrome) | ⏳ follow-up (§12) |
-| Page-layout **live shell adoption** (shell reads `resolvePageChrome`) | ⏳ follow-up (§13) |
+| Per-Space **header brand visual** (logo / name in the chrome) | ✅ shipped — `BrandMark` renders the Space logo / name in the header, fail-safe to the default mark (§12) |
+| Page-layout **live shell adoption** (shell merges the override into its rail) | ✅ shipped — `app-shell.tsx` uses `mergeChrome(railFor, chromeOverrides, pathname)` (§13) |
 | The **generation / demographic** axis as editable data | 🅿️ deferred (the code axis stands; Theme Studio does not yet manage it) |
 | Per-Space theme assignment | ✅ shipped (it is the existing `spaces.skin`, now set from `/admin/spaces`, §12) |
-| Occasion auto-resolution from the DB `MM-DD` windows | ✅ shipped (`resolveActiveOccasionSlug`, wired in the root layout, §§1, 6) |
+| Occasion auto-resolution from the DB `MM-DD` windows | ✅ shipped (`resolveActiveOccasionSlug`, wired in the in-app shell, §§1, 6) |
 | Template-per-page (a theme scoped to a page template) | 🔴 not built |
 | Client `ThemeProvider` / View-Transitions switch + `generations`/`occasions` guardrail tests | ⏳ tracked in §§2, 7 |
 
@@ -503,6 +538,7 @@ and reads the same answer it always has (PAGE-FRAMEWORK §3/§8). This work is *
 - [`docs/SPACES.md`](SPACES.md) — Spaces own the skin (and the per-Space generation default).
 - [`docs/DESIGN.md`](DESIGN.md) — the DAWN design language the `balanced` / `default` baseline encodes.
 - [`docs/DECISIONS.md`](DECISIONS.md) — [ADR-257](DECISIONS.md) (the four-axis model),
-  [ADR-258](DECISIONS.md) (Theme Studio: themes as operator-editable data), and
-  [ADR-259](DECISIONS.md) (occasion scheduling fix + per-Space branding + page-chrome overrides).
+  [ADR-258](DECISIONS.md) (Theme Studio: themes as operator-editable data),
+  [ADR-259](DECISIONS.md) (occasion scheduling fix + per-Space branding + page-chrome overrides),
+  and [ADR-260](DECISIONS.md) (the shell now consumes the per-Space brand + page-chrome overrides).
 </content>

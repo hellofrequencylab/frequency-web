@@ -23,7 +23,12 @@ const STATUS_TONE: Record<SpaceStatus, StatusTone> = {
 }
 
 function SpaceRow({ s }: { s: Space }) {
-  const accent = s.brandAccent
+  // Re-validate the stored accent before applying it to a style swatch (the renderer never
+  // trusts a DB value it did not re-check; it is written validated by updateSpaceBranding).
+  const accent =
+    s.brandAccent && /^#[0-9a-fA-F]{3,8}$|^(?:rgb|hsl)a?\([0-9.,%/\s]+\)$/.test(s.brandAccent)
+      ? s.brandAccent
+      : null
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">

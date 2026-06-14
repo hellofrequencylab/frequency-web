@@ -10,13 +10,13 @@ describe('themeToCss', () => {
       dark: { '--color-primary': '#F2B14E' },
       feel: { '--radius-card': '1rem' },
     })
-    // Base rule carries feel + light, on html[data-skin="…"] (more specific than the
-    // code skins' bare [data-skin="…"]).
-    expect(css).toContain('html[data-skin="midnight"]{')
+    // Base rule carries feel + light, on :root[data-skin] / :root [data-skin] (more specific
+    // than the code skins' bare [data-skin="…"]).
+    expect(css).toContain(':root[data-skin="midnight"],:root [data-skin="midnight"]{')
     expect(css).toContain('--radius-card:1rem;')
     expect(css).toContain('--color-primary:#E2912F;')
-    // Dark rule carries the dark block on html.dark[data-skin="…"].
-    expect(css).toContain('html.dark[data-skin="midnight"]{')
+    // Dark rule carries the dark block on :root.dark[data-skin] / :root.dark [data-skin].
+    expect(css).toContain(':root.dark[data-skin="midnight"],:root.dark [data-skin="midnight"]{')
     expect(css).toContain('--color-primary:#F2B14E;')
   })
 
@@ -27,8 +27,8 @@ describe('themeToCss', () => {
       feel: { '--radius-card': '1rem' },
     })
     // An occasion overlay must target the data-occasion attribute, not data-skin.
-    expect(css).toContain('html[data-occasion="solstice"]{')
-    expect(css).toContain('html.dark[data-occasion="solstice"]{')
+    expect(css).toContain(':root[data-occasion="solstice"],:root [data-occasion="solstice"]{')
+    expect(css).toContain(':root.dark[data-occasion="solstice"],:root.dark [data-occasion="solstice"]{')
     expect(css).not.toContain('data-skin')
     expect(css).toContain('--radius-card:1rem;')
     expect(css).toContain('--color-primary:#E2912F;')
@@ -46,8 +46,8 @@ describe('themeToCss', () => {
 
   it('omits an empty rule (no dark block → no .dark rule)', () => {
     const css = themeToCss('data-skin', 'x', { light: { '--color-canvas': '#fff' }, dark: {}, feel: {} })
-    expect(css).toContain('html[data-skin="x"]{')
-    expect(css).not.toContain('html.dark[data-skin="x"]')
+    expect(css).toContain(':root[data-skin="x"],:root [data-skin="x"]{')
+    expect(css).not.toContain(':root.dark[data-skin="x"]')
   })
 
   it('returns "" for an unsafe slug', () => {
