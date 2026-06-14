@@ -68,6 +68,50 @@ private profile card (#516, migration `20260610060000`).
 > from the repo filenames (e.g. canon batch `20260613*` files ↔ `20260610*` applied), but **every repo
 > migration is applied by name** — no unapplied drift. Cosmetic; a `migration repair` would re-align.
 
+## 🔎 Post-restructure reconciliation — 2026-06-14 (Journeys v2 / roles / IA)
+
+Six-agent sweep (Journeys-v2 reconcile · dead-code/junk · migration-drift+advisors · code-level
+security · SEO/AIO · buildable-backlog) cross-checked against this list after the day's 58-commit
+restructure. **Verdict: clean and on track. Lint clean, 905 tests green, no broken routes, no
+critical security holes, DB perf debt dropped sharply. The one real risk is a deliberate
+half-migration: ADR-253 (retire the legacy season engine) was decided today but not yet executed —
+so v2 journey rewards run in parallel with the legacy season engine (a live double-earn surface).**
+
+**Fixed this pass:** 🟢 **Security** — three crown-jewel role actions (`setAreaPermission` ·
+`setStaffRole` · `addStaffMember`) gated on the **deprecated `community_role`** axis; moved to
+`isJanitor(webRole)` (ADR-208), closing a privilege-escalation path. 🟢 **Cleanup** — 13 verified
+orphaned modules + stale `package-lock.json` removed. 🟢 **SEO** — `public/llms.txt` corrected to the
+naming canon (it was misinforming answer engines with retired Domains/Interests/Arcs); BreadcrumbList
+second-crumb URLs fixed on discover circle/topic detail; `/the-lab` surface copy de-jargoned
+(CONTENT-VOICE §3b/§5c). 🟢 **P-SEC.3** — `requestBetaAccess` now per-IP rate-limited.
+
+**Status corrections (rows below were stale — the code shipped):** P1.4/P1.6 scoped stewardship
+(`community_level` threaded end-to-end, `scope` passed into `surfaceAccess`) · P1.7
+`capability_permissions` (grid UI + `getCapabilityOverrides` in the live gate) · P6 §1.5 suggestion
+chips · P6 §2.2 `draft_intro` · P6 §3 AI core kernel (built, not 📋) · P7 10.3 Network hub · P7 10.5
+Settings hub · the June 13-14 event migrations (`event_posts`/`event_media`/`event_cohosts` wired).
+**Migration reconcile:** every "apply-pending" migration (stewardships `20260614100000`,
+capability_permissions `20260614300000`, journeys_v2) is **LIVE in prod** — those ⏳ rows are now ✅.
+
+**Remaining, ranked (buildable; owner-config items tracked separately in §P4/§P8):**
+
+| Pri | Item | Why | Where |
+|---|---|---|---|
+| 🔴 **P0** | **Execute ADR-253** — retire the legacy season reward/progress engine | v2 grants run in parallel with the season engine on every practice log (double-earn); retired widgets (completion-rule, depth tiers) still render to members. 5 sequenced steps; do NOT blind-delete (live currency + member-UI). | `lib/practices.ts`, `lib/journey-plans.ts`, `journeys/[slug]/page.tsx` |
+| **P1** | Hardening tails | Add plan-ownership checks on journey insert/checkoff actions (low sev); "// caller must enforce host gate" contracts on untyped `lib/journeys/runs.ts`/`store.ts`. | journeys edit/learn actions |
+| **P1** | `lib/experiments/*` is orphaned | Zero importers, yet PI claims it's part of the owned spine — wire it (PI.4 needs it) or stop claiming it. | `lib/experiments/*` |
+| **P2** | Segment builder UI | Eval is pure+tested; admin page is read-only. Add a predicate-form + `createSegment`. | `lib/traits/segments.ts`, `/admin/segments` |
+| **P2** | Push actions for Automations | `lib/push.ts` exists; add a `push_actor` action type + evaluator branch + form fields. | `lib/automations.ts`, automations rule-form |
+| **P2** | Role-promotion coachmark tours (P1.8) | The one in-product "Coming soon" card with real backlog behind it. | `/pages/sequences` |
+| **P3** | FK covering indexes on the new restructure tables | Clean advisor perf win (~13 indexes on `journey_runs`/`journey_enrollments`/`journey_lesson_progress`/`spaces`/`menu_config`/`platform_settings`/`walkthrough`). | new migration |
+| **P3** | Vera memory cron · Practices+Library merge · warm-demo action surface | P6 §2.3 / P7 10.4 / P6 §2.4 — buildable, no owner config. | per BACKLOG |
+
+> **Process note (migration ledger):** 22 repo migrations dated ≥`20260615` are applied to prod but
+> never stamped in `schema_migrations` (apply-on-merge keeps the schema correct, but the ledger is
+> stale → compounding cosmetic stamp-drift). A `migration repair` re-aligns it. The out-of-band
+> `energetics` schema (8 tables, live, not in repo) is a **separate project — leave alone** (owner
+> direction); it is the source of all "new" advisor lints and must not be read as a restructure regression.
+
 ## The headline
 
 The platform is **substantially built** — member surfaces, the practice engine + gamification,
