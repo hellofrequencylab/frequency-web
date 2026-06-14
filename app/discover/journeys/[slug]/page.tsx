@@ -1,28 +1,36 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
+import { Flame } from 'lucide-react'
 import { getPublicJourney } from '@/lib/journey-plans'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import {
   StoryBlock,
+  OutcomesBlock,
   PathBlock,
   PillarBalanceBlock,
-  RewardPreviewBlock,
+  InstructorBlock,
+  JourneyFaq,
+  JourneyStatChips,
+  AtAGlanceCard,
+  journeyFacts,
+  primaryPillar,
 } from '@/components/journey/discovery-widgets'
-import { SignInCta } from '@/components/discover/cards'
-import { FrequencyArcs } from '@/components/marketing/vector-art'
+import { getPlanAuthor } from '@/lib/journey-plans'
 import { DetailTemplate } from '@/components/templates'
+import { buttonClasses } from '@/components/ui/button'
+import { accentColor, accentTint } from '@/lib/studio/accents'
+import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { journeySchema, breadcrumbSchema } from '@/lib/jsonld'
 
-// Public, indexable detail page for one library Journey. Mirrors the discover
-// events detail page: revalidated hourly, canonical + OG/Twitter metadata, and
-// JSON-LD (HowTo — the AEO lever for guides, CONTENT-VOICE §8b). Reuses the same
-// discovery widgets the in-app Journey page composes, so the public face and the
-// member face stay in lockstep. Anonymous visitors get a sign-in CTA in place of
-// the adopt/remix actions.
+// Public, indexable detail page for one library Journey. Mirrors the in-app Journey
+// page's header (badge + Pillar + stat chips) + two-column body + sticky "At a glance"
+// card, but in the MARKETING register: anonymous visitors get a "Create a free account"
+// CTA in place of the enroll actions. Revalidated hourly, canonical + OG/Twitter
+// metadata, and JSON-LD (HowTo). Reuses the same discovery widgets so the public face
+// and the member face stay in lockstep. Voice is v2; no em dashes.
 export const revalidate = 3600
 
 export async function generateMetadata({
@@ -64,16 +72,28 @@ export default async function DiscoverJourneyPage({
   if (!found) notFound()
   const { plan, items } = found
 
-  const pillars = await getPillars()
+  const [pillars, author] = await Promise.all([getPillars(), getPlanAuthor(plan.author_id)])
   const byId = pillarsById(pillars)
+  const accent = plan.accent
+  const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
+
+  const facts = journeyFacts(items)
+  const topPillar = primaryPillar(items, byId)
+
+  // The marketing-register CTA: sign up free, then start it.
+  const signUpCta = (
+    <div className="space-y-2">
+      <Link href="/sign-in" className={buttonClasses('primary', 'md', 'w-full')}>
+        Create a free account
+      </Link>
+      <p className="text-2xs leading-relaxed text-subtle">
+        Free to start. Run it with your Circle or solo.
+      </p>
+    </div>
+  )
 
   return (
-    <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
-      {/* Frequency arcs radiating up under the Journey, tying practice to place. */}
-      <FrequencyArcs
-        aria-hidden
-        className="pointer-events-none absolute -top-10 right-0 w-[28rem] max-w-none text-primary opacity-[0.05]"
-      />
+    <div className="mx-auto max-w-5xl px-6 py-12 sm:py-16">
       <JsonLd
         data={[
           journeySchema(plan, items),
@@ -85,56 +105,90 @@ export default async function DiscoverJourneyPage({
         ]}
       />
 
-      <Link
-        href="/discover/journeys"
-        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Journeys
-      </Link>
-
       <DetailTemplate
+        back={{ href: '/discover/journeys', label: 'Journeys' }}
         title={
-          <span>
-            {plan.emoji ? `${plan.emoji} ` : ''}
-            {plan.title}
+          <span className="inline-flex items-center gap-3 align-middle">
+            <span
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+              style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
+            >
+              <PlanIcon className="h-6 w-6" />
+            </span>
+            <span className="min-w-0 break-words">{plan.title}</span>
           </span>
         }
         subtitle={
-          <div className="space-y-2">
-            {plan.summary && (
-              <p className="text-base text-muted leading-relaxed">{plan.summary}</p>
+          <span className="block space-y-2">
+            {plan.summary && <span className="block leading-relaxed text-text">{plan.summary}</span>}
+            {author && (
+              <Link
+                href={`/people/${author.handle}`}
+                className="inline-flex items-center gap-1 text-xs text-muted hover:text-text"
+              >
+                By <span className="font-semibold text-text">{author.displayName}</span>
+              </Link>
             )}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-subtle">
-              <span>
-                {items.length} {items.length === 1 ? 'practice' : 'practices'}
-              </span>
-              {plan.adopt_count > 0 && <span>{plan.adopt_count} on this Journey</span>}
-            </div>
-          </div>
+            <span className="block pt-0.5">
+              <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />
+            </span>
+          </span>
         }
         badges={
-          plan.official ? (
-            <span className="inline-block text-xs px-2 py-1 rounded-md font-medium bg-primary-bg text-primary-strong">
-              Official Journey
-            </span>
-          ) : undefined
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            {plan.official && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+                <Flame className="h-3 w-3" /> Official
+              </span>
+            )}
+            {topPillar && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+                {topPillar.name}
+              </span>
+            )}
+          </span>
+        }
+        actions={
+          <Link href="/sign-in" className={buttonClasses('primary', 'md')}>
+            Create a free account
+          </Link>
         }
       >
-        <div className="space-y-8">
-          {plan.intro && <StoryBlock intro={plan.intro} />}
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
+          <aside className="mb-6 lg:order-2 lg:mb-0 lg:sticky lg:top-6 lg:self-start">
+            <AtAGlanceCard
+              plan={plan}
+              slug={plan.slug}
+              facts={facts}
+              enrolled={false}
+              canStart={facts.lessonCount > 0}
+              isAuthor={false}
+              progress={null}
+              cta={signUpCta}
+            />
+          </aside>
 
-          <PathBlock items={items} pillarsById={byId} accent={plan.accent} />
+          <div className="min-w-0 max-w-2xl space-y-8 lg:order-1">
+            <StoryBlock intro={plan.intro} />
+            <OutcomesBlock summary={plan.summary} />
+            <div id="the-path" className="scroll-mt-6">
+              <PathBlock items={items} pillarsById={byId} accent={accent} facts={facts} />
+            </div>
+            <PillarBalanceBlock items={items} pillars={pillars} />
+            <InstructorBlock author={author} />
+            <JourneyFaq plan={plan} />
 
-          <PillarBalanceBlock items={items} pillars={pillars} />
-
-          <RewardPreviewBlock gems={plan.completion_gems} />
-
-          <SignInCta
-            title="Start this Journey"
-            body="Sign up free to adopt this Journey: its practices flow into your daily loop, your circle can run it with you, and finishing the season earns the completion badge. Two words to belong."
-            action="Sign up free"
-          />
+            <div className="rounded-2xl border border-border bg-surface p-5 text-center shadow-sm">
+              <p className="mb-1 text-lg font-bold text-text">Start this Journey</p>
+              <p className="mx-auto mb-4 max-w-sm text-sm leading-relaxed text-muted">
+                Sign up free to start it. Its phases drip one per week, your Circle can run it
+                with you, and finishing earns the completion gems.
+              </p>
+              <Link href="/sign-in" className={buttonClasses('primary', 'md')}>
+                Create a free account
+              </Link>
+            </div>
+          </div>
         </div>
       </DetailTemplate>
     </div>
