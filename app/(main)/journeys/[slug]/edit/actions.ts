@@ -11,6 +11,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan } from '@/lib/journey-plans'
+import { draftJourneyOutline } from '@/lib/ai/journey-outline'
 
 // Untyped admin handle: the v2 block columns (block_type/parent_id/body) and dynamic patch
 // objects aren't in the generated types yet — same pattern as lib/journeys/runs.ts.
@@ -20,12 +21,12 @@ function db(): SupabaseClient {
 
 const LEAF_TYPES = ['lesson', 'video', 'reading', 'exercise', 'reflection', 'check', 'resource'] as const
 
-async function authorPlan(slug: string): Promise<{ planId: string } | null> {
+async function authorPlan(slug: string): Promise<{ planId: string; profileId: string } | null> {
   const caller = await getCallerProfile()
   if (!caller) return null
   const loaded = await getPlan(slug)
   if (!loaded || loaded.plan.author_id !== caller.id) return null
-  return { planId: loaded.plan.id }
+  return { planId: loaded.plan.id, profileId: caller.id }
 }
 
 async function nextSortOrder(
@@ -55,6 +56,54 @@ export async function addPhaseAction(slug: string): Promise<ActionResult<{ id: s
     .select('id')
     .maybeSingle()
   if (error || !data) return fail('Could not add the phase.')
+  done(slug)
+  return ok({ id: String((data as { id: string }).id) })
+}
+
+/** Add a Module container under a Phase (build item §11.1 #3) — lets long Journeys group
+ *  lessons into sessions within a phase. The player/tree already render Phase → Module → Lesson. */
+/** Vera drafts a Phase -> Lesson outline from a one-line description and inserts it (build item
+ *  §11.1 #4). The blank-with-prompts authoring path. Degrades to a clear error if AI is off. */
+export async function draftOutlineAction(slug: string, description: string): Promise<ActionResult<{ phases: number }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const desc = description.trim().slice(0, 2000)
+  if (!desc) return fail('Add a short description first.')
+  const outline = await draftJourneyOutline({ description: desc, profileId: a.profileId })
+  if (!outline) return fail('Vera could not draft an outline right now. Try again, or add phases by hand.')
+
+  const admin = db()
+  let sort = await nextSortOrder(admin, a.planId, null)
+  for (const phase of outline.phases) {
+    const { data: ph } = await admin
+      .from('journey_plan_items')
+      .insert({ plan_id: a.planId, block_type: 'phase', parent_id: null, title: phase.title, sort_order: sort++, required: true })
+      .select('id')
+      .maybeSingle()
+    if (!ph) continue
+    const phaseId = String((ph as { id: string }).id)
+    let ls = 0
+    for (const lesson of phase.lessons) {
+      await admin
+        .from('journey_plan_items')
+        .insert({ plan_id: a.planId, block_type: lesson.type, parent_id: phaseId, title: lesson.title, sort_order: ls++, required: true })
+    }
+  }
+  done(slug)
+  return ok({ phases: outline.phases.length })
+}
+
+export async function addModuleAction(slug: string, phaseId: string): Promise<ActionResult<{ id: string }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const admin = db()
+  const sort = await nextSortOrder(admin, a.planId, phaseId)
+  const { data, error } = await admin
+    .from('journey_plan_items')
+    .insert({ plan_id: a.planId, block_type: 'module', parent_id: phaseId, title: 'New module', sort_order: sort, required: true })
+    .select('id')
+    .maybeSingle()
+  if (error || !data) return fail('Could not add the module.')
   done(slug)
   return ok({ id: String((data as { id: string }).id) })
 }
