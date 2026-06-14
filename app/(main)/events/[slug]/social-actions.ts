@@ -4,6 +4,13 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isEventCohost } from '@/lib/events/cohosts'
+import {
+  setRsvp,
+  approveRsvp,
+  setRsvpMuted,
+  type RsvpStatus,
+} from '@/lib/events/rsvp-depth'
+import { composeEventDispatch } from '@/lib/events/dispatch'
 
 // Post-event social loop (slice B-2): the event activity feed (event_posts), the
 // recap album (event_media), and cohosts (event_cohosts).
@@ -219,6 +226,102 @@ export async function removeCohost(eventId: string, slug: string, cohostProfileI
     .delete()
     .eq('event_id', eventId)
     .eq('profile_id', cohostProfileId)
+
+  revalidateEvent(slug)
+}
+
+// ── RSVP depth (EVENTS-REWORK A1) ──────────────────────────────────────────────
+// The Invite's Join column writes maybe / +1 names / approval / waitlist through
+// the frozen rsvp-depth data layer. Self-authorized: every call only ever touches
+// the caller's own RSVP row (the lib upserts on (event_id, profile_id)). The DB
+// capacity trigger still has the final say on going vs waitlist, so we never
+// pre-check capacity here. `approvalStatus` is set by the page: invited guests
+// skip the queue ('approved'); approval-required events open at 'pending'.
+
+const RSVP_DEPTH_STATUSES: RsvpStatus[] = ['going', 'not_going', 'maybe', 'waitlist']
+
+export async function setEventRsvpDepth(
+  eventId: string,
+  slug: string,
+  args: {
+    status: RsvpStatus
+    plusOneNames?: string[]
+    declineReason?: string | null
+    approvalStatus?: 'none' | 'pending' | 'approved'
+  },
+) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+  if (!RSVP_DEPTH_STATUSES.includes(args.status)) return
+
+  await setRsvp({
+    eventId,
+    profileId,
+    status: args.status,
+    plusOneNames: args.plusOneNames,
+    declineReason: args.declineReason,
+    approvalStatus: args.approvalStatus,
+  })
+
+  revalidateEvent(slug)
+  revalidatePath('/events', 'layout')
+}
+
+// Host approves one pending RSVP (approval-required events). Host/cohost only.
+export async function approveEventRsvp(eventId: string, slug: string, guestProfileId: string) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+
+  const admin = createAdminClient()
+  if (!(await isEventHost(admin, eventId, profileId)) && !(await isEventCohost(eventId, profileId)))
+    return
+
+  await approveRsvp(eventId, guestProfileId)
+  revalidateEvent(slug)
+}
+
+// Per-event mute: a guest silences Event Dispatch fan-out for this one event.
+// Self-authorized (only the caller's own row).
+export async function setEventRsvpMuted(eventId: string, slug: string, muted: boolean) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+
+  await setRsvpMuted(eventId, profileId, muted)
+  revalidateEvent(slug)
+}
+
+// ── Event Dispatch (ADR-255) ──────────────────────────────────────────────────
+// A host's update about one event. The base action always posts to the event
+// page; the host may also send it as a Dispatch (rides the existing rail with an
+// event badge + push fan-out) and/or text the group (SMS, gated/unbuilt per
+// ADR-256 — the data layer records the flag and sends nothing). Host/cohost only;
+// the frozen composeEventDispatch data layer does the channel fan-out.
+export async function postEventDispatch(
+  eventId: string,
+  slug: string,
+  args: { title?: string | null; body: string; toDispatch?: boolean; toSms?: boolean },
+) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+
+  const admin = createAdminClient()
+  const isAuthor =
+    (await isEventHost(admin, eventId, profileId)) || (await isEventCohost(eventId, profileId))
+  if (!isAuthor) return
+
+  const body = (args.body ?? '').trim()
+  if (!body) return
+
+  await composeEventDispatch({
+    eventId,
+    authorId: profileId,
+    title: args.title?.trim() || null,
+    body,
+    toPage: true,
+    toDispatch: !!args.toDispatch,
+    toSms: !!args.toSms,
+    eventUrl: `/events/${slug}`,
+  })
 
   revalidateEvent(slug)
 }

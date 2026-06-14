@@ -1,12 +1,15 @@
+import { Suspense } from 'react'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap } from 'lucide-react'
+import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap, Video, Globe } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton, RefundTicketButton, type TicketTierView } from './ticket-button'
+import { RsvpBottomBar } from './rsvp-bottom-bar'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { getCapacityInfo } from '@/lib/events/capacity'
@@ -17,17 +20,23 @@ import { InlineText } from '@/components/admin/inline/inline-text'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
-import { getInitials } from '@/lib/utils'
-import { WarmProof } from '@/components/events/warm-proof'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { EventActivity, type ActivityPost } from '@/components/events/event-activity'
+import { EventDispatchCompose } from '@/components/events/event-dispatch-compose'
+import { EventRewardStrip } from '@/components/events/event-reward-strip'
+import { EventFactPanel, type FactGuest } from '@/components/events/event-fact-panel'
 import { RecapAlbum, type RecapPhoto } from '@/components/events/recap-album'
 import { CohostManager, type CohostView } from '@/components/events/cohost-manager'
 import { listCohosts } from '@/lib/events/cohosts'
 import { PosterDetails } from '@/components/events/poster-details'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
+import type { EventMapPin } from '@/components/events/events-map'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ZAP_AMOUNTS } from '@/lib/zaps'
+
+type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
 type EventDetail = {
   id: string
@@ -57,6 +66,14 @@ const RECURRENCE_LABEL: Record<string, string> = {
   daily:   'Repeats daily',
   weekly:  'Repeats weekly',
   monthly: 'Repeats monthly',
+}
+
+// Attendance-mode chip (EVENTS-DESIGN §2.4) — one chip in the DetailTemplate
+// `badges` slot. DAWN tokens only.
+const MODE_CHIP: Record<AttendanceMode, { Icon: typeof Video; cls: string; label: string }> = {
+  in_person: { Icon: MapPin, cls: 'bg-surface-elevated text-muted', label: 'In person' },
+  online:    { Icon: Video, cls: 'bg-broadcast-bg text-broadcast-strong', label: 'Online' },
+  hybrid:    { Icon: Globe, cls: 'bg-primary-bg text-primary-strong', label: 'In person + online' },
 }
 
 type RSVPRow = {
@@ -106,24 +123,38 @@ export default async function EventDetailPage({
   if (!rawEvent) notFound()
   const event = rawEvent as unknown as EventDetail
 
-  // ── Poster Events fields (newer than the generated types → untyped read,
-  // repo convention). Drives the "Posted by" credit, the unclaimed-organizer
-  // note, and the flexible poster details below the description. ──────────────
-  type PosterMeta = {
+  // ── Poster Events + presentation + geo fields (newer than the generated types →
+  // untyped read, repo convention). Drives the "Posted by" credit, the cover image,
+  // the attendance-mode chip, and the online join link. ───────────────────────
+  type ExtraMeta = {
     posted_by_profile_id: string | null
     claimed_at: string | null
     organizer_name: string | null
     details: EventDetailsWithMedia | null
     poster_path: string | null
+    cover_image_path: string | null
+    attendance_mode: AttendanceMode | null
+    online_url: string | null
   }
-  const { data: rawPosterMeta } = await (admin)
+  const { data: rawExtra } = await (admin)
     .from('events')
-    .select('posted_by_profile_id, claimed_at, organizer_name, details, poster_path')
+    .select(
+      'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, attendance_mode, online_url',
+    )
     .eq('id', event.id)
     .maybeSingle()
-  const posterMeta = (rawPosterMeta ?? null) as PosterMeta | null
-  const postedById = posterMeta?.posted_by_profile_id ?? null
+  const extra = (rawExtra ?? null) as ExtraMeta | null
+  const postedById = extra?.posted_by_profile_id ?? null
   const isPostedEvent = !!postedById
+  const attendanceMode: AttendanceMode = extra?.attendance_mode ?? 'in_person'
+  const isOnline = attendanceMode === 'online'
+  const onlineUrl = extra?.online_url ?? null
+
+  // Cover image (A1) — a public storage path in the event-media bucket → public URL
+  // (next/image allows the supabase public storage host). Null = token placeholder.
+  const coverUrl = extra?.cover_image_path
+    ? admin.storage.from('event-media').getPublicUrl(extra.cover_image_path).data.publicUrl
+    : null
 
   // The credit: whoever put the event on the map, when they aren't the host.
   let postedBy: { display_name: string; handle: string } | null = null
@@ -138,7 +169,7 @@ export default async function EventDetailPage({
 
   // The flexible poster harvest + signed URLs for its crops (one batched call).
   const posterDetails: EventDetailsWithMedia =
-    posterMeta?.details && typeof posterMeta.details === 'object' ? posterMeta.details : {}
+    extra?.details && typeof extra.details === 'object' ? extra.details : {}
   const posterCropUrls = Object.fromEntries(await posterSignedUrlMap(detailsMediaPaths(posterDetails)))
 
   // Webhook-independent reconcile when Stripe redirects back from a paid ticket.
@@ -190,13 +221,23 @@ export default async function EventDetailPage({
   // and the "filling up" line. Never invented.
   const capacityInfo = await getCapacityInfo(event.id)
 
-  // Resolve scope name. Circle
+  // Resolve scope name + the circle's PUBLIC city-level coordinates (the mini map
+  // rides the hosting circle's area, never the exact venue — ADR-186 privacy).
   let scopeName: string | null = null
   let scopeSlug: string | null = null
+  let circleCoords: { lat: number; lng: number } | null = null
   if (event.scope_type === 'circle') {
-    const { data: c } = await admin.from('circles').select('name, slug').eq('id', event.scope_id).maybeSingle()
-    scopeName = c?.name ?? null
-    scopeSlug = c?.slug ?? null
+    const { data: c } = await admin
+      .from('circles')
+      .select('name, slug, latitude, longitude')
+      .eq('id', event.scope_id)
+      .maybeSingle()
+    const circle = c as { name: string; slug: string; latitude: number | null; longitude: number | null } | null
+    scopeName = circle?.name ?? null
+    scopeSlug = circle?.slug ?? null
+    if (circle?.latitude != null && circle?.longitude != null) {
+      circleCoords = { lat: Number(circle.latitude), lng: Number(circle.longitude) }
+    }
   }
 
   const {
@@ -323,6 +364,7 @@ export default async function EventDetailPage({
   }
   if (ticketedCents !== null) ownsTicket = true
   const priceLabel = `$${(flatPriceCents / 100).toFixed(2)}`
+  const allTiersSoldOut = hasTiers && tiers.every((t) => t.soldOut)
 
   // Host sales + refunds (EVENTS-SYSTEM §7). The host (anyone who can manage this
   // event) sees the succeeded tickets and can refund them. RLS lets the host read
@@ -386,15 +428,13 @@ export default async function EventDetailPage({
   }
 
   // ── Post-event social loop (slice B-2, EVENTS-SYSTEM §2.5) ──────────────────
-  // Activity feed (always), recap album (after the event ends), and cohosts.
-  // All read through the admin client (same as the rest of this page); writes
-  // re-authorize in social-actions.ts. event_posts/event_media aren't in the
-  // generated types yet → untyped cast (repo convention).
+  // Cohosts, the activity feed, the host's Event Dispatches, and the recap album.
   const cohosts = (await listCohosts(event.id)) as CohostView[]
   const isCohost = myProfileId != null && cohosts.some((c) => c.profileId === myProfileId)
   // Who may add a comment / photo: the host, a cohost, or anyone holding an RSVP.
   const isGuest = myRsvpStatus === 'going' || myRsvpStatus === 'maybe' || myRsvpStatus === 'waitlist'
   const canContribute = !!myProfileId && (isHost || isCohost || isGuest)
+  const canDispatch = isHost || isCohost
 
   type RawActivityPost = {
     id: string
@@ -409,7 +449,31 @@ export default async function EventDetailPage({
     .eq('event_id', event.id)
     .order('created_at', { ascending: false })
     .limit(100)
-  const activityPosts: ActivityPost[] = ((rawActivity ?? []) as unknown as RawActivityPost[]).map((p) => ({
+
+  // Host Event Dispatches (ADR-255) — page updates the host posted. They render in
+  // the same activity stream with an event badge. event_dispatches isn't in the
+  // generated types yet → untyped cast (repo convention).
+  type RawDispatch = {
+    id: string
+    title: string | null
+    body: string
+    created_at: string
+    author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
+  }
+  // event_dispatches isn't in lib/database.types.ts yet, so the typed client can't
+  // resolve the table name (narrows to `never`). Widen this ONE read to an untyped
+  // client — the genuinely-untyped case the ADR-246 rule allows (same convention as
+  // the lib/events/* data layer, which writes these rows).
+  // eslint-disable-next-line no-restricted-syntax -- event_dispatches not in generated types yet (ADR-246 exception)
+  const adminUntyped = admin as unknown as SupabaseClient
+  const { data: rawDispatches } = await adminUntyped
+    .from('event_dispatches')
+    .select('id, title, body, created_at, author:profiles!author_id ( id, display_name, handle, avatar_url )')
+    .eq('event_id', event.id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  const commentPosts: ActivityPost[] = ((rawActivity ?? []) as unknown as RawActivityPost[]).map((p) => ({
     id: p.id,
     body: p.body ?? '',
     imageUrl: p.image_url,
@@ -418,6 +482,21 @@ export default async function EventDetailPage({
       ? { id: p.author.id, displayName: p.author.display_name, handle: p.author.handle, avatarUrl: p.author.avatar_url }
       : null,
   }))
+  const dispatchPosts: ActivityPost[] = ((rawDispatches ?? []) as unknown as RawDispatch[]).map((d) => ({
+    id: `dispatch:${d.id}`,
+    body: d.body,
+    title: d.title,
+    isDispatch: true,
+    imageUrl: null,
+    createdAt: d.created_at,
+    author: d.author
+      ? { id: d.author.id, displayName: d.author.display_name, handle: d.author.handle, avatarUrl: d.author.avatar_url }
+      : null,
+  }))
+  // Merge comments + Dispatches into one newest-first stream.
+  const activityPosts: ActivityPost[] = [...dispatchPosts, ...commentPosts].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  )
 
   // Recap album only matters once the event is over.
   let recapPhotos: RecapPhoto[] = []
@@ -437,8 +516,155 @@ export default async function EventDetailPage({
     }))
   }
 
+  // Warm-proof faces (shared by the reward strip + fact panel).
+  const faces = goingRsvps.map(({ profile }) => ({
+    id: profile.id,
+    displayName: profile.display_name,
+    avatarUrl: profile.avatar_url,
+  }))
+  // Guest roster for the fact panel — Crew see names; others see a count.
+  const factGuests: FactGuest[] = goingRsvps.map(({ profile }) => ({
+    id: profile.id,
+    displayName: profile.display_name,
+    avatarUrl: profile.avatar_url,
+    handle: profile.handle,
+  }))
+
+  // Mini-map pin (city-level circle area). Only in-person events with a circle that
+  // has public coordinates get a map.
+  const mapPin: EventMapPin | null =
+    !isOnline && circleCoords
+      ? {
+          id: event.id,
+          slug: event.slug,
+          title: event.title,
+          whenLabel: `${formatFull(event.starts_at)} at ${formatTime(event.starts_at)}`,
+          cityLabel: scopeName,
+          lat: circleCoords.lat,
+          lng: circleCoords.lng,
+        }
+      : null
+
+  const whenLine = `${formatFull(event.starts_at)} at ${formatTime(event.starts_at)}${
+    event.ends_at ? ` – ${formatTime(event.ends_at)}` : ''
+  }`
+
+  const mode = MODE_CHIP[attendanceMode]
+
+  // The Join column's primary action — reused in the aside AND the mobile sheet.
+  const joinActions = (
+    <div className="space-y-4">
+      {isPaidEvent && !event.is_cancelled ? (
+        <div className="rounded-2xl border border-border bg-surface p-4">
+          <div className="flex items-center gap-2">
+            <Ticket className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-text">
+              {hasTiers ? (tiers.length === 1 ? 'Ticket' : 'Tickets') : `${priceLabel} ticket`}
+            </span>
+          </div>
+          <div className="mt-3">
+            {ownsTicket ? (
+              <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+                <Check className="h-4 w-4" /> Ticket confirmed
+              </p>
+            ) : hasEnded ? (
+              <p className="text-sm text-muted">Ticket sales have closed.</p>
+            ) : allTiersSoldOut ? (
+              <p className="text-sm text-muted">Sold out.</p>
+            ) : !myProfileId ? (
+              <p className="text-sm text-muted">Sign in to get your ticket.</p>
+            ) : isHost ? (
+              <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
+            ) : hostPayoutReady ? (
+              <TicketButton
+                eventId={event.id}
+                priceLabel={priceLabel}
+                tiers={hasTiers ? tiers : undefined}
+              />
+            ) : (
+              <p className="text-sm text-muted">Tickets aren&rsquo;t available for this event yet.</p>
+            )}
+          </div>
+        </div>
+      ) : !event.is_cancelled && myProfileId && !isPast && !isHost ? (
+        <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+          <CrewGateButton
+            isCrew={isCrew}
+            label={isGoing ? '✓ Going' : capacityInfo.isFull ? 'Join waitlist' : "RSVP: I'm going"}
+            buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
+          >
+            <RsvpControls
+              eventId={event.id}
+              slug={event.slug}
+              status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
+              plusOnes={myPlusOnes}
+              isFull={capacityInfo.isFull}
+            />
+          </CrewGateButton>
+          {/* At-RSVP calendar — the highest-ROI lever, emphasised once going. */}
+          {isGoing ? (
+            <div className="rounded-xl border border-border bg-surface-elevated/40 px-4 py-3">
+              <p className="mb-2 text-xs font-medium text-muted">
+                You&rsquo;re going. Lock it in so you don&rsquo;t miss it.
+              </p>
+              <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} emphasis />
+            </div>
+          ) : (
+            <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} />
+          )}
+        </div>
+      ) : !event.is_cancelled && myProfileId && isGoing && isPast ? (
+        /* Event time, going: Check in is the primary action; Cancel RSVP is quiet. */
+        <div className="flex items-center gap-4 flex-wrap rounded-2xl border border-border bg-surface p-4">
+          {alreadyCheckedIn ? (
+            <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-sm font-semibold">
+              <Check className="w-4 h-4" />
+              Checked In
+            </div>
+          ) : (
+            <EventCheckInButton eventId={event.id} />
+          )}
+          {!hasEnded && (
+            <form action={toggleRSVP.bind(null, event.id)}>
+              <button
+                type="submit"
+                className="text-xs text-subtle hover:text-danger underline underline-offset-2 transition-colors"
+              >
+                Cancel RSVP
+              </button>
+            </form>
+          )}
+        </div>
+      ) : !event.is_cancelled && myProfileId && isWaitlisted ? (
+        <form action={toggleRSVP.bind(null, event.id)} className="rounded-2xl border border-border bg-surface p-4">
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
+          >
+            <Clock className="w-4 h-4" />
+            On waitlist · tap to leave
+          </button>
+        </form>
+      ) : null}
+    </div>
+  )
+
+  // Whether the mobile bottom bar should appear (there's a real action to take).
+  const showBottomBar =
+    !event.is_cancelled && !hasEnded && !isHost && (isPaidEvent ? !ownsTicket && !allTiersSoldOut : !!myProfileId)
+  const bottomBarLabel = isPaidEvent
+    ? `Get ticket${hasTiers ? '' : ` · ${priceLabel}`}`
+    : isGoing
+      ? 'Going'
+      : capacityInfo.isFull
+        ? 'Join waitlist'
+        : 'RSVP'
+  const bottomBarStatus = isPaidEvent
+    ? hasTiers ? 'Tickets' : priceLabel
+    : isGoing ? "You're going" : isWaitlisted ? 'On the waitlist' : 'Free'
+
   return (
-    <div>
+    <div className="pb-24 lg:pb-0">
       {event.is_cancelled && (
         <div className="mb-4 rounded-2xl bg-danger-bg border border-danger px-3 py-2">
           <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
@@ -455,15 +681,21 @@ export default async function EventDetailPage({
       {ticketedCents !== null && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
           <Ticket className="h-4 w-4" />
-          You’re in. ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
+          You&rsquo;re in. ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
         </div>
       )}
 
-      {/* Unified Detail header (REDESIGN-INAPP Phase 1): title + the when/where/
-          host meta as subtitle. No header Edit/kebab — editing, cancel/reinstate,
-          and the QR all live in the Settings panel under the title (one
-          affordance, permission-gated). */}
       <DetailTemplate
+        // [A1] cover — the one big visual win (slot exists; token placeholder when none).
+        hero={
+          coverUrl ? (
+            <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
+              <Image src={coverUrl} alt="" fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover" preload />
+            </div>
+          ) : (
+            <div className="aspect-[16/6] w-full rounded-2xl bg-surface-elevated" />
+          )
+        }
         title={
           canManage ? (
             <InlineText
@@ -475,17 +707,20 @@ export default async function EventDetailPage({
             event.title
           )
         }
+        // [A2] attendance-mode chip.
+        badges={
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${mode.cls}`}>
+            <mode.Icon className="h-3 w-3" /> {mode.label}
+          </span>
+        }
         subtitle={
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
-              <span>
-                {formatFull(event.starts_at)} at {formatTime(event.starts_at)}
-                {event.ends_at && ` – ${formatTime(event.ends_at)}`}
-              </span>
+              <span>{whenLine}</span>
             </div>
 
-            {event.location && (
+            {event.location && !isOnline && (
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-subtle shrink-0" />
                 <span>{event.location}</span>
@@ -529,14 +764,12 @@ export default async function EventDetailPage({
                 </Link>
               </p>
             ) : isPostedEvent ? (
-              /* A posted town event nobody has claimed yet — quiet, honest. */
               <p className="text-subtle">
-                {posterMeta?.organizer_name ? `By ${posterMeta.organizer_name} · ` : ''}
+                {extra?.organizer_name ? `By ${extra.organizer_name} · ` : ''}
                 Organizer not on Frequency yet
               </p>
             ) : null}
 
-            {/* The Zap credit: whoever put this event on the map. */}
             {postedBy && (
               <p className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-primary shrink-0" />
@@ -551,297 +784,175 @@ export default async function EventDetailPage({
           </div>
         }
       >
-        {/* ── Warm proof (EVENTS-SYSTEM §4, Law 1): real, never-low counts ── */}
+        {/* [A3] EventRewardStrip — calm gamification chips + warm proof. Hidden for
+            a cancelled event (no rewards to dangle on a dead event). */}
         {!event.is_cancelled && (
-          <div className="mb-6">
-            <WarmProof
-              going={goingRsvps.length}
-              fromYourCircles={fromYourCircles}
-              maybe={maybeCount}
-              guests={guestCount}
-              faces={goingRsvps.map(({ profile }) => ({
-                id: profile.id,
-                displayName: profile.display_name,
-                avatarUrl: profile.avatar_url,
-              }))}
-              nearFull={nearFull}
-              spotsLeft={capacityInfo.spotsLeft}
-            />
-          </div>
-        )}
-
-        {/* ── Ticket (paid events, ADR-177 + tiers §2.2) ── */}
-        {isPaidEvent && !event.is_cancelled && (
-          <div className="mb-6 rounded-2xl border border-border bg-surface p-4">
-            <div className="flex items-center gap-2">
-              <Ticket className="h-4 w-4 text-primary" />
-              <span className="text-sm font-bold text-text">
-                {hasTiers ? (tiers.length === 1 ? 'Ticket' : 'Tickets') : `${priceLabel} ticket`}
-              </span>
-            </div>
-            <div className="mt-3">
-              {ownsTicket ? (
-                <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
-                  <Check className="h-4 w-4" /> Ticket confirmed
-                </p>
-              ) : hasEnded ? (
-                <p className="text-sm text-muted">Ticket sales have closed.</p>
-              ) : hasTiers && tiers.every((t) => t.soldOut) ? (
-                <p className="text-sm text-muted">Sold out.</p>
-              ) : !myProfileId ? (
-                <p className="text-sm text-muted">Sign in to get your ticket.</p>
-              ) : isHost ? (
-                <p className="text-sm text-muted">You’re hosting. No ticket needed.</p>
-              ) : hostPayoutReady ? (
-                <TicketButton
-                  eventId={event.id}
-                  priceLabel={priceLabel}
-                  tiers={hasTiers ? tiers : undefined}
-                />
-              ) : (
-                <p className="text-sm text-muted">Tickets aren’t available for this event yet.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── Host: sold tickets + refunds (EVENTS-SYSTEM §7) ── */}
-        {canManage && isPaidEvent && (
-          <div className="mb-6 rounded-2xl border border-border bg-surface p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-              Sales <span className="ml-1 font-normal normal-case text-muted">{soldTickets.length} sold</span>
-            </p>
-            {soldTickets.length === 0 ? (
-              <p className="mt-2 text-sm text-subtle">No tickets sold yet.</p>
-            ) : (
-              <ul className="mt-3 space-y-1.5">
-                {soldTickets.map((t) => (
-                  <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="min-w-0 truncate text-text">
-                      {t.buyer?.display_name ?? 'A member'}
-                      <span className="ml-2 text-subtle">
-                        ${(t.amount_cents / 100).toFixed(2)}
-                        {t.qty > 1 ? ` · ${t.qty}×` : ''}
-                      </span>
-                    </span>
-                    <RefundTicketButton
-                      ticketId={t.id}
-                      eventId={event.id}
-                      slug={event.slug}
-                      amountLabel={`$${(t.amount_cents / 100).toFixed(2)}`}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        {/* ── Actions: RSVP while upcoming, then Check in at event time ── */}
-        {!event.is_cancelled && myProfileId && (
-          <div className="mb-6">
-            {!isPast ? (
-              /* Upcoming: Going / Interested / waitlist controls + guests stepper
-                 + one-tap add-to-calendar. */
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <CrewGateButton
-                    isCrew={isCrew}
-                    label={isGoing ? '✓ Going' : capacityInfo.isFull ? 'Join waitlist' : "RSVP: I'm going"}
-                    buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
-                  >
-                    <RsvpControls
-                      eventId={event.id}
-                      status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
-                      plusOnes={myPlusOnes}
-                      isFull={capacityInfo.isFull}
-                    />
-                  </CrewGateButton>
-
-                  {/* Compact add-to-calendar always available; emphasised below once going. */}
-                  {!isGoing && <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} />}
-                </div>
-
-                {/* Highest-ROI lever: surface a prominent calendar add right after a
-                    'going' RSVP (implementation intentions, EVENTS-SYSTEM §4). */}
-                {isGoing && (
-                  <div className="rounded-2xl border border-border bg-surface px-4 py-3">
-                    <p className="mb-2 text-xs font-medium text-muted">
-                      You’re going. Lock it in so you don’t miss it.
-                    </p>
-                    <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} emphasis />
-                  </div>
-                )}
-              </div>
-            ) : isGoing ? (
-              /* Event time, going: Check in is the primary action; Cancel RSVP is a quiet link */
-              <div className="flex items-center gap-4 flex-wrap">
-                {alreadyCheckedIn ? (
-                  <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-sm font-semibold">
-                    <Check className="w-4 h-4" />
-                    Checked In
-                  </div>
-                ) : (
-                  <EventCheckInButton eventId={event.id} />
-                )}
-                {!hasEnded && (
-                  <form action={toggleRSVP.bind(null, event.id)}>
-                    <button
-                      type="submit"
-                      className="text-xs text-subtle hover:text-danger underline underline-offset-2 transition-colors"
-                    >
-                      Cancel RSVP
-                    </button>
-                  </form>
-                )}
-              </div>
-            ) : !hasEnded ? (
-              /* Event started, not 'going' yet. Waitlisted → calm "tap to leave";
-                 otherwise still allow joining (waitlist if the event is full). */
-              isWaitlisted ? (
-                <form action={toggleRSVP.bind(null, event.id)}>
-                  <button
-                    type="submit"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
-                  >
-                    <Clock className="w-4 h-4" />
-                    On waitlist · tap to leave
-                  </button>
-                </form>
-              ) : (
-                <CrewGateButton
-                  isCrew={isCrew}
-                  label={capacityInfo.isFull ? 'Join waitlist' : "RSVP: I'm going"}
-                  buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
-                >
-                  <form action={toggleRSVP.bind(null, event.id)}>
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors bg-primary text-on-primary hover:bg-primary-hover"
-                    >
-                      {capacityInfo.isFull ? (
-                        <><Clock className="w-4 h-4" />Join waitlist</>
-                      ) : (
-                        "RSVP: I'm going"
-                      )}
-                    </button>
-                  </form>
-                </CrewGateButton>
-              )
-            ) : null}
-          </div>
-        )}
-
-        {/* ── Description (open prose, not boxed) ─────── */}
-        {canManage ? (
-          <div className="mb-6 max-w-2xl">
-            <InlineText
-              value={event.description}
-              multiline
-              placeholder="Add a description…"
-              save={updateEventField.bind(null, event.id, slug, 'description')}
-            >
-              {event.description ? (
-                <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
-                  {event.description}
-                </p>
-              ) : (
-                <StartEditingLink label="+ Add a description" />
-              )}
-            </InlineText>
-          </div>
-        ) : event.description ? (
-          <div className="mb-6 max-w-2xl">
-            <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
-              {event.description}
-            </p>
-          </div>
-        ) : null}
-
-        {/* ── Poster details (captured events): lineup, schedule, features,
-            tickets, links, sponsors, gallery, other — each only when the
-            poster carried it. ───────────────────────────────────────────── */}
-        <PosterDetails details={posterDetails} signedUrls={posterCropUrls} />
-
-        {/* ── Attendees ──────────────────────────────── */}
-        <section>
-          <h2 className="text-sm font-bold text-text mb-3">
-            Attendees
-            <span className="ml-2 text-xs font-normal text-subtle">
-              {goingRsvps.length} going{guestCount > 0 ? ` · ${guestCount} ${guestCount === 1 ? 'guest' : 'guests'}` : ''}
-            </span>
-          </h2>
-
-          {goingRsvps.length === 0 ? (
-            <p className="text-sm text-subtle">No RSVPs yet.</p>
-          ) : isCrew ? (
-            <div className="space-y-0.5">
-              {goingRsvps.map(({ profile }) => (
-                <Link
-                  key={profile.id}
-                  href={`/people/${profile.handle}`}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3"
-                >
-                  {profile.avatar_url ? (
-                    <Image src={profile.avatar_url} alt={profile.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-                      {getInitials(profile.display_name)}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-text truncate">{profile.display_name}</p>
-                    <p className="text-xs text-subtle">@{profile.handle}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted">
-              {goingRsvps.length} {goingRsvps.length === 1 ? 'person' : 'people'} going.
-            </p>
-          )}
-        </section>
-
-        {/* ── Cohosts (slice B-2): displayed to everyone; the host manages them ── */}
-        {(cohosts.length > 0 || isHost) && (
-          <div className="mt-8">
-            <CohostManager
-              eventId={event.id}
-              slug={event.slug}
-              cohosts={cohosts}
-              canManage={isHost}
-            />
-          </div>
-        )}
-
-        {/* ── Activity feed (slice B-2): alive before AND after the event ──────── */}
-        <div className="mt-8">
-          <EventActivity
-            eventId={event.id}
-            slug={event.slug}
-            posts={activityPosts}
-            canPost={canContribute}
-            canModerate={isHost}
-            myProfileId={myProfileId}
+          <EventRewardStrip
+            checkInZaps={ZAP_AMOUNTS.event_attend}
             isPast={isPast}
+            circleName={scopeName}
+            going={goingRsvps.length}
+            fromYourCircles={fromYourCircles}
+            maybe={maybeCount}
+            guests={guestCount}
+            faces={faces}
+            nearFull={nearFull}
+            spotsLeft={capacityInfo.spotsLeft}
+          />
+        )}
+
+        {/* MOBILE: the critical-info card stacks ABOVE the Post area so a guest sees
+            the facts before the conversation (EVENTS-DESIGN §2.6). The lg aside is
+            hidden < lg; this block is hidden ≥ lg. */}
+        <div className="mb-8 lg:hidden">
+          <EventFactPanel
+            whenLine={whenLine}
+            isOnline={isOnline}
+            location={event.location}
+            onlineUrl={onlineUrl}
+            mapPin={mapPin}
+            going={goingRsvps.length}
+            nearFull={nearFull}
+            spotsLeft={capacityInfo.spotsLeft}
+            guests={factGuests}
+            guestsAreVisible={isCrew}
           />
         </div>
 
-        {/* ── Recap album (slice B-2): shows once the event has ended ──────────── */}
-        {hasEnded && (
-          <div className="mt-8">
-            <RecapAlbum
-              eventId={event.id}
-              slug={event.slug}
-              photos={recapPhotos}
-              canUpload={canContribute}
-              canModerate={isHost}
-              myProfileId={myProfileId}
-            />
+        {/* ── TWO-COLUMN interior grid (no new template; plain grid in the body) ── */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+          {/* [B] POST AREA — wide left */}
+          <div className="min-w-0 space-y-8">
+            {/* B1 description (open prose, not boxed) */}
+            {canManage ? (
+              <div className="max-w-2xl">
+                <InlineText
+                  value={event.description}
+                  multiline
+                  placeholder="Add a description…"
+                  save={updateEventField.bind(null, event.id, slug, 'description')}
+                >
+                  {event.description ? (
+                    <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
+                      {event.description}
+                    </p>
+                  ) : (
+                    <StartEditingLink label="+ Add a description" />
+                  )}
+                </InlineText>
+              </div>
+            ) : event.description ? (
+              <p className="max-w-2xl text-sm text-text leading-relaxed whitespace-pre-wrap">
+                {event.description}
+              </p>
+            ) : null}
+
+            {/* Poster details (captured events) */}
+            <PosterDetails details={posterDetails} signedUrls={posterCropUrls} />
+
+            {/* Cohosts — shown to everyone; the host manages them. */}
+            {(cohosts.length > 0 || isHost) && (
+              <CohostManager
+                eventId={event.id}
+                slug={event.slug}
+                cohosts={cohosts}
+                canManage={isHost}
+              />
+            )}
+
+            {/* Host: sold tickets + refunds (EVENTS-SYSTEM §7) */}
+            {canManage && isPaidEvent && (
+              <div className="rounded-2xl border border-border bg-surface p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                  Sales <span className="ml-1 font-normal normal-case text-muted">{soldTickets.length} sold</span>
+                </p>
+                {soldTickets.length === 0 ? (
+                  <p className="mt-2 text-sm text-subtle">No tickets sold yet.</p>
+                ) : (
+                  <ul className="mt-3 space-y-1.5">
+                    {soldTickets.map((t) => (
+                      <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="min-w-0 truncate text-text">
+                          {t.buyer?.display_name ?? 'A member'}
+                          <span className="ml-2 text-subtle">
+                            ${(t.amount_cents / 100).toFixed(2)}
+                            {t.qty > 1 ? ` · ${t.qty}×` : ''}
+                          </span>
+                        </span>
+                        <RefundTicketButton
+                          ticketId={t.id}
+                          eventId={event.id}
+                          slug={event.slug}
+                          amountLabel={`$${(t.amount_cents / 100).toFixed(2)}`}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {/* B2 host Event Dispatch composer (host/cohost only) */}
+            {canDispatch && !event.is_cancelled && (
+              <EventDispatchCompose eventId={event.id} slug={event.slug} />
+            )}
+
+            {/* B2/B3 activity — Event Dispatches + guest comments + Boops + GIF.
+                Behind its own Suspense (PAGE-FRAMEWORK §5). */}
+            <Suspense fallback={<Skeleton className="h-40 rounded-2xl" />}>
+              <EventActivity
+                eventId={event.id}
+                slug={event.slug}
+                posts={activityPosts}
+                canPost={canContribute && !event.is_cancelled}
+                canModerate={isHost}
+                myProfileId={myProfileId}
+                isPast={isPast}
+              />
+            </Suspense>
+
+            {/* B4 recap album — once the event has ended. */}
+            {hasEnded && (
+              <Suspense fallback={<Skeleton className="h-48 rounded-2xl" />}>
+                <RecapAlbum
+                  eventId={event.id}
+                  slug={event.slug}
+                  photos={recapPhotos}
+                  canUpload={canContribute}
+                  canModerate={isHost}
+                  myProfileId={myProfileId}
+                />
+              </Suspense>
+            )}
           </div>
-        )}
+
+          {/* [C] JOIN AREA — narrow right, sticky on lg+. Hidden on mobile (it
+              collapses to the bottom bar + the fact panel stacks above). */}
+          <aside className="hidden space-y-4 self-start lg:sticky lg:top-20 lg:block">
+            {!event.is_cancelled && joinActions}
+            {/* C4 critical info */}
+            <EventFactPanel
+              whenLine={whenLine}
+              isOnline={isOnline}
+              location={event.location}
+              onlineUrl={onlineUrl}
+              mapPin={mapPin}
+              going={goingRsvps.length}
+              nearFull={nearFull}
+              spotsLeft={capacityInfo.spotsLeft}
+              guests={factGuests}
+              guestsAreVisible={isCrew}
+            />
+          </aside>
+        </div>
       </DetailTemplate>
+
+      {/* MOBILE sticky action bar — hidden on lg+, hidden for host/past/cancelled. */}
+      {showBottomBar && (
+        <RsvpBottomBar primaryLabel={bottomBarLabel} statusLine={bottomBarStatus}>
+          {joinActions}
+        </RsvpBottomBar>
+      )}
     </div>
   )
 }
