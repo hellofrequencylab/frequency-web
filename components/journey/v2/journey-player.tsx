@@ -18,15 +18,16 @@ import type { LessonContent } from '@/lib/journeys/store'
 
 interface Props {
   slug: string
+  /** The journey's name — used only for the completion celebration (the page header
+   *  carries the visible title now, so the progress card doesn't repeat it). */
   title: string
-  emoji?: string | null
   tree: JourneyTree
   lessonsById: Record<string, LessonContent>
   /** Show a printable certificate on Journey completion (plan opt-in). */
   certificateEnabled?: boolean
 }
 
-export function JourneyPlayer({ slug, title, emoji, tree, lessonsById, certificateEnabled = false }: Props) {
+export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabled = false }: Props) {
   const router = useRouter()
   const [pending, start] = useTransition()
 
@@ -69,7 +70,7 @@ export function JourneyPlayer({ slug, title, emoji, tree, lessonsById, certifica
       {/* Progress header — never-empty bar (endowed-progress effect). */}
       <div className="rounded-xl border border-border bg-surface p-4">
         <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="font-semibold text-text">{emoji ? `${emoji} ` : ''}{title}</span>
+          <span className="font-semibold text-text">Your progress</span>
           <span className="tabular-nums text-muted">{tree.doneRequired} of {tree.totalRequired} done</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
@@ -120,7 +121,7 @@ export function JourneyPlayer({ slug, title, emoji, tree, lessonsById, certifica
               <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">
                 Lesson {idx + 1} of {order.length}{lesson.estMinutes ? ` · ${lesson.estMinutes} min` : ''}{lesson.required ? '' : ' · optional'}
               </p>
-              <h1 className="mt-1 text-xl font-bold text-text">{lesson.title}</h1>
+              <h2 className="mt-1 text-xl font-bold text-text">{lesson.title}</h2>
 
               {video && (
                 <div className="mt-4 aspect-video overflow-hidden rounded-xl bg-black">
