@@ -71,8 +71,9 @@ export function JourneyBoard({
   willFreezeProtect?: boolean
   /** The member's adopted practices counted per Pillar (all four, zero-filled). */
   pillarBalance?: PillarCount[]
-  /** The member's top active journey — a slim "current step" line that links to
-   *  the full /crew/journey tab. Undefined = no adopted journey. */
+  /** The member's top enrolled journey — a slim "current step" line that links to
+   *  the full /crew/journey tab. Undefined = no enrolled journey. `done`/`total` are
+   *  phases complete vs total; `nextStepTitle` is the next lesson (v2; ADR-253). */
   activeJourney?: {
     title: string
     href: string
@@ -294,10 +295,11 @@ export function JourneyBoard({
             <p className="truncate text-sm font-medium text-text">
               {activeJourney.nextStepTitle
                 ? `Next: ${activeJourney.nextStepTitle}`
-                : `You're on track in ${activeJourney.title}`}
+                : `Keep going in ${activeJourney.title}`}
             </p>
             <p className="truncate text-2xs text-subtle">
-              {activeJourney.title} · {activeJourney.done}/{activeJourney.total} on track this week
+              {activeJourney.title}
+              {activeJourney.total > 0 ? ` · ${activeJourney.done}/${activeJourney.total} phases done` : ''}
             </p>
           </div>
           <ArrowRight className="h-3.5 w-3.5 shrink-0 text-subtle transition-colors group-hover:text-primary-strong" />

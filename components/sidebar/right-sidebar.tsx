@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { SEASON_RANKS, rankForZaps } from '@/lib/season-ranks'
 import { GameStatsDockClient, GameStatsPanel, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
-import { getActiveJourneyProgress } from '@/lib/journey-plans'
+import { getMemberJourneyProgress } from '@/lib/journeys/progress'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
 import { pageRailPanels } from '@/lib/layout/rail-panels'
 import { ControlCenterPanel, PanelSkeleton } from '@/components/sidebar/rail-panels'
@@ -88,15 +88,17 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
       }
     : { nextLabel: null, toGo: 0, pct: 100 }
 
-  // The member's active Journey → the dock's "current track" line (ADR-152). Best-effort.
+  // The member's enrolled Journey → the dock's "current track" line (v2; ADR-253). Shows the
+  // active enrolled Journey, % complete, and the next lesson. Hidden when there's no enrollment
+  // (no empty/broken widget). Best-effort.
   let arc: DockData['arc'] = null
   try {
-    const progress = await getActiveJourneyProgress(profileId)
+    const progress = await getMemberJourneyProgress(profileId)
     const top = progress[0]
     if (top) {
       arc = {
-        chain: top.plan.title,
-        step: top.nextItem?.practice?.title ?? 'On track this week',
+        chain: top.title,
+        step: top.nextLesson?.title ?? 'On track',
         pct: top.percent,
       }
     }

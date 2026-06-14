@@ -43,24 +43,23 @@ interface Assignment {
 const todayUTC = () => new Date().toISOString().slice(0, 10)
 
 /** Pick the single highest-leverage next thing. Priority order is deliberate:
- *  the Journey rhythm first (the daily spine), then a challenge within reach,
+ *  the next Journey lesson first (the program spine), then a challenge within reach,
  *  then the circle rhythm, then the practice depth mark, then the steady default. */
 async function resolveAssignment(profileId: string): Promise<Assignment> {
   const admin = db()
 
-  // 1. Next Journey step not yet logged today — the daily spine.
+  // 1. Next lesson in an enrolled Journey — the program spine (v2; ADR-253).
   try {
-    const { getActiveJourneyProgress } = await import('@/lib/journey-plans')
-    const progress = await getActiveJourneyProgress(profileId)
+    const { getMemberJourneyProgress } = await import('@/lib/journeys/progress')
+    const progress = await getMemberJourneyProgress(profileId)
     for (const p of progress) {
-      const next = p.nextItem?.practice
-      if (next?.id && next.title) {
+      if (p.nextLesson) {
         return {
           kind: 'journey_step',
-          copy: `Next on ${p.plan.title}: ${next.title}. One log keeps the week on track.`,
-          actionHref: `/on-air?practice=${next.id}`,
-          actionLabel: 'Queue it up',
-          payload: { planId: p.plan.id, practiceId: next.id },
+          copy: `Next on ${p.title}: ${p.nextLesson.title}. Pick it up where you left off.`,
+          actionHref: p.nextLesson.href,
+          actionLabel: 'Continue',
+          payload: { planId: p.planId, lessonId: p.nextLesson.id },
         }
       }
     }
