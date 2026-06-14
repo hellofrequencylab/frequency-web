@@ -57,6 +57,31 @@ export async function markWalkthroughSeen(profileId: string, slug: string): Prom
   await patchProgress(profileId, slug, { seenAt: new Date().toISOString() })
 }
 
+/**
+ * Mark a (role-promotion) tour PENDING for a member — called by assignRole when a role
+ * is granted, so the tour fires on the actual promotion. Best-effort, and only stamps
+ * when the tour isn't already finished (a re-grant of a role the member already toured
+ * past never re-surfaces it). Same merge-one-slug write as every other progress writer.
+ */
+export async function markWalkthroughPending(profileId: string, slug: string): Promise<void> {
+  if (!isSafeSlug(slug)) return
+  try {
+    const admin = createAdminClient()
+    const meta = await readMeta(admin, profileId)
+    if (meta === null) return
+    const map = readProgressMap(meta)
+    if (map[slug]?.completedAt || map[slug]?.dismissedAt) return // already toured / opted out
+    if (map[slug]?.pendingAt) return // already pending — don't reset the clock
+    const next = { ...map, [slug]: { ...(map[slug] ?? {}), pendingAt: new Date().toISOString() } }
+    await admin
+      .from('profiles')
+      .update({ meta: { ...meta, walkthroughs: next } as Json })
+      .eq('id', profileId)
+  } catch {
+    // best-effort
+  }
+}
+
 /** Stamp a "Not now" dismissal (cadence then hides it for the dismiss window). */
 export async function dismissWalkthrough(profileId: string, slug: string): Promise<void> {
   await patchProgress(profileId, slug, { dismissedAt: new Date().toISOString() })

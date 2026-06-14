@@ -9,6 +9,9 @@ import { renderQrSvg } from '@/lib/qr/render'
 import { toAbsoluteSiteUrl } from '@/lib/qr/links'
 import { SITE_URL } from '@/lib/site'
 import { EntryPointShare } from './entry-point-share'
+import { TRIGGER_CHIP } from '@/lib/walkthroughs'
+import { allRolePromotionWalkthroughs } from '@/lib/walkthroughs/role-promotion'
+import { RolePromotionPreview } from './role-promotion-preview'
 
 // Splash pages (ADR-068 → ADR-162): audience-targeted splash + induction flows.
 // Every flow here is a DB version built in the wizard (the three code-shipped
@@ -65,22 +68,22 @@ export default async function SplashPagesPage() {
             ; versions for specific audiences live below.
           </p>
         </div>
-        <div
-          aria-disabled
-          className="cursor-not-allowed rounded-2xl border border-dashed border-border bg-surface/50 p-5 opacity-60"
-        >
+        <div className="rounded-2xl border border-border bg-surface p-5">
           <div className="flex items-center gap-2">
-            <Layers className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-            <h2 className="text-sm font-bold text-muted">Role promotion overlays</h2>
-            <span className="ml-auto shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide text-subtle">
-              Coming soon
+            <Layers className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+            <h2 className="text-sm font-bold text-text">Role promotion tours</h2>
+            <span className="ml-auto shrink-0 rounded-full bg-success-bg px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide text-success">
+              Active
             </span>
           </div>
           <p className="mt-1.5 text-xs leading-relaxed text-muted">
-            These will walk a member through newly unlocked areas when their role advances.
+            When a member&rsquo;s role advances, they get a short tour of the areas it just
+            unlocked. These ship with the product and fire on promotion; preview them below.
           </p>
         </div>
       </div>
+
+      <RolePromotionTours />
 
       <AdminSection
         title="Build a version"
@@ -197,5 +200,46 @@ export default async function SplashPagesPage() {
         </p>
       </AdminSection>
     </AdminPage>
+  )
+}
+
+// ── Role promotion tours (P1.8) ──────────────────────────────────────────────────
+// The code-shipped tours assignRole queues when a member's trust role advances. Listed
+// here so an operator can see exactly what each member sees and preview the slides. The
+// content lives in lib/walkthroughs/role-promotion.ts (not editable here on purpose —
+// these are shipped, always-on tours, distinct from the audience-targeted DB versions
+// above).
+function RolePromotionTours() {
+  const tours = allRolePromotionWalkthroughs()
+  return (
+    <AdminSection
+      title="Role promotion tours"
+      description="One short tour per step up the trust ladder. Each fires automatically the moment the role is granted, then meets the member as a gentle card on their next feed visit."
+    >
+      <div className="grid gap-3 sm:grid-cols-3">
+        {tours.map((t) => (
+          <div key={t.slug} className="flex flex-col rounded-2xl border border-border bg-surface p-4">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-broadcast-bg px-2 py-0.5 text-2xs font-semibold text-broadcast-strong">
+                {TRIGGER_CHIP[t.trigger]}
+              </span>
+            </div>
+            <h3 className="mt-2 text-sm font-bold text-text">{t.name}</h3>
+            <p className="mt-1 flex-1 text-xs leading-relaxed text-muted">{t.description}</p>
+            <p className="mt-2 text-2xs font-medium text-subtle">
+              {t.steps.length} {t.steps.length === 1 ? 'slide' : 'slides'}
+            </p>
+            <RolePromotionPreview walkthrough={t} />
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-subtle">
+        These tours are shipped with the product, so they aren&rsquo;t edited here. The content lives
+        in <code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">lib/walkthroughs/role-promotion.ts</code>.
+        For audience-targeted induction flows, build a version above; for evergreen
+        walkthroughs you author and target yourself, use{' '}
+        <Link href="/admin/walkthroughs" className="text-primary-strong hover:underline">Walkthroughs</Link>.
+      </p>
+    </AdminSection>
   )
 }

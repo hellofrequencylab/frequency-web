@@ -18,9 +18,13 @@ import { completeWalkthroughAction } from '@/app/(main)/walkthrough-actions'
 export function WalkthroughLightbox({
   walkthrough,
   onClose,
+  previewOnly = false,
 }: {
   walkthrough: Walkthrough
   onClose: () => void
+  /** Operator preview (e.g. /pages/sequences): walk the slides but DON'T record
+   *  completion or pay zaps on Finish — just close. */
+  previewOnly?: boolean
 }) {
   const steps = walkthrough.steps
   const [index, setIndex] = useState(0)
@@ -51,6 +55,10 @@ export function WalkthroughLightbox({
   }
   function finish() {
     if (pending) return
+    if (previewOnly) {
+      close()
+      return
+    }
     start(async () => {
       await completeWalkthroughAction(walkthrough.slug)
       close()
