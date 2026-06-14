@@ -19,7 +19,7 @@ import {
 // (Admins are nearly-janitor, but not for the keys-to-the-keys.)
 export async function setAreaPermission(areaKey: string, minRole: NavAccess) {
   const caller = await getCallerProfile()
-  if (!caller || caller.community_role !== 'janitor') throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
 
   if (!(areaKey in NAV_AREA_DEFAULTS)) throw new Error('Unknown area')
   if (!ACCESS_LEVELS.includes(minRole)) throw new Error('Invalid access level')
@@ -43,7 +43,7 @@ export async function setAreaPermission(areaKey: string, minRole: NavAccess) {
 /** Set or clear (role=null) a member's staff role. */
 export async function setStaffRole(profileId: string, role: StaffRole | null) {
   const caller = await getCallerProfile()
-  if (!caller || caller.community_role !== 'janitor') throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
 
   const db = createAdminClient()
   if (role === null) {
@@ -62,7 +62,7 @@ export async function setStaffRole(profileId: string, role: StaffRole | null) {
 /** Add a member to the team by @handle, at `role`. */
 export async function addStaffMember(handle: string, role: StaffRole): Promise<{ ok: boolean; error?: string }> {
   const caller = await getCallerProfile()
-  if (!caller || caller.community_role !== 'janitor') return { ok: false, error: 'Unauthorized' }
+  if (!caller || !isJanitor(caller.webRole)) return { ok: false, error: 'Unauthorized' }
   if (!isStaffRole(role)) return { ok: false, error: 'Invalid staff role' }
 
   const h = handle.trim().replace(/^@/, '')
