@@ -6641,6 +6641,9 @@ export type Database = {
       }
       spaces: {
         Row: {
+          brand_accent: string | null
+          brand_logo_url: string | null
+          brand_name: string | null
           created_at: string
           domain: string | null
           enabled_verticals: string[]
@@ -6656,6 +6659,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brand_accent?: string | null
+          brand_logo_url?: string | null
+          brand_name?: string | null
           created_at?: string
           domain?: string | null
           enabled_verticals?: string[]
@@ -6671,6 +6677,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brand_accent?: string | null
+          brand_logo_url?: string | null
+          brand_name?: string | null
           created_at?: string
           domain?: string | null
           enabled_verticals?: string[]

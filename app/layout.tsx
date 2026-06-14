@@ -6,7 +6,7 @@ import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { resolveTheme } from "@/lib/theme/server/resolve";
-import { loadActiveThemeCss } from "@/lib/theme/server/themes";
+import { loadActiveThemeCss, resolveActiveOccasionSlug } from "@/lib/theme/server/themes";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
@@ -117,19 +117,28 @@ export default async function RootLayout({
   // bytes of attributes vary per request. We deliberately do NOT cache around it in this change.
   const theme = await resolveTheme();
 
+  // Effective occasion (the OCCASION time axis): a member/code pin wins when resolveTheme
+  // already settled on a non-'none' occasion (cookie pin or a code-registry window match);
+  // otherwise auto-schedule from the DB occasion windows authored in Theme Studio. The DB
+  // resolver is fail-safe ('none' on any error / missing table), so this never blocks render.
+  const occasion =
+    theme.occasion !== "none"
+      ? theme.occasion
+      : await resolveActiveOccasionSlug(new Date());
+
   // Data-driven themes (docs/THEME.md): render the active DB skin/occasion theme as a scoped
-  // <style> whose higher-specificity selectors (html[data-skin] / html.dark[data-skin]) override
-  // the code DAWN/skin tokens for the active data-skin value. FAIL-SAFE: returns '' when the
-  // themes table/rows are absent, so the code CSS skins stay the fallback. Placed late in <head>
-  // (after the pre-paint themeScript) so source order plus specificity make it win.
-  const themeCss = await loadActiveThemeCss({ skin: theme.skin, occasion: theme.occasion });
+  // <style> whose higher-specificity selectors (html[data-skin] / html.dark[data-skin], and the
+  // data-occasion equivalents) override the code DAWN/skin tokens for the active value. FAIL-SAFE:
+  // returns '' when the themes table/rows are absent, so the code CSS skins stay the fallback.
+  // Placed late in <head> (after the pre-paint themeScript) so source order plus specificity win.
+  const themeCss = await loadActiveThemeCss({ skin: theme.skin, occasion });
 
   return (
     <html
       lang="en"
       data-skin={theme.skin}
       data-generation={theme.generation}
-      data-occasion={theme.occasion === "none" ? undefined : theme.occasion}
+      data-occasion={occasion === "none" ? undefined : occasion}
       className={`${nunito.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
     >
       <head>

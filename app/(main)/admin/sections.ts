@@ -66,6 +66,7 @@ import {
   ToggleRight,
   Share2,
   Palette,
+  LayoutPanelLeft,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
@@ -303,6 +304,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/pages', label: 'Pages', desc: 'Edit public pages and content blocks.', Icon: FileText, min: 'janitor', section: 'Platform' },
       { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor', section: 'Platform' },
       { href: '/admin/appearance', label: 'Theme Studio', desc: 'Brand themes, palettes, and seasonal looks. Edit and assign without code.', Icon: Palette, min: 'janitor', section: 'Platform' },
+      { href: '/admin/spaces', label: 'Spaces', desc: 'White-label tenants: assign each Space its theme, brand name, accent, and logo.', Icon: Building2, min: 'janitor', section: 'Platform' },
+      { href: '/admin/page-layout', label: 'Page layout', desc: "Frame each route's right rail: Global, Scoped, or full-width Focus.", Icon: LayoutPanelLeft, min: 'janitor', section: 'Platform' },
       // ── System ──
       { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor', section: 'System' },
       { href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', Icon: ScrollText, min: 'admin', section: 'System' },
