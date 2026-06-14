@@ -4,7 +4,7 @@
 // the player renders, plus the per-lesson content keyed by id. Server-only (admin client).
 
 import { getPlan, getCompletedLessonIds, type JourneyPlan } from '@/lib/journey-plans'
-import { buildJourneyTree, type BlockRow, type JourneyTree, type LeafType } from './tree'
+import { buildJourneyTree, leafTitle, type BlockRow, type JourneyTree, type LeafType } from './tree'
 
 export interface LessonContent {
   id: string
@@ -53,7 +53,7 @@ export async function getJourneyPlayerView(slug: string, profileId: string): Pro
     lessonsById[i.id] = {
       id: i.id,
       type: (bt === 'section' ? 'lesson' : bt) as LeafType,
-      title: i.title ?? 'Untitled',
+      title: leafTitle(i.title, bt === 'section' ? 'lesson' : bt),
       body: i.body ?? null,
       media: i.media ?? null,
       estMinutes: i.est_minutes ?? null,

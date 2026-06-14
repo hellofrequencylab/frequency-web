@@ -99,6 +99,20 @@ export async function getMemberRunForPlan(profileId: string, planId: string): Pr
   return runId ? getRun(runId) : null
 }
 
+/** A member's SOLO enrollment start for a plan (run_id null), or null — the drip anchor
+ *  for someone taking a Journey on their own (the cohort path uses run.startedAt instead). */
+export async function getSoloEnrollmentStart(profileId: string, planId: string): Promise<string | null> {
+  const { data } = await db()
+    .from('journey_enrollments')
+    .select('started_at')
+    .eq('profile_id', profileId)
+    .eq('plan_id', planId)
+    .is('run_id', null)
+    .order('started_at', { ascending: true })
+    .limit(1)
+  return (data?.[0] as { started_at: string | null } | undefined)?.started_at ?? null
+}
+
 /** Active Runs for a Circle (most recent first). */
 export async function listRunsForCircle(circleId: string): Promise<JourneyRun[]> {
   const { data } = await db()
