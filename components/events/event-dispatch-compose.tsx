@@ -9,9 +9,12 @@ import { postEventDispatch } from '@/app/(main)/events/[slug]/social-actions'
 // may also send it as a Dispatch (rides the existing rail with an event badge +
 // push fan-out) and/or text the group (SMS).
 //
-// SMS is present but gated/unbuilt (ADR-256): the toggle renders disabled with a
-// lock + "Coming soon" so the host knows it exists and where it will live, but it
-// can't be turned on yet. The server action records the flag and sends nothing.
+// SMS is present but gated (ADR-256): the host can mark "text the group" so the
+// intent is recorded on the Event Dispatch, but the send is held behind the legal
+// gate. The server action records the flag and routes it through sendSms(), which
+// refuses every send until SMS is enabled (A2P 10DLC + member consent + quiet
+// hours). So choosing it queues nothing illegal — it just notes that this update
+// should also go out by text once the channel is live. The toggle says so plainly.
 //
 // Host/cohost only — the page gates whether this renders at all; the server action
 // re-checks authorization.
@@ -22,6 +25,7 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [toDispatch, setToDispatch] = useState(false)
+  const [toSms, setToSms] = useState(false)
   const [pending, startTransition] = useTransition()
 
   const canSubmit = !!body.trim() && !pending
@@ -34,11 +38,14 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
         title: title.trim() || null,
         body: trimmed,
         toDispatch,
-        toSms: false, // gated/unbuilt — ADR-256
+        // Records intent on the Event Dispatch. The send is gated behind sendSms()
+        // (ADR-256): nothing texts until SMS is enabled. Honest copy below.
+        toSms,
       })
       setTitle('')
       setBody('')
       setToDispatch(false)
+      setToSms(false)
     })
   }
 
@@ -92,17 +99,25 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
           Send as a Dispatch
         </button>
 
-        {/* SMS — present but gated (ADR-256). Disabled with a lock so the host can
-            see it's coming and where it will live. */}
-        <span
-          title="Texting the group is coming soon."
-          className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-2xs font-medium text-subtle"
+        {/* SMS — selectable, but the send is gated behind sendSms() (ADR-256). The
+            host can mark "text the group" to record the intent; the lock signals
+            the channel is not live yet. Copy below states it plainly. */}
+        <button
+          type="button"
+          onClick={() => setToSms((v) => !v)}
+          disabled={pending}
+          aria-pressed={toSms}
+          title="Marks this update to also go out by text once SMS is turned on."
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
+            toSms
+              ? 'bg-primary-bg text-primary-strong'
+              : 'border border-dashed border-border text-muted hover:border-border-strong hover:text-text'
+          }`}
         >
           <Smartphone className="h-3.5 w-3.5" />
           Text the group
           <Lock className="h-3 w-3" />
-          <span className="text-3xs">Coming soon</span>
-        </span>
+        </button>
 
         <button
           type="button"
@@ -117,6 +132,13 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
       {toDispatch && (
         <p className="mt-2 text-2xs text-subtle">
           Guests who RSVP&rsquo;d get this in their Dispatches, unless they muted this event.
+        </p>
+      )}
+
+      {toSms && (
+        <p className="mt-2 text-2xs text-subtle">
+          Texting isn&rsquo;t on yet. We&rsquo;ll mark this update to go out by text too, and it
+          sends once SMS is turned on and a guest has opted in.
         </p>
       )}
     </div>

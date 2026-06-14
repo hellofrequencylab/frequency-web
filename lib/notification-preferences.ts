@@ -80,3 +80,74 @@ export async function shouldSend(
     return false
   }
 }
+
+// ── SMS channel preferences (EVENTS-REWORK §5 / ADR-256) ─────────────────────
+// SMS is a separate, hard-gated channel: it never sends until the legal track is
+// live (see lib/comms/sms.ts). These readers are additive — the `sms_*` columns
+// (added in 20260626010000_sms_groundwork, not applied / not in database.types
+// yet) default OFF, so until a member explicitly opts in everything below returns
+// the safe "off / legal-default" values. Cast convention for the new columns.
+
+// SMS only carries the two host-driven event categories (ADR-255: "text the group"
+// is an Event Dispatch channel). Lifecycle/mentions never go to SMS.
+export type SmsCategory = 'dispatches' | 'events'
+
+// The legal default quiet-hours window: 8am-9pm local. Used when a row is missing
+// or the columns are not yet present, and as the clamp the guard never widens past.
+const DEFAULT_SMS_QUIET = { startHour: 8, endHour: 21 } as const
+
+type SmsPreferenceRow = {
+  sms_enabled?: boolean | null
+  sms_dispatches?: boolean | null
+  sms_events?: boolean | null
+  sms_quiet_start_hour?: number | null
+  sms_quiet_end_hour?: number | null
+}
+
+async function getSmsPreferenceRow(profileId: string): Promise<SmsPreferenceRow | null> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('notification_preferences')
+    .select('*')
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  return (data as unknown as SmsPreferenceRow | null) ?? null
+}
+
+// True only when the master SMS switch AND this category's SMS toggle are both on.
+// Missing row / missing columns -> false (SMS is opt-IN; the default is off). The
+// guard in lib/comms/sms.ts still requires consent + provisioning + quiet hours on
+// top of this. Fail-closed so a broken read never enables SMS.
+export async function isSmsEnabled(profileId: string, category: SmsCategory): Promise<boolean> {
+  try {
+    const row = await getSmsPreferenceRow(profileId)
+    if (!row || row.sms_enabled !== true) return false
+    const key = `sms_${category}` as 'sms_dispatches' | 'sms_events'
+    return row[key] === true
+  } catch {
+    return false
+  }
+}
+
+// The member's SMS quiet-hours window (local time), clamped to the legal 8am-9pm
+// bound — a member may narrow it but never widen past the statutory window. Missing
+// row / columns / any error -> the legal default. The guard evaluates the current
+// local hour against this.
+export async function smsQuietHours(
+  profileId: string,
+): Promise<{ startHour: number; endHour: number }> {
+  try {
+    const row = await getSmsPreferenceRow(profileId)
+    const start = row?.sms_quiet_start_hour
+    const end = row?.sms_quiet_end_hour
+    if (start == null || end == null) return { ...DEFAULT_SMS_QUIET }
+    // Clamp inside the legal window: never start earlier than 8am, never end later
+    // than 9pm. A member can only shrink the sending window, never extend it.
+    return {
+      startHour: Math.max(DEFAULT_SMS_QUIET.startHour, start),
+      endHour: Math.min(DEFAULT_SMS_QUIET.endHour, end),
+    }
+  } catch {
+    return { ...DEFAULT_SMS_QUIET }
+  }
+}

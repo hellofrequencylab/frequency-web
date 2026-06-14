@@ -1,9 +1,15 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { Check, Clock, Star, Minus, Plus, UserPlus, X } from 'lucide-react'
 import { setRsvpStatus, setRsvpPlusOnes } from '@/app/(main)/events/actions'
 import { setEventRsvpDepth } from '@/app/(main)/events/[slug]/social-actions'
+import {
+  loadGuestQuestionnaire,
+  saveGuestAnswer,
+  type GuestQuestionnaire,
+} from '@/app/(main)/events/[slug]/manage/questionnaire-actions'
+import type { EventQuestion } from '@/lib/events/questions'
 
 // Detail-page RSVP controls (event Detail template). Three warm states a member
 // can move between — Going · Interested (maybe) · (Join waitlist when full) —
@@ -60,6 +66,32 @@ export function RsvpControls({
   const isMaybe = current === 'maybe'
   const isWaitlisted = current === 'waitlist'
   const isPending = requiresApproval && approvalStatus === 'pending'
+
+  // A1 questionnaire: once the guest has expressed any interest, surface the host's
+  // questions and let them answer (saved per question via setAnswer). Self-loaded so
+  // the host page doesn't need to thread questions through — the action returns an
+  // empty set for events with no questionnaire, so this stays invisible otherwise.
+  const hasResponded = isGoing || isMaybe || isWaitlisted || isPending
+  const [questionnaire, setQuestionnaire] = useState<GuestQuestionnaire | null>(null)
+  useEffect(() => {
+    if (!hasResponded) return
+    let active = true
+    loadGuestQuestionnaire(eventId).then((q) => {
+      if (active) setQuestionnaire(q)
+    })
+    return () => {
+      active = false
+    }
+  }, [hasResponded, eventId])
+  const questionnaireBlock =
+    questionnaire && questionnaire.questions.length > 0 ? (
+      <EventQuestionnaire
+        eventId={eventId}
+        slug={slug ?? ''}
+        questions={questionnaire.questions}
+        initialAnswers={questionnaire.answers}
+      />
+    ) : null
 
   const go = (intent: 'going' | 'maybe' | 'not_going') =>
     startTransition(() => {
@@ -122,11 +154,14 @@ export function RsvpControls({
 
   if (isPending) {
     return (
-      <div className="rounded-xl border border-border bg-surface px-4 py-3">
-        <p className="flex items-center gap-2 text-sm font-medium text-text">
-          <Clock className="h-4 w-4 text-subtle" />
-          Request sent. The host will confirm.
-        </p>
+      <div className="space-y-3">
+        <div className="rounded-xl border border-border bg-surface px-4 py-3">
+          <p className="flex items-center gap-2 text-sm font-medium text-text">
+            <Clock className="h-4 w-4 text-subtle" />
+            Request sent. The host will confirm.
+          </p>
+        </div>
+        {questionnaireBlock}
       </div>
     )
   }
@@ -214,6 +249,187 @@ export function RsvpControls({
           </div>
         </div>
       ) : null}
+
+      {questionnaireBlock}
+    </div>
+  )
+}
+
+// The host's questionnaire, shown to a guest who has RSVP'd (EVENTS-REWORK A1).
+// Each answer saves on blur (text/number) or change (choice/yes-no) via setAnswer,
+// so partial answers persist. Six types: short/long text, pick one (dropdown),
+// pick several (multi-select), yes or no, and number. Self-authorized server-side.
+function EventQuestionnaire({
+  eventId,
+  slug,
+  questions,
+  initialAnswers,
+}: {
+  eventId: string
+  slug: string
+  questions: EventQuestion[]
+  initialAnswers: Record<string, string>
+}) {
+  const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers)
+  const [saving, setSaving] = useState<string | null>(null)
+  const [savedId, setSavedId] = useState<string | null>(null)
+
+  const save = (questionId: string, value: string) => {
+    setSaving(questionId)
+    saveGuestAnswer(eventId, slug, questionId, value).finally(() => {
+      setSaving((s) => (s === questionId ? null : s))
+      setSavedId(questionId)
+    })
+  }
+
+  const setLocal = (questionId: string, value: string) =>
+    setAnswers((a) => ({ ...a, [questionId]: value }))
+
+  return (
+    <div className="space-y-4 rounded-xl border border-border bg-surface p-4">
+      <p className="text-sm font-semibold text-text">A few questions from the host</p>
+      {questions.map((q) => {
+        const value = answers[q.id] ?? ''
+        const labelId = `q-${q.id}`
+        return (
+          <div key={q.id} className="space-y-1.5">
+            <label htmlFor={labelId} className="block text-sm font-medium text-text">
+              {q.prompt}
+              {q.required && <span className="ml-1 text-xs text-danger">required</span>}
+            </label>
+
+            {q.type === 'long_text' ? (
+              <textarea
+                id={labelId}
+                value={value}
+                onChange={(e) => setLocal(q.id, e.target.value)}
+                onBlur={(e) => save(q.id, e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+              />
+            ) : q.type === 'number' ? (
+              <input
+                id={labelId}
+                type="number"
+                value={value}
+                onChange={(e) => setLocal(q.id, e.target.value)}
+                onBlur={(e) => save(q.id, e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+              />
+            ) : q.type === 'boolean' ? (
+              <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-surface p-1">
+                {(['yes', 'no'] as const).map((opt) => {
+                  const selected = value === opt
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setLocal(q.id, opt)
+                        save(q.id, opt)
+                      }}
+                      aria-pressed={selected}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-semibold capitalize transition-colors ${
+                        selected
+                          ? 'bg-primary-bg text-primary-strong'
+                          : 'text-muted hover:bg-surface-elevated hover:text-text'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : q.type === 'dropdown' ? (
+              <select
+                id={labelId}
+                value={value}
+                onChange={(e) => {
+                  setLocal(q.id, e.target.value)
+                  save(q.id, e.target.value)
+                }}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+              >
+                <option value="">Choose one</option>
+                {q.options.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            ) : q.type === 'multi_select' ? (
+              <MultiSelectAnswer
+                options={q.options}
+                value={value}
+                onChange={(next) => {
+                  setLocal(q.id, next)
+                  save(q.id, next)
+                }}
+              />
+            ) : (
+              <input
+                id={labelId}
+                type="text"
+                value={value}
+                onChange={(e) => setLocal(q.id, e.target.value)}
+                onBlur={(e) => save(q.id, e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
+              />
+            )}
+
+            {saving === q.id ? (
+              <p className="text-2xs text-subtle">Saving…</p>
+            ) : savedId === q.id ? (
+              <p className="inline-flex items-center gap-1 text-2xs text-success">
+                <Check className="h-3 w-3" />
+                Saved
+              </p>
+            ) : null}
+          </div>
+        )
+      })}
+      <p className="text-2xs text-subtle">Only the host sees your answers.</p>
+    </div>
+  )
+}
+
+// Multi-select answer stored as a comma-joined string (the answer column is text).
+function MultiSelectAnswer({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[]
+  value: string
+  onChange: (next: string) => void
+}) {
+  const selected = value ? value.split(',').map((s) => s.trim()).filter(Boolean) : []
+  const toggle = (opt: string) => {
+    const next = selected.includes(opt)
+      ? selected.filter((s) => s !== opt)
+      : [...selected, opt]
+    onChange(next.join(', '))
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const on = selected.includes(opt)
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => toggle(opt)}
+            aria-pressed={on}
+            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+              on
+                ? 'bg-primary-bg text-primary-strong'
+                : 'border border-border text-muted hover:bg-surface-elevated hover:text-text'
+            }`}
+          >
+            {opt}
+          </button>
+        )
+      })}
     </div>
   )
 }

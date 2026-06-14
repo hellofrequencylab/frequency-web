@@ -14,6 +14,8 @@ import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-r
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { awardCircleCurrentForCheckin } from '@/lib/events/circle-current'
 import { embedEvent } from '@/lib/events/embeddings'
+import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
+import { nominatimGeocoder } from '@/lib/events/geocode-provider'
 import { sendEventRsvpConfirmationEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
@@ -21,6 +23,43 @@ import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
 const VALID_VISIBILITY = ['public', 'unlisted', 'circle_only', 'private']
 const VALID_ENERGY = ['high_activation', 'grounding', 'social', 'ceremonial']
+const VALID_ATTENDANCE: AttendanceMode[] = ['in_person', 'online', 'hybrid']
+
+// Geocode-on-save (EVENTS-REWORK B1). Reads the structured address + attendance mode
+// from the create form and hands them to the frozen saveEventLocation data layer
+// with the keyless Nominatim provider. Best-effort by construction: a geocode miss
+// (no/sparse address, online event, provider hiccup, rate-limit) just leaves geog
+// NULL and the event still exists. Never throws into the create flow.
+async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void> {
+  const str = (key: string): string | null => {
+    const v = (fd.get(key) as string | null)?.trim()
+    return v ? v : null
+  }
+  const modeRaw = (fd.get('attendanceMode') as string | null) ?? 'in_person'
+  const attendanceMode: AttendanceMode = (VALID_ATTENDANCE as string[]).includes(modeRaw)
+    ? (modeRaw as AttendanceMode)
+    : 'in_person'
+
+  try {
+    await saveEventLocation(eventId, {
+      address: {
+        venueName: str('venueName'),
+        street: str('street'),
+        city: str('city'),
+        region: str('region'),
+        country: str('country'),
+        postalCode: str('postalCode'),
+      },
+      attendanceMode,
+      onlineUrl: str('onlineUrl'),
+      geocoder: nominatimGeocoder,
+    })
+  } catch (e) {
+    // saveEventLocation already swallows a geocode miss; this guards the
+    // address-column write itself so the create flow never fails on location.
+    console.error('[createEvent geocode]', e)
+  }
+}
 
 export async function createEvent(formData: FormData) {
   const title = (formData.get('title') as string | null)?.trim()
@@ -98,6 +137,13 @@ export async function createEvent(formData: FormData) {
   if (error) {
     console.error('createEvent error', error)
     return
+  }
+
+  // Persist the structured address + geocode the venue to a map point (best-effort;
+  // never blocks or fails the create). Awaited so the event lands on its page with
+  // its address columns + geog already set.
+  if (inserted) {
+    await geocodeEventOnCreate(inserted.id, formData)
   }
 
   // For recurring events, materialise the first batch of occurrences right

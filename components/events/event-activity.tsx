@@ -1,21 +1,26 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ImagePlus, X, Trash2, Film, Radio, Smile } from 'lucide-react'
 import { createEventPost, deleteEventPost } from '@/app/(main)/events/[slug]/social-actions'
+import { getEventPostReactions, toggleEventPostReaction } from '@/lib/events/reactions'
+import type { BoopKind, PostReactions } from '@/lib/events/reactions'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
 
 // Boops — the Partiful-style reaction set (EVENTS-DESIGN §2.2/§8). A small set of
-// real faces a guest taps on a post. Optimistic + local: it reflects YOUR own boop
-// (a real fact — you booped), never a fabricated aggregate count (Law 1: a number
-// is real or it's absent). There is no event-post reaction table to ride yet, so we
-// don't invent a shared tally.
-const BOOPS = ['👋', '🔥', '🎉', '❤️', '😂'] as const
+// real faces a guest taps on a post. Now PERSISTED: the bar shows real aggregate
+// counts (lib/events/reactions.ts + event_post_reactions) and the viewer's own
+// booped faces — real numbers only, never a fabricated tally (Law 1: a number is
+// real or it's absent). This array MUST stay in lockstep with the server-side
+// BOOP_KINDS in lib/events/reactions.ts (a `'use server'` module can only export
+// async functions, so the set can't be shared as a value — only these faces are
+// accepted server-side).
+const BOOPS: readonly BoopKind[] = ['👋', '🔥', '🎉', '❤️', '😂']
 
 export type ActivityPost = {
   id: string
@@ -76,6 +81,41 @@ export function EventActivity({
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Real Boop counts per post (event_post_reactions). Only comment posts carry
+  // reactions — Dispatch entries are event_dispatches rows (id `dispatch:…`), not
+  // event_posts, so they have nothing to react to. Loaded once on mount + after a
+  // post is added; the BoopBar updates its own post in place when you toggle, so we
+  // never refetch the whole set on a single tap.
+  const [reactions, setReactions] = useState<Record<string, PostReactions>>({})
+
+  const commentPostIds = posts.filter((p) => !p.isDispatch).map((p) => p.id)
+  // Stable key so the effect only refetches when the actual set of post ids changes.
+  const commentPostIdsKey = commentPostIds.join(',')
+
+  useEffect(() => {
+    const ids = commentPostIdsKey ? commentPostIdsKey.split(',') : []
+    if (ids.length === 0) return
+    let active = true
+    // Fetch happens off the render path; state is only set in the async resolve, so
+    // this never triggers a synchronous cascading render. Stale entries for posts
+    // that disappeared are harmless — the render only reads the visible posts' keys.
+    getEventPostReactions(eventId, ids)
+      .then((map) => {
+        if (active) setReactions(map)
+      })
+      .catch(() => {
+        // A reactions read miss just leaves the bars in their unbooped state.
+      })
+    return () => {
+      active = false
+    }
+  }, [eventId, commentPostIdsKey])
+
+  // Replace one post's reactions with the fresh, server-returned state after a toggle.
+  function applyReactions(postId: string, next: PostReactions) {
+    setReactions((prev) => ({ ...prev, [postId]: next }))
+  }
 
   function pickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -341,9 +381,17 @@ export function EventActivity({
                       className="mt-2 max-h-72 w-auto rounded-xl border border-border object-cover"
                     />
                   )}
-                  {/* Boops — tap a face to react. Disabled (with a sign-in nudge on
-                      hover) for signed-out viewers. */}
-                  <BoopBar disabled={!myProfileId} />
+                  {/* Boops — tap a face to react. Real persisted counts; only on
+                      comment posts (Dispatch entries have no reaction row). Disabled
+                      (with a sign-in nudge on hover) for signed-out viewers. */}
+                  {!post.isDispatch && (
+                    <BoopBar
+                      postId={post.id}
+                      reactions={reactions[post.id]}
+                      onToggled={applyReactions}
+                      disabled={!myProfileId}
+                    />
+                  )}
                 </div>
               </li>
             )
@@ -354,45 +402,79 @@ export function EventActivity({
   )
 }
 
-// A small reaction bar per post. Optimistic + local: it reflects YOUR boop (a real
-// fact), and shows no fabricated shared count (there's no event-post reaction store
-// to ride yet — Law 1: a number is real or it's absent).
-function BoopBar({ disabled }: { disabled: boolean }) {
-  const [mine, setMine] = useState<string | null>(null)
+// A small reaction bar per post. Shows REAL persisted counts (event_post_reactions
+// via lib/events/reactions.ts) plus which faces the viewer booped, and toggles them
+// through the server. Real numbers only: a face with zero reactions is simply
+// absent, never shown as "0" (Law 1: a number is real or it's absent).
+function BoopBar({
+  postId,
+  reactions,
+  onToggled,
+  disabled,
+}: {
+  postId: string
+  reactions: PostReactions | undefined
+  onToggled: (postId: string, next: PostReactions) => void
+  disabled: boolean
+}) {
   const [open, setOpen] = useState(false)
+  const [pending, startTransition] = useTransition()
 
-  if (mine) {
-    return (
-      <div className="mt-2">
-        <button
-          type="button"
-          onClick={() => setMine(null)}
-          aria-label="Remove your boop"
-          className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2.5 py-1 text-2xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
-        >
-          <span className="text-sm leading-none">{mine}</span>
-          You booped
-        </button>
-      </div>
-    )
+  const counts = reactions?.counts ?? {}
+  const mine = reactions?.mine ?? []
+  // The faces that actually have at least one boop, in the canonical set order.
+  const reacted = BOOPS.filter((k) => (counts[k] ?? 0) > 0)
+  const hasAny = reacted.length > 0
+
+  function toggle(kind: BoopKind) {
+    if (disabled || pending) return
+    setOpen(false)
+    startTransition(async () => {
+      const res = await toggleEventPostReaction(postId, kind)
+      if (res.ok) onToggled(postId, res.reactions)
+    })
   }
 
   return (
-    <div className="mt-2">
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      {/* Existing reactions — one chip per face that has real boops. The chip the
+          viewer booped is highlighted; tapping it un-boops. */}
+      {reacted.map((kind) => {
+        const isMine = mine.includes(kind)
+        return (
+          <button
+            key={kind}
+            type="button"
+            onClick={() => toggle(kind)}
+            disabled={disabled || pending}
+            aria-pressed={isMine}
+            aria-label={isMine ? `Remove your ${kind} boop` : `Boop with ${kind}`}
+            title={disabled ? 'Sign in to boop' : undefined}
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              isMine
+                ? 'border-primary bg-primary-bg text-primary-strong hover:bg-primary-bg/70'
+                : 'border-border text-muted hover:border-border-strong hover:text-text'
+            }`}
+          >
+            <span className="text-sm leading-none">{kind}</span>
+            {counts[kind]}
+          </button>
+        )
+      })}
+
+      {/* Add-a-boop: the face picker, or the trigger when closed. */}
       {open ? (
         <div className="inline-flex items-center gap-0.5 rounded-full border border-border bg-surface px-1 py-0.5">
-          {BOOPS.map((emoji) => (
+          {BOOPS.map((kind) => (
             <button
-              key={emoji}
+              key={kind}
               type="button"
-              onClick={() => {
-                setMine(emoji)
-                setOpen(false)
-              }}
-              aria-label={`Boop with ${emoji}`}
-              className="rounded-full px-1.5 py-0.5 text-base leading-none transition-transform hover:scale-125"
+              onClick={() => toggle(kind)}
+              disabled={disabled || pending}
+              aria-label={`Boop with ${kind}`}
+              className="rounded-full px-1.5 py-0.5 text-base leading-none transition-transform hover:scale-125 disabled:opacity-50"
             >
-              {emoji}
+              {kind}
             </button>
           ))}
         </div>
@@ -400,12 +482,13 @@ function BoopBar({ disabled }: { disabled: boolean }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          disabled={disabled}
+          disabled={disabled || pending}
           title={disabled ? 'Sign in to boop' : undefined}
-          className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-2xs font-medium text-subtle transition-colors hover:border-border-strong hover:text-muted disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label="Add a boop"
+          className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-2xs font-medium text-subtle transition-colors hover:border-border-strong hover:text-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Smile className="h-3.5 w-3.5" />
-          Boop
+          {hasAny ? '' : 'Boop'}
         </button>
       )}
     </div>

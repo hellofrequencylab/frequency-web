@@ -128,9 +128,10 @@ describe('eventSchema', () => {
 
   it('uses city-level location when city is provided', () => {
     const result = eventSchema(makeEvent({ city: 'Oceanside' }))
-    expect(result.location['@type']).toBe('Place')
-    expect(result.location.name).toBe('Oceanside')
-    expect((result.location as Record<string, unknown>).address).toMatchObject({
+    const loc = result.location as Record<string, unknown>
+    expect(loc['@type']).toBe('Place')
+    expect(loc.name).toBe('Oceanside')
+    expect(loc.address).toMatchObject({
       '@type': 'PostalAddress',
       addressLocality: 'Oceanside',
     })
@@ -138,10 +139,59 @@ describe('eventSchema', () => {
 
   it('uses generic location placeholder when city is null (privacy contract)', () => {
     const result = eventSchema(makeEvent({ city: null }))
-    expect(result.location['@type']).toBe('Place')
+    const loc = result.location as Record<string, unknown>
+    expect(loc['@type']).toBe('Place')
     // Must NOT expose precise location; name is a generic placeholder
-    expect(result.location.name).toMatch(/member/i)
-    expect(result.location).not.toHaveProperty('address')
+    expect(loc.name).toMatch(/member/i)
+    expect(loc).not.toHaveProperty('address')
+  })
+
+  it('defaults to a scheduled, offline (in-person) event with no enrichment', () => {
+    const result = eventSchema(makeEvent())
+    expect(result.eventStatus).toBe('https://schema.org/EventScheduled')
+    expect(result.eventAttendanceMode).toBe('https://schema.org/OfflineEventAttendanceMode')
+  })
+
+  it('maps an online event to a VirtualLocation + OnlineEventAttendanceMode', () => {
+    const result = eventSchema({ ...makeEvent({ slug: 'live-sit' }), attendance_mode: 'online' })
+    expect(result.eventAttendanceMode).toBe('https://schema.org/OnlineEventAttendanceMode')
+    const loc = result.location as Record<string, unknown>
+    expect(loc['@type']).toBe('VirtualLocation')
+    // The VirtualLocation url is the PUBLIC event page, never the members-only join link.
+    expect(loc.url).toBe(`${SITE_URL}/discover/events/live-sit`)
+  })
+
+  it('maps a hybrid event to both a Place and a VirtualLocation + MixedEventAttendanceMode', () => {
+    const result = eventSchema({
+      ...makeEvent({ city: 'Encinitas' }),
+      attendance_mode: 'hybrid',
+    })
+    expect(result.eventAttendanceMode).toBe('https://schema.org/MixedEventAttendanceMode')
+    const locs = result.location as Array<Record<string, unknown>>
+    expect(Array.isArray(locs)).toBe(true)
+    expect(locs.map((l) => l['@type'])).toEqual(['Place', 'VirtualLocation'])
+  })
+
+  it('marks a cancelled event EventCancelled with a SoldOut offer', () => {
+    const result = eventSchema({ ...makeEvent(), is_cancelled: true })
+    expect(result.eventStatus).toBe('https://schema.org/EventCancelled')
+    expect(result.offers).toMatchObject({ availability: 'https://schema.org/SoldOut' })
+  })
+
+  it('adds city-level region and country to the address when provided (no street/venue)', () => {
+    const result = eventSchema({
+      ...makeEvent({ city: 'San Marcos' }),
+      region: 'CA',
+      country: 'US',
+    })
+    const address = (result.location as Record<string, unknown>).address as Record<string, unknown>
+    expect(address).toMatchObject({
+      addressLocality: 'San Marcos',
+      addressRegion: 'CA',
+      addressCountry: 'US',
+    })
+    // Privacy contract: never a precise street address.
+    expect(address).not.toHaveProperty('streetAddress')
   })
 
   it('generates the canonical event URL from slug', () => {

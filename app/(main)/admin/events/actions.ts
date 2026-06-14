@@ -10,6 +10,74 @@ import { slugify } from '@/lib/utils'
 import { refundTicket } from '@/lib/billing/tickets'
 import { sendEventCancelledEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
+import { saveEventLocation, type EventAddress, type AttendanceMode } from '@/lib/events/geocode'
+import { nominatimGeocoder } from '@/lib/events/geocode-provider'
+
+// Geocode-on-save for the admin surface (EVENTS-REWORK B1). The admin event forms
+// collect only the free-text `location`, so we hand the event's address to the
+// frozen saveEventLocation with the keyless Nominatim provider. saveEventLocation
+// rewrites the structured address columns, so we read the row's EXISTING structured
+// address first and pass it through unchanged — preserving anything the member
+// create form set — and only fall back to the free-text `location` (as a single-line
+// query in `street`) when there is no structured address to geocode. Best-effort:
+// never throws into the save; a blank/sparse address simply leaves geog NULL.
+async function geocodeEventLocation(
+  admin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+  location: string | null,
+): Promise<void> {
+  try {
+    // Read the row's current geo columns + attendance mode (newer than the generated
+    // types → untyped cast, repo convention).
+    const { data: row } = await (admin)
+      .from('events')
+      .select('venue_name, street, city, region, country, postal_code, attendance_mode, online_url')
+      .eq('id', eventId)
+      .maybeSingle()
+    const r = (row ?? {}) as {
+      venue_name?: string | null
+      street?: string | null
+      city?: string | null
+      region?: string | null
+      country?: string | null
+      postal_code?: string | null
+      attendance_mode?: string | null
+      online_url?: string | null
+    }
+
+    const existing: EventAddress = {
+      venueName: r.venue_name ?? null,
+      street: r.street ?? null,
+      city: r.city ?? null,
+      region: r.region ?? null,
+      country: r.country ?? null,
+      postalCode: r.postal_code ?? null,
+    }
+    const hasStructured = Boolean(
+      existing.venueName || existing.street || existing.city || existing.region || existing.postalCode,
+    )
+
+    // Prefer the structured address; otherwise place the free-text line as a single
+    // query in `street` so the whole string reaches the provider.
+    const address: EventAddress = hasStructured
+      ? existing
+      : { ...existing, street: location?.trim() || null }
+
+    const attendanceMode: AttendanceMode =
+      r.attendance_mode === 'online' || r.attendance_mode === 'hybrid'
+        ? r.attendance_mode
+        : 'in_person'
+
+    await saveEventLocation(eventId, {
+      address,
+      attendanceMode,
+      onlineUrl: r.online_url ?? null,
+      geocoder: nominatimGeocoder,
+    })
+  } catch (e) {
+    console.error('[admin events geocode]', e)
+  }
+}
 
 // Shared guard: community host+ (the floor for event management in /admin).
 async function requireEventHost() {
@@ -49,7 +117,7 @@ export async function createEvent(fd: FormData) {
   const { data: existing } = await admin.from('events').select('slug').eq('slug', slug).maybeSingle()
   if (existing) slug = base + '-' + Math.random().toString(36).slice(2, 6)
 
-  const { error } = await admin.from('events').insert({
+  const { data: inserted, error } = await admin.from('events').insert({
     title,
     description,
     location,
@@ -59,8 +127,11 @@ export async function createEvent(fd: FormData) {
     ends_at:    endsAt ? new Date(endsAt).toISOString() : null,
     host_id:    caller.id,
     slug,
-  })
+  }).select('id').single()
   if (error) throw new Error(error.message)
+
+  // Geocode the venue to a map point (best-effort; never fails the create).
+  if (inserted) await geocodeEventLocation(admin, inserted.id, location)
 
   revalidatePath('/admin/events')
   revalidatePath('/events')
@@ -81,16 +152,22 @@ export async function updateEvent(id: string, fd: FormData) {
   const priceNum = priceRaw ? Number(priceRaw) : 0
   const priceCents = Number.isFinite(priceNum) && priceNum > 0 ? Math.round(priceNum * 100) : null
 
+  const location = (fd.get('location') as string)?.trim() || null
+
   // price_cents isn't in the generated types yet — untyped cast (repo convention).
   const { error } = await (admin).from('events').update({
     title:       (fd.get('title') as string).trim(),
     description: (fd.get('description') as string)?.trim() || null,
-    location:    (fd.get('location') as string)?.trim() || null,
+    location,
     starts_at:   startsAt ? new Date(startsAt).toISOString() : undefined,
     ends_at:     endsAt   ? new Date(endsAt).toISOString()   : null,
     price_cents: priceCents,
   }).eq('id', id)
   if (error) throw new Error(error.message)
+
+  // Re-resolve the map point from the (possibly changed) location. Best-effort:
+  // preserves any structured address already on the row; never fails the save.
+  await geocodeEventLocation(admin, id, location)
 
   revalidatePath('/admin/events')
   revalidatePath('/events')

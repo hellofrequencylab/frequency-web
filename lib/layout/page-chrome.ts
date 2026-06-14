@@ -49,10 +49,14 @@ const FOCUS_PATTERNS: RegExp[] = [
   // Post area + sticky Join aside); the global rail is suppressed to avoid the
   // double-rail trap (EVENTS-DESIGN §1). NOT a Focus form — a Detail page that
   // simply needs the full width. [^/]+ keeps it to the single slug segment, so
-  // /events/[slug]/event.ics and a future /events/[slug]/manage are NOT matched
+  // /events/[slug]/event.ics and /events/[slug]/manage are NOT matched here
   // and keep their own treatment; the negative lookahead re-excludes the sibling
   // Focus routes above it belt-and-suspenders.
   /^\/events\/(?!new$|scan$|drafts(\/|$))[^/]+$/,
+  // The host Manage Dashboard (EVENTS-REWORK A2) is a metric-led operator surface
+  // rendered with <DashboardTemplate> — Focus chrome (no rail), the operator
+  // sibling of /admin. One segment deep under the slug.
+  /^\/events\/[^/]+\/manage$/,
   /^\/practices\/[^/]+\/edit$/, // edit a practice
   /^\/connections\/.+/, // a contact editor / new contact (the index keeps the rail)
 ]
