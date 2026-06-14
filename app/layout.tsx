@@ -5,6 +5,8 @@ import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/site"
 import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { resolveTheme } from "@/lib/theme/server/resolve";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
 // Weights: 400 body, 600 semibold, 700 bold, 800 extrabold, 900 black (headings/branding).
@@ -92,16 +94,34 @@ export const metadata: Metadata = {
 // dark-mode flash). Reads localStorage('freq-theme'): 'light' | 'dark' |
 // 'system' | null; defaults to 'system' per the Dawn spec. We also migrate
 // the legacy 'theme' key one-time so existing users don't get reset.
-const themeScript = `(function(){try{var s=localStorage.getItem('freq-theme');if(!s){var legacy=localStorage.getItem('theme');if(legacy==='dark'||legacy==='light'||legacy==='system'){s=legacy;localStorage.setItem('freq-theme',legacy);}}var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;var dark=s==='dark'||((s==='system'||!s)&&sys);document.documentElement.classList.toggle('dark',dark);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',dark?'#16130E':'#FBFAF6');}catch(e){}})();`;
+//
+// Skin preview override: after resolving dark mode, it also reads
+// localStorage('freq-skin'); if set, it writes that value to `data-skin` on
+// <html> so a skin can be previewed globally (including marketing pages)
+// without a real Space. Real Spaces still render `data-skin` server-side on the
+// shell root (no flash); the skin CSS selectors match both <html> and the shell
+// div. The value is trusted blind — an unknown skin is a harmless CSS no-op.
+const themeScript = `(function(){try{var s=localStorage.getItem('freq-theme');if(!s){var legacy=localStorage.getItem('theme');if(legacy==='dark'||legacy==='light'||legacy==='system'){s=legacy;localStorage.setItem('freq-theme',legacy);}}var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;var dark=s==='dark'||((s==='system'||!s)&&sys);document.documentElement.classList.toggle('dark',dark);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',dark?'#16130E':'#FBFAF6');var skin=localStorage.getItem('freq-skin');if(skin){document.documentElement.setAttribute('data-skin',skin);}}catch(e){}})();`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Resolve the three theming axes server-side (skin / generation / occasion) so the
+  // data-attributes below are present in the first byte — no flash, and they compose with
+  // the .dark class the pre-paint script sets. resolveTheme() reads the `fxtheme` cookie via
+  // next/headers, which opts this root layout into dynamic rendering. That's acceptable here:
+  // CSS does all the visual work, so the streamed body stays theme-agnostic and only ~tens of
+  // bytes of attributes vary per request. We deliberately do NOT cache around it in this change.
+  const theme = await resolveTheme();
+
   return (
     <html
       lang="en"
+      data-skin={theme.skin}
+      data-generation={theme.generation}
+      data-occasion={theme.occasion === "none" ? undefined : theme.occasion}
       className={`${nunito.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
     >
       <head>
@@ -112,7 +132,9 @@ export default function RootLayout({
         {/* GA4 — inert unless NEXT_PUBLIC_GA_MEASUREMENT_ID is set in production */}
         <GoogleAnalytics />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider value={theme}>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

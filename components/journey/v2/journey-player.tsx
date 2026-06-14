@@ -192,7 +192,11 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
   }
 
   return (
-    <div data-skin="default" className="space-y-4">
+    // No local data-skin: the player is regular in-app content and inherits the
+    // active Space's skin from the shell root (components/layout/app-shell.tsx).
+    // The previous hardcoded `data-skin="default"` predated the skin registry and
+    // wrongly pinned the Dawn look inside a non-default Space (e.g. Midnight).
+    <div className="space-y-4">
       {milestone && <TrophyCelebration milestone={milestone} onDismiss={() => setMilestone(null)} />}
 
       {/* Progress header — never-empty bar (endowed-progress effect, docs/JOURNEYS-DESIGN.md §1). */}

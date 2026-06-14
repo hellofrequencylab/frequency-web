@@ -38,7 +38,7 @@ one operator (a practitioner, a business, an org, a Lab, a Hook-style coaching b
 | Facet | What it carries |
 |---|---|
 | **Type** | `practitioner` · `business` · `organization` · `lab` · `partner` · `coaching` (Hook-like) — drives the default capabilities, templates, and onboarding track. |
-| **Brand / skin** | name, logo, palette, and a `skin` token set (the [data-skin] axis, PAGE-FRAMEWORK / BASELINE Phase 4). The look is the operator's; the kit underneath is ours. |
+| **Brand / skin** | name, logo, palette, and a `skin` token set (the `[data-skin]` axis of the four-axis theme model, [`docs/THEME.md`](THEME.md)). The look is the operator's; the kit underneath is ours. |
 | **Domain** | a Frequency subpath, a subdomain, or a custom domain — routing resolves the Space from the host/path. |
 | **Entity** | `foundation` · `labs` · `partner` — the money-partition tag (PLATFORM-VISION §1). A Space's commerce posts to `financial_transactions` under its entity; money never commingles. |
 | **`network_connected`** | the one switch (see §3). Off = standalone white-label app. On = ported into the shared Frequency network. |
@@ -141,8 +141,12 @@ rewrite; all are *activation* (BASELINE-ASSESSMENT, ADR-248):
    Space's money has a partitioned home from day one.
 3. 🔴 **Trust signals seam** (ADR-247). Spaces emit trust signals the way they emit
    engagement events; seam it before commerce Spaces ship so each emits from day one.
-4. 🔴 **The `spaces` table + `space_id` scoping + skin axis** (this doc). The tenancy
-   columns, RLS, and the `[data-skin]` resolver (BASELINE Phase 4).
+4. ⏳ **The `spaces` table + `space_id` scoping + skin axis** (this doc). The tenancy
+   columns + the `[data-skin]` resolver exist; the theme seam is now generalized to a
+   **multi-axis `data-*` model** (mode × skin × occasion × generation) with a `server-only`
+   `resolveTheme()` and typed `lib/theme/` registries (see [`docs/THEME.md`](THEME.md), ADR-257).
+   Remaining: full `space_id` RLS on new vertical tables, the `spaces.generation` default column,
+   `space_members`, and custom-domain content-routing.
 
 Sequence: **registry activation → spaces table + skin → trust seam → first Space.** Build a
 Space before the registry is load-bearing and it accretes hand-wiring — the one thing this

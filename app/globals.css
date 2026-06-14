@@ -100,6 +100,56 @@
   --brand-burn:         rgba(74, 40, 12, 0.45);
   --brand-shine:        rgba(255, 244, 222, 0.65);
   --brand-wash:         rgba(194, 88, 18, 0.62);
+
+  /* ── Feel axis (skin-tunable) ───────────────────────────────────────────────
+     The non-color half of a skin: radius, motion, density. Defined here as the
+     DAWN/default baseline; a skin (e.g. [data-skin="midnight"]) overrides these
+     to shift "feel" without touching a component. Radius + motion are wired into
+     @theme inline below so `rounded-control/card/pill` and the motion tokens are
+     available app-wide. */
+
+  /* Radius by role (docs/DESIGN.md "Radius — by role"): control = lg (0.5rem),
+     card = 2xl (1rem), pill = full. Defining them as tokens lets a skin retune the
+     whole feel (softer / sharper) at once. NOTE: existing components keep their
+     literal rounded-* utilities — consuming rounded-control/card/pill is incremental. */
+  --radius-control: 0.5rem;
+  --radius-card:    1rem;
+  --radius-pill:    9999px;
+
+  /* Motion durations — defaults match the current animation timings in this file
+     (cue-pop ~260ms is the base interaction beat; faster/slower bracket it). The
+     prefers-reduced-motion guards already in this file still win; these tokens do
+     not re-introduce motion where it is suppressed. */
+  --motion-fast: 130ms;
+  --motion-base: 260ms;
+  --motion-slow: 700ms;
+
+  /* Density — a single lever that mirrors the global "breathe" root font-size set on
+     html below (the rem-based type + spacing scale derives from it). A skin can nudge
+     --density-root to make its whole surface tighter or airier. Kept minimal on
+     purpose; broad density consumption (spacing scales reading it) is incremental. */
+  --density-root: 106.25%;
+
+  /* ── Generation/feel axis tokens (DAWN baseline) ────────────────────────────
+     The GENERATION axis (data-generation, see the unlayered blocks below) owns the
+     "feel": type scale, ornamentation, and the interactive-target floor. Defined here
+     as the `balanced` baseline; each generation preset overrides them in its block.
+
+     --type-scale  — a unitless multiplier on top of --density-root, so a preset can
+                     enlarge/shrink type WITHOUT changing spacing density (the two are
+                     decoupled: spacious wants big type AND roomy space; bold wants
+                     small type AND tight space; kids want big type but LOW density).
+                     Consumed via the `text-scaled-*` utilities below (font-size only).
+     --ornament    — 0–1 decorative intensity, read by the marketing decorative layers
+                     (.amber-glow / .light-strip / .bg-slat sheen) so a flat preset
+                     (spacious) calms them and a rich preset (playful) lifts them.
+     --tap-min     — minimum interactive target size. NON-monotonic across presets:
+                     large at BOTH the spacious end AND the kids end, smallest (but
+                     still ≥ 24px AA) only in the dense `bold` middle. Consumed by
+                     interactive primitives via min-block/inline-size. */
+  --type-scale: 1;
+  --ornament:   0.6;
+  --tap-min:    32px;
 }
 
 /* Always-light lock. The cinematic beta induction is a branded cream experience
@@ -127,6 +177,66 @@
   --color-success-bg:        #D7EFEA;
   --color-danger:            #BA3B30;
   --color-danger-bg:         #F7E4E1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SKINS — the lateral (white-label) axis. A skin is a token-set applied via
+   [data-skin="<id>"] on the shell root (a DESCENDANT of <html>). The skin axis is
+   ORTHOGONAL to the light/dark MODE: `.dark` (on <html>) picks the mode; [data-skin]
+   picks the palette + feel. Because [data-skin] sits on a descendant, a skin's
+   dark-mode overrides MUST use the descendant selector `.dark [data-skin="<id>"]`
+   (NOT `[data-skin].dark`). The custom-property cascade lets a token redefined on the
+   shell element override the inherited :root/.dark value for that subtree — the same
+   pattern `.theme-light-lock` above uses.
+
+   Registry: lib/theme/skins.ts (typed mirror). The guardrail test skins.test.ts reads
+   this file and asserts every non-default skin id has BOTH a light and a dark block, so
+   CSS + registry can never drift. Add a skin = add its blocks here AND a SkinDef there.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* default = DAWN. The :root (light) + .dark (dark) values above ARE this skin; it adds
+   no overrides. Anchor kept so the contract is visible — do NOT add tokens here. */
+[data-skin="default"] {
+  /* inherits :root — no overrides */
+}
+
+/* midnight (light mode). A cooler, deeper "cinematic" take: cool slate / indigo-leaning
+   surfaces in place of the warm cream, with the warm amber accent kept so it still reads
+   as Frequency. Body text/background contrast held ≥ ~4.5:1. Feel is also retuned: radii
+   go sharper. See .dark [data-skin="midnight"] below for the dark-mode counterpart. */
+[data-skin="midnight"] {
+  color-scheme: light;
+
+  /* Surfaces — cool, pale slate instead of warm cream. */
+  --color-canvas:            #EEF1F6;
+  --color-marketing-canvas:  #E3E8F1;
+  --color-surface:           #FFFFFF;
+  --color-surface-elevated:  #F4F6FB;
+
+  /* Borders — cool grey-blue hairlines. */
+  --color-border:            #D5DBE6;
+  --color-border-strong:     #BCC5D6;
+
+  /* Text — deep slate ink (≈12:1 on canvas), cool muted/subtle steps. */
+  --color-text:              #1C2535;
+  --color-text-muted:        #4B566B;
+  --color-text-subtle:       #6E7A91;
+
+  /* Primary — keep the warm amber accent so the brand carries; nudged slightly
+     deeper/cooler-shadowed to sit on the cool surfaces. */
+  --color-primary:           #D9852A;
+  --color-primary-hover:     #C2741F;
+  --color-primary-strong:    #8C5410;
+  --color-primary-bg:        #F6E7CF;
+  --color-text-on-primary:   #FFFFFF;
+
+  /* Focus follows primary, as DAWN does. */
+  --color-focus-ring:        #D9852A;
+
+  /* Feel — sharper, more architectural than DAWN's soft radii. */
+  --radius-control: 0.375rem;
+  --radius-card:    0.625rem;
+  --radius-pill:    9999px;
 }
 
 .dark {
@@ -195,6 +305,278 @@
   --brand-burn:         rgba(20, 9, 0, 0.60);
   --brand-shine:        rgba(255, 230, 190, 0.42);
   --brand-wash:         rgba(232, 134, 54, 0.55);
+}
+
+/* midnight (dark mode). The descendant selector `.dark [data-skin="midnight"]` is
+   REQUIRED (mode lives on <html>, skin on the shell descendant). Deep cool slate /
+   indigo-leaning surfaces — a true cinematic midnight rather than DAWN's warm espresso —
+   with the warm amber accent kept. Body text on canvas holds ≥ ~4.5:1. Sharper radii
+   match the light-mode midnight feel. */
+.dark [data-skin="midnight"] {
+  color-scheme: dark;
+
+  /* Surfaces — deep cool slate / indigo, not warm timber. */
+  --color-canvas:           #0C1018;
+  --color-marketing-canvas: #080B12;
+  --color-surface:          #161C28;
+  --color-surface-elevated: #1F2736;
+
+  /* Borders — cool slate. */
+  --color-border:           #2A3445;
+  --color-border-strong:    #3A4659;
+
+  /* Text — cool off-white ink (≈14:1 on canvas), cool muted/subtle steps. */
+  --color-text:             #E7ECF4;
+  --color-text-muted:       #9AA6BC;
+  --color-text-subtle:      #6B7689;
+
+  /* Primary — warm amber accent kept (brighter in the dark, as DAWN does), so the
+     cool field still carries a Frequency-warm highlight. */
+  --color-primary:          #F0AD4E;
+  --color-primary-hover:    #F6C16F;
+  --color-primary-strong:   #F0AD4E;
+  --color-primary-bg:       #2A2113;
+  --color-text-on-primary:  #1A1206;
+
+  --color-focus-ring:       #F0AD4E;
+
+  /* Feel — sharper radii, matching the light-mode midnight. */
+  --radius-control: 0.375rem;
+  --radius-card:    0.625rem;
+  --radius-pill:    9999px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ADAPTIVE THEMING — the four-axis composition model.
+
+   Four ORTHOGONAL axes compose purely through the CSS custom-property cascade. Each is
+   an attribute/class on <html> (or a descendant shell root):
+
+     · class="dark"        MODE     — light vs dark (EXISTING; :root / .dark above)
+     · data-skin           PALETTE  — white-label palette + base feel (EXISTING)
+     · data-occasion       OVERLAY  — a small seasonal palette/ornament overlay (NEW)
+     · data-generation      FEEL     — type scale, density, radius, motion, ornament,
+                                       tap floor (NEW; FEEL-ONLY, no palette tokens)
+
+   PRECEDENCE is pure SOURCE ORDER. Every selector across all four axes is UNLAYERED and
+   equal specificity — a single attribute (0,1,0) or `.dark` + attribute (0,2,0) — so when
+   two of them set the same custom property, the one authored LATER in this file wins.
+   The blocks are deliberately authored in axis order, giving the cascade (LOWEST →
+   HIGHEST priority):
+
+       base (:root / .dark)  <  [data-skin]  <  [data-occasion]  <  [data-generation]
+
+   Reading the order:
+     · base (:root / .dark) sets DAWN.
+     · skin owns the PALETTE and may set a base feel; authored after base, so it wins.
+     · occasion is a LIGHT overlay (accent/ornament nudge); authored after skin so a
+       seasonal touch reads on any palette, but stays subtle.
+     · generation owns the FEEL and, authored last, WINS on the feel tokens
+       (type/density/radius/motion/tap/ornament). It is FEEL-ONLY: it sets NO palette/
+       contrast tokens, so contrast always resolves to the base/skin/occasion value and
+       stays correct in BOTH light and dark mode (see the GENERATION section).
+
+   WHY UNLAYERED (do NOT re-wrap these in @layer): the base :root / .dark and [data-skin]
+   blocks above are unlayered, and UNLAYERED styles BEAT any @layer in the cascade. If the
+   two new axes were wrapped in `@layer`, the unlayered base :root feel tokens would beat
+   the layered [data-generation] overrides whenever data-generation is set — the generation
+   axis would silently fail. Keeping all four axes unlayered puts them on one equal footing
+   where SOURCE ORDER alone decides, which is exactly the precedence we want. Author any new
+   axis block here, unlayered, AFTER the ones it must override.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   OCCASION axis — data-occasion. A LIGHT seasonal overlay, NOT a restyle. Default is
+   `none`/absent: no block needed (everything inherits skin/base). An occasion nudges
+   only the accent + ornament a touch so a season reads on any skin without redesigning.
+   Unlike generation, an occasion IS an intentional palette overlay, so it ships BOTH a
+   light block and a `.dark [data-occasion=…]` variant to stay correct in either mode.
+
+   Registry mirror lives alongside the skin/generation registries; the guardrail test
+   reads THIS file and asserts each non-default occasion id has its [data-occasion] block
+   (and its .dark variant), same contract pattern as skins.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* solstice (light) — a gentle midwinter-light warm-up: the amber accent goes a touch
+   warmer/deeper and ornament lifts slightly so glows/strips feel a little more lit, the
+   way the spaces glow at solstice. Palette structure + contrast otherwise untouched. */
+[data-occasion="solstice"] {
+  --color-primary:        #E68A22;
+  --color-primary-hover:  #D2791A;
+  --color-focus-ring:     #E68A22;
+  /* Ornament lifts a notch so decorative glow layers read warmer for the season. */
+  --ornament: 0.75;
+}
+
+/* solstice (dark) — mode lives on <html>, so the .dark variant is required. A warmer,
+   slightly brighter amber against the dark wood, ornament lifted a touch more so the
+   light strips/glows feel festively lit in the dark. */
+.dark [data-occasion="solstice"] {
+  --color-primary:        #F6BC5E;
+  --color-primary-hover:  #FACE7C;
+  --color-focus-ring:     #F6BC5E;
+  --ornament: 0.85;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GENERATION axis — data-generation. Owns the FEEL, and ONLY the feel. Two families:
+
+     ADULT spectrum (calm → bold):  spacious · classic · balanced · bold · playful
+     KIDS bands (NN/g age bands):   kids-early (3-5) · kids-mid (6-8) · kids-tween (9-12)
+
+   Each block tunes FEEL tokens ONLY (type scale, density, radius, motion, ornament, tap
+   floor). It deliberately sets NO palette/contrast tokens (--color-*): a generation must
+   read correctly in BOTH light and dark mode, but it has no `.dark` variant, so a light-
+   only palette override here would force e.g. near-black text onto a dark canvas. Leaving
+   palette to the base/skin/occasion tiers keeps contrast correct in either mode — the DAWN
+   base body text is already ~AAA and muted is AA, so no preset drops below WCAG AA. Raw
+   feel values live here; @theme inline above stays the var() bridge.
+
+   FOLLOW-UP (deliberately NOT done here): per-preset contrast/saturation tuning (e.g. AAA
+   text for the calm/kids ends, higher-saturation accents for bold/playful) is a real want,
+   but it must ship with proper `.dark` variants per preset — never light-only — so it is
+   intentionally deferred rather than reintroducing dark-mode-invisible text.
+
+   INVARIANTS held in every block (evidence-grounded):
+     · Text contrast never below WCAG AA — inherited from the base/skin/occasion palette,
+       which is correct in both modes (base body ~AAA, muted AA).
+     · Tap target is NON-MONOTONIC: large at the spacious end AND the kids end; smallest
+       (but still ≥ 24px AA) only in the dense `bold` middle.
+     · prefers-reduced-motion still wins everywhere — the most motion-heavy presets are
+       explicitly neutralized in the reduced-motion guard at the END of this section.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── spacious ─────────────────────────────────────────────────────────────────
+   Largest type, roomy density, minimal motion, flat/clear (low ornament), big
+   targets. The calmest end of the adult spectrum. */
+[data-generation="spacious"] {
+  --type-scale:   1.15;          /* largest adult type */
+  --density-root: 112.5%;        /* roomy — airier than baseline 106.25% */
+  --radius-control: 0.625rem;
+  --radius-card:    1.125rem;
+  --motion-fast: 90ms;           /* minimal motion: shorter, calmer beats */
+  --motion-base: 170ms;
+  --motion-slow: 420ms;
+  --ornament:    0.25;           /* flat / clear: decorative layers calmed */
+  --tap-min:     48px;           /* big targets (AAA-leaning, ≥ 44px) */
+}
+
+/* ── classic ──────────────────────────────────────────────────────────────────
+   One calm step toward baseline: slightly larger-than-baseline type, larger tap
+   target, gentle motion, low-moderate ornament. */
+[data-generation="classic"] {
+  --type-scale:   1.06;
+  --density-root: 109%;
+  --radius-control: 0.5rem;
+  --radius-card:    1rem;
+  --motion-fast: 110ms;
+  --motion-base: 210ms;
+  --motion-slow: 560ms;
+  --ornament:    0.45;
+  --tap-min:     44px;           /* AAA-leaning larger target */
+}
+
+/* ── balanced = today's DAWN look. EXPLICIT NO-OP ANCHOR. ──────────────────────
+   The baseline. Inherits the base feel tokens (--type-scale 1, --density-root
+   106.25%, base radii/motion/ornament/tap) UNCHANGED. Kept as a visible anchor so
+   the contract is explicit and the registry/test have a selector to match — do NOT
+   add overrides here. */
+[data-generation="balanced"] {
+  /* inherits base feel — no overrides */
+}
+
+/* ── bold ─────────────────────────────────────────────────────────────────────
+   Past baseline toward energetic: smaller/denser type, rounder radius, livelier
+   motion, more ornament. The DENSE MIDDLE — and the ONLY preset with the smallest
+   tap floor (still ≥ 24px AA). */
+[data-generation="bold"] {
+  --type-scale:   0.96;          /* smaller / denser */
+  --density-root: 103%;          /* tighter than baseline */
+  --radius-control: 0.625rem;
+  --radius-card:    1.25rem;     /* rounder */
+  --motion-fast: 150ms;          /* livelier */
+  --motion-base: 300ms;
+  --motion-slow: 760ms;
+  --ornament:    0.8;            /* more ornament */
+  --tap-min:     26px;           /* smallest floor, still ≥ 24px AA (non-monotonic dip) */
+}
+
+/* ── playful (AESTHETIC, not literal kids) ─────────────────────────────────────
+   Max rounded, most (purposeful) motion, high ornament, BIG friendly targets,
+   larger type. Energetic but NOT tiny/dense. */
+[data-generation="playful"] {
+  --type-scale:   1.08;          /* larger, not small */
+  --density-root: 107%;          /* comfortable, not dense */
+  --radius-control: 0.875rem;    /* max rounded */
+  --radius-card:    1.5rem;
+  --radius-pill:    9999px;
+  --motion-fast: 170ms;          /* most motion (purposeful) */
+  --motion-base: 340ms;
+  --motion-slow: 820ms;
+  --ornament:    1;              /* highest ornament */
+  --tap-min:     46px;           /* BIG friendly targets */
+}
+
+/* ── kids-early (ages 3-5) ─────────────────────────────────────────────────────
+   The most simplified + largest. Big type, ~2cm targets, very rounded, purposeful
+   (not constant) motion, LOW density. (NN/g: youngest need BIGGER targets + icon
+   clarity, not denser screens.) */
+[data-generation="kids-early"] {
+  --type-scale:   1.3;           /* largest type overall */
+  --density-root: 115%;          /* LOW density — lots of room */
+  --radius-control: 1rem;        /* very rounded, friendly */
+  --radius-card:    1.75rem;
+  --radius-pill:    9999px;
+  --motion-fast: 140ms;          /* purposeful, gentle */
+  --motion-base: 280ms;
+  --motion-slow: 620ms;
+  --ornament:    0.7;            /* friendly, not busy */
+  --tap-min:     56px;           /* ~2cm, well above 44px */
+}
+
+/* ── kids-mid (ages 6-8) ───────────────────────────────────────────────────────
+   A step toward balanced from kids-early: still large type + big targets + very
+   rounded + low density, slightly less oversized. */
+[data-generation="kids-mid"] {
+  --type-scale:   1.2;
+  --density-root: 112%;
+  --radius-control: 0.875rem;
+  --radius-card:    1.5rem;
+  --motion-fast: 130ms;
+  --motion-base: 260ms;
+  --motion-slow: 580ms;
+  --ornament:    0.65;
+  --tap-min:     50px;           /* ≥ 44px, kids-large */
+}
+
+/* ── kids-tween (ages 9-12) ────────────────────────────────────────────────────
+   Trends toward `balanced`: type/density/radius near baseline, but KEEPS the kids
+   invariant — a LARGE (≥44px) tap target, gentle motion. */
+[data-generation="kids-tween"] {
+  --type-scale:   1.1;           /* nearing balanced */
+  --density-root: 108%;
+  --radius-control: 0.625rem;
+  --radius-card:    1.125rem;
+  --motion-fast: 120ms;
+  --motion-base: 240ms;
+  --motion-slow: 540ms;
+  --ornament:    0.6;
+  --tap-min:     46px;           /* still ≥ 44px (kids invariant) */
+}
+
+/* ── Reduced-motion override for the FEEL axis ─────────────────────────────────
+   prefers-reduced-motion must win regardless of preset. The existing per-animation
+   guards in this file already set `animation: none`; here we additionally neutralize
+   the motion-DURATION tokens for EVERY generation (esp. the motion-heavy bold /
+   playful / kids presets) so any transition that consumes --motion-* collapses to a
+   near-instant beat. It is authored AFTER every preset so, by source order, it
+   overrides each preset's own --motion-* values. */
+@media (prefers-reduced-motion: reduce) {
+  [data-generation] {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
 }
 
 /* ── Tailwind wiring ────────────────────────────────────────────────────────
@@ -283,6 +665,30 @@
      frame. Use `shadow-pop` / `shadow-pop-lg`. The in-app UI keeps the soft set. */
   --shadow-pop:    0 4px 12px -2px rgb(20 16 10 / 0.16), 0 16px 40px -10px rgb(20 16 10 / 0.22);
   --shadow-pop-lg: 0 10px 24px -6px rgb(20 16 10 / 0.20), 0 36px 70px -16px rgb(20 16 10 / 0.30);
+
+  /* Feel axis → utilities. Tailwind v4 generates `rounded-control`, `rounded-card`,
+     and `rounded-pill` from these --radius-* keys; because they reference the :root
+     (or skin-overridden) custom properties, the utilities re-resolve per skin. */
+  --radius-control: var(--radius-control);
+  --radius-card:    var(--radius-card);
+  --radius-pill:    var(--radius-pill);
+
+  /* Motion durations exposed as transition/animation-duration tokens — Tailwind v4
+     does not synthesize duration utilities from these, so consume via
+     `duration-[var(--motion-base)]` or in CSS; defined here to keep the feel axis
+     in one place and skin-overridable. */
+  --motion-fast: var(--motion-fast);
+  --motion-base: var(--motion-base);
+  --motion-slow: var(--motion-slow);
+
+  /* Generation/feel axis → utilities. The same var() bridge as radius/motion: these
+     reference the :root (or generation-overridden) custom properties, so any utility
+     built on them re-resolves per `data-generation`. --type-scale and --tap-min are
+     exposed so the `text-scaled-*` / `tap-target` helpers below pick up the active
+     preset; --ornament stays a CSS-consumed var (decorative layers read it directly). */
+  --type-scale: var(--type-scale);
+  --ornament:   var(--ornament);
+  --tap-min:    var(--tap-min);
 }
 
 /* Sub-xs type scale — named steps so tiny labels/badges stop using the
@@ -295,13 +701,38 @@
   font-size: 10px;
 }
 
+/* Generation-scaled type — opt-in utilities that multiply a base size by the active
+   `--type-scale` (set per data-generation). A surface that adopts these grows/shrinks
+   its type with the chosen generation WITHOUT touching spacing (density is the separate
+   --density-root lever). Plain `text-*` utilities are unaffected, so adoption is
+   incremental and nothing regresses. */
+@utility text-scaled-base {
+  font-size: calc(1rem * var(--type-scale, 1));
+}
+@utility text-scaled-lg {
+  font-size: calc(1.125rem * var(--type-scale, 1));
+}
+@utility text-scaled-xl {
+  font-size: calc(1.25rem * var(--type-scale, 1));
+}
+
+/* Tap-target floor — clamps an interactive element to at least the active
+   `--tap-min` (set per data-generation; large at the spacious + kids ends, smaller in
+   the dense middle, never below the 24px AA floor). Opt-in so it can't shift existing
+   layouts; consume on buttons/links/controls that want the per-generation floor. */
+@utility tap-target {
+  min-block-size:  var(--tap-min, 32px);
+  min-inline-size: var(--tap-min, 32px);
+}
+
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
   font-family: var(--font-nunito, 'Nunito', sans-serif);
   /* Site-wide "breathe + a touch larger": the rem-based Tailwind scale (font AND
      spacing) derives from this root size, so a single gentle bump softens type and
-     opens up padding/gaps everywhere at once. ~16px → ~17px. Reversible one-liner. */
-  font-size: 106.25%;
+     opens up padding/gaps everywhere at once. ~16px → ~17px. Reversible one-liner.
+     Driven by the --density-root feel token so a skin can retune global density. */
+  font-size: var(--density-root, 106.25%);
 }
 
 body {
@@ -466,7 +897,7 @@ h1, h2, h3, h4, h5, h6 {
 .bg-slat {
   background-color: var(--color-ink);
   background-image:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 7%, transparent) 0%, transparent 22%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) calc(7% * var(--ornament, 1) / 0.6) , transparent) 0%, transparent 22%),
     repeating-linear-gradient(
       90deg,
       color-mix(in srgb, var(--color-on-ink) 6%, transparent) 0,
@@ -482,15 +913,19 @@ h1, h2, h3, h4, h5, h6 {
 .light-strip {
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
-  box-shadow: 0 0 16px 1px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  /* Glow strength scales with the active --ornament (baseline 0.6): a flat preset
+     (spacious) dims the strip, a rich one (playful / solstice) lifts it. */
+  box-shadow: 0 0 16px 1px color-mix(in srgb, var(--color-primary) calc(55% * var(--ornament, 0.6) / 0.6), transparent);
 }
 
 /* Soft amber radial glow backdrop, e.g. behind a hero CTA or within a dark band.
    Place as an absolutely-positioned, pointer-events-none layer. */
 .amber-glow {
+  /* Glow intensity scales with --ornament (baseline 0.6) so the generation/occasion
+     axes can calm it (spacious) or lift it (playful / solstice) without a JS toggle. */
   background: radial-gradient(
     ellipse 60% 55% at 50% 42%,
-    color-mix(in srgb, var(--color-primary) 28%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary) calc(28% * var(--ornament, 0.6) / 0.6), transparent) 0%,
     transparent 70%
   );
 }
