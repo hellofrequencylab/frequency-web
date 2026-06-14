@@ -45,9 +45,9 @@ vi.mock('@/lib/unsubscribe-tokens', () => ({
 
 vi.mock('@/lib/site', () => ({ SITE_URL: 'https://example.com' }))
 
-const sendPushToProfile = vi.fn<(...args: unknown[]) => Promise<number>>(async () => 1)
-vi.mock('@/lib/push', () => ({
-  sendPushToProfile: (...args: unknown[]) => sendPushToProfile(...args),
+const enqueue = vi.fn<(...args: unknown[]) => Promise<void>>(async () => {})
+vi.mock('@/lib/queue/outbox', () => ({
+  enqueue: (...args: unknown[]) => enqueue(...args),
 }))
 
 import {
@@ -79,23 +79,23 @@ describe('runAutomationsForEvent — push_actor branch', () => {
     state.rules = []
     state.contactEmail = null
     enqueueEmail.mockClear()
-    sendPushToProfile.mockClear()
+    enqueue.mockClear()
   })
 
   it('does nothing without an actor', async () => {
     state.rules = [{ action_type: 'push_actor', action_config: { title: 'T', body: 'B' } }]
     await runAutomationsForEvent('practice.verified', null)
-    expect(sendPushToProfile).not.toHaveBeenCalled()
+    expect(enqueue).not.toHaveBeenCalled()
   })
 
-  it('sends push to the actor profile with title/body and a default url', async () => {
+  it('enqueues a push job for the actor with title/body and a default url', async () => {
     state.rules = [{ action_type: 'push_actor', action_config: { title: 'Nice work', body: 'You did it' } }]
     await runAutomationsForEvent('practice.verified', 'profile-1')
-    expect(sendPushToProfile).toHaveBeenCalledWith(
-      'profile-1',
-      { title: 'Nice work', body: 'You did it', url: '/' },
-      'lifecycle',
-    )
+    expect(enqueue).toHaveBeenCalledWith('push', {
+      profileId: 'profile-1',
+      payload: { title: 'Nice work', body: 'You did it', url: '/' },
+      category: 'lifecycle',
+    })
     // Push does not require the CRM email lookup, so no email is enqueued.
     expect(enqueueEmail).not.toHaveBeenCalled()
   })
@@ -103,11 +103,11 @@ describe('runAutomationsForEvent — push_actor branch', () => {
   it('passes a provided url through as the deep link', async () => {
     state.rules = [{ action_type: 'push_actor', action_config: { title: 'T', body: 'B', url: '/crew/journey' } }]
     await runAutomationsForEvent('practice.verified', 'profile-1')
-    expect(sendPushToProfile).toHaveBeenCalledWith(
-      'profile-1',
-      { title: 'T', body: 'B', url: '/crew/journey' },
-      'lifecycle',
-    )
+    expect(enqueue).toHaveBeenCalledWith('push', {
+      profileId: 'profile-1',
+      payload: { title: 'T', body: 'B', url: '/crew/journey' },
+      category: 'lifecycle',
+    })
   })
 
   it('skips a push rule missing title or body', async () => {
@@ -117,11 +117,11 @@ describe('runAutomationsForEvent — push_actor branch', () => {
       { action_type: 'push_actor', action_config: { title: 'no body' } },
     ]
     await runAutomationsForEvent('practice.verified', 'profile-1')
-    expect(sendPushToProfile).not.toHaveBeenCalled()
+    expect(enqueue).not.toHaveBeenCalled()
   })
 
-  it('never throws when the push sender rejects', async () => {
-    sendPushToProfile.mockRejectedValueOnce(new Error('boom'))
+  it('never throws when enqueueing the push job rejects', async () => {
+    enqueue.mockRejectedValueOnce(new Error('boom'))
     state.rules = [{ action_type: 'push_actor', action_config: { title: 'T', body: 'B' } }]
     await expect(runAutomationsForEvent('practice.verified', 'profile-1')).resolves.toBeUndefined()
   })
@@ -134,6 +134,6 @@ describe('runAutomationsForEvent — push_actor branch', () => {
     ]
     await runAutomationsForEvent('practice.verified', 'profile-1')
     expect(enqueueEmail).toHaveBeenCalledTimes(1)
-    expect(sendPushToProfile).toHaveBeenCalledTimes(1)
+    expect(enqueue).toHaveBeenCalledTimes(1)
   })
 })

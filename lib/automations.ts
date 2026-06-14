@@ -8,7 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
-import { sendPushToProfile } from '@/lib/push'
+import { enqueue } from '@/lib/queue/outbox'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 
@@ -115,16 +115,20 @@ export async function runAutomationsForEvent(
         headers: listUnsubscribeHeaders(unsubscribeUrl),
       })
     } else if (rule.action_type === 'push_actor') {
-      // Push to the same actor. sendPushToProfile runs the full send-gate
-      // (push preference + consent) and fails dark without VAPID keys, so
-      // there's no extra gate here and no owner config can block the path.
+      // Push to the same actor via the durable outbox (kind 'push'), mirroring how
+      // the email branch enqueues rather than sends inline. This is deliberate, not
+      // just for durability: automations.ts is client-reachable (capture-launcher →
+      // analytics → engagement/events → here), and lib/push pulls in web-push, a
+      // node-only dep (net/tls/dns) that breaks `next build` if it lands in a client
+      // bundle. Enqueue is a plain DB write; the queue handler sends server-side and
+      // runs the full send-gate (push preference + consent, fails dark without VAPID).
       const cfg = (rule.action_config ?? {}) as Partial<PushActionConfig>
       if (!cfg.title || !cfg.body) continue
-      await sendPushToProfile(
-        actorProfileId,
-        { title: cfg.title, body: cfg.body, url: cfg.url || '/' },
-        'lifecycle',
-      ).catch(() => 0)
+      await enqueue('push', {
+        profileId: actorProfileId,
+        payload: { title: cfg.title, body: cfg.body, url: cfg.url || '/' },
+        category: 'lifecycle',
+      }).catch(() => {})
     }
   }
 }
