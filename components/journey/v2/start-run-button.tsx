@@ -24,7 +24,7 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
   const [msg, setMsg] = useState<{ ok: boolean; text: string; slug?: string } | null>(null)
 
   if (journeys.length === 0) {
-    return <p className="text-xs leading-relaxed text-muted">No published journeys yet — build one in the Studio, then run it with your circle.</p>
+    return <p className="text-xs leading-relaxed text-muted">No published journeys yet. Create one, publish it, then run it with your circle.</p>
   }
   const selected = journeys.find((j) => j.id === planId)
 
@@ -36,7 +36,7 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
         setMsg({ ok: false, text: res.error })
         return
       }
-      setMsg({ ok: true, text: `Run started — your circle is enrolled.`, slug: selected?.slug })
+      setMsg({ ok: true, text: `Run started. Your circle is enrolled.`, slug: selected?.slug })
       router.refresh()
     })
   }
@@ -44,7 +44,7 @@ export function StartRunButton({ circleId, journeys }: { circleId: string; journ
   return (
     <div>
       <p className="mb-2 text-xs leading-relaxed text-muted">
-        Run a journey with your circle — everyone moves through it together, one phase a week.
+        Run a journey with your circle. Everyone moves through it together, one phase a week.
       </p>
       <select
         value={planId}

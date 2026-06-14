@@ -61,7 +61,7 @@ export async function addPhaseAction(slug: string): Promise<ActionResult<{ id: s
 
 export async function addLessonAction(
   slug: string,
-  parentId: string,
+  parentId: string | null,
   blockType: string,
 ): Promise<ActionResult<{ id: string }>> {
   const a = await authorPlan(slug)
@@ -84,7 +84,7 @@ export async function addLessonAction(
  *  any leaf, and check-offs use the same journey_lesson_progress as every other block. */
 export async function addPracticeBlockAction(
   slug: string,
-  parentId: string,
+  parentId: string | null,
   practiceId: string,
 ): Promise<ActionResult<{ id: string }>> {
   const a = await authorPlan(slug)

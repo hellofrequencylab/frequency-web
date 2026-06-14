@@ -33,7 +33,7 @@ export function CohortMeter({ progress, circleName }: { progress: CohortProgress
         <p className="mt-2 text-xs text-muted">
           {completedPhases > 0
             ? `${completedPhases} of ${progress.phases.length} phases done as a group · ${progress.journeyCompleted} finished the whole journey`
-            : 'Keep going — the Circle moves together.'}
+            : 'Keep going. The Circle moves together.'}
         </p>
       )}
     </div>
