@@ -50,8 +50,10 @@ export function JourneyPlayer({ slug, title, emoji, tree, lessonsById }: Props) 
         const ev = res.data.events
         const j = ev.find((e) => e.kind === 'journey_complete')
         const ph = ev.find((e) => e.kind === 'phase_complete')
-        if (j) setCelebration(`🎉 You finished ${title}!`)
-        else if (ph) setCelebration(`🏆 Phase complete: ${ph.phaseTitle ?? 'done'}!`)
+        const gems = res.data.granted.reduce((s, g) => s + g.gems, 0)
+        const gemStr = gems ? ` +${gems} Gems` : ''
+        if (j) setCelebration(`🎉 You finished ${title}!${gemStr}`)
+        else if (ph) setCelebration(`🏆 Phase complete: ${ph.phaseTitle ?? 'done'}!${gemStr}`)
         if (nextId) setSelectedId(nextId)
         router.refresh()
       }

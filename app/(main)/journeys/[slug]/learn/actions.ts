@@ -11,11 +11,12 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan, completeLesson, uncompleteLesson } from '@/lib/journey-plans'
 import { getJourneyTree } from '@/lib/journeys/store'
 import { rewardEventsForTransition, type JourneyRewardEvent } from '@/lib/journeys/rewards'
+import { grantJourneyRewards, type GrantedJourneyReward } from '@/lib/journeys/grants'
 
 export async function completeJourneyLessonAction(
   slug: string,
   itemId: string,
-): Promise<ActionResult<{ events: JourneyRewardEvent[] }>> {
+): Promise<ActionResult<{ events: JourneyRewardEvent[]; granted: GrantedJourneyReward[] }>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Sign in to track your progress.')
   const loaded = await getPlan(slug)
@@ -28,10 +29,23 @@ export async function completeJourneyLessonAction(
 
   const events =
     before && after ? rewardEventsForTransition({ profileId: caller.id, planId, before, after }) : []
-  // J3: grant Gems / phase + journey trophies / certificate for `events` here (idempotent).
+
+  // Grant the milestone Gems for any phase/journey just completed (idempotent, best-effort).
+  let granted: GrantedJourneyReward[] = []
+  if (events.length) {
+    try {
+      granted = await grantJourneyRewards({
+        profileId: caller.id,
+        completionGems: loaded.plan.completion_gems ?? 30,
+        events,
+      })
+    } catch {
+      /* rewards are best-effort — never block the check-off */
+    }
+  }
 
   revalidatePath(`/journeys/${slug}/learn`)
-  return ok({ events })
+  return ok({ events, granted })
 }
 
 export async function uncompleteJourneyLessonAction(slug: string, itemId: string): Promise<ActionResult> {
