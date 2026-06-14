@@ -1,4 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
+import Link from 'next/link'
+import { Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
 import { getMemberRunForPlan, getCohortProgress } from '@/lib/journeys/runs'
@@ -41,8 +43,20 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
     /* Runs not enabled yet */
   }
 
+  const isAuthor = view.plan.author_id === profileId
+
   return (
     <div className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6">
+      {isAuthor && (
+        <div className="flex justify-end">
+          <Link
+            href={`/journeys/${slug}/edit`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit journey
+          </Link>
+        </div>
+      )}
       {cohort && <CohortMeter progress={cohort} />}
       <JourneyPlayer
         slug={slug}
