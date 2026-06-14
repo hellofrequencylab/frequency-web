@@ -128,13 +128,23 @@ async function canReadEvent(
 }
 
 /** Fold reaction rows into per-post {counts, mine} for the given viewer. */
+// Post IDs that, used as an object key, would pollute the prototype chain. `postIds`
+// reaches this from a `'use server'` action (caller-controlled), so never write one
+// of these as a property name (CodeQL: remote property injection).
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
 function aggregate(
   rows: ReactionRow[],
   postIds: string[],
   myProfileId: string | null,
 ): Record<string, PostReactions> {
-  const out: Record<string, PostReactions> = {}
-  for (const id of postIds) out[id] = { counts: {}, mine: [] }
+  // Null-prototype map: a caller-supplied key can never reach Object.prototype, and
+  // we still skip the reserved names explicitly as a second barrier.
+  const out: Record<string, PostReactions> = Object.create(null)
+  for (const id of postIds) {
+    if (UNSAFE_KEYS.has(id)) continue
+    out[id] = { counts: {}, mine: [] }
+  }
 
   for (const row of rows) {
     if (!isBoopKind(row.kind)) continue

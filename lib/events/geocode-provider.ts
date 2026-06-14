@@ -92,18 +92,22 @@ export const nominatimGeocoder: Geocoder = async (
   if (!q) return null
 
   return rateLimited(async () => {
-    const params = new URLSearchParams({
-      q,
-      format: 'jsonv2',
-      limit: '1',
-      addressdetails: '0',
-    })
+    // Build from a CONSTANT base URL so the (user-supplied) address can only ever
+    // land in the query string via searchParams — it can never influence the host or
+    // path, so the request is pinned to nominatim.openstreetmap.org by construction.
+    // This is the standard remediation for request-forgery: no tainted data reaches
+    // the request destination, only its query.
+    const url = new URL(NOMINATIM_URL)
+    url.searchParams.set('q', q)
+    url.searchParams.set('format', 'jsonv2')
+    url.searchParams.set('limit', '1')
+    url.searchParams.set('addressdetails', '0')
 
     let res: Response
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     try {
-      res = await fetch(`${NOMINATIM_URL}?${params.toString()}`, {
+      res = await fetch(url, {
         method: 'GET',
         headers: {
           // Required by the Nominatim usage policy + helps them reach us before
