@@ -64,6 +64,12 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   return (
     <DetailTemplate
       back={{ href: '/journeys', label: 'Journeys' }}
+      hero={
+        plan.cover_image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={plan.cover_image} alt="" className="h-32 w-full rounded-2xl border border-border object-cover sm:h-40" />
+        ) : undefined
+      }
       title={
         <span className="inline-flex items-center gap-3 align-middle">
           <span

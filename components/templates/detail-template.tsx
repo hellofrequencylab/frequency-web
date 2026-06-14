@@ -23,6 +23,7 @@ export interface DetailTab {
 }
 
 export function DetailTemplate({
+  hero,
   title,
   subtitle,
   badges,
@@ -31,6 +32,9 @@ export function DetailTemplate({
   tabs,
   children,
 }: {
+  /** A full-width hero image/banner rendered ABOVE the context header band (e.g. a
+   *  cover photo). Optional — most detail pages don't set it. */
+  hero?: React.ReactNode
   title: React.ReactNode
   subtitle?: React.ReactNode
   /** Status / mode chips (e.g. the in-person designator). */
@@ -45,6 +49,8 @@ export function DetailTemplate({
 }) {
   return (
     <div>
+      {/* Hero image (cover) at the very top of the header, when provided. */}
+      {hero && <div className="mb-4">{hero}</div>}
       {/* Context header band. On mobile the actions stack BELOW the identity so the
           title is never crushed into a truncation; from sm up they sit inline right. */}
       <header className="border-b border-border pb-4 mb-4">
