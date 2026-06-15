@@ -1,31 +1,20 @@
 import Link from 'next/link'
 import { Bot, ArrowRight } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
-import { getVeraAdminData } from './load-vera'
-import { VeraConfigForm } from './vera-config-form'
+import { AdminSection } from '@/components/templates'
+import { getVeraAdminData } from '@/app/(main)/admin/vera/load-vera'
+import { VeraConfigForm } from '@/app/(main)/admin/vera/vera-config-form'
 
-// Tune Vera — her style + live responses + the induction/funnel copy, no deploy
-// needed (AI-VERA.md). Writes vera_config; read live by the loop + induction.
-// This is also the AI control room: the operator Agent (which proposes actions for
-// approval) lives here now, lifted out of the deep Marketing menu (IA restructure).
-// The SETTINGS template (ADR-233 §3.8): annotated FormSections; the declarative config
-// fields explicit-save (one Save Vera button), the splash feed has its own imperative
-// refresh/veto controls. Gate (PB.1h): community janitor OR a staff role with the
-// `insights` domain (write).
-export const dynamic = 'force-dynamic'
-
-export default async function VeraAdminPage() {
+// The "Vera" tab of the consolidated Vera & AI workspace (ADR-265) — formerly /admin/vera.
+// Tune Vera's voice + live responses + induction copy (AI-VERA.md); the shared
+// VeraConfigForm + loader + saveVera action are reused unchanged. Gate: janitor OR
+// insights staff (write) — re-asserted here (the workspace only renders it when allowed).
+export async function VeraTab() {
   await requireAdmin('janitor', { staff: 'insights' })
   const { cfg, featured } = await getVeraAdminData()
 
   return (
-    <AdminTemplate
-      title="Manage Vera"
-      eyebrow="Vera"
-      icon={Bot}
-      description="Tune Vera's voice, her live responses, and the founder-induction copy. Saved instantly, no deploy."
-    >
+    <>
       <AdminSection title="AI operator" description="The console where the operator proposes work for your approval.">
         <Link
           href="/admin/marketing/agent"
@@ -50,6 +39,6 @@ export default async function VeraAdminPage() {
       <AdminSection title="Voice and copy" description="Vera's voice, her live responses, and the founder-induction flow.">
         <VeraConfigForm cfg={cfg} featured={featured} />
       </AdminSection>
-    </AdminTemplate>
+    </>
   )
 }

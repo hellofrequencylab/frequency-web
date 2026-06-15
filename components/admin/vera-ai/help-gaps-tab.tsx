@@ -1,26 +1,22 @@
 import { MessageCircleQuestion, ShieldX, CheckCircle2 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
+import { AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Badge } from '@/components/admin/status'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-// Janitor-only: the demand side of the living-docs loop (docs/SUPPORT-SYSTEM.md §6).
-// What members ask Vera that she can't confidently answer — the "to-write" list. The
-// QUEUE template (ADR-233 §3.5): a frequency-ranked spine of deflected questions, each
-// row exposing how often it's asked. Header + instructional copy on the canvas; the KPIs
-// and the queue live in white tiles; the cleared state celebrates an empty queue.
-export const dynamic = 'force-dynamic'
-
-export default async function HelpGapsPage() {
+// The "Help gaps" tab of the consolidated Vera & AI workspace (ADR-265) — formerly
+// /admin/help-gaps. The demand side of the living-docs loop (docs/SUPPORT-SYSTEM.md §6):
+// what members ask Vera that she can't confidently answer, ranked. JANITOR-ONLY — the
+// gate is re-asserted here, and the workspace hides this tab from non-janitor staff.
+export async function HelpGapsTab() {
   await requireAdmin('janitor')
 
   const admin = createAdminClient()
   const since = new Date()
   since.setDate(since.getDate() - 30)
-  const db = admin
-  const { data } = await db
+  const { data } = await admin
     .from('ai_help_queries')
     .select('question, deflected, confidence, created_at')
     .gte('created_at', since.toISOString())
@@ -43,12 +39,7 @@ export default async function HelpGapsPage() {
   const gaps = [...grouped.values()].sort((a, b) => b.count - a.count).slice(0, 50)
 
   return (
-    <AdminTemplate
-      title="Help gaps"
-      eyebrow="Vera"
-      icon={MessageCircleQuestion}
-      description="What members asked Vera that she couldn't confidently answer in the last 30 days. The to-write list for the help center."
-    >
+    <>
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:max-w-md">
           <StatCard bordered label="Questions asked" value={total.toLocaleString()} icon={MessageCircleQuestion} />
@@ -85,6 +76,6 @@ export default async function HelpGapsPage() {
           </ul>
         )}
       </AdminSection>
-    </AdminTemplate>
+    </>
   )
 }

@@ -97,14 +97,14 @@ export function AdminFooter({ role, webRole = 'none', staffRole = null }: AdminF
                 Support inbox
               </FootLink>
             )}
-            {can('/admin/help-gaps') && <FootLink href="/admin/help-gaps">Help gaps</FootLink>}
+            {can('/admin/vera-ai?tab=help-gaps') && <FootLink href="/admin/vera-ai?tab=help-gaps">Help gaps</FootLink>}
           </FootCol>
 
           {/* Vital links */}
           <FootCol title="Operate">
             {can('/admin/roles') && <FootLink href="/admin/roles">Roles &amp; permissions</FootLink>}
             {can('/admin/audit') && <FootLink href="/admin/audit">Audit log</FootLink>}
-            {can('/admin/ai') && <FootLink href="/admin/ai">AI controls</FootLink>}
+            {can('/admin/vera-ai?tab=ai') && <FootLink href="/admin/vera-ai?tab=ai">AI controls</FootLink>}
             <FootLink href="/settings">Settings</FootLink>
           </FootCol>
 

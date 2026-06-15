@@ -1,20 +1,19 @@
-import { Lightbulb, Sparkles, History } from 'lucide-react'
+import { Sparkles, History } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { AdminTemplate, AdminSection } from '@/components/templates'
+import { AdminSection } from '@/components/templates'
 import { Banner } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getStudioRead } from '@/lib/studio/recommendations'
 import { SITE_ACTIONS, isSiteAction } from '@/lib/studio/site-actions'
-import { RecommendationCard } from './recommendation-card'
-import { StudioChangeTable } from './change-table'
+import { RecommendationCard } from '@/app/(main)/admin/studio/recommendation-card'
+import { StudioChangeTable } from '@/app/(main)/admin/studio/change-table'
 
-export const dynamic = 'force-dynamic'
-
-// AI Intelligence Studio — the QUEUE/INDEX template (ADR-233 §3.5/§3.3). A ranked spine
-// of AI recommendations, each exposing its evidence and a propose-then-confirm
-// accept/apply inline, over an index of the governed change log. Header + the AI read on
-// the canvas; the recommendations and the change table live in white tiles.
+// The "Studio" tab of the consolidated Vera & AI workspace (ADR-265) — formerly
+// /admin/studio. The AI Intelligence Studio: ranked recommendations (propose-then-confirm
+// inline apply) over the governed change log. The RecommendationCard / StudioChangeTable
+// components + applyStudioAction / revertStudioChange actions are reused unchanged. Gate:
+// admin OR janitor (the operators allowed to apply changes), re-asserted here.
 
 interface ChangeRow {
   id: string
@@ -36,19 +35,12 @@ async function recentChanges(): Promise<ChangeRow[]> {
   return (data ?? []) as unknown as ChangeRow[]
 }
 
-export default async function StudioPage() {
-  // Admin OR Janitor (community 'admin' floor) — the operators allowed to apply changes.
+export async function StudioTab() {
   await requireAdmin('admin')
-
   const [read, changes] = await Promise.all([getStudioRead(), recentChanges()])
 
   return (
-    <AdminTemplate
-      title="AI Intelligence Studio"
-      icon={Lightbulb}
-      eyebrow="Operations"
-      description="What the platform's behavior, support, and help signals say to change, ranked, with evidence. Applyable fixes are one click and fully reversible."
-    >
+    <>
       {/* The read — Claude narrates the summary when AI is on, else a deterministic line. */}
       <AdminSection>
         <Banner
@@ -102,6 +94,6 @@ export default async function StudioPage() {
           />
         )}
       </AdminSection>
-    </AdminTemplate>
+    </>
   )
 }

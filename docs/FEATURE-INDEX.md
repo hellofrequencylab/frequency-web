@@ -113,7 +113,7 @@
 | **Moderation** | `/admin/moderation` | Content/member moderation | — |
 | **Structure** | `/admin/hubs` · `/admin/circles` · `/admin/events` | Manage the community tree & entities | — |
 | **Insights** | `/admin/insights` (tabs: read · engagement · outcomes · intel · expansion · finances) | First-party analytics, consolidated into one suite (ADR-263) | ENGAGEMENT-ARCHITECTURE · ANALYTICS |
-| **Vera admin** | `/admin/vera` | Tune Vera's voice + induction copy; the AI control room | AI-VERA · AI-CONTROLS |
+| **Vera admin** | `/admin/vera-ai` (tabs: vera · help-gaps · ai · studio) | Tune Vera's voice + induction copy; the AI control room, consolidated (ADR-265) | AI-VERA · AI-CONTROLS |
 | **Members admin** | `/admin/members` | Member operations | — |
 | **Segments** | `/admin/segments` | Cohort segmentation (marketing tags) | — |
 | **Demo / beta content** | toggle | Seeded demo content that recedes as real members join | DEMO-SYSTEM |
