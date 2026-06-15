@@ -161,7 +161,7 @@ export async function AdminInfoRail({
       <section className="rounded-2xl border border-border bg-surface p-2">
         <p className="px-3 pb-1.5 pt-2 text-xs font-semibold uppercase tracking-wide text-muted">Live</p>
         <InfoStat label="Members" value={d.members.toLocaleString()} href="/admin/members" icon={Users} />
-        <InfoStat label="Active this week" value={d.wam} href="/admin/engagement" icon={Zap} />
+        <InfoStat label="Active this week" value={d.wam} href="/admin/insights?tab=engagement" icon={Zap} />
         <InfoStat label="Upcoming events" value={d.eventsAhead} href="/admin/events" icon={CalendarDays} />
       </section>
 

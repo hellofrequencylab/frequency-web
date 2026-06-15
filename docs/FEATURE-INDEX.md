@@ -112,7 +112,7 @@
 | **Roles & permissions** | `/admin/roles` | The NAV_AREAS permission grid (trust ladder × staff axis). Being reworked into three systems — Community / Partners / Admin — + a Free/Member/Supporter entitlement | ROLES |
 | **Moderation** | `/admin/moderation` | Content/member moderation | — |
 | **Structure** | `/admin/hubs` · `/admin/circles` · `/admin/events` | Manage the community tree & entities | — |
-| **Insights** | `/admin/engagement` · `/admin/insights` · `/admin/intel` | First-party engagement analytics | ENGAGEMENT-ARCHITECTURE · ANALYTICS |
+| **Insights** | `/admin/insights` (tabs: read · engagement · outcomes · intel · expansion · finances) | First-party analytics, consolidated into one suite (ADR-263) | ENGAGEMENT-ARCHITECTURE · ANALYTICS |
 | **Vera admin** | `/admin/vera` | Tune Vera's voice + induction copy; the AI control room | AI-VERA · AI-CONTROLS |
 | **Members admin** | `/admin/members` | Member operations | — |
 | **Segments** | `/admin/segments` | Cohort segmentation (marketing tags) | — |

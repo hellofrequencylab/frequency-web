@@ -1,12 +1,14 @@
-// The on-page PAGE settings spine — the page-level (not entity-level) settings an
-// operator can tune from the page itself (the staff-only "Page" group in the on-page
-// Settings panel, components/admin/page-settings/page-settings-module.tsx).
+// The on-page PAGE settings spine — the settings that tune THE INTERIOR of a page
+// (the view *within* the page container), surfaced on the page itself for staff (the
+// "Page" group in the on-page Settings panel, components/admin/page-settings/
+// page-settings-module.tsx).
 //
-// This is the page-scoped slice of the EMBEDDED-ADMIN spine (docs/EMBEDDED-ADMIN.md):
-// where the entity modules answer "what is THIS circle/event", these answer "how is
-// THIS PAGE framed, found, gated, and laid out". One ordered, memorable set; each
-// section declares whether it is wired LIVE or staged as the NEXT shift, so the panel
-// renders the whole intended shape without pretending a staged control works.
+// SCOPE — interior only. These adjust what shows *inside* the page and how it reads:
+// its sections/modules, its own interior right column, its meta, its visibility. They
+// deliberately DO NOT touch the app SHELL chrome (the global left nav + global right
+// rail + header). The shell rail is platform chrome, managed once in the back end
+// (/admin/page-layout, page_chrome_overrides), not per page here. So when a page calls
+// for a "right rail", it means the page's own interior column, never the shell rail.
 //
 // Pure + dependency-light so it is unit-tested (sections.test.ts) and safe to import
 // from a client component.
@@ -19,7 +21,7 @@ export type PageSettingStatus = 'live' | 'next'
 
 export interface PageSettingSection {
   /** Stable id; the panel switches its control on this. */
-  id: 'chrome' | 'seo' | 'status' | 'layout'
+  id: 'layout' | 'seo' | 'status'
   /** Operator-facing label. */
   label: string
   /** The spine "question" this setting answers (memorable, ordered). */
@@ -29,14 +31,15 @@ export interface PageSettingSection {
   status: PageSettingStatus
 }
 
-// Order is the spine order — same on every page, so operators learn it once.
+// Order is the spine order — same on every page, so operators learn it once. Every
+// section is INTERIOR (it tunes the page, never the shell).
 export const PAGE_SETTING_SECTIONS: readonly PageSettingSection[] = [
   {
-    id: 'chrome',
-    label: 'Right rail',
-    question: 'How is the page framed?',
-    hint: 'Pick the right rail this page shows: the community rail, an in-body scope rail, or none for full width.',
-    status: 'live',
+    id: 'layout',
+    label: 'Layout',
+    question: 'What shows inside the page?',
+    hint: "Choose the sections and modules inside the page, their order, and the page's own interior right column. Tunes the page, never the app shell. Activates next.",
+    status: 'next',
   },
   {
     id: 'seo',
@@ -52,19 +55,12 @@ export const PAGE_SETTING_SECTIONS: readonly PageSettingSection[] = [
     hint: 'Set draft or published and the lowest role that can reach the page. Activates next.',
     status: 'next',
   },
-  {
-    id: 'layout',
-    label: 'Layout',
-    question: 'What shows on the page?',
-    hint: 'Choose which modules show on the page and their order. Activates next.',
-    status: 'next',
-  },
 ] as const
 
 /** Who may open the on-page "Page" settings group: the STAFF web_role axis (ADR-208) —
  *  Site Admin or Executive Admin. This is the codebase's meaning of "admin and above",
  *  independent of the community trust ladder (host/guide/mentor). UX gate only; every
- *  underlying server action re-checks (requireAdmin('admin')). */
+ *  underlying server action re-checks. */
 export function canManagePageSettings(webRole: WebRole | null | undefined): boolean {
   return isStaff(webRole)
 }

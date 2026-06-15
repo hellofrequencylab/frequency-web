@@ -82,7 +82,7 @@ function questModuleFor(pathname: string) {
 // page — fed by PageAdminProvider (no per-template prop threading). Self-hides when
 // the viewer isn't an operator or the page has nothing to administer.
 export function PageAdminBar() {
-  const { role, staffRole, webRole, chromeOverride } = usePageAdmin()
+  const { role, staffRole, webRole } = usePageAdmin()
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
@@ -200,7 +200,7 @@ export function PageAdminBar() {
             {/* Page-level settings (chrome / SEO / status / layout), staff-only. A
                 hairline sets it apart from any entity admin / share kit above it. */}
             {isOperator && (hasBottomRow || shareable) && <hr className="border-border" />}
-            {isOperator && <PageSettingsModule pathname={pathname} chromeOverride={chromeOverride} />}
+            {isOperator && <PageSettingsModule />}
           </div>
         </div>
       </div>

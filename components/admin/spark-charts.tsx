@@ -2,7 +2,7 @@
 // Server-friendly (no hooks, no client JS, no chart library): each chart is a
 // single inline SVG styled with semantic Tailwind tokens (PRESENTATION.md — no
 // hardcoded hex). Built for at-a-glance optics, not analysis — the deep
-// dashboards (/admin/engagement, /admin/intel) own the drill-downs.
+// dashboards (the /admin/insights suite) own the drill-downs.
 
 const W = 100 // viewBox width — charts scale to their container
 

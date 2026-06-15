@@ -423,22 +423,27 @@ Hubs · Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** the 
 > not crammed into the sidebar — so that earlier "embed vs deep-link" question is resolved by the
 > suite model.
 >
-> ✅ **Page-level settings on the page (ADR-261, shift 1).** Page-GLOBALS now live on the page
-> too, not just entity settings: a staff-only **"Page"** group in `PageAdminBar` (gated on the
-> `web_role` admin+ axis, `lib/page-settings/sections.ts` `canManagePageSettings`) renders the
-> page-settings spine — **Chrome · SEO · Status · Layout** — on every templated page. **Chrome is
-> live** (it reuses `RouteChromeRow` + the `page_chrome_overrides` store, so a staffer reframes the
-> page's rail in place); chrome management relaxed janitor → admin+. SEO/Status/Layout show as
-> honest **"Next"** rows, each activated as its own shift (their backing isn't built yet — see below).
+> ✅ **Page-level settings on the page (ADR-261 → corrected by ADR-262).** A staff-only **"Page"**
+> group in `PageAdminBar` (gated on the `web_role` admin+ axis, `lib/page-settings/sections.ts`
+> `canManagePageSettings`) renders on every templated page. It is **interior-only**: it tunes the view
+> *within* the page (`Layout · SEO · Status`) and never the app-shell chrome. The shell right rail is a
+> platform concern with one home, the back-end `/admin/page-layout` (`page_chrome_overrides`); ADR-261's
+> on-page shell-rail control was the wrong layer and was pulled. The interior sections are staged "Next"
+> until their engines land (see below).
 >
-> ⏳ **Remaining (polish, non-blocking):** ① the inline **tuning** layer — the **Layout /
-> page-template** editor + the **Vera-tone** tuner (still "Soon" in the console); ② the rest of the
-> on-page page-globals — **SEO** (a unified per-route store + per-route `generateMetadata`),
-> **Status/visibility** (draft-gating; no middleware today), **Layout** (the `WidgetSlot` engine),
-> plus a per-page **Stats** read; ③ the server-composed **`@admin`
-> slot** (move the page-global modules off the client on-open fetch); ④ optionally align the
-> left-rail "Manage" labels to the suite names. The `/admin/*` routes now *are* the suite pages
-> (Layer 2) — they no longer retire, they're the management layer.
+> ✅ **One editable page Library (ADR-262).** `/pages` is grown into the single page library: an
+> **In-app pages** section (`MANAGED_ROUTES`, Member + Focus areas) opens the real page with edit mode
+> on (`?edit=1`) — "the library that pulls up the actual page with edit capabilities". Relaxed janitor →
+> **admin+**; the marketing + splash editors stay janitor-only (hidden for non-janitor admins, no
+> dead-ends). This Library is the **anchor for condensing `/admin`**: as a surface becomes reachable +
+> editable on its page, its bespoke admin route can be merged or retired (ongoing, non-destructive).
+>
+> ⏳ **Remaining (polish, non-blocking):** ① the interior **Layout** engine (the `WidgetSlot` engine
+> from PAGE-FRAMEWORK §4) — the page-template / interior-rail editor; ② the rest of the on-page
+> page-globals — **SEO** (a unified per-route store + per-route `generateMetadata`) and
+> **Status/visibility** (draft-gating; no middleware today), plus a per-page **Stats** read; ③ the
+> server-composed **`@admin` slot** (move the page-global modules off the client on-open fetch);
+> ④ **condense `/admin`** — merge/retire the bespoke admin routes the Library + on-page editing now cover.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`

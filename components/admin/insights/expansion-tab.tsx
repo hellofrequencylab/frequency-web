@@ -1,6 +1,5 @@
-import { Radar, MapPin, Users, Building2, Sparkles } from 'lucide-react'
-import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
+import { MapPin, Users, Building2, Sparkles } from 'lucide-react'
+import { AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { StatusChip } from '@/components/admin/status'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
@@ -13,13 +12,9 @@ import {
   type ExpansionStage,
 } from '@/lib/analytics/density'
 
-// Janitor-only: the Density / demand read-model (ADR-151, PLATFORM-VISION §6).
-// The expansion decision-engine — where local community density is crossing the
-// threshold that justifies a Lab (a physical third space). Deterministic + dark-
-// safe: the SQL spine supplies facts, lib/analytics/density scores them, this page
-// only renders. Analytics (ADR-233 §3): StatCard KPIs + a DataTable; the ad-hoc
-// STAGE glyph dict retires into the tokenized StatusChip vocabulary.
-export const dynamic = 'force-dynamic'
+// The "Expansion" tab of the consolidated Insights suite (ADR-263) — formerly /admin/expansion.
+// The Density / demand read-model (ADR-151, PLATFORM-VISION §6): where local community density is
+// crossing the threshold that justifies a Lab (a physical third space). Deterministic + dark-safe.
 
 // The readiness ladder maps onto the shared StatusChip tones (the PRESENTATION
 // status legend): Ready = success, Growing = warning, Seed = neutral.
@@ -41,8 +36,7 @@ function StageChips({ p }: { p: DensityPlace }) {
   )
 }
 
-export default async function ExpansionPage() {
-  await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
+export async function ExpansionTab() {
   const signal = await getDensitySignal()
   const { totals, places, ready } = signal
   const next = places.find((p) => p.stage !== 'ready') // closest-to-ready when none are ready
@@ -61,13 +55,7 @@ export default async function ExpansionPage() {
   ]
 
   return (
-    <AdminTemplate
-      title="Expansion signal"
-      icon={Radar}
-      eyebrow="Insights"
-      description="Where local community density is crossing the threshold that justifies a Lab (a physical third space). Deterministic signal off the place-tree; the same data is the grant-funder and growth story."
-      width="wide"
-    >
+    <>
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard label="Cities with signal" value={totals.cities} icon={MapPin} />
@@ -150,6 +138,6 @@ export default async function ExpansionPage() {
           circles are filling <em>and</em> the population is there to fill a third space.
         </p>
       </AdminSection>
-    </AdminTemplate>
+    </>
   )
 }
