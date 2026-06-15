@@ -36,6 +36,33 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
 6. **Seasonal Journey authoring surface** *(§Q)* — tracks are seeded; no editor yet. (M)
 7. **Community library moderation + promote-to-tracked plan** *(§Q Phase 5)*. (M)
 
+**P3 — Content + on-page page settings (2026-06-15, owner ask)**
+8. **Content Studio page (G/L)** — one surface to *add and edit all content* (practices,
+   Journeys, challenges, seasons, posts, marketing pages…), evolving `/admin/content` from a
+   curation dashboard into a full create/edit hub. Base it on the Studio shell
+   (`components/studio/*`, ADR-142) so authoring feels identical everywhere.
+9. **Activate the three on-page Page-settings functions** — today staged "Next" rows in the
+   on-page Page panel (`components/admin/page-settings/page-settings-module.tsx`,
+   `lib/page-settings/sections.ts`). Make them work, one at a time on a shared `page_settings`
+   per-route store:
+   - **SEO & meta (M)** — store + `proxy.ts` (Next 16 renamed `middleware`→`proxy`) injecting
+     `x-pathname` + a `(main)` layout `generateMetadata`. Honest caveat: member routes are
+     auth-gated, so the real payoff is per-route browser tab titles, not crawlable SEO (public
+     SEO already lives in the Puck editor). ⏳ in progress.
+   - **Status & visibility (M)** — per-route draft/published + lowest role to reach it; enforce
+     **fail-safe** (default published, never lock out staff). Overlaps `/admin/menu` role gating —
+     reconcile, don't duplicate.
+   - **Layout (L)** — the `WidgetSlot` module-assignment engine (PAGE-FRAMEWORK §4): choose the
+     sections/modules + order + the page's interior right column. The big one.
+   - **Content page strip-down first (S→M)** — `/admin/content` is currently a mess; strip it to
+     its primary functions, then build the "add/edit all content" Studio out from there.
+10. **Leadership section (rename `/lead` → "Leadership") (M→L, owner ask 2026-06-15)** — the
+    community-leader surface for volunteer **Crew · Hosts · Guides · Mentors** to manage *their*
+    community (distinct from the staff `/admin` workspace; `requireLeadFloor`, host+). Build a
+    dashboard: the **Circles they host**, the **networks under them** (hubs/nexuses they steward),
+    and **Crew tasks** (internal volunteer tasks that support their circles). **Move** Leader
+    Training (`/training`) and Crew Tasks under Leadership. Rename the nav label Lead → Leadership.
+
 ## A. Security and hardening
 - D economy-column lock trigger, map XSS escape, open-redirect fix, gem-farm fix,
   private-reply authz, shared input sanitizer, baseline security headers.
