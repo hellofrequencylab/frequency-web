@@ -254,13 +254,18 @@ export async function setEventRsvpDepth(
   if (!profileId) return
   if (!RSVP_DEPTH_STATUSES.includes(args.status)) return
 
+  // A guest sets only their own RSVP and may request 'pending' (on approval-required events)
+  // or 'none'. 'approved' is host-only (approveEventRsvp); never trust the client with it or a
+  // guest self-approves past the queue (ADR-274).
+  const approvalStatus = args.approvalStatus === 'approved' ? 'pending' : args.approvalStatus
+
   await setRsvp({
     eventId,
     profileId,
     status: args.status,
     plusOneNames: args.plusOneNames,
     declineReason: args.declineReason,
-    approvalStatus: args.approvalStatus,
+    approvalStatus,
   })
 
   revalidateEvent(slug)

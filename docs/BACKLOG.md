@@ -1,5 +1,11 @@
 # Master backlog
 
+> ⚠️ **Stale — superseded (2026-06-15).** This list trails reality (many §A–§F items are
+> already shipped). The current master list is **[`BUILD-LIST.md`](BUILD-LIST.md)**, and the
+> reconciled, audited view (docs-vs-code, with grades + valuation) is
+> **[`AUDIT-2026-06-15.md`](AUDIT-2026-06-15.md) §9**. Treat those two as canonical; keep this
+> file only for historical context until it is retired.
+
 The single flat, actionable list of outstanding work, spanning engineering
 hygiene, the audit findings, the AI fabric/webmaster, and the product verticals.
 

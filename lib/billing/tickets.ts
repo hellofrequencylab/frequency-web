@@ -360,7 +360,7 @@ interface TicketForRefundRow {
  *
  *  Authorization (the caller hosts/manages this event) is enforced by the server
  *  action that calls this — see app/(main)/events/[slug]/ticket-actions.ts. */
-export async function refundTicket(ticketId: string): Promise<RefundResult> {
+export async function refundTicket(ticketId: string, eventId: string): Promise<RefundResult> {
   if (!(await payoutsLive())) return { error: 'Ticketing isn’t turned on yet.' }
   if (!stripe) return { error: 'Ticketing isn’t turned on yet.' }
 
@@ -368,6 +368,9 @@ export async function refundTicket(ticketId: string): Promise<RefundResult> {
     .from('event_tickets')
     .select('id, event_id, status, stripe_payment_intent_id, amount_cents')
     .eq('id', ticketId)
+    // Bind the ticket to the event the caller is authorized for — without this a host could
+    // refund any ticket on any event by passing their own eventId past the gate (ADR-274).
+    .eq('event_id', eventId)
     .maybeSingle()
   const ticket = data as TicketForRefundRow | null
   if (!ticket) return { error: 'Ticket not found.' }

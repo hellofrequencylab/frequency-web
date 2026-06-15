@@ -289,7 +289,7 @@ async function refundAndNotifyForCancelledEvent(eventId: string): Promise<void> 
 
   for (const ticket of tickets) {
     try {
-      const r = await refundTicket(ticket.id)
+      const r = await refundTicket(ticket.id, eventId)
       if (r.error) {
         failures.push({ ticketId: ticket.id, error: r.error })
         console.error('[cancelEvent] refund failed', { eventId, ticketId: ticket.id, error: r.error })

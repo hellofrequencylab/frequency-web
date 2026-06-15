@@ -9,6 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { embedText } from '@/lib/ai/embed'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { escapeLike } from '@/lib/search-sanitize'
 
 const FEATURE = 'room-search'
 
@@ -36,7 +37,7 @@ async function substringSearch(roomId: string, q: string, limit: number): Promis
     .from('room_messages')
     .select('id, author_id, body, created_at')
     .eq('room_id', roomId)
-    .ilike('body', `%${q}%`)
+    .ilike('body', `%${escapeLike(q)}%`)
     .order('created_at', { ascending: false })
     .limit(limit)
   return ((data ?? []) as Omit<RoomSearchHit, 'similarity'>[]).map((m) => ({ ...m, similarity: 0 }))

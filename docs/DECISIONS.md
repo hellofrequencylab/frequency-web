@@ -6820,3 +6820,18 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 **Consequences:** The rail is no longer bare on any route — sparse data degrades to the always-on pulse anchor rather than to nothing. Adding a panel stays one entry in the route map + one in the registry (no change to that contract). The standing panels (streak cockpit, stats dock) are unchanged.
 
+## ADR-274: Security hardening pass (confused-deputy IDORs, search injection, QR SSRF)
+
+**Status:** Accepted (2026-06-15) — fixes from the full-site security audit (`docs/AUDIT-2026-06-15.md`). No migration; no behavior change for legitimate use. Code is the source of truth.
+
+**Context:** A multi-agent security sweep found a small cluster of real vulnerabilities against an otherwise strong posture (CI `check:authz` gate, HMAC-verified webhooks, bound RPC params, no raw SQL, SSRF-safe geocoders/wallet/OG, validated avatars). The common root cause of the worst two was the *confused deputy*: a server action authorizes a **caller-supplied `eventId`** but then mutates a different resource id without binding the two.
+
+**Decision — fixes shipped:**
+- **🔴 Critical — cross-event refund IDOR.** `refundTicket(ticketId)` selected the ticket by id only while `refundTicketAction` gated on a caller-supplied `eventId`, so a host could refund *any* ticket on *any* event (real money: reverses the transfer + platform fee). Fixed by threading `eventId` into `refundTicket` and scoping the lookup `.eq('event_id', eventId)` (both callers — the host action and the admin cancel loop — pass the authorized event). `lib/billing/tickets.ts`, `app/(main)/events/[slug]/ticket-actions.ts`, `app/(main)/admin/events/actions.ts`.
+- **🟠 High — cross-event question IDOR.** `updateQuestion`/`deleteQuestion` mutated by `questionId` only; a host could edit/delete another event's questions (delete cascades guest answers). Fixed by adding `eventId` and scoping `.eq('event_id', eventId)`. `lib/events/questions.ts`, `app/(main)/events/[slug]/manage/actions.ts`.
+- **🟠 High — search filter injection.** The full-search page interpolated raw `?q=` into PostgREST `.or()`/`.ilike()` on the RLS-bypassing service-role client (its API twin already sanitized). Centralized the sanitizer in `lib/search-sanitize.ts` (`sanitizeOrTerm` strips `(),` + escapes LIKE wildcards; `escapeLike` for single-column patterns) and applied it on the search page + the room-search and support-ticket `.ilike()` paths. `app/(main)/search/page.tsx`, `lib/ai/room-search.ts`, `lib/support/store.ts`.
+- **🟠 High (blind) — QR logo SSRF.** `isSafeLogoSrc` validated the scheme only, and the logo is fetched server-side when rendering a code PNG; a member could point it at `169.254.169.254`/`localhost`/private IPs. Added a host blocklist (loopback, RFC-1918, link-local incl. cloud metadata, CGNAT, IPv6 ULA/link-local, internal TLDs). `lib/qr/style.ts`. (Fetch-time IP pinning vs DNS rebinding is a noted follow-up.)
+- **🟡 Medium — RSVP self-approval.** A guest could pass `approvalStatus: 'approved'` to bypass the host approval queue. The guest action now clamps `'approved' → 'pending'` (approval stays host-only via `approveEventRsvp`). `app/(main)/events/[slug]/social-actions.ts`.
+
+**Consequences:** The money IDOR (the most serious, irreversible-transfer bug) is closed, along with the cross-tenant tamper and the two injection/SSRF classes. New unit tests cover the sanitizer and the SSRF host block. **Follow-up (tracked in the audit + BUILD-LIST):** the `check:authz` CI guard only scans `app/` server actions, not `lib/` mutation helpers — extending it (or adding an integration test harness for RLS/RPC/authz) is the systemic fix that would have caught the confused-deputy class.
+

@@ -127,10 +127,38 @@ function color(value: unknown, fallback: string): string {
   return typeof value === 'string' && HEX.test(value.trim()) ? value.trim() : fallback
 }
 
-/** A logo src is safe to inline only if it's an https URL or a data:image URL. */
+/** Block hosts that point at the server's own network — loopback, private/link-local IP
+ *  ranges, cloud metadata (169.254.169.254), and internal TLDs — so a stored logo URL can't
+ *  be used for server-side SSRF when it's fetched + inlined (lib/qr/raster.ts, ADR-274). */
+function isBlockedLogoHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) return true
+  // IPv6 loopback / unspecified / unique-local (fc00::/7) / link-local (fe80::/10)
+  if (h === '::1' || h === '::' || h.startsWith('fc') || h.startsWith('fd') || h.startsWith('fe8') || h.startsWith('fe9') || h.startsWith('fea') || h.startsWith('feb')) return true
+  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  if (m) {
+    const a = Number(m[1])
+    const b = Number(m[2])
+    if (a === 0 || a === 10 || a === 127) return true
+    if (a === 169 && b === 254) return true // link-local incl. cloud metadata 169.254.169.254
+    if (a === 172 && b >= 16 && b <= 31) return true
+    if (a === 192 && b === 168) return true
+    if (a === 100 && b >= 64 && b <= 127) return true // CGNAT
+  }
+  return false
+}
+
+/** A logo src is safe to inline only if it's a data:image URL, or an https URL whose host is
+ *  not an internal/private/metadata address (the value is fetched server-side, ADR-274). */
 export function isSafeLogoSrc(src: string): boolean {
   const s = src.trim()
-  return /^https:\/\//i.test(s) || /^data:image\/(png|jpeg|jpg|gif|svg\+xml|webp);/i.test(s)
+  if (/^data:image\/(png|jpeg|jpg|gif|svg\+xml|webp);/i.test(s)) return true
+  if (!/^https:\/\//i.test(s)) return false
+  try {
+    return !isBlockedLogoHost(new URL(s).hostname)
+  } catch {
+    return false
+  }
 }
 
 /** Coerce arbitrary stored/edited JSON into a valid, safe QrStyle (defaults fill

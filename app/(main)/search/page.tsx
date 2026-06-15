@@ -1,5 +1,6 @@
 import { Search, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sanitizeOrTerm } from '@/lib/search-sanitize'
 import { createClient } from '@/lib/supabase/server'
 import { IndexTemplate } from '@/components/templates'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
@@ -78,6 +79,9 @@ export default async function SearchPage({
   const { q = '', tab: rawTab = 'people' } = await searchParams
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : 'people'
   const query = q.trim()
+  // Sanitize before interpolating into PostgREST filters — this runs on the RLS-bypassing
+  // service-role client, so an unsanitized `?q=` could inject extra `or()` conditions (ADR-274).
+  const safe = sanitizeOrTerm(query)
 
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -99,12 +103,12 @@ export default async function SearchPage({
   let posts: PostRow[] = []
   let events: EventRow[] = []
 
-  if (query.length >= 2) {
+  if (safe.length >= 2) {
     if (tab === 'people') {
       const { data } = await admin
         .from('profiles')
         .select('id, display_name, handle, avatar_url, community_role, is_demo')
-        .or(`display_name.ilike.%${query}%,handle.ilike.%${query}%`)
+        .or(`display_name.ilike.%${safe}%,handle.ilike.%${safe}%`)
         .eq('is_active', true)
         .order('display_name')
         .limit(24)
@@ -118,7 +122,7 @@ export default async function SearchPage({
           `id, body, created_at, is_demo,
            author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
         )
-        .ilike('body', `%${query}%`)
+        .ilike('body', `%${safe}%`)
         .is('hidden_at', null)
         .order('created_at', { ascending: false })
         .limit(20)
@@ -132,7 +136,7 @@ export default async function SearchPage({
           `id, title, slug, starts_at, location, is_cancelled, is_demo,
            host:profiles!host_id ( display_name, handle )`
         )
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+        .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
         .order('starts_at', { ascending: true })
         .limit(20)
       events = (data ?? []) as unknown as EventRow[]
