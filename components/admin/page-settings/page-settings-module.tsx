@@ -2,6 +2,7 @@
 
 import { LayoutGrid, Search, Eye, type LucideIcon } from 'lucide-react'
 import { PAGE_SETTING_SECTIONS, type PageSettingSection } from '@/lib/page-settings/sections'
+import { LayoutEditor } from './layout-editor'
 import { SeoEditor } from './seo-editor'
 import { StatusEditor } from './status-editor'
 
@@ -36,6 +37,7 @@ export function PageSettingsModule() {
                   <span className="text-sm font-semibold text-text">{section.label}</span>
                 </div>
                 <p className="mb-2 text-xs text-muted">{section.hint}</p>
+                {section.id === 'layout' && <LayoutEditor />}
                 {section.id === 'seo' && <SeoEditor />}
                 {section.id === 'status' && <StatusEditor />}
               </div>

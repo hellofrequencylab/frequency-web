@@ -107,6 +107,27 @@ Context header band + context tabs + body + **scope-aware** right rail.
 This is the answer to *"add different functions depending on the page… like
 widgets that show up when assigned… without rebuilding every page."*
 
+> ✅ **Shipped — the per-route module-assignment engine (ADR-270, 2026-06-15).** The
+> first concrete slice of this section is live: a page's **interior** modules are
+> assigned per route and tuned from the on-page Layout editor. The sketch below (the
+> scope cascade, per-role gates, `<WidgetSlot>`) is the wider target this builds toward.
+> What exists today:
+>
+> | Concern | Where | Note |
+> |---|---|---|
+> | **Module catalog** (metadata only) | [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) | `LAYOUT_MODULES` / `LAYOUT_MODULE_IDS` / `moduleMeta` — no React, so the editor / actions / resolver never import RSCs |
+> | **Component binding** | [`lib/widgets/registry.tsx`](../lib/widgets/registry.tsx) | `componentFor(id)` binds each id to its self-fetching RSC ([`components/widgets/`](../components/widgets)) |
+> | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | merges the stored `{order,hidden}` over the registry default order |
+> | **Renderer** | [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) | `<PageModules route>` — each module in its own `<Suspense>` (§5), `null` when empty |
+> | **Storage** | `page_settings.layout` jsonb `{order,hidden}` | reused from the page-settings store (no new migration) |
+> | **Editor** | [`components/admin/page-settings/layout-editor.tsx`](../components/admin/page-settings/layout-editor.tsx) | the on-page Layout settings row (toggle + reorder), staff-gated; section is `live` in [`lib/page-settings/sections.ts`](../lib/page-settings/sections.ts) |
+>
+> **Add a module:** one meta entry in `modules.ts` + bind its component in `registry.tsx`.
+> Nothing else. **Assign per route:** open the page's on-page **Layout** settings (order +
+> visibility, stored per route); or render `<PageModules route="…" />` on a page (piloted on
+> `/lead`). This is the page's interior column, **not** the app shell rail (that stays
+> operator-managed in `/admin/page-layout` / `page_chrome_overrides`, ADR-259/260).
+
 ### 4.1 Anatomy of a widget
 A widget is a **self-contained module** colocated with its data:
 

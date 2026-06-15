@@ -38,8 +38,8 @@ export const PAGE_SETTING_SECTIONS: readonly PageSettingSection[] = [
     id: 'layout',
     label: 'Layout',
     question: 'What shows inside the page?',
-    hint: "Choose the sections and modules inside the page, their order, and the page's own interior right column. Tunes the page, never the app shell. Activates next.",
-    status: 'next',
+    hint: 'Choose which modules show inside the page and their order. Tunes the page, never the app shell.',
+    status: 'live',
   },
   {
     id: 'seo',
