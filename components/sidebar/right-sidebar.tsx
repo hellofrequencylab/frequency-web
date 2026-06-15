@@ -6,7 +6,7 @@ import { GameStatsDockClient, GameStatsPanel, type DockData } from '@/components
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
-import { pageRailPanels } from '@/lib/layout/rail-panels'
+import { pageRailPanels, isQuestSurface } from '@/lib/layout/rail-panels'
 import { ControlCenterPanel, PanelSkeleton } from '@/components/sidebar/rail-panels'
 import { RAIL_PANELS } from '@/components/sidebar/rail-registry'
 
@@ -111,8 +111,7 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
 }
 
 // Render the page panels for the current route (each its own Suspense boundary).
-async function PagePanels({ profileId, role }: RightSidebarProps) {
-  const pathname = (await headers()).get('x-pathname') ?? ''
+async function PagePanels({ profileId, role, pathname }: RightSidebarProps & { pathname: string }) {
   const keys = pageRailPanels(pathname)
   const isCrew = ['crew', 'host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)
 
@@ -147,23 +146,35 @@ async function PagePanels({ profileId, role }: RightSidebarProps) {
 
 // ── Right sidebar — standing panels (site-wide) + page panels (contextual) ─────
 export default async function RightSidebar({ profileId, role }: RightSidebarProps) {
+  const pathname = (await headers()).get('x-pathname') ?? ''
+  // On The Quest surfaces (the /crew tree) the PAGE already owns the member's standing —
+  // the hub's StandingHero/SeasonMap + the Journey pages — so the rail SUPPRESSES its two
+  // standing panels here (the "Your Quest" cockpit + the bottom GameStatsDock) to avoid
+  // showing the same zaps/gems/streak/rank twice or thrice in one viewport (UI audit). The
+  // route decision lives in the rail resolver (isQuestSurface); the rail just reads the flag.
+  // Off-Quest (feed, channels, …) the page shows no standing, so the rail keeps it.
+  const onQuest = isQuestSurface(pathname)
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1 space-y-4 pt-1 pb-6">
         {/* Site-wide demo notice — pinned ABOVE the Quest box when demo content is
             present (it self-hides otherwise). */}
         <DemoNotice />
-        {/* Quest control center: next onboarding step (+ gems nudge), rank, streak. */}
-        <Suspense fallback={<PanelSkeleton />}>
-          <ControlCenterPanel profileId={profileId} />
-        </Suspense>
+        {/* Quest control center: rank/standing + (when live) the next onboarding step.
+            Hidden on Quest surfaces, where the page already owns this standing. */}
+        {!onQuest && (
+          <Suspense fallback={<PanelSkeleton />}>
+            <ControlCenterPanel profileId={profileId} />
+          </Suspense>
+        )}
         {/* Page panels — stats specific to this route. */}
         <Suspense fallback={<PanelSkeleton />}>
-          <PagePanels profileId={profileId} role={role} />
+          <PagePanels profileId={profileId} role={role} pathname={pathname} />
         </Suspense>
       </div>
-      {/* Standing panel — the player's progress cockpit, pinned to the bottom. */}
-      <GameStatsDock profileId={profileId} />
+      {/* Standing panel — the player's progress cockpit, pinned to the bottom.
+          Hidden on Quest surfaces (the page owns standing there). */}
+      {!onQuest && <GameStatsDock profileId={profileId} />}
     </div>
   )
 }
