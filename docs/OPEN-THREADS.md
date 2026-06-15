@@ -32,7 +32,7 @@
 | B6 | QR-logo SSRF fetch-time IP pinning | S | **✅ done** — `inlineLogo` now resolves the host (DNS) and rejects any private/loopback/metadata IP before fetching, closing the DNS-rebind residual (the ADR-274 literal-IP block only covered the hostname). Shared `isPrivateIp` helper; unit-tested. Residual TOCTOU noted (acceptable for a blind, capped, image-only fetch). |
 | B7 | CSP enforce + nonces on inline theme/JSON-LD | M | Baseline CSP is report-only today. |
 | B8 | Extend `check:authz` to `lib/` mutation helpers | M | Complementary to the ADR-275 runtime scoping tests. |
-| B9 | SEO: `/discover/practices`, dynamic OG on pillars, seeker-track articles | M | Audit P2/P3 growth surfaces. |
+| B9 | SEO growth surfaces | M | **`/discover/practices` ✅ done (ADR-279)** — public directory + per-practice `HowTo` detail pages + sitemap, so the practice library is crawlable. Remaining: practice slugs, browse-by-Pillar, dynamic OG on marketing pillars, the seeker-track article cluster. |
 
 ## C. ⏳ Seams to activate — built, empty in prod (need flows + a little owner)
 

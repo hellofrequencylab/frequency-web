@@ -6880,3 +6880,13 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 **Consequences:** Adding a vertical's rail is now a one-line descriptor edit, not a core edit — the nav / admin / capabilities / **rail** seams are all registry-composed. **Scope note (remaining):** a vertical that needs a *brand-new* rail PANEL still registers its component in `rail-registry.tsx` (the component binding isn't registry-composed yet — that needs `RailPanelDef` lifted into a lib so the descriptor can carry it without a components→lib import). The standing panels (streak cockpit, stats dock) and the `DEFAULT_PANELS` fallback are unchanged.
 
+## ADR-279: Public practice-library discover surface (`/discover/practices`)
+
+**Status:** Accepted (2026-06-15) — the public `/discover/practices` SEO/growth gap from the audit (`AUDIT-2026-06-15.md`). No migration (the `practices` table is already `public read using (true)`). Code: `lib/practices.ts` (`getPublicPractice`), `lib/jsonld.ts` (`practiceSchema`/`practiceListSchema`), `app/discover/practices/{page.tsx,[id]/page.tsx}`, `app/sitemap.ts`.
+
+**Context:** Circles, Events, Topics, Journeys, and (ADR-276) Partners all have public, crawlable `/discover` pages, but the **practice library** — the platform's core "the thing a member actually does" content — was only reachable behind auth (`/practices`). Each practice is literally a "how to do X", which is exactly the answer-engine target type the voice canon calls for (CONTENT-VOICE §8b).
+
+**Decision:** A public directory (`/discover/practices`, ISR) listing the public library via the existing `listPublicPractices`, and a per-practice detail page (`/discover/practices/[id]`, by id — practices have no slug) via a new `getPublicPractice` reader (public-read `practices` table + sub-category + tags). The detail page emits **`HowTo`** structured data (one step from the practice body) + `BreadcrumbList`; the directory emits an `ItemList`. Practice ids are added to the sitemap. Mirrors the ADR-276 partner pattern (admin-client reader exposing only public columns; member-side `/practices` workspace unchanged).
+
+**Consequences:** The practice library is now crawlable and answer-engine-eligible — each practice a "how-to" page search/AI can surface, feeding the top of the funnel. **Follow-up:** practice slugs (prettier URLs than ids); filter/browse-by-Pillar on the public directory; richer `HowTo` steps when a practice carries structured tiers.
+
