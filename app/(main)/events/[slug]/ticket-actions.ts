@@ -53,7 +53,7 @@ export async function refundTicketAction(
   const caps = await getEventCapabilities(eventId)
   if (!caps.has('event.editSettings')) return fail('You can’t refund tickets for this event.')
 
-  const r = await refundTicket(ticketId)
+  const r = await refundTicket(ticketId, eventId)
   if (r.error) return fail(r.error)
 
   revalidatePath(`/events/${slug}`)

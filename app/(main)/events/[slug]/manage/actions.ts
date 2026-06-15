@@ -109,13 +109,13 @@ export async function updateEventQuestion(
   const options = parseOptions(formData.get('options') as string | null, type)
   const required = formData.get('required') === 'on'
 
-  await updateQuestion(questionId, { prompt, type, options, required })
+  await updateQuestion(questionId, eventId, { prompt, type, options, required })
   revalidateManage(slug)
 }
 
 export async function deleteEventQuestion(eventId: string, slug: string, questionId: string) {
   if (!(await authorizeManager(eventId))) return
-  await deleteQuestion(questionId)
+  await deleteQuestion(questionId, eventId)
   revalidateManage(slug)
 }
 

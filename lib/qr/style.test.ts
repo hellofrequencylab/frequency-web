@@ -52,6 +52,15 @@ describe('parseStyle', () => {
     expect(parseStyle({ logo: 'http://x.com/a.png' }).logo).toBeNull()
   })
 
+  it('blocks SSRF to internal / private / metadata hosts', () => {
+    expect(isSafeLogoSrc('https://169.254.169.254/latest/meta-data/')).toBe(false)
+    expect(isSafeLogoSrc('https://10.0.0.5/a.png')).toBe(false)
+    expect(isSafeLogoSrc('https://192.168.1.1/a.png')).toBe(false)
+    expect(isSafeLogoSrc('https://127.0.0.1/a.png')).toBe(false)
+    expect(isSafeLogoSrc('https://localhost/a.png')).toBe(false)
+    expect(parseStyle({ logo: 'https://169.254.169.254/x.png' }).logo).toBeNull()
+  })
+
   it('trims and caps the frame label', () => {
     expect(parseStyle({ frameLabel: '  Scan me  ' }).frameLabel).toBe('Scan me')
     expect(parseStyle({ frameLabel: 'x'.repeat(50) }).frameLabel).toHaveLength(28)

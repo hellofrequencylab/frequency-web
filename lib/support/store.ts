@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { escapeLike } from '@/lib/search-sanitize'
 import {
   type SupportTicket,
   type TicketWithThread,
@@ -217,7 +218,7 @@ export async function listTickets(filters: TicketFilters = {}): Promise<AdminTic
   else if (filters.status && filters.status !== 'all') q = q.eq('status', filters.status)
   if (filters.type) q = q.eq('type', filters.type)
   if (filters.assignedTo) q = q.eq('assigned_to', filters.assignedTo)
-  if (filters.q?.trim()) q = q.ilike('subject', `%${filters.q.trim()}%`)
+  if (filters.q?.trim()) q = q.ilike('subject', `%${escapeLike(filters.q.trim())}%`)
 
   const { data } = await q
   const rows = ((data as TicketRow[] | null) ?? []).map(toTicket)

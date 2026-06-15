@@ -113,6 +113,7 @@ export async function createQuestion(args: {
 /** Edit a question. Caller must already be authorized as host/cohost. */
 export async function updateQuestion(
   questionId: string,
+  eventId: string,
   patch: Partial<Pick<EventQuestion, 'prompt' | 'type' | 'options' | 'required' | 'position'>>,
 ): Promise<void> {
   const admin = untyped()
@@ -123,13 +124,15 @@ export async function updateQuestion(
   if (patch.required !== undefined) update.required = patch.required
   if (patch.position !== undefined) update.position = patch.position
   if (Object.keys(update).length === 0) return
-  await admin.from('event_questions').update(update).eq('id', questionId)
+  // Scope to the authorized event so a host can't edit another event's questions by id (ADR-274).
+  await admin.from('event_questions').update(update).eq('id', questionId).eq('event_id', eventId)
 }
 
 /** Remove a question (cascades its answers). Caller must be host/cohost. */
-export async function deleteQuestion(questionId: string): Promise<void> {
+export async function deleteQuestion(questionId: string, eventId: string): Promise<void> {
   const admin = untyped()
-  await admin.from('event_questions').delete().eq('id', questionId)
+  // Scope to the authorized event (prevents cross-event delete-by-id, cascading answers; ADR-274).
+  await admin.from('event_questions').delete().eq('id', questionId).eq('event_id', eventId)
 }
 
 /** Upsert the caller's own answer to a question (one per question+profile).
