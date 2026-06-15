@@ -24,7 +24,7 @@
 
 | # | Thread | Size | Note |
 |---|---|---|---|
-| B1 | Stream Home + `/discover` with `<Suspense>` | M | The one real perf miss (they block on Supabase before first byte). PAGE-FRAMEWORK §5. |
+| B1 | Stream Home + `/discover` with `<Suspense>` | M | **Home ✅ done** — the live-proof band (counts/events/posts) now streams in its own `<Suspense>` so `getLiveData` no longer blocks the hero's first byte. `/discover` deferred: it's `revalidate = 3600` (ISR), so its fetch is largely off the request path — benefit unclear, revisit if it goes dynamic. |
 | B2 | Wire `pnpm test:rls` into CI | M | A job that boots Postgres → applies migrations → `supabase test db` (ADR-275). Needs the Actions infra, but the workflow is in-repo. |
 | B3 | Vertical-registry rail (step 2) | L | Admin dock is registry-dispatched; the right rail is still hardcoded prefix-match (ADR-250 "sequence is law"). |
 | B4 | Link the public partner directory into Discover nav | S | Kept out of shared `DISCOVER_NAV` to avoid member-vs-public dual-surface; needs a public-only nav slot. |

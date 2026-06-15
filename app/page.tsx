@@ -28,9 +28,10 @@ import { resolvePageContent } from '@/lib/page-content'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { communityHref } from '@/lib/community-href'
 import { getJanitor } from '@/lib/page-editor/guard'
+import { Suspense } from 'react'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { getReferrer } from '@/lib/qr/referral'
-import type { LiveData, LiveEvent } from '@/components/marketing/blocks'
+import type { LiveEvent } from '@/components/marketing/blocks'
 
 // SEO title + description are operator-editable through the ADR-180 page-content
 // system (edited at /pages/home; the coded strings below are the fallback). The
@@ -124,26 +125,20 @@ export default async function RootPage({
   // `home` is intentionally not editable in the visual editor, so the coded
   // flagship splash is always the source of truth for `/` — no published draft
   // can shadow it.
-  const live = await getLiveData(supabase)
   // Personalize the splash when arriving via a scanned personal code: the /q
   // resolver dropped an fq_ref cookie, so we can name the inviter (research: a
   // generic splash discards the inviter's social proof, the strongest referral
   // lever). Read-only — the cookie is applied/cleared at signup.
   const referrer = await getReferrer()
-  return <Splash live={live} referrer={referrer} />
+  // The live-proof band (counts, events, posts) streams in its own <Suspense> inside Splash,
+  // so getLiveData never blocks the hero's first byte (PAGE-FRAMEWORK §5).
+  return <Splash referrer={referrer} />
 }
 
 // Splash narrative — Place → People → Path (ADR-078):
 //   the Lab leads as the emblem, community carries the "start anywhere" on-ramp,
 //   and the Quest closes the feature arc before the CTA.
-function Splash({ live, referrer }: { live: LiveData; referrer: { displayName: string; handle: string; avatarUrl: string | null } | null }) {
-  const posts = live.posts as PostPreviewRow[]
-  const postsCurated = live.postsCurated
-  const memberCount = live.memberCount
-  const circleCount = live.circleCount
-  const upcomingEvents = live.upcomingEvents
-  const hasProof = memberCount >= SOCIAL_PROOF_FLOOR
-
+function Splash({ referrer }: { referrer: { displayName: string; handle: string; avatarUrl: string | null } | null }) {
   return (
     <>
       <MarketingHeader overHero />
@@ -452,88 +447,11 @@ function Splash({ live, referrer }: { live: LiveData; referrer: { displayName: s
         <p>You don&apos;t have to perform. You just have to show up.</p>
       </ZigZag>
 
-      {/* ── It's real, and it's early (honest live proof) ──────────────────── */}
-      <section className="relative bg-slat px-6 py-24 sm:py-28 overflow-hidden">
-        <div className="light-strip absolute inset-x-0 top-0 z-10" />
-        <div className="amber-glow absolute inset-0 pointer-events-none" />
-        <div className="relative z-10 mx-auto max-w-3xl text-center">
-          <Reveal>
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-4">
-              Not a someday idea
-            </p>
-            <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">
-              It&apos;s already happening.
-            </h2>
-          </Reveal>
-          {hasProof ? (
-            <Reveal delay={100}>
-              <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
-                Real people, real Circles, real gatherings, taking root in {FOUNDING_PLACE} right now.
-              </p>
-              <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
-                <Stat value={memberCount} label="Members" tone="ink" />
-                <Stat value={circleCount} label="Circles" tone="ink" />
-                <Stat value={upcomingEvents.length} label="Events soon" tone="ink" />
-              </div>
-            </Reveal>
-          ) : (
-            <Reveal delay={100}>
-              <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
-                The first Circles are forming in {FOUNDING_PLACE}. The founding members are shaping what
-                this becomes. Come be one of them.
-              </p>
-            </Reveal>
-          )}
-        </div>
-        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
-      </section>
-
-      {/* ── Upcoming events (live) ─────────────────────────────────────────── */}
-      {upcomingEvents.length > 0 && (
-        <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
-          <div className="max-w-2xl mx-auto">
-            <Reveal className="flex items-center justify-center gap-2 mb-9">
-              <CalendarDays className="w-5 h-5 text-primary-strong" aria-hidden />
-              <h2 className="font-display uppercase text-text text-3xl sm:text-4xl text-center">
-                Coming up near you
-              </h2>
-            </Reveal>
-            <div className="space-y-3">
-              {upcomingEvents.map((event, i) => (
-                <Reveal key={event.id} delay={i * 60}>
-                  <EventRow event={event} />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Member posts (live social proof) ───────────────────────────────── */}
-      {posts.length > 0 && (
-        <section className="bg-surface px-6 py-20 sm:py-24">
-          <div className="max-w-2xl mx-auto">
-            <Reveal className="text-center">
-              <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
-                In their own words
-              </p>
-              <h2 className={`font-display uppercase text-text text-3xl sm:text-4xl text-balance ${postsCurated ? 'mb-3' : 'mb-10'}`}>
-                People showing up for each other
-              </h2>
-              {postsCurated && (
-                <p className="mb-10 text-sm text-subtle">Hand-picked by Vera</p>
-              )}
-            </Reveal>
-            <div className="space-y-4">
-              {posts.map((post, i) => (
-                <Reveal key={post.id} delay={i * 60}>
-                  <PostPreviewCard post={post} />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* ── Live proof (counts · events · posts) — streamed so it never blocks the
+          hero's first byte (PAGE-FRAMEWORK §5). ───── */}
+      <Suspense fallback={<LiveProofSkeleton />}>
+        <LiveProof />
+      </Suspense>
 
       {/* ── PATH · The Quest — the last feature, the reason you come back ───── */}
       <section className="relative bg-slat overflow-hidden">
@@ -669,6 +587,112 @@ function Splash({ live, referrer }: { live: LiveData; referrer: { displayName: s
 }
 
 // ── Building blocks ─────────────────────────────────────────────────────────
+
+// The live-proof band — counts, upcoming events, recent member posts. Self-fetching async
+// server component so it streams in its own <Suspense> and never blocks the splash hero.
+async function LiveProof() {
+  const supabase = await createClient()
+  const live = await getLiveData(supabase)
+  const posts = live.posts as PostPreviewRow[]
+  const postsCurated = live.postsCurated
+  const memberCount = live.memberCount
+  const circleCount = live.circleCount
+  const upcomingEvents = live.upcomingEvents
+  const hasProof = memberCount >= SOCIAL_PROOF_FLOOR
+
+  return (
+    <>
+      {/* ── It's real, and it's early (honest live proof) ──────────────────── */}
+      <section className="relative bg-slat px-6 py-24 sm:py-28 overflow-hidden">
+        <div className="light-strip absolute inset-x-0 top-0 z-10" />
+        <div className="amber-glow absolute inset-0 pointer-events-none" />
+        <div className="relative z-10 mx-auto max-w-3xl text-center">
+          <Reveal>
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-4">
+              Not a someday idea
+            </p>
+            <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">
+              It&apos;s already happening.
+            </h2>
+          </Reveal>
+          {hasProof ? (
+            <Reveal delay={100}>
+              <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
+                Real people, real Circles, real gatherings, taking root in {FOUNDING_PLACE} right now.
+              </p>
+              <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
+                <Stat value={memberCount} label="Members" tone="ink" />
+                <Stat value={circleCount} label="Circles" tone="ink" />
+                <Stat value={upcomingEvents.length} label="Events soon" tone="ink" />
+              </div>
+            </Reveal>
+          ) : (
+            <Reveal delay={100}>
+              <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
+                The first Circles are forming in {FOUNDING_PLACE}. The founding members are shaping what
+                this becomes. Come be one of them.
+              </p>
+            </Reveal>
+          )}
+        </div>
+        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
+      </section>
+
+      {/* ── Upcoming events (live) ─────────────────────────────────────────── */}
+      {upcomingEvents.length > 0 && (
+        <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
+          <div className="max-w-2xl mx-auto">
+            <Reveal className="flex items-center justify-center gap-2 mb-9">
+              <CalendarDays className="w-5 h-5 text-primary-strong" aria-hidden />
+              <h2 className="font-display uppercase text-text text-3xl sm:text-4xl text-center">
+                Coming up near you
+              </h2>
+            </Reveal>
+            <div className="space-y-3">
+              {upcomingEvents.map((event, i) => (
+                <Reveal key={event.id} delay={i * 60}>
+                  <EventRow event={event} />
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Member posts (live social proof) ───────────────────────────────── */}
+      {posts.length > 0 && (
+        <section className="bg-surface px-6 py-20 sm:py-24">
+          <div className="max-w-2xl mx-auto">
+            <Reveal className="text-center">
+              <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+                In their own words
+              </p>
+              <h2 className={`font-display uppercase text-text text-3xl sm:text-4xl text-balance ${postsCurated ? 'mb-3' : 'mb-10'}`}>
+                People showing up for each other
+              </h2>
+              {postsCurated && (
+                <p className="mb-10 text-sm text-subtle">Hand-picked by Vera</p>
+              )}
+            </Reveal>
+            <div className="space-y-4">
+              {posts.map((post, i) => (
+                <Reveal key={post.id} delay={i * 60}>
+                  <PostPreviewCard post={post} />
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+    </>
+  )
+}
+
+// Holds the live-proof band's vertical space (bg matches the proof section) while it streams.
+function LiveProofSkeleton() {
+  return <section aria-hidden className="bg-slat px-6 py-24 sm:py-28" />
+}
 
 function PostPreviewCard({ post }: { post: PostPreviewRow }) {
   const a = post.author
