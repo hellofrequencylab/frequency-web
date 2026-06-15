@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Json } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
 import { isSafeRoute } from '@/lib/layout/page-chrome'
@@ -14,21 +14,17 @@ import { isTemplateId, templateMeta, slotIds, defaultSlotId, DEFAULT_TEMPLATE, t
 
 // Server actions for the on-page Page settings panel (ADR-268). STAFF (admin+, ADR-208 —
 // "admin and above"): the gate redirects an unauthorized viewer and captures the id for
-// `updated_by`. Writes go through the service-role admin client into public.page_settings;
-// `page_settings` isn't in the generated types yet, so the client is cast loose (fail-safe
-// reader handles the pre-migration window). The route is isSafeRoute-validated and the SEO
-// fields are normalized/bounded (lib/page-settings/seo.ts) before any write.
+// `updated_by`. Writes go through the service-role admin client into public.page_settings
+// (typed now that the table is in the generated types). The route is isSafeRoute-validated
+// and the SEO fields are normalized/bounded (lib/page-settings/seo.ts) before any write.
 
 async function gate(): Promise<string> {
   const { profileId } = await requireAdmin('admin')
   return profileId
 }
 
-function db(): SupabaseClient {
-  // page_settings isn't in the generated DB types yet (regenerated separately per the
-  // migration), so the client is cast loose; every write here is staff-gated + validated.
-  // eslint-disable-next-line no-restricted-syntax
-  return createAdminClient() as unknown as SupabaseClient
+function db() {
+  return createAdminClient()
 }
 
 /** Save the per-route SEO (title / description / share image). Upserts the row. */
@@ -140,7 +136,7 @@ export async function getPageLayoutForEditor(key: string): Promise<LayoutEditorS
   // Read the level's OWN row (a scope key never passes isSafeRoute, so we read directly here
   // inside the staff-gated action rather than via the route-only loadPageSettings reader).
   const { data } = await db().from('page_settings').select('layout').eq('route', key).maybeSingle()
-  return build(parseLayout((data as { layout: unknown } | null)?.layout ?? null))
+  return build(parseLayout(data?.layout ?? null))
 }
 
 /** Save the layout at a SCOPE KEY: the interior template, which modules sit in each slot, in
@@ -184,7 +180,9 @@ export async function savePageLayout(
 
   const { error } = await db()
     .from('page_settings')
-    .upsert({ route: key, layout: { template, slots: slotConfigs }, updated_by: me, updated_at: new Date().toISOString() }, { onConflict: 'route' })
+    // The layout is a known-good { template, slots } tree; cast to the column's jsonb type
+    // (TS can't infer a known-key object satisfies the recursive Json type).
+    .upsert({ route: key, layout: { template, slots: slotConfigs } as unknown as Json, updated_by: me, updated_at: new Date().toISOString() }, { onConflict: 'route' })
   if (error) return fail('Could not save the layout for that scope.')
 
   // A concrete route refreshes just that page; a scope edit is broad, so purge all cached

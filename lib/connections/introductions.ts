@@ -2,6 +2,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import type { Database } from '@/lib/database.types'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardGems } from '@/lib/gems'
@@ -11,9 +12,10 @@ import { getConnectionSettings } from '@/lib/connections/connection-settings'
 // The Introductions economy (ADR-186, P3). You introduce two people you're connected
 // to; when they become friends, you (the introducer) earn reward_introduction gems —
 // once, flag-first (idempotent, same doctrine as the founder/chores rewards). Rewards
-// the ACTION of introducing, never people-as-points.
+// the ACTION of introducing, never people-as-points. The tables are in the generated
+// types, so the admin client is fully typed.
 
-type Db = SupabaseClient
+type Db = SupabaseClient<Database>
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 // Cap introductions per hour — abuse / graph-probing guard.
@@ -45,7 +47,7 @@ export async function createIntroduction(
   if (personAId === personBId) return fail('Pick two different people.')
   if (personAId === me.id || personBId === me.id) return fail('Introduce two other people.')
 
-  const db = createAdminClient() as unknown as Db
+  const db = createAdminClient()
 
   // Rate limit: cap introductions per hour (abuse + friendship-graph probing guard).
   const { count: recent } = await db
@@ -87,7 +89,7 @@ export async function claimIntroductionRewards(): Promise<IntroductionRewardResu
   const me = await getCallerProfile()
   if (!me) return empty
 
-  const db = createAdminClient() as unknown as Db
+  const db = createAdminClient()
   const { data: pending } = await db
     .from('introductions')
     .select('id, person_a_id, person_b_id')
@@ -99,7 +101,7 @@ export async function claimIntroductionRewards(): Promise<IntroductionRewardResu
   let rewarded = 0
   let gems = 0
 
-  for (const intro of pending as { id: string; person_a_id: string; person_b_id: string }[]) {
+  for (const intro of pending) {
     if (!(await acceptedFriends(db, intro.person_a_id, intro.person_b_id))) continue
     // Stamp the flag FIRST (guarded on rewarded=false) so a double-call can't double-pay.
     const { data: claimed } = await db
@@ -149,12 +151,12 @@ async function peopleById(db: Db, ids: string[]): Promise<Map<string, IntroPerso
   const unique = [...new Set(ids)].filter(Boolean)
   if (unique.length === 0) return map
   const { data } = await db.from('profiles').select('id, display_name, handle, avatar_url').in('id', unique)
-  for (const r of (data ?? []) as Record<string, unknown>[]) {
-    map.set(String(r.id), {
-      id: String(r.id),
-      displayName: String(r.display_name ?? ''),
-      handle: String(r.handle ?? ''),
-      avatarUrl: (r.avatar_url as string | null) ?? null,
+  for (const r of data ?? []) {
+    map.set(r.id, {
+      id: r.id,
+      displayName: r.display_name ?? '',
+      handle: r.handle ?? '',
+      avatarUrl: r.avatar_url ?? null,
     })
   }
   return map
@@ -167,16 +169,14 @@ export async function listMyIntroductions(): Promise<{
 }> {
   const me = await getCallerProfile()
   if (!me) return { made: [], forYou: [] }
-  const db = createAdminClient() as unknown as Db
+  const db = createAdminClient()
 
   const { data: rows } = await db
     .from('introductions')
     .select('id, introducer_id, person_a_id, person_b_id, note, status')
     .or(`introducer_id.eq.${me.id},person_a_id.eq.${me.id},person_b_id.eq.${me.id}`)
     .order('created_at', { ascending: false })
-  const list = (rows ?? []) as {
-    id: string; introducer_id: string; person_a_id: string; person_b_id: string; note: string | null; status: string
-  }[]
+  const list = rows ?? []
 
   const ids = list.flatMap((r) => [r.introducer_id, r.person_a_id, r.person_b_id])
   const people = await peopleById(db, ids)
