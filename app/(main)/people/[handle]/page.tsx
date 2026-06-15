@@ -334,8 +334,7 @@ export default async function ProfilePage({
         {/* Cover — the member's header image when set, else the default gradient. */}
         <div className="relative h-28 sm:h-52 overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-signal to-signal-strong">
           {headerImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={headerImageUrl} alt="" className={`absolute inset-0 h-full w-full object-cover ${isDemo ? 'grayscale-[0.5]' : ''}`} />
+            <Image fill sizes="100vw" src={headerImageUrl} alt="" className={`object-cover ${isDemo ? 'grayscale-[0.5]' : ''}`} />
           ) : (
             <div className="absolute inset-0 bg-[url('/images/hero.jpg')] bg-cover bg-center opacity-30 mix-blend-overlay" />
           )}
