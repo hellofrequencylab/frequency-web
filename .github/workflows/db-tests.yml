@@ -1,0 +1,39 @@
+# RLS / RPC database tests (ADR-275). Boots a fresh local Supabase, applies EVERY migration in
+# supabase/migrations in order (so an un-applicable migration — e.g. the `<->`/search_path bug
+# fixed in ADR-277 — fails right here), then runs the pgTAP suite in supabase/tests via
+# `supabase test db`. This is the DB-backed half of the authz harness that vitest can't cover.
+#
+# MANUAL (workflow_dispatch) for now, on purpose: until the migration ledger is reconciled
+# (OPEN-THREADS A2), a fresh full apply may surface more latent migration bugs, so we don't want
+# a perpetually-red check on every PR yet. Run it from the Actions tab to validate the migration
+# set + RLS/RPC; once it's reliably green, add the `pull_request` trigger below and mark it a
+# required check so migration drift can never ship again.
+name: db-tests
+
+on:
+  workflow_dispatch: {}
+  # pull_request:        # ← enable once a fresh apply is green (see header)
+  #   branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  db-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      # Boots the full local stack (Postgres + auth + extensions like PostGIS) and applies every
+      # supabase/migrations file in order. A migration that can't apply fails the job here.
+      - name: Start local Supabase (applies all migrations)
+        run: supabase db start
+      # Runs every supabase/tests/*.test.sql through pgTAP against the freshly-migrated DB.
+      - name: Run pgTAP RLS/RPC tests
+        run: supabase test db
