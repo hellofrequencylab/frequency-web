@@ -6,11 +6,13 @@ import { Check, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { getPageLayoutForEditor, savePageLayout, type LayoutEditorItem } from '@/lib/page-settings/actions'
 import { MODULE_ROLES, type ModuleRole } from '@/lib/page-settings/layout'
+import { TEMPLATES, templateMeta, slotIds, defaultSlotId, type TemplateId } from '@/lib/widgets/templates'
 
-// The live Layout editor for the on-page "Page" settings panel (ADR-270/271). Staff choose
-// which modules show, in what order, and who may see each (per-module role gate) — at one of
-// three SCOPES: this page (the exact route), this section ('/seg/*'), or all pages ('*'),
-// most-specific wins. The saved item order IS the rendered order; a disabled item is hidden.
+// The live Layout editor for the on-page "Page" settings panel (ADR-270/271/272). Staff pick the
+// interior TEMPLATE, assign each module to one of its AREAS (slots), set order + visibility + a
+// per-module role gate — at one of three SCOPES: this page (the exact route), this section
+// ('/seg/*'), or all pages ('*'), most-specific wins. Render order = the saved order within each
+// slot; a disabled module is hidden; a gated module shows only to its rung and up.
 
 const ROLE_LABEL: Record<ModuleRole, string> = {
   host: 'Hosts and up',
@@ -23,6 +25,7 @@ type ScopeChoice = 'page' | 'section' | 'global'
 export function LayoutEditor() {
   const pathname = usePathname()
   const [choice, setChoice] = useState<ScopeChoice>('page')
+  const [template, setTemplate] = useState<TemplateId>('single')
   const [items, setItems] = useState<LayoutEditorItem[]>([])
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
@@ -55,7 +58,8 @@ export function LayoutEditor() {
     getPageLayoutForEditor(scopeKey)
       .then((d) => {
         if (!live) return
-        setItems(d)
+        setTemplate(d.template)
+        setItems(d.items)
         setLoading(false)
       })
       .catch(() => live && setLoading(false))
@@ -72,6 +76,16 @@ export function LayoutEditor() {
     setChoice(c)
   }
 
+  function chooseTemplate(t: TemplateId) {
+    if (t === template) return
+    setSaved(false)
+    setTemplate(t)
+    // Keep every module + its on/off + role; move any now-orphaned slot to the new default.
+    const valid = new Set(slotIds(t))
+    const def = defaultSlotId(t)
+    setItems((prev) => prev.map((it) => (valid.has(it.slot) ? it : { ...it, slot: def })))
+  }
+
   function toggle(id: string) {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, enabled: !it.enabled } : it)))
   }
@@ -80,13 +94,22 @@ export function LayoutEditor() {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, role } : it)))
   }
 
-  function move(index: number, delta: number) {
+  function setSlot(id: string, slot: string) {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, slot } : it)))
+  }
+
+  // Swap a module with its nearest neighbour IN THE SAME SLOT (the flat item order is what each
+  // slot's order is derived from on save).
+  function move(id: string, dir: -1 | 1) {
     setItems((prev) => {
-      const next = index + delta
-      if (next < 0 || next >= prev.length) return prev
+      const i = prev.findIndex((it) => it.id === id)
+      if (i < 0) return prev
+      const slot = prev[i].slot
+      let j = i + dir
+      while (j >= 0 && j < prev.length && prev[j].slot !== slot) j += dir
+      if (j < 0 || j >= prev.length) return prev
       const copy = [...prev]
-      const [item] = copy.splice(index, 1)
-      copy.splice(next, 0, item)
+      ;[copy[i], copy[j]] = [copy[j], copy[i]]
       return copy
     })
   }
@@ -95,7 +118,10 @@ export function LayoutEditor() {
     setError(null)
     setSaved(false)
     startTransition(async () => {
-      const r = await savePageLayout(scopeKey, items.map(({ id, enabled, role }) => ({ id, enabled, role })))
+      const r = await savePageLayout(scopeKey, {
+        template,
+        items: items.map(({ id, enabled, role, slot }) => ({ id, enabled, role, slot })),
+      })
       if (isError(r)) setError(r.error)
       else {
         setSaved(true)
@@ -103,6 +129,9 @@ export function LayoutEditor() {
       }
     })
   }
+
+  const slots = templateMeta(template).slots
+  const multiSlot = slots.length > 1
 
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
@@ -126,76 +155,135 @@ export function LayoutEditor() {
       <p className="text-2xs text-muted">{active.hint}</p>
 
       {loading ? (
-        <div className="h-44 animate-pulse rounded-xl border border-border bg-surface-elevated/50" />
-      ) : items.length === 0 ? (
-        <p className="text-xs text-muted">No modules available for this page yet.</p>
+        <div className="h-56 animate-pulse rounded-xl border border-border bg-surface-elevated/50" />
       ) : (
-        <ul className="space-y-2">
-          {items.map((item, index) => (
-            <li
-              key={item.id}
-              className="space-y-2 rounded-lg border border-border bg-surface-elevated/50 p-3"
-            >
-              <div className="flex items-center gap-3">
+        <>
+          {/* Template: the interior container shape (and the areas modules can sit in). */}
+          <div>
+            <p className="mb-1 text-2xs font-medium uppercase tracking-wide text-subtle">Template</p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {TEMPLATES.map((t) => (
                 <button
+                  key={t.id}
                   type="button"
-                  onClick={() => toggle(item.id)}
+                  onClick={() => chooseTemplate(t.id)}
                   disabled={pending}
-                  aria-label={item.enabled ? `Hide ${item.label}` : `Show ${item.label}`}
-                  aria-pressed={item.enabled}
-                  className={`shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
-                    item.enabled ? 'text-primary-strong hover:text-primary-hover' : 'text-subtle hover:text-text'
+                  aria-pressed={t.id === template}
+                  title={t.description}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 ${
+                    t.id === template ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:text-text'
                   }`}
                 >
-                  {item.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  {t.label}
                 </button>
-                <div className="min-w-0 flex-1">
-                  <p className={`truncate text-sm font-semibold ${item.enabled ? 'text-text' : 'text-muted'}`}>
-                    {item.label}
-                  </p>
-                  {item.description && <p className="truncate text-xs text-muted">{item.description}</p>}
+              ))}
+            </div>
+          </div>
+
+          {/* Modules, grouped by the current template's slots. */}
+          <div className="space-y-3">
+            {slots.map((s) => {
+              const group = items.filter((it) => it.slot === s.id)
+              return (
+                <div key={s.id} className="space-y-2">
+                  {multiSlot && (
+                    <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{s.label}</p>
+                  )}
+                  {group.length === 0 ? (
+                    <p className="text-xs text-muted">Nothing here yet.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {group.map((item, index) => (
+                        <li
+                          key={item.id}
+                          className="space-y-2 rounded-lg border border-border bg-surface-elevated/50 p-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => toggle(item.id)}
+                              disabled={pending}
+                              aria-label={item.enabled ? `Hide ${item.label}` : `Show ${item.label}`}
+                              aria-pressed={item.enabled}
+                              className={`shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                                item.enabled ? 'text-primary-strong hover:text-primary-hover' : 'text-subtle hover:text-text'
+                              }`}
+                            >
+                              {item.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              <p className={`truncate text-sm font-semibold ${item.enabled ? 'text-text' : 'text-muted'}`}>
+                                {item.label}
+                              </p>
+                              {item.description && <p className="truncate text-xs text-muted">{item.description}</p>}
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => move(item.id, -1)}
+                                disabled={pending || index === 0}
+                                aria-label={`Move ${item.label} up`}
+                                className="rounded-lg p-1.5 text-muted transition-colors hover:text-text disabled:opacity-30"
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => move(item.id, 1)}
+                                disabled={pending || index === group.length - 1}
+                                aria-label={`Move ${item.label} down`}
+                                className="rounded-lg p-1.5 text-muted transition-colors hover:text-text disabled:opacity-30"
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-9">
+                            {multiSlot && (
+                              <label className="flex items-center gap-2">
+                                <span className="text-2xs font-medium uppercase tracking-wide text-subtle">Area</span>
+                                <select
+                                  value={item.slot}
+                                  onChange={(e) => setSlot(item.id, e.target.value)}
+                                  disabled={pending}
+                                  aria-label={`Area for ${item.label}`}
+                                  className="rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text disabled:opacity-40"
+                                >
+                                  {slots.map((opt) => (
+                                    <option key={opt.id} value={opt.id}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            )}
+                            <label className="flex min-w-0 flex-1 items-center gap-2">
+                              <span className="shrink-0 text-2xs font-medium uppercase tracking-wide text-subtle">Who sees it</span>
+                              <select
+                                value={item.role ?? ''}
+                                onChange={(e) => setRole(item.id, (e.target.value || null) as ModuleRole | null)}
+                                disabled={pending}
+                                aria-label={`Who can see ${item.label}`}
+                                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text disabled:opacity-40"
+                              >
+                                <option value="">Everyone</option>
+                                {MODULE_ROLES.map((r) => (
+                                  <option key={r} value={r}>
+                                    {ROLE_LABEL[r]}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => move(index, -1)}
-                    disabled={pending || index === 0}
-                    aria-label={`Move ${item.label} up`}
-                    className="rounded-lg p-1.5 text-muted transition-colors hover:text-text disabled:opacity-30"
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => move(index, 1)}
-                    disabled={pending || index === items.length - 1}
-                    aria-label={`Move ${item.label} down`}
-                    className="rounded-lg p-1.5 text-muted transition-colors hover:text-text disabled:opacity-30"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 pl-9">
-                <span className="shrink-0 text-2xs font-medium uppercase tracking-wide text-subtle">Who sees it</span>
-                <select
-                  value={item.role ?? ''}
-                  onChange={(e) => setRole(item.id, (e.target.value || null) as ModuleRole | null)}
-                  disabled={pending}
-                  aria-label={`Who can see ${item.label}`}
-                  className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text disabled:opacity-40"
-                >
-                  <option value="">Everyone</option>
-                  {MODULE_ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {ROLE_LABEL[r]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </li>
-          ))}
-        </ul>
+              )
+            })}
+          </div>
+        </>
       )}
 
       {error && <p className="text-xs text-danger">{error}</p>}

@@ -230,15 +230,17 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
   301 the retired `go.findafreq.com`, update auth/OAuth redirect URLs. (S)
 - [ ] Page-editor polish: visual focal-point/crop picker; `page_revisions` rollback. (S)
 - [ ] Per-Nexus subdomains (`encinitas.frequencylocal.com`). (M)
-- [ ] Formal module/widget slot registry + fully scope-aware right rail. (M) *(Partly landed:
+- [ ] Formal module/widget slot registry + fully scope-aware right rail. (M) *(Mostly landed:
   the per-route module-assignment engine — metadata/registry split + resolver + on-page editor —
   shipped 2026-06-15, ADR-270; the **scope cascade** (route → `/seg/*` → global) and **per-module
-  role gate** shipped 2026-06-15, ADR-271. Still open: the interior **slot** model — assignable
-  areas within the container — and the shell-rail half.)*
-- [ ] Interior container templates + slot-assignable widget blocks (owner ask 2026-06-15). (M)
-  Three standard interior-container templates; widget blocks (the ADR-270 modules) assignable to
-  different **areas/slots** within the chosen template, extending the layout engine's `{order,
-  hidden, roles}` to a per-slot model. Builds on ADR-270/271.
+  role gate** shipped 2026-06-15, ADR-271; the interior **slot** model — assignable areas within
+  the container, via 4 interior templates — shipped 2026-06-15, ADR-272. **Still open: the
+  shell-rail half** (the app right rail stays operator-managed in `page_chrome_overrides`).)*
+- [x] **Interior container templates + slot-assignable widget blocks (owner ask 2026-06-15) — ✅
+  done (2026-06-15, ADR-272).** Four interior-container templates (Single · Main + side · 2
+  columns · 3 columns); widget blocks (the ADR-270 modules) assignable to different **areas/slots**
+  within the chosen template — the layout engine's `{order, hidden, roles}` extended to a per-slot
+  `{template, slots}` model behind a back-compat reader (no migration). Built on ADR-270/271.
 - [ ] Reconcile "Interests" (member) vs "Topics" (public) wording + the "tune in" verb. (S)
 
 ## K. Monetization / money foundation / Vault / verticals

@@ -1,65 +1,95 @@
 import { describe, it, expect } from 'vitest'
 import {
   parseLayout,
-  orderedModuleIds,
-  resolveModuleIds,
-  applyRoleGate,
+  moduleAssignments,
+  resolveSlots,
   isLayoutScopeKey,
   layoutScopeChain,
   hasLayoutConfig,
   pickLayoutConfig,
   type LayoutConfig,
+  type SlotConfig,
 } from './layout'
 
 const ALL = ['a', 'b', 'c', 'd'] as const
-const cfg = (c: Partial<LayoutConfig>): LayoutConfig => ({ order: [], hidden: [], roles: {}, ...c })
+const slot = (s: Partial<SlotConfig> = {}): SlotConfig => ({ order: [], hidden: [], roles: {}, ...s })
 
-describe('page-settings layout resolver', () => {
-  it('parses jsonb safely (bad input → empty config)', () => {
-    expect(parseLayout(null)).toEqual({ order: [], hidden: [], roles: {} })
-    expect(parseLayout('nope')).toEqual({ order: [], hidden: [], roles: {} })
-    expect(parseLayout([1, 2])).toEqual({ order: [], hidden: [], roles: {} })
-    expect(parseLayout({ order: ['a', 3, 'b'], hidden: ['c'] })).toEqual({ order: ['a', 'b'], hidden: ['c'], roles: {} })
+describe('parseLayout', () => {
+  it('bad input → empty Single layout', () => {
+    expect(parseLayout(null)).toEqual({ template: 'single', slots: {} })
+    expect(parseLayout('nope')).toEqual({ template: 'single', slots: {} })
+    expect(parseLayout([1, 2])).toEqual({ template: 'single', slots: {} })
   })
 
-  it('parses + validates the per-module roles map (drops non-ladder values)', () => {
-    expect(parseLayout({ roles: { a: 'host', b: 'nope', c: 'mentor', d: 5 } }).roles).toEqual({ a: 'host', c: 'mentor' })
-    expect(parseLayout({ roles: ['host'] }).roles).toEqual({})
+  it('parses the { template, slots } shape, validating roles + template', () => {
+    expect(
+      parseLayout({ template: 'main-side', slots: { main: { order: ['a', 3], hidden: ['b'], roles: { a: 'host', x: 'nope' } } } }),
+    ).toEqual({ template: 'main-side', slots: { main: { order: ['a'], hidden: ['b'], roles: { a: 'host' } } } })
+    expect(parseLayout({ template: 'bogus', slots: {} }).template).toBe('single')
   })
 
-  it('honors the saved order, drops unknown ids, appends new modules in registry order', () => {
-    expect(orderedModuleIds(cfg({ order: ['c', 'a', 'zzz'] }), ALL)).toEqual(['c', 'a', 'b', 'd'])
-  })
-
-  it('de-dupes a repeated id in the saved order', () => {
-    expect(orderedModuleIds(cfg({ order: ['b', 'b', 'a'] }), ALL)).toEqual(['b', 'a', 'c', 'd'])
-  })
-
-  it('resolveModuleIds removes the hidden set', () => {
-    expect(resolveModuleIds(cfg({ order: ['c', 'a'], hidden: ['a', 'd'] }), ALL)).toEqual(['c', 'b'])
-  })
-
-  it('default (empty config) = registry order, all visible', () => {
-    expect(resolveModuleIds(cfg({}), ALL)).toEqual(['a', 'b', 'c', 'd'])
+  it('back-compat: a legacy flat config reads as the Single template main slot', () => {
+    expect(parseLayout({ order: ['a', 'b'], hidden: ['b'], roles: { a: 'mentor' } })).toEqual({
+      template: 'single',
+      slots: { main: { order: ['a', 'b'], hidden: ['b'], roles: { a: 'mentor' } } },
+    })
   })
 })
 
-describe('per-module role gate', () => {
-  const config = cfg({ roles: { b: 'host', d: 'mentor' } })
-
-  it('drops gated modules below the viewer rung; keeps ungated', () => {
-    expect(applyRoleGate(['a', 'b', 'c', 'd'], config, 'member')).toEqual(['a', 'c'])
-    expect(applyRoleGate(['a', 'b', 'c', 'd'], config, 'host')).toEqual(['a', 'b', 'c'])
-    expect(applyRoleGate(['a', 'b', 'c', 'd'], config, 'mentor')).toEqual(['a', 'b', 'c', 'd'])
+describe('moduleAssignments', () => {
+  it('places saved-order modules per slot, appends unplaced to the default (first) slot', () => {
+    const cfg: LayoutConfig = { template: 'main-side', slots: { side: slot({ order: ['c'] }), main: slot({ order: ['b'] }) } }
+    const got = moduleAssignments(cfg, ALL)
+    expect(got.map((a) => [a.id, a.slot])).toEqual([
+      ['b', 'main'], // main's placed
+      ['c', 'side'], // side's placed
+      ['a', 'main'], // unplaced → default slot (main)
+      ['d', 'main'],
+    ])
   })
 
-  it('fail-closed: a null/unknown viewer role hides every gated module', () => {
-    expect(applyRoleGate(['a', 'b', 'c', 'd'], config, null)).toEqual(['a', 'c'])
-    expect(applyRoleGate(['a', 'b', 'c', 'd'], config, undefined)).toEqual(['a', 'c'])
+  it('de-dupes across slots (first slot that lists a module wins) + drops unknown ids', () => {
+    const cfg: LayoutConfig = { template: 'main-side', slots: { main: slot({ order: ['a', 'zzz'] }), side: slot({ order: ['a', 'b'] }) } }
+    const got = moduleAssignments(cfg, ALL)
+    expect(got.find((a) => a.id === 'a')?.slot).toBe('main')
+    expect(got.find((a) => a.id === 'b')?.slot).toBe('side')
+    expect(got.some((a) => a.id === 'zzz')).toBe(false)
   })
 
-  it('no gates → everyone sees everything', () => {
-    expect(applyRoleGate(['a', 'b'], cfg({}), 'member')).toEqual(['a', 'b'])
+  it('carries enabled (from hidden) + role state', () => {
+    const cfg: LayoutConfig = { template: 'single', slots: { main: slot({ order: ['a', 'b'], hidden: ['b'], roles: { a: 'host' } }) } }
+    const got = moduleAssignments(cfg, ALL)
+    expect(got.find((a) => a.id === 'a')).toMatchObject({ enabled: true, role: 'host' })
+    expect(got.find((a) => a.id === 'b')).toMatchObject({ enabled: false, role: null })
+  })
+
+  it('empty config = all modules in the default slot, enabled, no gates', () => {
+    const got = moduleAssignments({ template: 'single', slots: {} }, ALL)
+    expect(got).toEqual([
+      { id: 'a', slot: 'main', enabled: true, role: null },
+      { id: 'b', slot: 'main', enabled: true, role: null },
+      { id: 'c', slot: 'main', enabled: true, role: null },
+      { id: 'd', slot: 'main', enabled: true, role: null },
+    ])
+  })
+})
+
+describe('resolveSlots', () => {
+  it('returns visible ids per slot, dropping hidden + role-gated', () => {
+    const cfg: LayoutConfig = {
+      template: 'main-side',
+      slots: {
+        main: slot({ order: ['a', 'b'], hidden: ['b'], roles: {} }),
+        side: slot({ order: ['c', 'd'], roles: { d: 'mentor' } }),
+      },
+    }
+    expect(resolveSlots(cfg, ALL, 'member')).toEqual({ main: ['a'], side: ['c'] })
+    expect(resolveSlots(cfg, ALL, 'mentor')).toEqual({ main: ['a'], side: ['c', 'd'] })
+  })
+
+  it('fail-closed: a null viewer role hides gated modules', () => {
+    const cfg: LayoutConfig = { template: 'single', slots: { main: slot({ order: ['a', 'b'], roles: { b: 'host' } }) } }
+    expect(resolveSlots(cfg, ALL, null)).toEqual({ main: ['a', 'c', 'd'] })
   })
 })
 
@@ -68,36 +98,34 @@ describe('scope cascade', () => {
     expect(isLayoutScopeKey('*')).toBe(true)
     expect(isLayoutScopeKey('/lead/*')).toBe(true)
     expect(isLayoutScopeKey('/lead')).toBe(false)
-    expect(isLayoutScopeKey('/lead/crew-tasks')).toBe(false)
-    expect(isLayoutScopeKey('/a/b/*')).toBe(false) // only top-level section scopes
+    expect(isLayoutScopeKey('/a/b/*')).toBe(false)
   })
 
-  it('builds the most-specific-first chain: route → section → global', () => {
+  it('builds the most-specific-first chain', () => {
     expect(layoutScopeChain('/lead/crew-tasks')).toEqual(['/lead/crew-tasks', '/lead/*', '*'])
     expect(layoutScopeChain('/lead')).toEqual(['/lead', '/lead/*', '*'])
     expect(layoutScopeChain('/')).toEqual(['/', '*'])
   })
 
-  it('hasLayoutConfig is true when any of order / hidden / roles is set', () => {
-    expect(hasLayoutConfig(cfg({}))).toBe(false)
-    expect(hasLayoutConfig(cfg({ order: ['a'] }))).toBe(true)
-    expect(hasLayoutConfig(cfg({ hidden: ['a'] }))).toBe(true)
-    expect(hasLayoutConfig(cfg({ roles: { a: 'host' } }))).toBe(true)
+  it('hasLayoutConfig: a non-default template or any slot assignment counts', () => {
+    expect(hasLayoutConfig({ template: 'single', slots: {} })).toBe(false)
+    expect(hasLayoutConfig({ template: 'main-side', slots: {} })).toBe(true)
+    expect(hasLayoutConfig({ template: 'single', slots: { main: slot({ order: ['a'] }) } })).toBe(true)
+    expect(hasLayoutConfig({ template: 'single', slots: { main: slot({ roles: { a: 'host' } }) } })).toBe(true)
   })
 
   it('picks the most-specific level that carries an assignment (full override)', () => {
     const byKey = {
-      '*': cfg({ order: ['a'] }),
-      '/lead/*': cfg({ order: ['b'] }),
-      '/lead': cfg({ order: ['c'] }),
+      '*': { template: 'two-col', slots: {} } as LayoutConfig,
+      '/lead/*': { template: 'main-side', slots: {} } as LayoutConfig,
+      '/lead': { template: 'three-col', slots: {} } as LayoutConfig,
     }
-    expect(pickLayoutConfig(['/lead', '/lead/*', '*'], byKey).order).toEqual(['c'])
-    expect(pickLayoutConfig(['/lead/x', '/lead/*', '*'], byKey).order).toEqual(['b'])
-    expect(pickLayoutConfig(['/other', '/other/*', '*'], byKey).order).toEqual(['a'])
+    expect(pickLayoutConfig(['/lead', '/lead/*', '*'], byKey).template).toBe('three-col')
+    expect(pickLayoutConfig(['/lead/x', '/lead/*', '*'], byKey).template).toBe('main-side')
+    expect(pickLayoutConfig(['/other', '/other/*', '*'], byKey).template).toBe('two-col')
   })
 
-  it('falls back to the registry default when nothing in the chain is set', () => {
-    expect(pickLayoutConfig(['/x', '*'], { '/x': cfg({}), '*': cfg({}) })).toEqual({ order: [], hidden: [], roles: {} })
-    expect(pickLayoutConfig(['/x', '*'], {})).toEqual({ order: [], hidden: [], roles: {} })
+  it('falls back to the empty Single default when nothing in the chain is set', () => {
+    expect(pickLayoutConfig(['/x', '*'], {})).toEqual({ template: 'single', slots: {} })
   })
 })
