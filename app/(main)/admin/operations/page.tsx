@@ -103,7 +103,7 @@ async function AiArea() {
       severity: actionsPending > 5 ? 'risk' : 'watch',
       title: `${actionsPending} AI ${actionsPending === 1 ? 'action' : 'actions'} awaiting review`,
       finding: 'The operator has proposals queued for your approval.',
-      action: { label: 'Review', href: '/admin/studio' },
+      action: { label: 'Review', href: '/admin/vera-ai?tab=studio' },
     })
   }
   if (gaps > 0) {
@@ -112,7 +112,7 @@ async function AiArea() {
       severity: gaps > 10 ? 'risk' : 'watch',
       title: `${gaps} help ${gaps === 1 ? 'gap' : 'gaps'} this week`,
       finding: "Questions Vera couldn't confidently answer. The to-write list.",
-      action: { label: 'See gaps', href: '/admin/help-gaps' },
+      action: { label: 'See gaps', href: '/admin/vera-ai?tab=help-gaps' },
     })
   }
 
@@ -121,7 +121,7 @@ async function AiArea() {
       icon={Bot}
       label="AI & assistant"
       blurb="The AI master switch, the agent actions awaiting review, and the help gaps Vera couldn't answer. Assistant figures cover the last 7 days of Vera questions."
-      href="/admin/ai"
+      href="/admin/vera-ai?tab=ai"
       hrefLabel="Open AI controls"
       footnote={<FreshnessNote at={new Date()} label="Computed" />}
     >

@@ -49,7 +49,7 @@ export async function saveVera(formData: FormData): Promise<void> {
     },
     staff.profileId,
   )
-  revalidatePath('/admin/vera')
+  revalidatePath('/admin/vera-ai')
 }
 
 /** Re-run Vera's auto-curation of the splash "showing up for each other" feed
@@ -59,7 +59,7 @@ export async function refreshFeatured(): Promise<void> {
   const staff = await veraOperator()
   if (!staff) return
   await refreshFeaturedPosts()
-  revalidatePath('/admin/vera')
+  revalidatePath('/admin/vera-ai')
   revalidatePath('/')
 }
 
@@ -70,6 +70,6 @@ export async function vetoFeatured(formData: FormData): Promise<void> {
   const postId = String(formData.get('postId') ?? '').trim()
   if (!postId) return
   await unfeaturePost(postId)
-  revalidatePath('/admin/vera')
+  revalidatePath('/admin/vera-ai')
   revalidatePath('/')
 }

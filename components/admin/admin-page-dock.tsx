@@ -23,7 +23,7 @@ import type { StaffRole } from '@/lib/core/staff-roles'
 // dashboard's sections (persisted per browser + per scope via a cookie, applied during
 // server render so the page never reflows).
 
-const SETTINGS_HREFS = ['/admin/roles', '/admin/ai', '/admin/audit'] as const
+const SETTINGS_HREFS = ['/admin/roles', '/admin/vera-ai?tab=ai', '/admin/audit'] as const
 
 function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null

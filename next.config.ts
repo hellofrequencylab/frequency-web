@@ -65,7 +65,7 @@ const nextConfig: NextConfig = {
   // unaffected — they're statically generated at build time.) See docs/SUPPORT-SYSTEM.md.
   outputFileTracingIncludes: {
     '/api/cron/embed-help': ['./content/help/**/*'],
-    '/admin/ai': ['./content/help/**/*'],
+    '/admin/vera-ai': ['./content/help/**/*'],
     '/**': ['./content/help/**/*'],
   },
   async headers() {

@@ -284,11 +284,11 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     related: ['operations', 'marketing', 'community'],
     links: [
       // ── Assistant ──
-      { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor', staffDomain: 'insights', section: 'Assistant' },
-      { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected. The to-write list.', Icon: HelpCircle, min: 'janitor', section: 'Assistant' },
-      { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor', staffDomain: 'platform', section: 'Assistant' },
+      { href: '/admin/vera-ai?tab=vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor', staffDomain: 'insights', section: 'Assistant' },
+      { href: '/admin/vera-ai?tab=help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected. The to-write list.', Icon: HelpCircle, min: 'janitor', section: 'Assistant' },
+      { href: '/admin/vera-ai?tab=ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor', staffDomain: 'platform', section: 'Assistant' },
       // ── Intelligence ──
-      { href: '/admin/studio', label: 'AI Studio', desc: 'Ranked AI recommendations and one-click, reversible changes.', Icon: Lightbulb, min: 'admin', staffDomain: 'insights', section: 'Intelligence' },
+      { href: '/admin/vera-ai?tab=studio', label: 'AI Studio', desc: 'Ranked AI recommendations and one-click, reversible changes.', Icon: Lightbulb, min: 'admin', staffDomain: 'insights', section: 'Intelligence' },
       { href: '/admin/insights', label: 'Insights', desc: 'All analytics in one place: the read, engagement, outcomes, marketing intel, expansion, and finances.', Icon: Sparkles, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Intelligence' },
     ],
   },

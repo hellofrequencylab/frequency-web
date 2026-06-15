@@ -42,7 +42,7 @@ export async function applyStudioAction(
   }
 
   await logChange(actionKey, clean, recId, caller!.id, 'applied', detail)
-  revalidatePath('/admin/studio')
+  revalidatePath('/admin/vera-ai')
   revalidatePath('/', 'layout')
   return ok({ detail })
 }
@@ -77,7 +77,7 @@ export async function revertStudioChange(logId: string): Promise<ActionResult<vo
     .from('studio_site_changes')
     .update({ status: 'reverted', reverted_at: new Date().toISOString() })
     .eq('id', logId)
-  revalidatePath('/admin/studio')
+  revalidatePath('/admin/vera-ai')
   revalidatePath('/', 'layout')
   return ok()
 }

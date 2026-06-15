@@ -14,7 +14,7 @@ export async function setAiEnabled(enabled: boolean): Promise<void> {
   const { profileId } = await requireAdmin('janitor', { staff: 'platform' })
   await setPlatformFlag('ai_enabled', enabled, { changedBy: profileId, source: 'admin' })
   revalidatePath('/', 'layout') // AI gating touches many surfaces
-  revalidatePath('/admin/ai')
+  revalidatePath('/admin/vera-ai')
 }
 
 // (Re)build the help_chunks embedding index that "Ask Vera" retrieves from. Run
@@ -24,7 +24,7 @@ export async function reindexHelp(): Promise<ActionResult<ReindexResult>> {
   await requireAdmin('janitor', { staff: 'platform' })
   try {
     const result = await reindexHelpChunks()
-    revalidatePath('/admin/ai')
+    revalidatePath('/admin/vera-ai')
     return ok(result)
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Reindex failed. Check the embed function + AI budget.')

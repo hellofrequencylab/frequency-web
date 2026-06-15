@@ -32,8 +32,8 @@ const ATTENTION: AttentionDef[] = [
   { id: 'reports', label: 'Open reports', href: '/admin/moderation', Icon: ShieldAlert, weight: 5 },
   { id: 'tickets', label: 'Support tickets', href: '/admin/support', Icon: LifeBuoy, weight: 4 },
   { id: 'reviews', label: 'Pending reviews', href: '/admin/content', Icon: ClipboardCheck, weight: 3 },
-  { id: 'helpgaps', label: 'Help gaps', href: '/admin/help-gaps', Icon: HelpCircle, weight: 2 },
-  { id: 'studio', label: 'Studio prompts', href: '/admin/studio', Icon: Lightbulb, weight: 1 },
+  { id: 'helpgaps', label: 'Help gaps', href: '/admin/vera-ai?tab=help-gaps', Icon: HelpCircle, weight: 2 },
+  { id: 'studio', label: 'Studio prompts', href: '/admin/vera-ai?tab=studio', Icon: Lightbulb, weight: 1 },
 ]
 
 async function railData() {
