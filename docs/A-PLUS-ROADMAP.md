@@ -42,7 +42,7 @@ A is current (registry rail composed, types regenerated). For A+:
 ## 4. Testing → A+
 - ✅ App-level authz regression harness (ADR-275); 998 unit tests.
 - 🧑/🏗️ ◻️ Make `db-tests` (RLS/RPC pgTAP) actually run in CI (Postgres service / Supabase CLI) + go green — gated on A2 (migration-ledger repair) so a fresh apply succeeds. (M)
-- 🤖 ◻️ Add unit coverage on the highest-value untested paths: the economy (zaps/gems award math), the billing recorders (ledger), the capability resolver. (M)
+- 🤖 ◻️ Add unit coverage on the highest-value untested paths: the economy (zaps/gems award math), the billing recorders (ledger), the capability resolver. **Started:** the gem-store fulfillment classifier (`classifyRedemption`, ADR-280) is extracted to `lib/store/fulfillment.ts` + unit-tested (a regression guard for the silent-Gem-loss bug). The pure cores (zaps, rewards rules, season ranks, access matrix) are already covered; the remaining gaps are async-DB orchestration (needs the recorder harness). (M)
 
 ## 5. SEO / AIO → A+
 - ✅ `llms-full.txt`, per-article help OG, partner LocalBusiness, public `/discover/practices`.
