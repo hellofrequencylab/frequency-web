@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
@@ -131,8 +132,9 @@ export default async function JourneyPlanPage({
     <DetailTemplate
       hero={
         plan.cover_image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={plan.cover_image} alt="" className="h-44 w-full rounded-2xl border border-border object-cover sm:h-56" />
+          <div className="relative h-44 w-full sm:h-56">
+            <Image fill sizes="100vw" src={plan.cover_image} alt="" className="rounded-2xl border border-border object-cover" />
+          </div>
         ) : undefined
       }
       title={
