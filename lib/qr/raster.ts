@@ -5,7 +5,7 @@
 
 import { Resvg, initWasm } from '@resvg/resvg-wasm'
 import { renderStyledQrSvg } from './render-styled'
-import { isSafeLogoSrc, type QrStyle } from './style'
+import { isSafeLogoSrc, isPrivateIp, type QrStyle } from './style'
 
 // Init the wasm once per process. resvg's initWasm throws if called twice, so guard
 // behind a single promise.
@@ -33,6 +33,15 @@ async function ensureWasm(): Promise<void> {
 async function inlineLogo(src: string): Promise<string | null> {
   if (src.startsWith('data:')) return src
   try {
+    // Defense-in-depth vs DNS rebinding (ADR-274): the stored URL already passed the hostname
+    // allowlist (isSafeLogoSrc), but a public hostname can still RESOLVE to an internal IP. Look
+    // the host up and bail if any resolved address is private/loopback/metadata before fetching.
+    // (Residual TOCTOU: fetch re-resolves; acceptable for a blind, capped, image-only fetch.)
+    const { hostname } = new URL(src)
+    const { lookup } = await import('node:dns/promises')
+    const addrs = await lookup(hostname, { all: true })
+    if (addrs.length === 0 || addrs.some((a) => isPrivateIp(a.address))) return null
+
     const res = await fetch(src, { signal: AbortSignal.timeout(4000) })
     if (!res.ok) return null
     const type = res.headers.get('content-type') ?? 'image/png'

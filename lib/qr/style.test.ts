@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseStyle, isSafeLogoSrc, DEFAULT_STYLE } from './style'
+import { parseStyle, isSafeLogoSrc, isPrivateIp, DEFAULT_STYLE } from './style'
 import { renderStyledQrSvg } from './render-styled'
 
 describe('parseStyle', () => {
@@ -50,6 +50,19 @@ describe('parseStyle', () => {
     expect(isSafeLogoSrc('http://x.com/a.png')).toBe(false)
     expect(isSafeLogoSrc('javascript:alert(1)')).toBe(false)
     expect(parseStyle({ logo: 'http://x.com/a.png' }).logo).toBeNull()
+  })
+
+  it('isPrivateIp flags loopback / private / metadata / CGNAT (v4 + v6), allows public', () => {
+    expect(isPrivateIp('169.254.169.254')).toBe(true) // cloud metadata
+    expect(isPrivateIp('127.0.0.1')).toBe(true)
+    expect(isPrivateIp('10.1.2.3')).toBe(true)
+    expect(isPrivateIp('192.168.0.1')).toBe(true)
+    expect(isPrivateIp('172.16.0.1')).toBe(true)
+    expect(isPrivateIp('100.64.0.1')).toBe(true) // CGNAT
+    expect(isPrivateIp('::1')).toBe(true)
+    expect(isPrivateIp('fd00::1')).toBe(true)
+    expect(isPrivateIp('8.8.8.8')).toBe(false)
+    expect(isPrivateIp('172.32.0.1')).toBe(false) // just outside 172.16/12
   })
 
   it('blocks SSRF to internal / private / metadata hosts', () => {
