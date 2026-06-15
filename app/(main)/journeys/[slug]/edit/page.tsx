@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
-import { getPlan } from '@/lib/journey-plans'
+import { getPlan, getVeraReview } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
 import { JourneyEditor, type EditorBlock, type EditorPractice } from '@/components/journey/v2/journey-editor'
 import { parseCheck } from '@/lib/journeys/store'
@@ -33,7 +33,11 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
   }))
 
   const { plan } = loaded
-  const practices: EditorPractice[] = (await listPublicPractices()).map((p) => ({
+  const [practicesRaw, veraReview] = await Promise.all([
+    listPublicPractices(),
+    getVeraReview(plan.id),
+  ])
+  const practices: EditorPractice[] = practicesRaw.map((p) => ({
     id: p.id,
     title: p.title,
     description: p.description,
@@ -53,6 +57,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
         initialCompletionGems={plan.completion_gems}
         initialCertificateEnabled={plan.certificate_enabled}
         initialDripIntervalDays={plan.drip_interval_days}
+        initialReview={veraReview}
       />
       <JourneyEditor slug={slug} title={plan.title} blocks={blocks} practices={practices} />
       <JourneyAdvanced
