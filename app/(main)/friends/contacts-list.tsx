@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, ScanText, Lock, Globe, MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
@@ -42,8 +43,7 @@ export function ContactsList({ contacts }: { contacts: NetworkContactListItem[] 
             href={`/connections/${c.id}`}
             anchor={
               c.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={c.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
+                <Image src={c.avatarUrl} alt="" width={44} height={44} className="h-11 w-11 rounded-full object-cover" />
               ) : (
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-muted">
                   {getInitials(c.displayName ?? '?')}
