@@ -85,9 +85,9 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // one-item section so it never lands in the staff-gated "Admin" group. The `lead`
   // surface (access-matrix) resolves to 'full' for host/guide/mentor (+ staff) and
   // 'none' for member/visitor, so the shell's `itemAccess` reads it straight from the
-  // matrix — and because "Lead" is a TELESCOPE_SECTION, the item is HIDDEN (not
+  // matrix — and because "Leadership" is a TELESCOPE_SECTION, the item is HIDDEN (not
   // ghosted) for anyone below host. `defaultAccess: 'host'` mirrors the same floor. ──
-  { key: 'lead',          href: '/lead',      label: 'Lead',         section: 'Lead',      defaultAccess: 'host', surface: 'lead' },
+  { key: 'lead',          href: '/lead',      label: 'Leadership',   section: 'Leadership', defaultAccess: 'host', surface: 'lead' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
