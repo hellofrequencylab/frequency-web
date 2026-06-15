@@ -57,6 +57,7 @@ export const MARKETING_NAV: NavLink[] = [
   { label: "The Community", href: "/the-community" },
   { label: "The Quest", href: "/the-quest" },
   { label: "Discover", href: "/discover" },
+  { label: "Partners", href: "/discover/partners" },
   { label: "About", href: "/about" },
 ];
 
