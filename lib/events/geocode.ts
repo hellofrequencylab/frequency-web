@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Event geolocation data layer (EVENTS-REWORK B1).
@@ -9,14 +10,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 //   • nearby query: a typed wrapper over the hardened, RLS-respecting
 //     public.nearby_events RPC (20260625000000_event_geolocation).
 //
-// The new geo columns (geog, venue_name, street, city, region, country,
-// postal_code, attendance_mode, online_url) are newer than lib/database.types.ts,
-// so writes/RPC go through an untyped admin client — the established convention
-// for not-yet-regenerated columns (see lib/events/capacity.ts, matching.ts).
-
-function untyped(): SupabaseClient {
-  return createAdminClient()
-}
+// The geo columns + the set_event_geog / nearby_events RPCs are in
+// lib/database.types.ts now, so writes/RPC use the typed clients directly.
 
 /** A structured address as the create/edit form collects it. All optional: an
  *  online event has no address; a sparse address still geocodes if it has enough. */
@@ -77,7 +72,7 @@ export async function saveEventLocation(
     geocoder?: Geocoder
   },
 ): Promise<GeoPoint | null> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const { address, attendanceMode, onlineUrl, geocoder } = args
 
   // Always persist the structured address + mode (additive columns).
@@ -140,16 +135,10 @@ export interface NearbyEvent {
  * the caller's session; an admin client would bypass RLS and surface everything.
  */
 export async function nearbyEvents(
-  client: SupabaseClient,
+  client: SupabaseClient<Database>,
   args: { lat: number; lng: number; radiusM?: number; limit?: number },
 ): Promise<NearbyEvent[]> {
-  // nearby_events isn't in the generated types yet, so .rpc() can't resolve the
-  // name on the typed client. Widen this one call to an untyped RPC surface until
-  // types are regenerated, per ADR-246 — the passed client still governs RLS.
-  const untypedRpc = client as unknown as {
-    rpc: (fn: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
-  }
-  const { data, error } = await untypedRpc.rpc('nearby_events', {
+  const { data, error } = await client.rpc('nearby_events', {
     _lat: args.lat,
     _long: args.lng,
     _radius_m: args.radiusM ?? 50_000,
@@ -157,22 +146,7 @@ export async function nearbyEvents(
   })
   if (error || !data) return []
 
-  type Row = {
-    id: string
-    slug: string
-    title: string
-    description: string | null
-    starts_at: string
-    ends_at: string | null
-    venue_name: string | null
-    city: string | null
-    region: string | null
-    country: string | null
-    attendance_mode: AttendanceMode
-    distance_m: number
-  }
-
-  return (data as unknown as Row[]).map((r) => ({
+  return data.map((r) => ({
     id: r.id,
     slug: r.slug,
     title: r.title,
@@ -183,7 +157,8 @@ export async function nearbyEvents(
     city: r.city,
     region: r.region,
     country: r.country,
-    attendanceMode: r.attendance_mode,
+    // attendance_mode is a free-text column at the DB layer; the app constrains it.
+    attendanceMode: r.attendance_mode as AttendanceMode,
     distanceM: r.distance_m,
   }))
 }

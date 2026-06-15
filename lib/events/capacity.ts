@@ -1,12 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-// Capacity / waitlist helpers for events.
-//
-// `events.capacity` + the 'waitlist' RSVP status are newer than the generated
-// DB types (lib/database.types.ts), so we read/write them through an untyped
-// client — the established convention in this repo for not-yet-regenerated
-// columns (see lib/billing/* for the same pattern).
+// Capacity / waitlist helpers for events. `events.capacity` + the 'waitlist' RSVP
+// status are in the generated DB types (lib/database.types.ts) now, so the admin
+// client is used directly and fully typed.
 
 export interface CapacityInfo {
   /** null = unlimited */
@@ -18,12 +14,8 @@ export interface CapacityInfo {
   isFull: boolean
 }
 
-function untyped(): SupabaseClient {
-  return createAdminClient()
-}
-
 export async function getCapacityInfo(eventId: string): Promise<CapacityInfo> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const [evRes, countRes] = await Promise.all([
     admin.from('events').select('capacity').eq('id', eventId).maybeSingle(),
     admin
@@ -51,7 +43,7 @@ export async function promoteFromWaitlist(eventId: string): Promise<string | nul
   const { isFull } = await getCapacityInfo(eventId)
   if (isFull) return null
 
-  const admin = untyped()
+  const admin = createAdminClient()
   const { data: next } = await admin
     .from('event_rsvps')
     .select('id, profile_id')
@@ -63,5 +55,5 @@ export async function promoteFromWaitlist(eventId: string): Promise<string | nul
 
   if (!next) return null
   await admin.from('event_rsvps').update({ status: 'going' }).eq('id', next.id)
-  return (next.profile_id as string) ?? null
+  return next.profile_id ?? null
 }

@@ -233,10 +233,12 @@ export function mergeChrome(codeRail: Rail, overrides: ChromeOverrides, route: s
 }
 
 /** The EFFECTIVE rail for a route: the operator override if one exists, else the code
- *  default (railFor). The async, override-aware twin of `railFor`. NOTE: the live shell
- *  does not call this yet — adopting it is a flagged follow-up (see the note above); for
- *  now it powers /admin/page-layout's "current effective rail" column and is the entry
- *  point the shell will switch to. */
+ *  default (railFor). The async, override-aware twin of `railFor`, for SERVER callers
+ *  that want the resolved rail in a single call. NOTE: the shell does NOT route through
+ *  this wrapper — it already applies overrides inline as `mergeChrome(railFor(pathname),
+ *  chromeOverrides, pathname)` in `app-shell.tsx` (the map is loaded once per request in
+ *  `(main)/layout.tsx`), so operator overrides ARE live in rendering. This is the
+ *  convenience entry point for any other server caller that needs the same answer. */
 export async function resolvePageChrome(route: string): Promise<Rail> {
   const overrides = await loadChromeOverrides()
   return mergeChrome(railFor(route), overrides, route)
