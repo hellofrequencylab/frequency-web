@@ -52,8 +52,8 @@ export const PAGE_SETTING_SECTIONS: readonly PageSettingSection[] = [
     id: 'status',
     label: 'Status & visibility',
     question: 'Who can see it?',
-    hint: 'Set draft or published and the lowest role that can reach the page. Activates next.',
-    status: 'next',
+    hint: 'Set draft or published and the lowest role that can reach the page.',
+    status: 'live',
   },
 ] as const
 
