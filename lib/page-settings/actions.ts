@@ -148,8 +148,15 @@ export async function savePageLayout(
   const valid = items.filter((it) => known.has(it.id))
   const order = valid.map((it) => it.id)
   const hidden = valid.filter((it) => !it.enabled).map((it) => it.id)
+  // Build the roles map by iterating the CONSTANT catalog, never the request: the property
+  // KEY is always a known module id (not a user-supplied value), so a crafted `id` can't
+  // inject an arbitrary property. The request only supplies the validated role VALUE.
+  const requestedRole = new Map(valid.map((it) => [it.id, it.role]))
   const roles: Record<string, ModuleRole> = {}
-  for (const it of valid) if (isModuleRole(it.role)) roles[it.id] = it.role
+  for (const id of LAYOUT_MODULE_IDS) {
+    const role = requestedRole.get(id)
+    if (isModuleRole(role)) roles[id] = role
+  }
 
   const { error } = await db()
     .from('page_settings')
