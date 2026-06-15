@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import { Activity, Users, Flame, TrendingUp } from 'lucide-react'
-import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
+import { AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { DashArea, TileGrid, Tile } from '@/components/admin/dash'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
@@ -12,31 +11,19 @@ import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getEngagementDashboard, type FunnelStep, type EventTypeCount } from '@/lib/analytics/dashboard'
 
-// Janitor-only: the live engagement dashboard (ENGAGEMENT-MARKETING-ENGINE.md Phase B).
-// WAM + activation, the activation funnel (where it jams), what's happening in the
-// ledger, and the most-used pages + features. Reads first-party aggregates only.
-// Analytics (ADR-233 §3): StatCard KPIs + a DataTable for the event ledger; the heavy
-// aggregate sits behind one Suspense boundary so the shell never blocks.
-export const dynamic = 'force-dynamic'
+// The "Engagement" tab of the consolidated Insights suite (ADR-263) — formerly /admin/engagement.
+// The live engagement dashboard (ENGAGEMENT-MARKETING-ENGINE.md Phase B): WAM + activation, the
+// activation funnel, the ledger, and the most-used pages + features. First-party aggregates only;
+// the heavy aggregate sits behind one Suspense boundary so the shell never blocks.
 
 const WINDOW_DAYS = 30
 const pct = (n: number) => `${Math.round(n * 100)}%`
 
-export default async function EngagementDashboardPage() {
-  await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
-
+export function EngagementTab() {
   return (
-    <AdminTemplate
-      title="Engagement"
-      eyebrow="Insights"
-      icon={Activity}
-      description={`Live first-party signal over the last ${WINDOW_DAYS} days.`}
-      width="wide"
-    >
-      <Suspense fallback={<EngagementSkeleton />}>
-        <EngagementContent />
-      </Suspense>
-    </AdminTemplate>
+    <Suspense fallback={<EngagementSkeleton />}>
+      <EngagementContent />
+    </Suspense>
   )
 }
 
@@ -53,7 +40,7 @@ async function EngagementContent() {
     <>
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Weekly active" value={d.practice.wam} icon={Users} href="/admin/intel" />
+          <StatCard label="Weekly active" value={d.practice.wam} icon={Users} href="/admin/insights?tab=intel" />
           <StatCard label="Verified · 7d" value={d.practice.verifiedThisWeek} icon={Flame} />
           <StatCard label="New · 30d" value={d.practice.newMembers} icon={TrendingUp} />
           <StatCard label="Activation" value={pct(d.practice.activationRate)} icon={TrendingUp} />
@@ -129,7 +116,6 @@ function FunnelView({ steps }: { steps: FunnelStep[] }) {
     </div>
   )
 }
-
 
 function EngagementSkeleton() {
   return (

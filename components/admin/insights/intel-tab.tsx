@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
-import { Telescope, Users, CircleDot, CalendarDays, Sparkles, Compass } from 'lucide-react'
-import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
+import { Users, CircleDot, CalendarDays, Sparkles, Compass } from 'lucide-react'
+import { AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
@@ -12,7 +11,7 @@ import { getMarketingIntel } from '@/lib/analytics/marketing-intel'
 import type { InterestDemand, GeoRow, GrowthWeek, ContentRow, LeaderRow } from '@/lib/analytics/marketing-intel'
 import { getAcquisitionRollup } from '@/lib/attribution/rollup'
 import type { ChannelRollupRow } from '@/lib/attribution/rollup'
-import { runAcquisitionBackfill } from './actions'
+import { runAcquisitionBackfill } from '@/app/(main)/admin/insights/actions'
 import {
   projectGrowth,
   demandGaps,
@@ -22,14 +21,11 @@ import {
   type StrategyItem,
 } from '@/lib/analytics/marketing-forecast'
 
-// Janitor-only: Vera Marketing Intelligence. Phase 1 (the data spine): real-time,
-// first-party growth / demand / geo / content / leader signal, straight from the
-// deterministic mkt_* aggregates. Phase 2 (shipped): grounded forecasts + strategy.
-// Both stay deterministic and dark-safe (no model call). Analytics (ADR-233 §3):
-// StatCard KPIs + DataTables; the ad-hoc MOMENTUM_LABEL / STATUS_GLYPH dicts and the
-// bespoke Table retire into the tokenized StatusChip + DataTable kit. Heavy aggregates
-// sit behind one Suspense boundary so the shell never blocks.
-export const dynamic = 'force-dynamic'
+// The "Marketing intel" tab of the consolidated Insights suite (ADR-263) — formerly /admin/intel.
+// Vera Marketing Intelligence: real-time, first-party growth / demand / geo / content / leader signal
+// from the deterministic mkt_* aggregates, plus grounded forecasts + strategy. Deterministic, no model
+// call. The one-click acquisition Backfill action is preserved (runAcquisitionBackfill). Heavy
+// aggregates sit behind one Suspense boundary so the shell never blocks.
 
 // Momentum + strategy-status map onto the shared StatusChip tones.
 const MOMENTUM: Record<Momentum, { tone: StatusTone; label: string }> = {
@@ -48,21 +44,11 @@ function fmtDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-export default async function MarketingIntelPage() {
-  await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
-
+export function IntelTab() {
   return (
-    <AdminTemplate
-      title="Marketing intel"
-      icon={Telescope}
-      eyebrow="Insights"
-      description="Real-time growth, demand, and leader signal. The deterministic data spine, with grounded forecasts and a prioritized strategy."
-      width="wide"
-    >
-      <Suspense fallback={<IntelSkeleton />}>
-        <IntelContent />
-      </Suspense>
-    </AdminTemplate>
+    <Suspense fallback={<IntelSkeleton />}>
+      <IntelContent />
+    </Suspense>
   )
 }
 

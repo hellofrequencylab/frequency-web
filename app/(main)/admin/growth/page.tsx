@@ -105,7 +105,7 @@ async function FunnelArea() {
       icon={TrendingUp}
       label="Funnel & activation"
       blurb="New members joining, and how many reach the North-Star moment (a verified practice) within their first week. The funnel shows where it jams."
-      href="/admin/engagement"
+      href="/admin/insights?tab=engagement"
       hrefLabel="Open Engagement"
       footnote={<FreshnessNote at={new Date()} label="Computed" />}
     >
@@ -239,7 +239,7 @@ async function ExpansionArea() {
       icon={TrendingUp}
       label="Expansion"
       blurb="Where local member density is crossing the threshold that justifies opening the next Lab."
-      href="/admin/expansion"
+      href="/admin/insights?tab=expansion"
       hrefLabel="Open Expansion"
     >
       <TileGrid>

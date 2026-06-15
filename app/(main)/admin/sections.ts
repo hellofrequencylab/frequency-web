@@ -36,7 +36,6 @@ import {
   Target,
   Sparkles,
   Telescope,
-  Radar,
   PieChart,
   Bot,
   HelpCircle,
@@ -152,7 +151,6 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/rewards', label: 'Retroactive rewards', desc: 'Reward past behavior. Define a rule, grant once.', Icon: Gift, min: 'admin', section: 'Rewards' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community', section: 'Rewards' },
       // ── Outcomes (the program-side analytics) ──
-      { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and Journeys stall.', Icon: Target, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Outcomes' },
       // ── Enablement ──
       { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community', section: 'Enablement' },
     ],
@@ -180,7 +178,6 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles, plus posted events, claims, and poster quality.', Icon: CalendarDays, min: 'host', staffDomain: 'community', section: 'Activity' },
       { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community', section: 'Activity' },
       // ── Engagement (the member-side analytics) ──
-      { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Engagement' },
       // ── Trust & safety ──
       { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community', section: 'Trust & safety' },
       { href: '/admin/support', label: 'Support', desc: 'Member support tickets and help requests.', Icon: LifeBuoy, min: 'host', staffDomain: 'members', section: 'Trust & safety' },
@@ -223,7 +220,6 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/walkthroughs', label: 'Walkthroughs', desc: 'Instructional walkthroughs by role + trigger', Icon: GraduationCap, min: 'host', staffDomain: 'marketing', section: 'Onboarding' },
       { href: '/admin/onboarding-controls', label: 'Onboarding & referral controls', desc: 'Turn Next Steps prompts, popups, and referrals on or off.', Icon: ToggleRight, min: 'janitor', section: 'Onboarding' },
       // ── Expansion ──
-      { href: '/admin/expansion', label: 'Expansion signal', desc: 'Where density justifies the next Lab.', Icon: Radar, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Expansion' },
     ],
   },
   {
@@ -265,7 +261,6 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       // ── Analytics ──
       { href: '/admin/marketing/analytics', label: 'Marketing analytics', desc: 'Sends, opens, clicks, and bounces by type.', Icon: PieChart, min: 'host', staffDomain: 'marketing', section: 'Analytics' },
       { href: '/admin/marketing/market-read', label: 'Market read', desc: 'Demand, geography, and content performance.', Icon: Telescope, min: 'host', staffDomain: 'marketing', section: 'Analytics' },
-      { href: '/admin/intel', label: 'Lead funnels & intel', desc: 'Real-time growth, demand, and leader signal.', Icon: Telescope, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Analytics' },
       // ── AI operator ──
       { href: '/admin/marketing/agent', label: 'Marketing agent', desc: 'Ask the AI operator to draft, segment, and run the busywork.', Icon: Bot, min: 'host', staffDomain: 'marketing', section: 'AI operator' },
     ],
@@ -286,7 +281,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor', staffDomain: 'platform', section: 'Assistant' },
       // ── Intelligence ──
       { href: '/admin/studio', label: 'AI Studio', desc: 'Ranked AI recommendations and one-click, reversible changes.', Icon: Lightbulb, min: 'admin', staffDomain: 'insights', section: 'Intelligence' },
-      { href: '/admin/insights', label: 'AI read', desc: 'A narrative of what to do next.', Icon: Sparkles, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Intelligence' },
+      { href: '/admin/insights', label: 'Insights', desc: 'All analytics in one place: the read, engagement, outcomes, marketing intel, expansion, and finances.', Icon: Sparkles, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Intelligence' },
     ],
   },
   {

@@ -1,19 +1,17 @@
 import { Landmark, Building2, Wallet, Receipt } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
+import { AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip } from '@/components/admin/status'
 import { getFinanceSummary, formatCents, type FinanceTxn } from '@/lib/finance/dashboard'
 
-export const dynamic = 'force-dynamic'
-
-// Finances — the operator view of the entity-partitioned money ledger (ADR-246). Foundation
-// (nonprofit) and Labs (for-profit) money never commingle; this shows each separately. The
-// ledger fills as flows (tickets, dues, donations, commerce, payouts) are wired to append;
-// until then it reads zeros, which is correct. Read-only + janitor-gated.
-export default async function FinancialsPage() {
+// The "Finances" tab of the consolidated Insights suite (ADR-263) — formerly /admin/financials.
+// The operator view of the entity-partitioned money ledger (ADR-246): Foundation (nonprofit) and
+// Labs (for-profit) money never commingle. Read-only + JANITOR-ONLY (re-checked here, and the suite
+// hides this tab from non-janitor insights staff).
+export async function FinancialsTab() {
   await requireAdmin('janitor')
   const summary = await getFinanceSummary()
 
@@ -44,14 +42,11 @@ export default async function FinancialsPage() {
   ]
 
   return (
-    <AdminTemplate
-      title="Finances"
-      icon={Wallet}
-      eyebrow="Platform"
-      width="wide"
-      description="Money by legal entity. Foundation (nonprofit) and Labs (for-profit) funds are hard-partitioned and never commingle; each is reported on its own here. The ledger fills as ticketing, dues, donations, commerce, and payouts are wired to record into it."
-    >
-      <AdminSection>
+    <>
+      <AdminSection
+        title="Finances"
+        description="Money by legal entity. Foundation (nonprofit) and Labs (for-profit) funds are hard-partitioned and never commingle; each is reported on its own here. The ledger fills as ticketing, dues, donations, commerce, and payouts are wired to record into it."
+      >
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard bordered icon={Wallet} label="Total recorded" value={formatCents(summary.grandTotalCents)} detail={`${summary.txnCount.toLocaleString()} transactions`} />
           {summary.entities.map((e) => (
@@ -107,6 +102,6 @@ export default async function FinancialsPage() {
           }
         />
       </AdminSection>
-    </AdminTemplate>
+    </>
   )
 }

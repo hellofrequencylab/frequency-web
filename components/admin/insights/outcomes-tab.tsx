@@ -1,6 +1,5 @@
 import { Target, Trophy, Map, CircleDot } from 'lucide-react'
-import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
+import { AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { StatusChip } from '@/components/admin/status'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
@@ -12,12 +11,9 @@ import {
   type CircleOutcome,
 } from '@/lib/analytics/outcomes'
 
-// Janitor-only: program/game outcomes (ENGAGEMENT-MARKETING-ENGINE.md Phase C).
-// Where members complete vs stall in challenges, Journeys, and circles — "what's
-// working / what isn't." A low completion rate with real starts is the signal.
-// Analytics (ADR-233 §3): StatCard KPIs + DataTables; the ad-hoc RateCell style
-// retires into a tokenized StatusChip.
-export const dynamic = 'force-dynamic'
+// The "Outcomes" tab of the consolidated Insights suite (ADR-263) — formerly /admin/outcomes.
+// Program/game outcomes: where members complete vs stall in challenges, Journeys, and circles.
+// A low completion rate with real starts is the signal.
 
 // A completion rate this low, with enough starts to matter, is a friction flag.
 function needsAttention(rate: number | null, started: number): boolean {
@@ -37,9 +33,7 @@ function RateChip({ rate, started }: { rate: number | null; started: number }) {
   )
 }
 
-export default async function OutcomesPage() {
-  await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
-
+export async function OutcomesTab() {
   const { challenges, quests, circles, circleStatus } = await getOutcomeReport()
 
   const flagged =
@@ -107,13 +101,7 @@ export default async function OutcomesPage() {
   ]
 
   return (
-    <AdminTemplate
-      title="Outcomes"
-      eyebrow="Insights"
-      icon={Target}
-      description="Completion and stall points across the game and circles. A low rate with real starts is where a program is not landing."
-      width="wide"
-    >
+    <>
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard label="Challenges tracked" value={challenges.length} icon={Trophy} />
@@ -166,6 +154,6 @@ export default async function OutcomesPage() {
           empty={<EmptyState variant="first-use" icon={CircleDot} title="No member circles yet" description="Circles appear here as members create them." />}
         />
       </AdminSection>
-    </AdminTemplate>
+    </>
   )
 }

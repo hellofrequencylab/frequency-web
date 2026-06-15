@@ -1,77 +1,76 @@
-import { Sparkles } from 'lucide-react'
+import { LineChart } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate } from '@/components/templates'
-import { DashArea, TileGrid, Tile, SeverityChip } from '@/components/admin/dash'
-import { FreshnessNote } from '@/components/admin/freshness-note'
-import { EmptyState } from '@/components/ui/empty-state'
-import { getEngagementRead, type Severity } from '@/lib/analytics/engagement-read'
+import { isJanitor } from '@/lib/core/roles'
+import { AdminTemplate, AdminSection } from '@/components/templates'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
+import { ReadTab } from '@/components/admin/insights/read-tab'
+import { EngagementTab } from '@/components/admin/insights/engagement-tab'
+import { OutcomesTab } from '@/components/admin/insights/outcomes-tab'
+import { IntelTab } from '@/components/admin/insights/intel-tab'
+import { ExpansionTab } from '@/components/admin/insights/expansion-tab'
+import { FinancialsTab } from '@/components/admin/insights/financials-tab'
 
-// Janitor-only: the Engagement Read (ENGAGEMENT-MARKETING-ENGINE.md Phase D). Reads
-// the live signal and names what's working, what's jamming, and what to do — the
-// product/retention twin of the Market Read. Synthesis is deterministic + grounded.
-// Narrative dashboard (ADR-233 §3): Vera's read leads on the canvas, then the ranked
-// insights as a tiled attention spine. The per-page SEVERITY dict is retired into the
-// shared SeverityChip vocabulary.
+// The consolidated INSIGHTS suite (ADR-263): one tabbed surface that absorbed the six
+// scattered analytics pages — the Read, Engagement, Outcomes, Marketing intel, Expansion,
+// and Finances — so all the platform's analytics live in one place instead of six routes.
+// Tabs are query-param views (the UnderlineTabs pattern, like /admin/members), so only the
+// active tab's data loads and the URL stays shareable. Read is the default (so /admin/insights
+// keeps its old meaning). Finances is janitor-only; the other five admit insights staff too.
 export const dynamic = 'force-dynamic'
 
-// The Read's severities map onto the shared SeverityChip vocabulary.
-const SEVERITY_CHIP: Record<Severity, 'risk' | 'watch' | 'good'> = {
-  risk: 'risk',
-  watch: 'watch',
-  good: 'good',
+const TAB_KEYS = ['read', 'engagement', 'outcomes', 'intel', 'expansion', 'financials'] as const
+type TabKey = (typeof TAB_KEYS)[number]
+
+const TAB_LABEL: Record<TabKey, string> = {
+  read: 'Read',
+  engagement: 'Engagement',
+  outcomes: 'Outcomes',
+  intel: 'Marketing intel',
+  expansion: 'Expansion',
+  financials: 'Finances',
 }
 
-export default async function InsightsPage() {
-  await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
+export default async function InsightsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
+  const { webRole } = await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
+  const janitor = isJanitor(webRole)
 
-  const read = await getEngagementRead()
+  const { tab: raw } = await searchParams
+  // Finances is janitor-only; coerce a non-janitor (insights staff) away from it. Anything
+  // unknown falls back to the Read.
+  const valid = (TAB_KEYS as readonly string[]).includes(raw ?? '') && (raw !== 'financials' || janitor)
+  const tab: TabKey = valid ? (raw as TabKey) : 'read'
+
+  // Read lives at the bare route so /admin/insights keeps working; the rest carry ?tab=.
+  const href = (t: TabKey) => (t === 'read' ? '/admin/insights' : `/admin/insights?tab=${t}`)
+  const visible: TabKey[] = TAB_KEYS.filter((t) => t !== 'financials' || janitor)
 
   return (
     <AdminTemplate
-      title="Engagement Read"
+      title="Insights"
       eyebrow="Insights"
-      icon={Sparkles}
-      description="What is working, what is jamming, and what to do. Read off the live signal."
+      icon={LineChart}
+      description="The platform's analytics in one place: the engagement read, the activation funnel, program outcomes, marketing intel, expansion signal, and finances."
       width="wide"
     >
-      <DashArea
-        icon={Sparkles}
-        label="The read"
-        blurb="Vera reads the live engagement signal and names the next move. Start with whatever she flags as needing attention."
-        footnote={<FreshnessNote at={new Date()} label="Computed" />}
-      >
-        <TileGrid>
-          <Tile span={3}>
-            <p className="text-sm font-medium leading-relaxed text-text">{read.summary}</p>
-          </Tile>
+      <AdminSection>
+        <UnderlineTabs
+          activeHref={href(tab)}
+          tabs={visible.map((t) => ({ href: href(t), label: TAB_LABEL[t] }))}
+        />
+      </AdminSection>
 
-          {read.insights.length === 0 ? (
-            <Tile span={3}>
-              <EmptyState
-                variant="first-use"
-                icon={Sparkles}
-                title="No signal to read yet"
-                description="Insights appear here once members are active and the signal has something to say."
-              />
-            </Tile>
-          ) : (
-            <Tile label="What needs attention" span={3}>
-              <ul className="space-y-3.5">
-                {read.insights.map((i) => (
-                  <li key={i.id} className="flex items-start gap-3">
-                    <SeverityChip severity={SEVERITY_CHIP[i.severity]} />
-                    <div className="min-w-0 text-sm leading-snug">
-                      <span className="font-semibold text-text">{i.title}.</span>{' '}
-                      <span className="text-muted">{i.finding}</span>{' '}
-                      <span className="text-text">→ {i.recommendation}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </Tile>
-          )}
-        </TileGrid>
-      </DashArea>
+      <div className="mt-2">
+        {tab === 'read' && <ReadTab />}
+        {tab === 'engagement' && <EngagementTab />}
+        {tab === 'outcomes' && <OutcomesTab />}
+        {tab === 'intel' && <IntelTab />}
+        {tab === 'expansion' && <ExpansionTab />}
+        {tab === 'financials' && <FinancialsTab />}
+      </div>
     </AdminTemplate>
   )
 }
