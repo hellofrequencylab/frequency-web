@@ -6,17 +6,20 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { isSafeRoute, isRail, type Rail } from '@/lib/layout/page-chrome'
 
-// Server actions for the Page layout manager (back-end chrome management). Janitor-only,
-// like the Menu manager (the rail is platform chrome): the gate redirects an unauthorized
+// Server actions for chrome management — both the back-end Page layout manager and the
+// on-page "Page" settings group (docs/EMBEDDED-ADMIN.md inline layer). STAFF (admin+,
+// ADR-208), the chrome being platform presentation: the gate redirects an unauthorized
 // viewer, and we capture the id for `updated_by`. Writes go through the service-role admin
-// client into public.page_chrome_overrides. Each action revalidates this surface AND the
-// whole layout so the override is in place the moment the shell adopts the resolver
-// (a flagged follow-up — see lib/layout/page-chrome.ts).
+// client into public.page_chrome_overrides. Each action revalidates the manager surface
+// AND the whole layout so a saved override is live on the next request (the shell merges
+// it over the code chrome map).
 
 const LIST_PATH = '/admin/page-layout'
 
 async function gate(): Promise<string> {
-  const { profileId } = await requireAdmin('janitor')
+  // 'admin' = the STAFF axis (web_role admin OR janitor). Surfacing chrome on the page
+  // for "admin and above" requires Site Admins to write, not janitors only.
+  const { profileId } = await requireAdmin('admin')
   return profileId
 }
 

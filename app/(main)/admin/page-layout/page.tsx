@@ -12,7 +12,7 @@ import { RouteChromeRow } from '@/components/admin/page-layout/route-chrome-row'
 
 export const dynamic = 'force-dynamic'
 
-// The Page layout manager (janitor-only) — back-end management of the PAGE TEMPLATE /
+// The Page layout manager (staff, admin+) — back-end management of the PAGE TEMPLATE /
 // CHROME structure (docs/PAGE-FRAMEWORK.md §3/§8). It lists the meaningful surfaces from
 // the code chrome map (lib/layout/page-chrome.ts MANAGED_ROUTES) alongside each one's
 // CURRENT effective rail (the code default merged with any saved override), each editable.
@@ -31,7 +31,7 @@ const AREA_HINT: Record<ManagedRoute['area'], string> = {
 }
 
 export default async function PageLayoutAdminPage() {
-  await requireAdmin('janitor')
+  await requireAdmin('admin')
 
   // Fail-safe: an empty map (code defaults) on any error or pre-migration.
   const overrides = await loadChromeOverrides()
