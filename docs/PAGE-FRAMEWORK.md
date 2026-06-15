@@ -107,11 +107,11 @@ Context header band + context tabs + body + **scope-aware** right rail.
 This is the answer to *"add different functions depending on the page… like
 widgets that show up when assigned… without rebuilding every page."*
 
-> ✅ **Shipped — the per-route module-assignment engine (ADR-270, 2026-06-15).** The
-> first concrete slice of this section is live: a page's **interior** modules are
-> assigned per route and tuned from the on-page Layout editor. The sketch below (the
-> scope cascade, per-role gates, `<WidgetSlot>`) is the wider target this builds toward.
-> What exists today:
+> ✅ **Shipped — the per-route module-assignment engine (ADR-270 + ADR-271, 2026-06-15).** A
+> page's **interior** modules are assigned per route and tuned from the on-page Layout editor,
+> now with a **scope cascade** (route → section → global) and a **per-module role gate**. The
+> remaining sketch below (the interior **slot** model / `<WidgetSlot>` — assignable areas within
+> the container) is the wider target this builds toward. What exists today:
 >
 > | Concern | Where | Note |
 > |---|---|---|
@@ -119,8 +119,10 @@ widgets that show up when assigned… without rebuilding every page."*
 > | **Component binding** | [`lib/widgets/registry.tsx`](../lib/widgets/registry.tsx) | `componentFor(id)` binds each id to its self-fetching RSC ([`components/widgets/`](../components/widgets)) |
 > | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | merges the stored `{order,hidden}` over the registry default order |
 > | **Renderer** | [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) | `<PageModules route>` — each module in its own `<Suspense>` (§5), `null` when empty |
-> | **Storage** | `page_settings.layout` jsonb `{order,hidden}` | reused from the page-settings store (no new migration) |
-> | **Editor** | [`components/admin/page-settings/layout-editor.tsx`](../components/admin/page-settings/layout-editor.tsx) | the on-page Layout settings row (toggle + reorder), staff-gated; section is `live` in [`lib/page-settings/sections.ts`](../lib/page-settings/sections.ts) |
+> | **Storage** | `page_settings.layout` jsonb `{order,hidden,roles}` | reused from the page-settings store (no new migration) |
+> | **Scope cascade** (ADR-271) | [`lib/page-settings/{layout.ts,store.ts}`](../lib/page-settings) | a layout saves at the exact route, its section (`/seg/*`), or global (`*`); `loadLayoutForRoute` resolves most-specific-wins |
+> | **Per-module role gate** (ADR-271) | `applyRoleGate` + [`viewer-role.ts`](../lib/page-settings/viewer-role.ts) | `roles[id]` = lowest community rung to see a module; view-as-aware, fail-closed |
+> | **Editor** | [`components/admin/page-settings/layout-editor.tsx`](../components/admin/page-settings/layout-editor.tsx) | the on-page Layout settings row (scope switch + toggle + reorder + per-module "Who sees it"), staff-gated; section is `live` in [`lib/page-settings/sections.ts`](../lib/page-settings/sections.ts) |
 >
 > **Add a module:** one meta entry in `modules.ts` + bind its component in `registry.tsx`.
 > Nothing else. **Assign per route:** open the page's on-page **Layout** settings (order +
