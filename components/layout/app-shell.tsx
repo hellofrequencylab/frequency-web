@@ -55,7 +55,7 @@ import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
-import { railFor, leftRailFor, mergeChrome, type ChromeOverrides, type Rail } from '@/lib/layout/page-chrome'
+import { railFor, leftRailFor, mergeChrome, type ChromeOverrides } from '@/lib/layout/page-chrome'
 import type { WebRole } from '@/lib/core/roles'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
@@ -1241,10 +1241,6 @@ export default function AppShell({
   // loaded server-side and passed in) wins over the code chrome map; absent → code default.
   const effectiveRail = mergeChrome(railFor(pathname), chromeOverrides ?? {}, pathname)
   const showSidebar = !!sidebar && effectiveRail === 'global'
-  // The raw saved chrome override for THIS route (not the merged effective rail) —
-  // handed to the on-page Page settings so its rail control reflects the saved state
-  // without an extra fetch. null = no override (following the code default).
-  const chromeOverride: Rail | null = chromeOverrides?.[pathname] ?? null
 
   // The global MEMBER left rail is swapped out on workspace routes (today: /admin/*),
   // which mount their OWN left nav in their layout (the admin sidebar). Suppressing
@@ -1464,7 +1460,7 @@ export default function AppShell({
                   provider — not floating above the page. */}
               <main className="flex-1 min-w-0 py-6" data-tour-anchor="content">
                 <Breadcrumbs />
-                <PageAdminProvider value={{ role: gateRole, staffRole, webRole, chromeOverride }}>
+                <PageAdminProvider value={{ role: gateRole, staffRole, webRole }}>
                   {children}
                 </PageAdminProvider>
                 {showFooter && (

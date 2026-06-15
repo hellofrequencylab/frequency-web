@@ -2,15 +2,18 @@ import { describe, it, expect } from 'vitest'
 import { PAGE_SETTING_SECTIONS, canManagePageSettings } from './sections'
 
 describe('page-settings spine', () => {
-  it('declares the four page-level sections in spine order', () => {
-    expect(PAGE_SETTING_SECTIONS.map((s) => s.id)).toEqual(['chrome', 'seo', 'status', 'layout'])
+  it('declares the interior page sections in spine order', () => {
+    expect(PAGE_SETTING_SECTIONS.map((s) => s.id)).toEqual(['layout', 'seo', 'status'])
   })
 
-  it('ships Chrome live and stages the rest as the next shifts', () => {
-    const live = PAGE_SETTING_SECTIONS.filter((s) => s.status === 'live').map((s) => s.id)
-    const next = PAGE_SETTING_SECTIONS.filter((s) => s.status === 'next').map((s) => s.id)
-    expect(live).toEqual(['chrome'])
-    expect(next).toEqual(['seo', 'status', 'layout'])
+  it('is interior-only — never exposes a shell-chrome control', () => {
+    // The shell rail (global chrome) is a platform concern, not a page setting.
+    expect(PAGE_SETTING_SECTIONS.map((s) => s.id)).not.toContain('chrome')
+  })
+
+  it('stages every section until its interior engine lands', () => {
+    const live = PAGE_SETTING_SECTIONS.filter((s) => s.status === 'live')
+    expect(live).toEqual([])
   })
 
   it('every section carries an operator label, a question, and a hint', () => {

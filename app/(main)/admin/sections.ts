@@ -301,7 +301,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       // ── Platform ──
       { href: '/admin/menu', label: 'Menu manager', desc: 'Order and hide the one shared nav menu; set who reaches each item.', Icon: Menu, min: 'janitor', section: 'Platform' },
-      { href: '/pages', label: 'Pages', desc: 'Edit public pages and content blocks.', Icon: FileText, min: 'janitor', section: 'Platform' },
+      { href: '/pages', label: 'Pages', desc: 'The page library: open any page to edit it in place. Marketing pages + beta induction too.', Icon: FileText, min: 'admin', section: 'Platform' },
       { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor', section: 'Platform' },
       { href: '/admin/appearance', label: 'Theme Studio', desc: 'Brand themes, palettes, and seasonal looks. Edit and assign without code.', Icon: Palette, min: 'janitor', section: 'Platform' },
       { href: '/admin/spaces', label: 'Spaces', desc: 'White-label tenants: assign each Space its theme, brand name, accent, and logo.', Icon: Building2, min: 'janitor', section: 'Platform' },

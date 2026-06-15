@@ -1,55 +1,34 @@
 'use client'
 
-import { PanelRight, Search, Eye, LayoutGrid, type LucideIcon } from 'lucide-react'
-import { railFor, type Rail } from '@/lib/layout/page-chrome'
-import { RouteChromeRow } from '@/components/admin/page-layout/route-chrome-row'
+import { LayoutGrid, Search, Eye, type LucideIcon } from 'lucide-react'
 import { PAGE_SETTING_SECTIONS, type PageSettingSection } from '@/lib/page-settings/sections'
 
 // The staff-only "Page" group inside the on-page Settings panel (PageAdminBar). Where
-// the entity modules tune a circle/event, this tunes THE PAGE ITSELF — surfacing the
-// page-level settings that used to live only in the back end (/admin/page-layout) onto
-// the page, for admin+ (gated upstream by canManagePageSettings; every write re-checks).
+// the entity modules tune a circle/event, this tunes THE INTERIOR of the page itself —
+// what shows inside the page container and how it reads (docs/EMBEDDED-ADMIN.md inline
+// layer). It deliberately does NOT touch the app shell chrome (the global rails): the
+// shell rail is platform chrome managed once in /admin/page-layout, never per page here.
 //
-// It renders the full spine (lib/page-settings/sections.ts) so the panel shows the whole
-// intended shape: Chrome is wired LIVE (it reuses the live RouteChromeRow + page-chrome
-// override store); SEO / Status / Layout render as honest, non-interactive "Next" rows
-// until their shift lands. Nothing here pretends a staged control works.
+// It renders the interior spine (lib/page-settings/sections.ts) so staff see the whole
+// intended shape; each section is staged as an honest, non-interactive "Next" row until
+// its interior engine lands (Layout = the WidgetSlot engine; SEO + Status = a per-route
+// store). Nothing here pretends a staged control works.
 
 const SECTION_ICON: Record<PageSettingSection['id'], LucideIcon> = {
-  chrome: PanelRight,
+  layout: LayoutGrid,
   seo: Search,
   status: Eye,
-  layout: LayoutGrid,
 }
 
-export function PageSettingsModule({
-  pathname,
-  chromeOverride,
-}: {
-  /** The route this panel is framing (the live page). */
-  pathname: string
-  /** The saved chrome override for this route, or null to follow the code default. */
-  chromeOverride: Rail | null
-}) {
+export function PageSettingsModule() {
   return (
     <div className="min-w-0">
-      <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page</p>
+      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Page</p>
+      <p className="mb-3 mt-0.5 text-xs text-muted">
+        Tune what shows inside this page. The app shell (the global rails and header) stays put.
+      </p>
       <div className="space-y-3">
         {PAGE_SETTING_SECTIONS.map((section) => {
-          if (section.id === 'chrome') {
-            // LIVE — reuses the same control + backend as /admin/page-layout, scoped to
-            // this exact route. Saving takes effect on the next request (the shell merges
-            // the override over the code chrome map).
-            return (
-              <RouteChromeRow
-                key={section.id}
-                route={pathname}
-                label={section.label}
-                codeRail={railFor(pathname)}
-                initialOverride={chromeOverride}
-              />
-            )
-          }
           const Icon = SECTION_ICON[section.id]
           return (
             <div

@@ -1,8 +1,9 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { ExternalLink, Pencil, Rocket, ArrowRight, Sparkles } from 'lucide-react'
-import { getJanitor } from '@/lib/page-editor/guard'
+import { requireAdmin } from '@/lib/admin/guard'
+import { isJanitor } from '@/lib/core/roles'
 import { EDITABLE_PAGES, listPages } from '@/lib/page-editor/data'
+import { MANAGED_ROUTES } from '@/lib/layout/page-chrome'
 import { listAllSequences } from '@/lib/onboarding/resolve-sequence'
 import { IndexTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -18,17 +19,83 @@ function fmt(d: string | null | undefined): string {
 }
 
 export default async function PagesDirectory() {
-  // Janitor-only. This is the directory of editable public "static" pages.
-  if (!(await getJanitor())) notFound()
+  // Page management is STAFF (admin+, ADR-261/262): the Library is the one place to find
+  // any page and open it ready to edit. Site Admins get the in-app pages (open in place
+  // with edit mode on); the public marketing + beta induction editors stay Executive-
+  // Admin (janitor) only, so a Site Admin never dead-ends in a gated editor — those
+  // sections are simply hidden below.
+  const { webRole } = await requireAdmin('admin')
+  const janitor = isJanitor(webRole)
 
-  const pages = await listPages()
-  const splashVersions = (await listAllSequences()).filter((s) => s.source === 'custom')
+  const pages = janitor ? await listPages() : {}
+  const splashVersions = janitor
+    ? (await listAllSequences()).filter((s) => s.source === 'custom')
+    : []
+
+  // The in-app member-facing surfaces an operator opens to edit in place. The shell
+  // workspace under /admin manages itself, so the Operator area is left out here.
+  const inAppByArea = (['Member', 'Focus surfaces'] as const).map((area) => ({
+    area,
+    routes: MANAGED_ROUTES.filter((r) => r.area === area),
+  }))
 
   return (
     <IndexTemplate
       title="Pages"
-      description="Edit your public-facing pages: the home page's search copy, the marketing pages, the beta induction, and the audience splash pages. Changes go live when you publish. The member app isn't affected."
+      description="Find any page and open it ready to edit. In-app pages open in place with edit mode on. The public marketing pages and the beta induction open in their own editors and go live when you publish."
     >
+      {/* ── In-app pages — open the real page with edit mode on (ADR-261/262) ── */}
+      <SectionHeader title="In-app pages" />
+      <p className="-mt-1 mb-4 max-w-2xl text-sm text-muted">
+        Open any member-facing page with edit mode on. Staff edit it in place, right on the page.
+      </p>
+      <div className="mb-10 max-w-3xl space-y-6">
+        {inAppByArea.map(({ area, routes }) => (
+          <div key={area}>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-subtle">{area}</p>
+            <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-subtle">
+                    <th className="px-4 py-2.5 font-semibold">Page</th>
+                    <th className="px-4 py-2.5 font-semibold">Route</th>
+                    <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {routes.map((r) => (
+                    <tr key={r.route} className="border-b border-border/60 last:border-0">
+                      <td className="px-4 py-3 font-medium text-text">{r.label}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-subtle">{r.route}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-3">
+                          <a
+                            href={r.route}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-muted hover:text-text"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" /> View
+                          </a>
+                          <Link
+                            href={`${r.route}?edit=1`}
+                            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                          >
+                            <Pencil className="h-3.5 w-3.5" /> Open &amp; edit
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {janitor && (
+        <>
       {/* ── Beta splash — the front door, edited live ── */}
       <Link
         href="/pages/splash"
@@ -204,6 +271,8 @@ export default async function PagesDirectory() {
           )}
         </div>
       </div>
+        </>
+      )}
     </IndexTemplate>
   )
 }
