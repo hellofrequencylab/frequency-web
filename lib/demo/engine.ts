@@ -65,8 +65,8 @@ type Channel = {
   activities: string[]
   bio: string[]
   intro: string[]      // ghost / newcomer
-  regular: string[]    // echo / signal
-  host: string[]       // conduit / luminary
+  regular: string[]    // initiate / adept
+  host: string[]       // adept / master
   reply: string[]
   event: string[]
 }
@@ -180,24 +180,22 @@ const EVENT_DESC = [
   'Show up — that’s the only requirement. The rest takes care of itself.',
 ]
 
-// Rank bands (ghost -> luminary) — economy values per rank.
+// Rank bands (ghost -> master) — economy values per rank.
 const BAND = {
-  ghost:     { z: [5, 95],     g: [5, 60],     s: [0, 3],   a: [1, 4] },
-  echo:      { z: [100, 290],  g: [50, 150],   s: [2, 8],   a: [4, 7] },
-  signal:    { z: [300, 740],  g: [150, 400],  s: [5, 14],  a: [7, 11] },
-  beacon:    { z: [750, 1450], g: [400, 800],  s: [10, 20], a: [11, 16] },
-  conduit:   { z: [1500, 2100],g: [800, 1400], s: [16, 30], a: [16, 22] },
-  luminary:  { z: [2200, 3200],g: [1500, 2500],s: [30, 52], a: [22, 28] },
+  ghost:    { z: [5, 95],     g: [5, 60],     s: [0, 3],   a: [1, 4] },
+  initiate: { z: [100, 290],  g: [50, 150],   s: [2, 8],   a: [4, 7] },
+  adept:    { z: [300, 740],  g: [150, 400],  s: [5, 14],  a: [7, 11] },
+  master:   { z: [750, 1450], g: [400, 800],  s: [10, 20], a: [11, 16] },
 } as const
 type Rank = keyof typeof BAND
-// A believable roster: 1 host (conduit), a couple crew (beacon), a long low tail.
+// A believable roster: 1 host (adept), a couple crew (initiate), a long low tail.
 function rosterRanks(r: Rand, size: number): Rank[] {
-  const ranks: Rank[] = ['conduit'] // host
-  if (size > 8) ranks.push('beacon')
-  if (size > 14) ranks.push('beacon')
+  const ranks: Rank[] = ['adept'] // host
+  if (size > 8) ranks.push('initiate')
+  if (size > 14) ranks.push('initiate')
   while (ranks.length < size) {
     const roll = r()
-    ranks.push(roll < 0.45 ? 'ghost' : roll < 0.78 ? 'echo' : 'signal')
+    ranks.push(roll < 0.45 ? 'ghost' : roll < 0.78 ? 'initiate' : 'adept')
   }
   return ranks
 }
@@ -255,8 +253,7 @@ export type AreaPlan = {
 
 function tenureForRank(r: Rand, rank: Rank): number {
   const map: Record<Rank, [number, number]> = {
-    ghost: [0, 4], echo: [4, 16], signal: [12, 30],
-    beacon: [24, 44], conduit: [36, 52], luminary: [44, 52],
+    ghost: [0, 4], initiate: [4, 16], adept: [12, 30], master: [24, 52],
   }
   return int(r, ...map[rank])
 }
@@ -299,7 +296,7 @@ export function buildPlan(spec: AreaSpec, palette?: Palette | null): AreaPlan {
     const people: PersonPlan[] = ranks.map((rank, i) => {
       const first = pick(r, firstPool), last = pick(r, lastPool)
       const handle = uniqHandle(first, last)
-      const role: PersonPlan['role'] = i === 0 ? 'host' : rank === 'beacon' && i <= 2 ? 'crew' : 'member'
+      const role: PersonPlan['role'] = i === 0 ? 'host' : rank === 'initiate' && i <= 2 ? 'crew' : 'member'
       const b = BAND[rank]
       return {
         key: `${slug}:${i}`, name: `${first} ${last}`, handle, rank, role,
@@ -317,7 +314,7 @@ export function buildPlan(spec: AreaSpec, palette?: Palette | null): AreaPlan {
       const author = people[int(r, 0, people.length - 1)]
       const poolByStage =
         author.rank === 'ghost' ? ch.intro :
-        author.rank === 'conduit' || author.rank === 'luminary' ? ch.host : ch.regular
+        author.rank === 'adept' || author.rank === 'master' ? ch.host : ch.regular
       const body = fill(pick(r, poolByStage), { place, activity, day: pick(r, DAYS), time: pick(r, TIMES) })
       const ageMin = int(r, 30, Math.max(60, author.tenureWeeks * 7 * 24 * 60))
       const nReplies = r() < 0.5 ? int(r, 1, 4) : 0
@@ -347,10 +344,10 @@ export function buildPlan(spec: AreaSpec, palette?: Palette | null): AreaPlan {
   const gFirst = pick(r, firstPool), gLast = pick(r, lastPool)
   const guide: PersonPlan = {
     key: 'guide', name: `${gFirst} ${gLast}`, handle: uniqHandle(gFirst, gLast),
-    rank: 'luminary', role: 'guide',
+    rank: 'master', role: 'guide',
     bio: fill('Guide for the {place} neighborhood. My whole job is helping you find your circle and your people. Say hi.', { place: spec.areaName }),
-    zaps: int(r, BAND.luminary.z[0], BAND.luminary.z[1]), gems: int(r, BAND.luminary.g[0], BAND.luminary.g[1]),
-    streak: int(r, BAND.luminary.s[0], BAND.luminary.s[1]), achievements: int(r, BAND.luminary.a[0], BAND.luminary.a[1]),
+    zaps: int(r, BAND.master.z[0], BAND.master.z[1]), gems: int(r, BAND.master.g[0], BAND.master.g[1]),
+    streak: int(r, BAND.master.s[0], BAND.master.s[1]), achievements: int(r, BAND.master.a[0], BAND.master.a[1]),
     tenureWeeks: 52,
   }
   totals.people += 1
@@ -550,7 +547,7 @@ async function insertProfile(d: SupabaseClient, p: PersonPlan, region: string | 
     avatar_url: `https://i.pravatar.cc/240?u=${p.handle}`,
     current_season_rank: p.rank, current_season_zaps: p.zaps, lifetime_zaps: p.zaps,
     lifetime_gems: p.gems, current_streak: p.streak, longest_streak: p.streak,
-    achievement_count: p.achievements, season_challenges_complete: p.rank === 'luminary',
+    achievement_count: p.achievements,
     last_seen_at: new Date(Date.now() - Math.floor(rng2() * 72) * 3600_000).toISOString(),
     is_active: true, is_demo: true,
   }).select('id').single()

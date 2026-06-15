@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getOnboardingStatus, type OnboardingStatus } from '@/lib/onboarding/status'
 import { getPracticeStreak, type PracticeStreakState } from '@/lib/practice-streak'
 import { getMemberJourneyProgress, type MemberJourneyProgress } from '@/lib/journeys/progress'
-import { rankForZaps, getRankDef, SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { rankForCompletion, journeysFinishedThisSeason, getRankDef, SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 
 // --- the ladder ------------------------------------------------------------
 
@@ -40,8 +40,9 @@ export function stageByKey(key: StageKey): MemberStage {
 const REGULAR_STREAK = 7
 const ESTABLISHED_STREAK = 30
 const ANCHOR_STREAK = 100
-const SIGNAL_ZAPS = 300 // Signal rank
-const CONDUIT_ZAPS = 1500 // Conduit rank
+// Stage gates that previously used rank zaps now use Journey completions (ADR-Quest).
+const ESTABLISHED_JOURNEYS = 1 // one Journey completion gates established
+const ANCHOR_JOURNEYS = 2      // two Journey completions can gate anchor
 
 // --- pure derivation -------------------------------------------------------
 
@@ -53,14 +54,17 @@ export interface ProgressSignals {
   journeys: number
   /** Active circle memberships. */
   circles: number
+  /** Season Zaps (for the standing display). */
   seasonZaps: number
+  /** Journeys finished this season (drives rank in the completion model). */
+  journeysFinished: number
 }
 
 /** The member's stage from their signals. Monotonic in every signal. Pure. */
 export function deriveStage(s: ProgressSignals): StageKey {
   if (!s.activationComplete) return 'newcomer'
-  if (s.streak >= ANCHOR_STREAK || s.seasonZaps >= CONDUIT_ZAPS) return 'anchor'
-  if (s.streak >= ESTABLISHED_STREAK || s.seasonZaps >= SIGNAL_ZAPS || s.journeys >= 2) return 'established'
+  if (s.streak >= ANCHOR_STREAK || s.journeysFinished >= ANCHOR_JOURNEYS) return 'anchor'
+  if (s.streak >= ESTABLISHED_STREAK || s.journeysFinished >= ESTABLISHED_JOURNEYS || s.journeys >= 2) return 'established'
   if (s.streak >= REGULAR_STREAK || s.journeys >= 1) return 'regular'
   return 'finding_feet'
 }
@@ -84,12 +88,12 @@ export function gatesFor(stage: StageKey, s: ProgressSignals): NextGate[] {
       return [
         { label: `Reach a ${ESTABLISHED_STREAK}-day streak`, met: s.streak >= ESTABLISHED_STREAK },
         { label: 'Follow two Journeys', met: s.journeys >= 2 },
-        { label: 'Climb to Signal rank', met: s.seasonZaps >= SIGNAL_ZAPS },
+        { label: 'Finish a Journey this season', met: s.journeysFinished >= ESTABLISHED_JOURNEYS },
       ]
     case 'established':
       return [
         { label: `Reach a ${ANCHOR_STREAK}-day streak`, met: s.streak >= ANCHOR_STREAK },
-        { label: 'Climb to Conduit rank', met: s.seasonZaps >= CONDUIT_ZAPS },
+        { label: 'Finish two Journeys this season', met: s.journeysFinished >= ANCHOR_JOURNEYS },
       ]
     case 'anchor':
       return []
@@ -141,7 +145,7 @@ export interface MemberProgress {
 export async function getMemberProgress(profileId: string): Promise<MemberProgress> {
   const admin = createAdminClient()
 
-  const [onboarding, streakState, journeys, { data: profile }, { count: circleCount }] =
+  const [onboarding, streakState, journeys, { data: profile }, { count: circleCount }, finishedCount] =
     await Promise.all([
       getOnboardingStatus(profileId),
       getPracticeStreak(profileId),
@@ -152,6 +156,7 @@ export async function getMemberProgress(profileId: string): Promise<MemberProgre
         .select('id', { count: 'exact', head: true })
         .eq('profile_id', profileId)
         .eq('status', 'active'),
+      journeysFinishedThisSeason(profileId),
     ])
 
   const seasonZaps = (profile?.current_season_zaps as number | null) ?? 0
@@ -162,20 +167,21 @@ export async function getMemberProgress(profileId: string): Promise<MemberProgre
     journeys: journeys.length,
     circles: circleCount ?? 0,
     seasonZaps,
+    journeysFinished: finishedCount,
   }
 
   const stageKey = deriveStage(signals)
   const stage = stageByKey(stageKey)
   const next = nextStage(stageKey)
 
-  // Rank progress.
-  const rankKey = rankForZaps(seasonZaps)
+  // Rank progress — completion-based (ADR-Quest).
+  const rankKey = rankForCompletion(finishedCount)
   const rankDef = getRankDef(rankKey)
   const nextRankDef = SEASON_RANKS.find((r) => r.order === rankDef.order + 1) ?? null
   const rank = {
     rank: rankKey,
     label: RANK_LABELS[rankKey],
-    toNextZaps: nextRankDef ? Math.max(0, nextRankDef.minZaps - seasonZaps) : null,
+    toNextZaps: nextRankDef ? Math.max(0, nextRankDef.minJourneys - finishedCount) : null,
     nextLabel: nextRankDef ? nextRankDef.label : null,
   }
 

@@ -44,13 +44,23 @@ async function grantGemsOnce(
   return true
 }
 
-/** Grant the Gems for the phase/journey milestones in `events` (idempotent). Returns what was
- *  NEWLY granted (for the celebration toast). */
+/** Grant the Gems for the PHASE milestones in `events` (idempotent). Returns what was
+ *  NEWLY granted (for the celebration toast).
+ *
+ *  `completionGems` is retained on the signature for caller compatibility but is no
+ *  longer paid: per the Quest COMPLETION model (ADR-Quest), finishing a Journey is no
+ *  longer "checked off every lesson" — it is logging the Journey's Practices on 14
+ *  distinct days + completing its Expression Challenge, and the completion engine
+ *  (lib/quest/complete.ts) owns the finish rewards (+75 Zaps, an escalating Gem
+ *  rank-bonus, and the Trophy). The old flat-30 journey-complete grant is retired here
+ *  so a Journey is never double-rewarded. */
 export async function grantJourneyRewards(opts: {
   profileId: string
-  completionGems: number
+  /** @deprecated retired by ADR-Quest — no longer paid (see fn doc). Kept for callers. */
+  completionGems?: number
   events: readonly JourneyRewardEvent[]
 }): Promise<GrantedJourneyReward[]> {
+  void opts.completionGems // intentionally unused — journey-complete Gems retired (ADR-Quest)
   const admin = db()
   const granted: GrantedJourneyReward[] = []
   for (const ev of opts.events) {
@@ -59,12 +69,10 @@ export async function grantJourneyRewards(opts: {
       if (await grantGemsOnce(admin, ev.idempotencyKey, opts.profileId, PHASE_COMPLETE_GEMS, label)) {
         granted.push({ kind: 'phase', gems: PHASE_COMPLETE_GEMS, label: ev.phaseTitle ?? 'Phase complete' })
       }
-    } else if (ev.kind === 'journey_complete') {
-      const amount = Math.max(0, Math.round(opts.completionGems || 30))
-      if (await grantGemsOnce(admin, ev.idempotencyKey, opts.profileId, amount, 'Journey complete')) {
-        granted.push({ kind: 'journey', gems: amount, label: 'Journey complete' })
-      }
     }
+    // journey_complete (lesson-tree "finished every lesson") NO LONGER grants Gems
+    // (ADR-Quest). Phase-complete celebrations (sub-milestones inside a Run) are
+    // unaffected and still pay above.
   }
   return granted
 }

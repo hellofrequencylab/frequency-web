@@ -36,7 +36,7 @@ export default async function ChallengesPage() {
     <DashboardTemplate
       eyebrow="The Quest · Season 1"
       title="Season Challenges"
-      description="Complete challenges this season to earn bonus zaps and unlock Luminary rank. Each season runs 13 weeks."
+      description="Complete challenges this season to earn bonus zaps. Each season runs 13 weeks."
     >
       {/* ── KPI band — deliberately a shade darker than the canvas so the season
             stats read as one focused dashboard header. ─────────────────────────── */}
@@ -79,16 +79,16 @@ export default async function ChallengesPage() {
           />
           <StatCard label="In progress" value={inProgress} icon={Flame} />
           <StatCard
-            label="To Luminary"
-            value={allDone ? 'Earned' : `${remaining} left`}
+            label="Challenges left"
+            value={allDone ? 'Done!' : `${remaining} left`}
             icon={Trophy}
-            delta={allDone ? { label: 'Rank earned', trend: 'up' } : undefined}
+            delta={allDone ? { label: 'All complete', trend: 'up' } : undefined}
           />
         </div>
 
         {allDone && (
           <p className="mt-4 flex items-center justify-center gap-1.5 text-sm font-semibold text-signal-strong">
-            <Trophy className="h-4 w-4" /> All challenges complete. Luminary rank earned!
+            <Trophy className="h-4 w-4" /> All challenges complete. Great work this season!
           </p>
         )}
       </section>

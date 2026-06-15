@@ -9,7 +9,7 @@ import { CrewGate } from '@/components/crew/upgrade-lightbox'
 import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { surfaceAccess } from '@/lib/core/viewer-hats'
-import { RANK_LABELS, rankForZaps, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, rankForCompletion, journeysFinishedThisSeason, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { StandingHero } from '@/components/gamification/standing-hero'
 import { getCurrentSeason } from '@/lib/seasons'
 import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
@@ -27,13 +27,16 @@ export default async function StorePage() {
   // your spendable Gem balance.
   const { data: prof } = await supabase
     .from('profiles')
-    .select('current_season_zaps, current_season_rank, current_streak, amplitude')
+    .select('id, current_season_zaps, current_season_rank, current_streak, amplitude')
     .eq('auth_user_id', user.id)
     .maybeSingle()
+  const profileId = (prof as { id: string } | null)?.id ?? null
   const zaps = (prof?.current_season_zaps as number | null) ?? 0
   const streak = (prof?.current_streak as number | null) ?? 0
-  // Standing rank derived from zaps so a stale column never shows the wrong tier.
-  const standingRank = rankForZaps(zaps)
+
+  // Rank from Journey completions (completion-based model).
+  const storeFinishedCount = profileId ? await journeysFinishedThisSeason(profileId) : 0
+  const standingRank = rankForCompletion(storeFinishedCount)
   const season = await getCurrentSeason()
   // Amplitude — the lifetime layer (Rewards Economy v2, supersedes the ADR-037
   // lifetime-rank display). Shown to the member on their own Vault regardless of
@@ -73,6 +76,7 @@ export default async function StorePage() {
           gems={balance}
           streak={streak}
           rank={standingRank}
+          journeysFinished={storeFinishedCount}
           seasonName={season?.name}
           links={{
             zaps: '/crew/leaderboard',

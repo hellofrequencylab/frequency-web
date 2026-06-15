@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { SEASON_RANKS, rankForZaps } from '@/lib/season-ranks'
+import { SEASON_RANKS, rankForCompletion, journeysFinishedThisSeason } from '@/lib/season-ranks'
 import { GameStatsDockClient, GameStatsPanel, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
@@ -55,8 +55,9 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
   const zaps = p?.current_season_zaps ?? 0
   const gems = p?.lifetime_gems ?? 0
   const streak = p?.current_streak ?? 0
-  // Derive rank from zaps (the stored current_season_rank can be stale).
-  const rank = rankForZaps(zaps)
+  // Derive rank from Journey completions (completion-based model).
+  const finishedCount = await journeysFinishedThisSeason(profileId)
+  const rank = rankForCompletion(finishedCount)
 
   // Today's move (North-Star daily action)
   const todaysMove: DockData['todaysMove'] =
@@ -75,16 +76,16 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
     return loggedDays.has(d.toISOString().slice(0, 10))
   })
 
-  // Rank progress to next tier
+  // Rank progress to next tier (completion-based)
   const idx = SEASON_RANKS.findIndex((r) => r.rank === rank)
   const curIdx = idx < 0 ? 0 : idx
   const next = SEASON_RANKS[curIdx + 1]
-  const curMin = SEASON_RANKS[curIdx]?.minZaps ?? 0
+  const curMin = SEASON_RANKS[curIdx]?.minJourneys ?? 0
   const rankProgress = next
     ? {
         nextLabel: next.label,
-        toGo: Math.max(0, next.minZaps - zaps),
-        pct: next.minZaps > curMin ? Math.round(((zaps - curMin) / (next.minZaps - curMin)) * 100) : 0,
+        toGo: Math.max(0, next.minJourneys - finishedCount),
+        pct: next.minJourneys > curMin ? Math.round(((finishedCount - curMin) / (next.minJourneys - curMin)) * 100) : 0,
       }
     : { nextLabel: null, toGo: 0, pct: 100 }
 

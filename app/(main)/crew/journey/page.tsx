@@ -8,7 +8,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
-import { rankForZaps } from '@/lib/season-ranks'
+import { rankForCompletion, journeysFinishedThisSeason } from '@/lib/season-ranks'
 
 // "Your Journey" — the member's enrolled Journeys with v2 phase/program completion (ADR-253;
 // docs/JOURNEYS.md §4). Replaces the retired season qualifying-weeks checklist: completion now
@@ -32,7 +32,8 @@ export default async function JourneyPage() {
   const gems = (profile as { lifetime_gems: number }).lifetime_gems ?? 0
   const streak = (profile as { current_streak: number | null }).current_streak ?? 0
 
-  const rank = rankForZaps(seasonZaps)
+  const finishedCount = await journeysFinishedThisSeason(profile.id)
+  const rank = rankForCompletion(finishedCount)
 
   // All enrolled Journeys (including finished ones, so a completed Journey still shows its trophy).
   const journeys = await getMemberJourneyProgress(profile.id, { activeOnly: false })

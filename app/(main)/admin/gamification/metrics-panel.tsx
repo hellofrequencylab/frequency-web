@@ -84,10 +84,10 @@ async function computeMetrics(): Promise<Metric[]> {
   const seasonZaps = profileRows.map((p) => p.current_season_zaps ?? 0).filter((z) => z > 0).sort((a, b) => a - b)
   const median = seasonZaps.length ? seasonZaps[Math.floor(seasonZaps.length / 2)] : 0
   const ranked = profileRows.filter((p) => (p.current_season_zaps ?? 0) > 0)
-  const beaconPlus = ranked.filter((p) => ['beacon', 'conduit', 'luminary'].includes(p.current_season_rank ?? '')).length
-  const luminary = ranked.filter((p) => p.current_season_rank === 'luminary').length
-  const beaconRate = pct(beaconPlus, ranked.length)
-  const luminaryRate = pct(luminary, ranked.length)
+  const adeptPlus = ranked.filter((p) => ['adept', 'master'].includes(p.current_season_rank ?? '')).length
+  const master = ranked.filter((p) => p.current_season_rank === 'master').length
+  const adeptRate = pct(adeptPlus, ranked.length)
+  const masterRate = pct(master, ranked.length)
 
   // Gem sink rate: Gems spent ÷ Gems earned (watch for hoarding).
   const earned = profileRows.reduce((s, p) => s + (p.lifetime_gems ?? 0), 0)
@@ -114,8 +114,8 @@ async function computeMetrics(): Promise<Metric[]> {
     { label: '14-day streak share of WAM', value: share14 === null ? '—' : `${share14}%`, band: '> 25%', ok: share14 === null ? null : share14 > 25 },
     { label: 'Circle Journey alignment', value: alignment === null ? '—' : `${alignment}%`, band: '> 40%', ok: alignment === null ? null : alignment > 40 },
     { label: 'Median season Zaps', value: median.toLocaleString(), band: '800–1,500', ok: seasonZaps.length === 0 ? null : median >= 800 && median <= 1500 },
-    { label: '% reaching Beacon', value: beaconRate === null ? '—' : `${beaconRate}%`, band: '25–35%', ok: beaconRate === null ? null : beaconRate >= 25 && beaconRate <= 35 },
-    { label: 'Luminary rate', value: luminaryRate === null ? '—' : `${luminaryRate}%`, band: '< 5%', ok: luminaryRate === null ? null : luminaryRate < 5 },
+    { label: '% reaching Adept', value: adeptRate === null ? '—' : `${adeptRate}%`, band: '25–35%', ok: adeptRate === null ? null : adeptRate >= 25 && adeptRate <= 35 },
+    { label: 'Master rate', value: masterRate === null ? '—' : `${masterRate}%`, band: '< 5%', ok: masterRate === null ? null : masterRate < 5 },
     { label: 'Challenge completion E / N / H / L', value: ['easy', 'normal', 'hard', 'legendary'].map((d) => (diffRate(d) === null ? '—' : `${diffRate(d)}%`)).join(' / '), band: 'E>75 · N>45 · H>20 · L<5', ok: null },
     { label: 'Gem sink rate (spent ÷ earned)', value: sinkRate === null ? '—' : `${sinkRate}%`, band: 'watch for hoarding', ok: null },
   ]

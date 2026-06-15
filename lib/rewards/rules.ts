@@ -37,14 +37,14 @@ const num = (v: string | number | null | undefined): number => (typeof v === 'nu
 export const REWARD_RULES: readonly RewardRule[] = [
   {
     // Rule key stays `seasoned_agent` (stable grant identifier — renaming it would
-    // orphan past idempotent grants); the rank it gates on is now Beacon (canon rename
-    // Agent→Beacon, docs/NAMING.md).
+    // orphan past idempotent grants); the rank it gates on is now Adept (completion-based
+    // model, ADR-quest/rank — 2+ Journeys finished lifetime).
     key: 'seasoned_agent',
-    label: 'Seasoned — reached Beacon',
-    description: 'Anyone who ever climbed to Beacon or higher (locked lifetime rank). Rewards past competitive seasons.',
+    label: 'Seasoned — reached Adept',
+    description: 'Anyone who ever climbed to Adept or higher (locked lifetime rank). Rewards past seasons.',
     reward: { kind: 'gems', amount: 200 },
     active: true,
-    match: (m) => rankIndex(m.lifetimeRank as SeasonRank) >= rankIndex('beacon'),
+    match: (m) => rankIndex(m.lifetimeRank as SeasonRank) >= rankIndex('adept'),
   },
   {
     key: 'og_beta',

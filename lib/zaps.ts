@@ -58,6 +58,12 @@ export const ZAP_AMOUNTS = {
   // invite_accepted above is the other half of that handshake).
   community_join: 10,
   referred_join_bonus: 15,
+  // The Quest (ADR-Quest completion model): finishing a Journey pays a flat purse
+  // (the Gem rank-bonus + Trophy are granted by lib/quest/complete.ts), and an
+  // Expression Challenge done in person at a Circle pays Zaps (mirrors
+  // QUEST.JOURNEY_FINISH_ZAPS / QUEST.EXPRESSION_CIRCLE_ZAPS in lib/gamification.ts).
+  journey_finished: 75,
+  expression_challenge: 50,
 } as const
 
 /** Zap action for a practice's weight class (the per-log payout driver). */

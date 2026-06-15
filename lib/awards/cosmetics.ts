@@ -6,7 +6,7 @@
 //
 // Two award families ride the nightly sweep (lib/practice-streaks-job.ts):
 //   * Rank cosmetics — auto at promotion: every rank at or below the member's
-//     current season rank grants its cosmetic (Ghost flair → Luminary tokens).
+//     current season rank grants its cosmetic (Ghost flair → Master tokens).
 //   * Journey cosmetics — completing an OFFICIAL Journey (journey_plans.official,
 //     pillar from its items' domain_id) grants the pillar badge; all four grant
 //     the Full Spectrum banner (S1-exclusive).
@@ -22,14 +22,12 @@ function db(): SupabaseClient {
  *  slug at or below it). Mirrors the seeded store_items in 20260614000000. */
 export const RANK_COSMETICS: Record<string, string[]> = {
   ghost:    ['rank-ghost-flair'],
-  echo:     ['rank-echo-badge'],
-  signal:   ['rank-signal-ring'],
-  beacon:   ['rank-beacon-token'],
-  conduit:  ['rank-conduit-gold-name'],
-  luminary: ['rank-luminary-token', 'luminary-club-mark'],
+  initiate: ['rank-initiate-badge'],
+  adept:    ['rank-adept-ring'],
+  master:   ['rank-master-token', 'master-club-mark'],
 }
 
-const RANK_ORDER = ['ghost', 'echo', 'signal', 'beacon', 'conduit', 'luminary']
+const RANK_ORDER = ['ghost', 'initiate', 'adept', 'master']
 
 export const JOURNEY_BADGES: Record<string, string> = {
   mind: 'journey-badge-mind',

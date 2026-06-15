@@ -82,14 +82,15 @@ a fresh climb.
 
 > **Naming is canon-locked — see [`NAMING.md`](NAMING.md) §The Quest (ADR-208).** The
 > hierarchy is **Quest → Journey → Practice**: a **Quest** (table `quests`) is one
-> season's 13-week instance and its official, free collection of **Journeys**; a
-> **Journey** (`journey_plans`) is a set of **practices** you move through — official
-> Journeys nest under a Quest via `journey_plans.quest_id`, member-built ones live in
-> the open library; a **practice** is the atomic real-world act you do. Everything is
+> season's 13-week instance and its official, free collection of **three Journeys**
+> (Mind / Body / Spirit); a **Journey** (`journey_plans`) is a set of **practices**
+> you move through; a **practice** is the atomic real-world act you do. Everything is
 > free. **The Quest** is the brand for the year-round game (never in schema); a `quests`
-> row always means the season instance ("Seasonal Quest" is retired phrasing). Always say
-> **Zaps/Gems**, never "points". *(Retired & gone: the legacy action-chain "Arc"
-> engine (dropped, ADR-152), and the retired ceremonial rank naming — do not reintroduce.)*
+> row always means the season instance ("Seasonal Quest" is retired phrasing).
+> Named seasons: **Stretch (Summer) / Shed (Autumn) / Sit (Winter) / Sprout (Spring)**.
+> Always say **Zaps/Gems**, never "points".
+> *(Retired & gone: the legacy action-chain "Arc" engine (dropped, ADR-152); the old
+> 6-rank Zap-threshold ladder; per-practice intensity tiers — do not reintroduce.)*
 
 **Two currencies, split by where the activity happens. The rule is canonical
 (ADR-139): _anything online → Gems; anything in real life → Zaps_** — and it
@@ -107,29 +108,36 @@ pays gems. The single source of truth is `currencyForCriteria` /
 - **Zaps** — earned through **external + in-person activity**: showing up, hosting,
   founding/leading a circle, outreach + invites that land, ghost-node captures,
   business/NFC programs, and **every practice log** (personal or circle — the
-  real-world doing). Season XP that drives **season ranks**:
-  `ghost → echo → signal → beacon → conduit → luminary` (the `season_rank_enum`
-  values after migration `20260613000030`; renamed 2026 — see docs/NAMING.md).
-  Auto-advance at the unchanged thresholds
-  0 / 100 / 300 / 750 / 1500; luminary is a manual admin promotion gated on
-  `season_challenges_complete` (the 3000 double gate). `awardZaps()` (`lib/zaps.ts`).
+  real-world doing). Finishing a Journey pays **+75 Zaps + a Trophy + escalating Gems**
+  (Initiate 25 / Adept 50 / Master 100 Gems). An Expression Challenge pays **+50 Zaps
+  in person at a Circle, or +30 Gems posted solo online**. Zaps accumulate during the
+  season and roll into Gems at season end (5:1 flat). They drive **Amplitude** (lifetime
+  total) but no longer gate **season rank** directly — ranks are completion-based (see
+  Season ranks below). `awardZaps()` (`lib/zaps.ts`). Migration
+  `20260628010000_quest_completion_model.sql` moved rank advancement off the Zap trigger.
 - **Twin ledgers + the Vault log.** Both currencies write **one row per grant**
   (`gem_transactions` / `zap_transactions`); an `AFTER INSERT` trigger on each is
-  the only place profile totals (and, for zaps, rank) move. Those ledgers back the
-  member-facing **"how you earned" log** in the Vault (`/crew/store/ledger`,
-  `lib/economy/ledger.ts`). `awardZaps`/`awardGems` only ever append a ledger row.
+  the only place profile totals move. Rank advancement is now fired by Journey
+  completion, not the Zap trigger. Those ledgers back the member-facing **"how you
+  earned" log** in the Vault (`/crew/store/ledger`, `lib/economy/ledger.ts`).
+  `awardZaps`/`awardGems` only ever append a ledger row.
   (Never call it a "points log" — it's Zaps/Gems.)
 - **Season rollover** — at season end, `reset_season()` (migration `20260614200000`,
-  ADR-219) converts `floor(season_zaps / 5)` into Gems **flat for everyone**, pays a
-  one-time **final-rank Gem bonus** (Echo 10 / Signal 25 / Beacon 50 / Conduit 100 /
-  Luminary 250), mints a `season_trophies` row for everyone who played, then zeroes
-  season counters — all claim-then-pay via `reward_grants`. (Replaces the provisional
-  rank-based `ZAP_TO_GEM_RATES` ladder.) So Zaps are the seasonal "doing", Gems are
-  the durable spendable.
+  ADR-219) converts `floor(season_zaps / 5)` into Gems **flat for everyone** (no
+  rank bonus — the per-rank bonus is retired; per-Journey rewards replace it),
+  mints a `season_trophies` row for everyone who played, then zeroes season
+  counters — all claim-then-pay via `reward_grants`. So Zaps are the seasonal
+  "doing", Gems are the durable spendable.
+- **Season ranks (completion-based)** — `ghost → initiate → adept → master`
+  (4 values, migration `20260628010000_quest_completion_model.sql`; the old
+  6-rank Zap-threshold ladder Echo/Signal/Beacon/Conduit/Luminary is retired).
+  Rank = how many Journeys the member finished this season: 0 = Ghost, 1 = Initiate,
+  2 = Adept, 3 = Master. Advances automatically the moment a Journey finishes.
+  No Zap threshold, no manual promotion, no challenge gate. `rankForCompletion(journeysFinished)`.
 - **Amplitude** — lifetime XP (`profiles.amplitude`, ADR-219): cumulative Zaps ever
   earned, hosting-class actions 2×, accrued only by `after_zap_transaction()`. Never
   resets, never spent, never gates play. Level = largest L with `50·L·(L+1) ≤ amplitude`
-  (`lib/amplitude.ts`); shown beside the season rank ("Beacon · 14,200"). Supersedes the
+  (`lib/amplitude.ts`); shown beside the season rank. Supersedes the
   lifetime-rank *display* (the `lifetime_rank` column stays for the retro rules). Gem
   tiers (New→Legend) are retired.
 - **Practice weight class** — `practices.weight_class ∈ light|standard|heavy` drives the
@@ -148,24 +156,38 @@ pays gems. The single source of truth is `currencyForCriteria` /
   per season per granter; displayed with the granted-by name (`lib/awards/witnessed.ts`).
 - **Quests & Journeys** — hierarchy **Quest → Journey → Practice** (canon; see NAMING.md
   and [THE-QUEST.md](THE-QUEST.md)). A **Quest** (`quests`) is a season's official, free
-  container of Journeys; a **Journey** (`journey_plans` + `journey_plan_items`) is a set of
-  practices — official (nested under a Quest via `quest_id`) or member-built (open library) —
-  with progress derived from the practice log (ADR-144). All free. *(The legacy action-chain
-  engine is retired **and dropped**, ADR-152.)*
+  container of exactly **three Journeys** (Mind, Body, Spirit, run sequentially ~4 weeks each);
+  a **Journey** (`journey_plans` + `journey_plan_items`) is a set of practices —
+  official (nested under a Quest via `quest_id`) or member-built (open library) —
+  with progress derived from the practice log (ADR-144). Finishing a Journey pays
+  **+75 Zaps + a Trophy + escalating Gems by rank reached** and advances the member's
+  season rank. All free. *(The legacy action-chain engine is retired **and dropped**, ADR-152.)*
+- **Challenge / Expression Challenge** — the **Expression capstone** that completes each
+  Journey (a `season_challenges` row typed `expression`, linked to its Journey via `journey_id`).
+  Required to finish the Journey. Pays **+50 Zaps in person at a Circle, or +30 Gems posted
+  solo online**. The season-wide 15-challenge outreach engine is **dormant** (kept, not seeded).
+- **Trophy** — the award minted when a member **finishes a Journey**. Advances the season rank
+  and pays the escalating Gem bonus (Initiate 25 / Adept 50 / Master 100). Stamped with the
+  rank reached and stored in `season_trophies`.
 - **Pillars** — Mind / Body / Spirit / Expression, the taxonomy Journeys are organised by
-  (table `pillars`, migration `20260613000010`; renamed 2026 — see docs/NAMING.md). Pillars are **never**
+  (table `pillars`, migration `20260613000010`; renamed 2026 — see docs/NAMING.md).
+  **Three Pillars carry Journeys (Mind / Body / Spirit); Expression is woven in as the
+  Challenge capstone on every Journey**, not a fourth Journey. Pillars are **never**
   called Channels (Channels = the topical forum feature only).
-- **Practice depth tiers — Initiate / Adept / Master** — every practice ships three depths
-  (`practice_tiers.tier ∈ initiate|adept|master`). The selected tier resolves member override
-  (`journey_plan_adoptions.tier_override`) → circle default (`circles.default_intensity_tier`,
-  Host-set) → item default (`journey_plan_items.default_tier`) → `'adept'` (the middle-tier
-  default). Tier never changes zap/streak math (ADR-198; rename in migration `20260613000020`).
+- **Per-practice intensity tiers — RETIRED (June 2026).** The Initiate / Adept / Master
+  practice-content tier system is removed: `practice_tiers` table + `default_tier` /
+  `tier_override` / `default_intensity_tier` columns dropped
+  (migration `20260628000000_retire_practice_intensity_tiers.sql`). The words
+  **Initiate / Adept / Master are now season ranks only** (completion-based) and no
+  longer name a practice setting. Weight class (light / standard / heavy) is the only
+  per-practice variant that remains.
 - **Two internal clocks** — the rolling **rhythm clock** (cadence/streak) and the fixed
   **quest clock** (a season = 91 days = 13×7 buckets). Both are **internal-only** — the UI says
-  "streak" and "season," never "rhythm/quest clock." A Journey completes at ≥ `target_weeks`
-  (default 8) qualifying weeks of 13; derived from `practice_logs`, no progress table
-  (`lib/journey-arc.ts`, ADR-197). Bonuses (Full Day / Weekly Rhythm / completion) fire via
-  `reward_grants` (ADR-200).
+  "streak" and "season," never "rhythm/quest clock." A Journey completes when the member has
+  logged its Practices on 14-16 distinct days inside its ~4-week window **and** completed its
+  Expression Challenge. Derived from `practice_logs`, no progress table
+  (`lib/journey-arc.ts`, ADR-197). Completion fires the Trophy + rank advance + Zap/Gem grants
+  via `reward_grants` (ADR-200).
 - **Co-op** — circle co-op completion: ≥3 active circle members on the same Journey
   (`lib/journey-coop.ts`, ADR-199; renamed 2026 — see docs/NAMING.md). **Distinct from
   Resonance** — Resonance is the Connection-Layer tie strength (ADR-186), a separate concept.

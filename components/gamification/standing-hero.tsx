@@ -25,6 +25,7 @@ export function StandingHero({
   gems,
   streak,
   rank,
+  journeysFinished = 0,
   seasonName,
   links,
 }: {
@@ -32,11 +33,13 @@ export function StandingHero({
   gems: number
   streak: number
   rank: SeasonRank
+  /** Journeys finished this season — drives the rank progress bar. */
+  journeysFinished?: number
   /** Optional season name for the eyebrow ("Season · Bloom"). */
   seasonName?: string
   links?: { zaps?: string; gems?: string; streak?: string; rank?: string }
 }) {
-  const { def, next, pct, zapsToNext } = rankProgress(zaps)
+  const { def, next, pct, zapsToNext } = rankProgress(journeysFinished)
 
   return (
     <section className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface shadow-sm dark:from-primary-bg/20">
@@ -63,7 +66,8 @@ export function StandingHero({
         <p className="text-sm text-muted">
           {next ? (
             <>
-              <span className="font-bold tabular-nums text-text">{zapsToNext.toLocaleString()}</span> zaps to{' '}
+              <span className="font-bold tabular-nums text-text">{zapsToNext.toLocaleString()}</span>{' '}
+              {zapsToNext === 1 ? 'Journey' : 'Journeys'} to{' '}
               <span className="font-semibold text-text">{next.label}</span>
             </>
           ) : (
@@ -93,7 +97,7 @@ export function StandingHero({
         </div>
         <div className="mt-2.5 flex justify-between">
           {SEASON_RANKS.map((r) => {
-            const achieved = zaps >= r.minZaps
+            const achieved = journeysFinished >= r.minJourneys
             const current = r.rank === rank
             return (
               <div key={r.rank} className="flex flex-col items-center gap-1">

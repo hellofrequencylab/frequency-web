@@ -25,7 +25,7 @@ anything **real life → Zaps** — base actions *and* the meta-layer.
 | 4 | **Zaps had no ledger** — grants wrote `profiles.current_season_zaps` directly from ~6 sites; no history, rank could drift | ✅ fixed (`zap_transactions` + one trigger owns totals + rank) |
 | 5 | No member-facing record of *how* points were earned | ✅ shipped (`/crew/store/ledger`) |
 | 6 | `gem_config` row for `achievement` described the old (wrong) behavior | ✅ fixed (migration updates the description) |
-| 7 | Economy spec calls for one Journey **per Pillar per season**; only 3 generic chains existed | ✅ seeded 4 Pillar Journeys (Mind/Body/Spirit/Expression) |
+| 7 | Economy spec calls for one Journey **per Pillar per season**; only 3 generic chains existed | ✅ seeded 4 Pillar Journeys (Mind/Body/Spirit/Expression) — **superseded by ADR-284**: now 3 Journeys (Mind/Body/Spirit); Expression is the Challenge capstone on each |
 
 ## How currency is decided now
 
@@ -73,7 +73,7 @@ chain in the currency of its real-world steps.
 
 | Item | Resolution | Status |
 |---|---|---|
-| Provisional **Zap→Gem rank ladder** | Flat **5:1** + one-time final-rank Gem bonus (10/25/50/100/250), claim-then-pay in `reset_season()` | ✅ done |
+| Provisional **Zap→Gem rank ladder** | Flat **5:1** + one-time final-rank Gem bonus (10/25/50/100/250), claim-then-pay in `reset_season()` | ✅ done — **superseded by ADR-283**: final-rank bonus retired; per-Journey Trophy rewards replace it |
 | **Lifetime layer** | **Amplitude** = lifetime Zaps (hosting 2×), levels `50·L·(L+1)`, milestones 1k/5k seeded; supersedes the lifetime-rank display (column stays for retro rules) | ✅ done |
 | **Gem tiers** (New→Legend) | Retired — gems are purely spendable; Amplitude is the progression layer | ✅ done |
 | Flat practice-log Zap | **Weight classes** light 8 / standard 12 / heavy 15 (`practices.weight_class`; `reward_zaps` deprecated + backfilled) | ✅ done |
@@ -82,16 +82,32 @@ chain in the currency of its real-world steps.
 | S1 award set | Quiet Ones (5 secret), Witnessed peer grants, rank/journey cosmetics (granted-only store items), circle banner + Co-op Synchrony, Vault S1 SKUs (rank/stock/season gates) | ✅ done |
 | Crew-task ledger **regression** | `20260613000030` had restored the pre-ADR-139 `after_crew_completion()` (direct profile writes, ledger bypass) — re-fixed in `20260614000000` | ✅ fixed |
 
+## Quest completion-model migration (June 2026, ADR-283–286)
+
+**Shipped:** 2026-06-28. Migrations: `20260628000000_retire_practice_intensity_tiers.sql` + `20260628010000_quest_completion_model.sql`.
+
+| Change | What shipped |
+|---|---|
+| **Rank model** | Zap-threshold ladder (6 ranks) retired; replaced by completion-based model (4 ranks). Ghost → Initiate → Adept → Master = 0/1/2/3 Journeys finished. `rankForCompletion()` replaces `rankForZaps`. |
+| **Season structure** | Each Quest ships exactly 3 Journeys (Mind / Body / Spirit, ~4 weeks each). Expression is now the Challenge capstone on each Journey, not a fourth Journey. |
+| **Expression Challenge** | Each Journey is capped by one Expression Challenge (`season_challenges` typed `expression`, linked via `journey_id`). Required to finish the Journey. Pays +50 Zaps in person or +30 Gems solo. |
+| **Journey completion reward** | Finishing a Journey pays +75 Zaps + a Trophy + escalating Gems (Initiate 25 / Adept 50 / Master 100). Replaces the old flat 30-Gem reward and the retired final-rank Gem bonus. |
+| **Season-end rollover** | Still flat 5:1 Zaps to Gems. Final-rank bonus retired (per-Journey Trophy rewards replace it). |
+| **Intensity tiers retired** | `practice_tiers` table + `tier_override` / `default_intensity_tier` / `default_tier` columns dropped. Initiate / Adept / Master are now season rank names only. |
+| **Enum migration** | `season_rank_enum` migrated from 6 values (ghost/echo/signal/beacon/conduit/luminary) to 4 (ghost/initiate/adept/master). Beta data wiped (season Zaps + rank reset to Ghost; lifetime Gems, Amplitude, and S1 trophies preserved). |
+
+**Marketing + help copy updated:** `app/(marketing)/the-quest/page.tsx`, `lib/page-editor/templates/the-quest.ts`, `content/help/the-quest/season-ranks.md`, `content/help/the-quest/season-challenges.md`.
+
 ## Where the program is still lacking (recommended next)
 
 | Gap | Why it matters | Effort |
 |---|---|---|
 | ⏳ **Studio: more entities** (ADR-142) | Mount circle / practice / event onto the Studio shell as their own specs — the cross-site "create anywhere" vision | M each |
 | ⏳ **Endorsement set — cosmetics/titles/journey badges** | Granted + owned now (ADR-219 sweeps); public rendering still rides the `isEndorsed` gate when it lands | S (rides existing gate) |
-| ⏳ **Beta zap supply** | Most beta activity is online (gems). Drive zaps with seeded ghost nodes / QR drops + event check-ins so the rank ladder isn't flat — ships WITH the v2 economy (don't launch into a world with no faucets) | content |
+| ⏳ **Beta zap supply** | Most beta activity is online (gems). Drive zaps with seeded ghost nodes / QR drops + event check-ins so practice logs flow before S1 proper. | content |
 | ⏳ **Celebration art** | Amplitude level-up (mid-tier) + milestone / Full Spectrum (full-screen) are minted but visually stubbed; only 1k/5k art ships in S1 | design |
-| ⏳ **Forge Claim** | `forge_claim` metadata flags the Beacon/Luminary tokens; the physical claim flow is unbuilt | M |
-| ⏳ **Types regen** | `lib/database.types.ts` was hand-patched for the new columns; regenerate from the live schema after `20260614000000` applies | XS |
+| ⏳ **Forge Claim** | `forge_claim` metadata on Trophy tokens; the physical claim flow is unbuilt | M |
+| ⏳ **Types regen** | `lib/database.types.ts` was hand-patched for the new columns; regenerate from the live schema after `20260628010000` applies | XS |
 
 > Demo community already looks alive: the demo engine seeds zaps/gems/ranks/streaks
 > per rank-band and inserts attendance streaks + trophy cases, so leaderboards and

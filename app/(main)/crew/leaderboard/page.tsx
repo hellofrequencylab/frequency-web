@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Zap, TrendingUp, Award, Flame, Gem, QrCode, UserPlus, Filter } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { getRankDef, rankForZaps, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { getRankDef, rankForCompletion, journeysFinishedThisSeason, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 import { LeaderboardTabs } from './leaderboard-tabs'
 import { listEntryPointLeaderboard, signupsToNextTier } from '@/lib/entry-points/leaderboard'
@@ -150,15 +150,18 @@ export default async function LeaderboardPage({
   const myZaps = (profile as { current_season_zaps: number | null }).current_season_zaps ?? 0
   const myGems = (profile as { lifetime_gems: number | null }).lifetime_gems ?? 0
   const myStreak = (profile as { current_streak: number | null }).current_streak ?? 0
-  const myStandingRank = rankForZaps(myZaps)
-  const season = await getCurrentSeason()
-
+  const [myFinishedCount, season] = await Promise.all([
+    journeysFinishedThisSeason(profile.id),
+    getCurrentSeason(),
+  ])
+  const myStandingRank = rankForCompletion(myFinishedCount)
   const standingHero = (
     <StandingHero
       zaps={myZaps}
       gems={myGems}
       streak={myStreak}
       rank={myStandingRank}
+      journeysFinished={myFinishedCount}
       seasonName={season?.name}
       links={{ zaps: '/crew/leaderboard', rank: '/crew/achievements', streak: '/crew/streaks', gems: '/crew/store' }}
     />

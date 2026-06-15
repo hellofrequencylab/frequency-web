@@ -1,35 +1,43 @@
 ---
 title: Season ranks
-description: How Zaps move you up the ranks each season.
+description: How finishing Journeys moves you up the ranks each season.
 category: the-quest
 order: 2
-updated: 2026-06-11
+updated: 2026-06-28
 audience: member
 featureKeys: [ranks]
 status: published
 ---
 
-Ranks are your standing in the current season of **The Quest**, earned by showing up, especially in person. They're driven by **Zaps** (see [Zaps & Gems](/help/the-quest/zaps-and-gems)).
+Ranks are your standing in the current season of **The Quest**, earned by finishing Journeys. There are four ranks, and each one maps directly to how many Journeys you completed this season.
 
 ## The ranks
 
-You climb as you earn season Zaps:
+| Rank | What it takes |
+|---|---|
+| **Ghost** | Just arrived. Everyone starts here. |
+| **Initiate** | Finish your first Journey. |
+| **Adept** | Finish two Journeys. |
+| **Master** | Finish all three Journeys. |
 
-- **Ghost**
-- **Echo**: at 100 Zaps
-- **Signal**: at 300 Zaps
-- **Beacon**: at 750 Zaps
-- **Conduit**: at 1,500 Zaps
-- **Luminary**: the top, awarded by hand for those who've truly carried their community
+Your rank advances automatically the moment you finish a Journey. There is no points threshold to hit and no manual recognition required. Finish the work and the rank follows.
 
-The first five advance automatically as your Zaps add up. Luminary is a recognition, not just a number.
+## What finishing a Journey earns
 
-## Seasons reset (your Gems don't)
+When you complete a Journey you earn:
 
-A season runs for a stretch, then resets so everyone gets a fresh start. When it does, your season Zaps convert into **Gems** at 5 to 1, plus a one-time bonus for the rank you finished at: the durable, spendable currency that sticks with you. Everyone who played also gets a **season trophy** stamped with their final rank and Zaps. So the season is the "doing," and Gems and trophies are what you keep.
+- **+75 Zaps**
+- **A Trophy** stamped with the rank you reached
+- **Gems** that scale with your new rank: 25 Gems for Initiate, 50 for Adept, 100 for Master
+
+Each Journey is capped by an **Expression Challenge**: sharing what you practiced with your community. Completing the Expression Challenge is required to finish the Journey. It pays an extra **+50 Zaps** if you do it in person at a Circle gathering, or **+30 Gems** if you post it solo online.
+
+## Seasons reset (your Gems and Trophies don't)
+
+A season runs for 13 weeks, then resets so everyone gets a fresh start. When it does, your season Zaps convert into **Gems** at 5 to 1: the durable, spendable currency that sticks with you. Your Trophies, Amplitude total, and lifetime Gems carry over too. The season is the "doing." Gems and Trophies are what you keep.
 
 ## Amplitude: the number that never resets
 
-Your season rank goes back to Ghost each reset, but every Zap you've ever earned feeds **Amplitude**, your lifetime total. It only ever goes up. Hosting-class acts (hosting, running a program, founding or activating a circle) count double toward it. You'll see it next to your rank, like "Beacon · 14,200", and crossing big totals (1,000, then 5,000, and beyond) mints a permanent Award into your Vault.
+Your season rank goes back to Ghost each reset, but every Zap you have ever earned feeds **Amplitude**, your lifetime total. It only ever goes up. Hosting-class acts (hosting, running a program, founding or activating a circle) count double toward it. Crossing big totals (1,000, then 5,000, and beyond) mints a permanent Award into your Vault.
 
 Want to know what counts? See [Zaps & Gems](/help/the-quest/zaps-and-gems).

@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, CheckCircle, Zap, Award, Flame, Target, Map, TrendingUp, ShoppingBag, CalendarDays, ArrowRight, Compass } from 'lucide-react'
+import { Star, CheckCircle, Zap, Award, Flame, Map, TrendingUp, ShoppingBag, CalendarDays, ArrowRight, Compass, Target } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getPracticesToLogToday } from '@/lib/practices'
-import { getRankDef, rankForZaps, type SeasonRank } from '@/lib/season-ranks'
+import { getRankDef, rankForCompletion, journeysFinishedThisSeason, type SeasonRank } from '@/lib/season-ranks'
 import { CompleteButton } from './complete-button'
 import { getInitials } from '@/lib/utils'
 import { getCurrentSeason } from '@/lib/seasons'
@@ -39,7 +39,7 @@ export default async function CrewPage() {
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, display_name, handle, community_role, avatar_url, current_season_rank, current_season_zaps, season_challenges_complete, lifetime_gems, current_streak, is_crew_lead')
+    .select('id, display_name, handle, community_role, avatar_url, current_season_rank, current_season_zaps, lifetime_gems, current_streak, is_crew_lead')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -48,12 +48,12 @@ export default async function CrewPage() {
   const isCrew = await isPaidViewer()
 
   const currentSeasonZaps: number = (profile as { current_season_zaps: number }).current_season_zaps ?? 0
-  // Derive the rank from the zaps total so a stale current_season_rank column
-  // never shows the wrong tier (the stored value can lag behind awards).
-  const currentSeasonRank: SeasonRank = rankForZaps(currentSeasonZaps)
-  const challengesComplete: boolean = (profile as { season_challenges_complete: boolean }).season_challenges_complete ?? false
   const lifetimeGems: number = (profile as { lifetime_gems: number }).lifetime_gems ?? 0
   const currentStreak: number = (profile as { current_streak: number }).current_streak ?? 0
+
+  // Derive rank from Journey completions (completion-based model).
+  const finishedCount = await journeysFinishedThisSeason(profile.id)
+  const currentSeasonRank: SeasonRank = rankForCompletion(finishedCount)
 
   // Active season for the member-facing banner. End date is preformatted here
   // (server) so the client banner has no locale/timezone hydration mismatch.
@@ -181,6 +181,7 @@ export default async function CrewPage() {
           gems={lifetimeGems}
           streak={currentStreak}
           rank={currentSeasonRank}
+          journeysFinished={finishedCount}
           seasonName={season?.name}
           links={{
             zaps: '/crew/leaderboard',
@@ -237,14 +238,6 @@ export default async function CrewPage() {
         <ArrowRight className="hidden h-4 w-4 shrink-0 text-subtle sm:block" />
       </Link>
 
-      {/* The standing ladder lives in the hero now; the one rule it can't show is
-          the Luminary challenge gate, so keep that nudge when it applies. */}
-      {currentSeasonRank === 'conduit' && !challengesComplete && (
-        <p className="flex items-center gap-2 rounded-2xl bg-surface-elevated/60 px-5 py-3 text-sm text-muted">
-          <Target className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-          Complete all season challenges to unlock <span className="font-semibold text-text">Luminary</span> rank.
-        </p>
-      )}
 
       {/* ── Main content: left column (tasks) + right column (quick links + leaderboard) */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">

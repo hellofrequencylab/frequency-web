@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { MapPin, Megaphone, Zap, Gem, Flame, Compass, ArrowRight, Users, Trophy, Sparkles, CalendarDays, CircleDot } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
-import { RANK_LABELS, seasonRankStyle, rankForZaps, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, seasonRankStyle, rankForCompletion, journeysFinishedThisSeason, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
 import { isOnline, ONLINE_MS, RECENT_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
 import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
@@ -293,12 +293,13 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
   const zaps = p?.current_season_zaps ?? 0
   const gems = p?.current_season_gems ?? 0
   const streak = p?.current_streak ?? 0
-  const rank = rankForZaps(zaps)
+  const finishedCount = await journeysFinishedThisSeason(profileId)
+  const rank = rankForCompletion(finishedCount)
   const idx = SEASON_RANKS.findIndex((r) => r.rank === rank)
   const cur = idx < 0 ? 0 : idx
   const next = SEASON_RANKS[cur + 1]
-  const curMin = SEASON_RANKS[cur]?.minZaps ?? 0
-  const pct = next && next.minZaps > curMin ? Math.round(((zaps - curMin) / (next.minZaps - curMin)) * 100) : 100
+  const curMin = SEASON_RANKS[cur]?.minJourneys ?? 0
+  const pct = next && next.minJourneys > curMin ? Math.round(((finishedCount - curMin) / (next.minJourneys - curMin)) * 100) : 100
   // Next Steps prompts are shipped off (see lib/onboarding/status.ts) while the
   // Walkthroughs suite takes over; the Quest cockpit (rank/standing/streak) stays.
   const nextStep = showNextSteps ? (status?.current ?? null) : null
@@ -327,7 +328,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
             <div className="flex items-center justify-between gap-2 text-2xs">
               <span className="font-semibold text-text">{next ? `Climbing to ${next.label}` : 'Top rank reached'}</span>
               <span className="tabular-nums text-subtle">
-                {next ? <>{(next.minZaps - zaps).toLocaleString()} ⚡ to go</> : 'Max'}
+                {next ? <>{next.minJourneys - finishedCount} {next.minJourneys - finishedCount === 1 ? 'Journey' : 'Journeys'} to go</> : 'Max'}
               </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-warning-bg/60">
