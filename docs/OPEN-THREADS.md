@@ -29,7 +29,7 @@
 | B3 | Vertical-registry rail (step 2) | L | Admin dock is registry-dispatched; the right rail is still hardcoded prefix-match (ADR-250 "sequence is law"). |
 | B4 | Link the public partner directory into nav | S | **✅ done** — added "Partners" → `/discover/partners` to `MARKETING_NAV` (the public footer, every public page). Kept out of the shared `DISCOVER_NAV` (in-app + public) to avoid the member-vs-public dual-surface; a public-only header slot is a possible follow-up. |
 | B5 | Prune the ~19 documented dead exports | S | Listed in the audit; some are intentional seams (Journey runs, trust) — keep those. |
-| B6 | QR-logo SSRF fetch-time IP pinning | S | Defense-in-depth vs DNS rebinding (ADR-274 shipped the literal-IP block). |
+| B6 | QR-logo SSRF fetch-time IP pinning | S | **✅ done** — `inlineLogo` now resolves the host (DNS) and rejects any private/loopback/metadata IP before fetching, closing the DNS-rebind residual (the ADR-274 literal-IP block only covered the hostname). Shared `isPrivateIp` helper; unit-tested. Residual TOCTOU noted (acceptable for a blind, capped, image-only fetch). |
 | B7 | CSP enforce + nonces on inline theme/JSON-LD | M | Baseline CSP is report-only today. |
 | B8 | Extend `check:authz` to `lib/` mutation helpers | M | Complementary to the ADR-275 runtime scoping tests. |
 | B9 | SEO: `/discover/practices`, dynamic OG on pillars, seeker-track articles | M | Audit P2/P3 growth surfaces. |

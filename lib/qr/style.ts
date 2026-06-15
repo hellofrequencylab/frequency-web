@@ -127,12 +127,12 @@ function color(value: unknown, fallback: string): string {
   return typeof value === 'string' && HEX.test(value.trim()) ? value.trim() : fallback
 }
 
-/** Block hosts that point at the server's own network — loopback, private/link-local IP
- *  ranges, cloud metadata (169.254.169.254), and internal TLDs — so a stored logo URL can't
- *  be used for server-side SSRF when it's fetched + inlined (lib/qr/raster.ts, ADR-274). */
-function isBlockedLogoHost(hostname: string): boolean {
-  const h = hostname.toLowerCase().replace(/^\[|\]$/g, '')
-  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) return true
+/** True if an IP literal (v4 or v6) points at the server's own network — loopback,
+ *  private, link-local, cloud metadata (169.254.169.254), or CGNAT. Shared by the hostname
+ *  check below AND the fetch-time DNS-resolution check in lib/qr/raster.ts (ADR-274), so a
+ *  public hostname that *resolves* to an internal IP (DNS rebinding) is blocked too. */
+export function isPrivateIp(ip: string): boolean {
+  const h = ip.toLowerCase().replace(/^\[|\]$/g, '')
   // IPv6 loopback / unspecified / unique-local (fc00::/7) / link-local (fe80::/10)
   if (h === '::1' || h === '::' || h.startsWith('fc') || h.startsWith('fd') || h.startsWith('fe8') || h.startsWith('fe9') || h.startsWith('fea') || h.startsWith('feb')) return true
   const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
@@ -146,6 +146,15 @@ function isBlockedLogoHost(hostname: string): boolean {
     if (a === 100 && b >= 64 && b <= 127) return true // CGNAT
   }
   return false
+}
+
+/** Block hosts that point at the server's own network — loopback, private/link-local IP
+ *  literals, cloud metadata, and internal TLDs — so a stored logo URL can't be used for
+ *  server-side SSRF when it's fetched + inlined (lib/qr/raster.ts, ADR-274). */
+function isBlockedLogoHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) return true
+  return isPrivateIp(h)
 }
 
 /** A logo src is safe to inline only if it's a data:image URL, or an https URL whose host is
