@@ -43,6 +43,7 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
       domainId={practice.domain_id}
       subcategoryId={practice.subcategory_id}
       headerImage={practice.header_image}
+      weightClass={practice.weight_class}
       pillars={pillars.map((p) => ({ id: p.id, name: p.name }))}
       subcategories={subcategories.map((s) => ({ id: s.id, domain_id: s.domain_id, name: s.name }))}
       initialTags={tags}

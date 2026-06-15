@@ -8,9 +8,9 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronUp, ChevronDown, Eye, EyeOff, Sparkles, Layout } from 'lucide-react'
+import { ChevronUp, ChevronDown, Eye, EyeOff, Sparkles, Layout, CalendarRange } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import { loadJourneyOfficialContext, setJourneyOfficial, setJourneyPageConfig } from '@/app/(main)/journeys/actions'
+import { loadJourneyOfficialContext, setJourneyOfficial, setJourneyPageConfig, setJourneyWindow } from '@/app/(main)/journeys/actions'
 import { editorPageConfig, WIDGET_META, REQUIRED_WIDGETS } from '@/lib/journey-page-config'
 import type { PageWidgetConfig } from '@/lib/journey-plans'
 
@@ -19,11 +19,26 @@ interface Props {
   initialPageConfig: PageWidgetConfig[] | null
   initialOfficial: boolean
   initialQuestId: string | null
+  /** Quest play-window (ISO yyyy-mm-dd), or null = always open. */
+  initialWindowStartsAt: string | null
+  initialWindowEndsAt: string | null
+}
+
+/** A stored ISO timestamp/date → the yyyy-mm-dd a <input type="date"> expects. */
+function toDateInput(value: string | null): string {
+  return value ? value.slice(0, 10) : ''
 }
 
 const DISCOVERY_REQUIRED = new Set<string>(REQUIRED_WIDGETS.discovery)
 
-export function JourneyAdvanced({ planId, initialPageConfig, initialOfficial, initialQuestId }: Props) {
+export function JourneyAdvanced({
+  planId,
+  initialPageConfig,
+  initialOfficial,
+  initialQuestId,
+  initialWindowStartsAt,
+  initialWindowEndsAt,
+}: Props) {
   const router = useRouter()
   const [, start] = useTransition()
   const save = (fn: () => Promise<unknown>) =>
@@ -77,6 +92,26 @@ export function JourneyAdvanced({ planId, initialPageConfig, initialOfficial, in
     if (next.official !== undefined) setOfficial(next.official)
     if (next.questId !== undefined) setQuestId(next.questId)
     save(() => setJourneyOfficial(planId, next))
+  }
+
+  // ── Quest play-window (Guide/Mentor only; same role gate as Official). Either
+  //    bound may be empty (always-open / no-close). End must be on or after start —
+  //    validated inline as you type, and we only persist a valid (or cleared) span. ──
+  const [windowStart, setWindowStart] = useState(toDateInput(initialWindowStartsAt))
+  const [windowEnd, setWindowEnd] = useState(toDateInput(initialWindowEndsAt))
+  const windowInvalid = !!windowStart && !!windowEnd && windowEnd < windowStart
+
+  const saveWindowStart = (value: string) => {
+    setWindowStart(value)
+    // Don't write an inverted span; if the new start passes the end, hold the save
+    // until the end is fixed (the inline message points the way).
+    if (value && windowEnd && windowEnd < value) return
+    save(() => setJourneyWindow(planId, { startsAt: value || null }))
+  }
+  const saveWindowEnd = (value: string) => {
+    setWindowEnd(value)
+    if (value && windowStart && value < windowStart) return
+    save(() => setJourneyWindow(planId, { endsAt: value || null }))
   }
 
   return (
@@ -151,6 +186,42 @@ export function JourneyAdvanced({ planId, initialPageConfig, initialOfficial, in
                     <option key={q.id} value={q.id}>{q.emoji ? `${q.emoji} ` : ''}{q.name}</option>
                   ))}
                 </select>
+              )}
+            </div>
+
+            {/* Play window — the ~4-week span that sequences a Season's Journeys */}
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+                <CalendarRange className="h-3.5 w-3.5" /> Play window
+              </p>
+              <p className="mt-0.5 text-xs text-muted">When this Journey is in play. Leave a date empty to keep it open.</p>
+              <div className="mt-2 flex flex-wrap items-end gap-3">
+                <label className="flex flex-col gap-1">
+                  <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Opens</span>
+                  <input
+                    type="date"
+                    value={windowStart}
+                    max={windowEnd || undefined}
+                    onChange={(e) => saveWindowStart(e.target.value)}
+                    className="min-h-11 rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Closes</span>
+                  <input
+                    type="date"
+                    value={windowEnd}
+                    min={windowStart || undefined}
+                    onChange={(e) => saveWindowEnd(e.target.value)}
+                    aria-invalid={windowInvalid}
+                    className={`min-h-11 rounded-lg border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary ${
+                      windowInvalid ? 'border-danger' : 'border-border'
+                    }`}
+                  />
+                </label>
+              </div>
+              {windowInvalid && (
+                <p className="mt-1.5 text-xs text-danger">The close date needs to be on or after the open date.</p>
               )}
             </div>
           </div>

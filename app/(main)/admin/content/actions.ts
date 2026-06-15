@@ -10,6 +10,7 @@
 
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Json } from '@/lib/database.types'
 import { getCallerProfile } from '@/lib/auth'
 import { authorizeAction } from '@/lib/admin/guard'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
@@ -246,9 +247,87 @@ export async function createSeasonAction(input: {
 
 const DIFFICULTIES = ['easy', 'normal', 'hard', 'legendary'] as const
 type Difficulty = (typeof DIFFICULTIES)[number]
+const CATEGORIES = ['social', 'events', 'content', 'leadership', 'streak', 'seasonal', 'special'] as const
 
 const clampInt = (n: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, Math.round(Number.isFinite(n) ? n : lo)))
+
+/** A season's official Journey, surfaced in the Expression Challenge authoring path. */
+export interface ExpressionJourneyOption {
+  id: string
+  slug: string
+  title: string
+}
+
+/** The active season's number, or null when no season is active. */
+async function activeSeasonNumber(client: SupabaseClient): Promise<number | null> {
+  const { data } = await client
+    .from('seasons')
+    .select('season_number')
+    .eq('status', 'active')
+    .maybeSingle()
+  return (data as { season_number: number } | null)?.season_number ?? null
+}
+
+/**
+ * The active season's official Journeys — the only Journeys an Expression Challenge can
+ * cap. A Journey is official under the season's Quest (`quests.season = <active number>`,
+ * `journey_plans.quest_id` set + `official = true`). Server-only read. Returns [] when
+ * there is no active season or no Quest yet, so the form degrades to an empty selector.
+ */
+export async function activeSeasonJourneys(): Promise<ExpressionJourneyOption[]> {
+  const client = ub()
+  const season = await activeSeasonNumber(client)
+  if (season == null) return []
+
+  const { data: questRows } = await client
+    .from('quests')
+    .select('id')
+    .eq('season', season)
+    .eq('status', 'active')
+  const questIds = ((questRows ?? []) as { id: string }[]).map((q) => q.id)
+  if (questIds.length === 0) return []
+
+  const { data: journeyRows } = await client
+    .from('journey_plans')
+    .select('id, slug, title')
+    .in('quest_id', questIds)
+    .eq('official', true)
+    .order('title', { ascending: true })
+  return ((journeyRows ?? []) as ExpressionJourneyOption[]).map((j) => ({
+    id: j.id,
+    slug: j.slug,
+    title: j.title,
+  }))
+}
+
+/**
+ * Resolve an Expression Challenge's Journey server-side: confirm the id is a real official
+ * Journey under the active season's Quest, and that no OTHER Expression Challenge already
+ * caps it this season (the member lookup is `.maybeSingle()` on journey_id + season, so a
+ * Journey may carry at most one). `excludeChallengeId` skips the row being edited.
+ * Returns the Journey's slug (the criteria's `journey_slug`) or an inline error message.
+ */
+async function resolveExpressionJourney(
+  client: SupabaseClient,
+  season: number,
+  journeyId: string,
+  excludeChallengeId?: string,
+): Promise<{ slug: string } | { error: string }> {
+  const journey = (await activeSeasonJourneys()).find((j) => j.id === journeyId)
+  if (!journey) return { error: 'Pick an official Journey from this season to cap.' }
+
+  let dupeQuery = client
+    .from('season_challenges')
+    .select('id')
+    .eq('season', season)
+    .eq('journey_id', journeyId)
+  if (excludeChallengeId) dupeQuery = dupeQuery.neq('id', excludeChallengeId)
+  const { data: dupe } = await dupeQuery.maybeSingle()
+  if (dupe) return { error: 'That Journey already has an Expression Challenge this season.' }
+
+  return { slug: journey.slug }
+}
 
 export async function updateChallengeAction(
   id: string,
@@ -258,6 +337,9 @@ export async function updateChallengeAction(
     difficulty?: string
     target?: number
     zapsReward?: number
+    /** For an Expression Challenge: re-point it to a different official Journey. When set,
+     *  `journey_id` and the `criteria.journey_slug` are kept in sync server-side. */
+    journeyId?: string
   },
 ): Promise<ActionResult> {
   try {
@@ -266,6 +348,7 @@ export async function updateChallengeAction(
     return fail('You need curation access for this.')
   }
 
+  const client = ub()
   const update: Record<string, unknown> = {}
   if (patch.name !== undefined) {
     const name = patch.name.trim().slice(0, 120)
@@ -279,9 +362,28 @@ export async function updateChallengeAction(
   }
   if (patch.target !== undefined) update.target = clampInt(patch.target, 1, 10000)
   if (patch.zapsReward !== undefined) update.zaps_reward = clampInt(patch.zapsReward, 0, 1000)
+
+  // Re-pointing an Expression Challenge: only allowed on a row that already caps a Journey,
+  // and only to another official Journey in the same season. Keep journey_id + the criteria
+  // slug in lockstep so the member-side lookup stays valid.
+  if (patch.journeyId !== undefined) {
+    const { data: existing } = await client
+      .from('season_challenges')
+      .select('season, journey_id')
+      .eq('id', id)
+      .maybeSingle()
+    const row = existing as { season: number; journey_id: string | null } | null
+    if (!row) return fail('That challenge no longer exists.')
+    if (!row.journey_id) return fail('Only an Expression Challenge can point at a Journey.')
+    const resolved = await resolveExpressionJourney(client, row.season, patch.journeyId, id)
+    if ('error' in resolved) return fail(resolved.error)
+    update.journey_id = patch.journeyId
+    update.criteria = { type: 'expression', journey_slug: resolved.slug }
+  }
+
   if (Object.keys(update).length === 0) return ok()
 
-  const { error } = await ub().from('season_challenges').update(update).eq('id', id)
+  const { error } = await client.from('season_challenges').update(update).eq('id', id)
   if (error) return fail(error.message)
   revalidateContent('challenges')
   return ok()
@@ -294,6 +396,11 @@ export async function createChallengeAction(input: {
   difficulty: string
   target: number
   zapsReward: number
+  /** 'season' = a season-wide challenge (today's flow, no Journey). 'expression' = the
+   *  capstone for one Journey: the action sets journey_id + criteria server-side. */
+  kind?: 'season' | 'expression'
+  /** Required when kind === 'expression': the official Journey this Challenge caps. */
+  journeyId?: string
 }): Promise<ActionResult> {
   try {
     await requireCurator()
@@ -304,17 +411,25 @@ export async function createChallengeAction(input: {
   const name = input.name.trim().slice(0, 120)
   if (!name) return fail('Give the challenge a name.')
   if (!DIFFICULTIES.includes(input.difficulty as Difficulty)) return fail('Unknown difficulty.')
-  const categories = ['social', 'events', 'content', 'leadership', 'streak', 'seasonal', 'special']
-  if (!categories.includes(input.category)) return fail('Unknown category.')
+  if (!CATEGORIES.includes(input.category as (typeof CATEGORIES)[number])) return fail('Unknown category.')
+
+  const isExpression = input.kind === 'expression'
 
   const client = ub()
-  const { data: seasonRow } = await client
-    .from('seasons')
-    .select('season_number')
-    .eq('status', 'active')
-    .maybeSingle()
-  const season = (seasonRow as { season_number: number } | null)?.season_number
-  if (!season) return fail('No active season to add a challenge to.')
+  const season = await activeSeasonNumber(client)
+  if (season == null) return fail('No active season to add a challenge to.')
+
+  // Expression Challenge: validate the Journey + uniqueness, then derive journey_id +
+  // criteria server-side (the operator never hand-edits raw jsonb).
+  let journeyId: string | null = null
+  let criteria: Json = {}
+  if (isExpression) {
+    if (!input.journeyId) return fail('An Expression Challenge needs a Journey to cap.')
+    const resolved = await resolveExpressionJourney(client, season, input.journeyId)
+    if ('error' in resolved) return fail(resolved.error)
+    journeyId = input.journeyId
+    criteria = { type: 'expression', journey_slug: resolved.slug }
+  }
 
   const { data: lastRow } = await client
     .from('season_challenges')
@@ -334,9 +449,11 @@ export async function createChallengeAction(input: {
     slug,
     name,
     description: input.description.trim().slice(0, 500),
-    category: input.category,
+    // An Expression Challenge always sorts under 'special' (the capstone category).
+    category: isExpression ? 'special' : input.category,
     difficulty: input.difficulty,
-    criteria: {},
+    criteria,
+    journey_id: journeyId,
     target: clampInt(input.target, 1, 10000),
     zaps_reward: clampInt(input.zapsReward, 0, 1000),
     sort_order: sortOrder,
