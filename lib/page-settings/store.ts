@@ -43,7 +43,7 @@ export const loadPageSettings = cache(async (route: string): Promise<PageSetting
  *  service-role `.in()` read, REQUEST-CACHED, and FAIL-SAFE (empty config on any error) so a
  *  page falls back to the registry default. Role gates ride inside the returned config. */
 export const loadLayoutForRoute = cache(async (route: string): Promise<LayoutConfig> => {
-  const empty: LayoutConfig = { order: [], hidden: [], roles: {} }
+  const empty: LayoutConfig = { template: 'single', slots: {} }
   try {
     if (!isSafeRoute(route)) return empty
     const chain = layoutScopeChain(route)

@@ -107,28 +107,30 @@ Context header band + context tabs + body + **scope-aware** right rail.
 This is the answer to *"add different functions depending on the page… like
 widgets that show up when assigned… without rebuilding every page."*
 
-> ✅ **Shipped — the per-route module-assignment engine (ADR-270 + ADR-271, 2026-06-15).** A
-> page's **interior** modules are assigned per route and tuned from the on-page Layout editor,
-> now with a **scope cascade** (route → section → global) and a **per-module role gate**. The
-> remaining sketch below (the interior **slot** model / `<WidgetSlot>` — assignable areas within
-> the container) is the wider target this builds toward. What exists today:
+> ✅ **Shipped — the per-route module-assignment engine (ADR-270 + ADR-271 + ADR-272, 2026-06-15).**
+> A page's **interior** modules are assigned per route and tuned from the on-page Layout editor,
+> with a **scope cascade** (route → section → global), a **per-module role gate**, and now an
+> interior **template + slot** model — pick one of four templates and drop each module into an
+> **area (slot)** of it (the concrete landing of the `<WidgetSlot>` sketch below). What exists today:
 >
 > | Concern | Where | Note |
 > |---|---|---|
 > | **Module catalog** (metadata only) | [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) | `LAYOUT_MODULES` / `LAYOUT_MODULE_IDS` / `moduleMeta` — no React, so the editor / actions / resolver never import RSCs |
+> | **Templates** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId` — 4 interior templates (Single · Main + side · 2 columns · 3 columns) naming their slots; no React, like the module catalog. Add a template = one entry here + a grid case in `page-modules.tsx` |
 > | **Component binding** | [`lib/widgets/registry.tsx`](../lib/widgets/registry.tsx) | `componentFor(id)` binds each id to its self-fetching RSC ([`components/widgets/`](../components/widgets)) |
-> | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | merges the stored `{order,hidden}` over the registry default order |
-> | **Renderer** | [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) | `<PageModules route>` — each module in its own `<Suspense>` (§5), `null` when empty |
-> | **Storage** | `page_settings.layout` jsonb `{order,hidden,roles}` | reused from the page-settings store (no new migration) |
+> | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | `resolveSlots` / `moduleAssignments` — maps each module to one slot of the chosen template (unplaced → default slot), back-compat reader (`parseLayout`) reads a legacy flat config as the Single template's `main` slot |
+> | **Renderer** | [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) | `<PageModules route>` — lays out the template's grid, each slot's modules each in its own `<Suspense>` (§5), `null` when empty |
+> | **Storage** | `page_settings.layout` jsonb `{template, slots}` (each slot `{order,hidden,roles}`) | reused from the page-settings store; shape evolved behind the back-compat reader (no new migration) |
 > | **Scope cascade** (ADR-271) | [`lib/page-settings/{layout.ts,store.ts}`](../lib/page-settings) | a layout saves at the exact route, its section (`/seg/*`), or global (`*`); `loadLayoutForRoute` resolves most-specific-wins |
-> | **Per-module role gate** (ADR-271) | `applyRoleGate` + [`viewer-role.ts`](../lib/page-settings/viewer-role.ts) | `roles[id]` = lowest community rung to see a module; view-as-aware, fail-closed |
-> | **Editor** | [`components/admin/page-settings/layout-editor.tsx`](../components/admin/page-settings/layout-editor.tsx) | the on-page Layout settings row (scope switch + toggle + reorder + per-module "Who sees it"), staff-gated; section is `live` in [`lib/page-settings/sections.ts`](../lib/page-settings/sections.ts) |
+> | **Per-module role gate** (ADR-271) | `resolveSlots` + [`viewer-role.ts`](../lib/page-settings/viewer-role.ts) | per-slot `roles[id]` = lowest community rung to see a module; view-as-aware, fail-closed |
+> | **Editor** | [`components/admin/page-settings/layout-editor.tsx`](../components/admin/page-settings/layout-editor.tsx) | the on-page Layout settings row (template picker + modules grouped by slot, each with an Area selector + toggle + reorder + per-module "Who sees it"), under the scope switch, staff-gated; section is `live` in [`lib/page-settings/sections.ts`](../lib/page-settings/sections.ts) |
 >
 > **Add a module:** one meta entry in `modules.ts` + bind its component in `registry.tsx`.
-> Nothing else. **Assign per route:** open the page's on-page **Layout** settings (order +
-> visibility, stored per route); or render `<PageModules route="…" />` on a page (piloted on
-> `/lead`). This is the page's interior column, **not** the app shell rail (that stays
-> operator-managed in `/admin/page-layout` / `page_chrome_overrides`, ADR-259/260).
+> Nothing else. **Assign per route:** open the page's on-page **Layout** settings (pick a template,
+> drop each module into a slot, set order + visibility, stored per route); or render
+> `<PageModules route="…" />` on a page (piloted on `/lead`). This is the page's interior column,
+> **not** the app shell rail (that stays operator-managed in `/admin/page-layout` /
+> `page_chrome_overrides`, ADR-259/260).
 
 ### 4.1 Anatomy of a widget
 A widget is a **self-contained module** colocated with its data:
