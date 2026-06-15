@@ -7,6 +7,7 @@ import {
 } from "@/lib/discover";
 import { listPublicJourneys } from "@/lib/journey-plans";
 import { listActivePartners } from "@/lib/partners/read";
+import { listPublicPractices } from "@/lib/practices";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
 import { getCityCategoryHubs } from "@/app/discover/events/_data";
@@ -52,6 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/discover/journeys`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/topics`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/discover/partners`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${SITE_URL}/discover/practices`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/sign-in`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
     { url: `${SITE_URL}/help`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
@@ -90,7 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let organizerRoutes: MetadataRoute.Sitemap = [];
   let hubRoutes: MetadataRoute.Sitemap = [];
   try {
-    const [channels, circles, events, journeys, organizers, hubs, partners] = await Promise.all([
+    const [channels, circles, events, journeys, organizers, hubs, partners, practices] = await Promise.all([
       getTopicalChannels(),
       getPublicCircles(200),
       getPublicEvents(200),
@@ -100,6 +102,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // events (empty/low-value facets never get a URL, so they stay out of crawl).
       getCityCategoryHubs().catch(() => []),
       listActivePartners({ limit: 500 }).catch(() => []),
+      listPublicPractices("top").catch(() => []),
     ]);
     organizerRoutes = organizers;
 
@@ -108,6 +111,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.6,
+    }));
+
+    const practiceRoutes: MetadataRoute.Sitemap = practices.map((p) => ({
+      url: `${SITE_URL}/discover/practices/${p.id}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
     }));
 
     hubRoutes = hubs.map((h) => ({
@@ -157,6 +167,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...hubRoutes,
       ...journeyRoutes,
       ...partnerRoutes,
+      ...practiceRoutes,
     ];
   } catch {
     // Fall back to static routes only.

@@ -291,6 +291,53 @@ export function partnerListSchema(
   }
 }
 
+// ── Practice (HowTo) ────────────────────────────────────────────────────────────
+// A Practice is "one core real-world act" — a how-to. HowTo is the answer-engine lever for
+// guides (CONTENT-VOICE §8b), so each public practice page is a crawlable "how to do X".
+
+export function practiceSchema(p: {
+  id: string
+  title: string
+  summary?: string | null
+  description?: string | null
+  body?: string | null
+}) {
+  const url = abs(`/discover/practices/${p.id}`)
+  const desc = p.summary ?? p.description ?? undefined
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: p.title,
+    ...(desc ? { description: desc } : {}),
+    image: [abs('/opengraph-image')],
+    url,
+    step: [
+      {
+        '@type': 'HowToStep',
+        position: 1,
+        name: p.title,
+        text: p.body ?? desc ?? p.title,
+        url,
+      },
+    ],
+  }
+}
+
+export function practiceListSchema(practices: { id: string; title: string }[], listName: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: practices.length,
+    itemListElement: practices.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: abs(`/discover/practices/${p.id}`),
+      name: p.title,
+    })),
+  }
+}
+
 // ── FAQ ───────────────────────────────────────────────────────────────────────
 
 export function faqSchema(qas: { q: string; a: string }[]) {

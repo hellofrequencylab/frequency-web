@@ -120,6 +120,33 @@ export async function listPublicPractices(sort: PracticeSort = 'trending'): Prom
   })
 }
 
+/** A public practice enriched with its display taxonomy (no ranking signal) — for the public
+ *  /discover/practices detail page. */
+export interface PublicPractice extends Practice {
+  subcategory: { slug: string; name: string } | null
+  tags: PracticeTag[]
+}
+
+/** A single PUBLIC practice by id (the public discover detail page), with its sub-category +
+ *  tags. Reads the public-read `practices` table; null when missing or not public. */
+export async function getPublicPractice(id: string): Promise<PublicPractice | null> {
+  const { data } = await db()
+    .from('practices')
+    .select(PRACTICE_COLS)
+    .eq('id', id)
+    .eq('is_public', true)
+    .maybeSingle()
+  const p = data as Practice | null
+  if (!p) return null
+  const [subById, tagsByPractice] = await Promise.all([subcategoryMap(), tagsForPractices([p.id])])
+  const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
+  return {
+    ...p,
+    subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
+    tags: tagsByPractice.get(p.id) ?? [],
+  }
+}
+
 // --- Scalable library search (server-side filter · sort · paginate) -------
 //
 // Built for a library of thousands: all filtering, sorting, and paging happen in
