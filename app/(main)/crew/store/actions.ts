@@ -9,7 +9,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { canCashIn } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 
-export async function redeemItem(itemId: string): Promise<ActionResult> {
+export async function redeemItem(itemId: string): Promise<ActionResult<{ pending: boolean }>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not authenticated')
 
@@ -112,6 +112,24 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
     if (existing) return fail('You already own this item')
   }
 
+  // Fulfillment routing (ADR-280). Three honest outcomes — never charge Gems for
+  // something we cannot actually deliver:
+  //   1. cosmetic (border / flair / title) — applied to the profile instantly below.
+  //   2. operator-honored perk (the feature SKUs + the guest pass) — the
+  //      store_redemptions row IS the fulfillment record an operator acts on; the
+  //      member is told it has been recorded (not a silent "Owned" with nothing behind it).
+  //   3. membership BILLING CREDIT (membership-1mo / membership-3mo: type 'membership'
+  //      with a months count) — a paid-tier credit we cannot grant in-app until the
+  //      Stripe billing-credit rail exists (OPEN-THREADS A3). We REFUSE rather than
+  //      silently swallow the Gems. The two SKUs are also deactivated in migration
+  //      20260627000000; this guard defends against an operator reactivating them.
+  const meta = item.metadata as { type?: string; value?: string; months?: number } | null
+  if (meta?.type === 'membership' && typeof meta?.months === 'number') {
+    return fail('Membership credits aren’t redeemable yet. They unlock when billing credits launch, and your Gems stay safe.')
+  }
+  const cosmeticType =
+    meta?.type === 'border' || meta?.type === 'flair' || meta?.type === 'title' ? meta.type : null
+
   const { error } = await db.from('store_redemptions').insert({
     profile_id: profileId,
     item_id: itemId,
@@ -121,26 +139,19 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
 
   if (error) return fail(error.message)
 
-  // Apply cosmetic effects
-  const meta = item.metadata as { type?: string; value?: string } | null
-  if (meta?.type === 'border') {
-    await admin.from('profiles')
-      .update({ profile_border: meta.value })
-      .eq('id', profileId)
-  } else if (meta?.type === 'flair') {
-    await admin.from('profiles')
-      .update({ profile_flair: meta.value })
-      .eq('id', profileId)
-  } else if (meta?.type === 'title') {
-    await admin.from('profiles')
-      .update({ custom_title: meta.value })
-      .eq('id', profileId)
+  // Cosmetics take effect immediately; everything else is recorded for fulfillment.
+  if (cosmeticType === 'border') {
+    await admin.from('profiles').update({ profile_border: meta?.value }).eq('id', profileId)
+  } else if (cosmeticType === 'flair') {
+    await admin.from('profiles').update({ profile_flair: meta?.value }).eq('id', profileId)
+  } else if (cosmeticType === 'title') {
+    await admin.from('profiles').update({ custom_title: meta?.value }).eq('id', profileId)
   }
 
   revalidatePath('/crew/store')
   revalidatePath('/crew')
   revalidatePath('/people', 'layout')
-  return ok()
+  return ok({ pending: cosmeticType === null })
 }
 
 export async function equipCosmetic(type: 'border' | 'flair' | 'title', value: string | null) {
