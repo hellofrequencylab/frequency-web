@@ -6849,3 +6849,13 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 **Consequences:** The exact bug class from ADR-274 now has a fast, always-on regression test, and the DB-authz layer has a runnable foundation + a clear extension path. **Open:** wire `pnpm test:rls` into CI (a job that boots Postgres, applies migrations, runs `supabase test db`), and grow the per-role policy + RPC coverage. Extending the `check:authz` static guard to `lib/` mutation helpers remains complementary but is lower-priority now that the runtime scoping tests exist.
 
+## ADR-276: Public partner directory + LocalBusiness structured data
+
+**Status:** Accepted (2026-06-15) — realizes the "partner businesses are designed to be found" intent (a Yelp/Facebook-style business page that can post events and offer member rewards). No migration. Code is the source of truth: `app/discover/partners/{page.tsx,[slug]/page.tsx}`, `lib/jsonld.ts` (`localBusinessSchema` / `partnerListSchema`), `app/sitemap.ts`.
+
+**Context:** Partner pages existed only under the auth-gated `app/(main)/partners/*`, so they were invisible to search + AI crawlers — the opposite of "designed to be found." The data (`partners`: name / category / city / address / website / description + offer titles) is all business-public, so it can be surfaced publicly without leaking member PII.
+
+**Decision:** Add a PUBLIC, crawlable surface under `/discover` (mirroring the public circles/events/topics pattern): a directory (`/discover/partners`) and detail (`/discover/partners/[slug]`), ISR (`revalidate = 3600`) with `generateStaticParams`. The detail emits **`LocalBusiness`** JSON-LD — and, deliberately unlike the Event schema (city-level only for member venue privacy, ADR-186), it publishes the partner's full self-provided **street address**, because a partner business WANTS to be found. The directory emits an `ItemList`; both carry `BreadcrumbList`. Partner slugs are added to the sitemap. Reads reuse the existing `listActivePartners` / `getPartnerView` (service-role, but they select only public business columns and `status = 'active'`), so no anon-RLS change/migration is needed.
+
+**Consequences:** Partner businesses now have public, structured-data-rich pages that search/AI engines can surface for "<category> near me" queries — the local-SEO/AIO lever the audit (`AUDIT-2026-06-15.md`) called for. The member-side `/partners` workspace (claiming offers, scanning plaques) is unchanged. **Follow-up:** link the public directory from the marketing/discover nav (kept out of the shared `DISCOVER_NAV` for now to avoid the member/public dual-surface ambiguity); optional per-partner OG image; `openingHours`/`telephone`/`geo` once those fields exist on `partners`.
+
