@@ -24,10 +24,10 @@ describe('reward rules registry', () => {
     expect(rulesMatching(base)).toHaveLength(0)
   })
 
-  it('seasoned_agent matches a locked lifetime rank of Beacon or higher (past behavior)', () => {
-    expect(rulesMatching({ ...base, lifetimeRank: 'signal' }).map((r) => r.key)).not.toContain('seasoned_agent')
-    expect(rulesMatching({ ...base, lifetimeRank: 'beacon' }).map((r) => r.key)).toContain('seasoned_agent')
-    expect(rulesMatching({ ...base, lifetimeRank: 'luminary' }).map((r) => r.key)).toContain('seasoned_agent')
+  it('seasoned_agent matches a locked lifetime rank of Adept or higher (past behavior)', () => {
+    expect(rulesMatching({ ...base, lifetimeRank: 'initiate' }).map((r) => r.key)).not.toContain('seasoned_agent')
+    expect(rulesMatching({ ...base, lifetimeRank: 'adept' }).map((r) => r.key)).toContain('seasoned_agent')
+    expect(rulesMatching({ ...base, lifetimeRank: 'master' }).map((r) => r.key)).toContain('seasoned_agent')
   })
 
   it('og_beta matches the web_beta tag', () => {
@@ -51,7 +51,7 @@ describe('reward rules registry', () => {
     const keys = rulesMatching({
       ...base,
       membershipTier: 'supporter',
-      lifetimeRank: 'conduit',
+      lifetimeRank: 'master',
       tags: new Set(['web_beta']),
       traits: { engagement_depth: 'deep' },
     }).map((r) => r.key)
