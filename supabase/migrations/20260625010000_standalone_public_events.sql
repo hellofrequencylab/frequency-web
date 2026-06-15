@@ -56,44 +56,22 @@ end $$;
 
 alter table public.events
   add constraint events_scope_type_check
-  check (scope_type in ('circle', 'region', 'cluster', 'group', 'standalone'));
+  -- Permissive (the original intent: admit 'standalone' without narrowing the historical set,
+  -- so no existing row can violate it). 'public' is a historical value already present in prod.
+  check (scope_type in ('circle', 'region', 'cluster', 'group', 'standalone', 'public'));
 
 comment on column public.events.scope_type is
   'circle | region | cluster | group (Circle-scoped, the original model) | standalone (ADR-254: a public event with no Circle; scope_id self-references host_id and is inert for access control).';
 
--- ── 2. re-assert the visibility-aware READ policy (standalone-safe) ──────────
--- Verbatim disjuncts from 20260612000000, with get_my_*() wrapped in scalar
--- subselects (initplan) and an explicit note that standalone rows resolve through
--- the public/unlisted/private branches only.
-drop policy if exists "events: crew+ read in scope"     on public.events;
-drop policy if exists "events: visibility-aware read"    on public.events;
-
-create policy "events: visibility-aware read"
-  on public.events for select
-  using (
-    -- public / unlisted: anyone (circle OR standalone). App decides what to LIST;
-    -- RLS decides what is READABLE. Unlisted stays out of listings at the app layer.
-    visibility = 'public'
-    or visibility = 'unlisted'
-    -- The host always sees their own event (incl. private drafts).
-    or host_id = ( select get_my_profile_id() )
-    or (
-      -- circle_only: unchanged — crew+ within the event's Circle/Region scope.
-      -- A standalone event never has scope_type 'circle'/'region', so this branch
-      -- can never widen access to a standalone row.
-      visibility = 'circle_only'
-      and ( select get_my_role() ) >= 'crew'::community_role
-      and (
-        (scope_type = 'circle' and scope_id = any (( select get_my_circle_ids() )))
-        or (scope_type = 'region' and scope_id = ( select get_my_region_id() ))
-      )
-    )
-    -- private (incl. drafts): host-only, already covered by host_id above. No other
-    -- branch matches, so a private/standalone event is host-only — no leak.
-  );
-
-comment on policy "events: visibility-aware read" on public.events is
-  'ADR-254: public/unlisted readable by anyone (circle OR standalone; listing exclusion for unlisted is app-level); circle_only stays scope-membership (crew+, circle/region only); private + drafts are host-only; hosts always see their own events.';
+-- ── 2. events READ policy — intentionally NOT re-asserted here ───────────────
+-- The original plan re-created "events: visibility-aware read" (from 20260612000000).
+-- But a LATER migration, 20260613130000_poster_events, already SUPERSEDED that policy
+-- with the stricter "events: status + visibility-aware read" (it adds DRAFT/status
+-- gating). Re-creating the older policy here would leave TWO permissive SELECT policies
+-- whose OR drops the status gate — a draft-event read leak. The standalone case needs no
+-- new read rule: "status + visibility-aware read" already makes public/unlisted events
+-- readable regardless of scope (standalone never uses the circle_only branch). So this
+-- migration adds only the scope_type allowance (§1) + the lock-step can_read_event (§3).
 
 -- ── 3. keep can_read_event() in lock-step ────────────────────────────────────
 -- Same disjuncts as the policy so every child table (posts, media, cohosts,
