@@ -237,6 +237,60 @@ export function journeyListSchema(plans: JourneyPlan[], listName: string) {
   }
 }
 
+// ── Local business (partner) ───────────────────────────────────────────────────
+// Partner businesses are PUBLIC by design ("designed to be found" — a Yelp/Facebook-style
+// page that can post events and offer member rewards), so unlike Event location (city-level
+// only, ADR-186) a partner's full self-provided street address IS published: that's the point.
+// LocalBusiness is the local-SEO/AIO lever for "<category> near me" answers.
+
+export function localBusinessSchema(p: {
+  name: string
+  slug: string
+  description?: string | null
+  city?: string | null
+  address?: string | null
+  website?: string | null
+}) {
+  const url = abs(`/discover/partners/${p.slug}`)
+  const hasAddress = !!(p.address || p.city)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: p.name,
+    url,
+    image: [abs('/opengraph-image')],
+    ...(p.description ? { description: p.description } : {}),
+    ...(p.website ? { sameAs: [p.website] } : {}),
+    ...(hasAddress
+      ? {
+          address: {
+            '@type': 'PostalAddress',
+            ...(p.address ? { streetAddress: p.address } : {}),
+            ...(p.city ? { addressLocality: p.city } : {}),
+          },
+        }
+      : {}),
+  }
+}
+
+export function partnerListSchema(
+  partners: { slug: string; name: string }[],
+  listName: string,
+) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: partners.length,
+    itemListElement: partners.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: abs(`/discover/partners/${p.slug}`),
+      name: p.name,
+    })),
+  }
+}
+
 // ── FAQ ───────────────────────────────────────────────────────────────────────
 
 export function faqSchema(qas: { q: string; a: string }[]) {
