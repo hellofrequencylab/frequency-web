@@ -8,6 +8,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { canCashIn } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
+import { classifyRedemption } from '@/lib/store/fulfillment'
 
 export async function redeemItem(itemId: string): Promise<ActionResult<{ pending: boolean }>> {
   const profileId = await getMyProfileId()
@@ -112,23 +113,17 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
     if (existing) return fail('You already own this item')
   }
 
-  // Fulfillment routing (ADR-280). Three honest outcomes — never charge Gems for
-  // something we cannot actually deliver:
-  //   1. cosmetic (border / flair / title) — applied to the profile instantly below.
-  //   2. operator-honored perk (the feature SKUs + the guest pass) — the
-  //      store_redemptions row IS the fulfillment record an operator acts on; the
-  //      member is told it has been recorded (not a silent "Owned" with nothing behind it).
-  //   3. membership BILLING CREDIT (membership-1mo / membership-3mo: type 'membership'
-  //      with a months count) — a paid-tier credit we cannot grant in-app until the
-  //      Stripe billing-credit rail exists (OPEN-THREADS A3). We REFUSE rather than
-  //      silently swallow the Gems. The two SKUs are also deactivated in migration
-  //      20260627000000; this guard defends against an operator reactivating them.
-  const meta = item.metadata as { type?: string; value?: string; months?: number } | null
-  if (meta?.type === 'membership' && typeof meta?.months === 'number') {
+  // Fulfillment routing (ADR-280, classifyRedemption) — never charge Gems for something
+  // we cannot deliver. Cosmetics apply instantly; operator-honored perks are recorded
+  // ({ pending }); a membership BILLING CREDIT (membership-1mo/3mo) is REFUSED because we
+  // can't grant it until the Stripe billing-credit rail exists (OPEN-THREADS A3). Those
+  // two SKUs are also deactivated in migration 20260627000000; this guards reactivation.
+  const plan = classifyRedemption(item.metadata)
+  if (plan.kind === 'refuse') {
     return fail('Membership credits aren’t redeemable yet. They unlock when billing credits launch, and your Gems stay safe.')
   }
-  const cosmeticType =
-    meta?.type === 'border' || meta?.type === 'flair' || meta?.type === 'title' ? meta.type : null
+  const cosmeticType = plan.kind === 'cosmetic' ? plan.cosmeticType : null
+  const cosmeticValue = (item.metadata as { value?: string } | null)?.value
 
   const { error } = await db.from('store_redemptions').insert({
     profile_id: profileId,
@@ -141,11 +136,11 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
 
   // Cosmetics take effect immediately; everything else is recorded for fulfillment.
   if (cosmeticType === 'border') {
-    await admin.from('profiles').update({ profile_border: meta?.value }).eq('id', profileId)
+    await admin.from('profiles').update({ profile_border: cosmeticValue }).eq('id', profileId)
   } else if (cosmeticType === 'flair') {
-    await admin.from('profiles').update({ profile_flair: meta?.value }).eq('id', profileId)
+    await admin.from('profiles').update({ profile_flair: cosmeticValue }).eq('id', profileId)
   } else if (cosmeticType === 'title') {
-    await admin.from('profiles').update({ custom_title: meta?.value }).eq('id', profileId)
+    await admin.from('profiles').update({ custom_title: cosmeticValue }).eq('id', profileId)
   }
 
   revalidatePath('/crew/store')
