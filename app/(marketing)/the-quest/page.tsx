@@ -5,10 +5,8 @@ import {
   Gem,
   Ghost,
   Footprints,
-  Eye,
-  Radio,
-  Telescope,
-  Crown,
+  Flame,
+  Star,
   Repeat,
   HandHeart,
   Trophy,
@@ -50,44 +48,32 @@ export const metadata: Metadata = {
 
 type IconType = React.ComponentType<{ className?: string }>
 
-// The season ranks — a path from invisible to indispensable. Framed as who you
-// become to the people around you, not a points tier.
+// The season ranks — tied to how many Journeys you finish, not how many Zaps you
+// collect. Framed as what you've done this season, not a points tier.
 const RANKS: { icon: IconType; name: string; tag: string; body: string }[] = [
   {
     icon: Ghost,
     name: 'Ghost',
     tag: 'Just arrived',
-    body: 'You found the room. Nobody knows your name yet, and that’s exactly where everyone starts.',
+    body: "You found the room. Nobody knows your name yet, and that is exactly where everyone starts.",
   },
   {
     icon: Footprints,
-    name: 'Echo',
-    tag: 'Showing up',
-    body: 'You keep coming back. The same faces start to expect you, and the standing time becomes yours.',
+    name: 'Initiate',
+    tag: 'One Journey done',
+    body: 'You finished your first Journey. The practice is real now, not just an intention.',
   },
   {
-    icon: Eye,
-    name: 'Signal',
-    tag: 'Known by name',
-    body: 'You’re a regular now. You notice the newcomer in the corner, and you’re the one who says hello.',
+    icon: Flame,
+    name: 'Adept',
+    tag: 'Two Journeys done',
+    body: 'Two down. You know what it takes to see something through, and you keep showing up anyway.',
   },
   {
-    icon: Radio,
-    name: 'Beacon',
-    tag: 'Holding the door',
-    body: 'You carry a Circle. You bring people in, smooth the rough edges, and keep the standing time alive.',
-  },
-  {
-    icon: Telescope,
-    name: 'Conduit',
-    tag: 'Seeding the next',
-    body: 'When your Circle fills, you seed the next one. You connect rooms that didn’t know each other.',
-  },
-  {
-    icon: Crown,
-    name: 'Luminary',
-    tag: 'Missed by many',
-    body: 'A whole neighborhood is warmer because you kept showing up. The community would feel your absence.',
+    icon: Star,
+    name: 'Master',
+    tag: 'Three Journeys done',
+    body: 'You finished the season. Mind, body, spirit: you moved through all three and came out changed.',
   },
 ]
 
@@ -207,18 +193,19 @@ function LegacyTheQuest() {
         </div>
       </Section>
 
-      {/* Season ranks — the path from invisible to indispensable */}
+      {/* Season ranks — tied to Journey completions */}
       <Section tone="canvas">
         <SectionHeading
           eyebrow="Season ranks"
-          title="From ghost to luminary."
-          kicker="Not a leaderboard. A record of who you became this season."
+          title="Ranks you earn by finishing."
+          kicker="Not a leaderboard. A record of how many Journeys you completed this season."
         />
         <p className="text-lg text-muted leading-relaxed mb-9">
-          Each season you climb a path that mirrors your place in the community:
-          from the stranger who just found the room to the person a whole
-          neighborhood would miss. Ranks reset, because the point was never the
-          badge. The point is who you become getting there.
+          Each season has three Journeys: Mind, Body, Spirit. Finish one and
+          you become an Initiate. Finish two and you are Adept. Finish all
+          three and you reach Master. There is no points threshold to cross,
+          no leaderboard to beat. You just do the work, and the rank follows.
+          Ranks reset each season so every season is a fresh start.
         </p>
         <ol className="grid gap-4 sm:grid-cols-2">
           {RANKS.map((r, i) => (
@@ -248,32 +235,32 @@ function LegacyTheQuest() {
       </Section>
 
       <Statement tone="surface">
-        You level up by becoming someone{' '}
-        <span className="text-primary">your community misses.</span>
+        You level up by{' '}
+        <span className="text-primary">finishing the work.</span>
       </Statement>
 
-      {/* Quests — multi-step seasonal journeys */}
+      {/* Quests — three Journeys per season */}
       <ZigZag
         img="/images/site/PHOTO-2020-10-17-13-49-14.jpeg"
         alt="A Frequency music circle gathered on a cliffside at golden hour"
         eyebrow="Quests"
-        title="A journey worth taking."
-        kicker="Seasonal paths with a beginning, a middle, and a changed you at the end."
+        title="Three Journeys. One season."
+        kicker="Mind, body, spirit: each one a focused track, each one capped by an Expression Challenge."
         imgAspect="landscape"
         reverse
         tone="canvas"
       >
         <p>
-          A <strong className="text-text">Quest</strong> is a multi-step seasonal
-          journey you choose to walk: a string of real-world steps that add up to
-          something. A 30 morning cold-plunge streak. Hosting your first supper
-          club. Bringing three friends into a Circle and watching them stay.
+          Each season of <strong className="text-text">The Quest</strong> gives
+          you three Journeys to walk: one for the mind, one for the body, one
+          for the spirit. Each runs for about four weeks, and each closes with
+          an Expression Challenge where you share what you practiced with your
+          community.
         </p>
         <p>
-          Quests give a season its shape. They turn a vague intention to be more
-          present into a path with a next step always lit, and a community walking
-          it beside you. You don&apos;t finish a Quest with more points. You finish
-          it as someone a little more woven in.
+          Finish all three and you are Master for the season. Trophies and Gems
+          follow each completion. Then the season resets, the next one opens,
+          and you begin again.
         </p>
       </ZigZag>
 
@@ -298,7 +285,7 @@ function LegacyTheQuest() {
           <Guard
             icon={Repeat}
             title="Rhythm over streaks"
-            text="Ranks reset each season so nobody is ever too far ahead to catch. It’s a fresh climb, an open invitation, not a ladder you missed."
+            text="Ranks reset each season so nobody is ever too far ahead to catch. It's a fresh climb, an open invitation, not a ladder you missed."
           />
         </div>
       </Section>
@@ -309,10 +296,10 @@ function LegacyTheQuest() {
           items={[
             'Show up',
             'Earn zaps',
-            'Climb your rank',
-            'Walk a Quest',
+            'Finish a Journey',
+            'Earn a Trophy',
             'Bring someone new',
-            'Be missed when you’re gone',
+            'Reach Master',
           ]}
         />
       </div>
@@ -352,11 +339,11 @@ function LegacyTheQuest() {
           kicker={`The founding cohort is climbing it together in ${FOUNDING_PLACE}.`}
         />
         <Body>
-          Every player starts as a ghost. Join the beta and you start your first
+          Every player starts as a Ghost. Join the beta and you start your first
           season alongside the founding members, the people shaping what these
-          ranks and Quests even mean. Show up once, earn your first zap, and watch
-          the path light up. You can begin anywhere: all it takes is a Circle and
-          a standing time.
+          Journeys even mean. Pick a practice, log it, earn your first Zap, and
+          watch the path light up. Finish a Journey and you earn a Trophy. Finish
+          three and you reach Master. All it takes is a Circle and a standing time.
         </Body>
         <p className="mt-7 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-primary-strong">
           <Trophy className="w-4 h-4" aria-hidden /> Season one is open
@@ -367,7 +354,7 @@ function LegacyTheQuest() {
 
       <BetaCTA
         heading="Start your first season."
-        body="Pick a Circle, show up, and earn your first zap. The high score is a life you’re actually living."
+        body="Pick a Circle, show up, and earn your first zap. The high score is a life you're actually living."
       />
     </>
   )

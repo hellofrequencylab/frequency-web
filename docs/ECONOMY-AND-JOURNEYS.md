@@ -13,9 +13,11 @@ Status: ⏳ **draft, pre-build.** Extends ADR-084 (Beta = Crew) and the Quest ec
 > rank-endorsement (ADR-141) and Gem **spend** (Store) remain Crew-gated. Read the rest of this
 > doc as historical context for those *remaining* gates, not for Quests/Journeys.
 >
-> 🔴 **Naming canon ([NAMING.md](NAMING.md), ADR-208):** wherever this doc says "points," read
-> **Zaps/Gems**; ranks **Operative/Agent** are now **Signal/Beacon**; **Arc** is retired (the
-> engine is dropped). Schema source of truth: migrations `2026061300*`.
+> 🔴 **Naming canon ([NAMING.md](NAMING.md), ADR-208 + ADR-283–286):** wherever this doc says "points," read
+> **Zaps/Gems**; the old 6-rank Zap-threshold ladder (Echo/Signal/Beacon/Conduit/Luminary) is
+> **retired** — ranks are now **Ghost → Initiate → Adept → Master** (completion-based, ADR-283);
+> **Arc** is retired (the engine is dropped). Schema source of truth: migrations `2026061300*`
+> and `20260628000000` / `20260628010000`.
 
 ## 1. The principle (lead with the answer)
 
@@ -51,50 +53,55 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
 - **Gems = the web / on-platform currency.** Earned by keeping the community warm
   between gatherings (post, comment, react, welcome, RSVP). Daily-capped so they
   can't be farmed; spendable in the Vault — by Crew. For a Member they pile up, inert.
-- **Zaps = the showing-up currency** that drives **season ranks** — *the weight of
-  being there*. Earned by **in-person + outreach** acts (and **every practice log**,
-  personal or circle — the real-world doing), the biggest rewards living off the
-  screen. **Everyone earns at full rate** (Rewards Economy v2: the old
-  `MEMBER_ZAP_RATE = 0.5` throttle is deleted — the free game is the principle;
-  ADR-141 visibility gating is the membership value).
+- **Zaps = the showing-up currency** — *the weight of being there*. Earned by
+  **in-person + outreach** acts (and **every practice log**, personal or circle — the
+  real-world doing), the biggest rewards living off the screen. Also earned when
+  finishing a Journey (+75 Zaps) or an Expression Challenge (+50 Zaps in person).
+  Zaps accumulate and roll to Gems at season end (5:1 flat). They do **not** directly
+  gate season rank — rank is completion-based (ADR-283). **Everyone earns at full rate**
+  (Rewards Economy v2: the old `MEMBER_ZAP_RATE = 0.5` throttle is deleted — the free
+  game is the principle; ADR-141 visibility gating is the membership value).
 - **Amplitude — the lifetime layer (Rewards Economy v2).** `profiles.amplitude` =
   lifetime cumulative Zaps, hosting-class actions (`event_host`, `program_run`,
   `circle_start`, `circle_activate`) counting **2×**. Accrued ONLY in
   `after_zap_transaction()`; never decremented, never spent, never gates play.
   Level derives on read: largest L where `50·L·(L+1) ≤ amplitude`
   (`lib/amplitude.ts`); milestones at 1k/5k/10k/25k/50k/100k mint permanent Awards
-  (1k "First Thousand" + 5k "Five K" seeded for S1). Displayed beside the season
-  rank ("Beacon · 14,200"). Supersedes the ADR-037 lifetime-rank *display*; the
-  `lifetime_rank` column + ratchet stay for the retro reward rules. **Gem tiers
-  (New→Legend) are retired.**
-- **Season rank vs. lifetime rank (ADR-164).** The **season rank** advances with this
-  season's zaps and resets to `ghost` at each `reset_season()`. The **lifetime rank** is a
-  separate, **locked peak** (`profiles.lifetime_rank`) that only ever moves up and survives
-  every reset — the durable credential you "lock in." The zap trigger ratchets it to the
-  season peak automatically; the season reset also locks it from the final rank (catching
-  manual Luminary promotions) before wiping the season. The member sees it on their own Vault
-  (the Store widget + the "how you earned" headline); public display still follows ADR-141.
-  Ranks are `ghost → echo → signal → beacon → conduit → luminary` (`season_rank_enum`;
-  renamed 2026 — see docs/NAMING.md; migration `20260613000030`).
-- **Season-end Zap → Gem rollover — flat 5:1 + rank bonus (Rewards Economy v2).**
-  At season end, `reset_season()` (migration `20260614200000`) converts
-  `floor(season_zaps / 5)` into Gems **for everyone**, plus a **one-time
-  final-rank bonus**:
+  (1k "First Thousand" + 5k "Five K" seeded for S1). Displayed beside the season rank.
+  Supersedes the ADR-037 lifetime-rank *display*; the `lifetime_rank` column + ratchet
+  stay for the retro reward rules. **Gem tiers (New→Legend) are retired.**
+- **Season rank — completion-based (ADR-283).** Season rank = how many Journeys
+  the member finished this season: **Ghost (0) → Initiate (1) → Adept (2) → Master (3)**.
+  Rank advances automatically the moment a Journey is finished. No Zap threshold, no
+  manual promotion, no challenge gate. Resets to `ghost` at each `reset_season()`. The
+  **lifetime rank** (`profiles.lifetime_rank`) is a separate locked peak that only ever
+  moves up and survives every reset. The member sees it in the Vault; public display
+  follows ADR-141. (`season_rank_enum` migrated to 4 values in
+  `20260628010000_quest_completion_model.sql`; ADR-286.)
+- **Journey completion rewards.** Finishing a Journey pays:
+  - **+75 Zaps** (in-person activity credit)
+  - **A Trophy** — minted in `season_trophies`, stamped with the rank reached
+  - **Escalating Gems** by the rank reached:
 
-  | Final rank | Bonus Gems |
+  | Rank reached | Gems |
   | :-- | --: |
-  | Echo | 10 |
-  | Signal | 25 |
-  | Beacon | 50 |
-  | Conduit | 100 |
-  | Luminary | 250 |
+  | Initiate (1st Journey) | 25 |
+  | Adept (2nd Journey) | 50 |
+  | Master (3rd Journey) | 100 |
 
-  Both grants are claim-then-pay through `reward_grants` (re-running the reset can
-  never double-pay). The reset also mints a **season trophy** (final rank + season
-  Zaps stamped) for every profile with ≥1 practice log or any season Zaps, and the
-  Season 1 close grants the **Founding Season stamp** (the `season-one`
-  achievement) to everyone who practiced. This resolves the earlier provisional
-  rank-based sliding ladder (5:1→1.5:1, retired).
+  These replace the old flat 30-Gem journey reward and the retired final-rank Gem bonus.
+- **Expression Challenge reward.** The Expression Challenge that caps each Journey pays
+  **+50 Zaps** when completed in person at a Circle, or **+30 Gems** when posted solo
+  online. Required to finish the Journey. Fires through `reward_grants` (claim-then-pay,
+  can never double-pay).
+- **Season-end Zap → Gem rollover — flat 5:1 (Rewards Economy v2).**
+  At season end, `reset_season()` (migration `20260614200000`) converts
+  `floor(season_zaps / 5)` into Gems **for everyone** (no rank bonus — the final-rank
+  bonus is retired; per-Journey Trophy rewards replace it). The reset also mints a
+  **season trophy** for every profile with ≥1 practice log or any season Zaps, and the
+  Season 1 close grants the **Founding Season stamp** (the `season-one` achievement)
+  to everyone who practiced. Rollover is claim-then-pay through `reward_grants`
+  (re-running the reset can never double-pay).
 
 > **Categorization is canonical (ADR-139): online → Gems, real life → Zaps — and
 > it applies to the meta-layer too.** Achievements, season challenges, and Journeys
@@ -107,21 +114,22 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
 > "look at everything you've earned" land.
 
 **Reward ladder** (live in `gem_config` / `zap_config`; ADR-104 / the
-`…_economy_rebalance` migration). Tuned so a ~13-week season lands a **casual member
-at Signal (300+)**, a **regular at Beacon (750+)**, and a **real leader at
-Conduit→Luminary (1500–3000)** *(Signal/Beacon replace the retired Operative/Agent —
-NAMING.md/ADR-208)*:
+`…_economy_rebalance` migration). Tuned so a member who finishes all three Journeys
+reaches **Master** by season end. Journey rewards (Zaps + Trophy + Gems) are the primary
+rank driver; the table below covers base activity:
 
 | ⚡ Zaps — in-person + outreach | | 💎 Gems — web / on-platform (capped) | |
 | :-- | --: | :-- | --: |
-| Found a real circle | 100 | Finish a Journey | 30 |
+| Found a real circle | 100 | Expression Challenge (solo online) | 30 |
 | Host an in-person event | 60 | Complete a season challenge | 15 |
 | Activate / claim a circle | 40 | Welcome a newcomer | 8 |
 | An invite you sent joins | 40 | RSVP to an event | 5 |
 | Show up (verified check-in) | 25 | Join a circle | 5 |
 | Outreach task (flyer/QR) | 20 | Post (≤3/day) | 3 |
 | Log a practice — light / standard / heavy | 8 / 12 / 15 | Reply (≤5/day) | 2 |
-| Capture a ghost node | 10 | Daily login (1/day) · React (≤5/day) | 2 · 1 |
+| Expression Challenge (in person at Circle) | 50 | Daily login (1/day) · React (≤5/day) | 2 · 1 |
+| Capture a ghost node | 10 | | |
+| Finish a Journey | 75 | | |
 
 **Rewards Economy v2 additions** (all live-tunable in `zap_config`):
 `practices.weight_class` drives the per-log payout (8/12/15 — supersedes the
@@ -159,22 +167,18 @@ narrative arc. *(This section's old engine — the legacy action-chain engine (d
 ADR-152) — is obsolete; the spine is now `journey_plans` and the chain engine is
 dropped. See [JOURNEYS.md](JOURNEYS.md).)*
 
-- **Seasonal issuance.** Each season ships **4 primary tracks — one per Pillar**
-  (Mind · Body · Spirit · Expression) — plus a handful of **bonus micro-journeys**
-  (short Zap/Gem earners).
-- **Crew-only, full stop.** Journeys are tracked, gamified, all-in-one programs — a
-  member can't join *or* build one. They can **browse** every journey (see the value,
-  the steps, the coaching) → upgrade lightbox on "Start". The closest a free member
-  gets is **choosing individual practices** on their own: it approximates a journey but
-  isn't the cohesive, tracked, all-in-one flow, and it's harder to follow. That gap is
-  deliberate — the curated tracked program is the premium thing.
-- **Exclusivity.** You can only see the inside of Journeys you're part of; you can't
-  engage with others' journeys.
+- **Seasonal structure (ADR-284).** Each Quest ships **exactly three Journeys** —
+  Mind, then Body, then Spirit — run in sequence (~4 weeks each, 13 weeks total).
+  Each Journey is capped by a single **Expression Challenge** (required to finish the
+  Journey). Expression is never a fourth Journey; it is the capstone on each one.
+- **All free.** Journeys, Challenges, and member-built library Journeys are all free to
+  start and complete (ADR-152). The Crew gate applies only to rank-endorsement visibility
+  on public profiles (ADR-141) and Gem spend in the Store.
 - **Streaks stay free.** A member always keeps their own practice streaks and collects
-  the (dead) rewards — the North-Star loop is never paywalled.
+  the rewards — the North-Star loop is never paywalled.
 
-Net: Journeys become the clearest reason to pay — seasonal, pillar-aligned coaching
-you can only *do* as Crew.
+Finishing all three Journeys = **Master** rank, the season's highest, plus 100 Gems
+and three Trophies in the Vault.
 
 ## 6. Decisions
 

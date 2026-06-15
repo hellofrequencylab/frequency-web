@@ -6920,3 +6920,43 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 **Consequences:** Public practice URLs are now keyword-rich and stable. **Owner/content gate (flagged):** there are currently **0 `is_public` practices in prod**, so the public directory, the Pillar pages (ADR-281), and these detail pages all render the empty state until an operator marks practices public — the SEO value of ADR-279/281/282 is real but **dark until practices are published** (the same "built seam, awaiting content" shape as the empty ledger). **Follow-up:** an admin "publish to the public library" affordance to light these surfaces.
 
+## ADR-283: Completion-based season rank model
+
+**Status:** Accepted (2026-06-28) — replaces the Zap-threshold rank ladder introduced in ADR-219. Migration: `20260628010000_quest_completion_model.sql`. See also [NAMING.md](NAMING.md) §Season ranks and [ECONOMY-AND-JOURNEYS.md](ECONOMY-AND-JOURNEYS.md).
+
+**Context:** The old model advanced rank by season Zap totals (Ghost → Echo → Signal → Beacon → Conduit at 0/100/300/750/1500; Luminary by manual admin promotion gated on completing all season challenges). This created three problems: (1) rank advanced passively from any Zap source, not specifically from doing the Quest's structured work; (2) Luminary's double gate (Zap threshold + challenge gate) was opaque to members; (3) the six-value enum was larger than it needed to be and the names (Echo / Signal / Beacon / Conduit / Luminary) were being retired anyway as the naming canon evolved.
+
+**Decision:** Replace with a **completion-based model**: season rank = how many Journeys the member finished this season. Ghost (0) → Initiate (1) → Adept (2) → Master (3). Rank advances automatically the moment a Journey is marked complete. No Zap threshold, no manual promotion, no challenge gate. The function `rankForCompletion(journeysFinished)` replaces `rankForZaps`. The `season_rank_enum` is migrated from 6 values to 4 (see ADR-286 for the enum migration detail and beta wipe).
+
+**Consequences:** Rank is now a direct, legible signal of Quest progress. The Luminary double-gate is retired. The old final-rank Gem bonus (Echo 10 / Signal 25 / Beacon 50 / Conduit 100 / Luminary 250) is retired; per-Journey Trophies + escalating Gems replace it. Season-end rollover stays flat 5:1 Zaps to Gems with no rank modifier. Any code or copy that called `rankForZaps` or referenced the old rank names must be updated.
+
+## ADR-284: Three-Journey season structure + Expression-as-Challenge capstone
+
+**Status:** Accepted (2026-06-28) — supersedes the four-Journey-per-Pillar framing in ECONOMY-AND-JOURNEYS.md §5 and the `currencyForCriteria` audit (ADR-139). Migration: `20260628010000_quest_completion_model.sql`.
+
+**Context:** The prior model seeded four official Journeys per Quest, one per Pillar (Mind / Body / Spirit / Expression). Expression was a fourth Journey like the others. This was not wrong mechanically, but it broke the naming canon's intent: Expression is a practice mode that weaves through every other domain, not a separate domain to sit in for ~4 weeks. It also made the three-Journey rank ladder (0/1/2/3) uneven — a member finishing Expression before the others would advance rank without having touched Mind, Body, or Spirit.
+
+**Decision:** A Quest ships **exactly three Journeys**: Mind, then Body, then Spirit, run in sequence (~4 weeks each, 13 weeks total). Each Journey is capped by a single **Expression Challenge** (a `season_challenges` row typed `expression`, linked to the Journey via `journey_id`). Completing the Expression Challenge is required to finish the Journey. Paying **+50 Zaps in person at a Circle** (the preferred form: sharing with the community) or **+30 Gems posted solo online** (fallback). Expression is never a standalone Journey; it is the capstone that closes each one.
+
+**Consequences:** Each of the three Journeys now has a clear arc: practice (Mind/Body/Spirit) plus an expressive closing act. Rank maps cleanly to Journey count. The `pillars` table's four values (Mind / Body / Spirit / Expression) are unchanged; Expression simply has no `journey_plans` rows of its own — only `season_challenges` rows typed `expression`. The season-wide 15-challenge outreach engine is dormant (kept, not seeded) and is not an Expression Challenge.
+
+## ADR-285: Per-practice intensity tiers retired
+
+**Status:** Accepted (2026-06-28) — retires ADR-198 (tier rename) and the practice-tier depth model. Migration: `20260628000000_retire_practice_intensity_tiers.sql`.
+
+**Context:** Since ADR-198 (2026) practices shipped three content tiers named Initiate / Adept / Master (`practice_tiers.tier ∈ initiate|adept|master`). The selected tier resolved via `journey_plan_adoptions.tier_override` → `circles.default_intensity_tier` (Host-set) → `journey_plan_items.default_tier` → `'adept'`. This created two problems: (1) the names Initiate / Adept / Master are now the season ranks (ADR-283); the two uses are a permanent collision risk; (2) the tier system added authoring and UI complexity for a benefit (differentiated content depth) that pre-launch data did not justify.
+
+**Decision:** Drop the per-practice intensity tier system entirely. `practice_tiers` table is dropped. `journey_plan_adoptions.tier_override`, `circles.default_intensity_tier`, and `journey_plan_items.default_tier` columns are dropped. A Practice now carries only a **weight class** (light / standard / heavy, `practices.weight_class`) which drives the per-log Zap payout (8/12/15) — this is a property of the practice itself, not a member setting. The words Initiate / Adept / Master are reserved for season ranks going forward and must not be introduced as any other kind of tier.
+
+**Consequences:** Authoring is simpler (one variant, not three). No member-facing intensity selector. The weight class remains the only per-practice variable. Any surviving references to `practice_tiers`, `tier_override`, `default_intensity_tier`, or `default_tier` in application code are dead and should be removed.
+
+## ADR-286: season_rank_enum 6→4 migration + beta wipe
+
+**Status:** Accepted (2026-06-28) — the schema migration counterpart to ADR-283. Migration: `20260628010000_quest_completion_model.sql`.
+
+**Context:** The `season_rank_enum` Postgres type had 6 values: `ghost / echo / signal / beacon / conduit / luminary`. Migrating a Postgres enum in place requires recreating all columns and constraints that use it — a multi-step operation with downtime risk on a live table. Additionally, S1 beta members have season Zap data and rank values assigned under the old model; carrying those forward into the new completion model would create incorrect ranks (a member at "Signal" from Zaps alone would appear to have finished one Journey when they have not).
+
+**Decision:** Migrate the enum to 4 values (`ghost / initiate / adept / master`) and **wipe beta season rank + Journey-completion data** in the same migration. This is a one-time destructive reset justified by the pre-launch beta context: no member has a completion-based rank yet, so there is nothing to preserve. The wipe zeroes `current_season_zaps`, `current_season_gems`, and resets `season_rank` to `ghost` for all profiles; `lifetime_gems`, `amplitude`, and trophy rows from S1 activity are preserved. All future rank changes flow through `rankForCompletion`.
+
+**Consequences:** Beta members start S1 fresh under the correct model. The enum rename is permanent: the old values (echo / signal / beacon / conduit / luminary) are retired from the schema and must not be reintroduced. Any seed data, demo-seeding scripts, or fixtures that reference old rank names must be updated.
+

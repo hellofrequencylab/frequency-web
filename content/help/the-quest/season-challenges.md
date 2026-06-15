@@ -1,58 +1,65 @@
 ---
 title: Season challenges
-description: A set of season-long goals that pay bonus Zaps, and the road to Luminary.
+description: The Expression Challenge that closes each Journey, and how it works.
 category: the-quest
 order: 6
-updated: 2026-06-11
+updated: 2026-06-28
 audience: member
 featureKeys: [challenges, gamification]
 status: published
 ---
 
-Each season of **The Quest** comes with **15 challenges**: concrete goals to
-chase over the season's 13 weeks, each paying **bonus Zaps** when you finish it.
-Think of them as the season's side quests: the ranks measure how much you show up,
-challenges reward *how* you show up. Finish all of the first fourteen and the
-fifteenth, **The Completionist**, completes itself, with the biggest bonus and a
-border you can't get any other way.
+Every Journey in **The Quest** closes with an **Expression Challenge**: a moment to
+share what you practiced with the people around you. It is the capstone that finishes
+the Journey, not a separate goal you track alongside it.
 
-## Where to find them
+## What an Expression Challenge is
 
-Open **The Quest** (your dashboard) and pick the **Challenges** tab. Up top you get
-the season at a glance: how many challenges you've finished, the bonus Zaps you've
-earned (and how many are still up for grabs), what's in progress, and how many
-remain on the road to Luminary.
+Each of the three seasonal Journeys (Mind / Body / Spirit) has one Expression Challenge
+attached to it. You complete it at the end of the Journey. It might be a reflection,
+a piece of creative work, a conversation, or something you make and bring to a Circle
+gathering. The prompt is specific to the Journey.
 
-## How they work
+Completing the Expression Challenge is **required to finish the Journey**. You cannot
+close out a Journey without it.
 
-- **No signing up.** Every challenge tracks automatically as you do the thing:
-  attend gatherings, host, post, welcome people, invite friends. Each card shows a
-  progress bar (say, 4 of 10) so you always know where you stand.
-- **Four difficulty levels.** Challenges are grouped **Easy → Normal → Hard →
-  Legendary**. Easy ones fall to you in your first weeks; Legendary ones take a
-  real season of showing up.
-- **Bonus Zaps on completion.** The harder the challenge, the bigger the reward,
-  and it lands on top of the Zaps the activity itself already earned you.
-- **Progress is seasonal.** When the season resets, challenge progress clears too,
-  and a fresh set begins. (Your Gems, trophies and Amplitude are safe; see
+## What you earn
+
+An Expression Challenge pays based on how you complete it:
+
+- **In person at a Circle gathering**: +50 Zaps
+- **Posted solo online**: +30 Gems
+
+Sharing with your community earns the Zap reward because that act of presence is the
+whole point. Posting solo still counts and still pays, in the currency of online activity.
+
+## How it works
+
+- **No signing up.** The Expression Challenge appears automatically on your Journey once
+  you are in the final stretch. Complete it and your Journey closes.
+- **Progress is seasonal.** When the season resets, a new set of Journeys and Challenges
+  begins. (Your Gems, Trophies, and Amplitude are safe; see
   [Season ranks](/help/the-quest/season-ranks).)
 
-## The road to Luminary
+## The full picture
 
-Finish **every** challenge in the season and you've done the full set. The
-Challenges page tracks how many you have left and celebrates when you're done.
-That complete set is the strongest signal behind **Luminary**, the top rank, which
-is recognized by hand for people who've truly carried their community.
+Finishing a Journey (including its Expression Challenge) earns:
+
+- **+75 Zaps**
+- **A Trophy** stamped with the rank you reached
+- **Gems** scaled to your new rank (Initiate 25 / Adept 50 / Master 100)
+
+Finish all three Journeys and you reach **Master**, the highest rank for the season.
+
+## Doing it with your circle
+
+If your circle is running the Journey together, the Expression Challenge can become a
+circle moment: everyone shares their work at the same gathering. Your personal completion
+still records to your own progress, and the circle's shared
+[Current](/help/groups/circle-current) builds when members finish together.
 
 ## Scavenger hunts
 
-Some challenges are **code hunts**: a set of Frequency QR codes hidden around your
-city or an event. Scan them to fill the progress bar; each code counts once. See
+Some Expression Challenges are **code hunts**: a set of Frequency QR codes hidden around
+your city or an event. Scan them to complete the prompt; each code counts once. See
 [QR codes & checking in](/help/the-quest/qr-check-ins) for how scanning works.
-
-## Doing one with your circle
-
-Circle hosts can **adopt a challenge for the whole circle**: the same goal, taken
-on together. Your personal progress still counts as yours, and every time someone
-in the circle finishes an adopted challenge, the circle's shared
-[Current](/help/groups/circle-current) builds. Same Quest, played side by side.
