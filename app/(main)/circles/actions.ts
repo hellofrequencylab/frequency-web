@@ -12,25 +12,6 @@ import { SITE_URL } from '@/lib/site'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { track } from '@/lib/analytics/track'
 import { suggestCircleDraft, fallbackCircleSuggestion, type CircleSuggestion } from '@/lib/ai/circle-wizard'
-import { ok, fail, type ActionResult } from '@/lib/action-result'
-import { setCircleTier } from '@/lib/journey-plans'
-import { isIntensityTier, type IntensityTier } from '@/lib/journey-tiers'
-
-/** Host control: set the circle's default practice depth (Initiate/Adept/Master) for its
- *  members (docs/JOURNEYS.md §5). Null clears it. Gated on circle.editSettings (host+). */
-export async function setCircleTierAction(
-  circleId: string,
-  tier: IntensityTier | null,
-): Promise<ActionResult> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return fail('Not signed in')
-  if (tier !== null && !isIntensityTier(tier)) return fail('Unknown depth tier')
-  const caps = await getCircleCapabilities(circleId)
-  if (!caps.has('circle.editSettings')) return fail('Not allowed')
-  await setCircleTier(circleId, tier)
-  revalidatePath('/circles/[slug]', 'page')
-  return ok()
-}
 
 // Vera's start-a-circle assist: suggest a name + about from the chosen Interest.
 // Live (Haiku) when AI is on; a deterministic draft otherwise — so the modal's
