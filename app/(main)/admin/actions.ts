@@ -809,33 +809,6 @@ export async function updateEventDetails(id: string, fd: FormData) {
   revalidatePath('/feed')
 }
 
-// ── Season rank controls ──────────────────────────────────────────────────────
-
-export async function toggleSeasonComplete(profileId: string, complete: boolean) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'guide')) throw new Error('Unauthorized')
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('profiles')
-    .update({ season_challenges_complete: complete })
-    .eq('id', profileId)
-  if (error) throw new Error(error.message)
-  revalidatePath('/admin')
-}
-
-export async function assignLuminary(profileId: string) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'guide')) throw new Error('Unauthorized')
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('profiles')
-    .update({ current_season_rank: 'luminary', season_challenges_complete: true })
-    .eq('id', profileId)
-  if (error) throw new Error(error.message)
-  processGamificationEvent({ type: 'rank_change', profileId, rank: 'luminary' }).catch(() => {})
-  revalidatePath('/admin')
-}
-
 // ── Crew task verification ────────────────────────────────────────────────────
 
 export async function approveVerification(completionId: string) {

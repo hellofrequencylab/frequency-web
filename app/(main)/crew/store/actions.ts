@@ -77,7 +77,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   // Rank-gated SKUs (e.g. Founders' Table requires Conduit or above).
   const requiredRank = (item.metadata as { requires_rank?: string } | null)?.requires_rank
   if (requiredRank) {
-    const order = ['ghost', 'echo', 'signal', 'beacon', 'conduit', 'luminary']
+    const order = ['ghost', 'initiate', 'adept', 'master']
     const have = order.indexOf((profile?.current_season_rank as string | null) ?? 'ghost')
     if (have < order.indexOf(requiredRank)) {
       return fail(`Requires ${requiredRank.charAt(0).toUpperCase()}${requiredRank.slice(1)} rank or above`)

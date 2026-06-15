@@ -1,11 +1,10 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { UserX, Star } from 'lucide-react'
-import { assignRole, deactivateMember, toggleSeasonComplete, assignLuminary } from './actions'
+import { UserX } from 'lucide-react'
+import { assignRole, deactivateMember } from './actions'
 import type { SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 
@@ -23,7 +22,6 @@ export type MemberItem = {
   isCrewLead: boolean
   currentSeasonRank?: SeasonRank
   currentSeasonZaps?: number
-  seasonChallengesComplete?: boolean
 }
 
 const ROLES: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'admin', 'janitor']
@@ -60,18 +58,6 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
     startTransition(async () => {
       await deactivateMember(profileId)
       setConfirmId(null)
-    })
-  }
-
-  function handleToggleSeason(profileId: string, current: boolean) {
-    startTransition(async () => {
-      await toggleSeasonComplete(profileId, !current)
-    })
-  }
-
-  function handleLuminary(profileId: string) {
-    startTransition(async () => {
-      await assignLuminary(profileId)
     })
   }
 
@@ -132,10 +118,6 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
       ) : (
         <div className="space-y-0.5">
           {filtered.map((m) => {
-            const isConduit = m.currentSeasonRank === 'conduit'
-            const isLuminary = m.currentSeasonRank === 'luminary'
-            const canPromote = isConduit && m.seasonChallengesComplete && !isLuminary
-
             return (
               <div
                 key={m.membershipId}
@@ -170,11 +152,6 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                         Crew Lead
                       </span>
                     )}
-                    {isLuminary && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium flex items-center gap-0.5">
-                        <Star className="w-2.5 h-2.5" /> Luminary
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-subtle">
                     <span>@{m.handle}</span>
@@ -205,32 +182,6 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
 
                 {/* Controls. Visible on hover */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                  {/* Season challenges toggle. Guides+ */}
-                  {m.currentSeasonRank !== undefined && (
-                    <button
-                      onClick={() => handleToggleSeason(m.profileId, m.seasonChallengesComplete ?? false)}
-                      disabled={isPending}
-                      title={m.seasonChallengesComplete ? 'Mark season challenges incomplete' : 'Mark season challenges complete'}
-                      className={`text-xs px-2 py-1 rounded-lg border font-medium transition-colors disabled:opacity-50 ${
-                        m.seasonChallengesComplete
-                          ? 'border-success bg-success-bg text-success dark:bg-success-bg/30 dark:text-success'
-                          : 'border-border text-muted hover:border-success hover:text-success'
-                      }`}
-                    >
-                      {m.seasonChallengesComplete ? '✓ Challenges' : 'Mark complete'}
-                    </button>
-                  )}
-                  {/* Luminary promotion. Conduit + challenges complete */}
-                  {canPromote && (
-                    <button
-                      onClick={() => handleLuminary(m.profileId)}
-                      disabled={isPending}
-                      title="Promote to Luminary"
-                      className={buttonClasses('warningOutline', 'sm', 'bg-warning-bg dark:text-primary')}
-                    >
-                      → Luminary
-                    </button>
-                  )}
                   <select
                     defaultValue={m.role}
                     disabled={isPending}

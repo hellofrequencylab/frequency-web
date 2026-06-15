@@ -8,7 +8,7 @@ import { getPracticeStreak } from '@/lib/practice-streak'
 import { STREAK_CONFIG, isStreakActive } from '@/lib/gamification'
 import type { StreakType } from '@/lib/gamification'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
-import { rankForZaps } from '@/lib/season-ranks'
+import { rankForCompletion, journeysFinishedThisSeason } from '@/lib/season-ranks'
 import { getCurrentSeason } from '@/lib/seasons'
 import { IndexTemplate } from '@/components/templates'
 import { StandingHero } from '@/components/gamification/standing-hero'
@@ -39,7 +39,7 @@ export default async function StreaksPage() {
   if (!profileId) notFound()
 
   const admin = createAdminClient()
-  const [streaks, practice, { data: prof }, season] = await Promise.all([
+  const [streaks, practice, { data: prof }, season, finishedCount] = await Promise.all([
     getStreaksData(),
     getPracticeStreak(profileId),
     admin
@@ -48,6 +48,7 @@ export default async function StreaksPage() {
       .eq('id', profileId)
       .maybeSingle(),
     getCurrentSeason(),
+    journeysFinishedThisSeason(profileId),
   ])
 
   // The viewer's standing — the four counts, with the flame (streak) the subject
@@ -55,7 +56,7 @@ export default async function StreaksPage() {
   const standZaps = (prof as { current_season_zaps: number | null } | null)?.current_season_zaps ?? 0
   const standGems = (prof as { lifetime_gems: number | null } | null)?.lifetime_gems ?? 0
   const standStreak = (prof as { current_streak: number | null } | null)?.current_streak ?? 0
-  const standRank = rankForZaps(standZaps)
+  const standRank = rankForCompletion(finishedCount)
 
   // Daily practice streak — the headline.
   const prog = streakProgress(practice.current)
@@ -76,6 +77,7 @@ export default async function StreaksPage() {
           gems={standGems}
           streak={standStreak}
           rank={standRank}
+          journeysFinished={finishedCount}
           seasonName={season?.name}
           links={{ zaps: '/crew/leaderboard', rank: '/crew/achievements', streak: '/crew/streaks', gems: '/crew/store' }}
         />
