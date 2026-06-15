@@ -79,7 +79,7 @@ export function DealDetail({
   return (
     <div className="mx-auto w-full max-w-3xl">
       <DetailTemplate
-        back={{ href: '/admin/crm', label: 'Pipeline' }}
+        back={{ href: '/admin/growth?tab=crm', label: 'Pipeline' }}
         title={
           <input
             value={title}
@@ -319,7 +319,7 @@ export function DealDetail({
         title="Delete deal"
         body="This removes the deal and its activity timeline. This cannot be undone."
         confirmLabel="Delete deal"
-        onConfirm={() => run(() => deleteDeal(deal.id), () => router.push('/admin/crm'))}
+        onConfirm={() => run(() => deleteDeal(deal.id), () => router.push('/admin/growth?tab=crm'))}
       />
     </div>
   )

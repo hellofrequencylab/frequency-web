@@ -22,7 +22,11 @@ interface Props {
 export function AdminLeftNav({ role, webRole = 'none', staffRole = null }: Props) {
   const pathname = usePathname()
   const active = domainForPath(pathname)
-  const groups = visibleGroups(role, webRole, staffRole)
+  // Only PRIMARY domains list in the left rail. Sub-workspaces folded into a parent
+  // (Acquisition / CRM / Marketing → the Growth workspace tabs, ADR-264) are marked
+  // primary:false — they keep resolving in the switcher + top sub-nav but don't clutter
+  // the rail. The active sub-workspace highlights its parent's tab inside the page.
+  const groups = visibleGroups(role, webRole, staffRole).filter((g) => g.primary !== false)
 
   return (
     <nav aria-label="Admin areas" className="space-y-1">
