@@ -84,18 +84,6 @@ export async function countMyEntryPoints(ownerId: string): Promise<number> {
   return count ?? 0
 }
 
-/** Every entry point in a campaign (any owner) — the admin campaign view. */
-export async function listEntryPointsByCampaign(campaignId: string): Promise<EntryPoint[]> {
-  const db = createAdminClient()
-  const { data } = await db
-    .from('qr_codes')
-    .select(COLS)
-    .eq('campaign_id', campaignId)
-    .not('template_id', 'is', null)
-    .order('created_at', { ascending: false })
-  return ((data as EntryRow[] | null) ?? []).map(toEntryPoint)
-}
-
 export interface EntryPointWithOwner extends EntryPoint {
   ownerId: string | null
   ownerName: string | null
@@ -165,17 +153,4 @@ export async function isAssignableMember(profileId: string): Promise<boolean> {
     !!p && p.is_active && !p.is_system &&
     (['crew', 'supporter'].includes(p.membership_tier ?? '') || hostPlus.includes(p.community_role))
   )
-}
-
-/** One entry point by id, only if `ownerId` owns it. */
-export async function getMyEntryPoint(id: string, ownerId: string): Promise<EntryPoint | null> {
-  const db = createAdminClient()
-  const { data } = await db
-    .from('qr_codes')
-    .select(`${COLS}, owner_profile_id, template_id`)
-    .eq('id', id)
-    .maybeSingle()
-  const row = data as (EntryRow & { owner_profile_id: string | null }) | null
-  if (!row || row.owner_profile_id !== ownerId || !row.template_id) return null
-  return toEntryPoint(row)
 }

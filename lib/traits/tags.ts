@@ -67,9 +67,3 @@ export async function getMemberTags(profileId: string): Promise<MemberTag[]> {
       context: r.context ?? {},
     }))
 }
-
-/** Whether a member currently holds a given tag. */
-export async function hasTag(profileId: string, tagKey: string): Promise<boolean> {
-  const tags = await getMemberTags(profileId)
-  return tags.some((t) => t.tagKey === tagKey)
-}

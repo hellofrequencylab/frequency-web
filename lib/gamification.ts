@@ -224,8 +224,3 @@ export function isStreakActive(lastActivityAt: string | null, windowDays: number
   const diffDays = diffMs / (1000 * 60 * 60 * 24)
   return diffDays <= windowDays
 }
-
-export function getStreakFreezeEarnedAt(count: number): number[] {
-  const milestones = [4, 8, 13, 26, 52]
-  return milestones.filter(m => count >= m)
-}
