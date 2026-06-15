@@ -153,15 +153,6 @@ export async function getRealCallerRole(): Promise<CommunityRole | null> {
   return (await resolveCaller())?.realRole ?? null
 }
 
-/**
- * The caller's REAL staff web_role (ignoring any active "view as" downgrade), or
- * null. The true STAFF axis (ADR-208) — use it to gate the staff-only controls
- * themselves irrespective of preview.
- */
-export async function getRealCallerWebRole(): Promise<WebRole | null> {
-  return (await resolveCaller())?.realWebRole ?? null
-}
-
 /** The caller's profile id, or null if not signed in / no profile row. */
 export async function getMyProfileId(): Promise<string | null> {
   return (await resolveCaller())?.id ?? null

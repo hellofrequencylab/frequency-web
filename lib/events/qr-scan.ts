@@ -21,11 +21,6 @@ interface BarcodeDetectorInstance {
 }
 type BarcodeDetectorCtor = new (opts?: { formats?: string[] }) => BarcodeDetectorInstance
 
-/** True when the browser can decode a QR code on-device. */
-export function canDecodeQr(): boolean {
-  return typeof globalThis !== 'undefined' && 'BarcodeDetector' in globalThis
-}
-
 /**
  * Pull a usable http(s) URL out of a raw QR payload, or null. QR codes also
  * carry wifi / vcard / tel / plain text — we only want a booking link. A bare

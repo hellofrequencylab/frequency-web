@@ -22,7 +22,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { recordStreakActivity, processGamificationEvent } from '@/lib/achievements'
 import { scaledPostReward } from './poster-quality'
 import { isValidClaim } from './claim-trust'
-import type { DomainSlug, ExtractedEvent, EventDetails } from './types'
+import type { DomainSlug, EventDetails } from './types'
 
 const db = () => createAdminClient()
 
@@ -161,23 +161,6 @@ export interface DraftInput {
   posterPath?: string | null
   /** The rich, flexible poster harvest. Persisted as the events.details JSONB. */
   details?: EventDetails | null
-}
-
-/** Build a DraftInput from an AI extraction, for convenience at the call site. */
-export function draftInputFromExtraction(e: ExtractedEvent, posterPath?: string | null): DraftInput {
-  return {
-    title: e.title,
-    description: e.description,
-    startsAt: e.startsAt || null,
-    endsAt: e.endsAt || null,
-    location: e.location,
-    priceCents: e.isFree ? 0 : e.priceCents,
-    organizerName: e.organizerName,
-    organizerContact: e.organizerContact,
-    domain: e.domain,
-    posterPath: posterPath ?? null,
-    details: e.details,
-  }
 }
 
 /** Insert a poster-scanned event as a DRAFT, owned by the poster. host_id stays

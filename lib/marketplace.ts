@@ -86,16 +86,6 @@ export async function getListing(id: string): Promise<MarketListingWithAuthor | 
   return (data as MarketListingWithAuthor | null) ?? null
 }
 
-/** A member's own listings (any status), newest-touched first. */
-export async function myListings(authorId: string): Promise<MarketListing[]> {
-  const { data } = await db()
-    .from('market_listings')
-    .select(COLS)
-    .eq('author_id', authorId)
-    .order('updated_at', { ascending: false })
-  return (data as MarketListing[] | null) ?? []
-}
-
 export async function listingAuthorId(id: string): Promise<string | null> {
   const { data } = await db().from('market_listings').select('author_id').eq('id', id).maybeSingle()
   return (data as { author_id: string | null } | null)?.author_id ?? null

@@ -7,17 +7,6 @@
 // (cosmetic continuity aside). Accrual lives in the after_zap_transaction trigger
 // (the single place totals move); this module owns the derived math + display.
 
-/** Hosting-class zap actions accrue Amplitude at 2×. Mirrors the trigger CASE in
- *  20260614200000_rewards_economy_v2.sql — change both together. */
-export const HOSTING_AMPLITUDE_ACTIONS = [
-  'event_host',
-  'program_run',
-  'circle_start',
-  'circle_activate',
-] as const
-
-export const HOSTING_AMPLITUDE_MULTIPLIER = 2
-
 /** cumulative(L) = COEFF * L * (L+1) — the total Amplitude needed to hold level L. */
 export const AMPLITUDE_LEVEL_COEFF = 50
 

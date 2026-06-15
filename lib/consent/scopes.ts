@@ -41,10 +41,6 @@ export const CONSENT_SCOPES: readonly ConsentScopeDef[] = [
 
 const BY_KEY = new Map<string, ConsentScopeDef>(CONSENT_SCOPES.map((s) => [s.key, s]))
 
-export function getConsentScope(key: string): ConsentScopeDef | undefined {
-  return BY_KEY.get(key)
-}
-
 export function defaultGranted(scope: string): boolean {
   return BY_KEY.get(scope)?.defaultGranted ?? false
 }

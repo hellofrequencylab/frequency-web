@@ -105,16 +105,3 @@ export function statusChipClass(s: TicketStatus): string {
     case 'closed': return 'bg-surface-elevated text-subtle'
   }
 }
-
-export function priorityChipClass(p: TicketPriority): string {
-  switch (p) {
-    case 'low': return 'bg-surface-elevated text-subtle'
-    case 'normal': return 'bg-surface-elevated text-muted'
-    case 'high': return 'bg-warning-bg text-warning'
-    case 'urgent': return 'bg-danger-bg text-danger'
-  }
-}
-
-export function typeIconKey(t: TicketType): string {
-  return t
-}
