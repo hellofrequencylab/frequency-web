@@ -6,6 +6,7 @@ import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
+import { PageModules } from '@/components/widgets/page-modules'
 import { formatEventDate } from '@/lib/utils'
 import { getEventsAdminData } from '@/app/(main)/admin/events/load-events'
 import { getLedCircles, getLedHubs, getLedNexuses } from './load-led-circles'
@@ -201,6 +202,8 @@ export default async function LeadershipPage() {
           />
         </div>
       </section>
+
+      <PageModules route="/lead" />
     </DashboardTemplate>
   )
 }

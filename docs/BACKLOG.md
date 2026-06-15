@@ -41,19 +41,22 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
    Journeys, challenges, seasons, posts, marketing pages…), evolving `/admin/content` from a
    curation dashboard into a full create/edit hub. Base it on the Studio shell
    (`components/studio/*`, ADR-142) so authoring feels identical everywhere.
-9. **Activate the three on-page Page-settings functions** — today staged "Next" rows in the
-   on-page Page panel (`components/admin/page-settings/page-settings-module.tsx`,
-   `lib/page-settings/sections.ts`). Make them work, one at a time on a shared `page_settings`
-   per-route store:
-   - **SEO & meta (M)** — store + `proxy.ts` (Next 16 renamed `middleware`→`proxy`) injecting
-     `x-pathname` + a `(main)` layout `generateMetadata`. Honest caveat: member routes are
+9. **Activate the three on-page Page-settings functions** — ✅ **all three live (2026-06-15).** Were
+   staged "Next" rows in the on-page Page panel (`components/admin/page-settings/page-settings-module.tsx`,
+   `lib/page-settings/sections.ts`); each now works on a shared `page_settings` per-route store:
+   - **SEO & meta (M)** — ✅ **done (ADR-268).** Store + `proxy.ts` (Next 16 renamed `middleware`→`proxy`)
+     injecting `x-pathname` + a `(main)` layout `generateMetadata`. Honest caveat: member routes are
      auth-gated, so the real payoff is per-route browser tab titles, not crawlable SEO (public
-     SEO already lives in the Puck editor). ⏳ in progress.
-   - **Status & visibility (M)** — per-route draft/published + lowest role to reach it; enforce
-     **fail-safe** (default published, never lock out staff). Overlaps `/admin/menu` role gating —
-     reconcile, don't duplicate.
-   - **Layout (L)** — the `WidgetSlot` module-assignment engine (PAGE-FRAMEWORK §4): choose the
-     sections/modules + order + the page's interior right column. The big one.
+     SEO already lives in the Puck editor).
+   - **Status & visibility (M)** — ✅ **done (ADR-269).** Per-route draft/published + lowest role to reach
+     it; enforced **fail-safe** in `(main)/layout.tsx` (default published, never lock out staff, `/feed`
+     never loops). Complements `/admin/menu` (which gates nav items) by gating the page itself.
+   - **Layout (L)** — ✅ **done (2026-06-15, ADR-270).** The per-route module-assignment engine:
+     `page_settings.layout` jsonb `{order,hidden}` merged over a registry default, a metadata/registry
+     split (`lib/widgets/{modules.ts,registry.tsx}`) so the editor + pure resolver never import RSCs,
+     `<PageModules route>` rendering each module in its own `<Suspense>`, staff-gated writes, and the
+     on-page `LayoutEditor` now driving it (the "Layout" section is `live`). Piloted on `/lead`; build
+     out across routes from there.
    - **Content page strip-down first (S→M)** — `/admin/content` is currently a mess; strip it to
      its primary functions, then build the "add/edit all content" Studio out from there.
 10. **Leadership section (rename `/lead` → "Leadership") (M→L, owner ask 2026-06-15)** — the
@@ -225,7 +228,10 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
   301 the retired `go.findafreq.com`, update auth/OAuth redirect URLs. (S)
 - [ ] Page-editor polish: visual focal-point/crop picker; `page_revisions` rollback. (S)
 - [ ] Per-Nexus subdomains (`encinitas.frequencylocal.com`). (M)
-- [ ] Formal module/widget slot registry + fully scope-aware right rail. (M)
+- [ ] Formal module/widget slot registry + fully scope-aware right rail. (M) *(Partly landed:
+  the per-route module-assignment engine — metadata/registry split + `{order,hidden}` resolver +
+  on-page editor — shipped 2026-06-15, ADR-270. Still open: the scope cascade, per-role gating,
+  and the shell-rail half.)*
 - [ ] Reconcile "Interests" (member) vs "Topics" (public) wording + the "tune in" verb. (S)
 
 ## K. Monetization / money foundation / Vault / verticals

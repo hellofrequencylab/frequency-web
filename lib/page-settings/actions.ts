@@ -8,6 +8,8 @@ import { isSafeRoute } from '@/lib/layout/page-chrome'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { normalizeSeo, type SeoFields } from './seo'
 import { normalizeStatus, type StatusFields } from './status'
+import { parseLayout, orderedModuleIds, type LayoutConfig } from './layout'
+import { LAYOUT_MODULE_IDS, moduleMeta } from '@/lib/widgets/modules'
 
 // Server actions for the on-page Page settings panel (ADR-268). STAFF (admin+, ADR-208 —
 // "admin and above"): the gate redirects an unauthorized viewer and captures the id for
@@ -92,6 +94,52 @@ export async function getPageStatusForEditor(route: string): Promise<StatusField
     status: row.status === 'draft' ? 'draft' : 'published',
     visibility_role: (row.visibility_role as StatusFields['visibility_role']) ?? null,
   }
+}
+
+/** One row in the on-page Layout editor: a known module, in resolved order, flagged on/off. */
+export interface LayoutEditorItem {
+  id: string
+  label: string
+  description: string
+  enabled: boolean
+}
+
+/** The per-route layout for the editor (ADR-270): every known module in resolved order, each
+ *  flagged enabled (visible) or not. Staff-gated read; defaults to registry order, all on. */
+export async function getPageLayoutForEditor(route: string): Promise<LayoutEditorItem[]> {
+  await gate()
+  const build = (config: LayoutConfig): LayoutEditorItem[] => {
+    const hidden = new Set(config.hidden)
+    return orderedModuleIds(config, LAYOUT_MODULE_IDS).flatMap((id) => {
+      const meta = moduleMeta(id)
+      return meta ? [{ id: meta.id, label: meta.label, description: meta.description, enabled: !hidden.has(id) }] : []
+    })
+  }
+  if (!isSafeRoute(route)) return build({ order: [], hidden: [] })
+  const { loadPageSettings } = await import('./store')
+  const row = await loadPageSettings(route)
+  return build(parseLayout(row?.layout ?? null))
+}
+
+/** Save a route's layout (which modules show inside the page, and in what order). Order = the
+ *  given id list (known ids only); hidden = the disabled ids. Upserts the layout jsonb. */
+export async function savePageLayout(
+  route: string,
+  items: { id: string; enabled: boolean }[],
+): Promise<ActionResult> {
+  const me = await gate()
+  if (!isSafeRoute(route)) return fail('That is not a valid app route.')
+  const known = new Set(LAYOUT_MODULE_IDS)
+  const valid = items.filter((it) => known.has(it.id))
+  const order = valid.map((it) => it.id)
+  const hidden = valid.filter((it) => !it.enabled).map((it) => it.id)
+  const { error } = await db()
+    .from('page_settings')
+    .upsert({ route, layout: { order, hidden }, updated_by: me, updated_at: new Date().toISOString() }, { onConflict: 'route' })
+  if (error) return fail('Could not save the layout for that route.')
+
+  revalidatePath(route)
+  return ok()
 }
 
 /** Clear a route's SEO back to the code default (null the fields). */
