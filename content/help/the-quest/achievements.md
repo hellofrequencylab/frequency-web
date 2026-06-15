@@ -32,7 +32,7 @@ A few examples of the kind of thing that earns one:
 - **The Welcomer.** Be the first to welcome 5 new members.
 - **Storyteller.** Share 10 posts.
 - **Warming Up.** Keep a 3-week attendance rhythm going.
-- **Echo Unlocked.** Reach your first season rank.
+- **First Journey.** Finish your first Journey of the season.
 
 ## Categories and tiers
 
