@@ -17,7 +17,6 @@
 // there are two halves of the same decision (see docs/PAGE-FRAMEWORK.md §3).
 
 import { cache } from 'react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type Rail = 'global' | 'scoped' | 'none'
 
@@ -140,16 +139,15 @@ export function railFor(pathname: string): Rail {
 
 // ── Operator overrides (back-end chrome management) ────────────────────────────────────
 //
-// The block above is the CODE source of truth and is UNCHANGED — the live shell
-// (components/layout/app-shell.tsx) still calls `railFor` / `leftRailFor` synchronously
-// and reads the same answer it always has. What follows is ADDITIVE: a fail-safe layer
-// that lets an operator override a route's right rail from the back end
-// (/admin/page-layout → public.page_chrome_overrides), merged OVER the code default.
+// The block above is the CODE source of truth and stays UNCHANGED. What follows is an
+// ADDITIVE, fail-safe layer that lets an operator override a route's right rail from the
+// back end (/admin/page-layout → public.page_chrome_overrides), merged OVER the code default.
 //
-// Wiring the live shell to read `resolvePageChrome` is a deliberate FOLLOW-UP (flagged):
-// the app-shell is a monolith and the events agent is rewiring nearby, so today this
-// only STORES + RESOLVES intent. The visible effect lands when the shell adopts the
-// resolver. See docs/PAGE-FRAMEWORK.md §3/§8.
+// LIVE: the shell reads these overrides. `(main)/layout.tsx` loads them server-side via
+// `loadChromeOverrides()` and passes the map to `app-shell.tsx`, which resolves the right
+// rail with `mergeChrome(railFor(pathname), chromeOverrides, pathname)`. `resolvePageChrome`
+// is the equivalent async server-side resolver, available for server callers. Fail-safe
+// throughout (no override / missing table → the code default). See docs/PAGE-FRAMEWORK.md §3/§8.
 
 /** The routes an operator can frame from /admin/page-layout. The code map keys off
  *  PREFIXES + PATTERNS, so there is no finite list of every concrete path; this is the
@@ -207,15 +205,12 @@ export type ChromeOverrides = Record<string, Rail>
 export const loadChromeOverrides = cache(async (): Promise<ChromeOverrides> => {
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin')
-    // `page_chrome_overrides` is genuinely untyped until the orchestrator regenerates
-    // lib/database.types.ts after this lands — so we read it through a narrow untyped
-    // client. The result payload is re-validated below (isSafeRoute/isRail) before use.
-    // eslint-disable-next-line no-restricted-syntax -- new table not yet in generated types (ADR-246 exemption)
-    const db = createAdminClient() as unknown as SupabaseClient
+    // The result payload is re-validated below (isSafeRoute/isRail) before use.
+    const db = createAdminClient()
     const { data, error } = await db.from('page_chrome_overrides').select('route, rail')
     if (error) return {}
     const out: ChromeOverrides = {}
-    for (const row of (data ?? []) as { route: string; rail: string }[]) {
+    for (const row of data ?? []) {
       if (isSafeRoute(row.route) && isRail(row.rail)) out[row.route] = row.rail
     }
     return out

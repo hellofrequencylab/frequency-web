@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -21,12 +20,10 @@ async function gate(): Promise<string> {
   return profileId
 }
 
-// `page_chrome_overrides` is genuinely untyped until the orchestrator regenerates
-// lib/database.types.ts after this lands, so we write it through a narrow untyped client.
-// Inputs are validated (isSafeRoute/isRail) before they reach the table.
-function db(): SupabaseClient {
-  // eslint-disable-next-line no-restricted-syntax -- new table not yet in generated types (ADR-246 exemption)
-  return createAdminClient() as unknown as SupabaseClient
+// Writes go through the service-role admin client. Inputs are validated
+// (isSafeRoute/isRail) before they reach the table.
+function db() {
+  return createAdminClient()
 }
 
 /** Pin a route to a rail (Global / Scoped / No rail) — upsert the override. Validates the

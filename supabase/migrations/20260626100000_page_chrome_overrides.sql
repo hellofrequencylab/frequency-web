@@ -6,11 +6,11 @@
 -- entity-detail page renders its own in-body scope rail (global suppressed), 'none' =
 -- a FOCUS full-width work surface with no rail.
 --
--- v1 STORES intent: the management surface (/admin/page-layout) and the fail-safe
--- resolver (lib/layout/page-chrome.ts resolvePageChrome / mergeChrome) land now; the
--- live app-shell adopting the resolver is a flagged FOLLOW-UP (the events agent + the
--- app-shell monolith make rewiring the live read risky today). Until then an override
--- configures the intended chrome; the visible effect arrives when the shell reads it.
+-- Live end-to-end: the management surface (/admin/page-layout) and the fail-safe
+-- resolver (lib/layout/page-chrome.ts resolvePageChrome / mergeChrome) ship alongside the
+-- live read. app-shell.tsx computes its right rail as mergeChrome(railFor(pathname),
+-- chromeOverrides, pathname), so a saved override merges into the shell's rail and takes
+-- visible effect on the next request.
 --
 -- House style: additive + idempotent, RLS on. Applied to production via the Supabase
 -- SQL Editor (the repo migration-history baseline predates `db push` being safe here —

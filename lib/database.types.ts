@@ -4524,6 +4524,38 @@ export type Database = {
           },
         ]
       }
+      page_chrome_overrides: {
+        Row: {
+          note: string | null
+          rail: string
+          route: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          note?: string | null
+          rail: string
+          route: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          note?: string | null
+          rail?: string
+          route?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_chrome_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_content: {
         Row: {
           cta_href: string | null
