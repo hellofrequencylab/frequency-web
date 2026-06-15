@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Trophy, Zap, X } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
@@ -16,8 +16,14 @@ import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-rank
 // motion gets the calm, static card. Dismissible (Esc or the close control). Modeled on
 // the trophy-celebration card pattern (token-only colors, reduced-motion safe).
 //
+// Mounting marks the finish as seen: the auto-fire path on the Quest hub passes an
+// `onSeen` callback that records the seen-marker (a server action) so the moment fires
+// exactly once. It runs on mount (the member has now seen it), so dismissing or
+// navigating away never re-arms it. The `?finished=` link path omits `onSeen` and is
+// unchanged, so the contract stays additive.
+//
 //   <HeroMoment journeyTitle="Quiet Mornings" zaps={75} rank="adept" rankAdvanced
-//     trophiesHref="/crew/achievements" />
+//     trophiesHref="/crew/achievements" onSeen={() => markSeen(id)} />
 
 export function HeroMoment({
   journeyTitle,
@@ -25,6 +31,7 @@ export function HeroMoment({
   rank,
   rankAdvanced = false,
   trophiesHref = '/crew/achievements',
+  onSeen,
 }: {
   /** The Journey just finished — names the win concretely. */
   journeyTitle: string
@@ -36,8 +43,19 @@ export function HeroMoment({
   rankAdvanced?: boolean
   /** Where "See your Trophies" links. */
   trophiesHref?: string
+  /** Fired once on mount to record this finish as seen (auto-fire path only).
+   *  May be a server action — its returned promise is intentionally not awaited. */
+  onSeen?: () => void | Promise<void>
 }) {
   const [open, setOpen] = useState(true)
+
+  // Record "seen" once, on mount, so the auto-fire moment never fires twice.
+  const seenRef = useRef(false)
+  useEffect(() => {
+    if (seenRef.current) return
+    seenRef.current = true
+    void onSeen?.()
+  }, [onSeen])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
