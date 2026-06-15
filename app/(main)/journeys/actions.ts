@@ -25,11 +25,14 @@ import {
   getPlan,
   planAuthorId,
   planMeta,
+  applyVeraReview,
   type PlanVisibility,
   type PlanStatus,
   type PageWidgetConfig,
+  type StoredVeraReview,
 } from '@/lib/journey-plans'
 import { getSeasonalQuests } from '@/lib/quests'
+import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
 
 // Server actions for the Journeys builder (ADR-096; free, ADR-152).
 // Building, editing, publishing to the community library, and adopting/forking
@@ -135,6 +138,10 @@ export async function publishPlanAction(formData: FormData) {
   const planId = String(formData.get('planId') ?? '')
   if (!(await assertOwner(planId))) return
   await publishPlan(planId)
+  // Run Vera's rank gate (best-effort; never blocks the publish). The no-JS form can't show
+  // the verdict inline, but the Journey is live and the coaching is stored on vera_review for
+  // the builder to surface next visit.
+  await runVeraGate(planId)
   revalidateSlug(formData)
 }
 
@@ -271,19 +278,26 @@ export async function setJourneyStep(
 }
 
 /**
- * Set visibility + drive the review workflow (docs/JOURNEYS.md §11–§12).
- * Public = publish to the community library (free; stamps published_at):
- *  - a member-built Journey goes to `status='pending'` (Guide+ review backlog),
- *  - a Guide/Mentor's own Journey auto-approves (`status='approved'`).
- * Private/Unlisted just sets visibility (no status change).
+ * Set visibility + drive the review workflow (docs/JOURNEYS.md §11–§12) and, on publish,
+ * run Vera's rank quality gate (ADR-Quest "Gate + coach").
  *
- * Returns the resolved review state so the builder can show the right celebration
- * ("live" vs "in review").
+ * Public = publish to the community library (free; stamps published_at):
+ *  - a member-built Journey goes to `status='pending'` (Guide+ moderation backlog),
+ *  - a Guide/Mentor's own Journey auto-approves (`status='approved'`),
+ *  - and SEPARATELY Vera reviews it for RANK eligibility: only a Vera-approved Journey
+ *    becomes `ranked_eligible` (finishing it can count toward season rank). Publishing is
+ *    never blocked — a failed/over-budget/disabled review still ships the Journey to the
+ *    library, just not ranked-eligible (fail-closed). The verdict + coaching come back so
+ *    the builder can show "added to the ranked library" or Vera's notes to fix.
+ * Private/Unlisted just sets visibility (no status change, eligibility untouched).
+ *
+ * Returns the resolved moderation state + Vera's review so the builder can show the right
+ * celebration ("live" vs "in review") and the rank-eligibility coaching.
  */
 export async function setJourneyVisibility(
   planId: string,
   visibility: PlanVisibility,
-): Promise<ActionResult<{ status: PlanStatus }>> {
+): Promise<ActionResult<{ status: PlanStatus; review: StoredVeraReview | null }>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Not allowed.')
   const author = await planAuthorId(planId)
@@ -291,16 +305,50 @@ export async function setJourneyVisibility(
 
   if (visibility === 'public') {
     await publishPlan(planId)
-    // Mentor+ (guide/mentor) auto-approve; everyone else enters the review queue.
+    // Mentor+ (guide/mentor) auto-approve moderation; everyone else enters the queue.
     const status: PlanStatus = canMakeOfficial(caller.community_role) ? 'approved' : 'pending'
     await setPlanStatus(planId, status)
+    // Vera's rank gate. Best-effort: it never throws (fail-closed verdicts), and we persist
+    // the result through the admin client (members can't self-approve). A failed review must
+    // not block publishing — the Journey is already live above.
+    const review = await runVeraGate(planId)
     revalidatePath('/journeys', 'layout')
-    return ok({ status })
+    return ok({ status, review })
   }
 
   await setPlanVisibility(planId, visibility)
   revalidatePath('/journeys', 'layout')
-  return ok({ status: 'draft' })
+  return ok({ status: 'draft', review: null })
+}
+
+/**
+ * Re-run Vera's rank quality gate for a published Journey the author edited (the
+ * "submit for review" / resubmit path). Owner-checked; the verdict is persisted through the
+ * admin client and `ranked_eligible` is set from it (so a stale approval can't survive a
+ * material edit). Returns the fresh verdict + coaching for the builder.
+ */
+export async function submitJourneyForReview(
+  planId: string,
+): Promise<ActionResult<{ review: StoredVeraReview }>> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  const review = await runVeraGate(planId)
+  revalidatePath('/journeys', 'layout')
+  return ok({ review })
+}
+
+/** Run the Vera gate for a planId and persist the verdict + eligibility through the admin
+ *  client. Internal; both publish and resubmit go through here so the write rule is one place.
+ *  Authorship is the caller's responsibility — this only ever sets eligibility from Vera. */
+async function runVeraGate(planId: string): Promise<StoredVeraReview> {
+  const review = await reviewJourneyForLibrary(planId)
+  const stored: StoredVeraReview = {
+    status: review.status,
+    score: review.score,
+    feedback: review.feedback,
+    reviewedAt: review.reviewedAt,
+  }
+  await applyVeraReview(planId, stored)
+  return stored
 }
 
 // --- New editor sections (docs/JOURNEYS.md §11) — all autosaved, JSON args -----

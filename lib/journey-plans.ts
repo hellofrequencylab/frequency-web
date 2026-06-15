@@ -503,6 +503,50 @@ export async function setPlanVisibility(planId: string, visibility: PlanVisibili
   await db().from('journey_plans').update({ visibility, ...touch() }).eq('id', planId)
 }
 
+// --- Vera quality gate (the Quest's "Gate + coach", ADR-Quest) -------------
+// Publishing is open; ranked eligibility is gated. These writes go through the
+// service-role admin client ONLY (a member can never self-approve): the review runs
+// server-side and `ranked_eligible` is set from Vera's verdict, never from client input.
+
+/** The shape of a stored Vera review, persisted on journey_plans.vera_review. */
+export interface StoredVeraReview {
+  status: 'approved' | 'rejected' | 'pending'
+  score: number
+  feedback: string[]
+  reviewedAt: string
+}
+
+/** Persist a Vera review on a Journey and set ranked eligibility from its verdict. Only an
+ *  `approved` verdict makes a Journey ranked-eligible; anything else (rejected / pending /
+ *  the fail-closed states) clears it. Idempotent + admin-only — the caller has already
+ *  established authorship; this never reads client-supplied eligibility. */
+export async function applyVeraReview(planId: string, review: StoredVeraReview): Promise<void> {
+  await db()
+    .from('journey_plans')
+    .update({
+      vera_review: review as unknown as Record<string, unknown>,
+      ranked_eligible: review.status === 'approved',
+      ...touch(),
+    })
+    .eq('id', planId)
+}
+
+/** Read a Journey's last stored Vera review (for re-rendering the coaching). Null if none. */
+export async function getVeraReview(planId: string): Promise<StoredVeraReview | null> {
+  const { data } = await db().from('journey_plans').select('vera_review').eq('id', planId).maybeSingle()
+  const raw = (data as { vera_review: unknown } | null)?.vera_review
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const status = r.status === 'approved' || r.status === 'rejected' || r.status === 'pending' ? r.status : null
+  if (!status) return null
+  return {
+    status,
+    score: typeof r.score === 'number' ? r.score : 0,
+    feedback: Array.isArray(r.feedback) ? r.feedback.filter((s): s is string => typeof s === 'string') : [],
+    reviewedAt: typeof r.reviewedAt === 'string' ? r.reviewedAt : '',
+  }
+}
+
 // --- Adopt / fork (acting on a community journey) --------------------------
 
 /** Is this plan currently adopted by the member? */
