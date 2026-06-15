@@ -66,7 +66,7 @@ export async function createDeal(input: {
     .maybeSingle()
 
   if (error) return fail(error.message)
-  revalidatePath('/admin/crm')
+  revalidatePath('/admin/growth')
   return ok({ id: (data as { id: string }).id })
 }
 
@@ -87,10 +87,10 @@ export async function createDealForProfile(profileId: string, name: string): Pro
     })
     .select('id')
     .maybeSingle()
-  revalidatePath('/admin/crm')
+  revalidatePath('/admin/growth')
   const id = (data as { id: string } | null)?.id
   if (id) redirect(`/admin/crm/deals/${id}`)
-  redirect('/admin/crm')
+  redirect('/admin/growth?tab=crm')
 }
 
 export async function moveDeal(dealId: string, stageId: string): Promise<ActionResult> {
@@ -106,7 +106,7 @@ export async function moveDeal(dealId: string, stageId: string): Promise<ActionR
     })
     .eq('id', dealId)
   if (error) return fail(error.message)
-  revalidatePath('/admin/crm')
+  revalidatePath('/admin/growth')
   revalidatePath(`/admin/crm/deals/${dealId}`)
   return ok()
 }
@@ -134,7 +134,7 @@ export async function updateDeal(
 
   const { error } = await db().from('crm_deals').update(row as Database['public']['Tables']['crm_deals']['Update']).eq('id', dealId)
   if (error) return fail(error.message)
-  revalidatePath('/admin/crm')
+  revalidatePath('/admin/growth')
   revalidatePath(`/admin/crm/deals/${dealId}`)
   return ok()
 }
@@ -143,7 +143,7 @@ export async function deleteDeal(dealId: string): Promise<ActionResult> {
   await requireCrm()
   const { error } = await db().from('crm_deals').delete().eq('id', dealId)
   if (error) return fail(error.message)
-  revalidatePath('/admin/crm')
+  revalidatePath('/admin/growth')
   return ok()
 }
 
@@ -167,7 +167,7 @@ export async function addActivity(input: {
   })
   if (error) return fail(error.message)
   revalidatePath(`/admin/crm/deals/${input.dealId}`)
-  revalidatePath('/admin/crm')
+  revalidatePath('/admin/growth')
   return ok()
 }
 
@@ -179,7 +179,7 @@ export async function toggleTask(activityId: string, dealId: string, done: boole
     .eq('id', activityId)
   if (error) return fail(error.message)
   revalidatePath(`/admin/crm/deals/${dealId}`)
-  revalidatePath('/admin/crm')
+  revalidatePath('/admin/growth')
   return ok()
 }
 

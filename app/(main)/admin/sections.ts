@@ -126,6 +126,11 @@ export interface AdminGroup {
   staffDomain?: StaffDomain
   /** Sibling areas worth a cross-link from this one's dashboard (the "Related" strip). */
   related?: readonly DomainKey[]
+  /** Whether this domain is a PRIMARY left-nav entry. Sub-workspaces folded into a parent
+   *  (Acquisition / CRM / Marketing → the Growth workspace tabs, ADR-264) set this false:
+   *  they keep their group object (so the domain switcher + top sub-nav still resolve their
+   *  routes) but drop out of the left rail, which lists only primary domains. Default true. */
+  primary?: boolean
   links: readonly AdminLink[]
 }
 
@@ -195,19 +200,20 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       // Roll-up: the three operational growth areas. The dashboard reads their KPIs;
       // these point into each one's own home (resolved to its own domain, not Growth).
-      { href: '/admin/acquisition', label: 'Acquisition', desc: 'How people first arrive and where to grow next.', Icon: Rocket, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
-      { href: '/admin/crm', label: 'CRM', desc: 'Contacts, relationships, and the deal pipeline.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
-      { href: '/admin/marketing', label: 'Marketing', desc: 'Campaigns, funnels, automations, and outbound.', Icon: Megaphone, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
+      { href: '/admin/growth?tab=acquisition', label: 'Acquisition', desc: 'How people first arrive and where to grow next.', Icon: Rocket, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
+      { href: '/admin/growth?tab=crm', label: 'CRM', desc: 'Contacts, relationships, and the deal pipeline.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
+      { href: '/admin/growth?tab=marketing', label: 'Marketing', desc: 'Campaigns, funnels, automations, and outbound.', Icon: Megaphone, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
     ],
   },
   {
     key: 'acquisition',
     label: 'Acquisition',
     blurb: 'How people first arrive, and where to open the next door.',
-    href: '/admin/acquisition',
+    href: '/admin/growth?tab=acquisition',
     Icon: Rocket,
     min: 'host',
     staffDomain: 'marketing',
+    primary: false,
     related: ['crm', 'marketing', 'community'],
     links: [
       // ── Entry points ──
@@ -226,10 +232,11 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'crm',
     label: 'CRM',
     blurb: 'Relationships and the pipeline. Contacts, deals, and the audiences they form.',
-    href: '/admin/crm',
+    href: '/admin/growth?tab=crm',
     Icon: Contact,
     min: 'host',
     staffDomain: 'marketing',
+    primary: false,
     related: ['acquisition', 'marketing'],
     links: [
       // ── Pipeline (the area home /admin/crm is the deal board) ──
@@ -245,10 +252,11 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'marketing',
     label: 'Marketing',
     blurb: 'Campaigns and outbound. Funnels, automations, broadcasts, and the read on how they land.',
-    href: '/admin/marketing',
+    href: '/admin/growth?tab=marketing',
     Icon: Megaphone,
     min: 'host',
     staffDomain: 'marketing',
+    primary: false,
     related: ['crm', 'vera-ai', 'acquisition'],
     links: [
       // ── Campaigns ──

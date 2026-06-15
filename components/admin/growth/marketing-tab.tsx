@@ -1,25 +1,17 @@
 import { Suspense } from 'react'
-import {
-  Users,
-  Rocket,
-  Megaphone,
-  Workflow,
-  BarChart3,
-  Sparkles,
-} from 'lucide-react'
+import { Users, Rocket, Megaphone, Workflow, BarChart3, Sparkles } from 'lucide-react'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { getStudioCounts } from '@/lib/studio/analytics'
-import { AdminTemplate, AdminSection } from '@/components/templates'
+import { AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { AdminAreaGrid } from '@/components/admin/admin-area-grid'
 import { FreshnessNote } from '@/components/admin/freshness-note'
-import type { AdminLink } from '../sections'
+import type { AdminLink } from '@/app/(main)/admin/sections'
 
-export const dynamic = 'force-dynamic'
-
-// Marketing overview: the domain dashboard for the workspace (ADR-233 §3 Domain
-// Dashboard). Live KPIs on top (behind their own Suspense so the shell paints first),
-// then module entry tiles into every tool in the Growth dropdown (ADR-228).
+// The "Marketing" tab of the consolidated Growth workspace (ADR-264) — formerly
+// /admin/marketing. Live KPIs over the marketing tools. The tool sub-routes
+// (/admin/marketing/contacts, /campaigns, /funnels, /automations, /analytics, /agent, …)
+// survive and keep their own capability gate via app/(main)/admin/marketing/layout.tsx.
 const MODULES: AdminLink[] = [
   { href: '/admin/marketing/contacts', label: 'Contacts', Icon: Users, min: 'host', desc: 'The unified CRM record for leads, customers, and members.' },
   { href: '/admin/marketing/beta', label: 'Beta waitlist', Icon: Rocket, min: 'host', desc: 'Everyone who raised a hand. Triage the list and send invites.' },
@@ -29,14 +21,9 @@ const MODULES: AdminLink[] = [
   { href: '/admin/marketing/agent', label: 'Agent', Icon: Sparkles, min: 'host', desc: 'The AI operator. Ask it to draft, segment, and run the busywork.' },
 ]
 
-export default async function MarketingOverview() {
+export function MarketingTab() {
   return (
-    <AdminTemplate
-      eyebrow="Growth"
-      title="Marketing"
-      icon={Megaphone}
-      description="Your marketing workspace. Contacts, campaigns, automations, analytics, and the AI operator live here. Everything sends through the one spine and reads from the one event backbone."
-    >
+    <>
       <AdminSection
         title="At a glance"
         description="Live signal, read from the same models as the analytics workspace."
@@ -50,7 +37,7 @@ export default async function MarketingOverview() {
       <AdminSection title="Workspace" description="Every marketing tool, one tap away.">
         <AdminAreaGrid links={MODULES} />
       </AdminSection>
-    </AdminTemplate>
+    </>
   )
 }
 

@@ -77,9 +77,9 @@ const nextConfig: NextConfig = {
   // (permanent: false) so the mapping can still evolve without a cached 308 locking it.
   async redirects() {
     return [
-      { source: '/crm', destination: '/admin/crm', permanent: false },
+      { source: '/crm', destination: '/admin/growth?tab=crm', permanent: false },
       { source: '/crm/:path*', destination: '/admin/crm/:path*', permanent: false },
-      { source: '/marketing', destination: '/admin/marketing', permanent: false },
+      { source: '/marketing', destination: '/admin/growth?tab=marketing', permanent: false },
       { source: '/marketing/:path*', destination: '/admin/marketing/:path*', permanent: false },
       { source: '/growth', destination: '/admin/growth', permanent: false },
       // The Quest help category was renamed from the-game -> the-quest (naming canon:
