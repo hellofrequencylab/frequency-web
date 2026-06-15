@@ -2,17 +2,13 @@
 
 import { LayoutGrid, Search, Eye, type LucideIcon } from 'lucide-react'
 import { PAGE_SETTING_SECTIONS, type PageSettingSection } from '@/lib/page-settings/sections'
+import { SeoEditor } from './seo-editor'
 
-// The staff-only "Page" group inside the on-page Settings panel (PageAdminBar). Where
-// the entity modules tune a circle/event, this tunes THE INTERIOR of the page itself —
-// what shows inside the page container and how it reads (docs/EMBEDDED-ADMIN.md inline
-// layer). It deliberately does NOT touch the app shell chrome (the global rails): the
-// shell rail is platform chrome managed once in /admin/page-layout, never per page here.
-//
-// It renders the interior spine (lib/page-settings/sections.ts) so staff see the whole
-// intended shape; each section is staged as an honest, non-interactive "Next" row until
-// its interior engine lands (Layout = the WidgetSlot engine; SEO + Status = a per-route
-// store). Nothing here pretends a staged control works.
+// The staff-only "Page" group inside the on-page Settings panel (PageAdminBar). It tunes THE
+// INTERIOR of the page (not the app-shell chrome) and renders the page-settings spine
+// (lib/page-settings/sections.ts): a LIVE section shows its real control under a header; a
+// staged one renders an honest, non-interactive "Next" row. SEO is live (ADR-268); Layout +
+// Status stage until their engines land.
 
 const SECTION_ICON: Record<PageSettingSection['id'], LucideIcon> = {
   layout: LayoutGrid,
@@ -27,9 +23,23 @@ export function PageSettingsModule() {
       <p className="mb-3 mt-0.5 text-xs text-muted">
         Tune what shows inside this page. The app shell (the global rails and header) stays put.
       </p>
-      <div className="space-y-3">
+      <div className="space-y-4">
         {PAGE_SETTING_SECTIONS.map((section) => {
           const Icon = SECTION_ICON[section.id]
+
+          if (section.status === 'live') {
+            return (
+              <div key={section.id}>
+                <div className="mb-1 flex items-center gap-2">
+                  <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                  <span className="text-sm font-semibold text-text">{section.label}</span>
+                </div>
+                <p className="mb-2 text-xs text-muted">{section.hint}</p>
+                {section.id === 'seo' && <SeoEditor />}
+              </div>
+            )
+          }
+
           return (
             <div
               key={section.id}

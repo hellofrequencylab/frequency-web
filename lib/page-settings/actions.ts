@@ -1,0 +1,73 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { isSafeRoute } from '@/lib/layout/page-chrome'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { normalizeSeo, type SeoFields } from './seo'
+
+// Server actions for the on-page Page settings panel (ADR-268). STAFF (admin+, ADR-208 —
+// "admin and above"): the gate redirects an unauthorized viewer and captures the id for
+// `updated_by`. Writes go through the service-role admin client into public.page_settings;
+// `page_settings` isn't in the generated types yet, so the client is cast loose (fail-safe
+// reader handles the pre-migration window). The route is isSafeRoute-validated and the SEO
+// fields are normalized/bounded (lib/page-settings/seo.ts) before any write.
+
+async function gate(): Promise<string> {
+  const { profileId } = await requireAdmin('admin')
+  return profileId
+}
+
+function db(): SupabaseClient {
+  // page_settings isn't in the generated DB types yet (regenerated separately per the
+  // migration), so the client is cast loose; every write here is staff-gated + validated.
+  // eslint-disable-next-line no-restricted-syntax
+  return createAdminClient() as unknown as SupabaseClient
+}
+
+/** Save the per-route SEO (title / description / share image). Upserts the row. */
+export async function savePageSeo(
+  route: string,
+  input: { title?: string; description?: string; ogImage?: string },
+): Promise<ActionResult> {
+  const me = await gate()
+  if (!isSafeRoute(route)) return fail('That is not a valid app route.')
+  const fields = normalizeSeo(input)
+  if (!fields) return fail('The share image must be an https URL or a path that starts with /.')
+
+  const { error } = await db()
+    .from('page_settings')
+    .upsert({ route, ...fields, updated_by: me, updated_at: new Date().toISOString() }, { onConflict: 'route' })
+  if (error) return fail('Could not save SEO for that route.')
+
+  revalidatePath(route)
+  return ok()
+}
+
+/** The current SEO for the editor (staff-gated read). Defaults to empty fields. */
+export async function getPageSeoForEditor(route: string): Promise<SeoFields> {
+  await gate()
+  const empty: SeoFields = { seo_title: null, seo_description: null, og_image_url: null }
+  if (!isSafeRoute(route)) return empty
+  const { loadPageSettings } = await import('./store')
+  const row = await loadPageSettings(route)
+  return row
+    ? { seo_title: row.seo_title, seo_description: row.seo_description, og_image_url: row.og_image_url }
+    : empty
+}
+
+/** Clear a route's SEO back to the code default (null the fields). */
+export async function clearPageSeo(route: string): Promise<ActionResult> {
+  await gate()
+  if (!isSafeRoute(route)) return fail('That is not a valid app route.')
+  const { error } = await db()
+    .from('page_settings')
+    .update({ seo_title: null, seo_description: null, og_image_url: null, updated_at: new Date().toISOString() })
+    .eq('route', route)
+  if (error) return fail('Could not clear SEO for that route.')
+
+  revalidatePath(route)
+  return ok()
+}
