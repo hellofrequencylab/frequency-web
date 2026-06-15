@@ -2206,6 +2206,67 @@ export type Database = {
           },
         ]
       }
+      event_dispatches: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          dispatch_id: string | null
+          event_id: string
+          id: string
+          title: string | null
+          to_dispatch: boolean
+          to_page: boolean
+          to_sms: boolean
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          dispatch_id?: string | null
+          event_id: string
+          id?: string
+          title?: string | null
+          to_dispatch?: boolean
+          to_page?: boolean
+          to_sms?: boolean
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          dispatch_id?: string | null
+          event_id?: string
+          id?: string
+          title?: string | null
+          to_dispatch?: boolean
+          to_page?: boolean
+          to_sms?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_dispatches_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_dispatches_dispatch_id_fkey"
+            columns: ["dispatch_id"]
+            isOneToOne: false
+            referencedRelation: "dispatches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_dispatches_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_embeddings: {
         Row: {
           embedding: string | null
@@ -2274,6 +2335,45 @@ export type Database = {
           },
         ]
       }
+      event_post_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          post_id: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          post_id: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          post_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "event_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_post_reactions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_posts: {
         Row: {
           body: string
@@ -2316,11 +2416,108 @@ export type Database = {
           },
         ]
       }
-      event_rsvps: {
+      event_question_answers: {
         Row: {
-          created_at: string | null
+          answer: string
+          created_at: string
           event_id: string
           id: string
+          profile_id: string
+          question_id: string
+          updated_at: string
+        }
+        Insert: {
+          answer?: string
+          created_at?: string
+          event_id: string
+          id?: string
+          profile_id: string
+          question_id: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          profile_id?: string
+          question_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_question_answers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_question_answers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_question_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "event_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_questions: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          options: Json
+          position: number
+          prompt: string
+          required: boolean
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          options?: Json
+          position?: number
+          prompt: string
+          required?: boolean
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          options?: Json
+          position?: number
+          prompt?: string
+          required?: boolean
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_questions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_rsvps: {
+        Row: {
+          approval_status: string
+          created_at: string | null
+          decline_reason: string | null
+          event_id: string
+          id: string
+          muted: boolean
+          plus_one_names: Json
           plus_ones: number
           profile_id: string
           reminder_24h_sent_at: string | null
@@ -2329,9 +2526,13 @@ export type Database = {
           status: string
         }
         Insert: {
+          approval_status?: string
           created_at?: string | null
+          decline_reason?: string | null
           event_id: string
           id?: string
+          muted?: boolean
+          plus_one_names?: Json
           plus_ones?: number
           profile_id: string
           reminder_24h_sent_at?: string | null
@@ -2340,9 +2541,13 @@ export type Database = {
           status: string
         }
         Update: {
+          approval_status?: string
           created_at?: string | null
+          decline_reason?: string | null
           event_id?: string
           id?: string
+          muted?: boolean
+          plus_one_names?: Json
           plus_ones?: number
           profile_id?: string
           reminder_24h_sent_at?: string | null
@@ -2511,10 +2716,14 @@ export type Database = {
       }
       events: {
         Row: {
+          attendance_mode: string
           capacity: number | null
           category: string
+          city: string | null
           claim_token: string | null
           claimed_at: string | null
+          country: string | null
+          cover_image_path: string | null
           created_at: string | null
           currency: string
           description: string | null
@@ -2522,6 +2731,7 @@ export type Database = {
           domain_id: string | null
           ends_at: string | null
           energy_tag: string | null
+          geog: unknown
           host_id: string | null
           id: string
           is_cancelled: boolean | null
@@ -2529,15 +2739,18 @@ export type Database = {
           location: string | null
           mux_playback_id: string | null
           mux_stream_id: string | null
+          online_url: string | null
           organizer_contact: string | null
           organizer_name: string | null
           parent_event_id: string | null
+          postal_code: string | null
           posted_by_profile_id: string | null
           poster_path: string | null
           price_cents: number | null
           published_at: string | null
           recurrence_type: string
           recurrence_until: string | null
+          region: string | null
           removed_at: string | null
           removed_reason: string | null
           scope_id: string
@@ -2546,14 +2759,21 @@ export type Database = {
           source: string
           starts_at: string
           status: string
+          street: string | null
+          theme: Json
           title: string
+          venue_name: string | null
           visibility: string
         }
         Insert: {
+          attendance_mode?: string
           capacity?: number | null
           category?: string
+          city?: string | null
           claim_token?: string | null
           claimed_at?: string | null
+          country?: string | null
+          cover_image_path?: string | null
           created_at?: string | null
           currency?: string
           description?: string | null
@@ -2561,6 +2781,7 @@ export type Database = {
           domain_id?: string | null
           ends_at?: string | null
           energy_tag?: string | null
+          geog?: unknown
           host_id?: string | null
           id?: string
           is_cancelled?: boolean | null
@@ -2568,15 +2789,18 @@ export type Database = {
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
+          online_url?: string | null
           organizer_contact?: string | null
           organizer_name?: string | null
           parent_event_id?: string | null
+          postal_code?: string | null
           posted_by_profile_id?: string | null
           poster_path?: string | null
           price_cents?: number | null
           published_at?: string | null
           recurrence_type?: string
           recurrence_until?: string | null
+          region?: string | null
           removed_at?: string | null
           removed_reason?: string | null
           scope_id: string
@@ -2585,14 +2809,21 @@ export type Database = {
           source?: string
           starts_at: string
           status?: string
+          street?: string | null
+          theme?: Json
           title: string
+          venue_name?: string | null
           visibility?: string
         }
         Update: {
+          attendance_mode?: string
           capacity?: number | null
           category?: string
+          city?: string | null
           claim_token?: string | null
           claimed_at?: string | null
+          country?: string | null
+          cover_image_path?: string | null
           created_at?: string | null
           currency?: string
           description?: string | null
@@ -2600,6 +2831,7 @@ export type Database = {
           domain_id?: string | null
           ends_at?: string | null
           energy_tag?: string | null
+          geog?: unknown
           host_id?: string | null
           id?: string
           is_cancelled?: boolean | null
@@ -2607,15 +2839,18 @@ export type Database = {
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
+          online_url?: string | null
           organizer_contact?: string | null
           organizer_name?: string | null
           parent_event_id?: string | null
+          postal_code?: string | null
           posted_by_profile_id?: string | null
           poster_path?: string | null
           price_cents?: number | null
           published_at?: string | null
           recurrence_type?: string
           recurrence_until?: string | null
+          region?: string | null
           removed_at?: string | null
           removed_reason?: string | null
           scope_id?: string
@@ -2624,7 +2859,10 @@ export type Database = {
           source?: string
           starts_at?: string
           status?: string
+          street?: string | null
+          theme?: Json
           title?: string
+          venue_name?: string | null
           visibility?: string
         }
         Relationships: [
@@ -3331,19 +3569,16 @@ export type Database = {
           id: string
           intro: string | null
           intro_video: string | null
-          min_practices_per_day: number
           official: boolean
           page_config: Json | null
           published_at: string | null
           quest_id: string | null
           reviewed_at: string | null
           reviewed_by: string | null
-          season_locked: boolean
           sequential: boolean
           slug: string
           status: string
           summary: string | null
-          target_weeks: number
           title: string
           updated_at: string
           visibility: string
@@ -3364,19 +3599,16 @@ export type Database = {
           id?: string
           intro?: string | null
           intro_video?: string | null
-          min_practices_per_day?: number
           official?: boolean
           page_config?: Json | null
           published_at?: string | null
           quest_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
-          season_locked?: boolean
           sequential?: boolean
           slug: string
           status?: string
           summary?: string | null
-          target_weeks?: number
           title: string
           updated_at?: string
           visibility?: string
@@ -3397,19 +3629,16 @@ export type Database = {
           id?: string
           intro?: string | null
           intro_video?: string | null
-          min_practices_per_day?: number
           official?: boolean
           page_config?: Json | null
           published_at?: string | null
           quest_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
-          season_locked?: boolean
           sequential?: boolean
           slug?: string
           status?: string
           summary?: string | null
-          target_weeks?: number
           title?: string
           updated_at?: string
           visibility?: string
@@ -4590,6 +4819,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "page_content_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_settings: {
+        Row: {
+          layout: Json | null
+          og_image_url: string | null
+          route: string
+          seo_description: string | null
+          seo_title: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          visibility_role: string | null
+        }
+        Insert: {
+          layout?: Json | null
+          og_image_url?: string | null
+          route: string
+          seo_description?: string | null
+          seo_title?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          visibility_role?: string | null
+        }
+        Update: {
+          layout?: Json | null
+          og_image_url?: string | null
+          route?: string
+          seo_description?: string | null
+          seo_title?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          visibility_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_settings_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -8142,6 +8415,7 @@ export type Database = {
           title: string
         }[]
       }
+      event_id_for_post: { Args: { p_post_id: string }; Returns: string }
       feed_for_viewer: {
         Args: {
           _lat?: number
@@ -8512,6 +8786,28 @@ export type Database = {
           shared_circles: number
         }[]
       }
+      nearby_events: {
+        Args: {
+          _lat: number
+          _limit?: number
+          _long: number
+          _radius_m?: number
+        }
+        Returns: {
+          attendance_mode: string
+          city: string
+          country: string
+          description: string
+          distance_m: number
+          ends_at: string
+          id: string
+          region: string
+          slug: string
+          starts_at: string
+          title: string
+          venue_name: string
+        }[]
+      }
       node_within_range: {
         Args: { p_lat: number; p_lng: number; p_node_id: string }
         Returns: boolean
@@ -8744,6 +9040,10 @@ export type Database = {
           handle: string
           id: string
         }[]
+      }
+      set_event_geog: {
+        Args: { _event_id: string; _lat: number; _long: number }
+        Returns: undefined
       }
       set_node_geo: {
         Args: {
