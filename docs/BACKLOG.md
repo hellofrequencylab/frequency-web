@@ -56,7 +56,9 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
      split (`lib/widgets/{modules.ts,registry.tsx}`) so the editor + pure resolver never import RSCs,
      `<PageModules route>` rendering each module in its own `<Suspense>`, staff-gated writes, and the
      on-page `LayoutEditor` now driving it (the "Layout" section is `live`). Piloted on `/lead`; build
-     out across routes from there.
+     out across routes from there. **Extended (ADR-271):** a **scope cascade** (per-page → per-section
+     `/seg/*` → global `*`, most-specific wins) and a **per-module role gate** (show a module to a
+     community rung and up; view-as-aware, fail-closed), both inside the same `layout` jsonb.
    - **Content page strip-down first (S→M)** — `/admin/content` is currently a mess; strip it to
      its primary functions, then build the "add/edit all content" Studio out from there.
 10. **Leadership section (rename `/lead` → "Leadership") (M→L, owner ask 2026-06-15)** — the
@@ -229,9 +231,14 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
 - [ ] Page-editor polish: visual focal-point/crop picker; `page_revisions` rollback. (S)
 - [ ] Per-Nexus subdomains (`encinitas.frequencylocal.com`). (M)
 - [ ] Formal module/widget slot registry + fully scope-aware right rail. (M) *(Partly landed:
-  the per-route module-assignment engine — metadata/registry split + `{order,hidden}` resolver +
-  on-page editor — shipped 2026-06-15, ADR-270. Still open: the scope cascade, per-role gating,
-  and the shell-rail half.)*
+  the per-route module-assignment engine — metadata/registry split + resolver + on-page editor —
+  shipped 2026-06-15, ADR-270; the **scope cascade** (route → `/seg/*` → global) and **per-module
+  role gate** shipped 2026-06-15, ADR-271. Still open: the interior **slot** model — assignable
+  areas within the container — and the shell-rail half.)*
+- [ ] Interior container templates + slot-assignable widget blocks (owner ask 2026-06-15). (M)
+  Three standard interior-container templates; widget blocks (the ADR-270 modules) assignable to
+  different **areas/slots** within the chosen template, extending the layout engine's `{order,
+  hidden, roles}` to a per-slot model. Builds on ADR-270/271.
 - [ ] Reconcile "Interests" (member) vs "Topics" (public) wording + the "tune in" verb. (S)
 
 ## K. Monetization / money foundation / Vault / verticals

@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isSafeRoute } from '@/lib/layout/page-chrome'
+import { parseLayout, layoutScopeChain, pickLayoutConfig, type LayoutConfig } from './layout'
 
 // The per-route page settings reader. Like loadChromeOverrides: a service-role read so it
 // works regardless of the caller's RLS context, REQUEST-CACHED (React.cache, by route arg),
@@ -34,5 +35,29 @@ export const loadPageSettings = cache(async (route: string): Promise<PageSetting
     return (data as PageSettingsRow | null) ?? null
   } catch {
     return null
+  }
+})
+
+/** The effective LAYOUT config for a route, resolved across the SCOPE CASCADE (ADR-271): the
+ *  exact route → its section ('/seg/*') → the global default ('*'), most-specific wins. One
+ *  service-role `.in()` read, REQUEST-CACHED, and FAIL-SAFE (empty config on any error) so a
+ *  page falls back to the registry default. Role gates ride inside the returned config. */
+export const loadLayoutForRoute = cache(async (route: string): Promise<LayoutConfig> => {
+  const empty: LayoutConfig = { order: [], hidden: [], roles: {} }
+  try {
+    if (!isSafeRoute(route)) return empty
+    const chain = layoutScopeChain(route)
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    // page_settings isn't in the generated DB types yet (regenerated separately per the
+    // migration), so the client is cast loose for this table; this read is fully fail-safe.
+    // eslint-disable-next-line no-restricted-syntax
+    const db = createAdminClient() as unknown as SupabaseClient
+    const { data, error } = await db.from('page_settings').select('route, layout').in('route', chain)
+    if (error || !data) return empty
+    const byKey: Record<string, LayoutConfig> = {}
+    for (const row of data as { route: string; layout: unknown }[]) byKey[row.route] = parseLayout(row.layout)
+    return pickLayoutConfig(chain, byKey)
+  } catch {
+    return empty
   }
 })

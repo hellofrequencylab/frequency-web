@@ -8,7 +8,7 @@ import { isSafeRoute } from '@/lib/layout/page-chrome'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { normalizeSeo, type SeoFields } from './seo'
 import { normalizeStatus, type StatusFields } from './status'
-import { parseLayout, orderedModuleIds, type LayoutConfig } from './layout'
+import { parseLayout, orderedModuleIds, isLayoutScopeKey, isModuleRole, type LayoutConfig, type ModuleRole } from './layout'
 import { LAYOUT_MODULE_IDS, moduleMeta } from '@/lib/widgets/modules'
 
 // Server actions for the on-page Page settings panel (ADR-268). STAFF (admin+, ADR-208 —
@@ -96,49 +96,70 @@ export async function getPageStatusForEditor(route: string): Promise<StatusField
   }
 }
 
-/** One row in the on-page Layout editor: a known module, in resolved order, flagged on/off. */
+/** A layout EDITOR key: a concrete route OR a scope key ('*' / '/seg/*', ADR-271). */
+function isLayoutKey(key: string): boolean {
+  return isSafeRoute(key) || isLayoutScopeKey(key)
+}
+
+/** One row in the on-page Layout editor: a known module, in resolved order, with its on/off
+ *  state and per-module role gate (null = everyone). */
 export interface LayoutEditorItem {
   id: string
   label: string
   description: string
   enabled: boolean
+  role: ModuleRole | null
 }
 
-/** The per-route layout for the editor (ADR-270): every known module in resolved order, each
- *  flagged enabled (visible) or not. Staff-gated read; defaults to registry order, all on. */
-export async function getPageLayoutForEditor(route: string): Promise<LayoutEditorItem[]> {
+/** The saved layout at a SCOPE KEY for the editor (ADR-270/271): every known module in
+ *  resolved order, each flagged enabled (visible) or not and carrying its role gate. The key
+ *  is the exact route, a section ('/seg/*'), or the global default ('*'); this reads THAT
+ *  level's own config (not the cascade), so staff see what is set at the level they edit.
+ *  Staff-gated; defaults to registry order, all on, no gates. */
+export async function getPageLayoutForEditor(key: string): Promise<LayoutEditorItem[]> {
   await gate()
   const build = (config: LayoutConfig): LayoutEditorItem[] => {
     const hidden = new Set(config.hidden)
     return orderedModuleIds(config, LAYOUT_MODULE_IDS).flatMap((id) => {
       const meta = moduleMeta(id)
-      return meta ? [{ id: meta.id, label: meta.label, description: meta.description, enabled: !hidden.has(id) }] : []
+      if (!meta) return []
+      const role = config.roles[id]
+      return [{ id: meta.id, label: meta.label, description: meta.description, enabled: !hidden.has(id), role: isModuleRole(role) ? role : null }]
     })
   }
-  if (!isSafeRoute(route)) return build({ order: [], hidden: [] })
-  const { loadPageSettings } = await import('./store')
-  const row = await loadPageSettings(route)
-  return build(parseLayout(row?.layout ?? null))
+  if (!isLayoutKey(key)) return build({ order: [], hidden: [], roles: {} })
+  // Read the level's OWN row (a scope key never passes isSafeRoute, so we read directly here
+  // inside the staff-gated action rather than via the route-only loadPageSettings reader).
+  const { data } = await db().from('page_settings').select('layout').eq('route', key).maybeSingle()
+  return build(parseLayout((data as { layout: unknown } | null)?.layout ?? null))
 }
 
-/** Save a route's layout (which modules show inside the page, and in what order). Order = the
- *  given id list (known ids only); hidden = the disabled ids. Upserts the layout jsonb. */
+/** Save the layout at a SCOPE KEY: which modules show, in what order, and the per-module role
+ *  gates. The key is a concrete route, a section ('/seg/*'), or the global default ('*');
+ *  resolution is most-specific-wins (ADR-271). Order = the given id list (known ids only);
+ *  hidden = the disabled ids; roles = the set gates. Upserts the layout jsonb. */
 export async function savePageLayout(
-  route: string,
-  items: { id: string; enabled: boolean }[],
+  key: string,
+  items: { id: string; enabled: boolean; role?: string | null }[],
 ): Promise<ActionResult> {
   const me = await gate()
-  if (!isSafeRoute(route)) return fail('That is not a valid app route.')
+  if (!isLayoutKey(key)) return fail('That is not a valid page or scope.')
   const known = new Set(LAYOUT_MODULE_IDS)
   const valid = items.filter((it) => known.has(it.id))
   const order = valid.map((it) => it.id)
   const hidden = valid.filter((it) => !it.enabled).map((it) => it.id)
+  const roles: Record<string, ModuleRole> = {}
+  for (const it of valid) if (isModuleRole(it.role)) roles[it.id] = it.role
+
   const { error } = await db()
     .from('page_settings')
-    .upsert({ route, layout: { order, hidden }, updated_by: me, updated_at: new Date().toISOString() }, { onConflict: 'route' })
-  if (error) return fail('Could not save the layout for that route.')
+    .upsert({ route: key, layout: { order, hidden, roles }, updated_by: me, updated_at: new Date().toISOString() }, { onConflict: 'route' })
+  if (error) return fail('Could not save the layout for that scope.')
 
-  revalidatePath(route)
+  // A concrete route refreshes just that page; a scope edit is broad, so purge all cached
+  // pages (rare operator action) — the cascade is read per request on the next visit.
+  if (isSafeRoute(key)) revalidatePath(key)
+  else revalidatePath('/', 'layout')
   return ok()
 }
 
