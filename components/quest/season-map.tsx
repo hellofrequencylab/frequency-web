@@ -27,7 +27,7 @@ export type JourneyState = 'done' | 'current' | 'upcoming'
 export interface SeasonMapJourney {
   /** Stable key + deep link target. */
   slug: string
-  /** Journey name (e.g. "Clear Head"). */
+  /** Journey name (e.g. "Clear"). */
   title: string
   /** The Pillar this Journey carries — its arc label. */
   pillar: 'Mind' | 'Body' | 'Spirit'
