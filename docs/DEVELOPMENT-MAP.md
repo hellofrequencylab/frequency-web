@@ -294,15 +294,24 @@
 > Post-Pro build backlog (small, unblocked once typed): rotating/Wallet ticket passes, recurring-event
 > RRULE, host analytics depth, Typesense only if typo-tolerant search becomes a growth lever.
 >
+> **FINALIZE STATUS (2026-06-14):** the typed cutover was **attempted and is on hold** — Supabase
+> branching returned `PaymentRequiredException` (Pro not yet active on the org), and the founder chose to
+> **wait for Pro** rather than apply to prod directly. No prod changes were made; no branch/cost incurred.
+> Events remains coded-but-not-live. **Finalize runbook (run the moment Pro is active):**
+> ① `create_branch` (events-finalize) → ② `apply_migration` the 8 files `20260625000000`–`20260626010000`
+> in order on the branch → ③ `generate_typescript_types` from the branch → overwrite `lib/database.types.ts`
+> → ④ remove the temp untyped-handle/`as unknown as` casts in `lib/events/*` (+ `components/feed/feed-list.tsx`,
+> the `manage/` reads) now that the columns are typed → ⑤ `pnpm tsc`/`lint`/`test`, then `merge_branch`
+> to prod (go-live), `get_advisors` (security + perf), `delete_branch`; finally `/sync-docs` for member help.
+>
 > **2026-06-14:** **Adaptive theming completeness audit** ([`THEME.md`](THEME.md); spec owned there).
 > The four-axis chain (mode · skin · occasion · generation) + the data-driven theme manager + the
 > page-chrome map are wired end-to-end and live: DAWN renders, a Space's skin/brand + a DB skin/occasion
 > theme + the time-scheduled occasion all reach the page, and the shell reads the page-chrome override
 > live (`mergeChrome`). Remaining connections are catalogued in **BACKLOG §V "Theme & template system"**:
 > the generation axis is latent (CSS+registry+resolver present, but no member switch / `fxtheme` cookie
-> writer and no `spaces.generation` column), `structureFor` has zero template consumers, the
-> `page_chrome_overrides` types need regen (currently cast), and occasion seeding + multi-Space membership
-> + cross-axis visual-regression + W3C-token native export are open.
+> writer and no `spaces.generation` column), `structureFor` has zero template consumers, and occasion
+> seeding + multi-Space membership + cross-axis visual-regression + W3C-token native export are open.
 
 ---
 
