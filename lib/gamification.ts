@@ -213,6 +213,30 @@ export const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, {
 }
 
 // ---------------------------------------------------------------------------
+// The Quest — completion-model rewards (ADR-Quest)
+// ---------------------------------------------------------------------------
+// A Journey finishes when a member logs one of its Practices on enough DISTINCT
+// days inside the Journey window AND completes its Expression Challenge. Finishing
+// pays a flat Zap purse, an escalating Gem bonus by the NEW rank reached, and a
+// Trophy (the journey_completions row itself). The Expression Challenge pays on its
+// own: in person at a Circle earns Zaps, posted solo online earns Gems. These are
+// the tunable-fallback constants; the live numbers (where applicable) come from
+// zap_config / gem_config, so a grant never breaks if a config row is missing.
+export const QUEST = {
+  /** Distinct days a Journey's Practices must be logged inside its window. The
+   *  spec band is 14-16; 14 is the bar. */
+  DAYS_TO_FINISH_JOURNEY: 14,
+  /** Flat Zap purse for finishing a Journey. */
+  JOURNEY_FINISH_ZAPS: 75,
+  /** Escalating Gem bonus by the NEW rank reached on finishing. */
+  JOURNEY_GEM_BONUS: { initiate: 25, adept: 50, master: 100 } as Record<string, number>,
+  /** Expression Challenge done in person at a Circle. */
+  EXPRESSION_CIRCLE_ZAPS: 50,
+  /** Expression Challenge posted solo online. */
+  EXPRESSION_ONLINE_GEMS: 30,
+} as const
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
