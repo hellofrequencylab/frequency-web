@@ -6960,3 +6960,17 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 **Consequences:** Beta members start S1 fresh under the correct model. The enum rename is permanent: the old values (echo / signal / beacon / conduit / luminary) are retired from the schema and must not be reintroduced. Any seed data, demo-seeding scripts, or fixtures that reference old rank names must be updated.
 
+## ADR-287: Completion-model go-live follow-ups (Expression capstone UI, dead-rank cleanup, self-edit hardening)
+
+**Status:** Accepted (2026-06-15) — the wiring + cleanup pass that makes the completion model functional and consistent end to end. Migrations: `20260630010000_fix_founders_table_rank_gate.sql`, `20260630020000_guard_lifetime_rank_self_edit.sql`.
+
+**Context:** ADR-283/284/286 shipped the schema, ranks, and completion engine (`lib/quest/*`), but a final scan found gaps: (1) `completeExpressionChallenge` had no caller, so the Expression Challenge — required to finish a Journey — was unreachable, meaning no Journey could ever complete; (2) the recruiter-ladder apex still read "Luminary" in `lib/entry-points/leaderboard.ts` though NAMING.md renamed it to **Catalyst** to dodge the season-rank collision; (3) the Founders' Table store item gated on `requires_rank: "conduit"`, a dropped rank, so the gate's index lookup returned -1 and silently never applied (item purchasable by anyone); (4) `prevent_economy_self_edit` guarded `current_season_rank` but not `lifetime_rank`, and the `seasoned_agent` retro rule pays 200 Gems for reaching Adept+ lifetime — a self-grant hole via the profiles self-update RLS policy.
+
+**Decision:**
+- **Expression capstone UI.** Add a member-facing control on the Season Challenges page for expression-type challenges (a "where did you share it" choice instead of a counter bar) backed by a `completeExpression(journeyId, mode)` server action. The member **self-attests** the share; `mode: 'circle'` pays +50 Zaps, `mode: 'online'` pays +30 Gems. The action resolves `profileId` from the session, never the client. This is the only member entry point to the capstone and it triggers `tryCompleteJourney`.
+- **Recruiter apex → Catalyst.** Rename in code + test (the tier key is computed, never persisted, so the rename is display-only and safe).
+- **Founders' Table gate → `adept`** (the "one below apex" slot Conduit held in the old 6-rank ladder), via data migration.
+- **Guard `lifetime_rank`** in `prevent_economy_self_edit`. All legitimate writers run as service_role and bypass the guard, so nothing legitimate breaks.
+
+**Consequences:** The completion loop is now reachable end to end (practice logging advances days; the Expression control closes the Journey). **Known honor-system tradeoff (flagged):** the Circle vs online choice is self-attested with no Circle check-in proof, so a member could pick "Circle" for the larger Zap reward without attending. This is bounded — the reward grants once per Journey/season (reward_grants + the fresh-completion guard) and rank still requires 14 real practice days — but tying the Circle mode to an actual Circle check-in is a future hardening if abuse appears. The `grantJourneyRewards` `completionGems` param is retained as a documented no-op shim (the journey **builder** still sets `completion_gems`; what that means for member-built library Journeys under the completion model is a separate open question).
+

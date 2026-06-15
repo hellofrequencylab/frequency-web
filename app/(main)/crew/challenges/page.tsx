@@ -7,6 +7,7 @@ import type { ChallengeDifficulty } from '@/lib/gamification'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
+import { ExpressionAction } from './expression-action'
 
 export default async function ChallengesPage() {
   const supabase = await createClient()
@@ -115,6 +116,11 @@ export default async function ChallengesPage() {
               {items.map((challenge) => {
                 const isComplete = !!challenge.completedAt
                 const progress = Math.min(100, Math.round((challenge.current / challenge.target) * 100))
+                // Expression Challenges are a deliberate act, not a counter: they get
+                // the share control instead of a progress bar (lib/quest/expression.ts).
+                const isExpression =
+                  (challenge.criteria as { type?: string } | null)?.type === 'expression' &&
+                  !!challenge.journey_id
 
                 return (
                   <div
@@ -155,6 +161,8 @@ export default async function ChallengesPage() {
                               Completed {new Date(challenge.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </p>
                           )
+                        ) : isExpression ? (
+                          <ExpressionAction journeyId={challenge.journey_id as string} />
                         ) : (
                           <div className="mt-2.5">
                             <div className="mb-1 flex items-center justify-between text-xs tabular-nums text-subtle">
