@@ -37,9 +37,10 @@ value for that subtree, so the axes never need to know about each other.
 registry in [`lib/theme/`](../lib/theme/) that is the single place an id is declared, plus a
 `resolve*` guard so an unknown value can never reach the DOM. A CSS⇄registry **guardrail
 test** reads `app/globals.css` from disk and fails the build if a registered id is missing its
-CSS block (or vice versa), so the two halves can never quietly drift. Today that test is live
-for skins ([`skins.test.ts`](../lib/theme/skins.test.ts)); the matching `generations.test.ts` /
-`occasions.test.ts` follow the same pattern and are ⏳ pending.
+CSS block (or vice versa), so the two halves can never quietly drift. ✅ All three are live:
+skins ([`skins.test.ts`](../lib/theme/skins.test.ts)),
+generations ([`generations.test.ts`](../lib/theme/generations.test.ts)), and
+occasions ([`occasions.test.ts`](../lib/theme/occasions.test.ts)) all follow the same pattern.
 
 ---
 
@@ -249,7 +250,10 @@ re-theme reads as one smooth cross-fade rather than a hard repaint. The switch i
 **reduced-motion guarded**: when `prefers-reduced-motion` is set, the transition is skipped and the
 new look applies instantly. ⏳ The client `ThemeProvider` / `useResolvedTheme` hook and the
 View-Transitions switch are the remaining client pieces; the server resolution and the CSS axes are
-already in place, so the system works (just without the animated switch) today.
+already in place, so the system works (just without the animated switch) today. Note: per-request
+theme injection now lives in the `(main)` shell ([`app/(main)/layout.tsx`](<../app/(main)/layout.tsx>)),
+not the root layout, and `ThemeProvider` has no consumers after that move, so it is not currently
+mounted; mounting it pairs with building this client switch.
 
 ---
 
@@ -526,7 +530,7 @@ and the operator layer is a fail-safe **merge over** them, never a replacement. 
 | Per-Space theme assignment | ✅ shipped (it is the existing `spaces.skin`, now set from `/admin/spaces`, §12) |
 | Occasion auto-resolution from the DB `MM-DD` windows | ✅ shipped (`resolveActiveOccasionSlug`, wired in the in-app shell, §§1, 6) |
 | Template-per-page (a theme scoped to a page template) | 🔴 not built |
-| Client `ThemeProvider` / View-Transitions switch + `generations`/`occasions` guardrail tests | ⏳ tracked in §§2, 7 |
+| Client `ThemeProvider` / View-Transitions switch (`ThemeProvider` has no consumers after the injection moved to the `(main)` shell, so it is not currently mounted) | ⏳ tracked in §7 |
 
 ---
 

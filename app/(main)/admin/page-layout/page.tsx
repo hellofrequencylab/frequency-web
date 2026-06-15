@@ -17,10 +17,10 @@ export const dynamic = 'force-dynamic'
 // the code chrome map (lib/layout/page-chrome.ts MANAGED_ROUTES) alongside each one's
 // CURRENT effective rail (the code default merged with any saved override), each editable.
 //
-// v1 STORES intent: overrides are saved into page_chrome_overrides and surfaced here, but
-// the live shell does not read them YET — adopting resolvePageChrome in the shell is a
-// flagged follow-up. So today this configures the intended chrome; the visible effect on
-// member pages lands when the shell switches over.
+// Live end-to-end: overrides are saved into page_chrome_overrides, surfaced here, and read
+// by the shell. app-shell.tsx computes its rail as mergeChrome(railFor(pathname),
+// chromeOverrides, pathname), so a saved override merges into the shell's rail and takes
+// visible effect on member pages on the next request.
 
 const AREA_ORDER: ManagedRoute['area'][] = ['Member', 'Focus surfaces', 'Operator']
 
@@ -55,9 +55,8 @@ export default async function PageLayoutAdminPage() {
         <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 text-sm text-muted">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
           <p>
-            Overrides are stored now and take effect when the shell starts reading them (a
-            planned follow-up). Until then this configures the intended chrome for each route;
-            the visible change on member pages lands once the shell adopts the resolver.
+            Overrides take effect live: the shell merges each one into its right rail, so a
+            saved change shows on member pages on the next request.
             {overrideCount > 0 && (
               <>
                 {' '}

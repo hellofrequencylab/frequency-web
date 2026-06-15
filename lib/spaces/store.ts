@@ -7,10 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Space, SpaceStatus, SpaceType } from './types'
 
-// The brand_* columns ship in 20260626000000_space_brand.sql and are not in the generated
-// `lib/database.types.ts` yet, so we keep them in this column list and cast each selected row
-// to the local `SpaceRow` below (the typed reads stay sound — the cast is localized here, not
-// pushed into database.types.ts). Regenerate the types to fold these in canonically.
+// The columns the Space reads project, including the brand_* fields (20260626000000_space_brand.sql).
 const COLS =
   'id, slug, name, type, status, entity_id, skin, domain, network_connected, enabled_verticals, owner_profile_id, brand_name, brand_logo_url, brand_accent'
 
@@ -60,7 +57,7 @@ export async function getSpaceByDomain(domain: string): Promise<Space | null> {
     .eq('domain', host)
     .eq('status', 'active')
     .maybeSingle()
-  return data ? mapSpace(data as unknown as SpaceRow) : null
+  return data ? mapSpace(data) : null
 }
 
 /** The Space with this slug, or null. */
@@ -70,7 +67,7 @@ export async function getSpaceBySlug(slug: string): Promise<Space | null> {
     .select(COLS)
     .eq('slug', slug.trim().toLowerCase())
     .maybeSingle()
-  return data ? mapSpace(data as unknown as SpaceRow) : null
+  return data ? mapSpace(data) : null
 }
 
 /** A single Space by id, or null. Used by the operator admin surface (it reads through the
@@ -81,7 +78,7 @@ export async function getSpaceById(id: string): Promise<Space | null> {
     .select(COLS)
     .eq('id', id)
     .maybeSingle()
-  return data ? mapSpace(data as unknown as SpaceRow) : null
+  return data ? mapSpace(data) : null
 }
 
 /** Every Space, name-ordered — the operator admin list. Admin-client read (all statuses). */
@@ -90,7 +87,7 @@ export async function listSpaces(): Promise<Space[]> {
     .from('spaces')
     .select(COLS)
     .order('name', { ascending: true })
-  return ((data ?? []) as unknown as SpaceRow[]).map(mapSpace)
+  return (data ?? []).map(mapSpace)
 }
 
 /** The canonical root Space (the Frequency app itself). */
@@ -101,7 +98,7 @@ export async function getRootSpace(): Promise<Space | null> {
     .eq('type', 'root')
     .eq('status', 'active')
     .maybeSingle()
-  return data ? mapSpace(data as unknown as SpaceRow) : null
+  return data ? mapSpace(data) : null
 }
 
 /**

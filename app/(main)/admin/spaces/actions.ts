@@ -9,8 +9,8 @@ import { listThemes } from '@/lib/theme/server/admin-themes'
 // Server actions for the per-Space branding surface (docs/SPACES.md, ADR-249/250). Janitor-
 // gated, mirroring the rest of the Spaces tenancy admin. The per-Space THEME is the existing
 // `spaces.skin` column; the VISUAL brand fields (name/logo/accent) ship in
-// 20260626000000_space_brand.sql. Writes go through the service-role admin client (the
-// brand_* columns predate the generated types). Fail-closed: the gate redirects on denial,
+// 20260626000000_space_brand.sql. Writes go through the service-role admin client.
+// Fail-closed: the gate redirects on denial,
 // every input is validated server-side before it touches the row, and a successful write
 // revalidates the admin list AND the root layout (a skin change repaints every Space surface).
 
@@ -100,13 +100,12 @@ export async function updateSpaceBranding(
 
   const { error } = await createAdminClient()
     .from('spaces')
-    // brand_* columns predate the generated types — cast the patch locally so this stays sound.
     .update({
       skin,
       brand_name: brandName,
       brand_accent: brandAccent,
       brand_logo_url: brandLogoUrl,
-    } as never)
+    })
     .eq('id', id)
 
   if (error) return fail('Could not save the Space branding.')

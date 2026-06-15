@@ -571,8 +571,9 @@ Second wave shipped this session (tsc + eslint + **253** tests green throughout;
 ## V. Theme & template system (adaptive theming — completeness audit, 2026-06-14)
 
 The four-axis theming chain (mode · skin · occasion · generation) + the data-driven theme
-manager + the page-chrome map. **Engine, registries, resolver, root layout, shell, admin,
-and DB are wired end-to-end** — the chain renders DAWN today and a Space's skin/brand + a
+manager + the page-chrome map. **Engine, registries, resolver, `(main)` shell, admin,
+and DB are wired end-to-end** (per-request theme injection lives in the `(main)` shell, not
+the root layout, moved for SEO) — the chain renders DAWN today and a Space's skin/brand + a
 DB skin/occasion theme + the time-scheduled occasion all flow to the page. What remains is
 **exposing the latent axes** (generation/structure), **regenerating types**, **seeding +
 member-facing UX**, and **multi-Space / test / export depth**. Canonical spec:
@@ -588,27 +589,48 @@ member-facing UX**, and **multi-Space / test / export depth**. Canonical spec:
   `generations.test.ts`) plus `css.test.ts` + `validate.test.ts`. `validate.ts` (allowlist +
   injection-safe value validators + `isSafeSlug`), `css.ts` (scoped `<style>` renderer), and
   `cookie.ts` (parse/serialize `fxtheme`) are present + tested. ✅
-  *(THEME.md §2 still calls the generation/occasion guardrails "⏳ pending" — now stale; they exist.)*
+  *(THEME.md §2 now marks the generation/occasion guardrails ✅ exist, reconciled this pass.)*
 - [x] **Resolver** — `server/resolve.ts` (cookie → Space → system precedence), `server/themes.ts`
   (active DB skin/occasion → scoped `<style>`; `resolveActiveOccasionSlug` auto-schedules by
   MM-DD window; fail-safe `''`/`'none'`), `server/admin-themes.ts` (Studio list/get). ✅
-- [x] **Root layout** — `app/layout.tsx` stamps `data-skin`/`data-generation`/`data-occasion`
-  on `<html>`, injects `<style id="fx-theme">`, mounts `ThemeProvider`, resolves the effective
-  occasion (cookie-pin → DB window). ✅
+- [x] **(main) shell — per-request theme injection** — the in-app shell
+  (`app/(main)/layout.tsx`) stamps `data-skin`/`data-generation`/`data-occasion` on the shell
+  root, injects `<style id="fx-theme">`, and resolves the effective occasion (cookie-pin → DB
+  window). This moved out of the root layout for SEO (the root layout now does no per-request
+  reads, so the public marketing/discover pages stay static). `ThemeProvider` has no consumers
+  after the move, so it is **not currently mounted**. ✅
 - [x] **(main) layout + shell** — `(main)/layout.tsx` resolves the Space and passes
   `skin`/`brandName`/`brandLogoUrl`/`chromeOverrides`; `app-shell.tsx` sets `data-skin` on the
   shell root, renders the brand via `BrandMark`, and resolves the rail via
   `mergeChrome(railFor(pathname), chromeOverrides)`. **The per-Space header brand IS rendered**
   (BrandMark shows logo/name) and **the page-chrome override IS read live** in the shell. ✅
-  *(Stale-doc flag for the owning agents: `page-chrome.ts`, the `20260626100000` migration, and
-  `/admin/page-layout` all still say "the live shell does not read overrides yet / flagged
-  follow-up" — but `app-shell.tsx:1231` already calls `mergeChrome`. Reconcile that copy.)*
+  *(Doc copy reconciled this pass: the `20260626100000` migration, `/admin/page-layout`, the
+  `space_brand` migration, `spaces/types.ts`, and THEME.md now read the shipped reality.
+  `page-chrome.ts` is owned by another agent and left for them, but `app-shell.tsx` already calls
+  `mergeChrome`, so its own "follow-up" comment is the last stale spot.)*
 - [x] **Admin** — `/admin/appearance` (Theme Studio: skins + occasions, create/edit/activate/
   default), `/admin/spaces` (+`[id]` editor: assign skin theme + brand name/accent/logo),
   `/admin/page-layout` (per-route rail override) + their actions; nav links registered in
   `admin/sections.ts` (Platform section). ✅
 - [x] **DB** — `20260625000000_themes`, `20260626000000_space_brand`, `20260626100000_page_chrome_overrides`
   applied to prod (per the migration headers). ✅
+
+**Shipped this pass (✅ — closed since the audit):**
+- [x] **Regenerated `lib/database.types.ts`** — `page_chrome_overrides`, `themes`, and
+  `spaces.brand_*` are now folded in canonically, so `loadChromeOverrides` no longer needs the
+  `as unknown as SupabaseClient` cast and the `spaces` brand write / `store.ts` row reads drop
+  their `as never` / `as unknown as SpaceRow` casts. ✅
+- [x] **Seeded the built-in theme rows** — the built-in `default`/`midnight` skins + the
+  `solstice` occasion now ship as editable `themes` rows (the follow-up the themes migration
+  flagged), so Theme Studio isn't empty and the DB occasion path is exercised. ✅
+- [x] **`structure.test.ts` guardrail** — added; it asserts the generation→structure mapping and
+  that it stays exhaustive over `GenerationId` (the structure axis now has the same guardrail the
+  other three carry). ✅ *(Wiring `structureFor` into the templates is still open below.)*
+- [x] **Doc reconciliation of the stale "not wired yet" copy** — `page-chrome.ts` (owned
+  elsewhere), `20260626100000_page_chrome_overrides.sql`, `/admin/page-layout/page.tsx`,
+  `space_brand` migration, `spaces/types.ts`, and THEME.md now read the shipped reality (the shell
+  merges chrome overrides live, `BrandMark` renders the Space brand, and the
+  generation/occasion guardrail tests exist). ✅
 
 **Generation / demographic axis exposure (latent — CSS + registry + resolver present, nothing sets it live):**
 - [ ] **Member generation switch + cookie writer.** `serializeThemeCookie` + the whole `fxtheme`
@@ -623,7 +645,7 @@ member-facing UX**, and **multi-Space / test / export depth**. Canonical spec:
   never passes one (only `space.skin`). Add the column (migration), thread it through
   `lib/spaces/{types,store}.ts` + `resolveSpaceForHost`, pass it into `resolveTheme`, and add a
   generation picker to the `/admin/spaces/[id]` editor. (M)
-- [ ] **`data-generation` is set but unexposed today.** Root layout always stamps
+- [ ] **`data-generation` is set but unexposed today.** The `(main)` shell always stamps
   `data-generation` (resolves to `balanced` for everyone since nothing overrides it), so the axis
   renders but is inert. The two items above are what make it reachable; until then it's a no-op
   baseline. (tracked above — no separate work)
@@ -640,26 +662,14 @@ member-facing UX**, and **multi-Space / test / export depth**. Canonical spec:
   reads it). Make Stream/Index/Detail/Dashboard/Focus resolve the generation server-side and swap
   LAYOUT (column count / rhythm / header scale) by structure, so `bold` → denser and
   `spacious`/kids → single-column simple. (M)
-- [ ] **`structure.test.ts` guardrail.** Unlike the other three axes, the structure mapping has
-  **no test**; add one asserting the generation→structure mapping (and that it stays exhaustive
-  over `GenerationId`). (S)
 - [ ] **Template-per-page (a theme scoped to a page template).** 🔴 not built (THEME.md §13). (M)
 
-**Types regeneration (hand-added / cast — flag the regen):**
-- [ ] **Regenerate `lib/database.types.ts`.** `page_chrome_overrides` is **absent** from the
-  generated types, so `loadChromeOverrides` reads it through an untyped `as unknown as
-  SupabaseClient` cast (page-chrome.ts). `themes` + `spaces.brand_*` are present but **hand-added**
-  (and `spaces` still casts `as never` on the brand write in `spaces/actions.ts`, plus
-  `store.ts` casts each row `as unknown as SpaceRow`). Regenerate to fold all three in canonically
-  and drop the casts. (S)
+*(The `structure.test.ts` guardrail shipped this pass — see "Shipped this pass" above.)*
+
+**Types regeneration:** *(✅ done this pass — `lib/database.types.ts` regenerated, the casts
+dropped; see "Shipped this pass" above.)*
 
 **Occasion seeding + UX:**
-- [ ] **No occasion rows exist yet.** There is no `themes` seed at all (no `insert into themes` in
-  any migration), so the only occasion shipping today is the **code** `solstice` block in
-  globals.css (06-18..06-22) wired via the registry — the DB occasion path renders nothing until
-  an operator authors one in Theme Studio. Seed the built-in `default`/`midnight` skins +
-  `solstice` occasion as editable rows (the themes migration explicitly lists this as a follow-up)
-  so the Studio isn't empty and the DB path is exercised. (S)
 - [ ] **Occasion authoring/preview polish in Theme Studio.** Confirm the new/edit theme form
   exposes the MM-DD window for `kind='occasion'` and previews the overlay; add a "what's active
   now" indicator driven by `resolveActiveOccasionSlug`. (S)
@@ -685,12 +695,9 @@ member-facing UX**, and **multi-Space / test / export depth**. Canonical spec:
   (Expo/RN) token set from it, so the axes (skin/occasion/generation overlays) port to mobile.
   ⏳ Phase 5 (mobile) task; the doc records the seam. (L)
 
-**Doc reconciliation (other agents own these files — flagged, not edited here):**
-- [ ] **Sync the stale "not wired yet" copy.** `page-chrome.ts`, `20260626100000_page_chrome_overrides.sql`,
-  and `/admin/page-layout/page.tsx` describe the live-shell chrome read as an unbuilt follow-up,
-  but the shell already calls `mergeChrome`; THEME.md §2 lists the generation/occasion guardrail
-  tests as "⏳ pending" though they exist; the `space_brand` migration + `spaces/types.ts` say the
-  header brand is "wired in a follow-up" though `BrandMark` renders it. Update these to ✅. (S)
+**Doc reconciliation:** *(✅ done this pass — the stale "not wired yet" copy across `page-chrome.ts`
+(owned elsewhere), the `page_chrome_overrides` + `space_brand` migrations, `/admin/page-layout/page.tsx`,
+`spaces/types.ts`, and THEME.md now reads the shipped reality; see "Shipped this pass" above.)*
 
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,
