@@ -82,6 +82,6 @@ and live on the same Streaks page, below your daily streak.
 
 ## Practicing together
 
-When three or more people from the same circle are on the same Journey and all log
+When three or more people from the same Circle are on the same Journey and all log
 on the same day, everyone gets a small **Co-op Pulse** bonus. It adds up quietly.
 Practicing together is the point.
