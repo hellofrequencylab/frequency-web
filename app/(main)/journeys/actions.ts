@@ -28,7 +28,6 @@ import {
   type PlanStatus,
   type PageWidgetConfig,
 } from '@/lib/journey-plans'
-import type { IntensityTier } from '@/lib/journey-tiers'
 import { getSeasonalQuests } from '@/lib/quests'
 
 // Server actions for the Journeys builder (ADR-096; free, ADR-152).
@@ -263,7 +262,7 @@ export async function reorderJourneySteps(planId: string, order: string[]): Prom
 export async function setJourneyStep(
   planId: string,
   practiceId: string,
-  patch: { note?: string | null; cadence?: string | null; defaultTier?: IntensityTier },
+  patch: { note?: string | null; cadence?: string | null },
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   await updateItem(planId, practiceId, patch)
@@ -313,18 +312,6 @@ export async function setJourneyVisibility(
  *  (docs/JOURNEYS.md §12: `community_role IN ('guide','mentor')`). */
 function canMakeOfficial(role: string): boolean {
   return role === 'guide' || role === 'mentor'
-}
-
-/** Per-step intensity default tier (Initiate/Adept/Master) → updateItem defaultTier. */
-export async function setJourneyStepTier(
-  planId: string,
-  practiceId: string,
-  tier: IntensityTier,
-): Promise<ActionResult> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
-  if (!practiceId) return fail('No step given.')
-  await updateItem(planId, practiceId, { defaultTier: tier })
-  return ok()
 }
 
 /** Rewards section: completion Gems (10–100, clamped in updatePlan). */

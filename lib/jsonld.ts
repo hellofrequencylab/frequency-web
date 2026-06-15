@@ -195,11 +195,9 @@ export function topicListSchema(channels: TopicalChannel[], listName: string) {
 
 export function journeySchema(plan: JourneyPlan, items: JourneyPlanItem[]) {
   const url = abs(`/discover/journeys/${plan.slug}`)
-  // Estimated total time from the default (Adept) tier of each step, when known.
+  // Estimated total time from each step's practice base est_minutes, when known.
   const totalMinutes = items.reduce((sum, it) => {
-    const tiers = it.practice?.tiers ?? []
-    const tier = tiers.find((t) => t.tier === 'adept') ?? tiers[0]
-    return sum + (tier?.est_minutes ?? 0)
+    return sum + (it.est_minutes ?? it.practice?.est_minutes ?? 0)
   }, 0)
 
   return {

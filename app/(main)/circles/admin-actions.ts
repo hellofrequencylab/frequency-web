@@ -135,7 +135,7 @@ export async function getCircleAdminData(slug: string) {
     }
   })
     .from('circles')
-    .select('id, slug, name, about, type, member_cap, status, image_url, sidebar_order, default_intensity_tier')
+    .select('id, slug, name, about, type, member_cap, status, image_url, sidebar_order')
     .eq('slug', slug)
     .maybeSingle()
   if (!circle) return null
@@ -163,7 +163,6 @@ export async function getCircleAdminData(slug: string) {
     status: circle.status,
     image_url: circle.image_url,
     sidebar_order: (circle.sidebar_order ?? null) as string[] | null,
-    default_intensity_tier: circle.default_intensity_tier ?? null,
     practice_library: practice_library.map((p) => ({ id: p.id, title: p.title })),
     active_practice_id: activePractice?.id ?? null,
     adoptedJourneys: adoptions.journeys,

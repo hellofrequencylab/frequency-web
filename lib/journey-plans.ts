@@ -14,7 +14,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { adoptPractice } from '@/lib/practices'
-import { type IntensityTier } from '@/lib/journey-tiers'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -29,14 +28,6 @@ export interface PageWidgetConfig {
   id: string
   enabled: boolean
   settings?: Record<string, unknown>
-}
-
-/** The content for one intensity tier of a practice (from practice_tiers; ADR-198). */
-export interface PracticeTierContent {
-  tier: IntensityTier
-  title: string | null
-  body: string | null
-  est_minutes: number | null
 }
 
 export interface JourneyPlan {
@@ -90,8 +81,6 @@ export interface JourneyPlanItem {
   note: string | null
   /** Per-journey cadence override (ADR-096). Null = the practice's own cadence. */
   cadence: string | null
-  /** The author's default intensity tier for this step (ADR-198). */
-  default_tier: IntensityTier
   // ── Block model (ADR-244). Optional + defaulted so pre-block code is unaffected. ──
   /** Defaults to 'practice' for legacy rows that predate the column. */
   block_type?: BlockType
@@ -115,7 +104,7 @@ export interface JourneyPlanItem {
         description: string | null
         domain_id: string | null
         cadence: string | null
-        tiers?: PracticeTierContent[] | null
+        est_minutes?: number | null
       }
     | null
 }
@@ -127,11 +116,10 @@ const PLAN_COLS =
   'drip_interval_days, certificate_enabled'
 
 const ITEM_COLS =
-  'id, plan_id, practice_id, domain_id, sort_order, note, cadence, default_tier, ' +
+  'id, plan_id, practice_id, domain_id, sort_order, note, cadence, ' +
   // Block model (ADR-244). Existing rows are block_type='practice' with these null/default.
   'block_type, parent_id, title, body, media, settings, required, est_minutes, ' +
-  'practice:practices(id, title, description, domain_id, cadence, ' +
-  'tiers:practice_tiers(tier, title, body, est_minutes))'
+  'practice:practices(id, title, description, domain_id, cadence, est_minutes)'
 
 /** A url-safe slug from the title + a short random suffix (slugs are unique). */
 function slugify(title: string): string {
@@ -307,38 +295,19 @@ export async function addItem(input: {
   await client.from('journey_plans').update(touch()).eq('id', input.planId)
 }
 
-/** Update a single item's per-journey controls (note, cadence override, default tier). */
+/** Update a single item's per-journey controls (note, cadence override). */
 export async function updateItem(
   planId: string,
   practiceId: string,
-  patch: { note?: string | null; cadence?: string | null; defaultTier?: IntensityTier },
+  patch: { note?: string | null; cadence?: string | null },
 ): Promise<void> {
   const client = db()
   const update: Record<string, unknown> = {}
-  if (patch.note !== undefined) update.note = patch.note?.trim() || null
-  if (patch.cadence !== undefined) update.cadence = patch.cadence?.trim() || null
-  if (patch.defaultTier !== undefined) update.default_tier = patch.defaultTier
+  if ('note' in patch && patch.note !== undefined) update.note = patch.note?.trim() || null
+  if ('cadence' in patch && patch.cadence !== undefined) update.cadence = patch.cadence?.trim() || null
   if (Object.keys(update).length === 0) return
   await client.from('journey_plan_items').update(update).eq('plan_id', planId).eq('practice_id', practiceId)
   await client.from('journey_plans').update(touch()).eq('id', planId)
-}
-
-/** Set a circle's default intensity tier — the Host control (ADR-198). Null clears it. */
-export async function setCircleTier(circleId: string, tier: IntensityTier | null): Promise<void> {
-  await db().from('circles').update({ default_intensity_tier: tier }).eq('id', circleId)
-}
-
-/** Set a member's per-Journey tier override (ADR-198). Null clears it (inherit the chain). */
-export async function setAdoptionTier(
-  profileId: string,
-  planId: string,
-  tier: IntensityTier | null,
-): Promise<void> {
-  await db()
-    .from('journey_plan_adoptions')
-    .update({ tier_override: tier })
-    .eq('profile_id', profileId)
-    .eq('plan_id', planId)
 }
 
 /** Set a plan's review status (draft/pending/approved/rejected). Caller enforces authz. */
