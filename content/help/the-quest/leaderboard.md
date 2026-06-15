@@ -27,7 +27,7 @@ Tabs across the top switch the board:
   reset, this one rewards the long haul.
 - **Entry points**: a board for Crew who put up flyers and QR codes that bring
   new people in, ranked by scans and signups. Recruiters climb their own tiers as
-  signups add up: Scout, Connector, Recruiter, Ambassador, Luminary.
+  signups add up: Scout, Connector, Recruiter, Ambassador, Catalyst.
 
 ## Reading the board
 

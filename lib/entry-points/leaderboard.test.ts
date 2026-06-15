@@ -10,8 +10,8 @@ describe('recruiter tiers', () => {
     expect(recruiterTier(10).key).toBe('recruiter')
     expect(recruiterTier(24).key).toBe('recruiter')
     expect(recruiterTier(25).key).toBe('ambassador')
-    expect(recruiterTier(50).key).toBe('luminary')
-    expect(recruiterTier(999).key).toBe('luminary')
+    expect(recruiterTier(50).key).toBe('catalyst')
+    expect(recruiterTier(999).key).toBe('catalyst')
   })
 
   it('clamps junk input to scout', () => {

@@ -38,7 +38,7 @@ on that below). What's free vs. member is covered in
   they're gone, they're gone.
 - Some items are **season exclusives**: they stop selling when the season closes,
   and a few retire on a set date. If you want one, don't sit on it.
-- A few items ask for a rank first (the Founders' Table seat needs Conduit or
+- A few items ask for a rank first (the Founders' Table seat needs Adept or
   above). Earn the rank, then redeem.
 - Can't afford something yet? The button tells you exactly how many Gems you're
   short. No surprises.
