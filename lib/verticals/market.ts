@@ -21,6 +21,15 @@ export const market: Vertical = {
       },
     },
   ],
+  // The marketplace's own right-rail (was a hardcoded `/market` arm of the base map): who's
+  // around + circles to join + what's on — the people-led-browse panels. Owned here now, so
+  // adding a vertical's rail is one descriptor edit, not a core edit (ADR-278).
+  rail: [
+    {
+      test: (p) => p === '/market' || p.startsWith('/market/'),
+      panels: ['online', 'circles', 'events'],
+    },
+  ],
   capabilities: [
     {
       scopeKind: 'market',

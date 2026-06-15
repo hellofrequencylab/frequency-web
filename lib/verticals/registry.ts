@@ -33,6 +33,17 @@ export interface NavPlacement {
   after?: string
 }
 
+/** A right-rail rule a vertical owns: which of its routes show which panel keys. The keys are
+ *  bound in components/sidebar/rail-registry.tsx (and unknown keys are skipped at render), so a
+ *  vertical reuses existing panels here, or registers its own panel there. Mirrors the base map
+ *  in lib/layout/rail-panels.ts, but composed from the registry (ADR-250 step 2 / ADR-278). */
+export interface RailRule {
+  /** Matches the routes this rule governs. */
+  test: (path: string) => boolean
+  /** Panel keys to show, in order (PanelKey strings; unknown keys are skipped at render). */
+  panels: readonly string[]
+}
+
 /** The full declaration of a vertical — its entire public surface. */
 export interface Vertical {
   /** Stable id, also the capability/table namespace ('market', 'store', …). */
@@ -43,6 +54,8 @@ export interface Vertical {
   nav?: readonly NavPlacement[]
   /** Admin-dock modules this vertical contributes (merged into the admin registry). */
   adminModules?: readonly AdminModule[]
+  /** Right-rail rules for this vertical's routes (composed before the base map). */
+  rail?: readonly RailRule[]
   /** Capability resolvers for this vertical's own scope kind(s). */
   capabilities?: readonly { scopeKind: string; resolve: ModuleCapabilityResolver }[]
   /** Engagement source declaration (ENGAGEMENT-ARCHITECTURE, ADR-247) — wired in step 5. */
@@ -70,6 +83,12 @@ export function verticalNavAreas(): NavArea[] {
 /** All vertical-contributed admin modules (mergeable into the admin registry by scope). */
 export function verticalAdminModules(): AdminModule[] {
   return VERTICALS.flatMap((v) => (v.adminModules ? [...v.adminModules] : []))
+}
+
+/** All vertical-contributed right-rail rules, in registry order. lib/layout/rail-panels.ts
+ *  consults these BEFORE its base rules, so a vertical owns its own routes' rail (ADR-278). */
+export function verticalRailRules(): RailRule[] {
+  return VERTICALS.flatMap((v) => (v.rail ? [...v.rail] : []))
 }
 
 /** The viewer's namespaced capabilities within a vertical scope, unioned across verticals. */

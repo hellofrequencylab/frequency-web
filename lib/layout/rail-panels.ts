@@ -5,9 +5,13 @@
 // panels, edit the map here — that is the whole API (mirrors page-chrome.ts for the
 // rail's CONTENT the way page-chrome decides the rail's PRESENCE).
 //
-// This file owns WHICH keys a route shows; what each key RENDERS (its data needs + gate)
-// lives in the rail WidgetSlot registry, components/sidebar/rail-registry.tsx (ADR-250
-// step 2). A new vertical's rail panel = a key here + an entry there.
+// This file owns the BASE map (which keys a route shows); what each key RENDERS (its data
+// needs + gate) lives in the rail WidgetSlot registry, components/sidebar/rail-registry.tsx.
+// A VERTICAL owns its own routes' rail via its descriptor (`rail` in lib/verticals/*), which
+// pageRailPanels consults BEFORE this base map — so adding a vertical's rail is a descriptor
+// edit, not a core edit (ADR-250 step 2 / ADR-278).
+
+import { verticalRailRules } from '@/lib/verticals'
 
 export type PanelKey =
   | 'dispatches' | 'events' | 'members' | 'leaderboard' | 'online' | 'circles'
@@ -24,9 +28,10 @@ const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
   { test: (p) => p === '/events' || p.startsWith('/events/'), panels: ['events', 'online', 'circles'] },
   // Circles — discover more circles (incl. just-launched ones) + who's active + what's on.
   { test: (p) => p === '/circles' || p.startsWith('/circles/') || p.startsWith('/hubs') || p.startsWith('/nexuses'), panels: ['circles', 'newcircles', 'activenow', 'events'] },
-  // People-led browse — who's online + circles to join + what's on.
+  // People-led browse — who's online + circles to join + what's on. (/market moved to the
+  // marketplace vertical descriptor, ADR-278.)
   {
-    test: (p) => ['/channels', '/people', '/market'].some((s) => p === s || p.startsWith(s + '/')),
+    test: (p) => ['/channels', '/people'].some((s) => p === s || p.startsWith(s + '/')),
     panels: ['online', 'circles', 'events'],
   },
   // Practice — keep momentum: the board + who's around.
@@ -47,8 +52,11 @@ const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
 // both self-hide with no fallback, leaving the rail bare.)
 const DEFAULT_PANELS: PanelKey[] = ['pulse', 'activenow', 'newcircles', 'events']
 
-/** The page panels for a path. Always returns at least the default pulse panel. */
+/** The page panels for a path: a vertical's own rail rules win first (so a vertical owns its
+ *  routes), then the base map, then the default. Always returns at least the default pulse
+ *  panel. Vertical panel keys are PanelKey strings; any unknown key is skipped at render. */
 export function pageRailPanels(pathname: string): PanelKey[] {
+  for (const rule of verticalRailRules()) if (rule.test(pathname)) return rule.panels as PanelKey[]
   for (const rule of RULES) if (rule.test(pathname)) return rule.panels
   return DEFAULT_PANELS
 }
