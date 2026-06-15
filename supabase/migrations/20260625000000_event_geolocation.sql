@@ -105,7 +105,7 @@ as $$
           public.st_setsrid(public.st_makepoint(_long, _lat), 4326)::public.geography,
           greatest(0, coalesce(_radius_m, 50000))
         )
-  order by e.geog <-> public.st_setsrid(public.st_makepoint(_long, _lat), 4326)::public.geography
+  order by e.geog OPERATOR(public.<->) public.st_setsrid(public.st_makepoint(_long, _lat), 4326)::public.geography
   limit greatest(1, least(coalesce(_limit, 50), 200));
 $$;
 
@@ -139,4 +139,11 @@ as $$
 $$;
 
 comment on function public.set_event_geog(uuid, double precision, double precision) is
-  'Persists events.geog from an app-resolved lat/long (EVENTS-REWORK B1 geocode-on-save). SECURITY DEFINER; called by the service-role save path only (no anon/authenticated grant), so SQL owns WKT/SRID construction.';
+  'Persists events.geog from an app-resolved lat/long (EVENTS-REWORK B1 geocode-on-save). SECURITY DEFINER; service-role save path only, so SQL owns WKT/SRID construction.';
+
+-- A Postgres function defaults to PUBLIC EXECUTE, and Supabase additionally grants anon +
+-- authenticated by default — so "no grant" is NOT "no access". This is a SECURITY DEFINER WRITE
+-- (it UPDATEs events.geog), so leaving it callable lets anon move any event's pin. Lock it to
+-- service_role explicitly (the geocode-on-save path runs as service role).
+revoke execute on function public.set_event_geog(uuid, double precision, double precision) from public, anon, authenticated;
+grant  execute on function public.set_event_geog(uuid, double precision, double precision) to service_role;
