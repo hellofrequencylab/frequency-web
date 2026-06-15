@@ -16,23 +16,23 @@
     "help:drift": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-drift.mts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.102.0",
+    "@anthropic-ai/sdk": "^0.104.2",
     "@measured/puck": "^0.20.2",
     "@resvg/resvg-wasm": "^2.6.2",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.108.0",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.2",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
     "jsqr": "^1.4.0",
-    "lucide-react": "^1.16.0",
+    "lucide-react": "^1.18.0",
     "maplibre-gl": "^5.24.0",
-    "next": "16.2.7",
+    "next": "16.2.9",
     "qrcode": "^1.5.4",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "react-markdown": "^10.1.0",
     "resend": "^6.12.4",
-    "stripe": "^22.2.0",
+    "stripe": "^22.2.1",
     "web-push": "^3.6.7",
     "zod": "4.4.3"
   },
@@ -44,10 +44,10 @@
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
-    "eslint-config-next": "16.2.7",
-    "supabase": "^2.105.0",
+    "eslint-config-next": "16.2.9",
+    "supabase": "^2.106.0",
     "tailwindcss": "^4",
     "typescript": "^6",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   }
 }
