@@ -55,6 +55,11 @@ export interface JourneyPlan {
   quest_id: string | null
   /** Official season Journey (Guide/Mentor flagged). */
   official: boolean
+  /** Quest play-window open (ISO date, inclusive). Null = always open. The Quest
+   *  sequences a season's Journeys by these windows (weeks 1-4 / 5-8 / 9-12). */
+  window_starts_at: string | null
+  /** Quest play-window close (ISO date, inclusive). Null = no close. */
+  window_ends_at: string | null
   /** Review state (default 'approved' grandfathers existing plans; ADR-197). */
   status: PlanStatus
   /** Per-Journey page layout (ordered widgets). Null = the hardcoded default. */
@@ -112,7 +117,7 @@ export interface JourneyPlanItem {
 const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, visibility, fork_of, ' +
   'forked_count, adopt_count, cover_image, created_at, updated_at, published_at, ' +
-  'quest_id, official, status, page_config, completion_gems, ' +
+  'quest_id, official, window_starts_at, window_ends_at, status, page_config, completion_gems, ' +
   'drip_interval_days, certificate_enabled'
 
 const ITEM_COLS =
@@ -322,6 +327,46 @@ export async function setPlanOfficial(
 ): Promise<void> {
   const update: Record<string, unknown> = { official: opts.official }
   if (opts.questId !== undefined) update.quest_id = opts.questId || null
+  await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
+}
+
+/** ISO-date guard for the Quest play-window. Accepts a yyyy-mm-dd (the date input's
+ *  value) or any Date.parse-able string; returns a normalized yyyy-mm-dd, or null for
+ *  empty/unparseable input (so clearing a field stores null = always open). */
+function normalizeWindowDate(value: string | null | undefined): string | null {
+  const t = (value ?? '').trim()
+  if (!t) return null
+  const ms = Date.parse(t)
+  return Number.isNaN(ms) ? null : new Date(ms).toISOString().slice(0, 10)
+}
+
+/**
+ * Set a Journey's Quest play-window (the ~4-week span that sequences a season's
+ * Journeys). Either bound may be null (always-open / no-close). Normalizes to a
+ * yyyy-mm-dd date; if both are present and end < start, the end is dropped rather
+ * than stored inverted. Guide/Mentor only — caller enforces authz (same gate as
+ * setPlanOfficial, since the window is a Quest-Journey concern).
+ */
+export async function setPlanWindow(
+  planId: string,
+  opts: { startsAt?: string | null; endsAt?: string | null },
+): Promise<void> {
+  const update: Record<string, unknown> = {}
+  let start: string | null = null
+  let hasStart = false
+  if (opts.startsAt !== undefined) {
+    start = normalizeWindowDate(opts.startsAt)
+    update.window_starts_at = start
+    hasStart = true
+  }
+  if (opts.endsAt !== undefined) {
+    let end = normalizeWindowDate(opts.endsAt)
+    // Never persist an inverted span. Compare against the start we're writing (or, if
+    // start isn't in this patch, the value already on the row is the author's intent).
+    if (end && hasStart && start && end < start) end = null
+    update.window_ends_at = end
+  }
+  if (Object.keys(update).length === 0) return
   await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
 }
 

@@ -15,6 +15,7 @@ import {
   setPlanVisibility,
   setPlanStatus,
   setPlanOfficial,
+  setPlanWindow,
   adoptPlan,
   forkPlan,
   completeLesson,
@@ -362,6 +363,26 @@ export async function setJourneyOfficial(
   if (!author || author !== caller.id) return fail('Not allowed.')
   if (!canMakeOfficial(caller.community_role)) return fail('Only Guides and Mentors can flag a Journey official.')
   await setPlanOfficial(planId, opts)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/**
+ * Quest play-window (Guide/Mentor only): the ~4-week span that sequences a season's
+ * Journeys (weeks 1-4 / 5-8 / 9-12). Either bound may be null (always-open / no-close).
+ * Same role gate as setJourneyOfficial — the window is a Quest-Journey concern. The
+ * lib layer normalizes the dates and drops an inverted span.
+ */
+export async function setJourneyWindow(
+  planId: string,
+  opts: { startsAt?: string | null; endsAt?: string | null },
+): Promise<ActionResult> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Not allowed.')
+  const author = await planAuthorId(planId)
+  if (!author || author !== caller.id) return fail('Not allowed.')
+  if (!canMakeOfficial(caller.community_role)) return fail('Only Guides and Mentors can set a play window.')
+  await setPlanWindow(planId, opts)
   revalidatePath('/journeys', 'layout')
   return ok()
 }

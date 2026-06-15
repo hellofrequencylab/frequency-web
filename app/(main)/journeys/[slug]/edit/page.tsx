@@ -60,6 +60,8 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
         initialPageConfig={plan.page_config}
         initialOfficial={plan.official}
         initialQuestId={plan.quest_id}
+        initialWindowStartsAt={plan.window_starts_at}
+        initialWindowEndsAt={plan.window_ends_at}
       />
     </div>
   )
