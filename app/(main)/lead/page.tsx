@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, CalendarDays, MapPin, Building2, ClipboardList, GraduationCap, ArrowUpRight } from 'lucide-react'
+import { Users, CalendarDays, MapPin, Building2, ClipboardList, GraduationCap, BookOpen, ArrowUpRight } from 'lucide-react'
 import { requireLeadFloor } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DashboardTemplate } from '@/components/templates'
@@ -195,9 +195,15 @@ export default async function LeadershipPage() {
             desc="Internal volunteer tasks that support your circles. Create them, see who claimed what, and release a stalled claim."
           />
           <ToolCard
+            href="/lead/training-library"
+            Icon={BookOpen}
+            title="Leader Training"
+            desc="The guide library for running a Circle and authoring a Journey. Read these before you build."
+          />
+          <ToolCard
             href="/training"
             Icon={GraduationCap}
-            title="Leader training"
+            title="Role training"
             desc="The advancement curriculum for your role. Materials to start and run a circle well."
           />
         </div>

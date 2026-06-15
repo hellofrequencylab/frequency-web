@@ -181,6 +181,7 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/crew', label: 'Crew', area: 'Member' },
   { route: '/outreach', label: 'Outreach', area: 'Member' },
   { route: '/lead', label: 'Leadership', area: 'Member' },
+  { route: '/lead/training-library', label: 'Leader Training', area: 'Member' },
   // ── Focus surfaces (default NONE — full-width, no rail) ──
   { route: '/settings', label: 'Settings', area: 'Focus surfaces' },
   { route: '/settings/profile', label: 'Profile editor', area: 'Focus surfaces' },
