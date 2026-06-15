@@ -46,18 +46,18 @@ Your Journey starts **private** (just you). When you're ready:
 
 - **Anyone with the link.** Share it directly without listing it.
 - **Community library.** Publish it so anyone can take it. Publishing, taking, and remixing
-  are all **free**, and **publishing is always open**. Hit Community library and it's live
-  right away for anyone to adopt.
+  are all **free**. When you publish, a Guide gives it a quick look before it lists in the
+  library, so the shelf stays worth browsing. A Guide or Mentor's own Journey lists right away.
 
 Guides and Mentors can also mark a Journey **official** and attach it to a Season, from the
 editor's **Advanced** section.
 
 ## Vera checks it for rank
 
-Publishing is open, but counting toward season **rank** is a higher bar, so **Vera** (the
-app's helper) reads every Journey you publish to the library and checks it against the
-authoring standard. This never holds up publishing. It's only about whether finishing your
-Journey can move someone's rank.
+Getting listed is one thing. Counting toward season **rank** is a higher bar, so **Vera**
+(the app's helper) reads every Journey you publish and checks it against the authoring
+standard. This is separate from the Guide's listing check, and it never holds up sharing.
+It's only about whether finishing your Journey can move someone's rank.
 
 You'll see her verdict right in **Settings**:
 
