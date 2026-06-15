@@ -889,7 +889,6 @@ export type Database = {
           about: string | null
           city: string | null
           created_at: string | null
-          default_intensity_tier: string | null
           geog: unknown
           host_id: string | null
           hub_id: string | null
@@ -915,7 +914,6 @@ export type Database = {
           about?: string | null
           city?: string | null
           created_at?: string | null
-          default_intensity_tier?: string | null
           geog?: unknown
           host_id?: string | null
           hub_id?: string | null
@@ -941,7 +939,6 @@ export type Database = {
           about?: string | null
           city?: string | null
           created_at?: string | null
-          default_intensity_tier?: string | null
           geog?: unknown
           host_id?: string | null
           hub_id?: string | null
@@ -3316,6 +3313,45 @@ export type Database = {
           },
         ]
       }
+      journey_completions: {
+        Row: {
+          completed_at: string
+          id: string
+          journey_id: string
+          profile_id: string
+          season: number
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          journey_id: string
+          profile_id: string
+          season: number
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          journey_id?: string
+          profile_id?: string
+          season?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_completions_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_completions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_enrollments: {
         Row: {
           completed_at: string | null
@@ -3424,7 +3460,6 @@ export type Database = {
           id: string
           plan_id: string
           profile_id: string
-          tier_override: string | null
         }
         Insert: {
           active?: boolean
@@ -3432,7 +3467,6 @@ export type Database = {
           id?: string
           plan_id: string
           profile_id: string
-          tier_override?: string | null
         }
         Update: {
           active?: boolean
@@ -3440,7 +3474,6 @@ export type Database = {
           id?: string
           plan_id?: string
           profile_id?: string
-          tier_override?: string | null
         }
         Relationships: [
           {
@@ -3464,7 +3497,6 @@ export type Database = {
           block_type: string
           body: string | null
           cadence: string | null
-          default_tier: string
           domain_id: string | null
           est_minutes: number | null
           id: string
@@ -3482,7 +3514,6 @@ export type Database = {
           block_type?: string
           body?: string | null
           cadence?: string | null
-          default_tier?: string
           domain_id?: string | null
           est_minutes?: number | null
           id?: string
@@ -3500,7 +3531,6 @@ export type Database = {
           block_type?: string
           body?: string | null
           cadence?: string | null
-          default_tier?: string
           domain_id?: string | null
           est_minutes?: number | null
           id?: string
@@ -3582,6 +3612,8 @@ export type Database = {
           title: string
           updated_at: string
           visibility: string
+          window_ends_at: string | null
+          window_starts_at: string | null
         }
         Insert: {
           accent?: string | null
@@ -3612,6 +3644,8 @@ export type Database = {
           title: string
           updated_at?: string
           visibility?: string
+          window_ends_at?: string | null
+          window_starts_at?: string | null
         }
         Update: {
           accent?: string | null
@@ -3642,6 +3676,8 @@ export type Database = {
           title?: string
           updated_at?: string
           visibility?: string
+          window_ends_at?: string | null
+          window_starts_at?: string | null
         }
         Relationships: [
           {
@@ -5662,54 +5698,6 @@ export type Database = {
           },
         ]
       }
-      practice_tiers: {
-        Row: {
-          body: string | null
-          created_at: string
-          est_minutes: number | null
-          id: string
-          practice_id: string
-          tier: string
-          title: string | null
-          updated_at: string
-        }
-        Insert: {
-          body?: string | null
-          created_at?: string
-          est_minutes?: number | null
-          id?: string
-          practice_id: string
-          tier: string
-          title?: string | null
-          updated_at?: string
-        }
-        Update: {
-          body?: string | null
-          created_at?: string
-          est_minutes?: number | null
-          id?: string
-          practice_id?: string
-          tier?: string
-          title?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "practice_tiers_practice_id_fkey"
-            columns: ["practice_id"]
-            isOneToOne: false
-            referencedRelation: "practices"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "practice_tiers_practice_id_fkey"
-            columns: ["practice_id"]
-            isOneToOne: false
-            referencedRelation: "practices_ranked"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       practices: {
         Row: {
           body: string | null
@@ -5731,6 +5719,7 @@ export type Database = {
           reviewed_by: string | null
           reward_note: string | null
           reward_zaps: number | null
+          slug: string | null
           status: string
           subcategory_id: string | null
           summary: string | null
@@ -5757,6 +5746,7 @@ export type Database = {
           reviewed_by?: string | null
           reward_note?: string | null
           reward_zaps?: number | null
+          slug?: string | null
           status?: string
           subcategory_id?: string | null
           summary?: string | null
@@ -5783,6 +5773,7 @@ export type Database = {
           reviewed_by?: string | null
           reward_note?: string | null
           reward_zaps?: number | null
+          slug?: string | null
           status?: string
           subcategory_id?: string | null
           summary?: string | null
@@ -6743,6 +6734,7 @@ export type Database = {
           difficulty: Database["public"]["Enums"]["challenge_difficulty"]
           id: string
           is_active: boolean
+          journey_id: string | null
           name: string
           season: number
           slug: string
@@ -6760,6 +6752,7 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["challenge_difficulty"]
           id?: string
           is_active?: boolean
+          journey_id?: string | null
           name: string
           season?: number
           slug: string
@@ -6777,6 +6770,7 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["challenge_difficulty"]
           id?: string
           is_active?: boolean
+          journey_id?: string | null
           name?: string
           season?: number
           slug?: string
@@ -6786,7 +6780,15 @@ export type Database = {
           valid_until?: string | null
           zaps_reward?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "season_challenges_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       season_trophies: {
         Row: {
@@ -9704,13 +9706,7 @@ export type Database = {
       membership_status: "active" | "pending" | "inactive"
       post_type: "feed" | "blog" | "announcement" | "recap" | "note" | "system"
       post_visibility: "public" | "region" | "cluster" | "group"
-      season_rank_enum:
-        | "ghost"
-        | "echo"
-        | "signal"
-        | "beacon"
-        | "conduit"
-        | "luminary"
+      season_rank_enum: "ghost" | "initiate" | "adept" | "master"
       store_category:
         | "cosmetic"
         | "membership"
@@ -9880,14 +9876,7 @@ export const Constants = {
       membership_status: ["active", "pending", "inactive"],
       post_type: ["feed", "blog", "announcement", "recap", "note", "system"],
       post_visibility: ["public", "region", "cluster", "group"],
-      season_rank_enum: [
-        "ghost",
-        "echo",
-        "signal",
-        "beacon",
-        "conduit",
-        "luminary",
-      ],
+      season_rank_enum: ["ghost", "initiate", "adept", "master"],
       store_category: [
         "cosmetic",
         "membership",
