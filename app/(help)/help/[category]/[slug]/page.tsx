@@ -23,6 +23,18 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${article.title} | Help`,
     description: article.description,
     alternates: { canonical: helpHref(category, slug) },
+    // Per-article share cards (the help route group's opengraph-image supplies the image).
+    openGraph: {
+      title: article.title,
+      description: article.description,
+      url: helpHref(category, slug),
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description: article.description,
+    },
   }
 }
 
