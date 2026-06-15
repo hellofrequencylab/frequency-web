@@ -6900,3 +6900,13 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 **Consequences:** No redemption path can charge Gems for an undeliverable item, and perks now read truthfully. **Follow-ups (tracked, A3-gated):** the real membership-credit grant (extend a paid membership / apply a Stripe coupon) and an operator "redemptions to honor" queue land once Stripe is live. Reactivate the two SKUs only when that fulfillment path exists.
 
+## ADR-281: Per-Pillar practice landing pages — browse-by-Pillar (SEO, ADR-279 follow-up)
+
+**Status:** Accepted (2026-06-15) — the "browse-by-Pillar" follow-up flagged in ADR-279. No migration (the `pillars` table + `practices_ranked` view already exist). Code: `app/discover/practices/pillar/[slug]/page.tsx`, `app/discover/practices/practice-card.tsx` (shared `PracticeCard` + `PillarChips`), `app/discover/practices/page.tsx` (chip nav), `app/sitemap.ts`.
+
+**Context:** The public `/discover/practices` directory (ADR-279) was a single flat list with no way to browse by **Pillar** (Mind · Body · Spirit · Expression) — the platform's core organizing axis. A flat list neither helps a visitor narrow by intent nor gives search/answer engines distinct, keyword-rich landing pages for "<Pillar> practices" queries.
+
+**Decision:** Add four crawlable Pillar landing pages at `/discover/practices/pillar/[slug]` (`generateStaticParams` over the fixed `PILLAR_SLUGS`, ISR `revalidate = 3600`). Each resolves its Pillar via `getPillars()` and lists that Pillar's public practices through the existing scalable reader `searchLibraryPractices({ pillarId, hideDemo: true })` — no new query path. Each page carries its own `title`/`description`/`canonical`, an `ItemList` + `BreadcrumbList`, and Pillar filter **chips** (`<Link>`-based, no client JS) that also appear on the main directory. The four URLs are added to the sitemap (static, since the taxonomy is fixed). The directory's inline card markup was extracted to a shared `PracticeCard` so both surfaces render identically.
+
+**Consequences:** Each Pillar is now a distinct, structured landing page the crawl can index for intent-led queries, and visitors can narrow the library by Pillar with zero added client weight. **Follow-up:** practice **slugs** (prettier than ids — needs a `slug` column + backfill), sub-category facets within a Pillar, and per-Pillar OG images.
+

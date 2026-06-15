@@ -35,7 +35,7 @@
 | B6 | QR-logo SSRF fetch-time IP pinning | S | **✅ done** — `inlineLogo` now resolves the host (DNS) and rejects any private/loopback/metadata IP before fetching, closing the DNS-rebind residual (the ADR-274 literal-IP block only covered the hostname). Shared `isPrivateIp` helper; unit-tested. Residual TOCTOU noted (acceptable for a blind, capped, image-only fetch). |
 | B7 | ~~CSP enforce~~ + nonces | — | **Correction (double-check):** CSP is already **ENFORCED** (ADR-170) with full HSTS + a tight `connect-src` gate. The only soft spot is `script-src 'unsafe-inline'` — `nonces` are a **deliberate tradeoff** (they force every page dynamic, killing static/ISR), so this is **not pursued**. See A-PLUS-ROADMAP §3. |
 | B8 | Extend `check:authz` to `lib/` mutation helpers | M | Complementary to the ADR-275 runtime scoping tests. |
-| B9 | SEO growth surfaces | M | **`/discover/practices` ✅ done (ADR-279)** — public directory + per-practice `HowTo` detail pages + sitemap, so the practice library is crawlable. Remaining: practice slugs, browse-by-Pillar, dynamic OG on marketing pillars, the seeker-track article cluster. |
+| B9 | SEO growth surfaces | M | **`/discover/practices` ✅ (ADR-279)** + **browse-by-Pillar ✅ (ADR-281)** — public directory, per-practice `HowTo` detail pages, four crawlable per-Pillar landing pages + filter chips, all in the sitemap. Remaining: practice **slugs** (needs a column + backfill), dynamic OG on marketing pillars, the seeker-track article cluster. |
 
 ## C. ⏳ Seams to activate — built, empty in prod (need flows + a little owner)
 
