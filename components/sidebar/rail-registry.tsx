@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import {
   DispatchesPanel, EventsPanel, MembersPanel, LeaderboardPanel, WhoOnlinePanel,
-  CirclesPanel, NewCirclesPanel, ActiveNowPanel,
+  CirclesPanel, NewCirclesPanel, ActiveNowPanel, PulsePanel,
 } from '@/components/sidebar/rail-panels'
 import type { PanelKey } from '@/lib/layout/rail-panels'
 
@@ -33,6 +33,9 @@ export interface RailPanelDef {
 }
 
 export const RAIL_PANELS: Record<PanelKey, RailPanelDef> = {
+  pulse: {
+    render: () => <PulsePanel />,
+  },
   dispatches: {
     needsCircles: true,
     render: ({ profileId, circleIds }) => <DispatchesPanel profileId={profileId} circleIds={circleIds} />,

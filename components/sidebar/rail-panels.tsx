@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { MapPin, Megaphone, Zap, Gem, Flame, Compass, ArrowRight, Users, Trophy, Sparkles } from 'lucide-react'
+import { MapPin, Megaphone, Zap, Gem, Flame, Compass, ArrowRight, Users, Trophy, Sparkles, CalendarDays, CircleDot } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_LABELS, seasonRankStyle, rankForZaps, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
@@ -631,6 +631,50 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
         <Link href="/people" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           {fellBack ? 'Meet the community →' : 'See who’s around →'}
         </Link>
+      </div>
+    </WidgetCard>
+  )
+}
+
+// ── Community pulse (aggregate counts — the rail's always-on anchor) ───────────
+// Three at-a-glance community totals (members · active circles · events this week), each
+// linking into its surface. Aggregate counts only (no private data), so it stays relevant on
+// ANY route and keeps the rail from collapsing to just the standing panels on a sparse page.
+export async function PulsePanel() {
+  const admin = createAdminClient()
+  const nowDate = new Date()
+  const now = nowDate.toISOString()
+  const weekAhead = new Date(nowDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  const [membersRes, circlesRes, eventsRes] = await Promise.all([
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('is_system', false),
+    admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active').eq('is_demo', false),
+    admin.from('events').select('id', { count: 'exact', head: true }).eq('is_cancelled', false).gte('starts_at', now).lte('starts_at', weekAhead),
+  ])
+  const members = membersRes.count ?? 0
+  const circles = circlesRes.count ?? 0
+  const events = eventsRes.count ?? 0
+  if (!members && !circles && !events) return null
+
+  const stats = [
+    { href: '/people', Icon: Users, value: members, label: members === 1 ? 'member' : 'members' },
+    { href: '/circles', Icon: CircleDot, value: circles, label: circles === 1 ? 'circle' : 'circles' },
+    { href: '/events', Icon: CalendarDays, value: events, label: 'this week' },
+  ]
+
+  return (
+    <WidgetCard tile title="Community pulse">
+      <div className="grid grid-cols-3 gap-1.5">
+        {stats.map(({ href, Icon, value, label }) => (
+          <Link
+            key={href}
+            href={href}
+            className="flex flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-center transition-colors hover:bg-surface-elevated"
+          >
+            <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
+            <span className="text-lg font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</span>
+            <span className="text-2xs text-subtle">{label}</span>
+          </Link>
+        ))}
       </div>
     </WidgetCard>
   )
