@@ -48,7 +48,7 @@ import { getProfileChores } from '@/lib/onboarding/profile-chores'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 import { FOUNDER_COACH } from '@/lib/onboarding/founder-config'
 import { getActiveTraining } from '@/lib/onboarding/training'
-import { atLeastRole, asWebRole } from '@/lib/core/roles'
+import { atLeastRole, asWebRole, isStaff } from '@/lib/core/roles'
 
 // Per-route SEO overrides (ADR-268): an operator sets a route's title / description /
 // share-image in the on-page Page panel; this applies them as the (main) layout's metadata
@@ -144,6 +144,23 @@ export default async function MainLayout({
   // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
   // steward's "view as" faithfully hides operator chrome, matching staffRole above.
   const pageWebRole = previewingDown ? 'none' : asWebRole(profile.web_role)
+
+  // Page status & visibility (ADR-269): an operator can mark a route DRAFT or set the
+  // lowest community role that may reach it (the on-page Page panel → page_settings).
+  // Enforce it here — the one place with the route (the x-pathname header proxy.ts sets)
+  // AND the viewer's resolved role. LOCKOUT-PROOF + FAIL-SAFE: staff (view-as-aware) always
+  // pass so an operator can preview drafts and is never locked out; any error is ignored
+  // (no gate); and we never redirect /feed itself, so a mis-set home can't loop.
+  const reqPath = (await headers()).get('x-pathname')
+  if (reqPath && reqPath !== '/feed' && isSafeRoute(reqPath) && !isStaff(pageWebRole)) {
+    const ps = await loadPageSettings(reqPath)
+    if (ps) {
+      const draftHidden = ps.status === 'draft'
+      const roleHidden =
+        !!ps.visibility_role && !atLeastRole(effectiveRole, ps.visibility_role as CommunityRole)
+      if (draftHidden || roleHidden) redirect('/feed')
+    }
+  }
 
   // Matrix-driven nav visibility (owner directive): resolve each nav item's access for
   // this viewer — respecting "view as" (effectiveRole) and suppressing personas/staff

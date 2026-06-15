@@ -7,6 +7,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { isSafeRoute } from '@/lib/layout/page-chrome'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { normalizeSeo, type SeoFields } from './seo'
+import { normalizeStatus, type StatusFields } from './status'
 
 // Server actions for the on-page Page settings panel (ADR-268). STAFF (admin+, ADR-208 —
 // "admin and above"): the gate redirects an unauthorized viewer and captures the id for
@@ -56,6 +57,41 @@ export async function getPageSeoForEditor(route: string): Promise<SeoFields> {
   return row
     ? { seo_title: row.seo_title, seo_description: row.seo_description, og_image_url: row.og_image_url }
     : empty
+}
+
+/** Save a route's status (draft/published) + visibility (lowest community rung). Upserts;
+ *  enforced fail-safe in (main)/layout.tsx. Only these two columns are touched. */
+export async function savePageStatus(
+  route: string,
+  input: { status?: string; visibilityRole?: string | null },
+): Promise<ActionResult> {
+  const me = await gate()
+  if (!isSafeRoute(route)) return fail('That is not a valid app route.')
+  const fields = normalizeStatus(input)
+  const { error } = await db()
+    .from('page_settings')
+    .upsert(
+      { route, status: fields.status, visibility_role: fields.visibility_role, updated_by: me, updated_at: new Date().toISOString() },
+      { onConflict: 'route' },
+    )
+  if (error) return fail('Could not save status for that route.')
+
+  revalidatePath(route)
+  return ok()
+}
+
+/** The current status + visibility for the editor (staff-gated read). Defaults to live/anyone. */
+export async function getPageStatusForEditor(route: string): Promise<StatusFields> {
+  await gate()
+  const dflt: StatusFields = { status: 'published', visibility_role: null }
+  if (!isSafeRoute(route)) return dflt
+  const { loadPageSettings } = await import('./store')
+  const row = await loadPageSettings(route)
+  if (!row) return dflt
+  return {
+    status: row.status === 'draft' ? 'draft' : 'published',
+    visibility_role: (row.visibility_role as StatusFields['visibility_role']) ?? null,
+  }
 }
 
 /** Clear a route's SEO back to the code default (null the fields). */

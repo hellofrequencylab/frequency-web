@@ -3,6 +3,7 @@
 import { LayoutGrid, Search, Eye, type LucideIcon } from 'lucide-react'
 import { PAGE_SETTING_SECTIONS, type PageSettingSection } from '@/lib/page-settings/sections'
 import { SeoEditor } from './seo-editor'
+import { StatusEditor } from './status-editor'
 
 // The staff-only "Page" group inside the on-page Settings panel (PageAdminBar). It tunes THE
 // INTERIOR of the page (not the app-shell chrome) and renders the page-settings spine
@@ -36,6 +37,7 @@ export function PageSettingsModule() {
                 </div>
                 <p className="mb-2 text-xs text-muted">{section.hint}</p>
                 {section.id === 'seo' && <SeoEditor />}
+                {section.id === 'status' && <StatusEditor />}
               </div>
             )
           }

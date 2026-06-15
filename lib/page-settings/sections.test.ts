@@ -11,11 +11,11 @@ describe('page-settings spine', () => {
     expect(PAGE_SETTING_SECTIONS.map((s) => s.id)).not.toContain('chrome')
   })
 
-  it('ships SEO live; layout + status stage as next', () => {
+  it('ships SEO + Status live; Layout stages as next', () => {
     const live = PAGE_SETTING_SECTIONS.filter((s) => s.status === 'live').map((s) => s.id)
     const next = PAGE_SETTING_SECTIONS.filter((s) => s.status === 'next').map((s) => s.id)
-    expect(live).toEqual(['seo'])
-    expect(next).toEqual(['layout', 'status'])
+    expect(live).toEqual(['seo', 'status'])
+    expect(next).toEqual(['layout'])
   })
 
   it('every section carries an operator label, a question, and a hint', () => {
