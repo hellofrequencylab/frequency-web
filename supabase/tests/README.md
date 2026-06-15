@@ -16,9 +16,12 @@ pnpm test:rls           # = supabase test db  → runs every *.test.sql here via
 ```
 
 The Supabase CLI is not installed in the cloud sandbox, so these run **locally or in CI**, not in
-the agent environment. Wiring them into CI is one job that boots a Postgres service (or
-`supabase db start`), applies `supabase/migrations`, and runs `supabase test db` — gate it the
-same way `check:authz` gates today.
+the agent environment. CI wiring is in **`.github/workflows/db-tests.yml`** — it boots a fresh
+local Supabase (`supabase db start`, applying every migration), then runs `supabase test db`. It's
+**manual (`workflow_dispatch`) for now**: until the migration ledger is reconciled
+(`OPEN-THREADS.md` §A2) a fresh full apply may surface latent migration bugs. Run it from the
+Actions tab; once it's reliably green, enable the `pull_request` trigger and mark it a required
+check so migration drift can never ship again.
 
 ## What's here / what to add
 
