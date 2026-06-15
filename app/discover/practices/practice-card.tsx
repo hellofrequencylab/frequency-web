@@ -5,6 +5,7 @@ import { Sparkles } from 'lucide-react'
  *  both satisfy it structurally, so the directory and the per-Pillar pages share one card. */
 export interface PracticeCardData {
   id: string
+  slug: string | null
   title: string
   subcategory: { name: string } | null
   summary: string | null
@@ -16,7 +17,7 @@ export function PracticeCard({ p }: { p: PracticeCardData }) {
   return (
     <li>
       <Link
-        href={`/discover/practices/${p.id}`}
+        href={`/discover/practices/${p.slug ?? p.id}`}
         className="flex h-full flex-col gap-2 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-border-strong hover:bg-surface-elevated"
       >
         <span className="flex items-center gap-2">

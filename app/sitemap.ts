@@ -121,7 +121,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     const practiceRoutes: MetadataRoute.Sitemap = practices.map((p) => ({
-      url: `${SITE_URL}/discover/practices/${p.id}`,
+      url: `${SITE_URL}/discover/practices/${p.slug ?? p.id}`,
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.5,

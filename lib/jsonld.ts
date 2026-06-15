@@ -297,12 +297,13 @@ export function partnerListSchema(
 
 export function practiceSchema(p: {
   id: string
+  slug?: string | null
   title: string
   summary?: string | null
   description?: string | null
   body?: string | null
 }) {
-  const url = abs(`/discover/practices/${p.id}`)
+  const url = abs(`/discover/practices/${p.slug ?? p.id}`)
   const desc = p.summary ?? p.description ?? undefined
   return {
     '@context': 'https://schema.org',
@@ -323,7 +324,10 @@ export function practiceSchema(p: {
   }
 }
 
-export function practiceListSchema(practices: { id: string; title: string }[], listName: string) {
+export function practiceListSchema(
+  practices: { id: string; slug?: string | null; title: string }[],
+  listName: string,
+) {
   return {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -332,7 +336,7 @@ export function practiceListSchema(practices: { id: string; title: string }[], l
     itemListElement: practices.map((p, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      url: abs(`/discover/practices/${p.id}`),
+      url: abs(`/discover/practices/${p.slug ?? p.id}`),
       name: p.title,
     })),
   }
