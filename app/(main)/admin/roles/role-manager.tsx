@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useMemo, useState, useTransition } from 'react'
 import { Search, Zap, ArrowUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -85,8 +86,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
                 {i + 1}
               </span>
               {m.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={m.avatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                <Image src={m.avatarUrl} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" />
               ) : (
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-xs font-semibold text-muted">
                   {getInitials(m.displayName)}

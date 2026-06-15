@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -60,8 +61,7 @@ export function Detail({ initial, timeline }: { initial: ContactDetail; timeline
       title={
         <span className="inline-flex items-center gap-3 align-middle">
           {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-surface" />
+            <Image src={avatarUrl} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-surface" />
           ) : (
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-base font-semibold text-muted">
               {contact.displayName ? getInitials(name) : <User className="h-6 w-6" />}

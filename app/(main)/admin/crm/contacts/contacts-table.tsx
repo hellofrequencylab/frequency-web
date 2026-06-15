@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { MessageSquare, Mail, MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
@@ -32,8 +33,7 @@ export function ContactsTable({ rows }: { rows: CrmContactRow[] }) {
       render: (m) => (
         <span className={`flex items-center gap-2.5 ${m.isDemo ? 'opacity-[0.72]' : ''}`}>
           {m.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={m.avatarUrl} alt="" className={`h-8 w-8 rounded-full object-cover ${m.isDemo ? 'grayscale-[0.5]' : ''}`} />
+            <Image src={m.avatarUrl} alt="" width={32} height={32} className={`h-8 w-8 rounded-full object-cover ${m.isDemo ? 'grayscale-[0.5]' : ''}`} />
           ) : (
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong select-none">
               {getInitials(m.displayName)}

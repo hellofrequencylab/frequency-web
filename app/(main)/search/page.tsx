@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { Search, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sanitizeOrTerm } from '@/lib/search-sanitize'
@@ -235,8 +236,7 @@ export default async function SearchPage({
                     href={a ? `/people/${a.handle}` : '/feed'}
                     anchor={
                       a?.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={a.avatar_url} alt="" className="h-11 w-11 rounded-full object-cover" />
+                        <Image src={a.avatar_url} alt="" width={44} height={44} className="h-11 w-11 rounded-full object-cover" />
                       ) : (
                         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none">
                           {a ? getInitials(a.display_name) : '?'}

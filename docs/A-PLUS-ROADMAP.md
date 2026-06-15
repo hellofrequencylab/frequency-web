@@ -54,7 +54,7 @@ A is current (registry rail composed, types regenerated). For A+:
 
 ## 6. Performance → A+
 - ✅ Home live-proof band now streams (ADR — B1).
-- 🤖 ◻️ Migrate the **34 raw `<img>`** (18 in the app) to `next/image` for LCP/bandwidth. (M)
+- 🤖 ◧ Migrate raw `<img>` → `next/image` for LCP/bandwidth. **Pass 1 ✅:** the 7 list **avatar** sites (contacts-table, role-manager, friends, search, network, connection detail, discovery-widgets) — safe because avatar URLs are validated to our Supabase storage (`lib/profile-input.ts`), which is in `remotePatterns`. **Remaining (pass 2, needs a browser check):** content **covers** (`fill` + positioned parent: circle/channel/profile-header/journey covers) + market images. **Intentionally NOT migrated (next/image is the wrong tool):** blob/data upload previews, the `/api/qr` image, map-marker overlays, the OG `ImageResponse` `<img>`s, the operator brand-mark logo, and the topical placeholder host. (M)
 - 🤖 ◻️ Paginate People & Circles (unbounded scans). (M)
 - 🤖 ◻️ Profile zap-sum via a SQL aggregate (drop the per-row tally). (S)
 - 🧑 ◻️ RLS initplan `auth.uid()`→`(select auth.uid())` ×59 + permissive-policy consolidation ×92 — advisor-flagged, but these are **DB migrations you apply**. (M)
