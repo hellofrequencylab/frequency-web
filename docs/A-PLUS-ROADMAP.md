@@ -47,7 +47,7 @@ A is current (registry rail composed, types regenerated). For A+:
 ## 5. SEO / AIO → A+
 - ✅ `llms-full.txt`, per-article help OG, partner LocalBusiness, public `/discover/practices`.
 - 🧑 ◻️ **LocalBusiness/Organization for The Lab** — the single most on-brand local-SEO lever — needs The Lab's real **street address + social URLs** (owner data + the city-level-privacy decision, ADR-186). (S once data is provided)
-- 🤖 ◻️ Browse-by-Pillar + practice slugs on `/discover/practices`; dynamic per-entity OG images on the discover pages. (M)
+- 🤖 ✅ **Browse-by-Pillar** — four crawlable per-Pillar landing pages (`/discover/practices/pillar/[slug]`) + filter chips on the directory (ADR-281), reusing `searchLibraryPractices`. Remaining: practice **slugs** (needs a `slug` column + backfill), per-entity OG images on the discover pages. (M)
 - 🤖 ◻️ Seeker-track pillar article cluster (5 pain-first pieces) — content, on the CONTENT-VOICE canon. (M)
 - 🧑 ◻️ Set `NEXT_PUBLIC_SITE_URL` in prod; submit the sitemap to Search Console + Bing. (S)
 
