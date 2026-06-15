@@ -1,6 +1,7 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Receipt, ArrowRight } from 'lucide-react'
+import { Receipt, ArrowRight, Compass } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getStoreData } from './actions'
 import { StoreGrid } from './store-grid'
@@ -8,11 +9,15 @@ import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { CrewGate } from '@/components/crew/upgrade-lightbox'
 import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Skeleton } from '@/components/ui/skeleton'
 import { surfaceAccess } from '@/lib/core/viewer-hats'
 import { RANK_LABELS, rankForCompletion, journeysFinishedThisSeason, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { StandingHero } from '@/components/gamification/standing-hero'
 import { getCurrentSeason } from '@/lib/seasons'
 import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
+import { TrophyCase } from '@/components/quest/trophy-case'
+import { getTrophyCase } from '@/lib/quest/trophies'
 
 export default async function StorePage() {
   const supabase = await createClient()
@@ -148,6 +153,20 @@ export default async function StorePage() {
           </div>
         </section>
 
+        {/* Your Trophies — the lifetime Trophy Case, the permanent record beside
+            the resettable seasonal rank. The case is forever; the rank resets,
+            so the season turnover reads as a Fresh Start. Streamed behind its own
+            Suspense so the slow completion read never blocks the Vault shell. */}
+        <section>
+          <SectionHeader title="Your Trophies" />
+          <p className="-mt-2 mb-3 text-xs text-subtle">
+            Every Journey you finish stays here for good. The season rank resets every 13 weeks for a fresh start; your Trophies and Gems do not.
+          </p>
+          <Suspense fallback={<TrophyCaseSkeleton />}>
+            <TrophyCaseSection profileId={profileId} currentSeason={season?.season_number ?? null} />
+          </Suspense>
+        </section>
+
         {/* Store categories. Members can browse everything but can't spend —
             the grid renders muted and a click opens the upgrade lightbox. */}
         <CrewGate locked={!canSpend}>
@@ -168,5 +187,63 @@ export default async function StorePage() {
         </CrewGate>
       </DashboardTemplate>
     </>
+  )
+}
+
+// The lifetime Trophy Case, read on the server and streamed in behind its own
+// Suspense. Self-fetching so the page never awaits the completion join before
+// painting the Vault. Returns the celebratory empty state when nothing's earned
+// yet, with a path to the Journey page.
+async function TrophyCaseSection({
+  profileId,
+  currentSeason,
+}: {
+  profileId: string | null
+  currentSeason: number | null
+}) {
+  const trophyCase = profileId
+    ? await getTrophyCase(profileId)
+    : { seasons: [], totalTrophies: 0, seasonsPlayed: 0 }
+
+  if (trophyCase.totalTrophies === 0) {
+    return (
+      <EmptyState
+        icon={Compass}
+        title="Finish a Journey to earn your first Trophy"
+        description="A Journey is 14 days of practice plus an Expression Challenge. Finish one and it lands here for good, with the rank it earned."
+        action={
+          <Link
+            href="/crew/journey"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+          >
+            Go to your Journey
+            <ArrowRight className="h-4 w-4 shrink-0" />
+          </Link>
+        }
+      />
+    )
+  }
+
+  return (
+    <TrophyCase
+      seasons={trophyCase.seasons}
+      totalTrophies={trophyCase.totalTrophies}
+      currentSeason={currentSeason}
+    />
+  )
+}
+
+// Dimension-matched skeleton so the streamed case doesn't shift the page (CLS).
+function TrophyCaseSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border bg-surface/60 p-5 shadow-sm">
+      <Skeleton className="mb-4 h-9 w-48" />
+      <Skeleton className="mb-3 h-5 w-32" />
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+    </div>
   )
 }

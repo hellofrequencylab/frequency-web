@@ -190,7 +190,7 @@ BEGIN
     window_starts_at, window_ends_at, published_at
   ) VALUES (
     'clear-head',
-    'Clear Head',
+    'Clear',
     'Reclaim the quiet. Six practices that clear the mental clutter and tune the mind back to what matters this season.',
     'public', true, v_quest_id,
     'approved', 'indigo', '🧠', 30,
@@ -233,7 +233,7 @@ BEGIN
   PERFORM pg_temp.wire_item(v_plan_mind, v_pid, v_domain_mind, 6);
 
   -- ═══════════════════════════════════════════════════════════════════════════
-  -- 4b. Journey: Get Moving  (Body — weeks 5-8, 2026-07-19 → 2026-08-16)
+  -- 4b. Journey: Move (Get Moving)  (Body — weeks 5-8, 2026-07-19 → 2026-08-16)
   -- ═══════════════════════════════════════════════════════════════════════════
 
   INSERT INTO public.journey_plans (
@@ -243,7 +243,7 @@ BEGIN
     window_starts_at, window_ends_at, published_at
   ) VALUES (
     'get-moving',
-    'Get Moving',
+    'Move',
     'The body is the transmitter. Six practices that keep the carrier wave strong and the signal coming through clean.',
     'public', true, v_quest_id,
     'approved', 'jade', '🔋', 30,
@@ -290,7 +290,7 @@ BEGIN
   PERFORM pg_temp.wire_item(v_plan_body, v_pid, v_domain_body, 6);
 
   -- ═══════════════════════════════════════════════════════════════════════════
-  -- 4c. Journey: Charge Up  (Spirit — weeks 9-12, 2026-08-16 → 2026-09-13)
+  -- 4c. Journey: Charge (Charge Up)  (Spirit — weeks 9-12, 2026-08-16 → 2026-09-13)
   -- ═══════════════════════════════════════════════════════════════════════════
 
   INSERT INTO public.journey_plans (
@@ -300,7 +300,7 @@ BEGIN
     window_starts_at, window_ends_at, published_at
   ) VALUES (
     'charge-up',
-    'Charge Up',
+    'Charge',
     'The quiet center of Stretch. Six practices that restore the inner signal and let the frequency find its way back.',
     'public', true, v_quest_id,
     'approved', 'plum', '🧘', 30,
@@ -359,8 +359,8 @@ BEGIN
      category, difficulty, criteria, target,
      zaps_reward, sort_order, is_active, journey_id)
   VALUES
-    (1, 'express-clear-head', 'Express: Clear Head',
-     'Complete the Clear Head Expression capstone. Share what shifted -- in person at a Circle or solo online.',
+    (1, 'express-clear-head', 'Express: Clear',
+     'Complete the Clear Expression capstone. Share what shifted -- in person at a Circle or solo online.',
      'special', 'hard',
      '{"type":"expression","journey_slug":"clear-head"}'::jsonb,
      1, 50, 20, true, v_plan_mind)
@@ -378,8 +378,8 @@ BEGIN
      category, difficulty, criteria, target,
      zaps_reward, sort_order, is_active, journey_id)
   VALUES
-    (1, 'express-get-moving', 'Express: Get Moving',
-     'Complete the Get Moving Expression capstone. Show what moved you -- in person at a Circle or solo online.',
+    (1, 'express-get-moving', 'Express: Move',
+     'Complete the Move Expression capstone. Show what moved you -- in person at a Circle or solo online.',
      'special', 'hard',
      '{"type":"expression","journey_slug":"get-moving"}'::jsonb,
      1, 50, 21, true, v_plan_body)
@@ -397,8 +397,8 @@ BEGIN
      category, difficulty, criteria, target,
      zaps_reward, sort_order, is_active, journey_id)
   VALUES
-    (1, 'express-charge-up', 'Express: Charge Up',
-     'Complete the Charge Up Expression capstone. Transmit what recharged you -- in person at a Circle or solo online.',
+    (1, 'express-charge-up', 'Express: Charge',
+     'Complete the Charge Expression capstone. Transmit what recharged you -- in person at a Circle or solo online.',
      'special', 'hard',
      '{"type":"expression","journey_slug":"charge-up"}'::jsonb,
      1, 50, 22, true, v_plan_spirit)
