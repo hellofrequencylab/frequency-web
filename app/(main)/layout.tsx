@@ -5,7 +5,9 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveSpaceForHost, activeVerticalsForSpace } from '@/lib/spaces'
 import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
-import { loadChromeOverrides } from '@/lib/layout/page-chrome'
+import type { Metadata } from 'next'
+import { loadChromeOverrides, isSafeRoute } from '@/lib/layout/page-chrome'
+import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
 import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
 import RightSidebar, { MobileGameStats } from '@/components/sidebar/right-sidebar'
@@ -47,6 +49,32 @@ import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 import { FOUNDER_COACH } from '@/lib/onboarding/founder-config'
 import { getActiveTraining } from '@/lib/onboarding/training'
 import { atLeastRole, asWebRole } from '@/lib/core/roles'
+
+// Per-route SEO overrides (ADR-268): an operator sets a route's title / description /
+// share-image in the on-page Page panel; this applies them as the (main) layout's metadata
+// (a page's own generateMetadata still wins). The current route comes from the `x-pathname`
+// header proxy.ts already sets (ADR-161). FAIL-SAFE: any miss → the code default (no override),
+// so it is harmless before the page_settings migration is applied.
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const pathname = (await headers()).get('x-pathname')
+    if (!pathname || !isSafeRoute(pathname)) return {}
+    const s = await loadPageSettings(pathname)
+    if (!s) return {}
+    const md: Metadata = {}
+    if (s.seo_title) md.title = s.seo_title
+    if (s.seo_description) md.description = s.seo_description
+    if (s.og_image_url) {
+      md.openGraph = {
+        images: [{ url: s.og_image_url }],
+        ...(s.seo_title ? { title: s.seo_title } : {}),
+      }
+    }
+    return md
+  } catch {
+    return {}
+  }
+}
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render

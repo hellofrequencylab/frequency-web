@@ -45,8 +45,8 @@ export const PAGE_SETTING_SECTIONS: readonly PageSettingSection[] = [
     id: 'seo',
     label: 'SEO & meta',
     question: 'How does it show up in search and shares?',
-    hint: 'Set the title, description, and share image for search and link previews. Activates next.',
-    status: 'next',
+    hint: 'Set the title, description, and share image for search and link previews.',
+    status: 'live',
   },
   {
     id: 'status',
