@@ -1,5 +1,8 @@
 # Open threads — the live development tracker
 
+> ▶ **Driving every domain to A+:** see **[`A-PLUS-ROADMAP.md`](A-PLUS-ROADMAP.md)** (the per-domain
+> gap analysis + what's code-reachable vs owner-gated). This file is the live per-item tracker.
+>
 > The single place that tracks **every trail of work in flight, blocked, or queued** so nothing
 > is missed. Updated as items move. This is the *active* companion to the detailed lists:
 > [`BUILD-LIST.md`](BUILD-LIST.md) (full reconciled backlog), [`AUDIT-2026-06-15.md`](AUDIT-2026-06-15.md)
@@ -30,7 +33,7 @@
 | B4 | Link the public partner directory into nav | S | **✅ done** — added "Partners" → `/discover/partners` to `MARKETING_NAV` (the public footer, every public page). Kept out of the shared `DISCOVER_NAV` (in-app + public) to avoid the member-vs-public dual-surface; a public-only header slot is a possible follow-up. |
 | B5 | Prune the ~19 documented dead exports | S | Listed in the audit; some are intentional seams (Journey runs, trust) — keep those. |
 | B6 | QR-logo SSRF fetch-time IP pinning | S | **✅ done** — `inlineLogo` now resolves the host (DNS) and rejects any private/loopback/metadata IP before fetching, closing the DNS-rebind residual (the ADR-274 literal-IP block only covered the hostname). Shared `isPrivateIp` helper; unit-tested. Residual TOCTOU noted (acceptable for a blind, capped, image-only fetch). |
-| B7 | CSP enforce + nonces on inline theme/JSON-LD | M | Baseline CSP is report-only today. |
+| B7 | ~~CSP enforce~~ + nonces | — | **Correction (double-check):** CSP is already **ENFORCED** (ADR-170) with full HSTS + a tight `connect-src` gate. The only soft spot is `script-src 'unsafe-inline'` — `nonces` are a **deliberate tradeoff** (they force every page dynamic, killing static/ISR), so this is **not pursued**. See A-PLUS-ROADMAP §3. |
 | B8 | Extend `check:authz` to `lib/` mutation helpers | M | Complementary to the ADR-275 runtime scoping tests. |
 | B9 | SEO growth surfaces | M | **`/discover/practices` ✅ done (ADR-279)** — public directory + per-practice `HowTo` detail pages + sitemap, so the practice library is crawlable. Remaining: practice slugs, browse-by-Pillar, dynamic OG on marketing pillars, the seeker-track article cluster. |
 
