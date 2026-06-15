@@ -6910,3 +6910,13 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 **Consequences:** Each Pillar is now a distinct, structured landing page the crawl can index for intent-led queries, and visitors can narrow the library by Pillar with zero added client weight. **Follow-up:** practice **slugs** (prettier than ids — needs a `slug` column + backfill), sub-category facets within a Pillar, and per-Pillar OG images.
 
+## ADR-282: Practice slugs — human/keyword URLs for the public detail pages
+
+**Status:** Accepted (2026-06-15) — the practice-slugs follow-up from ADR-281. Migration `20260627010000_practice_slugs.sql` **applied to prod** `azsqfeonabsbmemvddqd` (32 practices, all backfilled, 0 nulls, all unique). Code: `lib/practices.ts` (`slug` on `Practice`/`PRACTICE_COLS`, `getPublicPractice(slugOrId)`, `uniquePracticeSlug` on create), `lib/jsonld.ts`, `app/discover/practices/{practice-card,[id]/page,page,pillar/[slug]/page}.tsx`, `app/sitemap.ts`.
+
+**Context:** Public practice detail pages were keyed by uuid (`/discover/practices/<uuid>`), a weak crawl target; a human/keyword slug (`/discover/practices/breathwork`) is far stronger for "<practice> near me / how to" queries. `lib/practices.ts` uses an **untyped** admin handle (`db(): SupabaseClient` strips the generic) with hand-written row types, so adding `slug` needs no `gen types` regeneration.
+
+**Decision:** Add a nullable, partially-unique `slug` column, backfilled from the title (de-duplicated with a `-2`/`-3` suffix; empty titles → `practice-<id>`). `getPublicPractice` looks up by **slug OR uuid** (uuid-regex routing), so existing uuid URLs keep resolving (200, not 301) while the canonical, `ItemList`/`HowTo` schema URLs, sitemap, and all internal links point at the slug. `createPractice` mints a unique slug (`uniquePracticeSlug`). The member-side `/practices` workspace stays id-keyed (not a crawl surface).
+
+**Consequences:** Public practice URLs are now keyword-rich and stable. **Owner/content gate (flagged):** there are currently **0 `is_public` practices in prod**, so the public directory, the Pillar pages (ADR-281), and these detail pages all render the empty state until an operator marks practices public — the SEO value of ADR-279/281/282 is real but **dark until practices are published** (the same "built seam, awaiting content" shape as the empty ledger). **Follow-up:** an admin "publish to the public library" affordance to light these surfaces.
+

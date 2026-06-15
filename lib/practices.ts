@@ -47,6 +47,8 @@ export interface Practice {
   subcategory_id: string | null
   /** Library review status — null/draft until proposed, then pending → approved/rejected. */
   status: string | null
+  /** URL-safe slug derived from the title (unique); the public detail page key. */
+  slug: string | null
 }
 
 /** A library tag (canonical or member/Vera folksonomy) as shown on a practice. */
@@ -77,7 +79,7 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, weight_class, domain_id, subcategory_id, status'
+  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, weight_class, domain_id, subcategory_id, status, slug'
 
 // --- Library + reads ------------------------------------------------------
 
@@ -127,13 +129,14 @@ export interface PublicPractice extends Practice {
   tags: PracticeTag[]
 }
 
-/** A single PUBLIC practice by id (the public discover detail page), with its sub-category +
- *  tags. Reads the public-read `practices` table; null when missing or not public. */
-export async function getPublicPractice(id: string): Promise<PublicPractice | null> {
+/** A single PUBLIC practice by SLUG (the canonical public key) or uuid (legacy URLs), with
+ *  its sub-category + tags. Reads the public-read `practices` table; null when missing or not public. */
+export async function getPublicPractice(slugOrId: string): Promise<PublicPractice | null> {
+  const column = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId) ? 'id' : 'slug'
   const { data } = await db()
     .from('practices')
     .select(PRACTICE_COLS)
-    .eq('id', id)
+    .eq(column, slugOrId)
     .eq('is_public', true)
     .maybeSingle()
   const p = data as Practice | null
@@ -481,6 +484,7 @@ export async function createPractice(input: {
       description: input.description ?? null,
       created_by: input.createdBy,
       is_public: input.isPublic ?? true,
+      slug: await uniquePracticeSlug(input.title),
     })
     .select(PRACTICE_COLS)
     .maybeSingle()
@@ -536,6 +540,22 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
 
 const slugify = (s: string): string =>
   s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+
+/** A unique practice slug from a title: the slugified base, or base-2/-3… if taken.
+ *  (slug chars are a-z0-9- only, so the ilike prefix is injection-safe.) */
+async function uniquePracticeSlug(title: string): Promise<string> {
+  const root = slugify(title) || 'practice'
+  const { data } = await db().from('practices').select('slug').ilike('slug', `${root}%`)
+  const taken = new Set(
+    ((data ?? []) as { slug: string | null }[]).map((r) => r.slug).filter((s): s is string => !!s),
+  )
+  if (!taken.has(root)) return root
+  for (let n = 2; n < 1000; n++) {
+    const candidate = `${root}-${n}`
+    if (!taken.has(candidate)) return candidate
+  }
+  return `${root}-${Date.now().toString(36)}`
+}
 
 /**
  * Replace a practice's tags for a given `source` with `labels` (hybrid model: any new

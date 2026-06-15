@@ -47,7 +47,8 @@ A is current (registry rail composed, types regenerated). For A+:
 ## 5. SEO / AIO → A+
 - ✅ `llms-full.txt`, per-article help OG, partner LocalBusiness, public `/discover/practices`.
 - 🧑 ◻️ **LocalBusiness/Organization for The Lab** — the single most on-brand local-SEO lever — needs The Lab's real **street address + social URLs** (owner data + the city-level-privacy decision, ADR-186). (S once data is provided)
-- 🤖 ✅ **Browse-by-Pillar** — four crawlable per-Pillar landing pages (`/discover/practices/pillar/[slug]`) + filter chips on the directory (ADR-281), reusing `searchLibraryPractices`. Remaining: practice **slugs** (needs a `slug` column + backfill), per-entity OG images on the discover pages. (M)
+- 🤖 ✅ **Browse-by-Pillar** (ADR-281) — four crawlable per-Pillar landing pages + filter chips, reusing `searchLibraryPractices`. **✅ Practice slugs** (ADR-282) — keyword URLs (`/discover/practices/breathwork`), uuid back-compat, slugs on canonical/schema/sitemap/links. Remaining: per-entity OG images on the discover pages. (M)
+- 🧑 ◻️ **Light the public practice library** — there are **0 `is_public` practices in prod**, so the directory, Pillar pages, and detail pages render empty despite being crawlable. The SEO value of ADR-279/281/282 is real but **dark until an operator publishes practices**. The affordance already exists — flip practices public via the `is_public` toggle on **`/admin/content`** (`content-controls.tsx`). Pure owner action, no code. (🧑 owner)
 - 🤖 ◻️ Seeker-track pillar article cluster (5 pain-first pieces) — content, on the CONTENT-VOICE canon. (M)
 - 🧑 ◻️ Set `NEXT_PUBLIC_SITE_URL` in prod; submit the sitemap to Search Console + Bing. (S)
 

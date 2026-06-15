@@ -13,7 +13,7 @@ export const revalidate = 3600
 
 export async function generateStaticParams() {
   const practices = await listPublicPractices('top').catch(() => [])
-  return practices.map((p) => ({ id: p.id }))
+  return practices.map((p) => ({ id: p.slug ?? p.id }))
 }
 
 export async function generateMetadata({
@@ -31,8 +31,8 @@ export async function generateMetadata({
   return {
     title: practice.title,
     description,
-    alternates: { canonical: `/discover/practices/${practice.id}` },
-    openGraph: { title: ogTitle, description, url: `/discover/practices/${practice.id}`, type: 'article' },
+    alternates: { canonical: `/discover/practices/${practice.slug ?? practice.id}` },
+    openGraph: { title: ogTitle, description, url: `/discover/practices/${practice.slug ?? practice.id}`, type: 'article' },
     twitter: { card: 'summary_large_image', title: ogTitle, description },
   }
 }
@@ -54,7 +54,7 @@ export default async function PublicPracticePage({
           breadcrumbSchema([
             { name: 'Discover', path: '/discover' },
             { name: 'Practices', path: '/discover/practices' },
-            { name: practice.title, path: `/discover/practices/${practice.id}` },
+            { name: practice.title, path: `/discover/practices/${practice.slug ?? practice.id}` },
           ]),
         ]}
       />

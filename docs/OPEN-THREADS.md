@@ -45,6 +45,7 @@
 | C2 | Trust score | `trust_signals`/`trust_scores` = 0 rows; few emitters | Route marketplace/moderation/verification to emit signals + add the SECURITY DEFINER read RPC + recompute job. |
 | C3 | Journeys v2 | `journey_runs`/`journey_enrollments` = 0 rows | Seed a curriculum + launch one Circle cohort to prove the loop. |
 | C4 | Personas | `profile_personas` = 0 rows | Onboard the first verified business/practitioner; per-persona Stripe binding still stubbed. |
+| C5 | Public practice library | **0 `is_public` practices** in prod | The public `/discover/practices` directory + Pillar pages (ADR-281) + slug detail pages (ADR-282) are crawlable but render empty. **Owner action, no code:** flip practices public via the `is_public` toggle on `/admin/content`. |
 
 ## D. ✅ Shipped this session (the trail)
 
