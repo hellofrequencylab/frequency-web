@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { Users, ArrowRight, CheckCircle2, CalendarRange, Sparkles } from 'lucide-react'
+import { Users, ArrowRight, CheckCircle2, CalendarRange } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { ExpressionAction } from '@/app/(main)/crew/challenges/expression-action'
+import { ExpressionIcon, expressionPillarStyle } from '@/lib/quest/expression-pillar'
 
 // JourneyProgressCard — the honest arc for one active Journey on the Journey page.
 // A Journey is finished by logging its Practices on 14 DISTINCT days inside its
@@ -9,6 +10,13 @@ import { ExpressionAction } from '@/app/(main)/crew/challenges/expression-action
 // real bar, never a "0%" frame: it credits the days already done out of 14, names the
 // window dates, and brings the Expression Challenge capstone in-flow so the final step
 // is discovered here, not stumbled onto elsewhere.
+//
+// Every Journey carries all four Pillars: its practice Pillar (Mind / Body / Spirit)
+// AND Expression, woven in as the Expression Challenge. So the card reads in two parts
+// the whole way through — the 14-day practice bar, and a peer Expression line in its
+// own accent (the 4th Pillar), pending or done. The capstone's interactive control
+// still surfaces in-flow once the bar is near done; the Expression line just makes the
+// 4th Pillar legible from the start, not only at the finish.
 //
 // Presentational + server-friendly (no hooks of its own; ExpressionAction is the one
 // interactive client leaf). The caller fetches the quest signals and passes them in.
@@ -99,9 +107,12 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
       </div>
 
       {finished ? (
-        <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
-          <CheckCircle2 className="h-4 w-4" /> You finished this Journey
-        </p>
+        <div className="space-y-2">
+          <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+            <CheckCircle2 className="h-4 w-4" /> You finished this Journey
+          </p>
+          {hasExpression && <ExpressionPillarLine expressionDone />}
+        </div>
       ) : (
         <>
           {/* The 14-distinct-days bar — credit days done, never frame it as 0%. */}
@@ -123,17 +134,37 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
                 : `${daysDone} of ${daysRequired} practice days. ${daysLeft} to go.`}
           </p>
 
-          {/* The Expression Challenge capstone, brought in-flow as the final step. */}
+          {/* Expression — the Journey's 4th Pillar, peer to the practice bar above and
+              visible the whole way through. It reads pending or done in Expression's own
+              accent so a member sees it is part of THIS Journey, not a separate step. */}
+          {hasExpression && !showCapstone && (
+            <div className="mt-3">
+              <ExpressionPillarLine expressionDone={expressionDone} />
+            </div>
+          )}
+
+          {/* Once the practice bar is near or at done, the capstone becomes the
+              actionable final step: its interactive control surfaces in-flow. */}
           {showCapstone &&
             (expressionDone ? (
-              <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-success">
-                <CheckCircle2 className="h-4 w-4" /> Expression Challenge done
-              </p>
+              <div className="mt-3">
+                <ExpressionPillarLine expressionDone />
+              </div>
             ) : (
-              <div className="mt-4 rounded-xl border border-primary-bg bg-primary-bg/30 p-3.5">
-                <p className="flex items-center gap-1.5 text-sm font-semibold text-text">
-                  <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
-                  Capstone: share what you practiced
+              <div
+                className="mt-4 rounded-xl border p-3.5"
+                style={{
+                  ...expressionPillarStyle(),
+                  borderColor: 'var(--rank-bright)',
+                  background: 'color-mix(in srgb, var(--rank) 8%, var(--color-surface))',
+                }}
+              >
+                <p
+                  className="flex items-center gap-1.5 text-sm font-semibold text-text"
+                  style={{ color: 'var(--rank-deep)' }}
+                >
+                  <ExpressionIcon className="h-4 w-4" aria-hidden />
+                  Expression Challenge: share what you practiced
                 </p>
                 <ExpressionAction journeyId={planId} />
               </div>
@@ -150,5 +181,31 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
         </>
       )}
     </section>
+  )
+}
+
+// The Expression Pillar status line — the 4th Pillar made legible on every Journey.
+// In Expression's own accent (plum): a solid done state, or a quiet pending one.
+function ExpressionPillarLine({ expressionDone }: { expressionDone: boolean }) {
+  return (
+    <p
+      className="inline-flex items-center gap-1.5 text-xs font-medium"
+      style={expressionPillarStyle()}
+    >
+      <span
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full"
+        style={
+          expressionDone
+            ? { background: 'var(--rank)', color: 'var(--color-on-primary)' }
+            : { background: 'color-mix(in srgb, var(--rank) 14%, var(--color-surface))', color: 'var(--rank-deep)' }
+        }
+        aria-hidden
+      >
+        {expressionDone ? <CheckCircle2 className="h-3 w-3" /> : <ExpressionIcon className="h-3 w-3" />}
+      </span>
+      <span style={{ color: 'var(--rank-deep)' }}>
+        {expressionDone ? 'Expression Challenge done' : 'Expression Challenge to come'}
+      </span>
+    </p>
   )
 }
