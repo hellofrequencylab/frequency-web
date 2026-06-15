@@ -1,14 +1,12 @@
 import { cache } from 'react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { isSafeRoute } from '@/lib/layout/page-chrome'
 import { parseLayout, layoutScopeChain, pickLayoutConfig, type LayoutConfig } from './layout'
 
 // The per-route page settings reader. Like loadChromeOverrides: a service-role read so it
 // works regardless of the caller's RLS context, REQUEST-CACHED (React.cache, by route arg),
-// and FAIL-SAFE — null on ANY error, including the missing table pre-migration. So the (main)
-// layout's generateMetadata (and any caller) falls back to the code defaults and nothing
-// breaks if the migration hasn't been applied yet. `page_settings` isn't in the generated DB
-// types yet, so the admin client is cast loose for this table (repo convention; cf. lib/page-editor/data.ts).
+// and FAIL-SAFE — null on ANY error. So the (main) layout's generateMetadata (and any caller)
+// falls back to the code defaults and nothing breaks. `page_settings` is in the generated DB
+// types now, so the admin client is used directly; the non-literal SELECT keeps a row-shape cast.
 
 export interface PageSettingsRow {
   route: string
@@ -26,10 +24,7 @@ export const loadPageSettings = cache(async (route: string): Promise<PageSetting
   try {
     if (!isSafeRoute(route)) return null
     const { createAdminClient } = await import('@/lib/supabase/admin')
-    // page_settings isn't in the generated DB types yet (regenerated separately per the
-    // migration), so the client is cast loose for this table; this read is fully fail-safe.
-    // eslint-disable-next-line no-restricted-syntax
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
     const { data, error } = await db.from('page_settings').select(SELECT).eq('route', route).maybeSingle()
     if (error) return null
     return (data as PageSettingsRow | null) ?? null
@@ -48,14 +43,11 @@ export const loadLayoutForRoute = cache(async (route: string): Promise<LayoutCon
     if (!isSafeRoute(route)) return empty
     const chain = layoutScopeChain(route)
     const { createAdminClient } = await import('@/lib/supabase/admin')
-    // page_settings isn't in the generated DB types yet (regenerated separately per the
-    // migration), so the client is cast loose for this table; this read is fully fail-safe.
-    // eslint-disable-next-line no-restricted-syntax
-    const db = createAdminClient() as unknown as SupabaseClient
+    const db = createAdminClient()
     const { data, error } = await db.from('page_settings').select('route, layout').in('route', chain)
     if (error || !data) return empty
     const byKey: Record<string, LayoutConfig> = {}
-    for (const row of data as { route: string; layout: unknown }[]) byKey[row.route] = parseLayout(row.layout)
+    for (const row of data) byKey[row.route] = parseLayout(row.layout)
     return pickLayoutConfig(chain, byKey)
   } catch {
     return empty
