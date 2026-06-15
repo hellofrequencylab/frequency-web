@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Trophy } from 'lucide-react'
+import { Trophy, Check } from 'lucide-react'
 import {
   SEASON_RANKS,
   RANK_LABELS,
@@ -7,6 +7,11 @@ import {
   RANK_TO_KEY,
   type SeasonRank,
 } from '@/lib/season-ranks'
+import {
+  EXPRESSION_PILLAR_LABEL,
+  ExpressionIcon,
+  expressionPillarStyle,
+} from '@/lib/quest/expression-pillar'
 
 // SeasonMap — the Quest hub's signature surface (replaces StandingHero on /crew).
 //
@@ -17,12 +22,21 @@ import {
 // current one glows, the rest sit quiet. Rank tokens only (--rank-* via
 // seasonRankStyle); no hardcoded color.
 //
+// All four Pillars read here. Mind / Body / Spirit carry the three Journey arcs;
+// Expression is the capstone built into EVERY Journey (its Expression Challenge), so
+// each arc wears a small Expression marker at its crown (done / pending) and the legend
+// names Expression beside the three practice Pillars. A member sees Expression is part
+// of every Journey, not a fourth Journey or an afterthought.
+//
 // Pure + presentational (no hooks, no data reads). The page server-fetches the three
-// Journeys + their completion state and the season frame, and passes them down. The
-// celebratory glow on the current arc respects prefers-reduced-motion (a calm static
-// ring is the fallback).
+// Journeys + their completion state (incl. each Journey's Expression Challenge state)
+// and the season frame, and passes them down. The celebratory glow on the current arc
+// respects prefers-reduced-motion (a calm static ring is the fallback).
 
 export type JourneyState = 'done' | 'current' | 'upcoming'
+
+/** Each Journey's Expression Challenge state — the capstone that completes it. */
+export type ExpressionState = 'done' | 'pending'
 
 export interface SeasonMapJourney {
   /** Stable key + deep link target. */
@@ -39,6 +53,8 @@ export interface SeasonMapJourney {
   daysLogged: number
   /** The distinct-days bar (14). */
   daysNeeded: number
+  /** This Journey's Expression Challenge: done = completed, pending = not yet. */
+  expression: ExpressionState
 }
 
 // Each finished Journey lifts the member one rank toward Master. The arc's fill maps
@@ -70,10 +86,15 @@ function PillarArc({
   const current = journey.state === 'current'
   const done = journey.state === 'done'
   const pct = Math.round(fill * 100)
+  const expressionDone = journey.expression === 'done'
 
   // Endowed-progress: never show a stone-cold zero. An open current arc keeps a live
   // track so the climb reads as begun, not absent.
   const trackOpacity = current ? 'opacity-100' : 'opacity-60'
+
+  // The Expression Challenge that caps THIS Journey — named in the arc's label so the
+  // 4th Pillar is part of every Journey's screen-reader read, not a silent extra.
+  const expressionLabel = `Expression Challenge ${expressionDone ? 'done' : 'pending'}`
 
   return (
     <li
@@ -87,7 +108,7 @@ function PillarArc({
           role="img"
           aria-label={`${journey.pillar}: ${journey.title}, ${
             done ? 'finished' : current ? `${pct}% to finish` : 'not started'
-          }`}
+          }. ${expressionLabel}.`}
         >
           {/* Track */}
           <path
@@ -111,6 +132,29 @@ function PillarArc({
             />
           )}
         </svg>
+
+        {/* Expression capstone marker — the 4th Pillar, built into every Journey. It
+            crowns the arc in Expression's own accent (plum): a solid Sparkles + check
+            when the Expression Challenge is done, a quiet outline while it's pending.
+            Decorative here (the SVG label already names it for assistive tech). */}
+        <span
+          className={`absolute -top-0.5 right-1 flex h-5 w-5 items-center justify-center rounded-full shadow-sm ${
+            expressionDone ? '' : 'ring-1'
+          }`}
+          style={
+            expressionDone
+              ? { ...expressionPillarStyle(), background: 'var(--rank)', color: 'var(--color-on-primary)' }
+              : {
+                  ...expressionPillarStyle(),
+                  background: 'var(--color-surface)',
+                  color: 'var(--rank-deep)',
+                  ['--tw-ring-color' as string]: 'var(--rank-bright)',
+                }
+          }
+          aria-hidden
+        >
+          {expressionDone ? <Check className="h-3 w-3" strokeWidth={3} /> : <ExpressionIcon className="h-3 w-3" />}
+        </span>
 
         {/* The Journey's face, dropped into the arc's mouth. The current one glows
             (a soft pulsing ring); reduced motion gets a steady ring instead. */}
@@ -181,7 +225,8 @@ export function SeasonMap({
   rank: SeasonRank
   /** Journeys finished this season (0-3) — drives the rank read. */
   journeysFinished: number
-  /** The three Pillar Journeys (Mind, Body, Spirit), already ordered. */
+  /** The three Pillar Journeys (Mind, Body, Spirit), already ordered, each carrying
+   *  its Expression Challenge state (the 4th Pillar's per-Journey capstone). */
   journeys: SeasonMapJourney[]
   achievementsHref?: string
 }) {
@@ -226,12 +271,40 @@ export function SeasonMap({
       </div>
 
       {/* The three arcs — the signature read. Mind → Body → Spirit, filling toward
-          Master. A row from the smallest screens (each arc stays legible). */}
+          Master, each crowned by its Expression Challenge marker (the 4th Pillar built
+          into every Journey). A row from the smallest screens (each arc stays legible). */}
       <ul className="mt-5 flex items-start justify-between gap-2 px-4 sm:gap-3 sm:px-7">
         {journeys.map((j, i) => (
           <PillarArc key={j.slug} journey={j} rank={RANK_BY_INDEX[i] ?? 'master'} index={i} />
         ))}
       </ul>
+
+      {/* The four Pillars, named — so the season reads as Mind / Body / Spirit AND
+          Expression. The three carry the Journeys; Expression is the capstone woven
+          into each one. Plain legend, Expression in its own accent. */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 px-6 sm:px-7">
+        <span className="text-2xs font-semibold uppercase tracking-widest text-subtle">
+          The four Pillars
+        </span>
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs font-medium text-muted">
+          <span>Mind</span>
+          <span aria-hidden className="text-border-strong">·</span>
+          <span>Body</span>
+          <span aria-hidden className="text-border-strong">·</span>
+          <span>Spirit</span>
+          <span aria-hidden className="text-border-strong">·</span>
+          <span
+            className="inline-flex items-center gap-1 font-semibold"
+            style={{ ...expressionPillarStyle(), color: 'var(--rank-deep)' }}
+          >
+            <ExpressionIcon className="h-3 w-3" aria-hidden />
+            {EXPRESSION_PILLAR_LABEL}
+          </span>
+        </span>
+      </div>
+      <p className="mt-1.5 px-6 text-center text-2xs text-subtle sm:px-7">
+        Every Journey ends with its Expression Challenge.
+      </p>
 
       {/* The climb line — the same Ghost → Master spine StandingHero uses, so the rank
           ladder reads identically across the app. One pip per finished Journey. */}
@@ -275,7 +348,7 @@ export function SeasonMap({
             className="mt-2 text-xs font-semibold"
             style={{ ...seasonRankStyle('master'), color: 'var(--rank-deep)' }}
           >
-            All three Journeys finished. You reached Master this season.
+            All three Journeys finished, Expression Challenge and all. You reached Master this season.
           </p>
         )}
       </div>

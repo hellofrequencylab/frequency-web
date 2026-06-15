@@ -3603,6 +3603,7 @@ export type Database = {
           page_config: Json | null
           published_at: string | null
           quest_id: string | null
+          ranked_eligible: boolean
           reviewed_at: string | null
           reviewed_by: string | null
           sequential: boolean
@@ -3611,6 +3612,7 @@ export type Database = {
           summary: string | null
           title: string
           updated_at: string
+          vera_review: Json | null
           visibility: string
           window_ends_at: string | null
           window_starts_at: string | null
@@ -3635,6 +3637,7 @@ export type Database = {
           page_config?: Json | null
           published_at?: string | null
           quest_id?: string | null
+          ranked_eligible?: boolean
           reviewed_at?: string | null
           reviewed_by?: string | null
           sequential?: boolean
@@ -3643,6 +3646,7 @@ export type Database = {
           summary?: string | null
           title: string
           updated_at?: string
+          vera_review?: Json | null
           visibility?: string
           window_ends_at?: string | null
           window_starts_at?: string | null
@@ -3667,6 +3671,7 @@ export type Database = {
           page_config?: Json | null
           published_at?: string | null
           quest_id?: string | null
+          ranked_eligible?: boolean
           reviewed_at?: string | null
           reviewed_by?: string | null
           sequential?: boolean
@@ -3675,6 +3680,7 @@ export type Database = {
           summary?: string | null
           title?: string
           updated_at?: string
+          vera_review?: Json | null
           visibility?: string
           window_ends_at?: string | null
           window_starts_at?: string | null
@@ -9888,3 +9894,4 @@ export const Constants = {
     },
   },
 } as const
+

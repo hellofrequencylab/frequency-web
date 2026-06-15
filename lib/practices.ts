@@ -921,19 +921,19 @@ export async function logPractice(input: {
   }
 
   // The Quest (ADR-Quest completion model): this log may have crossed the
-  // 14-distinct-days bar on an official Journey whose Practices include the one just
-  // logged. Find those Journeys and re-check completion. tryCompleteJourney is
-  // idempotent and only finishes a Journey once both gates (days + Expression) pass,
-  // so this is safe to run on every log. Best-effort + dynamic import — a completion
-  // check must NEVER break a practice log.
+  // 14-distinct-days bar on a RANKED-ELIGIBLE Journey whose Practices include the one
+  // just logged — an official season Journey OR a Vera-approved member-built library
+  // Journey. Find those Journeys and re-check completion. tryCompleteJourney is
+  // idempotent and resolves each Journey's own window/Expression rule (an un-enrolled
+  // library Journey simply can't complete), so this is safe to run on every log.
+  // Best-effort + dynamic import — a completion check must NEVER break a practice log.
   try {
     const { tryCompleteJourney } = await import('@/lib/quest/complete')
     const { data: items } = await db()
       .from('journey_plan_items')
-      .select('plan_id, plan:journey_plans!inner(id, official, window_starts_at)')
+      .select('plan_id, plan:journey_plans!inner(id, ranked_eligible)')
       .eq('practice_id', practiceId)
-      .eq('plan.official', true)
-      .not('plan.window_starts_at', 'is', null)
+      .eq('plan.ranked_eligible', true)
     type Row = { plan_id: string }
     const planIds = [...new Set(((items ?? []) as Row[]).map((r) => r.plan_id))]
     for (const planId of planIds) {

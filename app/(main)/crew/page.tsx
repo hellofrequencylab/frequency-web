@@ -15,7 +15,7 @@ import {
 import { CompleteButton } from './complete-button'
 import { getInitials } from '@/lib/utils'
 import { getCurrentSeason, type Season } from '@/lib/seasons'
-import { journeyPracticeIds, distinctPracticeDaysInWindow, expressionChallengeDone } from '@/lib/quest/completion'
+import { journeyPracticeIds, distinctPracticeDaysInWindow } from '@/lib/quest/completion'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ModuleCard } from '@/components/modules/module-card'
@@ -137,6 +137,41 @@ async function readSeasonMap(profileId: string, season: Season | null): Promise<
       .eq('season', season.season_number)
     const doneIds = new Set(((doneRows ?? []) as { journey_id: string }[]).map((r) => r.journey_id))
 
+    // Per-Journey Expression Challenge state — the 4th Pillar's capstone on each Journey.
+    // Each Journey's Expression Challenge is the season_challenges row with journey_id =
+    // <plan id>; done = a challenge_progress row with a completed_at for the member. Two
+    // batched reads (challenges for these plans, then this member's progress on them) so
+    // the map can mark every arc's capstone. A finished Journey implies its Expression
+    // Challenge is done. Stays behind the page's <Suspense>.
+    const planIds = pillarRowsOnly.map((r) => r.id)
+    const { data: challengeRows } = await admin
+      .from('season_challenges')
+      .select('id, journey_id')
+      .eq('season', season.season_number)
+      .in('journey_id', planIds)
+    const challenges = ((challengeRows ?? []) as { id: string; journey_id: string | null }[])
+      .filter((c): c is { id: string; journey_id: string } => !!c.journey_id)
+    const challengeByJourney = new Map(challenges.map((c) => [c.journey_id, c.id]))
+
+    let completedChallengeIds = new Set<string>()
+    if (challenges.length > 0) {
+      const { data: progressRows } = await admin
+        .from('challenge_progress')
+        .select('challenge_id, completed_at')
+        .eq('profile_id', profileId)
+        .in('challenge_id', challenges.map((c) => c.id))
+      completedChallengeIds = new Set(
+        ((progressRows ?? []) as { challenge_id: string; completed_at: string | null }[])
+          .filter((p) => !!p.completed_at)
+          .map((p) => p.challenge_id),
+      )
+    }
+    const expressionDoneFor = (journeyId: string): boolean => {
+      if (doneIds.has(journeyId)) return true // a finished Journey cleared its capstone
+      const challengeId = challengeByJourney.get(journeyId)
+      return !!challengeId && completedChallengeIds.has(challengeId)
+    }
+
     const today = new Date()
     const inWindow = (r: OfficialJourneyRow) => {
       const start = r.window_starts_at ? new Date(r.window_starts_at) : null
@@ -152,7 +187,9 @@ async function readSeasonMap(profileId: string, season: Season | null): Promise<
     )
     const currentRow = openRow ?? upcomingRow ?? pillarRowsOnly[pillarRowsOnly.length - 1]
 
-    // Days logged toward the bar — only the open current Journey needs the count.
+    // Days logged toward the bar — only the open current Journey needs the count. Once
+    // the 14 days are met, the only thing left is the Expression Challenge; read its
+    // state from the batched capstone map above (no extra round-trip).
     let currentDays = 0
     let currentExpressionPending = false
     if (openRow) {
@@ -161,8 +198,7 @@ async function readSeasonMap(profileId: string, season: Season | null): Promise<
         profileId, practiceIds, openRow.window_starts_at, openRow.window_ends_at,
       )
       if (currentDays >= DAYS_TO_FINISH) {
-        const expressionDone = await expressionChallengeDone(profileId, openRow.id, season.season_number)
-        currentExpressionPending = !expressionDone
+        currentExpressionPending = !expressionDoneFor(openRow.id)
       }
     }
 
@@ -178,6 +214,7 @@ async function readSeasonMap(profileId: string, season: Season | null): Promise<
         state: isDone ? 'done' : isCurrent ? 'current' : 'upcoming',
         daysLogged: isCurrent ? currentDays : 0,
         daysNeeded: DAYS_TO_FINISH,
+        expression: expressionDoneFor(r.id) ? 'done' : 'pending',
       }
     })
 
@@ -265,7 +302,7 @@ async function QuestHero({
         <EmptyState
           icon={Compass}
           title={season ? `The Quest is open: ${season.name}` : 'The Quest opens soon'}
-          description="This Quest's three Journeys (Mind, Body, Spirit) appear here once the season's curriculum is live. Your daily practice still counts."
+          description="This Quest's three Journeys (Mind, Body, Spirit) appear here once the season's curriculum is live, each capped by its Expression Challenge. Your daily practice still counts."
         />
       )}
 
@@ -438,7 +475,7 @@ export default async function CrewPage() {
         }
         description={
           <>
-            Three Journeys this season: Mind, Body, Spirit. Finish each to climb from Ghost to Master.
+            Three Journeys this season: Mind, Body, Spirit, each capped by its Expression Challenge. Finish each to climb from Ghost to Master.
             {circleName && (
               <> You&apos;re in <span className="font-medium text-text">{circleName}</span>.</>
             )}
