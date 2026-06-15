@@ -46,7 +46,7 @@ import { getProfileChores } from '@/lib/onboarding/profile-chores'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 import { FOUNDER_COACH } from '@/lib/onboarding/founder-config'
 import { getActiveTraining } from '@/lib/onboarding/training'
-import { atLeastRole } from '@/lib/core/roles'
+import { atLeastRole, asWebRole } from '@/lib/core/roles'
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -67,7 +67,7 @@ export default async function MainLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role, current_season_zaps, lifetime_gems, meta')
+    .select('id, display_name, handle, avatar_url, community_role, web_role, current_season_zaps, lifetime_gems, meta')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -111,6 +111,11 @@ export default async function MainLayout({
   const previewingDown = previewVisitor || effectiveRole !== realRole
   const staff = previewingDown ? null : await getStaffMember()
   const staffRole = staff?.role ?? null
+
+  // Staff web_role axis (ADR-208) — gates the staff-only on-page "Page" settings group
+  // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
+  // steward's "view as" faithfully hides operator chrome, matching staffRole above.
+  const pageWebRole = previewingDown ? 'none' : asWebRole(profile.web_role)
 
   // Matrix-driven nav visibility (owner directive): resolve each nav item's access for
   // this viewer — respecting "view as" (effectiveRole) and suppressing personas/staff
@@ -277,6 +282,7 @@ export default async function MainLayout({
       brandName={activeBrandName}
       brandLogoUrl={activeBrandLogoUrl}
       chromeOverrides={chromeOverrides}
+      webRole={pageWebRole}
       profile={{ ...profile, community_role: effectiveRole }}
       realRole={realRole}
       previewVisitor={previewVisitor}

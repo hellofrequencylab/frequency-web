@@ -12,6 +12,8 @@ import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
 import { modulesForScopeKind, type ScopeKind } from '@/lib/admin/modules/registry'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
+import { isStaff } from '@/lib/core/roles'
+import { PageSettingsModule } from '@/components/admin/page-settings/page-settings-module'
 
 // Header content (title + description) is operator-editable on the routes registered
 // in lib/layout/editable-content.ts (ADR-180). Admin+ only.
@@ -80,7 +82,7 @@ function questModuleFor(pathname: string) {
 // page — fed by PageAdminProvider (no per-template prop threading). Self-hides when
 // the viewer isn't an operator or the page has nothing to administer.
 export function PageAdminBar() {
-  const { role, staffRole } = usePageAdmin()
+  const { role, staffRole, webRole, chromeOverride } = usePageAdmin()
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
@@ -91,15 +93,21 @@ export function PageAdminBar() {
     if (open) setOpen(false)
   }
 
-  const isStaff = staffRole != null
+  const isStaffMember = staffRole != null
   // Two tiers: page MANAGERS (host+ / staff — each module still re-gates
   // server-side, so a host who can't manage THIS page gets empty modules) see the
   // full Settings panel; everyone else on a shareable page gets a Share panel with
   // just the QR + link. The dropdown only ever holds what the viewer can use.
-  const manager = meetsAccess('host', role) || isStaff
+  const manager = meetsAccess('host', role) || isStaffMember
+
+  // Platform operators (web_role admin/janitor, ADR-208 — "admin and above") get the
+  // page-level "Page" settings group on EVERY page: chrome / SEO / status / layout
+  // surfaced on the page itself, not buried in /admin (docs/EMBEDDED-ADMIN.md inline
+  // layer). The community ladder (host+) does NOT unlock this — it is staff-only.
+  const isOperator = isStaff(webRole)
 
   const shareable = isShareable(pathname)
-  if (!manager && !shareable) return null
+  if (!manager && !shareable && !isOperator) return null
 
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
   const settingsModules = manager ? settingsModulesFor(pathname) : []
@@ -111,8 +119,9 @@ export function PageAdminBar() {
       ? <PageContentModule />
       : null
 
-  // Nothing to administer or share here — render nothing.
-  if (!shareable && !hasSettings && !questModule && !contentModule) return null
+  // Nothing to administer or share here — render nothing. Operators always have the
+  // page-level Page group, so they keep the panel even on a plain (non-entity) page.
+  if (!shareable && !hasSettings && !questModule && !contentModule && !isOperator) return null
 
   // The bottom row: page settings (left) + quest / content (right). Only drawn
   // when at least one of those modules exists.
@@ -145,7 +154,7 @@ export function PageAdminBar() {
           aria-expanded={open}
           className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-xs font-semibold text-muted transition-colors hover:text-text"
         >
-          {manager ? 'Settings' : 'Share'}
+          {manager || isOperator ? 'Settings' : 'Share'}
           <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
         </button>
       </div>
@@ -187,6 +196,11 @@ export function PageAdminBar() {
             {shareable && (manager
               ? <PageQrManager pathname={pathname} url={url} />
               : <PageShareKit pathname={pathname} url={url} />)}
+
+            {/* Page-level settings (chrome / SEO / status / layout), staff-only. A
+                hairline sets it apart from any entity admin / share kit above it. */}
+            {isOperator && (hasBottomRow || shareable) && <hr className="border-border" />}
+            {isOperator && <PageSettingsModule pathname={pathname} chromeOverride={chromeOverride} />}
           </div>
         </div>
       </div>
