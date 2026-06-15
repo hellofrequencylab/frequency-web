@@ -48,10 +48,17 @@
 
 ## D. ✅ Shipped this session (the trail)
 
-PRs #770–#778, all merged to `main`:
+PRs #770–#788, all merged to `main`:
 - #770 module-assignment engine (ADR-270) · #771 scope cascade + per-module role gate (ADR-271) · #772 CodeQL property-injection fix
 - #773 interior templates + slot-assignable modules (ADR-272) · #774 content-aware side rail (ADR-273)
 - #775 full-site audit + security hardening (ADR-274) · #776 `/llms-full.txt` + per-article help OG
 - #777 authz test harness (ADR-275) · #778 public partner directory + LocalBusiness (ADR-276)
+- #779 live OPEN-THREADS tracker · #780 events-wave applied to prod (ADR-277, A1 done)
+- #781 Home live-proof band streams (B1) · #782 db-tests workflow (B2) · #783 partner nav (B4)
+- #784 QR DNS-rebind hardening (B6) · #785 registry-driven rail (ADR-278, B3)
+- #786 public `/discover/practices` (ADR-279, B9) · #787 types regenerated · #788 A+ roadmap
+
+**In flight (this PR):**
+- **Gem-store redemption fix (ADR-280)** — `redeemItem` no longer charges Gems for items it can't deliver; the `membership-1mo`/`3mo` credit SKUs are refused + deactivated; perks read "Recorded ✓". The full undeveloped-trail sweep (2026-06-15) is folded into **[`A-PLUS-ROADMAP.md`](A-PLUS-ROADMAP.md) §9** — that section is now the catch-all for every dormant seam.
 
 _(This file is the live index; move items between sections as they progress and add the PR to §D when they land.)_

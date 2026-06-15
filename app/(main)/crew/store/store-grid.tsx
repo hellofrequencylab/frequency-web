@@ -39,7 +39,7 @@ export function StoreGrid({ items, balance }: { items: StoreItem[]; balance: num
 
 function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
   const [isPending, startTransition] = useTransition()
-  const [result, setResult] = useState<string | null>(null)
+  const [result, setResult] = useState<{ text: string; ok: boolean } | null>(null)
 
   const Icon = ICON_MAP[item.icon] ?? ShoppingBag
   const canAfford = balance >= item.gem_cost
@@ -49,9 +49,10 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
     startTransition(async () => {
       const res = await redeemItem(item.id)
       if (isError(res)) {
-        setResult(res.error)
+        setResult({ text: res.error, ok: false })
       } else {
-        setResult('Redeemed!')
+        // Cosmetics apply instantly; operator-honored perks are recorded for fulfillment.
+        setResult({ text: res.data.pending ? 'Recorded ✓' : 'Redeemed!', ok: true })
       }
       setTimeout(() => setResult(null), 3000)
     })
@@ -85,8 +86,8 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
             </span>
 
             {result ? (
-              <span className={`text-xs font-semibold ${result === 'Redeemed!' ? 'text-signal-strong' : 'text-danger'}`}>
-                {result}
+              <span className={`text-xs font-semibold ${result.ok ? 'text-signal-strong' : 'text-danger'}`}>
+                {result.text}
               </span>
             ) : item.owned ? (
               <span className="text-xs font-semibold text-signal-strong flex items-center gap-1">

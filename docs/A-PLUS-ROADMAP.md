@@ -70,15 +70,43 @@ The **code** is A (entity-partitioned ledger, Connect rails, tiers, recorders wi
 - 🔴 The Collective / Affiliate / Donations / Lab Spaces verticals — after PMF + legal entity. (L each)
 
 ## 9. Undeveloped trails — captured so nothing is dropped
-Intentional stubs / dormant seams (not bugs — flagged so they're never silently forgotten):
-- **SMS send path** (`lib/comms/sms.ts`) — `TODO(SMS legal track)`; provider call stubbed until A2P/legal. 🧑
-- **Teaser / paywall gate** (`lib/teaser.ts`, `TEASER_GATE_ENABLED=false`) — flip on when paid tiers go live. 🧑
-- **`project` walkthrough trigger** (`lib/walkthroughs.ts`) — `UNWIRED_TRIGGERS`; no project concept yet. 🤖(when the concept exists)
-- **Coming-soon nav** (`lib/nav-areas.ts`) — Website · Hook Network · Finances route to `/coming-soon`. 🤖/🧑
-- **Walkthroughs Phase B** — in-app triggering/rendering intentionally unbuilt. 🤖 (M)
-- **Empty seams** — `financial_transactions` / `trust_signals` / `journey_runs` / `profile_personas` applied, 0 rows (need flows + a launched cohort). 🧑/🤖
-- **Member theming switcher** — the four-axis cookie is read but no UI writes generation/skin. 🤖 (M)
-- _(updated as the trail sweep + future work surface more — this section is the catch-all.)_
+Intentional stubs / dormant seams (flagged so they're never silently forgotten). A fresh
+read-only trail sweep (2026-06-15) confirmed these and is folded in below; false positives
+(`page_settings.status`/`visibility_role` and `qr_codes.style` ARE wired; `app/(main)/admin/ai/*`
+is a live shared module library imported by the `vera-ai` page, **not** an orphan to delete)
+were dropped after spot-checks.
+
+**Fixed this pass**
+- 🤖 ✅ **Gem-store silent redemption loss** — `redeemItem` charged Gems but applied only cosmetics, so the `membership-1mo`/`3mo` credit SKUs ate Gems for nothing. Refused defensively + the two SKUs deactivated (ADR-280); perks now read "Recorded ✓". The *real* membership-credit grant + an operator "redemptions to honor" queue remain **A3/Stripe-gated** follow-ups.
+
+**Confirmed dormant seams (located, in-repo)**
+- 🤖 **Member theming switcher** (M) — `lib/theme/cookie.ts` ships `serializeThemeCookie()`/`THEME_COOKIE_ATTRS` but **no UI writes the cookie**; `structureFor()` (`lib/theme/structure.ts`) has zero non-test callers. The axis is built + tested, never consumed.
+- 🤖 **`resolvePageChrome` operator rail overrides** (S) — `lib/layout/page-chrome.ts:235` ("the live shell does not call this yet"); `page_chrome_overrides` rows have no live render effect (only the admin "effective rail" preview reads them). Swap the shell's `railFor` → `resolvePageChrome` to honor them.
+- 🤖 **`savePageDraft` server action unwired** (S) — `app/edit/actions.ts:36` ("not yet wired to a UI button; kept for parity"); the draft-save backend has no caller.
+- 🤖 **Entry-point flyer/PDF designer** (M) — `entry-points-client.tsx:321` ("Flyer downloads are turned off for now"); QR PNG/SVG stay, the flyer pipeline is unbuilt.
+- 🤖 **Messages/Channels Phase B** (M) — DMs are 1:1 only; group chat is a private room; channel rooms are read-open with posting gated. The multi-party/group-DM evolution is staged, not finished.
+- 🤖 **`stewardships` outpost forward-compat** (L) — `role='outpost_lead'`/`scope_type='outpost'` baked into CHECK constraints (P1.5 parked); `lib/core/stewardship.ts:87` makes `outpost_lead` a no-op, nothing writes them.
+- 🤖 **`project` walkthrough trigger** — `lib/walkthroughs.ts` `UNWIRED_TRIGGERS`; a `project` walkthrough never fires (no project concept). Part of the larger **Walkthroughs Phase B** (in-app triggering/rendering unbuilt, M).
+- 🤖/🧑 **Two deterministic-only marketing drafters** (M each) — `lib/marketing/market-read.ts` + `lib/marketing/content.ts` ("a live Claude operator slots in behind it"); the concrete seams behind §7's live-Claude line (mirror the live winback drafter; needs the key).
+- 🤖 **Engagement currency capture/reward orchestration** (M-L) — `lib/engagement/currency.ts:10`; gems/zaps **routing** is wired, the at-scale capture/reward engine that consumes it is deferred.
+
+**Ledger-correctness gaps (matter the moment Stripe is live)**
+- 🤖 **Membership-tier entity tagging** (S) — `20260618…_entity_partition…:92` defers tagging `membership_tier` dues with entity + revenue_type; tier dues aren't entity-attributed.
+- 🧑/🤖 **Donation `revenue_type` unused** — enumerated in `lib/finance/record.ts`, no capture UI/webhook (Donations vertical, after PMF + Foundation status).
+- 🧑/🤖 **Affiliate commission ledger** — `lib/qr/referral.ts` grants **zaps only**; the commission→payout half is absent (after PMF).
+
+**Known stubs (unchanged)**
+- 🧑 **SMS send path** (`lib/comms/sms.ts`) — `TODO(SMS legal track)`; stubbed until A2P/legal.
+- 🧑 **Teaser / paywall gate** (`lib/teaser.ts`, `TEASER_GATE_ENABLED=false`) — flip on when paid tiers go live.
+- 🤖/🧑 **Coming-soon nav** (`lib/nav-areas.ts`) — Website · Hook Network · Finances → `/coming-soon`.
+- 🧑/🤖 **Empty seams** — `financial_transactions`/`trust_signals`/`journey_runs`/`profile_personas` applied, 0 rows (need flows + a launched cohort).
+- 🤖 **`page_revisions` rollback** (M) — greenfield (no table/code exists yet); a build, not a "wire-up".
+- 🧑 **Beta-induction subsystem** (`app/onboarding/beta/**`, `lib/onboarding/beta-*`) — "TEMPORARY, deleted at launch"; a deliberate teardown someone owns at launch.
+- 🤖 **"Temporary" admin-reorg redirects** (S) — `next.config.ts:74-90` (`/crm`·`/marketing`·`/growth`, `permanent:false`); revisit when the final mapping is decided.
+
+**Tracker wording corrections**
+- **Push (P1.4) already shipped** — `lib/notification-preferences.ts:5` says "hasn't shipped"; in fact `components/push/registration.tsx` is mounted, `public/sw.js` + `lib/push.ts` send, and the settings form enables the channel. Push is fully wired, gated only on VAPID keys (A4). Stale comment + an unused disabled-state branch to prune.
+- **CSP already enforced** (B7/ADR-170) and the **`page_settings`/`qr_codes`/`admin/ai` "seams" are actually wired** — see the header note.
 
 ## 10. Bottom line — what code can reach vs what needs you
 - **Code can reach A+:** code-health, security (+ two owner toggles), performance, docs, and most of SEO.
