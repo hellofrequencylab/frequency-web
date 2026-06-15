@@ -92,8 +92,21 @@ export const metadata: Metadata = {
 // dark-mode flash). Reads localStorage('freq-theme'): 'light' | 'dark' |
 // 'system' | null; defaults to 'system' per the Dawn spec. We also migrate
 // the legacy 'theme' key one-time so existing users don't get reset.
-const themeScript = `(function(){try{var s=localStorage.getItem('freq-theme');if(!s){var legacy=localStorage.getItem('theme');if(legacy==='dark'||legacy==='light'||legacy==='system'){s=legacy;localStorage.setItem('freq-theme',legacy);}}var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;var dark=s==='dark'||((s==='system'||!s)&&sys);document.documentElement.classList.toggle('dark',dark);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',dark?'#16130E':'#FBFAF6');}catch(e){}})();`;
+//
+// Skin preview override: after resolving dark mode, it also reads
+// localStorage('freq-skin'); if set, it writes that value to `data-skin` on
+// <html> so a skin can be previewed globally (including marketing pages)
+// without a real Space. Real Spaces still render `data-skin` server-side on the
+// shell root (no flash); the skin CSS selectors match both <html> and the shell
+// div. The value is trusted blind — an unknown skin is a harmless CSS no-op.
+const themeScript = `(function(){try{var s=localStorage.getItem('freq-theme');if(!s){var legacy=localStorage.getItem('theme');if(legacy==='dark'||legacy==='light'||legacy==='system'){s=legacy;localStorage.setItem('freq-theme',legacy);}}var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;var dark=s==='dark'||((s==='system'||!s)&&sys);document.documentElement.classList.toggle('dark',dark);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',dark?'#16130E':'#FBFAF6');var skin=localStorage.getItem('freq-skin');if(skin){document.documentElement.setAttribute('data-skin',skin);}}catch(e){}})();`;
 
+// The ROOT layout stays STATIC (no per-request cookie/DB reads) so the public marketing +
+// discover pages keep prerendering (static/ISR). All data-driven theming — the personal
+// `fxtheme` cookie, the active DB skin/occasion `<style>`, and the data-* axis attributes — is
+// resolved in the authed in-app shell instead (app/(main)/layout.tsx), which is dynamic by
+// nature. The public site renders the canonical default look; the `.dark` mode and a `freq-skin`
+// design preview are still applied client-side by the pre-paint script below (no SSR cost).
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -112,7 +125,9 @@ export default function RootLayout({
         {/* GA4 — inert unless NEXT_PUBLIC_GA_MEASUREMENT_ID is set in production */}
         <GoogleAnalytics />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+      </body>
     </html>
   );
 }

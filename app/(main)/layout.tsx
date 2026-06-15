@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveSpaceForHost, activeVerticalsForSpace } from '@/lib/spaces'
 import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
+import { loadChromeOverrides } from '@/lib/layout/page-chrome'
+import { resolveTheme } from '@/lib/theme/server/resolve'
+import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
 import RightSidebar, { MobileGameStats } from '@/components/sidebar/right-sidebar'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
@@ -233,10 +236,17 @@ export default async function MainLayout({
   // vertical filtering (the current look). The root space enables every vertical, so this
   // filtering is a no-op there — it only narrows nav for a non-root sub-brand Space.
   let activeSkin = 'default'
+  let activeBrandName: string | null = null
+  let activeBrandLogoUrl: string | null = null
+  // Operator route -> rail overrides, loaded once server-side (fail-safe → {}); the client
+  // shell merges them over the code chrome map per route.
+  const chromeOverrides = await loadChromeOverrides()
   try {
     const space = await resolveSpaceForHost((await headers()).get('host'))
     if (space) {
       activeSkin = space.skin
+      activeBrandName = space.brandName
+      activeBrandLogoUrl = space.brandLogoUrl
       const enabled = new Set(activeVerticalsForSpace(space).map((v) => v.id))
       for (const v of VERTICALS) {
         if (enabled.has(v.id)) continue
@@ -247,9 +257,26 @@ export default async function MainLayout({
     /* pre-migration / lookup failure → default skin, no filtering */
   }
 
+  // Resolve the member's theme for the in-app shell: the personal `fxtheme` cookie (skin /
+  // generation / occasion) over the Space default over the system default. The per-request
+  // cookie + DB-theme reads live HERE, not in the root layout, so the public marketing/discover
+  // pages stay static/prerendered (app/layout.tsx). Fail-safe throughout.
+  const theme = await resolveTheme({ spaceSkin: activeSkin })
+  const occasion =
+    theme.occasion !== 'none' ? theme.occasion : await resolveActiveOccasionSlug(new Date())
+  // The active DB skin/occasion theme as a scoped <style> (fail-safe '' until theme rows exist).
+  const themeCss = await loadActiveThemeCss({ skin: theme.skin, occasion })
+
   return (
+    <>
+      {themeCss ? <style id="fx-theme" dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
     <AppShell
-      skin={activeSkin}
+      skin={theme.skin}
+      generation={theme.generation}
+      occasion={occasion}
+      brandName={activeBrandName}
+      brandLogoUrl={activeBrandLogoUrl}
+      chromeOverrides={chromeOverrides}
       profile={{ ...profile, community_role: effectiveRole }}
       realRole={realRole}
       previewVisitor={previewVisitor}
@@ -290,6 +317,7 @@ export default async function MainLayout({
       {autoPopups && <DailyCheckIn />}
       {autoPopups && <TourProvider initialState={tourState} satisfied={tourSatisfied} />}
     </AppShell>
+    </>
   )
 }
 

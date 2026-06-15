@@ -13,3 +13,11 @@ both the web CSS variables and native style constants from it.
 
 **Not yet built** — extraction is a Phase 5 (mobile) task. This README marks the
 structural slot so the move is a known, planned step rather than a retrofit.
+
+**Carry the four axes too.** The live theme is a four-axis `data-*` model — mode ×
+skin × occasion × generation — composed through the CSS custom-property cascade
+(`docs/THEME.md`, ADR-257). The axes are token-set *deltas* over the DAWN baseline,
+so the W3C-token extraction must export not just the base set but each axis override
+(the typed registries in `lib/theme/` are the index to enumerate). Designing the
+export this way keeps a Space's brand and a member's chosen generation surviving the
+web → native generation. See `docs/THEME.md` §10.

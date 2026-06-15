@@ -32,4 +32,10 @@ export interface Space {
   enabledVerticals: string[]
   /** The operator who owns this Space (null for the root / platform spaces). */
   ownerProfileId: string | null
+  /** Display brand name (falls back to `name` when null). Live: BrandMark renders it in the header. */
+  brandName: string | null
+  /** Same-origin or https URL of the Space's brand logo. Live: BrandMark renders it in the header. */
+  brandLogoUrl: string | null
+  /** Optional brand accent color (hex/rgb/hsl); the active palette still comes from `skin`. */
+  brandAccent: string | null
 }

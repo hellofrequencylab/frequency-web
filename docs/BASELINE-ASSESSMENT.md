@@ -51,7 +51,7 @@ what's already designed.
 - Add an integration-test harness for RLS/RPC/authz — the scariest blind spot. Continue ADR-042 RLS convergence.
 
 ### Phase 4 — CMS / skins / role-templated front-to-back *(product vision)*
-- Decompose `app-shell.tsx` → generalize the theme seam (`.dark` → `[data-skin]`) + a server-side skin resolver → real multi-skin; tokenize the "feel" axis (radius/density/motion).
+- ⏳ Generalize the theme seam + tokenize the "feel" axis — **done**: the seam is now a **multi-axis `data-*` model** (mode × skin × occasion × generation) with typed `lib/theme/` registries + `resolve*` guards, a `server-only` `resolveTheme()` (cookie precedence member > Space > system/time), and the feel/generation axis tokenized (type/density/radius/motion/ornament/contrast/tap). See [`docs/THEME.md`](THEME.md) (ADR-257). **Remaining**: decompose `app-shell.tsx`; the client switch (`ThemeProvider` + View Transitions); structural rollout to all templates; occasion auto-scheduling; the `spaces.generation` default; the 🔴 kids-exposure gate.
 - Ship the `WidgetSlot` composition engine; wire `modulesFor` into the admin console + an `@admin` server slot → admin templated by role front-to-back. Then layout variants (structural skins).
 
 ### Phase 5 — Build Frequency Labs *(after the decision below)*
