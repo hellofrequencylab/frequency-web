@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueue } from '@/lib/queue/outbox'
 import type { PushPayload } from '@/lib/push'
@@ -15,14 +14,9 @@ import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
 //                   composer no-ops it (logs intent, sends nothing).
 //
 // Reuses dispatches + notification_queue — NOT a new broadcaster. event_dispatches
-// is new (not in lib/database.types.ts) → untyped admin client; the `dispatches`
-// insert is typed-shaped but routed through the same untyped client for one code
-// path. Authorize the caller as host/cohost before calling (RLS would also gate a
+// is in lib/database.types.ts now, so the admin client is used directly and fully
+// typed. Authorize the caller as host/cohost before calling (RLS would also gate a
 // client write, but this runs on the admin client).
-
-function untyped(): SupabaseClient {
-  return createAdminClient()
-}
 
 export interface ComposeEventDispatchArgs {
   eventId: string
@@ -57,7 +51,7 @@ export interface ComposeEventDispatchResult {
 export async function composeEventDispatch(
   args: ComposeEventDispatchArgs,
 ): Promise<ComposeEventDispatchResult> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const toPage = args.toPage ?? true
   const toDispatch = args.toDispatch ?? false
   const toSms = args.toSms ?? false
@@ -97,7 +91,7 @@ export async function composeEventDispatch(
       })
       .select('id')
       .maybeSingle()
-    dispatchId = (disp as { id: string } | null)?.id ?? null
+    dispatchId = disp?.id ?? null
     result.dispatchId = dispatchId
   }
 
@@ -118,7 +112,7 @@ export async function composeEventDispatch(
       })
       .select('id')
       .maybeSingle()
-    result.eventDispatchId = (ed as { id: string } | null)?.id ?? null
+    result.eventDispatchId = ed?.id ?? null
   }
 
   // 3. Fan out push to the non-muted event audience when this rode the Dispatch

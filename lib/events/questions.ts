@@ -1,17 +1,13 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
 
 // Event questionnaire data layer (EVENTS-REWORK A1) — host-defined questions and
 // guest answers. RLS (20260625030000) gates access: questions are readable by
 // anyone who can read the event; answers are readable only by the author and the
 // host/cohost. These admin-client helpers bypass RLS, so callers MUST authorize
 // the actor first (host/cohost for question CRUD + answer-roster reads; the author
-// for their own answer). New tables aren't in lib/database.types.ts yet → untyped
-// client, the established convention (see event_ticket_types / cohosts).
-
-function untyped(): SupabaseClient {
-  return createAdminClient()
-}
+// for their own answer). The events tables are in lib/database.types.ts now, so the
+// admin client is fully typed (ADR-280 follow-up — the untyped() escape hatch is gone).
 
 export type QuestionType =
   | 'short_text'
@@ -39,23 +35,21 @@ export interface EventQuestionAnswer {
   answer: string
 }
 
-interface QuestionRow {
-  id: string
-  event_id: string
-  prompt: string
-  type: QuestionType
-  options: string[] | null
-  required: boolean
-  position: number
-}
+// The exact column projection these helpers read (a subset of the generated Row).
+type QuestionRow = Pick<
+  Database['public']['Tables']['event_questions']['Row'],
+  'id' | 'event_id' | 'prompt' | 'type' | 'options' | 'required' | 'position'
+>
 
 function toQuestion(r: QuestionRow): EventQuestion {
   return {
     id: r.id,
     eventId: r.event_id,
     prompt: r.prompt,
-    type: r.type,
-    options: Array.isArray(r.options) ? r.options : [],
+    // `type` is a free-text column at the DB layer; the app constrains it to QuestionType.
+    type: r.type as QuestionType,
+    // `options` is jsonb; it always holds a string[] when set (see createQuestion).
+    options: Array.isArray(r.options) ? (r.options as string[]) : [],
     required: r.required,
     position: r.position,
   }
@@ -63,13 +57,13 @@ function toQuestion(r: QuestionRow): EventQuestion {
 
 /** The questionnaire for an event, in display order. */
 export async function listQuestions(eventId: string): Promise<EventQuestion[]> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const { data } = await admin
     .from('event_questions')
     .select('id, event_id, prompt, type, options, required, position')
     .eq('event_id', eventId)
     .order('position', { ascending: true })
-  return ((data ?? []) as unknown as QuestionRow[]).map(toQuestion)
+  return (data ?? []).map(toQuestion)
 }
 
 /** Add a question. Caller must already be authorized as host/cohost of the event.
@@ -82,7 +76,7 @@ export async function createQuestion(args: {
   required?: boolean
   position?: number
 }): Promise<EventQuestion | null> {
-  const admin = untyped()
+  const admin = createAdminClient()
 
   let position = args.position
   if (position == null) {
@@ -107,7 +101,7 @@ export async function createQuestion(args: {
     .maybeSingle()
 
   if (error || !data) return null
-  return toQuestion(data as unknown as QuestionRow)
+  return toQuestion(data)
 }
 
 /** Edit a question. Caller must already be authorized as host/cohost. */
@@ -116,8 +110,8 @@ export async function updateQuestion(
   eventId: string,
   patch: Partial<Pick<EventQuestion, 'prompt' | 'type' | 'options' | 'required' | 'position'>>,
 ): Promise<void> {
-  const admin = untyped()
-  const update: Record<string, unknown> = {}
+  const admin = createAdminClient()
+  const update: Database['public']['Tables']['event_questions']['Update'] = {}
   if (patch.prompt !== undefined) update.prompt = patch.prompt.trim()
   if (patch.type !== undefined) update.type = patch.type
   if (patch.options !== undefined) update.options = patch.options
@@ -130,7 +124,7 @@ export async function updateQuestion(
 
 /** Remove a question (cascades its answers). Caller must be host/cohost. */
 export async function deleteQuestion(questionId: string, eventId: string): Promise<void> {
-  const admin = untyped()
+  const admin = createAdminClient()
   // Scope to the authorized event (prevents cross-event delete-by-id, cascading answers; ADR-274).
   await admin.from('event_questions').delete().eq('id', questionId).eq('event_id', eventId)
 }
@@ -143,7 +137,7 @@ export async function setAnswer(args: {
   profileId: string
   answer: string
 }): Promise<void> {
-  const admin = untyped()
+  const admin = createAdminClient()
   await admin.from('event_question_answers').upsert(
     {
       question_id: args.questionId,
@@ -161,7 +155,7 @@ export async function listMyAnswers(
   eventId: string,
   profileId: string,
 ): Promise<EventQuestionAnswer[]> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const { data } = await admin
     .from('event_question_answers')
     .select('id, question_id, event_id, profile_id, answer')
@@ -173,7 +167,7 @@ export async function listMyAnswers(
 /** The full answer roster for an event (host/cohost only — authorize first).
  *  Powers the Host Manage Dashboard's questionnaire view / CSV export. */
 export async function listEventAnswers(eventId: string): Promise<EventQuestionAnswer[]> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const { data } = await admin
     .from('event_question_answers')
     .select('id, question_id, event_id, profile_id, answer')
@@ -181,16 +175,13 @@ export async function listEventAnswers(eventId: string): Promise<EventQuestionAn
   return toAnswers(data)
 }
 
-interface AnswerRow {
-  id: string
-  question_id: string
-  event_id: string
-  profile_id: string
-  answer: string
-}
+type AnswerRow = Pick<
+  Database['public']['Tables']['event_question_answers']['Row'],
+  'id' | 'question_id' | 'event_id' | 'profile_id' | 'answer'
+>
 
-function toAnswers(data: unknown): EventQuestionAnswer[] {
-  return ((data ?? []) as unknown as AnswerRow[]).map((r) => ({
+function toAnswers(data: AnswerRow[] | null): EventQuestionAnswer[] {
+  return (data ?? []).map((r) => ({
     id: r.id,
     questionId: r.question_id,
     eventId: r.event_id,

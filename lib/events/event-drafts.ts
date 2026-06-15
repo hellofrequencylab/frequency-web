@@ -7,9 +7,10 @@
 // the token, becomes the host, and the original poster gets the claim bonus.
 // Removing a posted event reverses the poster's Zaps, so spam loses money.
 //
-// New columns aren't in the generated types yet, so we talk to events through the
-// untyped admin handle (repo convention, cf. lib/connections/store.ts). All reads
-// and the draft writes are OWNER-SCOPED; claim/publish/removal run service-role.
+// The admin handle is the typed client; the few row casts below exist only because
+// the shared COLS projection is a runtime string (supabase-js can't infer the row
+// type from a non-literal .select). All reads and the draft writes are OWNER-SCOPED;
+// claim/publish/removal run service-role.
 
 import 'server-only'
 import { randomBytes } from 'node:crypto'
@@ -109,7 +110,7 @@ async function resolveRegionScopeId(profileId: string): Promise<string | null> {
     .select('nexus_region_id')
     .eq('id', profileId)
     .maybeSingle()
-  const regionId = (me as { nexus_region_id?: string | null } | null)?.nexus_region_id ?? null
+  const regionId = me?.nexus_region_id ?? null
   if (regionId) return regionId
   // Fallback: the topmost region (parent_id null, shallowest depth) is a stable
   // sentinel for "somewhere, not yet placed". Deterministic by id as a tiebreak.
@@ -218,7 +219,7 @@ export async function createEventDraft(
     .maybeSingle()
 
   if (error || !data) return null
-  return { id: String((data as { id: string }).id) }
+  return { id: String(data.id) }
 }
 
 /** Read one of the poster's own drafts (or published events they posted). */

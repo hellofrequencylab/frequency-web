@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // RSVP depth data layer (EVENTS-REWORK A1) — maybe / waitlist / plus-ones,
@@ -7,12 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // The capacity trigger (20260610030000) still owns over-capacity coercion:
 // writing status='going' to a full event is coerced to 'waitlist' in the DB, so
 // these setters never need to re-check capacity. plus_one_names / decline_reason /
-// approval_status / muted are newer than lib/database.types.ts → untyped admin
-// client, the established convention (see capacity.ts).
-
-function untyped(): SupabaseClient {
-  return createAdminClient()
-}
+// approval_status / muted are in lib/database.types.ts now, so the admin client is
+// used directly and fully typed.
 
 export type RsvpStatus = 'going' | 'not_going' | 'maybe' | 'waitlist'
 export type ApprovalStatus = 'none' | 'pending' | 'approved'
@@ -39,7 +34,7 @@ export interface SetRsvpArgs {
  * don't pre-check capacity here.
  */
 export async function setRsvp(args: SetRsvpArgs): Promise<{ id: string } | null> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const names = (args.plusOneNames ?? [])
     .map((n) => n.trim())
     .filter((n) => n.length > 0)
@@ -62,7 +57,7 @@ export async function setRsvp(args: SetRsvpArgs): Promise<{ id: string } | null>
     .maybeSingle()
 
   if (error || !data) return null
-  return { id: (data as { id: string }).id }
+  return { id: data.id }
 }
 
 /** Set just the names of the +1s a guest is bringing (and keep plus_ones in sync).
@@ -72,7 +67,7 @@ export async function setPlusOneNames(
   profileId: string,
   plusOneNames: string[],
 ): Promise<void> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const names = plusOneNames.map((n) => n.trim()).filter((n) => n.length > 0)
   await admin
     .from('event_rsvps')
@@ -87,7 +82,7 @@ export async function setDeclineReason(
   profileId: string,
   reason: string | null,
 ): Promise<void> {
-  const admin = untyped()
+  const admin = createAdminClient()
   await admin
     .from('event_rsvps')
     .update({ status: 'not_going', decline_reason: reason })
@@ -98,7 +93,7 @@ export async function setDeclineReason(
 /** Host approves a pending RSVP. Approving does NOT force 'going' — the guest's
  *  chosen status stands and the capacity trigger still applies if they're going. */
 export async function approveRsvp(eventId: string, profileId: string): Promise<void> {
-  const admin = untyped()
+  const admin = createAdminClient()
   await admin
     .from('event_rsvps')
     .update({ approval_status: 'approved' })
@@ -110,7 +105,7 @@ export async function approveRsvp(eventId: string, profileId: string): Promise<v
 export async function listPendingApprovals(
   eventId: string,
 ): Promise<{ profileId: string; status: RsvpStatus; createdAt: string }[]> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const { data } = await admin
     .from('event_rsvps')
     .select('profile_id, status, created_at')
@@ -118,11 +113,12 @@ export async function listPendingApprovals(
     .eq('approval_status', 'pending')
     .order('created_at', { ascending: true })
 
-  type Row = { profile_id: string; status: RsvpStatus; created_at: string }
-  return ((data ?? []) as unknown as Row[]).map((r) => ({
+  return (data ?? []).map((r) => ({
     profileId: r.profile_id,
-    status: r.status,
-    createdAt: r.created_at,
+    // `status` is a free-text column at the DB layer; the app constrains it to RsvpStatus.
+    status: r.status as RsvpStatus,
+    // created_at has a DB default (never null for an app-written RSVP); ?? keeps the string contract.
+    createdAt: r.created_at ?? '',
   }))
 }
 
@@ -132,7 +128,7 @@ export async function setRsvpMuted(
   profileId: string,
   muted: boolean,
 ): Promise<void> {
-  const admin = untyped()
+  const admin = createAdminClient()
   await admin
     .from('event_rsvps')
     .update({ muted })

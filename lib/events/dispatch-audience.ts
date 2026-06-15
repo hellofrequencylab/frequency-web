@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distanceKm } from '@/lib/distance'
 
@@ -25,13 +24,8 @@ import { distanceKm } from '@/lib/distance'
 // and consent at drain time (lib/queue/handlers.ts → sendPushToProfile), and the
 // feed read path re-checks event visibility so a private event never leaks.
 //
-// New columns/tables (events.geog, event_rsvps.muted) aren't in
-// lib/database.types.ts yet, so this runs on the untyped admin client per the
-// established `as unknown as SupabaseClient` cast convention.
-
-function untyped(): SupabaseClient {
-  return createAdminClient()
-}
+// events.geog / event_rsvps.muted are in lib/database.types.ts now, so this runs on
+// the typed admin client directly.
 
 /** A GeoJSON-ish point as PostgREST serialises a PostGIS geography column. */
 interface PointGeoJson {
@@ -62,7 +56,7 @@ function pointFromGeog(geog: unknown): { lat: number; lng: number } | null {
 export async function resolveEventDispatchAudience(
   eventId: string,
 ): Promise<string[]> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const audience = new Set<string>()
 
   // 1. Guests — going/maybe/waitlist, per-event mute honoured.
@@ -73,7 +67,7 @@ export async function resolveEventDispatchAudience(
       .eq('event_id', eventId)
       .eq('muted', false)
       .in('status', ['going', 'maybe', 'waitlist'])
-    for (const r of (data ?? []) as unknown as { profile_id: string }[]) {
+    for (const r of data ?? []) {
       if (r.profile_id) audience.add(r.profile_id)
     }
   } catch {
@@ -89,9 +83,8 @@ export async function resolveEventDispatchAudience(
       .select('scope_type, scope_id')
       .eq('id', eventId)
       .maybeSingle()
-    const ev = (data ?? null) as { scope_type: string | null; scope_id: string | null } | null
-    scopeType = ev?.scope_type ?? null
-    scopeId = ev?.scope_id ?? null
+    scopeType = data?.scope_type ?? null
+    scopeId = data?.scope_id ?? null
   } catch {
     // no scope read — guests-only fan-out still proceeds
   }
@@ -103,7 +96,7 @@ export async function resolveEventDispatchAudience(
         .select('profile_id')
         .eq('circle_id', scopeId)
         .eq('status', 'active')
-      for (const m of (data ?? []) as { profile_id: string }[]) {
+      for (const m of data ?? []) {
         if (m.profile_id) audience.add(m.profile_id)
       }
     } catch {
@@ -123,7 +116,7 @@ export async function viewerHasActiveRsvp(
   eventId: string,
   profileId: string,
 ): Promise<boolean> {
-  const admin = untyped()
+  const admin = createAdminClient()
   const { data } = await admin
     .from('event_rsvps')
     .select('id')
@@ -132,7 +125,7 @@ export async function viewerHasActiveRsvp(
     .eq('muted', false)
     .in('status', ['going', 'maybe', 'waitlist'])
     .maybeSingle()
-  return !!(data as { id: string } | null)
+  return !!data
 }
 
 /** The event fields the feed gate needs (read once on the admin client). */

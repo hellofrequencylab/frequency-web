@@ -7,10 +7,8 @@
 //
 // Storage is the `event_post_reactions` table (migration
 // 20260626000000_event_post_reactions.sql), keyed unique on (post, profile, kind)
-// so a member's reaction toggles instead of stacking. The table is newer than the
-// generated DB types (lib/database.types.ts), so reads/writes go through an untyped
-// admin client — the established `as unknown as SupabaseClient` convention for
-// not-yet-regenerated tables (see lib/events/capacity.ts, social-actions.ts).
+// so a member's reaction toggles instead of stacking. The table is in the generated
+// DB types (lib/database.types.ts) now, so reads/writes use the typed admin client.
 //
 // AUTHORIZATION: the admin client bypasses RLS, so every entry point re-checks
 // server-side exactly like the post actions do — a member must be able to READ the
@@ -18,7 +16,6 @@
 // cohost / guest) to add one. The DB migration encodes the same rules in RLS as the
 // second line of defence.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isEventCohost } from '@/lib/events/cohosts'
@@ -33,14 +30,6 @@ export type BoopKind = (typeof BOOP_KINDS)[number]
 
 function isBoopKind(value: string): value is BoopKind {
   return (BOOP_KINDS as readonly string[]).includes(value)
-}
-
-// event_post_reactions (+ some events geo columns) are newer than the generated DB
-// types, so reads/writes go through an untyped admin client. Matches the
-// lib/events/capacity.ts pattern: a return-type annotation widens the typed client
-// without an explicit `as unknown as SupabaseClient` cast (ADR-246).
-function untyped(): SupabaseClient {
-  return createAdminClient()
 }
 
 /** Per-post reaction state for the activity feed: how many of each face, and which
@@ -107,14 +96,11 @@ async function canReadEvent(
   eventId: string,
   profileId: string | null,
 ): Promise<boolean> {
-  // events.visibility isn't in the generated types yet → untyped client (the
-  // capacity.ts pattern), not an inline admin-client cast (ADR-246).
-  const { data: ev } = await untyped()
+  const { data: event } = await admin
     .from('events')
     .select('visibility, host_id')
     .eq('id', eventId)
     .maybeSingle()
-  const event = ev as { visibility: string | null; host_id: string | null } | null
   if (!event) return false
 
   // Public + link-shared events are readable by anyone; the host always reads their
@@ -178,13 +164,12 @@ export async function getEventPostReactions(
     return aggregate([], ids, myProfileId)
   }
 
-  const { data } = await untyped()
+  const { data } = await admin
     .from('event_post_reactions')
     .select('post_id, kind, profile_id')
     .in('post_id', ids)
 
-  const rows = (data ?? []) as unknown as ReactionRow[]
-  return aggregate(rows, ids, myProfileId)
+  return aggregate(data ?? [], ids, myProfileId)
 }
 
 /** What a toggle did and the post's resulting reaction state. */
@@ -219,7 +204,7 @@ export async function toggleEventPostReaction(
   // Only someone on the event may boop (host / cohost / guest) — same gate as posting.
   if (!(await isOnEvent(admin, eventId, myProfileId))) return empty
 
-  const db = untyped()
+  const db = createAdminClient()
 
   const { data: existing } = await db
     .from('event_post_reactions')

@@ -26,7 +26,8 @@
 ## 2. Architecture & code health → A+
 
 A is current (registry rail composed, types regenerated). For A+:
-- 🤖 ◻️ Drop the 8 `as unknown as SupabaseClient` casts + the `lib/events/* untyped()` pattern now the types are regenerated (tsc-gated, per-file). (S)
+- 🤖 ✅ **`lib/events/*` `untyped()` pattern dropped** — the regenerated types let 7 readers (questions · capacity · rsvp-depth · dispatch · dispatch-audience · reactions · geocode) use the typed admin client + typed `nearby_events`/`set_event_geog` RPCs, retiring the `untyped()` escape hatch and the blanket `as unknown as Row` casts (tsc + 36 events tests green). Remaining casts are *justified* escape hatches kept on purpose: `claim-trust.ts` (dynamic `from(table)`), `cohosts.ts` (embedded-join shape), `event-drafts.ts` (non-literal `COLS` projection). (done)
+- 🤖 ◻️ Drop the remaining ~8 `as unknown as` row casts outside events (digest, journey-plans, partners, …) where the generated types now line up (tsc-gated, per-file). (S)
 - 🤖 ◻️ Prune the verified-dead exports (`getConsentScope`, `typeIconKey`, `priorityChipClass`, `HOSTING_AMPLITUDE_*`, `getStreakFreezeEarnedAt`, `canDecodeQr`, `getRealCallerWebRole`, `myListings`, `hasTag`, `buildFirstTouch`, `getMyEntryPoint`, `listEntryPointsByCampaign`, `draftInputFromExtraction`, `canAccessGrowthStudio`). KEEP the in-progress seams (`enrollInRun`, `listRunsForCircle`, `getTrustScore`, `getSpaceBySlug`, `verticalAdminModules`, `savePageDraft`). (S)
 - 🤖 ◻️ Finish ADR-278: registry-compose the rail-panel *components* (lift `RailPanelDef` into a lib so a vertical can add a brand-new panel without editing `rail-registry.tsx`). (M)
 
@@ -81,7 +82,7 @@ were dropped after spot-checks.
 
 **Confirmed dormant seams (located, in-repo)**
 - 🤖 **Member theming switcher** (M) — `lib/theme/cookie.ts` ships `serializeThemeCookie()`/`THEME_COOKIE_ATTRS` but **no UI writes the cookie**; `structureFor()` (`lib/theme/structure.ts`) has zero non-test callers. The axis is built + tested, never consumed.
-- 🤖 **`resolvePageChrome` operator rail overrides** (S) — `lib/layout/page-chrome.ts:235` ("the live shell does not call this yet"); `page_chrome_overrides` rows have no live render effect (only the admin "effective rail" preview reads them). Swap the shell's `railFor` → `resolvePageChrome` to honor them.
+- ✅ **`resolvePageChrome` was a FALSE POSITIVE** (corrected after verifying) — operator rail overrides ARE live: `(main)/layout.tsx` loads `loadChromeOverrides()` and `app-shell.tsx` applies `mergeChrome(railFor(pathname), chromeOverrides, pathname)` per render. `resolvePageChrome` is just an unused server-side convenience twin; only its doc comment was stale ("shell does not call this yet"), now fixed. No render gap. (no action needed)
 - 🤖 **`savePageDraft` server action unwired** (S) — `app/edit/actions.ts:36` ("not yet wired to a UI button; kept for parity"); the draft-save backend has no caller.
 - 🤖 **Entry-point flyer/PDF designer** (M) — `entry-points-client.tsx:321` ("Flyer downloads are turned off for now"); QR PNG/SVG stay, the flyer pipeline is unbuilt.
 - 🤖 **Messages/Channels Phase B** (M) — DMs are 1:1 only; group chat is a private room; channel rooms are read-open with posting gated. The multi-party/group-DM evolution is staged, not finished.
