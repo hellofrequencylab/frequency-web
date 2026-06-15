@@ -95,6 +95,11 @@ export default async function CirclesPage({
     }
   }
 
+  // Cap the fetch at 500 rows so the query can't scan an unbounded table.
+  // Filtering is applied over this set server-side (interest/search/demo/type),
+  // so the cap is applied before any filtering — 500 is a generous ceiling that
+  // keeps the page fast while accommodating any realistic community size.
+  const CIRCLES_FETCH_LIMIT = 500
   let circlesQuery = (supabase)
     .from('circles')
     .select(
@@ -108,11 +113,13 @@ export default async function CirclesPage({
     )
     .neq('status', 'archived')
     .order('name', { ascending: true })
+    .limit(CIRCLES_FETCH_LIMIT)
   // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
   if (!(await demoModeEnabled()) || (await viewerHidesDemo())) circlesQuery = circlesQuery.eq('is_demo', false)
   const { data: rawCircles } = await circlesQuery
 
   const all = (rawCircles ?? []) as unknown as CircleRow[]
+  const hitFetchCap = all.length === CIRCLES_FETCH_LIMIT
 
   const { data: interestRows } = await supabase
     .from('topical_channels').select('id, name, category').order('name')
@@ -284,6 +291,13 @@ export default async function CirclesPage({
         )}
 
         <CirclesToolbar interests={interests} />
+
+        {/* Cap notice — only shown when the fetch hit the safety limit. */}
+        {hitFetchCap && (
+          <p className="mt-3 text-xs text-subtle">
+            Showing the first {CIRCLES_FETCH_LIMIT} Circles. Use the filters above to find what you&rsquo;re looking for.
+          </p>
+        )}
 
         {/* Expanded map — opens above the grid (the Find-near-me button opens it). */}
         <div className="mt-6">
