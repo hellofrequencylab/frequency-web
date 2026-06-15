@@ -6807,3 +6807,16 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 **Consequences:** Staff compose a page's interior across real areas — pick a template, drop each module into a slot, all from the on-page panel with no migration, on the same fail-safe store. The template catalog stays metadata-only (the editor/actions/resolver never import RSCs), the resolver stays pure and fully unit-tested, and the back-compat reader means every layout saved under ADR-270/271 keeps working as the Single template. **Scope note:** still the page's **interior**, not the app **shell** rail (operator-managed in `/admin/page-layout` / `page_chrome_overrides`, ADR-259/260) — the shell-rail half of layout remains the one open piece of BACKLOG §J's slot-registry line.
 
+## ADR-273: Right-rail page panels — a content-aware default (no more bare rail)
+
+**Status:** Accepted (2026-06-15). **No migration, no new system** — a content + routing tweak-spot fix in the existing rail page-panel system (ADR-161/250). Code is the source of truth: [`lib/layout/rail-panels.ts`](../lib/layout/rail-panels.ts) (route → panel keys, unit-tested in `rail-panels.test.ts`) + [`components/sidebar/{rail-panels.tsx,rail-registry.tsx}`](../components/sidebar).
+
+**Context:** The right rail (`right-sidebar.tsx`) renders standing panels (the "Your Quest" streak box + the bottom stats dock) plus **page panels** chosen per route by `pageRailPanels()`. On routes with no explicit rule, the baseline was `['dispatches', 'online']` — and **both of those self-hide when empty with no fallback**. So any unmapped route (notably the new `/lead` Leadership page) collapsed to just the standing streak box. The owner reported "the only thing there is the Streak box; there should be relevant, content-aware blocks."
+
+**Decision:**
+- **New `pulse` panel** (`PulsePanel`) — three aggregate community counts (members · active circles · events this week), each linking to its surface. Aggregate/public data only, so it stays relevant on any route and effectively always renders — the rail's **anchor** against going bare.
+- **Content-aware default.** `DEFAULT_PANELS` becomes `['pulse', 'activenow', 'newcircles', 'events']` — all panels that effectively always render (`pulse`) or self-fall-back (`activenow` → newest members, `newcircles` → popular circles, `events` → community events). Every unmapped route now gets a full, relevant rail.
+- **Leadership rule.** `/lead` (and `/lead/*`) gets its own leader-flavored panels: `['pulse', 'leaderboard', 'activenow', 'events']` (host+ only reach it, so the crew-gated leaderboard always shows).
+
+**Consequences:** The rail is no longer bare on any route — sparse data degrades to the always-on pulse anchor rather than to nothing. Adding a panel stays one entry in the route map + one in the registry (no change to that contract). The standing panels (streak cockpit, stats dock) are unchanged.
+

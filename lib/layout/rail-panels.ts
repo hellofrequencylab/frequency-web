@@ -11,12 +11,15 @@
 
 export type PanelKey =
   | 'dispatches' | 'events' | 'members' | 'leaderboard' | 'online' | 'circles'
-  | 'newcircles' | 'activenow'
+  | 'newcircles' | 'activenow' | 'pulse'
 
 // Ordered, longest-prefix-wins. The first matching rule supplies the page panels.
 const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
   // Quest — the game board: who's climbing + who's around to play with.
   { test: (p) => p === '/crew' || p.startsWith('/crew/'), panels: ['leaderboard', 'online'] },
+  // Leadership — a volunteer leader stewarding their community: the standings, who's active,
+  // and circles/events to point people at. (host+ only reach /lead, so leaderboard always shows.)
+  { test: (p) => p === '/lead' || p.startsWith('/lead/'), panels: ['pulse', 'leaderboard', 'activenow', 'events'] },
   // Events — what's coming up, who's going, and circles to find more.
   { test: (p) => p === '/events' || p.startsWith('/events/'), panels: ['events', 'online', 'circles'] },
   // Circles — discover more circles (incl. just-launched ones) + who's active + what's on.
@@ -37,8 +40,12 @@ const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
   { test: (p) => p === '/feed' || p === '/broadcast' || p.startsWith('/broadcast/'), panels: ['events', 'activenow', 'dispatches', 'newcircles'] },
 ]
 
-// The baseline for any page not matched above: the community pulse.
-const DEFAULT_PANELS: PanelKey[] = ['dispatches', 'online']
+// The baseline for any page not matched above. Uses panels that effectively ALWAYS render —
+// `pulse` (aggregate counts) plus the self-falling-back people/circles/events tiles — so an
+// unmapped route (e.g. /lead before its rule, or a new section) still gets a full, relevant
+// rail instead of collapsing to just the standing panels. (Was ['dispatches','online'], which
+// both self-hide with no fallback, leaving the rail bare.)
+const DEFAULT_PANELS: PanelKey[] = ['pulse', 'activenow', 'newcircles', 'events']
 
 /** The page panels for a path. Always returns at least the default pulse panel. */
 export function pageRailPanels(pathname: string): PanelKey[] {
