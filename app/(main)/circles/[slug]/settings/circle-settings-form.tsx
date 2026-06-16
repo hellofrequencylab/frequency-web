@@ -3,8 +3,9 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Check } from 'lucide-react'
-import { updateCircleSettings } from '@/app/(main)/admin/actions'
+import { Archive, Check } from 'lucide-react'
+import { archiveCircle, updateCircleSettings } from '@/app/(main)/admin/actions'
+import { DangerModal } from '@/components/admin/danger-modal'
 import { ImageUpload } from '@/components/ui/image-upload'
 
 export interface CircleSettingsInitial {
@@ -42,7 +43,21 @@ export function CircleSettingsForm({
   const [neighborhood, setNeighborhood] = useState(initial.neighborhood)
   const [resonancePublic, setResonancePublic] = useState(initial.resonancePublic)
   const [pending, start] = useTransition()
+  const [confirmArchive, setConfirmArchive] = useState(false)
+  const [archiving, startArchive] = useTransition()
   const router = useRouter()
+
+  function archive() {
+    startArchive(async () => {
+      try {
+        await archiveCircle(circleId)
+        router.push('/circles')
+      } catch {
+        // archiveCircle is host-or-admin gated and throws on failure; keep the
+        // form open so the host can retry rather than leaving a dead state.
+      }
+    })
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -128,6 +143,33 @@ export function CircleSettingsForm({
           Cancel
         </Link>
       </div>
+
+      <div className="mt-2 border-t border-border pt-5 sm:col-span-2">
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Danger zone</p>
+        <button
+          type="button"
+          onClick={() => setConfirmArchive(true)}
+          disabled={archiving || pending}
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
+        >
+          <Archive className="h-4 w-4" /> Archive this circle
+        </button>
+        <p className="mt-1.5 text-2xs text-muted">Hides the circle from discovery. An admin can restore it later.</p>
+      </div>
+
+      <DangerModal
+        open={confirmArchive}
+        onClose={() => setConfirmArchive(false)}
+        title="Archive this circle"
+        body={
+          <>
+            Archiving <span className="font-semibold text-text">{name.trim() || 'this circle'}</span> hides it from
+            discovery and its members lose access. It is not deleted, and an admin can restore it later.
+          </>
+        }
+        confirmLabel="Archive circle"
+        onConfirm={archive}
+      />
     </form>
   )
 }
