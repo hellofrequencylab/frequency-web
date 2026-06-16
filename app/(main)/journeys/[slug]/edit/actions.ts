@@ -197,24 +197,23 @@ export async function draftSlotCoachingAction(
 
 // ── Vera Journey composer (JOURNEYS.md §6) ──────────────────────────────────────────────
 //
-// Every new Journey opens pre-propagated with a balanced shape: one Practice each for Mind,
-// Body, and Spirit, plus two challenges. The author tells Vera what they're making and she
-// fills the shape — reusing fitting library practices or writing new ones; or the author
-// starts from the empty shape and fills it by hand.
+// Every new Journey opens pre-propagated with a balanced shape: one slot per Pillar — a Mind,
+// Body, and Spirit practice, plus an Expression slot written as a short, fun challenge-style
+// activity. So a fresh Journey starts balanced across all four Pillars. The author tells Vera
+// what they're making and she fills the shape (reusing fitting library practices or writing new
+// ones), or starts from the empty shape and fills it by hand. The separate, gamified Challenges
+// feature is its own bonus layer and is not touched here.
 
 const SCAFFOLD_PHASE = 'Your first week'
 
-const PRACTICE_SLOTS: { slug: ComposePillar; label: string; prompt: string }[] = [
+const PILLAR_SLOTS: { slug: ComposePillar; label: string; prompt: string }[] = [
   { slug: 'mind', label: 'Mind practice', prompt: 'A Mind practice to steady attention. Pick one from the library or let Vera draft it.' },
   { slug: 'body', label: 'Body practice', prompt: 'A Body practice that is physical and doable. Pick one from the library or let Vera draft it.' },
   { slug: 'spirit', label: 'Spirit practice', prompt: 'A Spirit practice that is reflective or connecting. Pick one from the library or let Vera draft it.' },
-]
-const CHALLENGE_SLOTS: { label: string; prompt: string }[] = [
-  { label: 'Challenge 1', prompt: 'A small real-world challenge for the week.' },
-  { label: 'Challenge 2', prompt: 'A second challenge to stretch a little further.' },
+  { slug: 'expression', label: 'Expression challenge', prompt: 'The fun part: a short challenge to put the week to work. Make something, share something, or do something out loud. Let Vera draft it or write your own.' },
 ]
 
-/** Pillar slug -> id, for tagging the scaffold's practice slots with their Focus. */
+/** Pillar slug -> id, for tagging the scaffold's slots with their Pillar. */
 async function pillarIdsBySlug(): Promise<Partial<Record<ComposePillar, string>>> {
   const pillars = await getPillars()
   const out: Partial<Record<ComposePillar, string>> = {}
@@ -235,8 +234,8 @@ async function insertChildren(admin: AdminDb, planId: string, parentId: string, 
   }
 }
 
-/** Build the empty shape (a phase with the three Pillar practice slots + two challenge slots),
- *  prompts in the body. The no-AI path, and the fallback when Vera is off. */
+/** Build the empty shape (a phase with the four Pillar slots — Mind/Body/Spirit practices + an
+ *  Expression challenge), prompts in the body. The no-AI path, and the fallback when Vera is off. */
 export async function scaffoldJourneyAction(slug: string): Promise<ActionResult<{ phaseId: string }>> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
@@ -251,24 +250,21 @@ export async function scaffoldJourneyAction(slug: string): Promise<ActionResult<
   if (!ph) return fail('Could not start the journey shape.')
   const phaseId = String((ph as { id: string }).id)
 
-  const rows: Omit<NewBlock, 'plan_id' | 'parent_id' | 'sort_order'>[] = [
-    ...PRACTICE_SLOTS.map((s) => ({
-      block_type: 'practice',
-      title: s.label,
-      body: s.prompt,
-      domain_id: pillarIds[s.slug] ?? null,
-      required: true,
-    })),
-    ...CHALLENGE_SLOTS.map((s) => ({ block_type: 'exercise', title: s.label, body: s.prompt, required: true })),
-  ]
+  const rows: Omit<NewBlock, 'plan_id' | 'parent_id' | 'sort_order'>[] = PILLAR_SLOTS.map((s) => ({
+    block_type: 'practice',
+    title: s.label,
+    body: s.prompt,
+    domain_id: pillarIds[s.slug] ?? null,
+    required: true,
+  }))
   await insertChildren(admin, a.planId, phaseId, rows)
   done(slug)
   return ok({ phaseId })
 }
 
-/** Vera composes the opening week from a one-line description: a Mind, Body, and Spirit practice
- *  (reused from the library or freshly written) plus two challenges. Falls back to the empty
- *  scaffold when Vera is off, so the author always gets the shape. */
+/** Vera composes the opening week from a one-line description: one slot per Pillar (Mind/Body/Spirit
+ *  practices reused from the library or freshly written, and an Expression challenge). Falls back to
+ *  the empty scaffold when Vera is off, so the author always gets the balanced shape. */
 export async function composeJourneyAction(
   slug: string,
   description: string,
@@ -337,7 +333,8 @@ export async function composeJourneyAction(
     }
   }
 
-  const practiceRows: ComposedRow[] = PRACTICE_SLOTS.map((s) =>
+  // One row per Pillar, in Pillar order. Any slot Vera left empty falls back to its prompt placeholder.
+  const rows: ComposedRow[] = PILLAR_SLOTS.map((s) =>
     filled.get(s.slug) ?? {
       block_type: 'practice',
       title: s.label,
@@ -346,11 +343,8 @@ export async function composeJourneyAction(
       required: true,
     },
   )
-  const challengeRows: ComposedRow[] = (composition.challenges.length ? composition.challenges : CHALLENGE_SLOTS.map((s) => ({ title: s.label, body: s.prompt })))
-    .slice(0, 2)
-    .map((c) => ({ block_type: 'exercise', title: c.title.slice(0, 200), body: (c.body ?? '').slice(0, 2000), required: true }))
 
-  await insertChildren(admin, a.planId, phaseId, [...practiceRows, ...challengeRows])
+  await insertChildren(admin, a.planId, phaseId, rows)
 
   // Name an untitled Journey from Vera's suggestion.
   if (composition.title) {

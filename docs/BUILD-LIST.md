@@ -151,11 +151,14 @@ reusable `<FeaturedBadge>` (filled star, `signal` tokens) in the `EntityCard` ba
 into the member Circles + Events cards via `featured_at`. Featured-first **sort** is still an optional
 follow-up; Channels curation rides existing `display_order`.
 
-**✅ Vera Journey composer (ADR-298).** New Journeys open pre-propagated with a balanced shape — a
-Mind, Body, and Spirit practice + two challenges — and a Vera box at the top of the Curriculum tab.
-The author describes the Journey; Vera fills the shape, reusing fitting library practices (validated
-ids) or writing new inline ones, challenges as `exercise` blocks. `scaffoldJourneyAction` lays the
-empty shape when AI is off. `lib/ai/journey-composition.ts` (Opus). No schema change.
+**✅ Vera Journey composer (ADR-298, ADR-299).** New Journeys open pre-propagated with a **balanced
+four-Pillar shape** — a Mind, Body, and Spirit practice plus an **Expression** slot written as a fun
+challenge-style activity — and a Vera box at the top of the Curriculum tab. The author describes the
+Journey; Vera fills each slot, reusing fitting library practices (validated ids) or writing new inline
+ones. All four are `practice` blocks tagged to their Pillar, so the Journey starts centered on the
+Signature balance. `scaffoldJourneyAction` lays the empty shape when AI is off. The gamified Challenges
+(`season_challenges`, incl. the per-Journey Expression capstone) stay a separate bonus layer.
+`lib/ai/journey-composition.ts` (Opus). No schema change.
 
 **✅ Journey course builder — full-page editor (ADR-297).** The Journey editor moved off the Studio
 **popup** onto a full-page **course builder** at `/journeys/[slug]/edit` (both "New journey" and

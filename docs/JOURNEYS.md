@@ -134,14 +134,18 @@ collapsed to a mini strip** (`railStartsCollapsed` in `lib/layout/page-chrome.ts
 returns `'global'`, the rail is never removed): an expand toggle at the rail's foot opens it to the
 full width, a collapse toggle returns it. Default on this route is collapsed, for the build width.
 
-**Vera composes the opening week.** A new Journey opens pre-propagated with a balanced shape: one
-Practice each for **Mind, Body, and Spirit** plus **two challenges**. The Vera box sits at the top
-of the Curriculum tab — the author says what they're making and Vera fills the shape, either reusing
-a fitting library practice (`searchLibraryPractices({ pillarId })` candidates, picked by id) or
-writing a new inline practice; challenges land as `exercise` blocks. Falls back to the empty shape
-("Start with the shape") when AI is off. Code: `journey-composer.tsx`, `lib/ai/journey-composition.ts`
-(Opus, forced-tool, every library id re-validated against the candidates), `composeJourneyAction` /
-`scaffoldJourneyAction`.
+**Vera composes the opening week.** A new Journey opens pre-propagated with a balanced shape: **one
+slot per Pillar** — a **Mind**, **Body**, and **Spirit** practice, plus an **Expression** slot written
+as a short, fun challenge-style activity ("put it to work"). So a fresh Journey starts balanced across
+all four Pillars (each slot is a block tagged to its Pillar `domain_id`; the per-Pillar balance read
+counts them like any practice). The Vera box sits at the top of the Curriculum tab — the author says
+what they're making and Vera fills the shape, either reusing a fitting library practice
+(`searchLibraryPractices({ pillarId })` candidates, picked by id) or writing a new inline one. Falls
+back to the empty shape ("Start with the shape") when AI is off. Code: `journey-composer.tsx`,
+`lib/ai/journey-composition.ts` (Opus, forced-tool, every library id re-validated against the
+candidates), `composeJourneyAction` / `scaffoldJourneyAction`. The separate gamified **Challenges**
+(season `season_challenges`, incl. the per-Journey Expression *capstone*) are their own bonus layer,
+untouched by the composer.
 
 **Structure-first**, template-driven, with live preview:
 

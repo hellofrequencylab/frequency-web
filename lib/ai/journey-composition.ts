@@ -1,9 +1,10 @@
 // Vera's "build my Journey" composer for the course builder (JOURNEYS.md §6). From a one-line
-// description, Vera drafts a balanced opening week: one Practice each for Mind, Body, and Spirit
-// (either picked from the member's library or freshly written) plus two challenges. Mirrors
-// lib/ai/journey-outline.ts: forced-tool structured output + the voice primer + the usage ledger;
-// never trust the raw shape, and every library id is re-validated against the candidates we sent.
-// Degrades to null when AI is off or the call fails, so the builder falls back to an empty scaffold.
+// description, Vera drafts a balanced opening week: one slot per Pillar — a Mind, Body, and Spirit
+// practice (picked from the library or freshly written) and an Expression slot written as a short,
+// fun challenge-style activity that puts the week to work. So a fresh Journey opens balanced across
+// all four Pillars. Mirrors lib/ai/journey-outline.ts: forced-tool structured output + the voice
+// primer + the usage ledger; never trust the raw shape, and every library id is re-validated against
+// the candidates we sent. Degrades to null when AI is off, so the builder falls back to an empty shape.
 
 import Anthropic from '@anthropic-ai/sdk'
 import { getAnthropic } from './client'
@@ -12,8 +13,8 @@ import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
 import { withVoice } from './voice'
 
-export type ComposePillar = 'mind' | 'body' | 'spirit'
-export const COMPOSE_PILLARS: ComposePillar[] = ['mind', 'body', 'spirit']
+export type ComposePillar = 'mind' | 'body' | 'spirit' | 'expression'
+export const COMPOSE_PILLARS: ComposePillar[] = ['mind', 'body', 'spirit', 'expression']
 
 /** A candidate library practice offered to Vera for one Pillar. */
 export interface ComposeCandidate {
@@ -22,73 +23,57 @@ export interface ComposeCandidate {
   summary: string | null
 }
 
-/** One filled practice slot: either a library pick (by id) or a freshly written practice. */
+/** One filled Pillar slot: either a library pick (by id) or a freshly written practice/activity. */
 export type ComposedPractice =
   | { pillar: ComposePillar; mode: 'library'; practiceId: string }
   | { pillar: ComposePillar; mode: 'create'; title: string; body: string }
 
-export interface ComposedChallenge {
-  title: string
-  body: string
-}
-
 export interface JourneyComposition {
   /** A refined Journey name, if Vera suggested one. */
   title: string | null
+  /** One slot per Pillar (Mind/Body/Spirit/Expression), in Pillar order. */
   practices: ComposedPractice[]
-  challenges: ComposedChallenge[]
 }
 
 const TOOL_NAME = 'compose_journey'
 
 const TOOL: Anthropic.Tool = {
   name: TOOL_NAME,
-  description: 'Return a balanced opening week: a Mind, Body, and Spirit practice plus two challenges.',
+  description: 'Return a balanced opening week: one slot for each Pillar (Mind, Body, Spirit, Expression).',
   input_schema: {
     type: 'object',
     properties: {
       title: { type: 'string', description: 'An optional short, evocative name for the Journey (<= 60 chars).' },
       practices: {
         type: 'array',
-        description: 'Exactly three practices: one for mind, one for body, one for spirit.',
+        description: 'Exactly four slots: one each for mind, body, spirit, and expression.',
         items: {
           type: 'object',
           properties: {
-            pillar: { type: 'string', enum: COMPOSE_PILLARS, description: 'Which Pillar this practice covers.' },
+            pillar: { type: 'string', enum: COMPOSE_PILLARS, description: 'Which Pillar this slot covers.' },
             mode: {
               type: 'string',
               enum: ['library', 'create'],
               description: 'library = reuse one of the candidate practices listed for this Pillar; create = write a new one.',
             },
             practiceId: { type: 'string', description: 'When mode=library: the exact id of a candidate practice for this Pillar.' },
-            title: { type: 'string', description: 'When mode=create: a short, plain practice name.' },
-            body: { type: 'string', description: 'When mode=create: 2 to 4 short steps for doing it, in second person.' },
+            title: { type: 'string', description: 'When mode=create: a short, plain name. For expression, a short fun challenge name.' },
+            body: { type: 'string', description: 'When mode=create: 2 to 4 short steps in second person. For expression, what to make/share/do.' },
           },
           required: ['pillar', 'mode'],
         },
       },
-      challenges: {
-        type: 'array',
-        description: 'Exactly two challenges: small, concrete real-world tasks that stretch the member a little.',
-        items: {
-          type: 'object',
-          properties: {
-            title: { type: 'string', description: 'A short, concrete challenge name.' },
-            body: { type: 'string', description: 'One or two plain sentences on what to do and how to know it is done.' },
-          },
-          required: ['title', 'body'],
-        },
-      },
     },
-    required: ['practices', 'challenges'],
+    required: ['practices'],
   },
 }
 
-const SYSTEM = `You are Vera, Frequency's warm, plain-spoken guide. An author is building a Journey: a short group-coaching program a Circle moves through together. From their description, compose a balanced opening week.
+const SYSTEM = `You are Vera, Frequency's warm, plain-spoken guide. An author is building a Journey: a short group-coaching program a Circle moves through together. From their description, compose a balanced opening week with one slot for each of the four Pillars.
 
 Rules:
-- Exactly three practices: one for Mind, one for Body, one for Spirit. For each, prefer reusing a fitting practice from the candidates listed for that Pillar (mode=library, return its exact id). Only write a new one (mode=create) when no candidate fits; then give a short title and 2 to 4 concrete steps in second person.
-- Exactly two challenges: small, concrete real-world tasks (not lessons) that stretch the member a little, each with a short title and one or two plain sentences.
+- Exactly four slots: Mind, Body, Spirit, and Expression.
+- Mind, Body, Spirit are quiet practices. For each, prefer reusing a fitting practice from the candidates listed for that Pillar (mode=library, return its exact id). Only write a new one (mode=create) when no candidate fits; then give a short title and 2 to 4 concrete steps in second person.
+- Expression is how they put the week to work: write it (mode=create) as a short, fun challenge-style activity. Make something, share something, or do something out loud. Give it a short name and one or two plain sentences on what to do.
 - Plain, specific, sentence case. No hype, no emoji, no em dashes. Never narrate the reader's feelings.
 - Never invent a library id that was not listed. Always call the ${TOOL_NAME} tool.`
 
@@ -113,11 +98,8 @@ export async function draftJourneyComposition(input: {
   }).join('\n\n')
 
   // The set of ids we actually offered, per Pillar — used to reject any hallucinated id.
-  const allowed: Record<ComposePillar, Set<string>> = {
-    mind: new Set((input.library.mind ?? []).map((c) => c.id)),
-    body: new Set((input.library.body ?? []).map((c) => c.id)),
-    spirit: new Set((input.library.spirit ?? []).map((c) => c.id)),
-  }
+  const allowed = {} as Record<ComposePillar, Set<string>>
+  for (const p of COMPOSE_PILLARS) allowed[p] = new Set((input.library[p] ?? []).map((c) => c.id))
 
   const userText = `Journey description:\n${description}\n\n${candidateText}\n\nCompose the opening week and call ${TOOL_NAME}.`
 
@@ -170,22 +152,8 @@ function coerce(raw: unknown, allowed: Record<ComposePillar, Set<string>>): Jour
       }
     }
   }
-  // Keep Pillar order (mind, body, spirit); only the slots Vera filled validly.
+  // Keep Pillar order (mind, body, spirit, expression); only the slots Vera filled validly.
   const practices = COMPOSE_PILLARS.map((p) => byPillar.get(p)).filter((s): s is ComposedPractice => !!s)
-
-  const challenges: ComposedChallenge[] = Array.isArray(r.challenges)
-    ? r.challenges
-        .map((c): ComposedChallenge | null => {
-          if (!c || typeof c !== 'object') return null
-          const cr = c as Record<string, unknown>
-          const ctitle = typeof cr.title === 'string' ? cr.title.trim().slice(0, 120) : ''
-          const body = typeof cr.body === 'string' ? cr.body.trim().slice(0, 600) : ''
-          return ctitle ? { title: ctitle, body } : null
-        })
-        .filter((c): c is ComposedChallenge => !!c)
-        .slice(0, 2)
-    : []
-
-  if (practices.length === 0 && challenges.length === 0) return null
-  return { title, practices, challenges }
+  if (practices.length === 0) return null
+  return { title, practices }
 }

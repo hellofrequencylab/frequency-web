@@ -7,15 +7,15 @@ import { composeJourneyAction, scaffoldJourneyAction } from '@/app/(main)/journe
 import { isError } from '@/lib/action-result'
 
 // The Vera "build my Journey" composer — the box at the TOP of the Curriculum tab. The author
-// describes what they're making; Vera fills a balanced opening week (a Mind, Body, and Spirit
-// practice — reused from the library or freshly written — plus two challenges). The empty shape
-// is shown as a preview, and "Start with the shape" lays it down without AI to fill by hand.
+// describes what they're making; Vera fills a balanced opening week with one slot per Pillar (a
+// Mind, Body, and Spirit practice — reused from the library or freshly written — plus an Expression
+// challenge to put the week to work), so the Journey starts balanced across all four Pillars. The
+// empty shape is shown as a preview, and "Start with the shape" lays it down without AI to fill by hand.
 const PREVIEW: { tag: string; text: string }[] = [
   { tag: 'Mind', text: 'A practice to steady attention.' },
   { tag: 'Body', text: 'A physical, doable practice.' },
   { tag: 'Spirit', text: 'A reflective or connecting practice.' },
-  { tag: 'Challenge', text: 'A small real-world task.' },
-  { tag: 'Challenge', text: 'A second, slightly bigger task.' },
+  { tag: 'Expression', text: 'A fun challenge to put the week to work.' },
 ]
 
 export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: boolean }) {
@@ -57,8 +57,9 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
         <h2 className="text-base font-bold text-text">Build your Journey with Vera</h2>
       </div>
       <p className="mt-1 text-sm text-muted">
-        Tell Vera what you&apos;re making. She&apos;ll add a Mind, Body, and Spirit practice (new ones or picks from the
-        library) plus two challenges. You can edit anything after.
+        Tell Vera what you&apos;re making. She&apos;ll fill one slot per Pillar (a Mind, Body, and Spirit practice,
+        new or picked from the library, plus an Expression challenge to put it to work), so the Journey starts
+        balanced. You can edit anything after.
       </p>
       <textarea
         value={desc}
