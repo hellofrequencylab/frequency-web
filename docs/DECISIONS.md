@@ -6960,3 +6960,100 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 **Consequences:** Beta members start S1 fresh under the correct model. The enum rename is permanent: the old values (echo / signal / beacon / conduit / luminary) are retired from the schema and must not be reintroduced. Any seed data, demo-seeding scripts, or fixtures that reference old rank names must be updated.
 
+## ADR-287: Completion-model go-live follow-ups (Expression capstone UI, dead-rank cleanup, self-edit hardening)
+
+**Status:** Accepted (2026-06-15) — the wiring + cleanup pass that makes the completion model functional and consistent end to end. Migrations: `20260630010000_fix_founders_table_rank_gate.sql`, `20260630020000_guard_lifetime_rank_self_edit.sql`.
+
+**Context:** ADR-283/284/286 shipped the schema, ranks, and completion engine (`lib/quest/*`), but a final scan found gaps: (1) `completeExpressionChallenge` had no caller, so the Expression Challenge — required to finish a Journey — was unreachable, meaning no Journey could ever complete; (2) the recruiter-ladder apex still read "Luminary" in `lib/entry-points/leaderboard.ts` though NAMING.md renamed it to **Catalyst** to dodge the season-rank collision; (3) the Founders' Table store item gated on `requires_rank: "conduit"`, a dropped rank, so the gate's index lookup returned -1 and silently never applied (item purchasable by anyone); (4) `prevent_economy_self_edit` guarded `current_season_rank` but not `lifetime_rank`, and the `seasoned_agent` retro rule pays 200 Gems for reaching Adept+ lifetime — a self-grant hole via the profiles self-update RLS policy.
+
+**Decision:**
+- **Expression capstone UI.** Add a member-facing control on the Season Challenges page for expression-type challenges (a "where did you share it" choice instead of a counter bar) backed by a `completeExpression(journeyId, mode)` server action. The member **self-attests** the share; `mode: 'circle'` pays +50 Zaps, `mode: 'online'` pays +30 Gems. The action resolves `profileId` from the session, never the client. This is the only member entry point to the capstone and it triggers `tryCompleteJourney`.
+- **Recruiter apex → Catalyst.** Rename in code + test (the tier key is computed, never persisted, so the rename is display-only and safe).
+- **Founders' Table gate → `adept`** (the "one below apex" slot Conduit held in the old 6-rank ladder), via data migration.
+- **Guard `lifetime_rank`** in `prevent_economy_self_edit`. All legitimate writers run as service_role and bypass the guard, so nothing legitimate breaks.
+
+**Consequences:** The completion loop is now reachable end to end (practice logging advances days; the Expression control closes the Journey). **Known honor-system tradeoff (flagged):** the Circle vs online choice is self-attested with no Circle check-in proof, so a member could pick "Circle" for the larger Zap reward without attending. This is bounded — the reward grants once per Journey/season (reward_grants + the fresh-completion guard) and rank still requires 14 real practice days — but tying the Circle mode to an actual Circle check-in is a future hardening if abuse appears. The `grantJourneyRewards` `completionGems` param is retained as a documented no-op shim (the journey **builder** still sets `completion_gems`; what that means for member-built library Journeys under the completion model is a separate open question).
+
+## ADR-288: Vera quality gate for member-built Journeys (ranked_eligible + coaching)
+
+**Status:** Accepted (2026-06-15) — implements the product owner's "Gate + coach" decision on `journey_plans.ranked_eligible` + `vera_review` (schema already present). Code: `lib/ai/journey-review.ts`, `lib/journey-plans.ts` (`applyVeraReview`/`getVeraReview`), `app/(main)/journeys/actions.ts`, `components/journey/v2/journey-settings.tsx`.
+
+**Context:** ADR-283/284 let member-built (library) Journeys count toward season rank. Open eligibility would dilute rank (anyone could ship a thin Journey and farm completions); a human-only review queue would not scale to a "massive, open library". The product owner chose **Gate + coach:** publishing to the library stays open and easy (visibility is ungated), but **counting toward rank** requires clearing a quality bar, and the author gets specific coaching either way.
+
+**Decision:** On publish (and on author resubmit after an edit), Vera reviews the Journey against the **Journey Creation standard** (`content/leader-training/how-to-create-a-journey.md`, loaded as the rubric) with the **voice primer** injected, via a forced-tool structured-output call on **Opus** (`MODELS.opus`, `thinking: disabled`, cached system prompt). `reviewJourneyForLibrary(planId)` returns `{ status, score, feedback[], reviewedAt }`. The verdict + `ranked_eligible = (status === 'approved')` are written **only through the service-role admin client** (`applyVeraReview`) — members can never self-approve, and client-supplied eligibility is never trusted. Approval requires **both** the model's `approved` verdict **and** `score >= PASS_SCORE` (70); a model "approved" below the bar is downgraded to rejected (the deterministic floor in `coerce`). Budget cap `journey-review: $3/day` + the `platform_flags.ai_enabled` kill switch are respected via `aiAvailable()` / `featureOverBudget()`.
+
+**Decision (fail-closed):** The review **never throws** and never blocks publishing. If AI is off, over budget, the call fails, or the model returns an unusable shape, it returns `status: 'pending'` and the caller clears `ranked_eligible` — an unreviewed Journey is never ranked-eligible. The Journey still goes live in the library; only rank eligibility is withheld. The coaching surfaces in the builder's Settings panel (`VeraRankPanel`): approved shows "added to the ranked library", rejected/pending shows Vera's notes plus a "Revise and submit for review" button that re-runs the gate.
+
+**Consequences:** The library stays open while rank stays meaningful. Review is **synchronous** with publish (one Opus call, low volume, the author waits ~seconds and sees the verdict immediately) — acceptable because publish is infrequent and the result is the point of the interaction; an async/queue path is a later option if volume grows. **Re-review on edit** is an explicit author action (the resubmit button), not an automatic trigger on every save, so a published approval is refreshed deliberately and can't silently go stale across a material change. **Spoofing surface:** authorship + profileId come from the session (`getCallerProfile`/`assertOwner`), the verdict is computed server-side, and the eligibility write is admin-only — there is no client path to set `ranked_eligible`. The honor-system note from ADR-287 (self-attested capstone) is unrelated; this gate concerns only library-Journey rank eligibility.
+
+## ADR-289: The Quest — UI/UX redesign (hub, cooperative-first, forgiving, member-built library)
+
+**Status:** Accepted (2026-06-15) — strategy in [QUEST-UI-REDESIGN.md](QUEST-UI-REDESIGN.md); shipped across PRs #804–#811. Surfaces: `app/(main)/crew/*`, `components/quest/*`, `components/crew/*`, `app/(main)/journeys/*`.
+
+**Context:** The completion model (ADR-283/284) changed what rank *means*, but the UI still spoke the old Zap-XP / 6-rank language across a sprawl of crew tabs. The owner asked for a ground-up redesign of every Quest surface (Journeys, Practices, Challenges; member-facing + admin) with "a super clean way to add, edit and manage." A best-practices review (echoing the cohort-program research behind the Journeys re-scope) confirmed: cooperative beats competitive, global leaderboards demotivate, and endowed-progress + streak-with-freeze + praise drive completion.
+
+**Decision (member-facing):** A single glanceable **hub** at `/crew` (Season Map) as the front door; a **Journey detail** surface (rank ladder + the 14-day completion bar + Expression); a **cooperative** leaderboard (collective goal + Circle framing, never a global rank-shaming board); **forgiving streaks** (streak-with-freeze, no punitive reset); a **Trophy Case** for finished Journeys / season trophies. Built entirely on DAWN tokens (no hex, no `text-[Npx]`), composed from the page kit (templates / PageHeading / StatCard / SectionHeader / EmptyState), reduced-motion-safe.
+
+**Decision (owner calls, locked):** Cooperative-first; the capstone stays **self-attested** (ADR-287 honor-system tradeoff accepted); **member-built Journeys are highly encouraged** — the goal is a massive library, with quality maintained by the **Vera gate** (ADR-288) rather than a human queue; evolve within DAWN (no new design language).
+
+**Consequences:** The Quest now reads in the completion-model language end to end. **Leader Training** (`content/leader-training/how-to-create-a-journey.md` + `/lead/training-library`, `requireLeadFloor`-gated) ships as a help-doc library so operators can author to standard. The redesign **added** the hub next to the existing surfaces rather than replacing them; the resulting information-architecture fragmentation is tracked as open work in ADR-293 / [QUEST-IA-DEBT.md](QUEST-IA-DEBT.md).
+
+## ADR-290: Pillar-based Journey completion + member-anchored window + Expression as the 4th Pillar
+
+**Status:** Accepted (2026-06-16) — refines the completion math of ADR-283/284. Code: `lib/quest/completion.ts`, `lib/quest/complete.ts`, `lib/practices.ts`. Migrations: `20260616010000_one_expression_per_journey.sql`, `20260630040000_library_journey_ranked_eligibility.sql`.
+
+**Context:** ADR-284 counted completion against a Journey's **fixed practice list**, which fights the owner's "massive library where members build and swap their own practices" goal: a member who swaps to a different same-Pillar practice would lose credit. Expression also needed to be a first-class **4th Pillar** (Mind / Body / Spirit / Expression), not a bolt-on capstone, with points balanced so finishing all of a Journey's practices yields an equal Zap total per Pillar.
+
+**Decision (Pillar coverage, not a fixed list):** A Journey is finished when, inside its window, the member logged **any practice whose Pillar the Journey covers** on ≥ `QUEST.DAYS_TO_FINISH_JOURNEY` (14) distinct days **and** completed the Journey's Expression Challenge (if it has one). `journeyPillarIds(journeyId)` reads the distinct `journey_plan_items.domain_id`; `distinctPillarDaysInWindow` joins `practice_logs → practices!inner(domain_id)` filtered to those Pillars. Swap freely within a Pillar and still get credit.
+
+**Decision (window):** OFFICIAL season Journeys keep a **fixed plan window** (`journey_plans.window_*`) and require their Expression Challenge. Member-built LIBRARY Journeys (ranked-eligible, Vera-approved) use a **member-anchored window** — the member's `journey_enrollments.started_at` + `QUEST.JOURNEY_WINDOW_DAYS` (28) — and require no Expression (they have none). Only `ranked_eligible` Journeys count toward rank, and a resolved window is required, so an un-enrolled library Journey can never complete.
+
+**Decision (Expression = 4th Pillar):** Expression appears on every Quest graph / dashboard as a peer Pillar. The model is **small daily expressions** (a Share-One-Thing-class practice in the Expression Pillar) plus the **Expression Challenge** as the final expression; the per-Pillar Zap totals are balanced so a fully-completed Journey awards equal points across the four areas. The Expression Challenge is completed via the capstone control (Circle +50 Zaps / online +30 Gems). A partial unique index enforces **one Expression Challenge per `(season, journey_id)`**.
+
+**Consequences:** Member-built Journeys + "build your own daily practice" work without a fixed-list trap. The practice-log hook (`lib/practices.ts`) resolves the logged practice's Pillar, finds `ranked_eligible` Journeys covering that Pillar, and calls `tryCompleteJourney` for each (idempotent via `journey_completions`).
+
+## ADR-291: Journeys named Clear / Move / Charge; Season 1 renamed "Shine"
+
+**Status:** Accepted (2026-06-16). Migrations: `20260616000000_seed_shine_season.sql`, `20260630030000_rename_stretch_journeys.sql`. Applied to prod (`azsqfeonabsbmemvddqd` — "Frequency Community"), verified.
+
+**Context:** The placeholder season "Stretch" and generic Journey names didn't carry the brand. The owner named the three Journeys **Clear / Move / Charge** and the season **Shine**, and provided full Season 1 content.
+
+**Decision:** Rename the season to **Shine**; the three Journeys are **Clear / Move / Charge**, each covering **all four Pillars** (so every season member touches Mind / Body / Spirit / Expression). Re-tag practices to the right Pillars (e.g. Box Breathing Mind → Spirit), rename the capstones, and seed the per-Journey practice roster (item counts 6 / 7 / 8). Per-Pillar Zap balance is tuned so completing a Journey's practices yields an equal total per Pillar (ADR-290).
+
+**Consequences:** Season 1 "Shine" is live in prod with Clear / Move / Charge across four Pillars. Naming follows `docs/NAMING.md`; member-facing copy follows `docs/CONTENT-VOICE.md` (no em dashes).
+
+## ADR-292: Season Composer (operator authoring) + auto-go-live scheduler
+
+**Status:** Accepted (2026-06-16) — Composer across PRs #809–#811; scheduler PR #812. Code: `app/(main)/admin/content/seasons/*`, `components/admin/pillar-balance.tsx`, `lib/quest/pillar-balance.ts`, `app/api/cron/season-go-live/route.ts`, `lib/seasons.ts`, `vercel.json`.
+
+**Context:** The owner asked for "a super clean way to add, edit and manage" seasons / Journeys / practices / challenges, and operators shouldn't have to be awake at launch time to flip a season Live.
+
+**Decision (Composer):** A **Season Composer** workspace: edit a season, manage its **lifecycle** (draft → scheduled → active=Live → ended via `seasons.status` + `starts_at`/`ends_at`, one active season enforced by a partial unique index), **clone** a season, **preview** it, an operator **content home**, **bulk** practice edits, and a **per-Pillar Zap balance** readout (`pillarZapBalance`) so authors see at a glance whether the four Pillars are point-balanced (ADR-290).
+
+**Decision (Scheduler):** A `CRON_SECRET`-guarded endpoint `app/api/cron/season-go-live/route.ts` runs on a Vercel cron (`*/10 * * * *`) and calls `promoteDueScheduledSeasons()`, which flips a **scheduled** season to **active** only when `starts_at ≤ now` **and** no season is already active (respecting the one-active-season invariant). It **never auto-ends** a season — ending stays a deliberate operator act.
+
+**Consequences:** A scheduled season goes Live on its own at its start time; nothing auto-ends, so there's no risk of the scheduler closing a season early.
+
+## ADR-293: Open — The Quest information-architecture debt (overlapping member surfaces)
+
+**Status:** Open / deferred (2026-06-16) — recorded for the next session in [QUEST-IA-DEBT.md](QUEST-IA-DEBT.md). Needs a product decision before building.
+
+**Context:** A post-build route audit found the redesign (ADR-289) **added** member surfaces without collapsing the old ones. Routes are wired (0 broken links) but a member can't tell which surface is the front door.
+
+**Decision (recorded, not yet built):** Three+ overlapping "journey" surfaces exist — `/crew` hub, `/crew/quests` list, `/crew/journey` progress, `/journeys` library — alongside the old **7-tab `QuestTabs`** and 3 orphaned legacy redirects (`/crew/journeys`, `/crew/arcs`, `/admin/quests`). Recommended consolidation: make **`/crew`** the canonical "My Journey" (fold `/crew/quests` + `/crew/journey` into the hub Season Map), keep `/journeys` as the explicit browse / build library, collapse `QuestTabs`, delete the orphaned redirects, and label the "this season's Quest" vs "the library" distinction.
+
+**Open decision for the owner:** which surface is the canonical "My Journey," and how aggressively to collapse the tab bar. Do **not** build the consolidation until that's chosen — it's an IA / product call, not a wiring fix.
+
+
+## ADR-294: Route-scoped module sets — a page only offers (and renders) its own blocks
+
+**Status:** Accepted (2026-06-16) — the page-to-module migration ("make all sections layout modules; no hand-built pages") needs page-specific blocks, and the ADR-270/272 engine resolved every page against the **global** catalog (`LAYOUT_MODULE_IDS`), so any new module appeared on every module-driven page. Code is the source of truth: [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) (`ROUTE_MODULE_IDS` / `moduleIdsForScope`) + [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) + [`lib/page-settings/actions.ts`](../lib/page-settings/actions.ts). **No migration** — only the in-memory module set varies by route; the `page_settings.layout` store is unchanged.
+
+**Context:** ADR-270/271/272 gave each route a saved `{ template, slots }` layout but a single, **global** module catalog. Converting a real page (My Quest `/crew`, admin Journeys) into modules means introducing blocks that belong to *that page only* (the Season Map, the circle Leaderboard, the Journey review queue). Under the global catalog the resolver appends every unplaced known module to the default slot, so My Quest's gauges would leak onto the Leadership dashboard and vice versa. The editor had the same leak: its Layout panel listed the whole catalog regardless of which page you opened it on.
+
+**Decision.** A module belongs to a route's **module set**, not to every page. `lib/widgets/modules.ts` adds `ROUTE_MODULE_IDS` (scope key → the ids that key offers) and `moduleIdsForScope(key)`, which walks the same most-specific-first chain as the layout cascade — an exact route → its section (`/seg/*`) → the global default (`*`) — and returns the first declared set (else the `*` set).
+- **One resolver, both ends.** The renderer (`<PageModules route>`) resolves `moduleIds ?? moduleIdsForScope(route)`; the editor read (`getPageLayoutForEditor(key)`) and write (`savePageLayout(key)`) resolve `moduleIdsForScope(key)`. So what an operator can arrange in the Layout panel is exactly what the page renders — and a crafted module id from another page is dropped as unknown (the property-injection guard from ADR-272 still iterates only the constant set).
+- **Catalog stays a union.** `LAYOUT_MODULES` (and `moduleMeta`) remain the union of every known block; `ROUTE_MODULE_IDS` is the only thing that says which subset a route shows. The default render order with no saved layout = the id order in that route's set (unplaced modules append to the template's first slot in order). `LAYOUT_MODULE_IDS` is kept as the `*` (community) set for back-compat.
+- **First conversions.** `/crew` (My Quest) → six blocks (`quest-finish-celebration`, `quest-season-map`, `quest-journeys`, `quest-tasks`, `quest-explore`, `quest-leaderboard`); `/admin/content/journeys` → three (`admin-journeys-stats`, `admin-journeys-review`, `admin-journeys-library`). Each is a self-fetching RSC (`components/widgets/quest/*`, `components/widgets/admin/*`) reading a shared request-cached context (`lib/quest/crew-context.ts`, `lib/admin/journeys-context.ts`) so the cross-cutting reads run once per request. Both routes are added to `MODULE_ROUTES` so the on-page Layout editor (ADR's gating, `lib/widgets/module-routes.ts`) appears on them.
+
+**Consequences:** The migration target — "every section is a layout module, no hand-built pages" — is now reachable page by page without cross-page leakage: convert a page's sections into self-fetching modules, declare its set in `ROUTE_MODULE_IDS`, list the route in `MODULE_ROUTES`, and the page becomes a header + `<PageModules>` whose template and block order staff control from the on-page Settings → Layout panel. The store, the scope cascade, the per-module role gate, and the CodeQL-safe writes all carry over unchanged.

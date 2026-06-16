@@ -1052,7 +1052,7 @@ function MobileRightDrawer({
           <p className="text-sm font-bold text-text">The Quest</p>
         </div>
 
-        {/* Dashboard — promoted here from the account menu (owner ask): the
+        {/* My Quest — promoted here from the account menu (owner ask): the
             gamification drawer is where the game lives. */}
         <Link
           href="/crew"
@@ -1060,7 +1060,7 @@ function MobileRightDrawer({
           className="mx-3 mt-3 flex shrink-0 items-center gap-2.5 rounded-lg bg-surface-elevated px-3 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-border-strong"
         >
           <Zap className="w-4 h-4 text-primary" />
-          Dashboard
+          My Quest
           <ChevronRight className="ml-auto h-4 w-4 text-subtle" />
         </Link>
 

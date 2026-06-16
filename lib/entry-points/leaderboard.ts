@@ -20,7 +20,9 @@ export const RECRUITER_TIERS: RecruiterTier[] = [
   { key: 'connector',  label: 'Connector',  emoji: '🔗', min: 3 },
   { key: 'recruiter',  label: 'Recruiter',  emoji: '📣', min: 10 },
   { key: 'ambassador', label: 'Ambassador', emoji: '🌟', min: 25 },
-  { key: 'luminary',   label: 'Luminary',   emoji: '🔥', min: 50 },
+  // Apex renamed from "Luminary" to "Catalyst" so it no longer collides with the
+  // (retired) season rank of the same name (docs/NAMING.md §collision-guards).
+  { key: 'catalyst',   label: 'Catalyst',   emoji: '🔥', min: 50 },
 ]
 
 /** The tier a recruiter has earned for `signups` people brought in. */

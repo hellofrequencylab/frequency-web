@@ -17,10 +17,22 @@ export type PanelKey =
   | 'dispatches' | 'events' | 'members' | 'leaderboard' | 'online' | 'circles'
   | 'newcircles' | 'activenow' | 'pulse'
 
+/** True on The Quest surfaces (the `/crew` tree: hub, journey, leaderboard, streaks, store, …).
+ *  These pages OWN the member's standing — the Quest hub's StandingHero/SeasonMap plus the
+ *  Journey pages — so the rail SUPPRESSES its own standing panels here (ControlCenterPanel's
+ *  "Your Quest" hero + the GameStatsDock cockpit) to avoid showing the same zaps/gems/streak/rank
+ *  two or three times in one viewport (UI audit). Off-Quest (feed, channels, …) the page does NOT
+ *  render standing, so the rail keeps it — it's valuable there. Declarative route-conditional that
+ *  the rail reads; the rail never inspects the path itself. Single source of truth for "is this a
+ *  Quest route" — the page-panel rule below reuses it too. */
+export function isQuestSurface(pathname: string): boolean {
+  return pathname === '/crew' || pathname.startsWith('/crew/')
+}
+
 // Ordered, longest-prefix-wins. The first matching rule supplies the page panels.
 const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
   // Quest — the game board: who's climbing + who's around to play with.
-  { test: (p) => p === '/crew' || p.startsWith('/crew/'), panels: ['leaderboard', 'online'] },
+  { test: isQuestSurface, panels: ['leaderboard', 'online'] },
   // Leadership — a volunteer leader stewarding their community: the standings, who's active,
   // and circles/events to point people at. (host+ only reach /lead, so leaderboard always shows.)
   { test: (p) => p === '/lead' || p.startsWith('/lead/'), panels: ['pulse', 'leaderboard', 'activenow', 'events'] },

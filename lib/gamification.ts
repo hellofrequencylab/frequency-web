@@ -226,6 +226,10 @@ export const QUEST = {
   /** Distinct days a Journey's Practices must be logged inside its window. The
    *  spec band is 14-16; 14 is the bar. */
   DAYS_TO_FINISH_JOURNEY: 14,
+  /** The member-anchored completion window for a member-built (library) Journey:
+   *  ~4 weeks from the member's enrollment. Official season Journeys use their own
+   *  fixed window (journey_plans.window_starts_at/ends_at) instead. */
+  JOURNEY_WINDOW_DAYS: 28,
   /** Flat Zap purse for finishing a Journey. */
   JOURNEY_FINISH_ZAPS: 75,
   /** Escalating Gem bonus by the NEW rank reached on finishing. */

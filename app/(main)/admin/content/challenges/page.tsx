@@ -8,6 +8,7 @@ import { StatusChip } from '@/components/admin/status'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentSeason } from '@/lib/seasons'
 import { challengeCompletionRates } from '@/lib/admin/content-signals'
+import { activeSeasonJourneys } from '../actions'
 import { ChallengeEditor, ChallengeCreateForm, type ChallengeRow } from './challenge-editor'
 
 // Season challenges editor: tune the active season's challenges (name, story,
@@ -32,12 +33,13 @@ export default async function AdminContentChallengesPage() {
   await requireAdmin('host', { staff: 'community' })
 
   const ub = createAdminClient()
-  const [season, completion, { data: challengeRows }] = await Promise.all([
+  const [season, completion, journeys, { data: challengeRows }] = await Promise.all([
     getCurrentSeason(),
     challengeCompletionRates(),
+    activeSeasonJourneys(),
     ub
       .from('season_challenges')
-      .select('id, season, slug, name, description, category, difficulty, target, zaps_reward, sort_order')
+      .select('id, season, slug, name, description, category, difficulty, target, zaps_reward, sort_order, journey_id')
       .order('season', { ascending: false })
       .order('sort_order', { ascending: true }),
   ])
@@ -66,6 +68,16 @@ export default async function AdminContentChallengesPage() {
       key: 'name',
       header: 'Challenge name',
       render: (c) => <span className="truncate font-medium text-text">{c.name}</span>,
+    },
+    {
+      key: 'type',
+      header: 'Type',
+      render: (c) =>
+        c.journey_id ? (
+          <StatusChip tone="info">Expression capstone</StatusChip>
+        ) : (
+          <span className="text-muted">Season-wide</span>
+        ),
     },
     {
       key: 'difficulty',
@@ -136,15 +148,15 @@ export default async function AdminContentChallengesPage() {
                 description="Add the first one below. Members see it on the challenge board right away."
               />
             ) : (
-              <ChallengeEditor challenges={current} />
+              <ChallengeEditor challenges={current} journeys={journeys} />
             )}
           </AdminSection>
 
           <AdminSection
             title="Add a challenge"
-            description="Lands on this season's board. Criteria wiring is set by engineering; the board copy and reward are yours."
+            description="A season-wide challenge lands on the board for everyone. An Expression Challenge caps one Journey; pick the Journey and the wiring is set for you."
           >
-            <ChallengeCreateForm />
+            <ChallengeCreateForm journeys={journeys} />
           </AdminSection>
         </>
       ) : (

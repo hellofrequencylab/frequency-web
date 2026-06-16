@@ -1,53 +1,62 @@
 ---
 title: Your Journey
-description: Take a guided program solo or with your Circle, move through it phase by phase, and earn trophies as you finish.
+description: Each season gives you three Journeys. Do the practices, share what shifted, and finish to climb the ranks.
 category: the-quest
 order: 4
-updated: 2026-06-14
+updated: 2026-06-16
 audience: member
 featureKeys: [journeys, circles]
 status: published
 ---
 
-A **Journey** is a guided program you move through, on your own or with your Circle.
-Each one is built as **Phases**, and inside every Phase a handful of short **Lessons**:
-a video, a reading, an exercise, a reflection, or a quick check. Some Journeys also fold
-in a practice or two to do in the world.
+A **Journey** is a guided run of **Practices** that moves through all four **Pillars**:
+Mind, Body, Spirit, and Expression. Every season of **The Quest** gives you three
+Journeys, and they run in sequence, about four weeks each.
 
 ## Start one
 
-Browse **Journeys** and open the one that fits. You can take a Journey on your own, or
-your circle **Host** can launch a **Run** so the whole circle goes through it together.
-Starting a Journey is always free.
+Open **My Quest** and pick the Journey that's open this stretch of the season. You can
+walk it on your own or with your Circle. Starting is always free. Each Journey is live
+for about four weeks, and the practices are short, real-world things you can actually fit
+into a day.
 
-## How it opens up
+## How you finish
 
-A Journey unlocks one Phase at a time, about one a week (the author sets the pace).
-Finish this Phase and the next one opens. That keeps a circle moving in step and keeps
-the work to a size you can actually do.
+A Journey is finished when two things are true inside its four-week window:
 
-## Move through it
+1. You **logged one of its Practices on at least 14 different days**. Not 14 in a row, and
+   not all in one weekend. The point is the rhythm: showing up most days for a few weeks.
+2. You **completed its Expression Challenge** (below).
 
-Open a Journey to see the player:
+That's it. No lessons to grind and no quiz at the end. The work is the practice, done
+often enough to stick.
 
-- The **syllabus** lists every Phase and Lesson, with your progress marked.
-- One Lesson sits front and center with a single next action. Read it, watch it, or do
-  it, then **Mark complete** and move to the next.
-- A progress bar tracks how far you've come and **resumes where you left off**, so you
-  never have to find your place.
+## The Expression Challenge
 
-## What you earn
+Each Journey closes with an **Expression Challenge**: share what you practiced with your
+community. You can do it two ways, and you choose:
 
-- Finish a **Lesson** and your progress moves.
-- Finish a whole **Phase** and a trophy fires, with **Gems**.
-- Finish the whole **Journey** for more Gems, a completion trophy, and, if the author
-  turned it on, a **certificate** you can print.
+- **In person at a Circle gathering** pays **+50 Zaps**.
+- **Posted solo online** pays **+30 Gems**.
 
-Rewards are cooperative. In a Circle Run you finish together, and circles are never
-ranked against each other.
+Completing the Expression Challenge is required to finish the Journey. It's the part where
+the practice turns into something other people can see.
+
+## What finishing earns
+
+The moment a Journey is finished you earn:
+
+- **+75 Zaps**
+- **A Trophy**, stamped with the rank you reached
+- **Gems** that scale with your new rank: 25 for your first Journey, 50 for your second,
+  100 for your third
+
+And your **season rank** moves on its own: one Journey makes you **Initiate**, two makes
+you **Adept**, all three makes you **Master**. Finish the work and the rank follows. See
+[Season ranks](/help/the-quest/season-ranks) for the full ladder.
 
 ## Doing it with your circle
 
-When your Host launches a Run, everyone in the circle is enrolled and you can see the
-group's shared progress as you go. Many Journeys include a kickoff and weekly check-in
-gathering, so you meet up while you work through it. The program is better with company.
+You can walk a Journey alongside the people in your Circle, practicing the same things
+over the same weeks and doing your Expression Challenges together at a gathering. Nobody
+is ranked against their circle, and the practices are better with company.

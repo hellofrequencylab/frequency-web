@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { derivePracticeStreak, shiftDay, dayDiff } from './practice-streak'
+import {
+  derivePracticeStreak,
+  shiftDay,
+  dayDiff,
+  pauseCoveredDays,
+  isResting,
+  MAX_PAUSE_DAYS,
+} from './practice-streak'
 
 const TODAY = '2026-06-06'
 const set = (...days: string[]) => new Set(days)
@@ -60,5 +67,54 @@ describe('derivePracticeStreak', () => {
     const r = derivePracticeStreak(set(back(0)), set(), TODAY)
     expect(r.current).toBe(1)
     expect(r.loggedToday).toBe(true)
+  })
+})
+
+describe('pauseCoveredDays (the "life happens" rest window)', () => {
+  it('is empty with no window', () => {
+    expect(pauseCoveredDays(null, TODAY)).toEqual([])
+    expect(pauseCoveredDays(undefined, TODAY)).toEqual([])
+  })
+
+  it('covers every passed day in the window, inclusive', () => {
+    const rest = { from: back(3), through: back(1) }
+    expect(pauseCoveredDays(rest, TODAY)).toEqual([back(3), back(2), back(1)])
+  })
+
+  it('never covers the future — clamps the window end to today', () => {
+    const rest = { from: back(1), through: shiftDay(TODAY, 5) }
+    // only yesterday and today have actually passed
+    expect(pauseCoveredDays(rest, TODAY)).toEqual([back(1), back(0)])
+  })
+
+  it('returns nothing for a window that has not started yet', () => {
+    const rest = { from: shiftDay(TODAY, 2), through: shiftDay(TODAY, 4) }
+    expect(pauseCoveredDays(rest, TODAY)).toEqual([])
+  })
+
+  it('caps the span at MAX_PAUSE_DAYS so it can never freeze unbounded', () => {
+    const rest = { from: shiftDay(TODAY, -100), through: TODAY }
+    expect(pauseCoveredDays(rest, TODAY)).toHaveLength(MAX_PAUSE_DAYS)
+  })
+})
+
+describe('isResting', () => {
+  it('is true inside the window and false outside it', () => {
+    expect(isResting({ from: back(2), through: back(1) }, TODAY)).toBe(false)
+    expect(isResting({ from: back(1), through: back(0) }, TODAY)).toBe(true)
+    expect(isResting({ from: TODAY, through: shiftDay(TODAY, 3) }, TODAY)).toBe(true)
+    expect(isResting(null, TODAY)).toBe(false)
+  })
+})
+
+describe('a planned rest bridges the streak like a reserve day', () => {
+  it('survives a break when its days are folded into the frozen set', () => {
+    // Logged today + four days ago; the three days between were a planned rest.
+    const logged = set(back(0), back(4), back(5))
+    const restDays = pauseCoveredDays({ from: back(3), through: back(1) }, TODAY)
+    const frozen = new Set([...set(), ...restDays])
+    const r = derivePracticeStreak(logged, frozen, TODAY)
+    expect(r.alive).toBe(true)
+    expect(r.current).toBe(6) // today + 3 rested + 2 logged before
   })
 })

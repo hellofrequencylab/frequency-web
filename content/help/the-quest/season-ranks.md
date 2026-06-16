@@ -13,12 +13,10 @@ Ranks are your standing in the current season of **The Quest**, earned by finish
 
 ## The ranks
 
-| Rank | What it takes |
-|---|---|
-| **Ghost** | Just arrived. Everyone starts here. |
-| **Initiate** | Finish your first Journey. |
-| **Adept** | Finish two Journeys. |
-| **Master** | Finish all three Journeys. |
+- **Ghost**: just arrived. Everyone starts here.
+- **Initiate**: finish your first Journey.
+- **Adept**: finish two Journeys.
+- **Master**: finish all three Journeys.
 
 Your rank advances automatically the moment you finish a Journey. There is no points threshold to hit and no manual recognition required. Finish the work and the rank follows.
 

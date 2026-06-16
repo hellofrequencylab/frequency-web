@@ -16,9 +16,10 @@ real community. There are two currencies, split by where the activity happens.
 
 You earn **Zaps** for getting out into the world: going to in-person gatherings,
 inviting someone new, hosting, and capturing physical spots around your city. Zaps
-are your seasonal score, and as you earn them you climb the season ranks:
-
-- Ghost, then Echo, then Signal, then Beacon, then Conduit, then Luminary.
+are your seasonal score: they set the [leaderboard](/help/the-quest/leaderboard),
+convert into Gems when the season ends, and feed your lifetime Amplitude. (Your
+**rank** is a separate thing now, earned by finishing
+[Journeys](/help/the-quest/your-journey), not by piling up Zaps.)
 
 Roughly what things are worth (the biggest rewards live off the screen):
 
@@ -59,15 +60,14 @@ you actually did.
 ## How they connect
 
 At the end of each season, your Zaps convert into Gems at a flat **5 to 1**, the
-same rate for everyone. On top of that, the final rank you reached pays a one-time
-Gem bonus: Echo **10**, Signal **25**, Beacon **50**, Conduit **100**, Luminary
-**250**. So the in-person "doing" (Zaps) turns into the durable, spendable reward
-(Gems) over time, and finishing strong is worth a little extra.
+same rate for everyone. So the in-person "doing" (Zaps) turns into the durable,
+spendable reward (Gems) over time. Finishing Journeys pays Gems directly along the
+way, too (see [Season ranks](/help/the-quest/season-ranks)).
 
 Your Zaps also feed **Amplitude**, your lifetime total. Season Zaps reset; Amplitude
 never does. Hosting-class acts (hosting an event, running a program, founding or
 activating a circle) count double toward it. You'll see it next to your rank, like
-"Beacon · 14,200".
+"Adept · 14,200".
 
 ## The one thing to remember
 

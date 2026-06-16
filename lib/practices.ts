@@ -511,7 +511,15 @@ export interface PracticeEdit {
   header_image?: string | null
   domain_id?: string | null
   subcategory_id?: string | null
+  /** Payout weight for a log (Rewards Economy v2): 'light' (8⚡) | 'standard' (12⚡) |
+   *  'heavy' (15⚡). Unlike the reward_zaps amount, this IS author-editable — it's the
+   *  effort tier of the practice, which the author knows best (drives practiceLogAction). */
+  weight_class?: WeightClass
 }
+
+/** The three payout tiers a practice log can carry. 'standard' is the default. */
+export const WEIGHT_CLASSES = ['light', 'standard', 'heavy'] as const
+export type WeightClass = (typeof WEIGHT_CLASSES)[number]
 
 const STR = (v: string | null | undefined, max: number): string | null => {
   const t = (v ?? '').trim()
@@ -532,6 +540,10 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
   if (patch.domain_id !== undefined) update.domain_id = patch.domain_id || null
   if (patch.subcategory_id !== undefined) update.subcategory_id = patch.subcategory_id || null
+  // Weight class drives the per-log Zap payout (light 8 / standard 12 / heavy 15).
+  // Guard against an unexpected value so a bad client can't write a junk tier.
+  if (patch.weight_class !== undefined)
+    update.weight_class = WEIGHT_CLASSES.includes(patch.weight_class) ? patch.weight_class : 'standard'
   if (Object.keys(update).length === 0) return getPractice(id)
 
   const { data } = await db().from('practices').update(update).eq('id', id).select(PRACTICE_COLS).maybeSingle()
@@ -908,24 +920,32 @@ export async function logPractice(input: {
     // a secret award check must never break the log
   }
 
-  // The Quest (ADR-Quest completion model): this log may have crossed the
-  // 14-distinct-days bar on an official Journey whose Practices include the one just
-  // logged. Find those Journeys and re-check completion. tryCompleteJourney is
-  // idempotent and only finishes a Journey once both gates (days + Expression) pass,
-  // so this is safe to run on every log. Best-effort + dynamic import — a completion
-  // check must NEVER break a practice log.
+  // The Quest (ADR-Quest completion model): completion counts "any practice in the
+  // Journey's PILLARS" (the member builds their own daily practice and swaps freely
+  // within a tag). So this log may have advanced any RANKED-ELIGIBLE Journey that covers
+  // this practice's Pillar — an official season Journey OR a Vera-approved library one.
+  // tryCompleteJourney is idempotent and resolves each Journey's own window/Expression
+  // rule (an un-enrolled / out-of-window Journey simply can't complete), so it's safe to
+  // run on every log. Best-effort + dynamic import — a completion check must NEVER break a log.
   try {
     const { tryCompleteJourney } = await import('@/lib/quest/complete')
-    const { data: items } = await db()
-      .from('journey_plan_items')
-      .select('plan_id, plan:journey_plans!inner(id, official, window_starts_at)')
-      .eq('practice_id', practiceId)
-      .eq('plan.official', true)
-      .not('plan.window_starts_at', 'is', null)
-    type Row = { plan_id: string }
-    const planIds = [...new Set(((items ?? []) as Row[]).map((r) => r.plan_id))]
-    for (const planId of planIds) {
-      await tryCompleteJourney(profileId, planId)
+    const { data: prac } = await db()
+      .from('practices')
+      .select('domain_id')
+      .eq('id', practiceId)
+      .maybeSingle()
+    const pillarId = (prac as { domain_id: string | null } | null)?.domain_id
+    if (pillarId) {
+      const { data: items } = await db()
+        .from('journey_plan_items')
+        .select('plan_id, plan:journey_plans!inner(ranked_eligible)')
+        .eq('domain_id', pillarId)
+        .eq('plan.ranked_eligible', true)
+      type Row = { plan_id: string }
+      const planIds = [...new Set(((items ?? []) as Row[]).map((r) => r.plan_id))]
+      for (const planId of planIds) {
+        await tryCompleteJourney(profileId, planId)
+      }
     }
   } catch {
     // a Quest completion check must never break the log

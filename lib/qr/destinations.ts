@@ -34,8 +34,8 @@ export const SITE_DESTINATIONS: SiteDestination[] = [
   { group: 'Network', label: 'Partners', path: '/partners', value: 'Local partner offers — send people to redeem.' },
 
   // ── The Quest ───────────────────────────────────────────────────────────────
-  { group: 'The Quest', label: 'Quest dashboard', path: '/crew', value: 'The gamified progress dashboard.' },
-  { group: 'The Quest', label: 'Quests & challenges', path: '/crew/quests', value: 'Active quests and challenges — drive participation in a campaign.' },
+  { group: 'The Quest', label: 'My Quest', path: '/crew', value: 'The gamified progress hub: rank, standing, and this season’s Journeys.' },
+  { group: 'The Quest', label: "This season's Quest", path: '/crew', value: "The season's official Quest and its Journeys: drive participation in a campaign." },
   { group: 'The Quest', label: 'Store', path: '/crew/store', value: 'Where members spend gems.' },
 
   // ── Membership / story ──────────────────────────────────────────────────────

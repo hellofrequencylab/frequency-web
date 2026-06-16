@@ -85,8 +85,8 @@ async function resolveAssignment(profileId: string): Promise<Assignment> {
       return {
         kind: 'challenge_close',
         copy: `${near.challenge.name} is ${left} ${left === 1 ? 'step' : 'steps'} from done. Close it out this week.`,
-        actionHref: '/crew/challenges',
-        actionLabel: 'See the board',
+        actionHref: '/crew',
+        actionLabel: 'Open My Quest',
         payload: { left },
       }
     }

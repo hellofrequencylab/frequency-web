@@ -55,6 +55,11 @@ export interface JourneyPlan {
   quest_id: string | null
   /** Official season Journey (Guide/Mentor flagged). */
   official: boolean
+  /** Quest play-window open (ISO date, inclusive). Null = always open. The Quest
+   *  sequences a season's Journeys by these windows (weeks 1-4 / 5-8 / 9-12). */
+  window_starts_at: string | null
+  /** Quest play-window close (ISO date, inclusive). Null = no close. */
+  window_ends_at: string | null
   /** Review state (default 'approved' grandfathers existing plans; ADR-197). */
   status: PlanStatus
   /** Per-Journey page layout (ordered widgets). Null = the hardcoded default. */
@@ -112,7 +117,7 @@ export interface JourneyPlanItem {
 const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, visibility, fork_of, ' +
   'forked_count, adopt_count, cover_image, created_at, updated_at, published_at, ' +
-  'quest_id, official, status, page_config, completion_gems, ' +
+  'quest_id, official, window_starts_at, window_ends_at, status, page_config, completion_gems, ' +
   'drip_interval_days, certificate_enabled'
 
 const ITEM_COLS =
@@ -325,6 +330,46 @@ export async function setPlanOfficial(
   await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
 }
 
+/** ISO-date guard for the Quest play-window. Accepts a yyyy-mm-dd (the date input's
+ *  value) or any Date.parse-able string; returns a normalized yyyy-mm-dd, or null for
+ *  empty/unparseable input (so clearing a field stores null = always open). */
+function normalizeWindowDate(value: string | null | undefined): string | null {
+  const t = (value ?? '').trim()
+  if (!t) return null
+  const ms = Date.parse(t)
+  return Number.isNaN(ms) ? null : new Date(ms).toISOString().slice(0, 10)
+}
+
+/**
+ * Set a Journey's Quest play-window (the ~4-week span that sequences a season's
+ * Journeys). Either bound may be null (always-open / no-close). Normalizes to a
+ * yyyy-mm-dd date; if both are present and end < start, the end is dropped rather
+ * than stored inverted. Guide/Mentor only — caller enforces authz (same gate as
+ * setPlanOfficial, since the window is a Quest-Journey concern).
+ */
+export async function setPlanWindow(
+  planId: string,
+  opts: { startsAt?: string | null; endsAt?: string | null },
+): Promise<void> {
+  const update: Record<string, unknown> = {}
+  let start: string | null = null
+  let hasStart = false
+  if (opts.startsAt !== undefined) {
+    start = normalizeWindowDate(opts.startsAt)
+    update.window_starts_at = start
+    hasStart = true
+  }
+  if (opts.endsAt !== undefined) {
+    let end = normalizeWindowDate(opts.endsAt)
+    // Never persist an inverted span. Compare against the start we're writing (or, if
+    // start isn't in this patch, the value already on the row is the author's intent).
+    if (end && hasStart && start && end < start) end = null
+    update.window_ends_at = end
+  }
+  if (Object.keys(update).length === 0) return
+  await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
+}
+
 /** Edit a plan's own fields (identity + intro). Caller enforces ownership. */
 export async function updatePlan(
   planId: string,
@@ -456,6 +501,50 @@ export async function publishPlan(planId: string): Promise<void> {
 
 export async function setPlanVisibility(planId: string, visibility: PlanVisibility): Promise<void> {
   await db().from('journey_plans').update({ visibility, ...touch() }).eq('id', planId)
+}
+
+// --- Vera quality gate (the Quest's "Gate + coach", ADR-Quest) -------------
+// Publishing is open; ranked eligibility is gated. These writes go through the
+// service-role admin client ONLY (a member can never self-approve): the review runs
+// server-side and `ranked_eligible` is set from Vera's verdict, never from client input.
+
+/** The shape of a stored Vera review, persisted on journey_plans.vera_review. */
+export interface StoredVeraReview {
+  status: 'approved' | 'rejected' | 'pending'
+  score: number
+  feedback: string[]
+  reviewedAt: string
+}
+
+/** Persist a Vera review on a Journey and set ranked eligibility from its verdict. Only an
+ *  `approved` verdict makes a Journey ranked-eligible; anything else (rejected / pending /
+ *  the fail-closed states) clears it. Idempotent + admin-only — the caller has already
+ *  established authorship; this never reads client-supplied eligibility. */
+export async function applyVeraReview(planId: string, review: StoredVeraReview): Promise<void> {
+  await db()
+    .from('journey_plans')
+    .update({
+      vera_review: review as unknown as Record<string, unknown>,
+      ranked_eligible: review.status === 'approved',
+      ...touch(),
+    })
+    .eq('id', planId)
+}
+
+/** Read a Journey's last stored Vera review (for re-rendering the coaching). Null if none. */
+export async function getVeraReview(planId: string): Promise<StoredVeraReview | null> {
+  const { data } = await db().from('journey_plans').select('vera_review').eq('id', planId).maybeSingle()
+  const raw = (data as { vera_review: unknown } | null)?.vera_review
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const status = r.status === 'approved' || r.status === 'rejected' || r.status === 'pending' ? r.status : null
+  if (!status) return null
+  return {
+    status,
+    score: typeof r.score === 'number' ? r.score : 0,
+    feedback: Array.isArray(r.feedback) ? r.feedback.filter((s): s is string => typeof s === 'string') : [],
+    reviewedAt: typeof r.reviewedAt === 'string' ? r.reviewedAt : '',
+  }
 }
 
 // --- Adopt / fork (acting on a community journey) --------------------------

@@ -115,7 +115,7 @@ widgets that show up when assigned… without rebuilding every page."*
 >
 > | Concern | Where | Note |
 > |---|---|---|
-> | **Module catalog** (metadata only) | [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) | `LAYOUT_MODULES` / `LAYOUT_MODULE_IDS` / `moduleMeta` — no React, so the editor / actions / resolver never import RSCs |
+> | **Module catalog** (metadata only) | [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) | `LAYOUT_MODULES` / `moduleMeta` (union of every block) + **route scoping** (ADR-294): `ROUTE_MODULE_IDS` / `moduleIdsForScope` map a scope key → the ids that page offers, so a page only shows/renders ITS OWN blocks — no React, so the editor / actions / resolver never import RSCs |
 > | **Templates** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId` — 4 interior templates (Single · Main + side · 2 columns · 3 columns) naming their slots; no React, like the module catalog. Add a template = one entry here + a grid case in `page-modules.tsx` |
 > | **Component binding** | [`lib/widgets/registry.tsx`](../lib/widgets/registry.tsx) | `componentFor(id)` binds each id to its self-fetching RSC ([`components/widgets/`](../components/widgets)) |
 > | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | `resolveSlots` / `moduleAssignments` — maps each module to one slot of the chosen template (unplaced → default slot), back-compat reader (`parseLayout`) reads a legacy flat config as the Single template's `main` slot |
@@ -126,9 +126,13 @@ widgets that show up when assigned… without rebuilding every page."*
 > | **Editor** | [`components/admin/page-settings/layout-editor.tsx`](../components/admin/page-settings/layout-editor.tsx) | the on-page Layout settings row (template picker + modules grouped by slot, each with an Area selector + toggle + reorder + per-module "Who sees it"), under the scope switch, staff-gated; section is `live` in [`lib/page-settings/sections.ts`](../lib/page-settings/sections.ts) |
 >
 > **Add a module:** one meta entry in `modules.ts` + bind its component in `registry.tsx`.
-> Nothing else. **Assign per route:** open the page's on-page **Layout** settings (pick a template,
-> drop each module into a slot, set order + visibility, stored per route); or render
-> `<PageModules route="…" />` on a page (piloted on `/lead`). This is the page's interior column,
+> **Add a page's own blocks (ADR-294):** declare its set in `ROUTE_MODULE_IDS` and list the route
+> in [`module-routes.ts`](../lib/widgets/module-routes.ts) so the Layout editor appears there — the
+> page becomes a header + `<PageModules route="…" />`, each block a self-fetching RSC (the
+> migration target: no hand-built sections). **Assign per route:** open the page's on-page
+> **Layout** settings (pick a template, drop each module into a slot, set order + visibility,
+> stored per route); or render `<PageModules route="…" />` on a page (live on `/lead`, `/crew`
+> My Quest, and `/admin/content/journeys`). This is the page's interior column,
 > **not** the app shell rail (that stays operator-managed in `/admin/page-layout` /
 > `page_chrome_overrides`, ADR-259/260).
 

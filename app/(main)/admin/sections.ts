@@ -104,6 +104,8 @@ export interface AdminLink {
 // own (often stricter, janitor) gates.
 export type DomainKey =
   | 'programs'
+  | 'content'
+  | 'rewards'
   | 'community'
   | 'growth'
   | 'acquisition'
@@ -145,19 +147,50 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     staffDomain: 'community',
     related: ['community', 'vera-ai'],
     links: [
-      { href: '/admin/content', label: 'Content suite', desc: 'Curate the Quest. Seasons, Journeys, Practices, Challenges.', Icon: Map, min: 'host', staffDomain: 'community', section: 'Content' },
+      { href: '/admin/programs?tab=content', label: 'Content', desc: 'Seasons, Journeys, Practices, and Challenges.', Icon: Map, min: 'host', staffDomain: 'community', section: 'Workspaces' },
+      { href: '/admin/programs?tab=rewards', label: 'Rewards & economy', desc: 'Gamification, the store, retroactive rewards, and crew tasks.', Icon: Trophy, min: 'host', staffDomain: 'community', section: 'Workspaces' },
+      // ── Enablement ──
+      { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community', section: 'Enablement' },
+    ],
+  },
+  {
+    // Content + Rewards are FOLDED sub-workspaces of Programs (primary:false, like the
+    // Growth tabs in ADR-264): they keep a group so the domain switcher + sub-nav resolve
+    // their leaf editors and highlight the right Programs tab, but drop out of the left
+    // rail. Their `href` is the Programs tab that hosts them.
+    key: 'content',
+    label: 'Content',
+    blurb: 'The Quest content suite. Seasons, Journeys, Practices, Challenges, and creator tips.',
+    href: '/admin/programs?tab=content',
+    Icon: Map,
+    min: 'host',
+    staffDomain: 'community',
+    primary: false,
+    related: ['programs', 'community'],
+    links: [
       { href: '/admin/content/seasons', label: 'Seasons', desc: 'Season identity, theme, and lifecycle.', Icon: CalendarDays, min: 'host', staffDomain: 'community', section: 'Content' },
       { href: '/admin/content/journeys', label: 'Journeys', desc: 'Curate and publish official journeys.', Icon: BookOpen, min: 'host', staffDomain: 'community', section: 'Content' },
       { href: '/admin/content/practices', label: 'Practices', desc: 'The practice catalog and its adopters.', Icon: Sparkles, min: 'host', staffDomain: 'community', section: 'Content' },
       { href: '/admin/content/challenges', label: 'Challenges', desc: 'Define challenges and watch completion.', Icon: Target, min: 'host', staffDomain: 'community', section: 'Content' },
+      { href: '/admin/content/training', label: 'Role training', desc: 'The advancement curriculum each promotion teaches.', Icon: GraduationCap, min: 'host', staffDomain: 'community', section: 'Content' },
       { href: '/admin/content/tips', label: 'Creator tips', desc: 'Tips and prompts for content creators.', Icon: Lightbulb, min: 'host', staffDomain: 'community', section: 'Content' },
+    ],
+  },
+  {
+    key: 'rewards',
+    label: 'Rewards & economy',
+    blurb: 'The economy. Gamification, the gem store, retroactive grants, and crew tasks.',
+    href: '/admin/programs?tab=rewards',
+    Icon: Trophy,
+    min: 'host',
+    staffDomain: 'community',
+    primary: false,
+    related: ['programs'],
+    links: [
       { href: '/admin/gamification', label: 'Gamification & rewards', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community', section: 'Rewards' },
       { href: '/admin/store', label: 'Store', desc: 'Manage gem store items and catalog.', Icon: ShoppingBag, min: 'host', staffDomain: 'community', section: 'Rewards' },
       { href: '/admin/rewards', label: 'Retroactive rewards', desc: 'Reward past behavior. Define a rule, grant once.', Icon: Gift, min: 'admin', section: 'Rewards' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community', section: 'Rewards' },
-      // ── Outcomes (the program-side analytics) ──
-      // ── Enablement ──
-      { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community', section: 'Enablement' },
     ],
   },
   {
@@ -493,4 +526,18 @@ export function pageLabelForPath(pathname: string): string | null {
     }
   }
   return best?.label ?? null
+}
+
+/** The back-link a sub-page shows to its parent DOMAIN dashboard (or null on a domain
+ *  root / unowned path). A folded sub-group (content/rewards/acquisition/crm/marketing)
+ *  resolves UP to its primary domain by stripping the ?tab from its href, so e.g. a
+ *  Journeys editor links back to "Programs", a Campaign back to "Growth". */
+export function backToDomainFor(pathname: string): { href: string; label: string } | null {
+  if (pathname === '/admin') return null
+  const group = domainForPath(pathname)
+  if (!group || pathname === group.href) return null
+  const baseHref = group.href.split('?')[0]
+  const primary = ADMIN_GROUPS.find((g) => g.href === baseHref && g.primary !== false) ?? group
+  if (pathname === primary.href) return null
+  return { href: primary.href, label: primary.label }
 }

@@ -11,18 +11,23 @@ describe('isJourneyFinished (the 14-day + Expression gate)', () => {
   const bar = QUEST.DAYS_TO_FINISH_JOURNEY // 14
 
   it('is not finished below the day threshold, even with the Expression done', () => {
-    expect(isJourneyFinished(bar - 1, true)).toBe(false) // 13 days
-    expect(isJourneyFinished(0, true)).toBe(false)
+    expect(isJourneyFinished(bar - 1, true, true)).toBe(false) // 13 days
+    expect(isJourneyFinished(0, true, true)).toBe(false)
   })
 
-  it('is finished at exactly the day threshold WITH the Expression done', () => {
-    expect(isJourneyFinished(bar, true)).toBe(true) // 14 days
-    expect(isJourneyFinished(bar + 2, true)).toBe(true) // 16 days (top of the band)
+  it('is finished at the day threshold WITH a required Expression done', () => {
+    expect(isJourneyFinished(bar, true, true)).toBe(true) // 14 days
+    expect(isJourneyFinished(bar + 2, true, true)).toBe(true) // 16 days (top of the band)
   })
 
-  it('is NOT finished with enough days but no Expression Challenge', () => {
-    expect(isJourneyFinished(bar, false)).toBe(false)
-    expect(isJourneyFinished(bar + 5, false)).toBe(false)
+  it('is NOT finished with enough days but a required Expression undone', () => {
+    expect(isJourneyFinished(bar, true, false)).toBe(false)
+    expect(isJourneyFinished(bar + 5, true, false)).toBe(false)
+  })
+
+  it('finishes a library Journey on days alone when no Expression is required', () => {
+    expect(isJourneyFinished(bar, false, false)).toBe(true) // member-built: no Expression
+    expect(isJourneyFinished(bar - 1, false, false)).toBe(false) // still needs the days
   })
 
   it('keys the bar off the constant, not a magic number', () => {

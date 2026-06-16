@@ -32,7 +32,7 @@ export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerificat
       <CrewGateButton
         isCrew={false}
         label={label}
-        buttonClassName="shrink-0 flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold bg-surface-elevated text-subtle hover:bg-primary-bg hover:text-primary-strong transition-colors"
+        buttonClassName="shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold bg-surface-elevated text-subtle hover:bg-primary-bg hover:text-primary-strong transition-colors motion-reduce:transition-none"
       />
     )
   }
@@ -48,14 +48,14 @@ export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerificat
     <button
       onClick={handleClick}
       disabled={isPending}
-      className={`shrink-0 flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+      className={`shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 motion-reduce:transition-none ${
         isDone
           ? 'bg-surface-elevated text-muted hover:bg-border-strong'
           : 'bg-primary text-on-primary hover:bg-primary-hover'
       }`}
     >
       {isPending ? (
-        <Loader2 className="w-3 h-3 animate-spin" />
+        <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" />
       ) : isDone ? (
         <RotateCcw className="w-3 h-3" />
       ) : (

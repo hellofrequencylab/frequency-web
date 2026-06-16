@@ -1,6 +1,6 @@
 ---
 title: Practices, choose, do, log
-description: Adopt a practice or follow your circle's, then log it each day to earn Zaps and build your streak.
+description: Adopt a practice or follow your Circle's, then log it each day to earn Zaps and build your streak.
 category: getting-started
 order: 3
 updated: 2026-06-11
@@ -14,16 +14,16 @@ your practice is the heart of Frequency, it is how showing up turns into progres
 
 ## Two ways to have a practice
 
-- **Your circle's practice.** A circle host sets what the circle is practicing.
-  Open your circle and you will see "This week's practice" with a button to log it.
-- **Your own practice.** Not in a circle yet, or want something extra? Go to
+- **Your Circle's practice.** A Circle host sets what the Circle is practicing.
+  Open your Circle and you will see "This week's practice" with a button to log it.
+- **Your own practice.** Not in a Circle yet, or want something extra? Go to
   **Practices**, browse the library, and adopt one for yourself.
 
 ## Log it
 
-Each day you do your practice, hit **Log practice**. That:
+Each day you do your practice, hit **Log practice**. Logging **any** practice, your
+own or your Circle's, earns **Zaps** (the in-person, real-world currency). It also:
 
-- earns you **Zaps** (the in-person / real-world currency),
 - keeps your **streak** alive, and
 - counts you as active for the week.
 
@@ -37,7 +37,7 @@ log, same rewards, plus the sit itself.
 ## Adopt or change anytime
 
 Adopt as many practices as you like from the library, and remove any that no longer
-fit. If you host a circle, you can change the circle's practice whenever the focus
+fit. If you host a Circle, you can change the Circle's practice whenever the focus
 shifts.
 
 ## Make it your own
@@ -52,8 +52,9 @@ You can shape practices, not just pick them:
   yours? Hit **Customize** to make your own private copy and edit it freely. The
   original stays exactly as it was for everyone else.
 
-(Editing covers the content and cadence; the weight a practice carries, and so the
-Zaps it rewards, is set by the team so the Quest stays fair.)
+(Editing covers the content and cadence. The weight class a practice carries, and so
+the Zaps it rewards (Light 8, Standard 12, Heavy 15), is set by the team so the Quest
+stays fair.)
 
 ## Claim a starter template
 
@@ -83,9 +84,9 @@ Each practice also has a category (movement, holistic health, spirituality, crea
 human relating, business support) and a cadence hint (daily, weekly, as needed). The
 library is browsable by what you are drawn to.
 
-If a practice is part of any **Journeys** or is being run by any **circles**, the page
+If a practice is part of any **Journeys** or is being run by any **Circles**, the page
 shows a **"Used in"** section linking to them, a quick way to find a Journey built
-around it or a circle already practising it together.
+around it or a Circle already practising it together.
 
 ## Find your way around the library
 
@@ -105,7 +106,8 @@ thousands:
 
 ## Rewards vary by practice
 
-Every practice has a weight: **light (8 Zaps)**, **standard (12)**, or **heavy
-(15)** per log. A cold plunge or a dawn surf asks more of you, so it gives back
-more. Each practice page shows its reward up front, so you know what logging it is
-worth before you commit.
+Every practice has a **weight class** that sets its payout per log: **Light (8
+Zaps)**, **Standard (12 Zaps)**, or **Heavy (15 Zaps)**. A cold plunge or a dawn
+surf asks more of you, so it gives back more. Each practice page shows its reward up
+front, so you know what logging it is worth before you commit. Whatever the class,
+logging any practice always earns Zaps.

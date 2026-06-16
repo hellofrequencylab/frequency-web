@@ -36,12 +36,12 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'The Quest',
   description:
-    'Showing up should count. Earn zaps in person and gems on platform, climb the season ranks, and choose a Quest. You level up by becoming someone your community misses.',
+    'Showing up should count. Earn Zaps in person and Gems on platform, climb the season ranks, and choose a Quest. You level up by becoming someone your community misses.',
   alternates: { canonical: '/the-quest' },
   openGraph: {
     title: 'The Quest · Frequency',
     description:
-      'Real life is the high score. Zaps, gems, season ranks, and Quests: a path that rewards showing up, not scrolling.',
+      'Real life is the high score. Zaps, Gems, season ranks, and Quests: a path that rewards showing up, not scrolling.',
     url: '/the-quest',
   },
 }
