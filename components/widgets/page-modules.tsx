@@ -3,7 +3,7 @@ import type { CommunityRole } from '@/lib/core/roles'
 import { loadLayoutForRoute } from '@/lib/page-settings/store'
 import { resolveSlots } from '@/lib/page-settings/layout'
 import { getViewerCommunityRole } from '@/lib/page-settings/viewer-role'
-import { LAYOUT_MODULE_IDS } from '@/lib/widgets/modules'
+import { moduleIdsForScope } from '@/lib/widgets/modules'
 import { componentFor } from '@/lib/widgets/registry'
 import type { TemplateId } from '@/lib/widgets/templates'
 
@@ -12,12 +12,22 @@ import type { TemplateId } from '@/lib/widgets/templates'
 // → global, most-specific wins), drops any a viewer's role can't see (per-module gate), and lays
 // them out in the chosen template's grid — each self-fetching RSC isolated in its own <Suspense>
 // so a slow module never blocks the page or its siblings. Pass `role` to skip the viewer lookup.
-// Fail-safe by construction: loadLayoutForRoute returns an empty config on any error and an empty
-// resolution renders nothing, so the host page stays clean.
-export async function PageModules({ route, role }: { route: string; role?: CommunityRole }) {
+// The route's MODULE SET is route-scoped (ADR-294, moduleIdsForScope) so a page only renders its
+// own blocks; pass `moduleIds` to override. Fail-safe by construction: loadLayoutForRoute returns
+// an empty config on any error and an empty resolution renders nothing, so the host page stays clean.
+export async function PageModules({
+  route,
+  role,
+  moduleIds,
+}: {
+  route: string
+  role?: CommunityRole
+  /** Override the route's module set; defaults to moduleIdsForScope(route). */
+  moduleIds?: readonly string[]
+}) {
   const config = await loadLayoutForRoute(route)
   const viewerRole = role ?? (await getViewerCommunityRole())
-  const bySlot = resolveSlots(config, LAYOUT_MODULE_IDS, viewerRole)
+  const bySlot = resolveSlots(config, moduleIds ?? moduleIdsForScope(route), viewerRole)
 
   const total = Object.values(bySlot).reduce((n, ids) => n + ids.length, 0)
   if (total === 0) return null

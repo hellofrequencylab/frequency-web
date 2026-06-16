@@ -7,6 +7,8 @@
 // lib/widgets/modules.ts. Client-safe (no imports), so the editor + pages can both read it.
 export const MODULE_ROUTES: readonly string[] = [
   '/lead',
+  '/crew',
+  '/admin/content/journeys',
 ]
 
 /** Whether `pathname` is (or sits under) a module-driven route — drives the Layout
