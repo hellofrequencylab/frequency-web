@@ -6,9 +6,10 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Plus, Mountain, ChevronUp, ChevronDown, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Zap, Plus, Mountain, ChevronUp, ChevronDown, Trash2, Eye, EyeOff, Pencil, X } from 'lucide-react'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
 import {
@@ -41,35 +42,27 @@ export interface ChallengeRow {
 const DIFFICULTIES = ['easy', 'normal', 'hard', 'legendary'] as const
 const CATEGORIES = ['social', 'events', 'content', 'leadership', 'streak', 'seasonal', 'special'] as const
 
-const selectCls = `${fieldClasses} w-auto py-1 text-xs`
-const numCls = 'rounded-md border border-border bg-canvas px-2 py-1 text-xs text-text text-right'
-
-function EditorRow({
+// ── The popup edit form for one challenge (shown in a Dialog) ────────────────
+function ChallengeEditForm({
   challenge,
   journeys,
-  index,
-  total,
+  onClose,
 }: {
   challenge: ChallengeRow
   journeys: ExpressionJourneyOption[]
-  index: number
-  total: number
+  onClose: () => void
 }) {
   const [row, setRow] = useState(challenge)
   const [dirty, setDirty] = useState(false)
   const [pending, start] = useTransition()
-  const [acting, act] = useTransition()
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [status, setStatus] = useState<'idle' | 'saved' | string>('idle')
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-
   const isExpression = challenge.journey_id != null
-  const busy = pending || acting
 
   function update(patch: Partial<ChallengeRow>) {
     setRow((r) => ({ ...r, ...patch }))
     setDirty(true)
-    setStatus('idle')
+    setError(null)
   }
 
   function save() {
@@ -83,59 +76,49 @@ function EditorRow({
         zapsReward: row.zaps_reward,
         // Category only applies to a season-wide challenge (Expression is always 'special').
         ...(isExpression ? {} : { category: row.category }),
-        // Only send journeyId when an Expression row's Journey actually changed, so editing
-        // copy/reward never re-validates (and never re-runs) the Journey link.
+        // Only send journeyId when an Expression row's Journey actually changed.
         ...(journeyChanged ? { journeyId: row.journey_id! } : {}),
       })
-      if (isError(r)) setStatus(r.error)
+      if (isError(r)) setError(r.error)
       else {
-        setStatus('saved')
         setDirty(false)
         router.refresh()
+        onClose()
       }
-    })
-  }
-
-  // Immediate (non-dirty) controls: pause/resume, reorder, delete.
-  function toggleActive() {
-    act(async () => {
-      const next = !row.is_active
-      const r = await updateChallengeAction(row.id, { isActive: next })
-      if (!isError(r)) {
-        setRow((rr) => ({ ...rr, is_active: next }))
-        router.refresh()
-      }
-    })
-  }
-  function move(dir: 'up' | 'down') {
-    act(async () => {
-      const r = await moveChallengeAction(row.id, dir)
-      if (!isError(r)) router.refresh()
-    })
-  }
-  function remove() {
-    act(async () => {
-      const r = await deleteChallengeAction(row.id)
-      if (!isError(r)) router.refresh()
     })
   }
 
   return (
-    <div className={`space-y-2 px-4 py-3 ${row.is_active ? '' : 'opacity-60'}`}>
-      {isExpression && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-            <Mountain className="h-3 w-3" /> Expression Challenge
-          </span>
-          <label className="flex items-center gap-1">
-            <span className="text-xs text-subtle">caps</span>
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-xl">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-base font-bold text-text">
+            {isExpression ? 'Edit Expression Challenge' : 'Edit challenge'}
+          </h3>
+          <p className="mt-0.5 text-xs text-subtle">
+            {row.completed}/{row.started} completed{row.started > 0 ? ` · ${row.rate}%` : ''}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="shrink-0 rounded-lg p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {isExpression && (
+          <div className="space-y-1">
+            <Label htmlFor="edit-ch-journey">Caps which Journey</Label>
             <select
+              id="edit-ch-journey"
               value={row.journey_id ?? ''}
               onChange={(e) => update({ journey_id: e.target.value })}
-              aria-label="Journey this Expression Challenge caps"
-              className={selectCls}
+              className={fieldClasses}
             >
-              {/* If the linked Journey isn't in the current official set, keep its id selectable. */}
               {!journeys.some((j) => j.id === row.journey_id) && row.journey_id && (
                 <option value={row.journey_id}>Current Journey</option>
               )}
@@ -145,129 +128,187 @@ function EditorRow({
                 </option>
               ))}
             </select>
-          </label>
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          value={row.name}
-          onChange={(e) => update({ name: e.target.value })}
-          aria-label="Challenge name"
-          className="min-w-48 flex-1 rounded-md border border-border bg-canvas px-2 py-1 text-sm font-medium text-text"
-        />
-        {!isExpression && (
-          <select
-            value={row.category}
-            onChange={(e) => update({ category: e.target.value })}
-            aria-label="Category"
-            className={selectCls}
-          >
-            {CATEGORIES.filter((c) => c !== 'special').map((c) => (
-              <option key={c} value={c}>
-                {c.charAt(0).toUpperCase() + c.slice(1)}
-              </option>
-            ))}
-          </select>
+          </div>
         )}
-        <select
-          value={row.difficulty}
-          onChange={(e) => update({ difficulty: e.target.value })}
-          aria-label="Difficulty"
-          className={selectCls}
+
+        <div className="space-y-1">
+          <Label htmlFor="edit-ch-name">Name</Label>
+          <Input id="edit-ch-name" value={row.name} onChange={(e) => update({ name: e.target.value })} />
+        </div>
+
+        {!isExpression && (
+          <div className="space-y-1">
+            <Label htmlFor="edit-ch-cat">Category</Label>
+            <select
+              id="edit-ch-cat"
+              value={row.category}
+              onChange={(e) => update({ category: e.target.value })}
+              className={fieldClasses}
+            >
+              {CATEGORIES.filter((c) => c !== 'special').map((c) => (
+                <option key={c} value={c}>
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <Label htmlFor="edit-ch-desc">Description</Label>
+          <Textarea id="edit-ch-desc" rows={3} value={row.description} onChange={(e) => update({ description: e.target.value })} />
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="edit-ch-diff">Difficulty</Label>
+            <select id="edit-ch-diff" value={row.difficulty} onChange={(e) => update({ difficulty: e.target.value })} className={fieldClasses}>
+              {DIFFICULTIES.map((d) => (
+                <option key={d} value={d}>
+                  {d.charAt(0).toUpperCase() + d.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-ch-target">Target</Label>
+            <Input id="edit-ch-target" type="number" min={1} max={10000} value={row.target} onChange={(e) => update({ target: Number(e.target.value) })} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-ch-zaps">Zap reward</Label>
+            <Input id="edit-ch-zaps" type="number" min={0} max={1000} value={row.zaps_reward} onChange={(e) => update({ zaps_reward: Number(e.target.value) })} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-center justify-end gap-2">
+        {error && <span className="mr-auto text-xs text-danger">{error}</span>}
+        <Button variant="secondary" size="sm" onClick={onClose} disabled={pending}>
+          Cancel
+        </Button>
+        <Button size="sm" onClick={save} disabled={pending || !dirty}>
+          {pending ? 'Saving…' : 'Save changes'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ── One challenge in the list: a compact summary + quick controls + the Edit popup ──
+function ChallengeListItem({
+  challenge,
+  journeys,
+  index,
+  total,
+}: {
+  challenge: ChallengeRow
+  journeys: ExpressionJourneyOption[]
+  index: number
+  total: number
+}) {
+  const [editing, setEditing] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [active, setActive] = useState(challenge.is_active)
+  const [acting, act] = useTransition()
+  const router = useRouter()
+  const isExpression = challenge.journey_id != null
+
+  function toggleActive() {
+    act(async () => {
+      const next = !active
+      const r = await updateChallengeAction(challenge.id, { isActive: next })
+      if (!isError(r)) {
+        setActive(next)
+        router.refresh()
+      }
+    })
+  }
+  function move(dir: 'up' | 'down') {
+    act(async () => {
+      const r = await moveChallengeAction(challenge.id, dir)
+      if (!isError(r)) router.refresh()
+    })
+  }
+  function remove() {
+    act(async () => {
+      const r = await deleteChallengeAction(challenge.id)
+      if (!isError(r)) router.refresh()
+    })
+  }
+
+  return (
+    <div className={`flex flex-wrap items-center gap-3 px-4 py-3 ${active ? '' : 'opacity-60'}`}>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="truncate text-sm font-medium text-text">{challenge.name}</span>
+          {isExpression ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary">
+              <Mountain className="h-3 w-3" /> Expression
+            </span>
+          ) : (
+            <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium capitalize text-muted">
+              {challenge.category}
+            </span>
+          )}
+          <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium capitalize text-subtle">
+            {challenge.difficulty}
+          </span>
+          {!active && <span className="rounded-full bg-warning-bg px-2 py-0.5 text-2xs font-medium text-warning">Paused</span>}
+        </div>
+        <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-subtle">
+          target {challenge.target} · <Zap className="h-3 w-3 text-primary" /> {challenge.zaps_reward} ·{' '}
+          {challenge.completed}/{challenge.started} done{challenge.started > 0 ? ` (${challenge.rate}%)` : ''}
+        </p>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          onClick={toggleActive}
+          disabled={acting}
+          title={active ? 'Active — click to pause' : 'Paused — click to activate'}
+          className={`rounded-md border border-border p-1.5 transition-colors disabled:opacity-50 ${
+            active ? 'text-success hover:bg-success/10' : 'text-muted hover:bg-surface-elevated'
+          }`}
         >
-          {DIFFICULTIES.map((d) => (
-            <option key={d} value={d}>
-              {d.charAt(0).toUpperCase() + d.slice(1)}
-            </option>
-          ))}
-        </select>
-        <label className="flex items-center gap-1" title="Count to hit">
-          <span className="text-xs text-subtle">target</span>
-          <input
-            type="number"
-            min={1}
-            max={10000}
-            value={row.target}
-            onChange={(e) => update({ target: Number(e.target.value) })}
-            className={`w-16 ${numCls}`}
-          />
-        </label>
-        <label className="flex items-center gap-1" title="Zaps paid on completion">
-          <Zap className="h-3 w-3 text-primary" />
-          <input
-            type="number"
-            min={0}
-            max={1000}
-            value={row.zaps_reward}
-            onChange={(e) => update({ zaps_reward: Number(e.target.value) })}
-            className={`w-16 ${numCls}`}
-          />
-        </label>
+          {active ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => move('up')}
+          disabled={acting || index === 0}
+          aria-label="Move up"
+          className="rounded-md border border-border p-1.5 text-muted transition-colors hover:text-text disabled:opacity-30"
+        >
+          <ChevronUp className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => move('down')}
+          disabled={acting || index === total - 1}
+          aria-label="Move down"
+          className="rounded-md border border-border p-1.5 text-muted transition-colors hover:text-text disabled:opacity-30"
+        >
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+        <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
+          <Pencil className="h-3.5 w-3.5" /> Edit
+        </Button>
+        <button
+          type="button"
+          onClick={() => setConfirmDelete(true)}
+          disabled={acting}
+          aria-label={`Delete ${challenge.name}`}
+          title="Delete"
+          className="rounded-md border border-border p-1.5 text-subtle transition-colors hover:border-danger/40 hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
-      <textarea
-        value={row.description}
-        onChange={(e) => update({ description: e.target.value })}
-        rows={2}
-        aria-label="Challenge description"
-        className="w-full rounded-md border border-border bg-canvas px-2 py-1 text-xs text-text"
-      />
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs tabular-nums text-subtle">
-          {row.completed}/{row.started} completed{row.started > 0 ? ` (${row.rate}%)` : ''}
-        </span>
 
-        {/* Immediate controls: pause/resume · reorder · delete. */}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={toggleActive}
-            disabled={busy}
-            title={row.is_active ? 'Active — click to pause' : 'Paused — click to activate'}
-            className={`inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
-              row.is_active ? 'text-success hover:bg-success/10' : 'text-muted hover:bg-surface-elevated'
-            }`}
-          >
-            {row.is_active ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-            {row.is_active ? 'Active' : 'Paused'}
-          </button>
-          <button
-            type="button"
-            onClick={() => move('up')}
-            disabled={busy || index === 0}
-            aria-label="Move up"
-            className="rounded-md border border-border p-1 text-muted transition-colors hover:text-text disabled:opacity-30"
-          >
-            <ChevronUp className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => move('down')}
-            disabled={busy || index === total - 1}
-            aria-label="Move down"
-            className="rounded-md border border-border p-1 text-muted transition-colors hover:text-text disabled:opacity-30"
-          >
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(true)}
-            disabled={busy}
-            aria-label={`Delete ${row.name}`}
-            title="Delete challenge"
-            className="rounded-md border border-border p-1 text-subtle transition-colors hover:border-danger/40 hover:bg-danger-bg hover:text-danger disabled:opacity-50"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        <div className="ml-auto flex items-center gap-2">
-          {status === 'saved' && <span className="text-xs text-success">Saved.</span>}
-          {status !== 'idle' && status !== 'saved' && <span className="text-xs text-danger">{status}</span>}
-          <Button size="sm" variant="secondary" onClick={save} disabled={pending || !dirty}>
-            {pending ? 'Saving…' : 'Save'}
-          </Button>
-        </div>
-      </div>
+      <Dialog open={editing} onClose={() => setEditing(false)} className="max-w-xl">
+        <ChallengeEditForm challenge={challenge} journeys={journeys} onClose={() => setEditing(false)} />
+      </Dialog>
 
       <DangerModal
         open={confirmDelete}
@@ -275,12 +316,12 @@ function EditorRow({
         title="Delete challenge"
         body={
           <>
-            This removes <span className="font-semibold text-text">{row.name}</span> from the season board
-            for everyone, along with members&apos; progress on it. This cannot be undone.
+            This removes <span className="font-semibold text-text">{challenge.name}</span> from the season
+            board for everyone, along with members&apos; progress on it. This cannot be undone.
           </>
         }
         confirmLabel="Delete challenge"
-        requireTyping={row.name}
+        requireTyping={challenge.name}
         onConfirm={remove}
       />
     </div>
@@ -298,7 +339,7 @@ export function ChallengeEditor({
     <div className="overflow-hidden rounded-2xl border border-border bg-surface">
       <div className="divide-y divide-border/50">
         {challenges.map((c, i) => (
-          <EditorRow key={c.id} challenge={c} journeys={journeys} index={i} total={challenges.length} />
+          <ChallengeListItem key={c.id} challenge={c} journeys={journeys} index={i} total={challenges.length} />
         ))}
       </div>
     </div>

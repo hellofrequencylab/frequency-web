@@ -54,7 +54,7 @@ export async function AdminJourneysLibrary() {
       key: 'signal',
       header: 'Signal',
       render: (j) => (
-        <span className="tabular-nums text-muted">
+        <span className="whitespace-nowrap tabular-nums text-muted">
           {j.adopt_count} adopted · {j.active_adoptions} active · {j.forked_count} remixed
         </span>
       ),

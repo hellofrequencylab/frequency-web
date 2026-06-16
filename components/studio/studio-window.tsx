@@ -56,7 +56,9 @@ export function StudioWindow({
       role="dialog"
       aria-modal="true"
     >
-      <div className="flex h-full w-full flex-col overflow-hidden bg-canvas shadow-2xl sm:h-[86vh] sm:max-w-3xl sm:rounded-3xl sm:border sm:border-border">
+      {/* Desktop: size to the content (a quick "name it" create step stays a compact card),
+          capped at 86vh so a full builder scrolls instead of overflowing. */}
+      <div className="flex h-full w-full flex-col overflow-hidden bg-canvas shadow-2xl sm:h-auto sm:max-h-[86vh] sm:max-w-3xl sm:rounded-3xl sm:border sm:border-border">
         {/* Chrome bar */}
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong">{eyebrow}</p>
