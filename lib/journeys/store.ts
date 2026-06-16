@@ -28,6 +28,14 @@ export function parseCheck(settings: unknown): CheckConfig | null {
   return { question: c.question, options, answer, explanation: typeof c.explanation === 'string' ? c.explanation : null }
 }
 
+/** Vera's per-slot coaching line for a practice block, from `settings.coaching_prompt`. Null for
+ *  non-practice blocks or when none is set (then the player shows no coaching note). */
+function coachingFrom(blockType: string, settings: Record<string, unknown> | null | undefined): string | null {
+  if (blockType !== 'practice') return null
+  const cp = settings?.coaching_prompt
+  return typeof cp === 'string' && cp.trim() ? cp : null
+}
+
 export interface LessonContent {
   id: string
   type: LeafType
@@ -40,6 +48,8 @@ export interface LessonContent {
   required: boolean
   /** Interactive knowledge-check config (check blocks only), else null. */
   check: CheckConfig | null
+  /** Vera's per-slot coaching line (practice blocks), from settings.coaching_prompt, else null. */
+  coachingPrompt: string | null
 }
 
 export interface JourneyPlayerView {
@@ -84,6 +94,7 @@ export async function getJourneyPlayerView(slug: string, profileId: string): Pro
       practiceId: i.practice_id || null,
       required: i.required ?? true,
       check: bt === 'check' ? parseCheck((i as { settings?: unknown }).settings) : null,
+      coachingPrompt: coachingFrom(bt, (i as { settings?: Record<string, unknown> | null }).settings),
     }
   }
 

@@ -8,8 +8,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Plus, Trash2, ChevronUp, ChevronDown, Eye, Layers, Search, Dumbbell, X, Check, Sparkles } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Layers, Search, Dumbbell, X, Check, Sparkles } from 'lucide-react'
 import {
   addPhaseAction,
   addModuleAction,
@@ -19,6 +18,7 @@ import {
   removeBlockAction,
   moveBlockAction,
   draftOutlineAction,
+  draftSlotCoachingAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { isError } from '@/lib/action-result'
 import type { CheckConfig } from '@/lib/journeys/store'
@@ -79,6 +79,10 @@ export interface EditorBlock {
   sortOrder: number
   /** Knowledge-check config for `check` blocks (build item §11.1 #2), else null. */
   check: CheckConfig | null
+  /** The slot's Pillar (practice blocks) — drives the pillar chip + Vera grounding. */
+  domainId: string | null
+  /** Vera's per-slot coaching line (practice blocks), from settings.coaching_prompt. */
+  coachingPrompt: string | null
 }
 
 // The authoring inspector for a `check` block: question + options (tap the circle to mark the
@@ -129,24 +133,106 @@ export interface EditorPractice {
   id: string
   title: string
   description: string | null
+  /** The practice's primary Pillar (practices.domain_id) — for the pillar-faceted picker. */
+  pillarId: string | null
+}
+
+/** The four Pillars (Mind/Body/Spirit/Expression), for the practice selector's facets. */
+export interface EditorPillar {
+  id: string
+  name: string
+  slug: string
 }
 
 const LEAF_TYPES = ['lesson', 'video', 'reading', 'exercise', 'reflection', 'check', 'resource'] as const
 const LOOSE_KEY = '__loose__'
 
+// One coaching slot for a practice block — Vera drafts a short line (grounded in the season,
+// the Journey name, the practice, and its Pillar), and the author can edit it. Generated on
+// demand to keep cost down; the action returns the text so the field updates without a refresh.
+function SlotCoaching({
+  slug,
+  itemId,
+  initialPrompt,
+  pillarName,
+  disabled,
+}: {
+  slug: string
+  itemId: string
+  initialPrompt: string | null
+  pillarName: string | null
+  disabled: boolean
+}) {
+  const [value, setValue] = useState(initialPrompt ?? '')
+  const [busy, startBusy] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const draft = () => {
+    setError(null)
+    startBusy(async () => {
+      const res = await draftSlotCoachingAction(slug, itemId)
+      if (isError(res)) setError(res.error ?? 'Vera could not draft a prompt.')
+      else setValue(res.data.prompt)
+    })
+  }
+  return (
+    <div className="mt-2 rounded-lg border border-dashed border-primary/30 bg-primary-bg/20 p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-primary-strong" />
+          <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Vera coaching prompt</span>
+          {pillarName && (
+            <span className="rounded-full border border-border bg-surface px-1.5 py-0.5 text-2xs font-medium text-muted">{pillarName}</span>
+          )}
+        </div>
+        <button
+          type="button"
+          disabled={disabled || busy}
+          onClick={draft}
+          className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60"
+        >
+          <Sparkles className="h-3.5 w-3.5" /> {busy ? 'Drafting…' : value ? 'Redraft' : 'Draft with Vera'}
+        </button>
+      </div>
+      <textarea
+        value={value}
+        disabled={disabled || busy}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => updateBlockAction(slug, itemId, { coachingPrompt: value })}
+        rows={2}
+        placeholder="What Vera nudges them with when they reach this practice. Draft it with Vera or write your own."
+        className="mt-1.5 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
+      />
+      {error && <p className="mt-1 text-2xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
 export function JourneyEditor({
   slug,
   blocks,
   practices = [],
+  pillars = [],
 }: {
   slug: string
   blocks: EditorBlock[]
   practices?: EditorPractice[]
+  pillars?: EditorPillar[]
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [picker, setPicker] = useState<string | null>(null) // phase id, or LOOSE_KEY
   const [query, setQuery] = useState('')
+  // Pillar facets for the practice selector: which Pillars are toggled on. Empty = all Pillars.
+  // Unselected Pillars stay on screen (greyed), so the author sees the full set to choose from.
+  const [pillarFilter, setPillarFilter] = useState<Set<string>>(new Set())
+  const pillarNameById = new Map(pillars.map((p) => [p.id, p.name]))
+  const togglePillar = (id: string) =>
+    setPillarFilter((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   const run = (fn: () => Promise<unknown>) =>
     start(async () => {
       await fn()
@@ -187,6 +273,9 @@ export function JourneyEditor({
   const term = query.trim().toLowerCase()
   const pickList = practices
     .filter((p) => !used.has(p.title))
+    // Pillar facet: when any Pillar is toggled on, show only practices in those Pillars
+    // (preloaded from the chosen Pillar/Focus). Empty filter = the whole library.
+    .filter((p) => pillarFilter.size === 0 || (p.pillarId !== null && pillarFilter.has(p.pillarId)))
     .filter((p) => !term || (p.title + ' ' + (p.description ?? '')).toLowerCase().includes(term))
     .slice(0, 30)
 
@@ -241,6 +330,15 @@ export function JourneyEditor({
             onSave={(cfg) => run(() => updateBlockAction(slug, l.id, { check: cfg }))}
           />
         )}
+        {isPractice && (
+          <SlotCoaching
+            slug={slug}
+            itemId={l.id}
+            initialPrompt={l.coachingPrompt}
+            pillarName={l.domainId ? pillarNameById.get(l.domainId) ?? null : null}
+            disabled={pending}
+          />
+        )}
       </li>
     )
   }
@@ -270,6 +368,40 @@ export function JourneyEditor({
       </div>
       {picker === pickerKey && (
         <div className="mt-2 rounded-xl border border-border bg-canvas p-2">
+          {/* Pillar facets — tap a Pillar to preload its practices. Unselected Pillars stay
+              on screen, greyed, so the whole set is always one tap away (Mind/Body/Spirit/
+              Expression). No selection = the whole library. */}
+          {pillars.length > 0 && (
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              {pillars.map((pl) => {
+                const on = pillarFilter.has(pl.id)
+                return (
+                  <button
+                    key={pl.id}
+                    type="button"
+                    onClick={() => togglePillar(pl.id)}
+                    aria-pressed={on}
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      on
+                        ? 'border-primary/40 bg-primary-bg text-primary-strong'
+                        : 'border-border bg-surface text-subtle opacity-60 hover:opacity-100 hover:text-text'
+                    }`}
+                  >
+                    {pl.name}
+                  </button>
+                )
+              })}
+              {pillarFilter.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPillarFilter(new Set())}
+                  className="rounded-full px-2 py-1 text-xs font-medium text-muted hover:text-text"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
           <div className="mb-2 flex items-center gap-2">
             <Search className="h-4 w-4 shrink-0 text-subtle" />
             <input
@@ -312,20 +444,11 @@ export function JourneyEditor({
 
   return (
     <div className="space-y-4">
-      {/* Section header — the identity/title lives in the Settings section above, so this is just
-          the structure section's label, not a second page title. */}
-      <header className="flex items-end justify-between gap-3">
-        <div>
-          <h2 className="text-base font-bold text-text">Structure</h2>
-          <p className="text-sm text-muted">Add phases, then fill each with bite-sized lessons and practices.</p>
-        </div>
-        <Link
-          href={`/journeys/${slug}/learn`}
-          target="_blank"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text hover:bg-surface-elevated"
-        >
-          <Eye className="h-4 w-4" /> Preview
-        </Link>
+      {/* Section header — the identity/title lives in the Details tab, and Preview + Done live in
+          the builder bar above, so this is just the curriculum section's label. */}
+      <header>
+        <h2 className="text-base font-bold text-text">Curriculum</h2>
+        <p className="text-sm text-muted">Add phases, then fill each with bite-sized lessons and practices.</p>
       </header>
 
       {empty && (

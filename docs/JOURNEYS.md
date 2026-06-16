@@ -123,7 +123,18 @@ Public discovery (`/discover/journeys`) stays as the SEO/AEO surface with sign-i
 
 ## 6. The editor (a breeze)
 
-Lives in the Studio shell. **Structure-first**, template-driven, with live preview:
+A **full-page course builder** at `/journeys/[slug]/edit` (both "New journey" and "Edit journey"
+land here — no popup). Best-practice course-creator layout: a sticky builder bar (title · status ·
+Preview · Done) over three tabs — **Curriculum** (the structure editor, the star), **Details**
+(identity/cover/release), **Settings** (advanced + danger). Panels stay mounted across tab switches
+so unsaved input survives; every section autosaves on blur (no Save button).
+
+This is an immersive build surface, so the global community **right rail stays mounted but starts
+collapsed to a mini strip** (`railStartsCollapsed` in `lib/layout/page-chrome.ts` — `railFor` still
+returns `'global'`, the rail is never removed): an expand toggle at the rail's foot opens it to the
+full width, a collapse toggle returns it. Default on this route is collapsed, for the build width.
+
+**Structure-first**, template-driven, with live preview:
 
 1. **Start from a template or blank-with-prompts.** Seeded templates ("4-Week Reset," "5-Phase
    Coaching Arc," "Onboarding Program") + a blank that walks the author with prompts ("Who is
@@ -140,6 +151,15 @@ Lives in the Studio shell. **Structure-first**, template-driven, with live previ
    completion rewards (Gems, certificate on/off), visibility + review.
 6. **Minimal required fields** to ship: title, who it's for, one outcome, ≥1 phase with ≥1
    lesson. Everything else has a sensible default.
+7. **Pillar-faceted practice selector.** Adding a practice to a slot opens a picker with the four
+   Pillar facets (Mind/Body/Spirit/Expression): tap a Pillar to preload its practices; unselected
+   Pillars stay on screen, greyed, one tap away. No selection = the whole library, plus free-text
+   search. (`practices.domain_id` drives the facet; `searchLibraryPractices({ pillarId })` is the
+   server twin for paged loads.)
+8. **Per-slot Vera coaching prompts.** Each practice slot gets a short coaching line Vera drafts on
+   demand (`lib/ai/journey-slot-coaching.ts`, Haiku), grounded **dynamically** in the season, the
+   Journey's name, the practice, and its Pillar. Stored on the block's `settings.coaching_prompt`;
+   the author can edit it. The player shows it as a Vera nudge when the member reaches the step.
 
 ---
 

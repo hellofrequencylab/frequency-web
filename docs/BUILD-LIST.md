@@ -149,6 +149,18 @@ rail restored** (a no-rail registration was reverted); and the wiped **join/shar
 `events.featured_at` (`20260616181100`). Member-card "Featured" badge + featured-first sort are a
 small follow-up; Channels curation rides existing `display_order`.
 
+**✅ Journey course builder — full-page editor (ADR-297).** The Journey editor moved off the Studio
+**popup** onto a full-page **course builder** at `/journeys/[slug]/edit` (both "New journey" and
+"Edit" land here): sticky builder bar + three tabs (Curriculum · Details · Settings), autosave, panels
+stay mounted across tabs. Four parts shipped: (1) full-page builder (`journey-builder.tsx`, popup
+retired); (2) **mini rail** — the global rail stays mounted but starts collapsed to a `w-14` strip
+with a foot expand/collapse toggle (new `railStartsCollapsed` in `page-chrome.ts`; `railFor` still
+`'global'` — rail never removed, owner rule honored); (3) **Pillar-faceted practice selector** —
+facet chips preload a Pillar's practices, unselected Pillars stay greyed and one tap away; (4)
+**per-slot Vera coaching** — `lib/ai/journey-slot-coaching.ts` (Haiku) drafts a short line dynamically
+from season + Journey name + practice + Pillar, stored on `settings.coaching_prompt`, editable, shown
+in the player as a nudge. No schema change.
+
 ### 📋 D — Block editor (`<PageModules>`) on every primary page  *(specced, not built — XL; paused 2026-06-16 by owner)*
 
 **Goal:** every primary page renders `<PageModules route="…">` so an operator rearranges its blocks

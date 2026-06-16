@@ -135,6 +135,24 @@ export function railFor(pathname: string): Rail {
   return 'global'
 }
 
+// MINI rail — routes that keep the GLOBAL community rail but START it COLLAPSED to a thin
+// strip, with an expand toggle at the rail's foot. The rail is NEVER removed (owner directive:
+// "the right rail stays") — these are immersive build surfaces (the Journey course builder)
+// that want the full center width by default while keeping the rail one tap away. railFor still
+// returns 'global' for these, so every "rail stays" guarantee and the whole chrome-override
+// model are untouched; this is a separate, additive hint the shell reads to pick the rail's
+// DEFAULT width. Pattern match (one segment deep, the edit surface only).
+const MINI_RAIL_PATTERNS: RegExp[] = [
+  /^\/journeys\/[^/]+\/edit$/, // the Journey course builder (full-page editor)
+]
+
+/** Whether a page's GLOBAL rail should START collapsed to a mini strip (an expand toggle at the
+ *  rail's foot restores it). Only meaningful where `railFor === 'global'`. Never suppresses the
+ *  rail: collapse is reversible and the rail is always mounted. Pure + client-safe like railFor. */
+export function railStartsCollapsed(pathname: string): boolean {
+  return MINI_RAIL_PATTERNS.some((re) => re.test(pathname))
+}
+
 // ── Operator overrides (back-end chrome management) ────────────────────────────────────
 //
 // The block above is the CODE source of truth and stays UNCHANGED. What follows is an

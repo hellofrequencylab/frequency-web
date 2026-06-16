@@ -12,6 +12,8 @@ import type { Database } from '@/lib/database.types'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan } from '@/lib/journey-plans'
 import { draftJourneyOutline } from '@/lib/ai/journey-outline'
+import { draftSlotCoaching } from '@/lib/ai/journey-slot-coaching'
+import { getCurrentSeason } from '@/lib/seasons'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 
 type BlockUpdate = Database['public']['Tables']['journey_plan_items']['Update']
@@ -168,6 +170,55 @@ export async function addPracticeBlockAction(
   return ok({ id: String((data as { id: string }).id) })
 }
 
+/** Vera drafts a per-slot coaching line for a practice block (JOURNEYS.md §6), grounded in the
+ *  season, the Journey's name, the practice, and its Pillar — generated dynamically on demand.
+ *  Stores it on `settings.coaching_prompt`; the author can edit it after. Degrades to a clear
+ *  error when AI is off so the author can write the line by hand. */
+export async function draftSlotCoachingAction(
+  slug: string,
+  itemId: string,
+): Promise<ActionResult<{ prompt: string }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const admin = db()
+  const { data: row } = await admin
+    .from('journey_plan_items')
+    .select('title, block_type, domain_id')
+    .eq('id', itemId)
+    .eq('plan_id', a.planId)
+    .maybeSingle()
+  const slot = row as { title: string | null; block_type: string | null; domain_id: string | null } | null
+  if (!slot) return fail('That step is no longer here.')
+
+  // Pull the Journey name, the live season, and the slot's Pillar — the dynamic inputs Vera
+  // grounds the prompt in.
+  const [loaded, season] = await Promise.all([getPlan(slug), getCurrentSeason()])
+  const pillars: string[] = []
+  if (slot.domain_id) {
+    const { data: pil } = await admin.from('pillars').select('name').eq('id', slot.domain_id).maybeSingle()
+    const name = (pil as { name: string } | null)?.name
+    if (name) pillars.push(name)
+  }
+
+  const prompt = await draftSlotCoaching({
+    journeyTitle: loaded?.plan.title ?? '',
+    practiceTitle: slot.title ?? 'this practice',
+    pillars,
+    season: season ? { name: season.name, theme: season.theme } : null,
+    profileId: a.profileId,
+  })
+  if (!prompt) return fail('Vera could not draft a prompt right now. Try again, or write one yourself.')
+
+  const { error } = await admin
+    .from('journey_plan_items')
+    .update({ settings: { coaching_prompt: prompt } })
+    .eq('id', itemId)
+    .eq('plan_id', a.planId)
+  if (error) return fail('Could not save the prompt.')
+  done(slug)
+  return ok({ prompt })
+}
+
 export async function updateBlockAction(
   slug: string,
   itemId: string,
@@ -178,6 +229,9 @@ export async function updateBlockAction(
     required?: boolean
     /** Knowledge-check config for `check` blocks (build item §11.1 #2); null clears it. */
     check?: { question: string; options: string[]; answer: number; explanation?: string | null } | null
+    /** Vera coaching line for a `practice` slot — stored on `settings.coaching_prompt`. The
+     *  player shows it when the member reaches the step; '' clears it. */
+    coachingPrompt?: string
   },
 ): Promise<ActionResult> {
   const a = await authorPlan(slug)
@@ -187,6 +241,11 @@ export async function updateBlockAction(
   if (patch.body !== undefined) update.body = patch.body.slice(0, 20000)
   if (patch.required !== undefined) update.required = patch.required
   if (patch.blockType !== undefined && (LEAF_TYPES as readonly string[]).includes(patch.blockType)) update.block_type = patch.blockType
+  if (patch.coachingPrompt !== undefined) {
+    // A practice slot's `settings` carries only the coaching line, so a whole-object write
+    // is safe here (same rationale as the check block above).
+    update.settings = { coaching_prompt: patch.coachingPrompt.slice(0, 300) }
+  }
   if (patch.check !== undefined) {
     // `settings` on a check block holds only the check, so a whole-object write is safe here.
     if (patch.check === null) update.settings = {}
