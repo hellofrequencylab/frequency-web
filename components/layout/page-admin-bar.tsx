@@ -77,11 +77,13 @@ function questModuleFor(pathname: string) {
   return null
 }
 
-// Rendered by the page TEMPLATES, immediately under their header divider (the line
-// below the title), so the Settings control reads as a split on that line on every
-// page — fed by PageAdminProvider (no per-template prop threading). Self-hides when
-// the viewer isn't an operator or the page has nothing to administer.
-export function PageAdminBar() {
+// Rendered by the page TEMPLATES in place of their header divider. With `asDivider`
+// (the default for PageHeading), it DRAWS the hairline rule and puts the "Settings ▾"
+// split inline on that rule — one line, not two — so the control reads as a split on
+// the divider on every page. Fed by PageAdminProvider (no per-template prop threading).
+// When the viewer has nothing to administer it still draws the bare rule (asDivider) or
+// nothing (legacy callers that own their own divider).
+export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}) {
   const { role, staffRole, webRole } = usePageAdmin()
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
@@ -107,7 +109,10 @@ export function PageAdminBar() {
   const isOperator = isStaff(webRole)
 
   const shareable = isShareable(pathname)
-  if (!manager && !shareable && !isOperator) return null
+  // When acting AS the page's divider, always at least draw the rule; otherwise (a
+  // legacy caller that owns its divider) render nothing when there is no admin.
+  const bareRule = asDivider ? <div className="mb-5 border-b border-border sm:mb-6" /> : null
+  if (!manager && !shareable && !isOperator) return bareRule
 
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
   const settingsModules = manager ? settingsModulesFor(pathname) : []
@@ -121,7 +126,7 @@ export function PageAdminBar() {
 
   // Nothing to administer or share here — render nothing. Operators always have the
   // page-level Page group, so they keep the panel even on a plain (non-entity) page.
-  if (!shareable && !hasSettings && !questModule && !contentModule && !isOperator) return null
+  if (!shareable && !hasSettings && !questModule && !contentModule && !isOperator) return bareRule
 
   // The bottom row: page settings (left) + quest / content (right). Only drawn
   // when at least one of those modules exists.
@@ -143,67 +148,86 @@ export function PageAdminBar() {
     </div>
   ) : null
 
-  return (
-    <div className="-mt-3 mb-5 sm:mb-6">
-      {/* Right-aligned trigger just under the page header's divider — "Settings ▾"
-          for managers, "Share ▾" for everyone else on a shareable page. */}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-xs font-semibold text-muted transition-colors hover:text-text"
-        >
-          {manager || isOperator ? 'Settings' : 'Share'}
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
-        </button>
-      </div>
+  const trigger = (
+    <button
+      type="button"
+      onClick={() => setOpen((o) => !o)}
+      aria-expanded={open}
+      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold text-muted transition-colors hover:text-text"
+    >
+      {manager || isOperator ? 'Settings' : 'Share'}
+      <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+    </button>
+  )
 
-      {/* Panel — a CONTAINED card within the content column (not edge-to-edge), with
-          generous inner padding. The page's EDIT modules come first; the QR designer
-          + share/codes sit below them. Non-managers get only the share kit. */}
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
-          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="mt-2 space-y-5 rounded-2xl border border-border bg-surface p-4 sm:p-6">
-            {hasBottomRow && isCircle && (
-              <div className="space-y-6">
-                {/* Circle settings — full width across the top. */}
-                {settingsBlock}
-                {/* Quest (2/3) + rail layout (1/3) below. */}
-                <div className="gap-y-6 lg:grid lg:grid-cols-3 lg:gap-x-8">
-                  {questModule && <div className="min-w-0 lg:col-span-2">{questModule}</div>}
-                  <div className="min-w-0 lg:col-span-1">
-                    <CircleRailModule />
-                  </div>
+  // Panel — a CONTAINED card within the content column (not edge-to-edge), with
+  // generous inner padding. The page's EDIT modules come first; the QR designer +
+  // share/codes sit below them. Non-managers get only the share kit.
+  const panel = (
+    <div
+      className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
+        open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      }`}
+    >
+      <div className="overflow-hidden">
+        <div className="mt-2 space-y-5 rounded-2xl border border-border bg-surface p-4 sm:p-6">
+          {hasBottomRow && isCircle && (
+            <div className="space-y-6">
+              {/* Circle settings — full width across the top. */}
+              {settingsBlock}
+              {/* Quest (2/3) + rail layout (1/3) below. */}
+              <div className="gap-y-6 lg:grid lg:grid-cols-3 lg:gap-x-8">
+                {questModule && <div className="min-w-0 lg:col-span-2">{questModule}</div>}
+                <div className="min-w-0 lg:col-span-1">
+                  <CircleRailModule />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {hasBottomRow && !isCircle && (
-              <div className="grid gap-x-8 gap-y-6 lg:grid-cols-2">
-                {settingsBlock}
-                {questModule && <div className="min-w-0">{questModule}</div>}
-                {contentModule && <div className="min-w-0 lg:col-span-2">{contentModule}</div>}
-              </div>
-            )}
+          {hasBottomRow && !isCircle && (
+            <div className="grid gap-x-8 gap-y-6 lg:grid-cols-2">
+              {settingsBlock}
+              {questModule && <div className="min-w-0">{questModule}</div>}
+              {contentModule && <div className="min-w-0 lg:col-span-2">{contentModule}</div>}
+            </div>
+          )}
 
-            {shareable && hasBottomRow && <hr className="border-border" />}
+          {shareable && hasBottomRow && <hr className="border-border" />}
 
-            {shareable && (manager
-              ? <PageQrManager pathname={pathname} url={url} />
-              : <PageShareKit pathname={pathname} url={url} />)}
+          {shareable && (manager
+            ? <PageQrManager pathname={pathname} url={url} />
+            : <PageShareKit pathname={pathname} url={url} />)}
 
-            {/* Page-level settings (chrome / SEO / status / layout), staff-only. A
-                hairline sets it apart from any entity admin / share kit above it. */}
-            {isOperator && (hasBottomRow || shareable) && <hr className="border-border" />}
-            {isOperator && <PageSettingsModule />}
-          </div>
+          {/* Page-level settings (chrome / SEO / status / layout), staff-only. A
+              hairline sets it apart from any entity admin / share kit above it. */}
+          {isOperator && (hasBottomRow || shareable) && <hr className="border-border" />}
+          {isOperator && <PageSettingsModule />}
         </div>
       </div>
+    </div>
+  )
+
+  // As the page divider: the hairline rule fills the row and the "Settings ▾" split
+  // sits INLINE on it (one line, not two). The panel expands below, full content width.
+  if (asDivider) {
+    return (
+      <div className="mb-5 sm:mb-6">
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          {trigger}
+        </div>
+        {panel}
+      </div>
+    )
+  }
+
+  // Legacy callers that own their own divider: the trigger sits just under it,
+  // right-aligned, with no rule of its own.
+  return (
+    <div className="-mt-3 mb-5 sm:mb-6">
+      <div className="flex justify-end">{trigger}</div>
+      {panel}
     </div>
   )
 }

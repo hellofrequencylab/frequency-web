@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pageRailPanels } from './rail-panels'
+import { pageRailPanels, isQuestSurface } from './rail-panels'
 
 describe('pageRailPanels', () => {
   it('maps a matched section to its rule (first match wins)', () => {
@@ -20,6 +20,21 @@ describe('pageRailPanels', () => {
     // sibling people-led routes still resolve from the base map
     expect(pageRailPanels('/channels')).toEqual(['online', 'circles', 'events'])
     expect(pageRailPanels('/people/jane')).toEqual(['online', 'circles', 'events'])
+  })
+
+  it('flags The Quest surfaces so the rail suppresses its duplicated standing panels', () => {
+    // The /crew tree owns the member's standing (hub StandingHero/SeasonMap + Journey pages),
+    // so the rail drops its ControlCenterPanel + GameStatsDock there (no duplicated standing).
+    expect(isQuestSurface('/crew')).toBe(true)
+    expect(isQuestSurface('/crew/journey')).toBe(true)
+    expect(isQuestSurface('/crew/leaderboard')).toBe(true)
+    expect(isQuestSurface('/crew/streaks')).toBe(true)
+    expect(isQuestSurface('/crew/store')).toBe(true)
+    // Off-Quest: the page shows no standing, so the rail KEEPS it (valuable there).
+    expect(isQuestSurface('/feed')).toBe(false)
+    expect(isQuestSurface('/channels')).toBe(false)
+    expect(isQuestSurface('/people/jane')).toBe(false)
+    expect(isQuestSurface('/crewmates')).toBe(false) // not a /crew sub-path
   })
 
   it('falls back to a full, content-aware default for unmapped routes (never bare)', () => {

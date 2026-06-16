@@ -25,7 +25,7 @@ Everything is **free** (ADR-150/152); only the Store (Gem spend) and the public 
 | **Practice** | The atomic real-world act a member does + logs. The North-Star act. | `practices`, `practice_logs` (`lib/practices.ts`) |
 | **Zaps** ⚡ | In-person / external currency. Season XP that drives ranks. Resets each season. | `lib/zaps.ts`, `current_season_zaps`, `lifetime_zaps` |
 | **Gems** 💎 | On-platform currency + the Zap rollover. The spendable one (store, merch). Durable. | `lib/gems.ts`, `gem_transactions`, `store_*` |
-| **Season Ranks** | ghost → echo → signal → beacon → conduit → luminary (renamed 2026 — see docs/NAMING.md) | `current_season_rank` (`season_rank_enum`) |
+| **Season Ranks** | Ghost → Initiate → Adept → Master (completion-based, 4 values — by Journeys finished this season; ADR-283, see docs/NAMING.md). The old 6-rank Zap ladder (ghost/echo/signal/beacon/conduit/luminary) is RETIRED. | `current_season_rank` (`season_rank_enum`) |
 | **Practice depth tiers** | Initiate / Adept / Master (default Adept). Tier never changes zap/streak math. | `practice_tiers.tier` |
 | **Challenges** | Community-wide seasonal goals (everyone wins together). | `season_challenges`, `challenge_progress` |
 | **Achievements** | Permanent unlock badges. | `achievements`, `user_achievements` |

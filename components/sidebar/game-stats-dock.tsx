@@ -164,7 +164,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <SectionLabel>Journey</SectionLabel>
-            <Link href="/crew/quests" className="text-2xs font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
+            <Link href="/crew" className="text-2xs font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
           </div>
           <div className="rounded-xl bg-surface-elevated px-3 py-2.5">
             <div className="flex items-center gap-1.5">

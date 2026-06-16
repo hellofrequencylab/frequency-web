@@ -50,6 +50,7 @@ export function PageHeader({
               card's footprint, so it doesn't dominate a narrow screen. */}
           <Link
             href="/crew"
+            aria-label="My Quest"
             className="inline-flex items-center gap-2.5 self-start rounded-full border border-border bg-surface px-3 py-1.5 shadow-sm transition-colors hover:border-primary-bg sm:hidden"
           >
             <span className="rank-badge text-3xs font-bold leading-none" style={seasonRankStyle(gam.rank)}>
@@ -69,6 +70,7 @@ export function PageHeader({
           {/* Desktop+ : the full stat card. */}
           <Link
             href="/crew"
+            aria-label="My Quest"
             className="hidden shrink-0 items-center gap-5 self-start rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md sm:flex"
           >
             <div className="flex flex-col items-center">

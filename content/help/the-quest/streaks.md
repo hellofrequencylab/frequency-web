@@ -1,9 +1,9 @@
 ---
 title: Streaks
-description: How your daily practice streak works, freezes, and the rewards for keeping it.
+description: How your daily practice streak works, the reserve that forgives a slip, the rest you can plan, and the rewards for showing up.
 category: the-quest
 order: 5
-updated: 2026-06-11
+updated: 2026-06-16
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -11,7 +11,8 @@ status: published
 
 Your **streak** is the number of days in a row you’ve logged a practice. It’s the
 heartbeat of Frequency (one small thing, every day) and it shows up front and
-centre on your home screen.
+centre on your home screen. One missed day won’t break it, and a planned rest
+doesn’t count against you.
 
 ## How it grows
 
@@ -23,30 +24,45 @@ A new badge lands at each checkpoint (**3, 7, 14, 30, 60, 100 and 365 days**) an
 each one pays **Zaps** (which drive your season rank). The further you go, the bigger
 the reward.
 
-## Streak freezes
+## Your reserve (one slip won’t break it)
 
-Life happens. You bank a **freeze** (up to two at a time) two ways:
+The streak is built to survive a normal life. You bank a small **reserve** of grace
+days (up to two), and if you miss a single day a reserve day bridges it the next time
+you log. So one slip never zeroes your streak.
 
-- Reach the **Week, Month, Century and Year** milestones.
-- Earn five **Full Day** bonuses on a Journey: every fifth one banks a freeze.
+The rule is simple: **never miss twice.** Miss two days in a row and the streak starts
+fresh from one. Your best-ever streak stays on record either way, so nothing you built
+disappears.
 
-If you miss a single day, a freeze is spent automatically the next time you log, so
-one slip never wipes out the momentum you’ve built. Miss two days in a row and the
-streak resets to one. Freezes can’t be bought, only earned.
+You bank a reserve day two ways:
 
-## Coming back
+- Reach the **Week, Month, Century and Year** badges.
+- Earn five **Full Day** bonuses on a Journey: every fifth one banks one.
 
-If you’ve been away a week or more, your first practice back pays a small
-**Welcome Back** bonus. No guilt, no lost-streak lecture. Just log one thing and
-you’re moving again.
+Reserve days can’t be bought, only earned.
 
-## Keeping it alive
+## Resting (when you’re planning time off)
 
-If you haven’t logged yet today, your home screen flags the streak as **at risk** so
-you don’t lose it by accident. Log one practice and you’re safe until tomorrow.
+Going away, sick, or just need a break? Open the **Leaderboard** (it lives in **The
+Vault**) and, under your streak, **set a rest**. The days you’re resting don’t count
+against the streak, so a planned break isn’t a miss. Rest runs up to two weeks; end it
+early whenever you’re ready, and log one practice to pick the streak back up right where
+it was.
 
-You can see your current streak, your best-ever streak, your banked freezes and the
-next badge to chase on the **Streaks** page in your dashboard.
+## Picking it back up
+
+If the streak does reset, there’s no lost-streak lecture. The page reads **pick it
+back up today**, your best-ever streak is still there, and one practice starts day one
+again. If you’ve been away a week or more, your first practice back also pays a small
+**Welcome Back** bonus.
+
+## Keeping it going
+
+If you haven’t logged yet today, your home screen notes that today isn’t logged yet so
+you don’t miss it by accident. Log one practice and you’re set until tomorrow.
+
+You can see your current streak, your best-ever streak, your reserve and the next
+badge to chase on the **Leaderboard**, in the consistency section under the shared goal.
 
 ## Per-practice streaks and the Practice Shelf
 
@@ -63,10 +79,10 @@ the practices you actually keep showing up for, deepest first.
 
 Alongside the daily streak, Frequency also tracks **weekly rhythms**: showing up to
 events, posting, and hosting at least once a week. These power their own achievements
-and live on the same Streaks page, below your daily streak.
+and live with your daily streak on the **Leaderboard**.
 
 ## Practicing together
 
-When three or more people from the same circle are on the same Journey and all log
+When three or more people from the same Circle are on the same Journey and all log
 on the same day, everyone gets a small **Co-op Pulse** bonus. It adds up quietly.
 Practicing together is the point.

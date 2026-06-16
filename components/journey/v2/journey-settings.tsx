@@ -8,12 +8,12 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { PencilLine, Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper } from 'lucide-react'
+import { PencilLine, Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw } from 'lucide-react'
 import { IconAccentFace, AccentPicker, IconGrid } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT } from '@/lib/studio/accents'
 import { isError } from '@/lib/action-result'
-import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery } from '@/app/(main)/journeys/actions'
-import type { PlanStatus, PlanVisibility } from '@/lib/journey-plans'
+import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview } from '@/app/(main)/journeys/actions'
+import type { PlanStatus, PlanVisibility, StoredVeraReview } from '@/lib/journey-plans'
 
 export interface JourneySettingsProps {
   planId: string
@@ -27,6 +27,8 @@ export interface JourneySettingsProps {
   initialCompletionGems: number
   initialCertificateEnabled: boolean
   initialDripIntervalDays: number
+  /** Vera's last rank-eligibility review, if this Journey has been published/reviewed. */
+  initialReview: StoredVeraReview | null
 }
 
 export function JourneySettings(props: JourneySettingsProps) {
@@ -52,11 +54,16 @@ export function JourneySettings(props: JourneySettingsProps) {
   const [status, setStatus] = useState<PlanStatus>(props.initialStatus)
   const [celebrate, setCelebrate] = useState<null | 'live' | 'review'>(null)
 
+  // Vera's rank-eligibility gate: the verdict + coaching, refreshed on publish/resubmit.
+  const [review, setReview] = useState<StoredVeraReview | null>(props.initialReview)
+  const [reviewing, setReviewing] = useState(false)
+
   const meta = (patch: Parameters<typeof saveJourneyMeta>[1]) => save(() => saveJourneyMeta(props.planId, patch))
 
   const changeVisibility = (v: PlanVisibility) => {
     const prev = visibility
     setVisibility(v)
+    if (v === 'public') setReviewing(true)
     start(async () => {
       const res = await setJourneyVisibility(props.planId, v)
       if (isError(res)) {
@@ -67,8 +74,22 @@ export function JourneySettings(props: JourneySettingsProps) {
           const live = res.data.status === 'approved'
           setCelebrate(live ? 'live' : 'review')
           setTimeout(() => setCelebrate(null), 3500)
+          setReview(res.data.review)
         }
       }
+      setReviewing(false)
+      router.refresh()
+    })
+  }
+
+  // Re-run Vera's rank gate after editing a published Journey (resubmit). Re-reviewing keeps a
+  // stale approval from surviving a material change.
+  const resubmitForReview = () => {
+    setReviewing(true)
+    start(async () => {
+      const res = await submitJourneyForReview(props.planId)
+      if (!isError(res)) setReview(res.data.review)
+      setReviewing(false)
       router.refresh()
     })
   }
@@ -208,6 +229,79 @@ export function JourneySettings(props: JourneySettingsProps) {
           <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2.5 py-1 text-warning">In review</span>
         )}
       </div>
+
+      {/* Vera's rank gate — coaching for the author. Publishing is open; this is only about
+          whether finishing this Journey can count toward season rank. Shown once it's public. */}
+      {visibility === 'public' && (review || reviewing) && (
+        <VeraRankPanel review={review} reviewing={reviewing} onResubmit={resubmitForReview} />
+      )}
     </section>
+  )
+}
+
+/** Vera's rank-eligibility verdict + coaching. Three faces: approved (in the ranked library),
+ *  rejected (notes to fix, with a resubmit), and pending (Vera couldn't reach a verdict — try
+ *  again). All tokens only; no hex, no hardcoded sizes. */
+function VeraRankPanel({
+  review,
+  reviewing,
+  onResubmit,
+}: {
+  review: StoredVeraReview | null
+  reviewing: boolean
+  onResubmit: () => void
+}) {
+  if (reviewing && !review) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-canvas px-4 py-3 text-sm text-muted">
+        <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is reading your
+        Journey to see if it can count toward rank.
+      </div>
+    )
+  }
+  if (!review) return null
+
+  const approved = review.status === 'approved'
+  const pending = review.status === 'pending'
+
+  const tone = approved
+    ? { border: 'border-success/50', bg: 'bg-success-bg', text: 'text-success', Icon: Trophy }
+    : pending
+      ? { border: 'border-border', bg: 'bg-canvas', text: 'text-muted', Icon: Sparkles }
+      : { border: 'border-warning/50', bg: 'bg-warning-bg', text: 'text-warning', Icon: Sparkles }
+
+  const headline = approved
+    ? 'Vera added this to the ranked library. Finishing it now counts toward rank.'
+    : pending
+      ? "Vera couldn't reach a verdict this time, so it isn't counting toward rank yet."
+      : "Vera's notes before this can count toward rank:"
+
+  return (
+    <div className={`space-y-3 rounded-xl border ${tone.border} ${tone.bg} px-4 py-3`}>
+      <p className={`flex items-start gap-2 text-sm font-medium ${tone.text}`}>
+        <tone.Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> {headline}
+      </p>
+      {review.feedback.length > 0 && (
+        <ul className="space-y-1.5 text-sm text-text">
+          {review.feedback.map((line, i) => (
+            <li key={i} className="flex gap-2">
+              <span aria-hidden className="select-none text-subtle">·</span>
+              <span>{line}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!approved && (
+        <button
+          type="button"
+          onClick={onResubmit}
+          disabled={reviewing}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 ${reviewing ? 'animate-spin' : ''}`} aria-hidden />
+          {reviewing ? 'Vera is reviewing' : 'Revise and submit for review'}
+        </button>
+      )}
+    </div>
   )
 }

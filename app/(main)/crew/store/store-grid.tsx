@@ -59,7 +59,7 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
   }
 
   return (
-    <div className={`rounded-2xl border px-4 py-3 transition-all ${
+    <div className={`rounded-2xl border px-4 py-3 transition-all motion-reduce:transition-none ${
       item.owned
         ? 'border-success bg-success-bg/30'
         : 'border-border bg-surface'
@@ -101,14 +101,14 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
               <button
                 onClick={handleRedeem}
                 disabled={!canAfford || isPending}
-                className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                className={`flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold transition-colors motion-reduce:transition-none ${
                   canAfford
                     ? 'bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-50'
                     : 'bg-surface-elevated text-subtle cursor-not-allowed'
                 }`}
               >
                 {isPending ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" />
                 ) : !canAfford ? (
                   <Lock className="w-3 h-3" />
                 ) : (

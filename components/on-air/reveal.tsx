@@ -408,7 +408,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
           </div>
         ))}
       </div>
-      <Link href="/crew/streaks" className="mt-4 inline-block text-xs font-semibold text-primary-strong hover:underline">
+      <Link href="/crew/leaderboard" className="mt-4 inline-block text-xs font-semibold text-primary-strong hover:underline">
         Full stats →
       </Link>
     </div>

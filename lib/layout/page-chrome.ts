@@ -78,19 +78,18 @@ const SCOPED_PREFIXES: string[] = [
   // like the rest of the app. Re-add a prefix here only if a section grows a real in-body rail.
 ]
 
-// The admin WORKSPACE (Phase 4, ADR-228): under /admin/* the global member LEFT
-// rail is suppressed (the admin layout mounts a sticky top-nav menubar instead of a
-// left sidebar). The shell reads BOTH axes: `leftRailFor` for the left column,
-// `railFor` for the right — and admin now returns 'none' on BOTH (full-width
-// operator workspace). To swap the left rail for another workspace, add its prefix
-// here — never path-sniff in the shell.
-const LEFT_WORKSPACE_PREFIXES = ['/admin']
+// The global MEMBER left rail (the one site menu) frames EVERY in-app page now,
+// including the admin workspace (owner directive): admin uses the same left menu as
+// the rest of the site, with the Admin section gated by role. No route swaps the left
+// rail today; a future full-takeover surface could add its prefix here to mount its
+// own left nav — never path-sniff in the shell. (Admin still drops the member RIGHT
+// rail via `railFor`, so the admin info rail owns the right column.)
+const LEFT_WORKSPACE_PREFIXES: readonly string[] = []
 
 export type LeftRail = 'global' | 'none'
 
-/** Whether the global MEMBER left rail frames a page. 'none' = a workspace
- *  (today: /admin/*) mounts its OWN left nav in its layout and the shell suppresses
- *  the member rail to avoid a double left rail. */
+/** Whether the global MEMBER left rail (the one site menu) frames a page. 'global'
+ *  everywhere today; 'none' only if a route mounts its OWN left nav (none currently). */
 export function leftRailFor(pathname: string): LeftRail {
   const inWorkspace = LEFT_WORKSPACE_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
@@ -113,10 +112,9 @@ export function railFor(pathname: string): Rail {
   // 'global' at the end. Registered here so the decision is explicit (PAGE-FRAMEWORK
   // §3): a leader keeps the member chrome, unlike /admin which drops both rails.
 
-  // The admin WORKSPACE (Phase 4, ADR-228) is a full-width operator surface: no
-  // right rail, just the sticky top-nav menubar (app/(main)/admin/layout.tsx) over
-  // a wide content column. The member community rail is irrelevant in admin, so it
-  // is dropped on both axes (leftRailFor already returns 'none' for /admin/*).
+  // The admin workspace keeps the global LEFT menu (the one site nav) but drops the
+  // member community RIGHT rail: the admin layout (app/(main)/admin/layout.tsx) mounts
+  // its own operator info rail on the right, so the member right rail is suppressed.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return 'none'
 
   // The profile editor keeps the standard community rail even though it lives under
@@ -181,6 +179,7 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/crew', label: 'Crew', area: 'Member' },
   { route: '/outreach', label: 'Outreach', area: 'Member' },
   { route: '/lead', label: 'Leadership', area: 'Member' },
+  { route: '/lead/training-library', label: 'Leader Training', area: 'Member' },
   // ── Focus surfaces (default NONE — full-width, no rail) ──
   { route: '/settings', label: 'Settings', area: 'Focus surfaces' },
   { route: '/settings/profile', label: 'Profile editor', area: 'Focus surfaces' },

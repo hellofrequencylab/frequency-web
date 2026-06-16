@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
       {
         title: `Your next step in ${prompt.journeyTitle}`,
         body: prompt.timeNote ? `${prompt.practiceTitle}. ${prompt.timeNote}` : prompt.practiceTitle,
-        url: '/crew/journey',
+        url: '/crew',
         tag: `journey-prompt-${day}`,
       },
       'lifecycle',

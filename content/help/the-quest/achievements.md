@@ -3,7 +3,7 @@ title: Achievements & badges
 description: The permanent badges you collect for showing up: tiers, categories, and the secret ones.
 category: the-quest
 order: 7
-updated: 2026-06-10
+updated: 2026-06-16
 audience: member
 featureKeys: [achievements, gamification]
 status: published
@@ -15,9 +15,9 @@ long record of who you've been in the community.
 
 ## Where to find them
 
-Open **The Quest** and pick the **Achievements** tab. You'll see your whole
-collection: what you've earned, what's still locked, your collection progress, and
-your lifetime Zaps and streaks alongside.
+Open **The Vault** and scroll to **Your Awards**. You'll see your whole collection:
+what you've earned, what's still locked, and your collection progress, sitting right
+beside your Trophy Case.
 
 ## How you earn them
 
@@ -32,7 +32,7 @@ A few examples of the kind of thing that earns one:
 - **The Welcomer.** Be the first to welcome 5 new members.
 - **Storyteller.** Share 10 posts.
 - **Warming Up.** Keep a 3-week attendance rhythm going.
-- **Echo Unlocked.** Reach your first season rank.
+- **First Journey.** Finish your first Journey of the season.
 
 ## Categories and tiers
 
@@ -53,7 +53,6 @@ surprise is the point.
 
 ## Where your badges show
 
-Your badge count rides with you. It shows on the
-[leaderboard](/help/the-quest/leaderboard) next to your Zaps and streak, and recent
-badges appear on your Quest dashboard. Collecting them is never required; they're
-a record, not homework.
+Your badges ride with you. Recent ones appear on your **My Quest** dashboard, and your
+full collection lives in **The Vault** under Your Awards. Collecting them is never
+required; they're a record, not homework.

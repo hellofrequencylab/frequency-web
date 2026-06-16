@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import type { AchievementCategory, AchievementTier, StreakType } from '@/lib/gamification'
@@ -119,6 +120,42 @@ export async function getChallengesData(season: number = 1) {
       total: (challenges ?? []).length,
       completed: (progress ?? []).filter(p => p.completed_at).length,
     },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Complete a Journey's Expression Challenge (the capstone). The member self-attests
+// the share and picks where it happened: in person at a Circle (+50 Zaps) or solo
+// online (+30 Gems). This is the ONLY member entry point to the Expression capstone,
+// and completing it can finish the Journey (lib/quest/expression.ts owns the reward +
+// the journey-finish check). profileId always comes from the session, never the
+// client, so a member can only complete their OWN capstone.
+// ---------------------------------------------------------------------------
+
+export async function completeExpression(
+  journeyId: string,
+  mode: 'circle' | 'online',
+): Promise<{ ok: boolean; found: boolean; zaps: number; gems: number; finishedJourney: boolean; rank: string | null }> {
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in')
+
+  const { completeExpressionChallenge } = await import('@/lib/quest/expression')
+  const res = await completeExpressionChallenge(profileId, journeyId, { mode })
+
+  // The capstone touches season rank, Zaps/Gems, and the Journey card across surfaces.
+  revalidatePath('/crew/challenges')
+  revalidatePath('/crew/leaderboard')
+  revalidatePath('/crew/store')
+  revalidatePath('/crew')
+  revalidatePath('/people', 'layout')
+
+  return {
+    ok: res.ok,
+    found: res.found,
+    zaps: res.zaps,
+    gems: res.gems,
+    finishedJourney: !!res.journey?.completed,
+    rank: res.journey?.rank ?? null,
   }
 }
 

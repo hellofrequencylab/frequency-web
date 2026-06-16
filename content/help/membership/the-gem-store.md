@@ -3,15 +3,14 @@ title: Spending Gems in the Vault Store
 description: What Gems buy, how redeeming works, and the "how you earned" ledger.
 category: membership
 order: 2
-updated: 2026-06-11
+updated: 2026-06-16
 audience: member
 featureKeys: [vault, gems]
 status: published
 ---
 
 Gems are the currency you **spend**, and the Vault Store is where you spend them.
-Open **The Quest** and pick the **Store** tab. Your Vault and the Vault Store live on
-one page.
+Open **The Vault** from the menu. Your Vault and the Vault Store live on one page.
 
 ## Your Vault, up top
 
@@ -38,7 +37,7 @@ on that below). What's free vs. member is covered in
   they're gone, they're gone.
 - Some items are **season exclusives**: they stop selling when the season closes,
   and a few retire on a set date. If you want one, don't sit on it.
-- A few items ask for a rank first (the Founders' Table seat needs Conduit or
+- A few items ask for a rank first (the Founders' Table seat needs Adept or
   above). Earn the rank, then redeem.
 - Can't afford something yet? The button tells you exactly how many Gems you're
   short. No surprises.

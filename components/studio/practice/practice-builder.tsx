@@ -11,7 +11,7 @@ import { useStudioDraft } from '../kit/use-studio-draft'
 import { StudioField } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { updatePracticeAction, setPracticeTagsAction } from '@/app/(main)/practices/actions'
-import type { PracticeEdit } from '@/lib/practices'
+import type { PracticeEdit, WeightClass } from '@/lib/practices'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
 // fields, footer) against the existing practice actions; mirrors the old
@@ -28,6 +28,16 @@ const ICONS: { key: string; Icon: LucideIcon }[] = [
 ]
 const ICON_BY_KEY = new Map(ICONS.map((i) => [i.key, i.Icon]))
 
+// Weight class → its per-log Zap payout. These mirror ZAP_AMOUNTS (lib/zaps.ts:
+// practice_logged_light 8 / practice_logged 12 / practice_logged_heavy 15); kept as
+// literals here because lib/zaps pulls in the server-only admin client. The live
+// payout is tunable in zap_config, so this is a "starts at" hint, not a promise.
+const WEIGHT_OPTIONS: { value: WeightClass; label: string; zaps: number }[] = [
+  { value: 'light', label: 'Light', zaps: 8 },
+  { value: 'standard', label: 'Standard', zaps: 12 },
+  { value: 'heavy', label: 'Heavy', zaps: 15 },
+]
+
 const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 export interface PracticeBuilderProps {
@@ -42,6 +52,8 @@ export interface PracticeBuilderProps {
   domainId: string | null
   subcategoryId: string | null
   headerImage: string | null
+  /** Payout tier (null on legacy rows → defaults to Standard in the form). */
+  weightClass: string | null
   pillars: { id: string; name: string }[]
   subcategories: { id: string; domain_id: string; name: string }[]
   initialTags: string[]
@@ -68,6 +80,10 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [domainId, setDomainId] = useState(props.domainId ?? '')
   const [subcategoryId, setSubcategoryId] = useState(props.subcategoryId ?? '')
   const [headerImage, setHeaderImage] = useState(props.headerImage ?? '')
+  // Smart default: an existing practice without a tier reads as Standard (the 12⚡ middle).
+  const [weightClass, setWeightClass] = useState<WeightClass>(
+    WEIGHT_OPTIONS.some((w) => w.value === props.weightClass) ? (props.weightClass as WeightClass) : 'standard',
+  )
   const [tagsInput, setTagsInput] = useState(props.initialTags.join(', '))
   const [iconOpen, setIconOpen] = useState(false)
 
@@ -183,6 +199,34 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           </select>
         </StudioField>
       </div>
+
+      {/* Effort (weight class) — the per-log Zap payout tier */}
+      <fieldset className="mt-4">
+        <legend className="text-2xs font-semibold uppercase tracking-wide text-subtle">Effort</legend>
+        <div role="radiogroup" aria-label="Effort" className="mt-1 grid grid-cols-3 gap-2">
+          {WEIGHT_OPTIONS.map((w) => {
+            const active = weightClass === w.value
+            return (
+              <button
+                key={w.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => { setWeightClass(w.value); queueSave({ weight_class: w.value }) }}
+                className={`flex min-h-11 flex-col items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  active
+                    ? 'border-primary/50 bg-primary-bg text-primary-strong'
+                    : 'border-border bg-surface text-muted hover:bg-surface-elevated'
+                }`}
+              >
+                <span>{w.label}</span>
+                <span className={`text-2xs font-semibold ${active ? 'text-primary-strong' : 'text-subtle'}`}>{w.zaps} Zaps</span>
+              </button>
+            )
+          })}
+        </div>
+        <p className="mt-1 text-xs text-subtle">How much a single log pays. Light 8 · Standard 12 · Heavy 15 Zaps.</p>
+      </fieldset>
 
       {/* Tags */}
       <div className="mt-4">

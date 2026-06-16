@@ -26,9 +26,9 @@ export function ClaimTaskButton({ taskId }: { taskId: string }) {
       <button
         onClick={handleClick}
         disabled={isPending}
-        className="shrink-0 flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold bg-primary text-on-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
+        className="shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold bg-primary text-on-primary hover:bg-primary-hover transition-colors disabled:opacity-50 motion-reduce:transition-none"
       >
-        {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Hand className="w-3 h-3" />}
+        {isPending ? <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" /> : <Hand className="w-3 h-3" />}
         Claim
       </button>
       {error && <span className="text-xs text-danger">{error}</span>}
@@ -49,9 +49,9 @@ export function ReleaseTaskButton({ taskId }: { taskId: string }) {
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="shrink-0 flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold bg-surface-elevated text-muted hover:bg-border-strong transition-colors disabled:opacity-50"
+      className="shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold bg-surface-elevated text-muted hover:bg-border-strong transition-colors disabled:opacity-50 motion-reduce:transition-none"
     >
-      {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Undo2 className="w-3 h-3" />}
+      {isPending ? <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" /> : <Undo2 className="w-3 h-3" />}
       Release
     </button>
   )

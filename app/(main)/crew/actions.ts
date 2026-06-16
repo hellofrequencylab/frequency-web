@@ -53,6 +53,6 @@ export async function logCompletion(taskId: string) {
   }
 
   revalidatePath('/crew')
-  revalidatePath('/crew/achievements')
-  revalidatePath('/crew/challenges')
+  revalidatePath('/crew/store')
+  revalidatePath('/crew/leaderboard')
 }

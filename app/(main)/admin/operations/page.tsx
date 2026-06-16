@@ -1,28 +1,28 @@
-import { Fragment, Suspense } from 'react'
-import { cookies } from 'next/headers'
+import { Suspense } from 'react'
 import Link from 'next/link'
-import { ArrowUpRight, SlidersHorizontal, Bot, Server } from 'lucide-react'
+import {
+  SlidersHorizontal, ArrowUpRight, Bot, Server, Menu, FileText, CreditCard,
+  Palette, Building2, LayoutPanelLeft, Sparkles, ScrollText,
+  type LucideIcon,
+} from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { dashCookie, sanitizeDashOrder } from '../dash-sections'
 import { RelatedAreas } from '@/components/admin/related-areas'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { DashArea, TileGrid, Tile, GraphTile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { WeekBars, weeklyBuckets } from '@/components/admin/spark-charts'
 import { AttentionList, type AttentionItem } from '@/components/admin/attention-list'
 import { FreshnessNote } from '@/components/admin/freshness-note'
-import { groupLinks } from '../sections'
-import type { AdminLink } from '../sections'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { aiEnabledFlag, demoContentExists } from '@/lib/platform-flags'
 
-// Operations — "the platform machine." The DOMAIN DASHBOARD (ADR-233 §3.2): the same
-// tiled grammar as the exec home, scoped to the system layer — the AI/assistant
-// controls, content infrastructure (pages), commerce switches, the demo layer, and the
-// security trail. KPI MiniStat clusters + graphs + a domain attention strip + area-card
-// entry tiles into the domain's own surfaces. Headers + instructional copy print on the
-// canvas; all data lives in white tiles. Gate: janitor / platform staff (everything here
-// is sensitive); each linked area keeps its own gate. Each slow read sits behind its own
-// Suspense so the shell never blocks (PAGE-FRAMEWORK §5).
+// Operations — "the platform machine," a single DASHBOARD (no sub-tabs): the AI &
+// assistant KPIs and the platform/system-health stats up top, then ONE section per
+// working sub-page (Menu, Pages, Payments, Theme Studio, Spaces, Page layout, Demo
+// Studio, and the audit trail), each with a live stat and a link straight to the
+// surface that edits it. Gate: janitor / platform staff (everything here is sensitive);
+// each linked area keeps its own gate. Each slow read streams behind its own Suspense
+// so the shell never blocks (PAGE-FRAMEWORK §5).
+export const dynamic = 'force-dynamic'
 
 const DAY = 24 * 60 * 60 * 1000
 const WEEK = 7 * DAY
@@ -30,26 +30,6 @@ const VOLUME_WEEKS = 8
 
 export default async function OperationsDashboard() {
   const { role, webRole, staffRole } = await requireAdmin('janitor', { staff: 'platform' })
-  const links = groupLinks('operations', role, webRole, staffRole)
-  const order = sanitizeDashOrder('operations', (await cookies()).get(dashCookie('operations'))?.value)
-
-  const sections: Record<string, React.ReactNode> = {
-    ai: (
-      <Suspense fallback={<DashSkeleton title="AI & assistant" />}>
-        <AiArea />
-      </Suspense>
-    ),
-    platform: (
-      <Suspense fallback={<DashSkeleton title="Platform" />}>
-        <PlatformArea />
-      </Suspense>
-    ),
-    work: (
-      <AdminSection title="Work in Operations" description="Every surface in this domain you can manage.">
-        <AreaTiles links={links} />
-      </AdminSection>
-    ),
-  }
 
   return (
     <AdminTemplate
@@ -57,11 +37,19 @@ export default async function OperationsDashboard() {
       eyebrow="Domain"
       icon={SlidersHorizontal}
       width="wide"
-      description="The platform machine. AI, content infrastructure, commerce, and the system trail. Start with whatever needs your attention, then dig into a surface."
+      description="The platform machine. AI, content infrastructure, commerce, and the system trail at a glance, then every working surface, each a click from editing."
     >
-      {order.map((id) => (
-        <Fragment key={id}>{sections[id]}</Fragment>
-      ))}
+      <Suspense fallback={<DashSkeleton title="AI & assistant" />}>
+        <AiArea />
+      </Suspense>
+
+      <Suspense fallback={<DashSkeleton title="Platform" />}>
+        <PlatformArea />
+      </Suspense>
+
+      <Suspense fallback={<DashSkeleton title="Manage" />}>
+        <ManageSections />
+      </Suspense>
 
       <RelatedAreas current="operations" role={role} webRole={webRole} staffRole={staffRole} />
     </AdminTemplate>
@@ -187,30 +175,65 @@ async function PlatformArea() {
   )
 }
 
-// Area-card entry tiles into the domain's surfaces — the soft-surface launchpad style,
-// scoped to what the viewer can reach (role filtering happens upstream in groupLinks).
-function AreaTiles({ links }: { links: readonly AdminLink[] }) {
+// ── Manage — one section per working sub-page, each a stat + a link to edit it. ──
+interface ManageCard {
+  label: string
+  desc: string
+  stat: string
+  statLabel: string
+  href: string
+  Icon: LucideIcon
+}
+
+async function ManageSections() {
+  const admin = createAdminClient()
+  const weekAgo = new Date(new Date().getTime() - WEEK).toISOString()
+  const [pagesC, themesC, spacesC, demoMembersC, auditC] = await Promise.all([
+    admin.from('pages').select('id', { count: 'exact', head: true }),
+    admin.from('themes').select('id', { count: 'exact', head: true }),
+    admin.from('spaces').select('id', { count: 'exact', head: true }),
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_demo', true),
+    admin.from('admin_audit_log').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
+  ])
+
+  const cards: ManageCard[] = [
+    { label: 'Menu manager', desc: 'Order and hide the one shared nav menu; set who reaches each item.', stat: '', statLabel: 'Manage', href: '/admin/menu', Icon: Menu },
+    { label: 'Pages', desc: 'The page library: open any page to edit it in place. Marketing + beta induction too.', stat: `${pagesC.count ?? 0}`, statLabel: 'pages', href: '/pages', Icon: FileText },
+    { label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', stat: '', statLabel: 'Manage', href: '/admin/payments', Icon: CreditCard },
+    { label: 'Theme Studio', desc: 'Brand themes, palettes, and seasonal looks. Edit and assign without code.', stat: `${themesC.count ?? 0}`, statLabel: 'themes', href: '/admin/appearance', Icon: Palette },
+    { label: 'Spaces', desc: 'White-label tenants: each Space its theme, brand name, accent, and logo.', stat: `${spacesC.count ?? 0}`, statLabel: 'spaces', href: '/admin/spaces', Icon: Building2 },
+    { label: 'Page layout', desc: "Frame each route's right rail: Global, Scoped, or full-width Focus.", stat: '', statLabel: 'Manage', href: '/admin/page-layout', Icon: LayoutPanelLeft },
+    { label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', stat: `${demoMembersC.count ?? 0}`, statLabel: 'demo members', href: '/admin/demo', Icon: Sparkles },
+    { label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', stat: `${auditC.count ?? 0}`, statLabel: 'entries · 7d', href: '/admin/audit', Icon: ScrollText },
+  ]
+
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-      {links.map((l) => (
-        <Link
-          key={l.href}
-          href={l.href}
-          className="group flex items-start gap-3 rounded-2xl bg-surface-elevated/60 p-4 transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
-        >
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-primary-strong">
-            <l.Icon className="h-4 w-4" aria-hidden />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-1 text-sm font-semibold text-text">
-              {l.label}
-              <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100" />
-            </span>
-            <span className="mt-0.5 block text-xs text-muted">{l.desc}</span>
-          </span>
-        </Link>
-      ))}
-    </div>
+    <AdminSection title="Manage" description="Every working surface in Operations. Open one to edit it.">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map((c) => (
+          <Link
+            key={c.href}
+            href={c.href}
+            className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-border-strong"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+                <c.Icon className="h-4 w-4" aria-hidden />
+              </span>
+              <ArrowUpRight className="h-4 w-4 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-text">{c.label}</p>
+              <p className="mt-0.5 text-xs leading-snug text-muted">{c.desc}</p>
+            </div>
+            <p className="mt-auto flex items-baseline gap-1.5">
+              {c.stat && <span className="text-lg font-bold tabular-nums text-text">{c.stat}</span>}
+              <span className="text-2xs font-medium uppercase tracking-wide text-subtle">{c.statLabel}</span>
+            </p>
+          </Link>
+        ))}
+      </div>
+    </AdminSection>
   )
 }
 
