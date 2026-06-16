@@ -2726,6 +2726,7 @@ export type Database = {
           cover_image_path: string | null
           created_at: string | null
           currency: string
+          featured_at: string | null
           description: string | null
           details: Json
           domain_id: string | null
@@ -2774,6 +2775,7 @@ export type Database = {
           claimed_at?: string | null
           country?: string | null
           cover_image_path?: string | null
+          featured_at?: string | null
           created_at?: string | null
           currency?: string
           description?: string | null
@@ -2824,6 +2826,7 @@ export type Database = {
           claimed_at?: string | null
           country?: string | null
           cover_image_path?: string | null
+          featured_at?: string | null
           created_at?: string | null
           currency?: string
           description?: string | null
