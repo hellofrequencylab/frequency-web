@@ -158,8 +158,12 @@ Signature). Vera fills each slot, reusing fitting library practices (validated i
 inline ones; `scaffoldJourneyAction` lays the empty shape when AI is off. **Part 2 (extra-credit
 Challenges) shipped:** Vera seeds one above-and-beyond bonus task per Journey (and the author can add
 more), an `exercise` block with `settings.extra_credit` + `settings.bonus_zaps` that pays regular Zaps
-exactly once on completion (`reward_grants` lock) without touching the Pillar Signature. **Part 3 (Side
-Quests — reward-only, badge-granting, built on the `achievements` engine) is planned.** No schema change.
+exactly once on completion (`reward_grants` lock) without touching the Pillar Signature. **Part 3
+(Side Quests) shipped:** reward-only missions on a `/crew/side-quests` board, built on the
+`achievements` engine — a Side Quest is an `achievements` row flagged `is_side_quest` (migration
+`20260616230000`) with manual criteria; claiming unlocks the **special badge** (`user_achievements`,
+the idempotency lock) and pays `zaps_reward` once, no Pillar credit. (Admin authoring UI is a tracked
+follow-up; starter quests are seeded.)
 
 **✅ Journey course builder — full-page editor (ADR-297).** The Journey editor moved off the Studio
 **popup** onto a full-page **course builder** at `/journeys/[slug]/edit` (both "New journey" and
