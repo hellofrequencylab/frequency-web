@@ -29,6 +29,7 @@ Everything is **free** (ADR-150/152); only the Store (Gem spend) and the public 
 | **Practice depth tiers** | Initiate / Adept / Master (default Adept). Tier never changes zap/streak math. | `practice_tiers.tier` |
 | **Challenges** | Community-wide seasonal goals (everyone wins together). | `season_challenges`, `challenge_progress` |
 | **Achievements** | Permanent unlock badges. | `achievements`, `user_achievements` |
+| **Side Quests** | Reward-only, self-directed missions: a member claims one for bonus Zaps + a badge. Do NOT count toward the four Pillars. An `achievements` row flagged `is_side_quest` with manual criteria; claimed on `/crew/side-quests` (ADR-300 Part 3). | `achievements.is_side_quest`, `lib/side-quests.ts` |
 | **Streaks** | Daily practice streak (the headline) + weekly rhythms. | `profiles.current_streak` + `streaks` (`lib/practice-streak.ts`) |
 | **Pillars** | Mind / Body / Spirit / Expression — the lens Journeys are organised by. Never called Channels. | `pillars`; `journey_plan_items.domain_id` (column rename deferred to Wave 3) |
 | **Co-op** | ≥3 active circle members on the same Journey (renamed 2026 — see docs/NAMING.md). Distinct from Resonance. | `lib/journey-coop.ts` |
