@@ -8,8 +8,9 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { PencilLine, Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw, Image as ImageIcon } from 'lucide-react'
+import { PencilLine, Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw } from 'lucide-react'
 import { IconAccentFace, AccentPicker, IconGrid } from '@/components/studio/kit/studio-identity'
+import { ImageUpload } from '@/components/ui/image-upload'
 import { DEFAULT_ACCENT } from '@/lib/studio/accents'
 import { isError } from '@/lib/action-result'
 import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview } from '@/app/(main)/journeys/actions'
@@ -47,6 +48,7 @@ export function JourneySettings(props: JourneySettingsProps) {
   const [showIntro, setShowIntro] = useState(!!props.initialIntro)
   const [iconOpen, setIconOpen] = useState(false)
 
+  const [coverImage, setCoverImage] = useState<string | null>(props.initialCoverImage)
   const [gems, setGems] = useState(props.initialCompletionGems)
   const [certificate, setCertificate] = useState(props.initialCertificateEnabled)
   const [drip, setDrip] = useState(props.initialDripIntervalDays)
@@ -161,18 +163,16 @@ export function JourneySettings(props: JourneySettingsProps) {
       )}
 
       {/* Cover image — the banner shown on the Journey's discovery page + cards. */}
-      <label className="flex flex-col gap-1">
-        <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
-          <ImageIcon className="h-3.5 w-3.5" /> Cover image
-        </span>
-        <input
-          type="url"
-          defaultValue={props.initialCoverImage ?? ''}
-          onBlur={(e) => meta({ coverImage: e.target.value.trim() || null })}
-          placeholder="https://… (optional)"
-          className="w-full rounded-xl border border-border bg-canvas px-3 py-2 text-sm text-text outline-none focus:border-primary placeholder:text-subtle"
-        />
-      </label>
+      <ImageUpload
+        label="Cover image"
+        value={coverImage}
+        onChange={(url) => {
+          setCoverImage(url)
+          meta({ coverImage: url })
+        }}
+        folder="journey-covers"
+        hint="Shown on the Journey's discovery page and cards."
+      />
 
       {/* Delivery + rewards */}
       <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-3">

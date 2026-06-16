@@ -10,6 +10,7 @@ import { StudioWindow } from '../studio-window'
 import { useStudioDraft } from '../kit/use-studio-draft'
 import { StudioField } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
+import { ImageUpload } from '@/components/ui/image-upload'
 import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction } from '@/app/(main)/practices/actions'
 import type { PracticeEdit, WeightClass } from '@/lib/practices'
 
@@ -298,9 +299,13 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         <StudioField label="Full guide (markdown)">
           <textarea value={body} onChange={(e) => { setBody(e.target.value); queueSave({ body: e.target.value }) }} rows={10} maxLength={8000} placeholder="How to do it, why it matters, tips…" className={`font-mono ${FIELD}`} />
         </StudioField>
-        <StudioField label="Header image URL">
-          <input value={headerImage} onChange={(e) => { setHeaderImage(e.target.value); queueSave({ header_image: e.target.value || null }) }} maxLength={500} placeholder="https://…" className={FIELD} />
-        </StudioField>
+        <ImageUpload
+          label="Header image"
+          value={headerImage || null}
+          onChange={(url) => { setHeaderImage(url ?? ''); queueSave({ header_image: url }) }}
+          folder="practice-headers"
+          hint="The banner shown at the top of the practice."
+        />
       </div>
 
       <p className="mt-4 text-xs text-subtle">Changes apply everywhere this practice appears.</p>

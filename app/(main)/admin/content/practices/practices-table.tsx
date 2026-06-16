@@ -404,10 +404,24 @@ export function PracticesTable({ rows }: { rows: LibraryRow[] }) {
                   label={`Select ${p.title}`}
                 />
                 <div className="min-w-0">
-                  <Link href={`/practices/${p.id}`} className="flex items-center gap-1.5 text-sm font-medium text-text hover:underline">
-                    <span className="truncate">{p.title}</span>
-                    <ExternalLink className="h-3 w-3 shrink-0 text-subtle" aria-hidden />
-                  </Link>
+                  <div className="flex items-center gap-1.5">
+                    {/* Admin library: the title opens the full editor popup (manage context). */}
+                    <Link
+                      href={`/practices/${p.id}/edit`}
+                      title={`Edit ${p.title}`}
+                      className="truncate text-sm font-medium text-text hover:underline"
+                    >
+                      {p.title}
+                    </Link>
+                    <Link
+                      href={`/practices/${p.id}`}
+                      title={`View ${p.title}`}
+                      aria-label={`View ${p.title}`}
+                      className="shrink-0 text-subtle transition-colors hover:text-text"
+                    >
+                      <ExternalLink className="h-3 w-3" aria-hidden />
+                    </Link>
+                  </div>
                   <span className="mt-0.5 block text-xs text-subtle lg:hidden">
                     {wt ? `${wt.label} · ` : 'No weight · '}{p.adopters} adopters · {p.logs_30d} logs in 30d
                   </span>

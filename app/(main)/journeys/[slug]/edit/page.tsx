@@ -65,7 +65,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
         initialCoverImage={plan.cover_image}
         initialReview={veraReview}
       />
-      <JourneyEditor slug={slug} title={plan.title} blocks={blocks} practices={practices} />
+      <JourneyEditor slug={slug} blocks={blocks} practices={practices} />
       <JourneyAdvanced
         planId={plan.id}
         initialPageConfig={plan.page_config}
