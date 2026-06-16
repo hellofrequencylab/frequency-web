@@ -29,7 +29,11 @@ export function JourneyEditorWindow({ children }: { children: ReactNode }) {
         </StudioFooter>
       }
     >
-      {children}
+      {/* One continuous form: each top-level section (Settings · Structure · Advanced) gets the
+          same vertical rhythm and a single divider between them, instead of competing cards. */}
+      <div className="divide-y divide-border [&>*]:py-7 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
+        {children}
+      </div>
     </StudioWindow>
   )
 }

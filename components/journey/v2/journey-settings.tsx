@@ -98,7 +98,7 @@ export function JourneySettings(props: JourneySettingsProps) {
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-border bg-surface p-4">
+    <section className="space-y-6">
       {celebrate === 'live' && (
         <div className="flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg px-4 py-3 text-sm font-medium text-success">
           <PartyPopper className="h-5 w-5 shrink-0" /> Live in the community library. Anyone can adopt it now.
@@ -175,7 +175,9 @@ export function JourneySettings(props: JourneySettingsProps) {
       />
 
       {/* Delivery + rewards */}
-      <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-3">
+      <div className="space-y-2.5">
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Delivery and rewards</p>
+        <div className="grid gap-3 sm:grid-cols-3">
         <label className="flex flex-col gap-1">
           <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
             <Gem className="h-3.5 w-3.5" /> Completion Gems
@@ -219,11 +221,13 @@ export function JourneySettings(props: JourneySettingsProps) {
           <span className="inline-flex items-center gap-1.5"><Award className="h-4 w-4 text-rank-gold" /> Certificate</span>
           <span className={`text-2xs font-semibold uppercase ${certificate ? 'text-rank-gold' : 'text-subtle'}`}>{certificate ? 'On' : 'Off'}</span>
         </button>
+        </div>
       </div>
 
       {/* Publish / visibility */}
-      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4 text-xs">
-        <span className="font-semibold uppercase tracking-wide text-subtle">Who can see it</span>
+      <div className="space-y-2.5">
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Who can see it</p>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
         {([
           ['private', Lock, 'Just me'],
           ['unlisted', Link2, 'Anyone with the link'],
@@ -243,6 +247,7 @@ export function JourneySettings(props: JourneySettingsProps) {
         {visibility === 'public' && status === 'pending' && (
           <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2.5 py-1 text-warning">In review</span>
         )}
+        </div>
       </div>
 
       {/* Vera's rank gate — coaching for the author. Publishing is open; this is only about
