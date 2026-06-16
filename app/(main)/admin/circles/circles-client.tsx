@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Pencil, Archive, Check, X } from 'lucide-react'
-import { updateCircle, archiveCircle } from '../actions'
+import { Pencil, Archive, Check, X, Star } from 'lucide-react'
+import { updateCircle, archiveCircle, setCircleFeaturedAction } from '../actions'
+import { isError, type ActionResult } from '@/lib/action-result'
 import { InviteLinkButton } from './invite-link-button'
 import { Button } from '@/components/ui/button'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
@@ -23,6 +24,7 @@ type CircleRow = CircleBase & {
   city: string | null
   neighborhood: string | null
   resonance_public: boolean
+  featured_at: string | null
   hub: { id: string; name: string } | null
   host: { id: string; display_name: string } | null
 }
@@ -41,6 +43,46 @@ const STATUS_TONE: Record<string, StatusTone> = {
   active: 'success',
   paused: 'warning',
   archived: 'neutral',
+}
+
+// Operator "Featured" star — optimistic toggle around setCircleFeaturedAction.
+// Filled when the circle is featured; reverts on a failed write (mirrors the
+// content suite's FeatureStar).
+function FeatureStar({
+  featured,
+  act,
+}: {
+  featured: boolean
+  act: (next: boolean) => Promise<ActionResult>
+}) {
+  const [optimistic, setOptimistic] = useState(featured)
+  const [pending, start] = useTransition()
+  const router = useRouter()
+
+  function toggle() {
+    const next = !optimistic
+    setOptimistic(next)
+    start(async () => {
+      const r = await act(next)
+      if (isError(r)) setOptimistic(!next)
+      else router.refresh()
+    })
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={pending}
+      title={optimistic ? 'Featured. Click to unfeature' : 'Not featured. Click to feature'}
+      aria-pressed={optimistic}
+      className={`rounded-md p-1 transition-colors disabled:opacity-50 ${
+        optimistic ? 'text-signal hover:bg-surface-elevated' : 'text-subtle hover:bg-surface-elevated hover:text-text'
+      }`}
+    >
+      <Star className={`h-4 w-4 ${optimistic ? 'fill-current' : ''}`} />
+    </button>
+  )
 }
 
 function CircleForm({
@@ -254,6 +296,10 @@ export function CirclesClient({
         columns={columns}
         rowActions={(c) => (
           <div className="flex items-center gap-1">
+            <FeatureStar
+              featured={c.featured_at != null}
+              act={(next) => setCircleFeaturedAction(c.id, next)}
+            />
             <InviteLinkButton circleId={c.id} />
             <button onClick={() => setEditingId(c.id)} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
               <Pencil className="h-3.5 w-3.5" aria-hidden />
