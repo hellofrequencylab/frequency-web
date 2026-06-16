@@ -112,6 +112,85 @@ capability_permissions `20260614300000`, journeys_v2) is **LIVE in prod** — th
 > `energetics` schema (8 tables, live, not in repo) is a **separate project — leave alone** (owner
 > direction); it is the source of all "new" advisor lints and must not be read as a restructure regression.
 
+## 🔎 Editor-pattern sweep — 2026-06-16 (Add/Edit/Delete popups · curation · block-editor plan)
+
+A five-agent survey (Events·Circles · Channels·Boards · Journeys·Practices · Challenges·Quests ·
+block-editor coverage) mapped every primary entity against one rubric: **clean Add / Edit / Delete,
+a fully-featured `StudioWindow` popup for Add+Edit, well-organized content, and a block editor
+(`<PageModules>`) on the page.** Workstreams **A** (popup add/edit), **B** (confirmed
+delete/archive), and **C** (curation) shipped; **D** (block editor everywhere) is specced below, not
+built. **Owner directive: never remove the global community right rail; editors are overlays, the
+page area only.**
+
+**A/B/C — DONE (PRs #834–#852).** Every primary entity now has a popup Add + Edit (the shared
+`StudioWindow`) and a confirmed Delete/Archive (`DangerModal`), owner **and** admin where it applies:
+
+| Entity | Add popup | Edit popup | Delete / Archive | Curation |
+|---|:--:|:--:|:--:|:--:|
+| Practices | ✅ | ✅ owner+admin | ✅ owner+admin (type-to-confirm) | ✅ feature star |
+| Journeys | ✅ | ✅ owner+admin | ✅ owner+admin | ✅ official + feature |
+| Challenges | ✅ popup launcher | ✅ StudioWindow | ✅ type-to-confirm | ✅ reorder/pause |
+| Events | ✅ member + admin | ✅ detail + admin | ✅ cancel/reinstate | ✅ **Featured** (`events.featured_at`) |
+| Circles | ✅ member + admin | ✅ host + admin | ✅ archive (host+admin) | ✅ **Featured** (`circles.featured_at`) |
+| Message Boards (rooms) | ✅ | ✅ (was missing) | ✅ (wired the orphaned `deleteRoom`) | — |
+| Channels | ✅ | ✅ | ✅ confirmed archive | `display_order` |
+| Seasons | ✅ popup launcher | (Composer) | end-season (confirmed) | — |
+
+Also this sweep: reusable `<ImageUpload>` (header/cover photo; URL **and** storage-path modes) wired
+into every popup editor; the **Journey editor popup** rebuilt into one continuous form (Settings ·
+Structure · Advanced, single-divider rhythm — was three competing cards); the **Practice/Challenge**
+editors moved onto `StudioWindow`; **Leader Training** rebuilt as a two-pane docs library (left
+index, right content) + the *Circles and Journeys* foundations guide; the Leader-Training **right
+rail restored** (a no-rail registration was reverted); and the wiped **join/share Zaps reinstated**
+(every initial member's `community_join`/`referred_join_bonus`/`invite_accepted` re-synced into
+`current_season_zaps`, plus one member's missing join created).
+
+**Curation columns (applied to prod + committed):** `circles.featured_at` (`20260616181000`),
+`events.featured_at` (`20260616181100`). Member-card "Featured" badge + featured-first sort are a
+small follow-up; Channels curation rides existing `display_order`.
+
+### 📋 D — Block editor (`<PageModules>`) on every primary page  *(specced, not built — XL; paused 2026-06-16 by owner)*
+
+**Goal:** every primary page renders `<PageModules route="…">` so an operator rearranges its blocks
+from the on-page Settings → Layout panel — the treatment `/journeys`, `/admin/content/journeys`,
+`/crew`, and `/lead` already have.
+
+**Why it can't fan out to parallel agents:** every page conversion edits the same three central
+registry files — `lib/widgets/modules.ts` (`LAYOUT_MODULES` + `ROUTE_MODULE_IDS`),
+`lib/widgets/registry.tsx` (id→component `COMPONENTS`), `lib/widgets/module-routes.ts`
+(`MODULE_ROUTES`). Concurrent agents collide there. The **per-page block components are disjoint**
+and *can* be authored in parallel; the registry wiring + page swap must be serialized.
+
+**Pages WITHOUT it today** (hand-authored): `/feed`, `/events`(+detail), `/circles`(+detail),
+`/channels`(+detail), `/practices`(+detail), `/journeys/[slug]` detail, `/messages`, `/programs`,
+`/admin/circles`, `/admin/events`, `/admin/channels`, `/admin/content/practices`,
+`/admin/content/seasons`, `/crew/challenges`. **Risk tier:** the faceted member libraries
+(`/practices`, `/events`, `/circles`) carry URL search + Pillar/tag facets + pagination — decomposing
+them into self-fetching blocks is a careful refactor, **NOT** a copy of `/journeys`; getting it wrong
+breaks library search. Do the **simple admin pages first, faceted member pages last.**
+
+**The recipe (per page, sequenced):**
+1. Author each block as a self-fetching async RSC in `components/widgets/<area>/<block>.tsx` —
+   returns `null` when empty (renders in its own `<Suspense>`). *(parallelizable across pages)*
+2. Add `{ id, label, description }` to `LAYOUT_MODULES` (`lib/widgets/modules.ts`).
+3. Declare the route's set: `const <ROUTE>_MODULE_IDS = [...]`, keyed under the route in
+   `ROUTE_MODULE_IDS` (key = exact route / `'/seg/*'` / `'*'`; order = default render order).
+4. Bind each id → component in `COMPONENTS` (`lib/widgets/registry.tsx`) — the only file that
+   imports the block RSCs.
+5. Register the route in `MODULE_ROUTES` (`lib/widgets/module-routes.ts`) — this reveals the
+   Settings → Layout panel (`isModuleRoute`).
+6. Swap the page body to `<PageModules route="/your-route" />` inside its kit template; keep the
+   operator-editable header (`PageHeading`/template chrome) **outside** `PageModules`.
+7. (Optional) extend `lib/widgets/modules.test.ts` (set resolves; every id has metadata).
+
+Persistence/resolution is already generic (`loadLayoutForRoute` + `resolveSlots` +
+`moduleIdsForScope`, `components/widgets/page-modules.tsx`) — no per-route wiring there. **Effort per
+page** ≈ steps 2–6 are ~5 small config diffs; the real work is step 1 (authoring N block RSCs),
+scaling with how many blocks the page decomposes into.
+
+**Sequence when resumed:** admin content/list pages (low risk) → simple member pages → `/feed` →
+the faceted libraries last.
+
 ## The headline
 
 The platform is **substantially built** — member surfaces, the practice engine + gamification,
