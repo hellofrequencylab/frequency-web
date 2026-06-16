@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { CalendarRange, Compass, ArrowRight, Sparkles, ExternalLink } from 'lucide-react'
+import { CalendarRange, Compass, ArrowRight, Sparkles, ExternalLink, Eye } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { isJanitor } from '@/lib/core/roles'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -52,7 +52,17 @@ export default async function SeasonComposerPage({ params }: { params: Promise<{
       description="Compose the season: edit its identity and window, move it through its lifecycle, and tune its Journeys. Each Journey links out to its full editor."
       width="wide"
       back={{ href: '/admin/content/seasons', label: 'Seasons' }}
-      actions={<StateBadge status={season.status} />}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/admin/content/seasons/${season.id}/preview`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+          >
+            <Eye className="h-3.5 w-3.5" aria-hidden /> Preview as a member
+          </Link>
+          <StateBadge status={season.status} />
+        </div>
+      }
     >
       <AdminSection
         title="Season"
