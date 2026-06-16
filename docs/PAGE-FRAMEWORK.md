@@ -86,11 +86,28 @@ Context header band + context tabs + body + **scope-aware** right rail.
   Index* (a Circle's "Posts" tab = Stream; its "Events" tab = Index). Templates
   **nest** — that's the fractal, and it means you reuse, never rebuild.
 
+### Template D — **Header / Page / Sidebar** (`HeaderSidebarTemplate`)
+Title band over a wide main column beside a narrower **in-body sidebar** (filters,
+a summary card, related links, a table of contents).
+- **Use:** a page with one primary flow AND a persistent secondary panel that
+  belongs in-body (not in the shell rail).
+- **Slots:** `sidebar` (+ `sidebarSide` left/right), the main `children`.
+- **Rail note:** a page with its own in-body sidebar should usually register as
+  `'scoped'` in `page-chrome.ts` so the global rail is suppressed (no double-rail).
+
+### Template E — **Header / 2 Column** (`TwoColumnTemplate`)
+Title band over **two equal columns** of comparable weight (e.g. "yours" vs "the
+community", a form beside a live preview, two related lists).
+- **Use:** two peer areas where neither column is subordinate (unlike Template D).
+- **Slots:** `left`, `right` (stack on mobile, split evenly from `md`).
+
 > **Update (§8, ADR-090):** Focus and Dashboard are now **real templates** too —
 > `FocusTemplate` (the no-rail compose/edit/settings surface, formerly just "the
 > shell hiding the rail") and `DashboardTemplate` (the metric-led operator
-> workspace). All five share one `PageHeading`. See §8 for the full kit + the
-> declarative rail map (`lib/layout/page-chrome.ts`).
+> workspace). With **`HeaderSidebarTemplate`** (Header/Page/Sidebar) and
+> **`TwoColumnTemplate`** (Header/2 Column), the kit is now eight shells — all
+> share one `PageHeading`. See §8 for the full kit + the declarative rail map
+> (`lib/layout/page-chrome.ts`).
 
 ### How templates map to Next.js
 - A **Detail** page = a route-segment **`layout.tsx`** (e.g.
