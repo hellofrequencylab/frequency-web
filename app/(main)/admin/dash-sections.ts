@@ -23,7 +23,6 @@ export const DASH_SCOPES: Record<DashScope, readonly DashSectionDef[]> = {
   programs: [
     { id: 'catalog', label: 'The catalog' },
     { id: 'season', label: 'Season & outcomes' },
-    { id: 'work', label: 'Work in Programs' },
   ],
   community: [
     { id: 'trust', label: 'Trust & safety' },

@@ -11,25 +11,21 @@ import {
   CheckCircle2,
   Scale,
 } from 'lucide-react'
-import { requireAdmin } from '@/lib/admin/guard'
-import { isJanitor } from '@/lib/core/roles'
-import { AdminTemplate, AdminSection } from '@/components/templates'
+import { isJanitor, type WebRole } from '@/lib/core/roles'
+import { AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip } from '@/components/admin/status'
-import { StateBadge } from './seasons/state-badge'
+import { StateBadge } from '@/app/(main)/admin/content/seasons/state-badge'
 import { getContentHomeData, type NeedsYouItem, type ContentHealth } from '@/lib/admin/content-home'
 
-// The content suite HOME — the operator "needs you" workspace (QUEST-UI-REDESIGN §4.5/§A7):
-// the work list that needs a decision today, a small at-a-glance health strip, and the
-// doors into each working surface. A dashboard is glance-and-act, not an exploration tool
-// (NN/g), so the action sits next to the metric: every "needs you" item links to the
-// surface that fixes it, and every health number drills in. The ranked curation tables
-// live on the dedicated sub-pages (/journeys, /practices), not here. Gate: host+ /
-// community staff (each sub-surface keeps its own gate).
-
-export default async function AdminContentPage() {
-  const { webRole } = await requireAdmin('host', { staff: 'community' })
+// The Content tab of the Programs workspace (absorbs the old /admin/content home,
+// QUEST-UI-REDESIGN §4.5): the work list that needs a decision today, a small
+// at-a-glance health strip, and the doors into each working surface. A dashboard is
+// glance-and-act (NN/g): every "needs you" item links to the surface that fixes it, and
+// every health number drills in. The ranked curation tables live on the leaf editors
+// (/admin/content/journeys, /admin/content/practices), reached from the doors below.
+export async function ContentTab({ webRole }: { webRole: WebRole }) {
   const janitor = isJanitor(webRole)
 
   const doors = [
@@ -44,14 +40,9 @@ export default async function AdminContentPage() {
   ]
 
   return (
-    <AdminTemplate
-      title="Content"
-      eyebrow="Engage"
-      description="The Quest at a glance: what needs a decision today, how the season is doing, and the doors into each working surface."
-      width="default"
-    >
-      {/* Speed is structural: the home shell renders instantly; the data-backed strip
-          and work list stream in behind one Suspense (PAGE-FRAMEWORK §5). */}
+    <>
+      {/* Speed is structural: the data-backed strip and work list stream behind one
+          Suspense so the tab paints instantly (PAGE-FRAMEWORK §5). */}
       <Suspense fallback={<HomeSkeleton />}>
         <ContentHomeBody />
       </Suspense>
@@ -78,7 +69,7 @@ export default async function AdminContentPage() {
           ))}
         </div>
       </AdminSection>
-    </AdminTemplate>
+    </>
   )
 }
 
@@ -93,7 +84,6 @@ async function ContentHomeBody() {
 }
 
 // --- The health strip: active season + headline counts (each drills in) ----------
-
 function HealthStrip({ health }: { health: ContentHealth }) {
   const { season, seasonState, daysLeft } = health
   const seasonValue = season ? season.name : 'No season'
@@ -172,7 +162,6 @@ function PillarSpreadCard({ health }: { health: ContentHealth }) {
 }
 
 // --- The "needs you" work list ----------------------------------------------------
-
 function NeedsYouList({ items }: { items: NeedsYouItem[] }) {
   return (
     <AdminSection
@@ -211,7 +200,6 @@ function NeedsYouList({ items }: { items: NeedsYouItem[] }) {
 }
 
 // --- Loading skeleton (matches the strip + list shape) ---------------------------
-
 function HomeSkeleton() {
   return (
     <>
