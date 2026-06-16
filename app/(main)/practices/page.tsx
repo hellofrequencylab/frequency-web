@@ -1,33 +1,27 @@
 import Link from 'next/link'
 import {
-  Flame, Sparkles, Library, Zap, Pencil, Wand2, Users, Search,
+  Flame, Sparkles, Library, Zap, Wand2, Users, Search,
   ChevronLeft, ChevronRight, EyeOff, X,
 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import {
   searchLibraryPractices,
-  countPublicPractices,
   listSubcategories,
   listCanonicalTags,
   getMemberPractices,
-  getRecentPracticeLogs,
-  type Practice,
   type PracticeSort,
 } from '@/lib/practices'
-import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
+import { getPillars, pillarsById } from '@/lib/pillars'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
-import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
-import { PillarBadge } from '@/components/practice/pillar-badge'
 import { PracticeAdminMenu } from '@/components/practice/practice-admin-menu'
 import { EntityCard } from '@/components/cards/entity-card'
-import { RowCard } from '@/components/cards/row-card'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { PageContents } from '@/components/templates/page-contents'
-import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PageModules } from '@/components/widgets/page-modules'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
@@ -54,57 +48,6 @@ const SORTS: { key: PracticeSort; label: string }[] = [
   { key: 'new', label: 'New' },
   { key: 'az', label: 'A–Z' },
 ]
-
-// --- "Your practices" row (the personal column keeps the readable list) -----
-function PracticeMeta({ p }: { p: { category: string | null; cadence: string | null; reward_note: string | null } }) {
-  if (!p.category && !p.cadence && !p.reward_note) return null
-  return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-      {p.category && (
-        <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
-          {p.category.replace(/-/g, ' ')}
-        </span>
-      )}
-      {p.cadence && <span className="text-subtle">{p.cadence}</span>}
-      {p.reward_note && (
-        <span className="inline-flex items-center gap-1 font-medium text-warning">
-          <Zap className="h-3 w-3 fill-warning" aria-hidden />
-          {p.reward_note}
-        </span>
-      )}
-    </div>
-  )
-}
-
-// "Your practices" rows fold onto the kit's RowCard (actions mode: the title is the
-// link; the Log/Adopt/Edit controls sit right and never nest inside an anchor).
-function MineRow({ p, byId, profileId }: { p: Practice; byId: Map<string, Pillar>; profileId: string }) {
-  return (
-    <li>
-      <RowCard
-        href={`/practices/${p.id}`}
-        title={p.title}
-        badge={p.domain_id && byId.has(p.domain_id) ? <PillarBadge name={byId.get(p.domain_id)!.name} /> : undefined}
-        description={p.summary ?? p.description ?? undefined}
-        meta={<PracticeMeta p={p} />}
-        actions={
-          <>
-            {p.created_by === profileId && (
-              <Link
-                href={`/practices/${p.id}/edit`}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
-              >
-                <Pencil className="h-3.5 w-3.5" /> Edit
-              </Link>
-            )}
-            <LogPracticeButton practiceId={p.id} />
-            <AdoptPracticeButton practiceId={p.id} adopted />
-          </>
-        }
-      />
-    </li>
-  )
-}
 
 function Chip({ label, href, active }: { label: string; href: string; active: boolean }) {
   return (
@@ -138,12 +81,13 @@ export default async function PracticesPage({
   const isAdmin = caps.has('admin.access')
   const showHidden = isAdmin && sp.hidden === '1'
 
-  const [pillars, subcategories, tags, mine, recent] = await Promise.all([
+  const [pillars, subcategories, tags, mine] = await Promise.all([
     getPillars(),
     listSubcategories(),
     listCanonicalTags(),
+    // The library cards need the viewer's adopted set to render the Adopt/Remove state. The
+    // personal upper sections (stats/activity/mine) are now self-fetching <PageModules> blocks.
     profileId ? getMemberPractices(profileId) : Promise.resolve([]),
-    profileId ? getRecentPracticeLogs(profileId, 60) : Promise.resolve([]),
   ])
   const byId = pillarsById(pillars)
   const mineIds = new Set(mine.map((p) => p.id))
@@ -155,30 +99,17 @@ export default async function PracticesPage({
 
   const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
 
-  const [result, libraryTotal] = await Promise.all([
-    searchLibraryPractices({
-      q: qParam,
-      pillarId: activePillar?.id ?? null,
-      subId: activeSub?.id ?? null,
-      tag: sp.tag ?? null,
-      sort,
-      page,
-      pageSize: PAGE_SIZE,
-      hideDemo,
-      includeHidden: showHidden,
-    }),
-    countPublicPractices({ hideDemo }),
-  ])
-
-  // Activity strip (last 14 days).
-  const loggedDays = new Set(recent.map((r) => r.logged_for))
-  const today = new Date()
-  const last14 = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(d.getDate() - (13 - i))
-    return d.toISOString().slice(0, 10)
+  const result = await searchLibraryPractices({
+    q: qParam,
+    pillarId: activePillar?.id ?? null,
+    subId: activeSub?.id ?? null,
+    tag: sp.tag ?? null,
+    sort,
+    page,
+    pageSize: PAGE_SIZE,
+    hideDemo,
+    includeHidden: showHidden,
   })
-  const daysLogged = last14.filter((d) => loggedDays.has(d)).length
 
   const base = {
     q: qParam || undefined,
@@ -276,21 +207,12 @@ export default async function PracticesPage({
         />
       )}
 
-      <StatStrip
-        items={[
-          { value: mine.length, label: 'Your practices', href: '#practices-mine' },
-          { value: daysLogged, label: 'Days logged (14d)', href: '#practices-activity' },
-          { value: libraryTotal, label: 'In the library', href: '#practices-library' },
-        ]}
-      />
-
-      {/* Table of contents — jump between your stuff and the library. Built from
-          whichever sections actually render (new members only see the library). */}
+      {/* Table of contents — jump between your stuff and the library. The personal entries link
+          to the module-driven blocks below (which render only for a signed-in member with data);
+          a dangling anchor is harmless when a block returns null. */}
       <PageContents
         sections={[
-          ...(profileId && (recent.length > 0 || mine.length > 0)
-            ? [{ id: 'practices-activity', label: 'Your activity' }]
-            : []),
+          ...(profileId ? [{ id: 'practices-activity', label: 'Your activity' }] : []),
           ...(profileId && mine.length > 0
             ? [{ id: 'practices-mine', label: 'Your practices', count: mine.length }]
             : []),
@@ -298,43 +220,13 @@ export default async function PracticesPage({
         ]}
       />
 
-      {/* Personal column: your activity + your practices (readable width). */}
+      {/* The personal, upper sections — the StatStrip, "Your activity", and "Your practices" — are
+          now operator-arrangeable <PageModules> blocks (ADR-270/294). Each is a self-fetching RSC in
+          components/widgets/practices/* and preserves its section id so the anchors above still work.
+          The faceted Practice Library below stays a FIXED page section: it reads searchParams (Pillar
+          / tag / sort / page), which blocks never receive, so it must not move into a module. */}
       <div className="max-w-2xl space-y-8">
-        {profileId && (recent.length > 0 || mine.length > 0) && (
-          <section id="practices-activity" className="scroll-mt-20">
-            <SectionHeader title="Your activity" />
-            <div>
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 text-sm text-muted">
-                  <Flame className="h-4 w-4 text-primary" />Last 14 days
-                </span>
-                <span className="text-sm font-semibold text-text">
-                  {daysLogged} {daysLogged === 1 ? 'day' : 'days'} practiced
-                </span>
-              </div>
-              <div className="flex gap-1.5">
-                {last14.map((d) => (
-                  <div
-                    key={d}
-                    title={d}
-                    className={`h-7 flex-1 rounded-lg ${loggedDays.has(d) ? 'bg-primary' : 'border border-border bg-surface'}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {profileId && mine.length > 0 && (
-          <section id="practices-mine" className="scroll-mt-20">
-            <SectionHeader title="Your practices" count={mine.length} />
-            <ul className="space-y-3">
-              {mine.map((p) => (
-                <MineRow key={p.id} p={p} byId={byId} profileId={profileId} />
-              ))}
-            </ul>
-          </section>
-        )}
+        <PageModules route="/practices" />
       </div>
 
       {/* The library — full-width, paginated, filterable grid. */}

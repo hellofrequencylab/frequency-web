@@ -41,6 +41,11 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'journeys-start', label: 'Start a journey', description: 'The two ways in: build your own, or open this season’s official Quest.' },
   { id: 'journeys-mine', label: 'Your journeys', description: 'The journeys the viewer has kept or built.' },
   { id: 'journeys-library', label: 'Community library', description: 'The open library of public journeys to browse and adopt.' },
+
+  // ── Practices blocks (/practices) — the personal sections above the fixed library ──
+  { id: 'practices-stats', label: 'Practice stats', description: 'The three-up strip: your practices, days logged in the last 14, and the library size.' },
+  { id: 'practices-activity', label: 'Your activity', description: 'A 14-day heatmap of the days the member logged a practice.' },
+  { id: 'practices-mine', label: 'Your practices', description: 'The member’s adopted and built practices, each with its log and edit controls.' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
@@ -68,6 +73,11 @@ const ADMIN_JOURNEYS_MODULE_IDS = [
 // The Journeys member page (/journeys), in default render order.
 const JOURNEYS_MODULE_IDS = ['journeys-start', 'journeys-mine', 'journeys-library'] as const
 
+// The Practices page (/practices) upper, personal blocks, in default render order. The faceted
+// Practice Library below them stays a FIXED section the page renders (it reads searchParams, which
+// blocks never receive), so only these three are module-driven.
+const PRACTICES_MODULE_IDS = ['practices-stats', 'practices-activity', 'practices-mine'] as const
+
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section
  *  ('/seg/*'), or an exact route. Add a route's set here when you convert its page to
  *  `<PageModules>` (and list it in lib/widgets/module-routes.ts). */
@@ -76,6 +86,7 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/crew': CREW_MODULE_IDS,
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
+  '/practices': PRACTICES_MODULE_IDS,
 }
 
 /** Back-compat: the default (global) module id set. */
