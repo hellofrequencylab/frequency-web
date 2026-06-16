@@ -8,8 +8,7 @@ import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { SeasonCreateForm } from './season-create'
-import { SeasonCloneButton } from './season-clone'
+import { SeasonCreateLauncher } from './season-create'
 import { StateBadge } from './state-badge'
 
 // The season calendar. Entity-Detail template (ADR-233 §3.4): the active (Live) season
@@ -89,6 +88,15 @@ export default async function AdminSeasonsPage() {
       eyebrow="Content"
       description="The 13-week cycles the Quest runs on. Each season carries a theme, a Quest of official Journeys, and its challenges. Open a season to compose it."
       width="default"
+      actions={
+        janitor ? (
+          <SeasonCreateLauncher
+            nextNumber={nextNumber}
+            cloneSourceId={lastSeason?.id}
+            cloneSourceName={lastSeason?.name}
+          />
+        ) : undefined
+      }
     >
       {/* Entity context band: the live season as the entity */}
       <EntityHeader
@@ -124,24 +132,6 @@ export default async function AdminSeasonsPage() {
           ) : undefined
         }
       />
-
-      {janitor && (
-        <AdminSection
-          title={`Start season ${nextNumber}`}
-          description="Open a fresh Draft, or clone the last season to carry its Quest and Journeys forward. Either way it opens as a Draft; take it live (or schedule it) from the season's Composer. The reset in Gamification closes the live season."
-        >
-          <div className="space-y-3">
-            {lastSeason && (
-              <SeasonCloneButton
-                sourceSeasonId={lastSeason.id}
-                sourceName={lastSeason.name}
-                nextNumber={nextNumber}
-              />
-            )}
-            <SeasonCreateForm nextNumber={nextNumber} />
-          </div>
-        </AdminSection>
-      )}
 
       <AdminSection title={`All seasons (${rows.length})`}>
         <DataTable

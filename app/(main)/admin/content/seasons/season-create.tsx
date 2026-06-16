@@ -2,15 +2,18 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { Plus } from 'lucide-react'
 import { Input, Label } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { StudioWindow } from '@/components/studio/studio-window'
 import { isError } from '@/lib/action-result'
 import { createSeasonAction } from '../actions'
+import { SeasonCloneButton } from './season-clone'
 
 // Janitor-only create form for the next season. The number auto-increments
 // server-side; this form sets the identity (name, theme) and the window.
 
-export function SeasonCreateForm({ nextNumber }: { nextNumber: number }) {
+export function SeasonCreateForm({ nextNumber, onCreated }: { nextNumber: number; onCreated?: () => void }) {
   const [name, setName] = useState(`Season ${nextNumber}`)
   const [theme, setTheme] = useState('')
   const [startsAt, setStartsAt] = useState('')
@@ -36,6 +39,7 @@ export function SeasonCreateForm({ nextNumber }: { nextNumber: number }) {
         setEndsAt('')
         setName(`Season ${nextNumber + 1}`)
         router.refresh()
+        onCreated?.()
       }
     })
   }
@@ -88,5 +92,47 @@ export function SeasonCreateForm({ nextNumber }: { nextNumber: number }) {
         {status !== 'idle' && status !== 'created' && <span className="text-xs text-danger">{status}</span>}
       </div>
     </div>
+  )
+}
+
+// "Start season" — launches the create surface in the shared Studio popup (parity with every
+// other Add surface), instead of an always-on inline form. The popup carries both ways to open
+// the next season: clone the last one (when there is one) or open a fresh Draft. Closes on a
+// successful create.
+export function SeasonCreateLauncher({
+  nextNumber,
+  cloneSourceId,
+  cloneSourceName,
+}: {
+  nextNumber: number
+  cloneSourceId?: string
+  cloneSourceName?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const canClone = !!cloneSourceId && !!cloneSourceName
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+      >
+        <Plus className="h-4 w-4" /> Start season {nextNumber}
+      </button>
+      {open && (
+        <StudioWindow open onClose={() => setOpen(false)} eyebrow="Studio · Season">
+          <div className="space-y-3">
+            {canClone && (
+              <SeasonCloneButton
+                sourceSeasonId={cloneSourceId}
+                sourceName={cloneSourceName}
+                nextNumber={nextNumber}
+              />
+            )}
+            <SeasonCreateForm nextNumber={nextNumber} onCreated={() => setOpen(false)} />
+          </div>
+        </StudioWindow>
+      )}
+    </>
   )
 }
