@@ -4,14 +4,31 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { isStaff } from '@/lib/core/roles'
-import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { getEventCapabilities, getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { authorizeAction } from '@/lib/admin/guard'
+import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { slugify } from '@/lib/utils'
 import { refundTicket } from '@/lib/billing/tickets'
 import { sendEventCancelledEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { saveEventLocation, type EventAddress, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
+
+// Operator curation: stamp (or clear) an event's featured marker. Gated on the platform
+// `admin.access` capability so only operators hand-pick the events that surface first.
+// `featured_at` doubles as the ordering key.
+export async function setEventFeaturedAction(id: string, on: boolean): Promise<ActionResult> {
+  if (!(await getGlobalCapabilities()).has('admin.access')) return fail('Not allowed')
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('events')
+    .update({ featured_at: on ? new Date().toISOString() : null })
+    .eq('id', id)
+  if (error) return fail(error.message)
+  revalidatePath('/admin/events')
+  revalidatePath('/events')
+  return ok()
+}
 
 // Geocode-on-save for the admin surface (EVENTS-REWORK B1). The admin event forms
 // collect only the free-text `location`, so we hand the event's address to the

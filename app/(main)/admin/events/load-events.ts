@@ -8,6 +8,7 @@ export type AdminEvent = {
   ends_at: string | null
   location: string | null
   is_cancelled: boolean
+  featured_at: string | null
   host: { display_name: string } | null
 }
 
@@ -36,7 +37,7 @@ export async function getEventsAdminData(profileId: string) {
     const { data } = await admin
       .from('events')
       .select(
-        `id, title, slug, starts_at, ends_at, location, is_cancelled,
+        `id, title, slug, starts_at, ends_at, location, is_cancelled, featured_at,
          host:profiles!host_id ( display_name )`,
       )
       .in('scope_id', circleIds)
