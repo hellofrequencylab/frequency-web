@@ -7,6 +7,7 @@ import { JourneyEditor, type EditorBlock, type EditorPractice } from '@/componen
 import { parseCheck } from '@/lib/journeys/store'
 import { JourneySettings } from '@/components/journey/v2/journey-settings'
 import { JourneyAdvanced } from '@/components/journey/v2/journey-advanced'
+import { JourneyEditorWindow } from '@/components/journey/v2/journey-editor-window'
 
 // Journeys v2 — the author-only structure editor route (ADR-252, J4b). Loads the plan's
 // block tree and hands it to the client editor. Only the author may open it; everyone else
@@ -48,7 +49,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
   }))
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4">
+    <JourneyEditorWindow>
       <JourneySettings
         planId={plan.id}
         initialTitle={plan.title}
@@ -73,6 +74,6 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
         initialWindowStartsAt={plan.window_starts_at}
         initialWindowEndsAt={plan.window_ends_at}
       />
-    </div>
+    </JourneyEditorWindow>
   )
 }
