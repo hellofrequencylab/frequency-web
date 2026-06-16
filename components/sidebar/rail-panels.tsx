@@ -343,7 +343,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
             gems={gems}
             streak={streak}
             rank={rank}
-            links={{ zaps: '/crew/leaderboard', gems: '/crew/store', streak: '/crew/streaks' }}
+            links={{ zaps: '/crew/leaderboard', gems: '/crew/store', streak: '/crew/leaderboard' }}
           />
 
           {streak > 0 && (

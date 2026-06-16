@@ -5,10 +5,11 @@ import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { setStreakPause, clearStreakPause, MAX_PAUSE_DAYS } from '@/lib/practice-streak'
 
-// The "life happens" pause — the member marks a planned rest so a break isn't a
-// miss. profileId always comes from the session (never the client), so a member
-// can only pause their OWN streak. The rest window is bounded server-side by
-// MAX_PAUSE_DAYS in the engine; the client value is clamped, never trusted.
+// The "life happens" pause: the member marks a planned rest so a break isn't a
+// miss. Streaks (the consistency track) live on the leaderboard since the IA
+// consolidation, so these actions revalidate that surface. profileId always comes
+// from the session (never the client), so a member can only pause their OWN streak.
+// The rest window is bounded server-side by MAX_PAUSE_DAYS; the client value is clamped.
 
 export async function pauseStreak(days: number): Promise<ActionResult<{ days: number }>> {
   const profileId = await getMyProfileId()
@@ -20,7 +21,7 @@ export async function pauseStreak(days: number): Promise<ActionResult<{ days: nu
   } catch {
     return fail('Could not start your rest. Try again in a moment.')
   }
-  revalidatePath('/crew/streaks')
+  revalidatePath('/crew/leaderboard')
   return ok({ days: span })
 }
 
@@ -33,6 +34,6 @@ export async function resumeStreak(): Promise<ActionResult> {
   } catch {
     return fail('Could not end your rest. Try again in a moment.')
   }
-  revalidatePath('/crew/streaks')
+  revalidatePath('/crew/leaderboard')
   return ok()
 }

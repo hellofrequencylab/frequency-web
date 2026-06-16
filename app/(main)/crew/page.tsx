@@ -3,8 +3,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import {
-  Star, CheckCircle, Zap, Award, Flame, Map as MapIcon, TrendingUp, ShoppingBag,
-  ArrowRight, Target, Compass, Sparkles,
+  Star, CheckCircle, Zap, Map as MapIcon, ShoppingBag,
+  ArrowRight, Compass, Sparkles, Target,
 } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -15,7 +15,9 @@ import {
 import { CompleteButton } from './complete-button'
 import { getInitials } from '@/lib/utils'
 import { getCurrentSeason, type Season } from '@/lib/seasons'
-import { journeyPracticeIds, distinctPracticeDaysInWindow } from '@/lib/quest/completion'
+import { journeyPracticeIds, distinctPracticeDaysInWindow, evaluateJourneyCompletion } from '@/lib/quest/completion'
+import { getMemberJourneyProgress, type MemberJourneyProgress } from '@/lib/journeys/progress'
+import { JourneyProgressCard } from '@/components/quest/journey-progress-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ModuleCard } from '@/components/modules/module-card'
@@ -261,7 +263,7 @@ async function FinishCelebration({ profileId }: { profileId: string }) {
       rankAdvanced={finish.rankAdvanced}
       seasonComplete={finish.seasonComplete}
       next={finish.next}
-      trophiesHref="/crew/achievements"
+      trophiesHref="/crew/store"
       onSeen={markJourneyCompletionSeen.bind(null, finish.completionId)}
     />
   )
@@ -302,13 +304,13 @@ async function QuestHero({
       ? {
           eyebrow: 'Today',
           title: `Log a ${current.title} practice`,
-          detail: `${current.daysLogged} of ${current.daysNeeded} days toward finishing the ${current.pillar} Journey.`,
+          detail: `${current.daysLogged} of ${current.daysNeeded} days toward finishing ${current.title}.`,
           href: `/journeys/${current.slug}`,
         }
       : {
           eyebrow: 'Up next',
           title: `${current.title} opens soon`,
-          detail: `The ${current.pillar} Journey is next in this Quest. Keep your daily practice going until it opens.`,
+          detail: `${current.title} is next in this Quest. Keep your daily practice going until it opens.`,
           href: `/journeys/${current.slug}`,
         }
     : {
@@ -333,7 +335,7 @@ async function QuestHero({
         <EmptyState
           icon={Compass}
           title={season ? `The Quest is open: ${season.name}` : 'The Quest opens soon'}
-          description="This Quest's three Journeys (Mind, Body, Spirit) appear here once the season's curriculum is live, each capped by its Expression Challenge. Your daily practice still counts."
+          description="This Quest's three Journeys appear here once the season's curriculum is live. Each covers all four Pillars: Mind, Body, Spirit, and Expression. Your daily practice still counts."
         />
       )}
 
@@ -494,7 +496,7 @@ export default async function CrewPage() {
       <DashboardTemplate
         title={
           <span className="inline-flex flex-wrap items-center gap-2">
-            The Quest
+            My Quest
             {isCrewLead && (
               <span className="rounded-md bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
                 Crew Lead
@@ -504,7 +506,7 @@ export default async function CrewPage() {
         }
         description={
           <>
-            Three Journeys this season: Mind, Body, Spirit, each capped by its Expression Challenge. Finish each to climb from Ghost to Master.
+            Three Journeys this season, each touching all four Pillars: Mind, Body, Spirit, and Expression. Finish each to climb from Ghost to Master.
             {circleName && (
               <> You&apos;re in <span className="font-medium text-text">{circleName}</span>.</>
             )}
@@ -531,6 +533,15 @@ export default async function CrewPage() {
             rank={currentSeasonRank}
             hasPracticeToLog={hasPracticeToLog}
           />
+        </Suspense>
+
+        {/* ── Your Journeys: the member's adopted + member-built Journeys (the old
+            /crew/journey list, folded in). The official season arc is the Season Map
+            above; this is everything else you're running, with each active one's honest
+            14-day arc + Expression state. Streams behind Suspense; renders nothing when
+            you have none, so it never adds clutter. ── */}
+        <Suspense fallback={null}>
+          <MemberJourneys profileId={profile.id} season={season?.season_number ?? null} />
         </Suspense>
 
         {/* ── Secondary: everything below the hero is demoted, scannable support. ── */}
@@ -647,12 +658,10 @@ export default async function CrewPage() {
             <section>
               <SectionHeader title="Explore" />
               <div className="grid grid-cols-2 gap-2">
-                <QuickLink href="/crew/quests" Icon={MapIcon} label="Journeys" sub="This season's three" color="bg-broadcast-bg text-broadcast-strong" />
-                <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-signal-bg text-signal-strong" />
-                <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-warning-bg text-warning dark:text-primary" />
-                <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-primary-bg text-primary-strong" />
-                <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-warning-bg text-warning" />
-                <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-signal-bg text-signal-strong" />
+                <QuickLink href="/journeys" Icon={MapIcon} label="Journeys" sub="Browse + build" color="bg-broadcast-bg text-broadcast-strong" />
+                <QuickLink href="/practices" Icon={Zap} label="Practices" sub="Log today" color="bg-primary-bg text-primary-strong" />
+                <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Capstones + more" color="bg-signal-bg text-signal-strong" />
+                <QuickLink href="/crew/store" Icon={ShoppingBag} label="The Vault" sub="Gems, Awards, standing" color="bg-warning-bg text-warning" />
               </div>
             </section>
 
@@ -719,6 +728,128 @@ export default async function CrewPage() {
         </div>
       </DashboardTemplate>
     </>
+  )
+}
+
+// ── Your Journeys — the member's adopted + member-built Journeys, folded in from the
+// old "Your Journey" page. The official season arc lives in the Season Map above; this
+// lists everything else the member is running. Each active Journey shows the honest arc
+// (14 distinct days + Expression state); the slow per-Journey evals stream behind their
+// own boundary. Returns null when there are none.
+async function MemberJourneys({ profileId, season }: { profileId: string; season: number | null }) {
+  const journeys = await getMemberJourneyProgress(profileId, { activeOnly: false })
+  if (journeys.length === 0) return null
+  const active = journeys.filter((j) => !j.complete)
+  const finished = journeys.filter((j) => j.complete)
+
+  return (
+    <section>
+      <SectionHeader title="Your Journeys" count={journeys.length} />
+      <div className="space-y-4">
+        {active.length > 0 && (
+          <Suspense fallback={<ActiveJourneysSkeleton count={active.length} />}>
+            <ActiveJourneys profileId={profileId} active={active} season={season} />
+          </Suspense>
+        )}
+        {finished.map((j) => (
+          <JourneyProgressCard
+            key={j.planId}
+            planId={j.planId}
+            slug={j.slug}
+            title={j.title}
+            inCohort={j.inCohort}
+            finished
+            distinctDays={14}
+            daysRequired={14}
+            hasExpression
+            expressionDone
+            windowStartsAt={null}
+            windowEndsAt={null}
+            learnHref={`/journeys/${j.slug}/learn`}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// The active Journeys, enriched with the real quest signals (14 distinct days, window
+// dates, Expression Challenge state). Each evaluation runs in parallel; this is the slow
+// part, so it sits behind a Suspense boundary above.
+async function ActiveJourneys({
+  profileId,
+  active,
+  season,
+}: {
+  profileId: string
+  active: MemberJourneyProgress[]
+  season: number | null
+}) {
+  const admin = createAdminClient()
+  const planIds = active.map((j) => j.planId)
+
+  const [{ data: planRows }, { data: challengeRows }] = await Promise.all([
+    admin.from('journey_plans').select('id, window_starts_at, window_ends_at').in('id', planIds),
+    season != null
+      ? admin.from('season_challenges').select('journey_id').eq('season', season).in('journey_id', planIds)
+      : Promise.resolve({ data: [] as { journey_id: string | null }[] }),
+  ])
+
+  const windowById = new Map<string, { start: string | null; end: string | null }>()
+  for (const r of (planRows ?? []) as { id: string; window_starts_at: string | null; window_ends_at: string | null }[]) {
+    windowById.set(r.id, { start: r.window_starts_at, end: r.window_ends_at })
+  }
+  const hasExpression = new Set(
+    ((challengeRows ?? []) as { journey_id: string | null }[])
+      .map((r) => r.journey_id)
+      .filter((id): id is string => !!id),
+  )
+
+  const evals = await Promise.all(
+    active.map((j) =>
+      season != null ? evaluateJourneyCompletion(profileId, j.planId, season) : Promise.resolve(null),
+    ),
+  )
+
+  return (
+    <div className="space-y-4">
+      {active.map((j, i) => {
+        const e = evals[i]
+        const win = windowById.get(j.planId)
+        return (
+          <JourneyProgressCard
+            key={j.planId}
+            planId={j.planId}
+            slug={j.slug}
+            title={j.title}
+            inCohort={j.inCohort}
+            finished={e?.finished ?? false}
+            distinctDays={e?.distinctDays ?? 0}
+            daysRequired={e?.daysRequired ?? 14}
+            hasExpression={hasExpression.has(j.planId)}
+            expressionDone={e?.expressionDone ?? false}
+            windowStartsAt={win?.start ?? null}
+            windowEndsAt={win?.end ?? null}
+            learnHref={j.nextLesson?.href ?? `/journeys/${j.slug}/learn`}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+// Dimension-matched skeleton for the streaming active-Journey list (no layout shift).
+function ActiveJourneysSkeleton({ count }: { count: number }) {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: Math.max(1, count) }).map((_, i) => (
+        <div key={i} className="rounded-2xl border border-border bg-surface p-5">
+          <div className="mb-3 h-4 w-40 rounded bg-surface-elevated" />
+          <div className="h-2 w-full rounded-full bg-surface-elevated" />
+          <div className="mt-3 h-9 w-36 rounded-lg bg-surface-elevated" />
+        </div>
+      ))}
+    </div>
   )
 }
 

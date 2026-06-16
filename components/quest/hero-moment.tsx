@@ -48,7 +48,7 @@ export function HeroMoment({
   rankAdvanced = false,
   seasonComplete = false,
   next = null,
-  trophiesHref = '/crew/achievements',
+  trophiesHref = '/crew/store',
   onSeen,
 }: {
   /** The Journey just finished — names the win concretely. */
