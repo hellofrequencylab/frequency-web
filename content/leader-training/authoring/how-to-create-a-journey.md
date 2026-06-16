@@ -1,7 +1,7 @@
 ---
 title: How to Create a Journey
 description: How to build a Journey people actually finish. The standard for every Quest, grounded in completion research, behavior design, and self-determination theory.
-category: leader-training
+category: authoring
 order: 1
 audience: leader
 status: published
