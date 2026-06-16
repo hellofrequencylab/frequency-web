@@ -38,3 +38,12 @@ These are harmless but should be deleted once the IA settles.
 
 ## What's already done (so it's not re-litigated)
 The full redesign is live: completion-model ranks, hub + Season Map, Journey detail, cooperative leaderboard, forgiving streaks, Trophy Case, Expression as the 4th Pillar, member-built Journeys + the Vera AI quality gate, the Season Composer (edit, lifecycle, clone, preview, operator home, bulk, per-Pillar balance, auto-go-live scheduler), Leader Training, and Season 1 "Shine" content. All migrations applied to prod.
+
+The **git** docs are fully synced: `DECISIONS.md` ADR-283..293, `QUEST-UI-REDESIGN.md`, this file, and the member **help center** (`content/help/the-quest/*` corrected to the live model — completion ranks, cooperative leaderboard, no broken tables).
+
+## Also open: operator-doc (Notion) sync
+The instructional **operator** pages in the Notion "Web Platform — Training & Strategy" DB were **not** refreshed for the redesign — this remote session couldn't pass the Notion write-approval gate, and the owner chose to skip it (git is the source of truth). Two pages are stale and still describe the **retired 6-rank Zap-threshold model**:
+- **"Crew Gamification"** (page `36bfb0d4-b941-812a-8672-c297304171fd`) — needs a current operator quick-reference: rank = Journeys finished (Ghost/Initiate/Adept/Master), four Pillars incl. Expression, pillar-based completion, cooperative leaderboard (Circle/Hub/Global + collective goal + opt-out), forgiving streaks, member-built + Vera gate, and the Season Composer + auto-go-live scheduler. Keep it instructional, no code/schema, link back to the git docs.
+- **"Journey Creation"** (page `380fb0d4-b941-81ba-aa4c-f00f9e0b133f`) — verify it covers the Vera ranked-eligibility gate and the Season Composer; mirror `content/leader-training/how-to-create-a-journey.md`.
+
+To finish: run `/sync-docs` from an interactive session where Notion writes are approved (or update the two pages by hand). Not a blocker — members read the help center; this is operator training only.
