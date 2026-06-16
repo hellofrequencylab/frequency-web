@@ -17,7 +17,7 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logAdminAction } from '@/lib/admin/audit'
 import { setPlanStatus, setPlanOfficial, type PlanStatus } from '@/lib/journey-plans'
-import { setPracticeFlags } from '@/lib/practices'
+import { setPracticeFlags, WEIGHT_CLASSES, type WeightClass } from '@/lib/practices'
 import {
   setJourneyFeatured,
   setPracticeFeatured,
@@ -153,6 +153,61 @@ export async function setAllPracticeFlagsAction(
   }
   revalidateContent('practices')
   return ok()
+}
+
+/** What a multi-select bulk edit may change on the chosen practices. Each field is
+ *  optional; only the ones present are written. Kept to the operator-safe library
+ *  controls (the payout tier + public visibility) — never the content fields. */
+export interface PracticeBulkPatch {
+  /** Payout tier: 'light' (8⚡) | 'standard' (12⚡) | 'heavy' (15⚡). */
+  weightClass?: WeightClass
+  /** Library visibility (publish / unpublish). */
+  isPublic?: boolean
+}
+
+/**
+ * Bulk-edit a chosen set of library practices (the multi-select bulk-action bar). Scoped
+ * to the explicit ids the operator selected — nothing outside the selection can be touched
+ * — and curator-gated, re-checked server-side: the client never carries authority. Every
+ * field is validated before it is written (a junk weight class is rejected, not coerced),
+ * and the patch is built field-by-field as a literal object so no remote key can be
+ * injected (CodeQL). Returns the number of rows the patch was applied to.
+ */
+export async function bulkUpdatePracticesAction(
+  ids: string[],
+  patch: PracticeBulkPatch,
+): Promise<ActionResult<{ count: number }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+
+  // De-dupe + bound the selection server-side (never trust the client's list length).
+  const cleanIds = [...new Set(ids.filter((id) => typeof id === 'string' && id.length > 0))].slice(0, 500)
+  if (cleanIds.length === 0) return fail('Select at least one practice.')
+
+  // Build the update literal field-by-field, validating each value. A precise shape (not
+  // Record<string, unknown>) keeps PostgREST's column typing + avoids remote key injection.
+  const update: { weight_class?: string; is_public?: boolean } = {}
+  if (patch.weightClass !== undefined) {
+    if (!WEIGHT_CLASSES.includes(patch.weightClass)) return fail('Unknown weight class.')
+    update.weight_class = patch.weightClass
+  }
+  if (patch.isPublic !== undefined) {
+    update.is_public = patch.isPublic === true
+  }
+  if (Object.keys(update).length === 0) return fail('Nothing to change.')
+
+  try {
+    const admin = createAdminClient()
+    const { error } = await admin.from('practices').update(update).in('id', cleanIds)
+    if (error) return fail(error.message)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not update the practices.')
+  }
+  revalidateContent('practices')
+  return ok({ count: cleanIds.length })
 }
 
 export async function setPracticeStatusAction(

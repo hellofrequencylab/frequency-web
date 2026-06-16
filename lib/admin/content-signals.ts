@@ -108,6 +108,9 @@ export interface RankedPracticeSignal {
   is_template: boolean
   status: string | null
   domain_id: string | null
+  /** Payout tier ('light' | 'standard' | 'heavy'); the column is NOT NULL DEFAULT
+   *  'standard', so this is effectively always set. */
+  weight_class: string | null
   created_at: string
   adopters: number
   logs_30d: number
@@ -125,7 +128,7 @@ export async function rankedPractices(limit = 200): Promise<RankedPracticeSignal
   const client = db()
   const { data: rows } = await client
     .from('practices_ranked')
-    .select('id, title, created_by, is_public, is_template, status, domain_id, created_at, adopters, logs_30d, logs_total, score')
+    .select('id, title, created_by, is_public, is_template, status, domain_id, weight_class, created_at, adopters, logs_30d, logs_total, score')
     .order('score', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(limit)

@@ -89,6 +89,7 @@ export default async function AdminContentPracticesPage() {
               is_public: p.is_public,
               is_template: p.is_template,
               featured: !!p.featured_at,
+              weight_class: p.weight_class ?? null,
             }))}
           />
         )}
