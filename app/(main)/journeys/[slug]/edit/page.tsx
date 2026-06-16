@@ -61,6 +61,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
         initialCompletionGems={plan.completion_gems}
         initialCertificateEnabled={plan.certificate_enabled}
         initialDripIntervalDays={plan.drip_interval_days}
+        initialCoverImage={plan.cover_image}
         initialReview={veraReview}
       />
       <JourneyEditor slug={slug} title={plan.title} blocks={blocks} practices={practices} />
