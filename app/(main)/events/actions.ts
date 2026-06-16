@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
+import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
@@ -165,6 +166,71 @@ export async function createEvent(formData: FormData) {
   recordStreakActivity(myProfileId, 'hosting').catch((e) => console.error('[events gamification]', e))
 
   revalidatePath('/events')
+  revalidatePath('/feed')
+  revalidatePath('/circles', 'layout')
+  redirect(`/events/${slug}`)
+}
+
+// Edit an existing event's details (EVENTS host self-service). Gated by the same
+// `event.editSettings` capability the admin editor + /manage use, so the host, a circle
+// manager, OR a community admin can edit — re-checked server-side. The event's circle,
+// host, slug, and recurrence are NOT changed here (moving circles / re-materialising
+// occurrences is a separate concern); everything else the create form sets is editable,
+// and the structured address re-geocodes on save (best-effort).
+export async function updateEvent(eventId: string, formData: FormData) {
+  const caps = await getEventCapabilities(eventId)
+  if (!caps.has('event.editSettings')) return
+
+  const title = (formData.get('title') as string | null)?.trim()
+  const startsAt = formData.get('startsAt') as string | null
+  if (!title || !startsAt) return
+
+  const description = (formData.get('description') as string | null)?.trim() || null
+  const location = (formData.get('location') as string | null)?.trim() || null
+  const endsAt = (formData.get('endsAt') as string | null) || null
+
+  const capacityRaw = (formData.get('capacity') as string | null)?.trim() || ''
+  const capacityParsed = capacityRaw ? parseInt(capacityRaw, 10) : NaN
+  const capacity = Number.isFinite(capacityParsed) && capacityParsed > 0 ? capacityParsed : null
+
+  const visibilityRaw = (formData.get('visibility') as string | null) || 'circle_only'
+  const visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
+  const category = (formData.get('category') as string | null)?.trim() || 'gathering'
+  const energyRaw = (formData.get('energyTag') as string | null) || ''
+  const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
+
+  const admin = createAdminClient()
+  const { data: ev } = await admin.from('events').select('slug').eq('id', eventId).maybeSingle()
+  const slug = (ev as { slug: string } | null)?.slug
+  if (!slug) return
+
+  const { error } = await admin
+    .from('events')
+    .update({
+      title,
+      description,
+      location,
+      starts_at: new Date(startsAt).toISOString(),
+      ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+      capacity,
+      visibility,
+      category,
+      energy_tag: energyTag,
+    })
+    .eq('id', eventId)
+  if (error) {
+    console.error('updateEvent error', error)
+    return
+  }
+
+  // Re-persist the structured address + re-geocode the venue (best-effort; never fails the save).
+  await geocodeEventOnCreate(eventId, formData)
+  // Re-embed for the matching engine (fire-and-forget; no-ops if AI off).
+  embedEvent(eventId).catch((e) => console.error('[events embed]', e))
+
+  revalidatePath('/events')
+  revalidatePath(`/events/${slug}`)
+  revalidatePath(`/events/${slug}/edit`)
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
   redirect(`/events/${slug}`)
