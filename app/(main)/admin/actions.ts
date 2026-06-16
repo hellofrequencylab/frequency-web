@@ -455,6 +455,31 @@ export async function archiveChannel(id: string) {
   revalidatePath('/channels')
 }
 
+/** Edit a channel's name + description (visibility is handled by archive/unarchive). */
+export async function updateChannel(id: string, fd: FormData) {
+  await requireCommunityOps()
+  const name = ((fd.get('name') as string) ?? '').trim()
+  if (!name) throw new Error('Name is required')
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('channels')
+    .update({ name, description: ((fd.get('description') as string) ?? '').trim() || null })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/channels')
+  revalidatePath('/channels')
+}
+
+/** Restore a hidden channel to discovery. */
+export async function unarchiveChannel(id: string) {
+  await requireCommunityOps()
+  const admin = createAdminClient()
+  const { error } = await admin.from('channels').update({ is_public: true }).eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/channels')
+  revalidatePath('/channels')
+}
+
 // ── Hubs ──────────────────────────────────────────────────────────────────────
 
 export async function createHub(fd: FormData) {
