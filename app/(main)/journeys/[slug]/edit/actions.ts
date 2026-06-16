@@ -12,6 +12,7 @@ import type { Database } from '@/lib/database.types'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan } from '@/lib/journey-plans'
 import { draftJourneyOutline } from '@/lib/ai/journey-outline'
+import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 
 type BlockUpdate = Database['public']['Tables']['journey_plan_items']['Update']
 
@@ -27,8 +28,11 @@ async function authorPlan(slug: string): Promise<{ planId: string; profileId: st
   const caller = await getCallerProfile()
   if (!caller) return null
   const loaded = await getPlan(slug)
-  if (!loaded || loaded.plan.author_id !== caller.id) return null
-  return { planId: loaded.plan.id, profileId: caller.id }
+  if (!loaded) return null
+  // The author, or an operator (admin.access) managing any Journey in the library.
+  if (loaded.plan.author_id === caller.id) return { planId: loaded.plan.id, profileId: caller.id }
+  if ((await getGlobalCapabilities()).has('admin.access')) return { planId: loaded.plan.id, profileId: caller.id }
+  return null
 }
 
 async function nextSortOrder(

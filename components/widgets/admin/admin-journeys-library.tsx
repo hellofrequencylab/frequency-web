@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, ExternalLink } from 'lucide-react'
+import { BookOpen, ExternalLink, Pencil } from 'lucide-react'
 import { getAdminJourneysContext } from '@/lib/admin/journeys-context'
 import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -10,6 +10,7 @@ import {
   JourneyRestoreButton,
   JourneyOfficialControl,
   JourneyFeatureToggle,
+  JourneyDeleteButton,
 } from '@/app/(main)/admin/content/content-controls'
 
 // Admin Journeys layout module (ADR-270/294): the public library in the shared DataTable — every
@@ -82,6 +83,24 @@ export async function AdminJourneysLibrary() {
       header: 'Review',
       align: 'center',
       render: (j) => (j.status === 'rejected' ? <JourneyRestoreButton id={j.id} /> : null),
+    },
+    {
+      key: 'manage',
+      header: 'Manage',
+      align: 'center',
+      render: (j) => (
+        <span className="inline-flex items-center justify-center gap-1">
+          <Link
+            href={`/journeys/${j.slug}/edit`}
+            title={`Edit ${j.title}`}
+            aria-label={`Edit ${j.title}`}
+            className="rounded-md p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+          >
+            <Pencil className="h-4 w-4" />
+          </Link>
+          <JourneyDeleteButton id={j.id} title={j.title} />
+        </span>
+      ),
     },
   ]
 
