@@ -561,8 +561,11 @@ function cleanFocusDetails(
   raw: Record<string, { instructions: string; timing: string }>,
 ): { focus_details: FocusDetails; primary: string | null } {
   const out: FocusDetails = {}
+  // Pillar ids are UUIDs. Only accept UUID-shaped keys, which rejects '__proto__' /
+  // 'constructor' / 'prototype' (remote property-injection / prototype-pollution guard).
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   for (const [pillarId, detail] of Object.entries(raw)) {
-    if (!pillarId) continue
+    if (!UUID.test(pillarId)) continue
     out[pillarId] = {
       instructions: (detail?.instructions ?? '').slice(0, 2000),
       timing: (detail?.timing ?? '').slice(0, 80),

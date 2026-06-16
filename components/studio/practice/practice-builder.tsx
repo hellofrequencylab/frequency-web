@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useTransition, createElement } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   Sparkles, Waves, Footprints, Snowflake, Brain, Flame, Heart, Leaf, Sun, Moon, Eye, Trash2,
   type LucideIcon,
@@ -189,8 +190,8 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-primary-bg text-primary-strong transition-transform hover:scale-105"
           >
             {headerImage ? (
-              // eslint-disable-next-line @next/next/no-img-element -- user-controlled host, not a configured next/image domain
-              <img src={headerImage} alt="" className="h-full w-full object-cover" />
+              // Unoptimized: user-controlled host + Supabase Storage, not a configured next/image domain.
+              <Image src={headerImage} alt="" width={64} height={64} unoptimized className="h-full w-full object-cover" />
             ) : (
               createElement(ICON_BY_KEY.get(icon) ?? Sparkles, { className: 'h-7 w-7' })
             )}
