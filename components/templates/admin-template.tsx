@@ -15,7 +15,9 @@
 // Presentational + server-friendly (no hooks).
 
 import type { LucideIcon } from 'lucide-react'
+import { headers } from 'next/headers'
 import { PageHeading } from './page-heading'
+import { backToDomainFor } from '@/app/(main)/admin/sections'
 
 const WIDTHS = {
   narrow: 'max-w-2xl',
@@ -23,7 +25,7 @@ const WIDTHS = {
   wide: 'max-w-7xl',
 } as const
 
-export function AdminTemplate({
+export async function AdminTemplate({
   title,
   icon: Icon,
   eyebrow,
@@ -49,10 +51,23 @@ export function AdminTemplate({
   width?: keyof typeof WIDTHS
   children: React.ReactNode
 }) {
+  // Auto back-link: a sub-page links back to its parent DOMAIN dashboard (resolved from
+  // the request path, x-pathname set by proxy.ts), unless the caller passed an explicit
+  // `back`. The domain roots resolve to null, so only sub-pages get the affordance.
+  let resolvedBack = back
+  if (!resolvedBack) {
+    try {
+      const pathname = (await headers()).get('x-pathname')
+      if (pathname) resolvedBack = backToDomainFor(pathname) ?? undefined
+    } catch {
+      /* no x-pathname (or non-request render) → no auto back */
+    }
+  }
+
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
       <PageHeading
-        back={back}
+        back={resolvedBack}
         eyebrow={eyebrow}
         title={
           Icon ? (
