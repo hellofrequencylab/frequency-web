@@ -42,6 +42,7 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
       category={practice.category}
       icon={practice.icon}
       domainId={practice.domain_id}
+      focusDetails={practice.focus_details ?? {}}
       subcategoryId={practice.subcategory_id}
       headerImage={practice.header_image}
       weightClass={practice.weight_class}
