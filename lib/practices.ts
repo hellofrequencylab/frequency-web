@@ -271,6 +271,20 @@ export async function setPracticeFlags(
   await db().from('practices').update(update).eq('id', id)
 }
 
+/** Set a practice's per-log Zap reward override + the reward note shown on its card
+ *  (admin-only; caller enforces capability). A null reward_zaps falls back to the
+ *  weight-class default payout. */
+export async function setPracticeReward(
+  id: string,
+  patch: { reward_zaps?: number | null; reward_note?: string | null },
+): Promise<void> {
+  const update: Record<string, unknown> = {}
+  if (patch.reward_zaps !== undefined) update.reward_zaps = patch.reward_zaps
+  if (patch.reward_note !== undefined) update.reward_note = patch.reward_note
+  if (Object.keys(update).length === 0) return
+  await db().from('practices').update(update).eq('id', id)
+}
+
 /** Hard-delete a practice (admin-only; caller enforces capability). FK on-delete
  *  handles member_practices (cascade) and logs (set null) per the schema. */
 export async function deletePractice(id: string): Promise<void> {

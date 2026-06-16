@@ -10,7 +10,7 @@ import { StudioWindow } from '../studio-window'
 import { useStudioDraft } from '../kit/use-studio-draft'
 import { StudioField } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
-import { updatePracticeAction, setPracticeTagsAction } from '@/app/(main)/practices/actions'
+import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction } from '@/app/(main)/practices/actions'
 import type { PracticeEdit, WeightClass } from '@/lib/practices'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
@@ -57,6 +57,11 @@ export interface PracticeBuilderProps {
   pillars: { id: string; name: string }[]
   subcategories: { id: string; domain_id: string; name: string }[]
   initialTags: string[]
+  /** Admin-only reward override. When `isAdmin`, the builder shows a Reward section that
+   *  sets reward_zaps / reward_note (gated apart from the author-editable fields). */
+  isAdmin?: boolean
+  rewardZaps?: number | null
+  rewardNote?: string | null
 }
 
 export function PracticeBuilder(props: PracticeBuilderProps) {
@@ -86,6 +91,16 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   )
   const [tagsInput, setTagsInput] = useState(props.initialTags.join(', '))
   const [iconOpen, setIconOpen] = useState(false)
+  const [rewardZaps, setRewardZaps] = useState(props.rewardZaps != null ? String(props.rewardZaps) : '')
+  const [rewardNote, setRewardNote] = useState(props.rewardNote ?? '')
+
+  const saveReward = () =>
+    void run(() =>
+      setPracticeRewardAction(props.id, {
+        rewardZaps: rewardZaps.trim() === '' ? null : Number(rewardZaps),
+        rewardNote,
+      }),
+    )
 
   // Sub-categories are scoped to the chosen Pillar.
   const subOptions = props.subcategories.filter((s) => !domainId || s.domain_id === domainId)
@@ -227,6 +242,38 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         </div>
         <p className="mt-1 text-xs text-subtle">How much a single log pays. Light 8 · Standard 12 · Heavy 15 Zaps.</p>
       </fieldset>
+
+      {/* Reward override — admin only. Overrides the weight-class payout + sets the card note. */}
+      {props.isAdmin && (
+        <fieldset className="mt-4 rounded-lg border border-warning/30 bg-warning-bg/20 p-3">
+          <legend className="px-1 text-2xs font-semibold uppercase tracking-wide text-warning">Reward override · admin</legend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <StudioField label="Zap reward override">
+              <input
+                type="number"
+                min={0}
+                max={1000}
+                value={rewardZaps}
+                onChange={(e) => setRewardZaps(e.target.value)}
+                onBlur={saveReward}
+                placeholder="(weight-class default)"
+                className={FIELD}
+              />
+            </StudioField>
+            <StudioField label="Reward note (on the card)">
+              <input
+                value={rewardNote}
+                onChange={(e) => setRewardNote(e.target.value)}
+                onBlur={saveReward}
+                maxLength={120}
+                placeholder="e.g. +20 Zaps · streak +1"
+                className={FIELD}
+              />
+            </StudioField>
+          </div>
+          <p className="mt-1 text-xs text-subtle">Overrides the weight-class payout. Leave the Zap field blank to use the default.</p>
+        </fieldset>
+      )}
 
       {/* Tags */}
       <div className="mt-4">

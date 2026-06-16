@@ -19,7 +19,8 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
 
   const practice = await getPractice(id)
   if (!practice) notFound()
-  if (practice.created_by !== profileId && !(await getGlobalCapabilities()).has('admin.access')) {
+  const isAdmin = (await getGlobalCapabilities()).has('admin.access')
+  if (practice.created_by !== profileId && !isAdmin) {
     // Not yours, and not an admin — you can only edit your own. (Customize a copy.)
     notFound()
   }
@@ -47,6 +48,9 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
       pillars={pillars.map((p) => ({ id: p.id, name: p.name }))}
       subcategories={subcategories.map((s) => ({ id: s.id, domain_id: s.domain_id, name: s.name }))}
       initialTags={tags}
+      isAdmin={isAdmin}
+      rewardZaps={practice.reward_zaps}
+      rewardNote={practice.reward_note}
     />
   )
 }
