@@ -24,9 +24,15 @@ strip to give you room; tap the toggle at its foot to bring it back.
 
 The fastest start is the **Vera box at the top of Curriculum**. Tell her what you're making (for
 example, "a 3-week reset for people who want to sleep better and scroll less") and hit **Build with
-Vera**. She lays down a balanced first week: a **Mind**, a **Body**, and a **Spirit** practice, plus
-**two challenges**. For each practice she either pulls a fitting one from the library or writes a new
-one for you. You can edit, reorder, or remove anything after.
+Vera**. She lays down a **balanced first week with one slot for each Pillar**: a **Mind**, a **Body**,
+and a **Spirit** practice, plus an **Expression** slot, the fun part, written as a short challenge to
+put the week to work (make something, share something, do something out loud). For the practices she
+either pulls a fitting one from the library or writes a new one. You can edit, reorder, or remove
+anything after.
+
+Starting with all four Pillars means a Journey opens **balanced**, so taking it nudges every side of
+your Signature toward center. (The Season **Challenges** you earn are a separate bonus, not part of
+this.)
 
 Prefer to start by hand? **Start with the shape** lays the same slots down empty for you to fill.
 
