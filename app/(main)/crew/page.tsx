@@ -591,11 +591,12 @@ export default async function CrewPage() {
           <MemberJourneys profileId={profile.id} season={season?.season_number ?? null} />
         </Suspense>
 
-        {/* ── Secondary: everything below the hero is demoted, scannable support. ── */}
-        <div className="flex flex-col items-start gap-6 lg:flex-row">
+        {/* ── Secondary: a logical vertical flow under the hero — earn (Tasks), then
+            browse (Explore), then your Circle's standing. ── */}
+        <div className="space-y-8">
 
-          {/* Left: tasks */}
-          <div className="min-w-0 flex-1 space-y-6">
+          {/* Tasks — earn Zaps by showing up. */}
+          <div className="space-y-6">
 
             {/* Circle tasks — host-assigned, claimable (renders nothing when the
                 viewer's circle has none). */}
@@ -698,13 +699,13 @@ export default async function CrewPage() {
             </section>
           </div>
 
-          {/* Right: quick links + leaderboard */}
-          <div className="shrink-0 space-y-6 lg:w-72">
+          {/* Explore + your Circle's standing — browse the rest of the Quest. */}
+          <div className="space-y-6">
 
             {/* Quick links */}
             <section>
               <SectionHeader title="Explore" />
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <QuickLink href="/journeys" Icon={MapIcon} label="Journeys" sub="Browse + build" color="bg-broadcast-bg text-broadcast-strong" />
                 <QuickLink href="/practices" Icon={Zap} label="Practices" sub="Log today" color="bg-primary-bg text-primary-strong" />
                 <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Capstones + more" color="bg-signal-bg text-signal-strong" />
