@@ -3,7 +3,7 @@ title: Achievements & badges
 description: The permanent badges you collect for showing up: tiers, categories, and the secret ones.
 category: the-quest
 order: 7
-updated: 2026-06-10
+updated: 2026-06-16
 audience: member
 featureKeys: [achievements, gamification]
 status: published
@@ -53,7 +53,6 @@ surprise is the point.
 
 ## Where your badges show
 
-Your badge count rides with you. It shows on the
-[leaderboard](/help/the-quest/leaderboard) next to your Zaps and streak, and recent
-badges appear on your Quest dashboard. Collecting them is never required; they're
-a record, not homework.
+Your badges ride with you. Recent ones appear on your Quest dashboard, and your
+full collection lives on the Achievements tab. Collecting them is never required;
+they're a record, not homework.
