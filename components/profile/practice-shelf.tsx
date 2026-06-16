@@ -4,6 +4,7 @@
 // adds the permanent ring treatment. Sorted deepest-first by the lib read.
 // Server Component; render inside <Suspense> from the profile page.
 
+import Link from 'next/link'
 import { Flame, Repeat } from 'lucide-react'
 import { getPracticeShelf } from '@/lib/practice-shelf'
 import { listWitnessedAwards } from '@/lib/awards/witnessed'
@@ -22,14 +23,15 @@ export async function PracticeShelf({ profileId, isOwner, firstName }: {
 
   return (
     <div className="mb-6">
-      <SectionHeader title="Practice Shelf" count={shelf.length || undefined} />
+      <SectionHeader title="Practice Shelf" count={shelf.length || undefined} href="/practices" />
       {shelf.length > 0 && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {shelf.map((e) => (
-            <div
+            <Link
               key={e.practiceId}
-              className={`flex items-center gap-3 rounded-2xl border bg-surface-elevated/60 px-3 py-2.5 ${
-                e.fullCycle ? 'border-primary ring-1 ring-primary/40' : 'border-border'
+              href={`/practices/${e.practiceId}`}
+              className={`flex items-center gap-3 rounded-2xl border bg-surface-elevated/60 px-3 py-2.5 transition-colors hover:bg-surface-elevated ${
+                e.fullCycle ? 'border-primary ring-1 ring-primary/40' : 'border-border hover:border-primary/40'
               }`}
             >
               <Repeat className="h-4 w-4 shrink-0 text-primary" />
@@ -44,7 +46,7 @@ export async function PracticeShelf({ profileId, isOwner, firstName }: {
                 <Flame className="h-3.5 w-3.5 text-primary" />
                 {e.lifetimeLogs.toLocaleString()}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
       )}

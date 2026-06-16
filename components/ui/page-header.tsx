@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Zap, Gem, Flame } from 'lucide-react'
+import { Zap, Gem, Flame, ArrowUpRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 
@@ -92,15 +92,36 @@ export function PageHeader({
 // A calm stats strip — a borderless row of value/label counts on the canvas
 // (not a boxed card). Matches the de-boxed treatment the Circles exemplar uses,
 // so every page's stat row reads the same way (DESIGN.md "group, don't box").
-export function StatStrip({ items }: { items: { value: number; label: string }[] }) {
+// Pass a per-item `href` to make a count a drill-down into its library/index.
+export function StatStrip({ items }: { items: { value: number; label: string; href?: string }[] }) {
   return (
     <div className="mb-6 flex flex-wrap items-center gap-x-8 gap-y-3">
-      {items.map((it) => (
-        <div key={it.label}>
-          <div className="text-xl font-bold leading-none tabular-nums text-text">{it.value.toLocaleString()}</div>
-          <div className="mt-1 text-xs text-subtle">{it.label}</div>
-        </div>
-      ))}
+      {items.map((it) => {
+        const value = (
+          <div className="text-xl font-bold leading-none tabular-nums text-text group-hover:text-primary-strong">
+            {it.value.toLocaleString()}
+          </div>
+        )
+        const label = (
+          <div className="mt-1 inline-flex items-center gap-1 text-xs text-subtle">
+            {it.label}
+            {it.href && (
+              <ArrowUpRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            )}
+          </div>
+        )
+        return it.href ? (
+          <Link key={it.label} href={it.href} className="group transition-colors">
+            {value}
+            {label}
+          </Link>
+        ) : (
+          <div key={it.label}>
+            {value}
+            {label}
+          </div>
+        )
+      })}
     </div>
   )
 }

@@ -37,7 +37,7 @@ export default async function AdminContentPracticesPage() {
     >
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="In the library" value={practices.length} icon={BookOpen} />
+          <StatCard label="In the library" value={practices.length} icon={BookOpen} href="/practices" />
           <StatCard label="Public" value={publicCount} icon={Globe} />
           <StatCard label="Awaiting review" value={pending.length} icon={Inbox} />
           <StatCard label="Featured" value={featuredCount} icon={Star} />
