@@ -4,11 +4,14 @@ import { SectionHeader } from '@/components/ui/section-header'
 
 // My Quest layout module (ADR-270/294): the four quick links into the rest of the Quest —
 // Journeys, Practices, Challenges, and The Vault. Static (no data read), so it never blocks.
+// Slot-aware (ADR-295): the grid is keyed to its CONTAINER, not the viewport — two-wide in a
+// narrow side column, four-wide once the slot is wide enough (`@lg`), so it never overflows the
+// sidebar.
 export async function QuestExplore() {
   return (
     <section>
       <SectionHeader title="Explore" />
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 @lg:grid-cols-4">
         <QuickLink href="/journeys" Icon={MapIcon} label="Journeys" sub="Browse + build" color="bg-broadcast-bg text-broadcast-strong" />
         <QuickLink href="/practices" Icon={Zap} label="Practices" sub="Log today" color="bg-primary-bg text-primary-strong" />
         <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Capstones + more" color="bg-signal-bg text-signal-strong" />

@@ -49,40 +49,43 @@ export async function PageModules({
   return <TemplateGrid template={config.template} slot={slot} />
 }
 
-// The interior grid per template. Each slot's contents stack with `space-y-4`; columns collapse
-// to a single column on small screens. Adding a template = one case here + a meta entry in
+// The interior grid per template. Each slot is its OWN container context (`@container`, Tailwind
+// v4) and stacks its modules with `space-y-4`; a block inside can then size itself to the slot it
+// lands in — wide in `main`, compact in `side` — via container-query variants (`@lg:` etc.), so a
+// block "auto-resizes based on where it is placed" without knowing the template. Columns collapse
+// to one on small screens. Adding a template = one case here + a meta entry in
 // lib/widgets/templates.ts.
 function TemplateGrid({ template, slot }: { template: TemplateId; slot: (id: string) => ReactNode }) {
   switch (template) {
     case 'main-side':
       return (
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">{slot('main')}</div>
-          <div className="space-y-4">{slot('side')}</div>
+        <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
+          <div className="@container space-y-4 lg:col-span-2">{slot('main')}</div>
+          <div className="@container space-y-4">{slot('side')}</div>
         </div>
       )
     case 'two-col':
       return (
-        <div className="space-y-4">
-          {slot('top')}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-4">{slot('col-1')}</div>
-            <div className="space-y-4">{slot('col-2')}</div>
+        <div className="space-y-6">
+          <div className="@container space-y-4">{slot('top')}</div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="@container space-y-4">{slot('col-1')}</div>
+            <div className="@container space-y-4">{slot('col-2')}</div>
           </div>
         </div>
       )
     case 'three-col':
       return (
-        <div className="space-y-4">
-          {slot('top')}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-4">{slot('col-1')}</div>
-            <div className="space-y-4">{slot('col-2')}</div>
-            <div className="space-y-4">{slot('col-3')}</div>
+        <div className="space-y-6">
+          <div className="@container space-y-4">{slot('top')}</div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="@container space-y-4">{slot('col-1')}</div>
+            <div className="@container space-y-4">{slot('col-2')}</div>
+            <div className="@container space-y-4">{slot('col-3')}</div>
           </div>
         </div>
       )
     default:
-      return <div className="space-y-4">{slot('main')}</div>
+      return <div className="@container space-y-4">{slot('main')}</div>
   }
 }
