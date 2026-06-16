@@ -9,11 +9,18 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
-import { ok, fail, type ActionResult } from '@/lib/action-result'
+import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { getPlan } from '@/lib/journey-plans'
-import { draftJourneyOutline } from '@/lib/ai/journey-outline'
 import { draftSlotCoaching } from '@/lib/ai/journey-slot-coaching'
+import {
+  draftJourneyComposition,
+  COMPOSE_PILLARS,
+  type ComposePillar,
+  type ComposeCandidate,
+} from '@/lib/ai/journey-composition'
 import { getCurrentSeason } from '@/lib/seasons'
+import { getPillars } from '@/lib/pillars'
+import { searchLibraryPractices } from '@/lib/practices'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 
 type BlockUpdate = Database['public']['Tables']['journey_plan_items']['Update']
@@ -70,37 +77,6 @@ export async function addPhaseAction(slug: string): Promise<ActionResult<{ id: s
 
 /** Add a Module container under a Phase (build item §11.1 #3) — lets long Journeys group
  *  lessons into sessions within a phase. The player/tree already render Phase → Module → Lesson. */
-/** Vera drafts a Phase -> Lesson outline from a one-line description and inserts it (build item
- *  §11.1 #4). The blank-with-prompts authoring path. Degrades to a clear error if AI is off. */
-export async function draftOutlineAction(slug: string, description: string): Promise<ActionResult<{ phases: number }>> {
-  const a = await authorPlan(slug)
-  if (!a) return fail('Only the author can edit this journey.')
-  const desc = description.trim().slice(0, 2000)
-  if (!desc) return fail('Add a short description first.')
-  const outline = await draftJourneyOutline({ description: desc, profileId: a.profileId })
-  if (!outline) return fail('Vera could not draft an outline right now. Try again, or add phases by hand.')
-
-  const admin = db()
-  let sort = await nextSortOrder(admin, a.planId, null)
-  for (const phase of outline.phases) {
-    const { data: ph } = await admin
-      .from('journey_plan_items')
-      .insert({ plan_id: a.planId, block_type: 'phase', parent_id: null, title: phase.title, sort_order: sort++, required: true })
-      .select('id')
-      .maybeSingle()
-    if (!ph) continue
-    const phaseId = String((ph as { id: string }).id)
-    let ls = 0
-    for (const lesson of phase.lessons) {
-      await admin
-        .from('journey_plan_items')
-        .insert({ plan_id: a.planId, block_type: lesson.type, parent_id: phaseId, title: lesson.title, sort_order: ls++, required: true })
-    }
-  }
-  done(slug)
-  return ok({ phases: outline.phases.length })
-}
-
 export async function addModuleAction(slug: string, phaseId: string): Promise<ActionResult<{ id: string }>> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
@@ -218,6 +194,178 @@ export async function draftSlotCoachingAction(
   done(slug)
   return ok({ prompt })
 }
+
+// ── Vera Journey composer (JOURNEYS.md §6) ──────────────────────────────────────────────
+//
+// Every new Journey opens pre-propagated with a balanced shape: one Practice each for Mind,
+// Body, and Spirit, plus two challenges. The author tells Vera what they're making and she
+// fills the shape — reusing fitting library practices or writing new ones; or the author
+// starts from the empty shape and fills it by hand.
+
+const SCAFFOLD_PHASE = 'Your first week'
+
+const PRACTICE_SLOTS: { slug: ComposePillar; label: string; prompt: string }[] = [
+  { slug: 'mind', label: 'Mind practice', prompt: 'A Mind practice to steady attention. Pick one from the library or let Vera draft it.' },
+  { slug: 'body', label: 'Body practice', prompt: 'A Body practice that is physical and doable. Pick one from the library or let Vera draft it.' },
+  { slug: 'spirit', label: 'Spirit practice', prompt: 'A Spirit practice that is reflective or connecting. Pick one from the library or let Vera draft it.' },
+]
+const CHALLENGE_SLOTS: { label: string; prompt: string }[] = [
+  { label: 'Challenge 1', prompt: 'A small real-world challenge for the week.' },
+  { label: 'Challenge 2', prompt: 'A second challenge to stretch a little further.' },
+]
+
+/** Pillar slug -> id, for tagging the scaffold's practice slots with their Focus. */
+async function pillarIdsBySlug(): Promise<Partial<Record<ComposePillar, string>>> {
+  const pillars = await getPillars()
+  const out: Partial<Record<ComposePillar, string>> = {}
+  for (const p of pillars) {
+    if ((COMPOSE_PILLARS as readonly string[]).includes(p.slug)) out[p.slug as ComposePillar] = p.id
+  }
+  return out
+}
+
+type AdminDb = ReturnType<typeof createAdminClient>
+type NewBlock = Database['public']['Tables']['journey_plan_items']['Insert']
+
+/** Insert a sequence of child blocks under `parentId`, in order. */
+async function insertChildren(admin: AdminDb, planId: string, parentId: string, rows: Omit<NewBlock, 'plan_id' | 'parent_id' | 'sort_order'>[]): Promise<void> {
+  let sort = 0
+  for (const row of rows) {
+    await admin.from('journey_plan_items').insert({ ...row, plan_id: planId, parent_id: parentId, sort_order: sort++ })
+  }
+}
+
+/** Build the empty shape (a phase with the three Pillar practice slots + two challenge slots),
+ *  prompts in the body. The no-AI path, and the fallback when Vera is off. */
+export async function scaffoldJourneyAction(slug: string): Promise<ActionResult<{ phaseId: string }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const admin = db()
+  const pillarIds = await pillarIdsBySlug()
+  const phaseSort = await nextSortOrder(admin, a.planId, null)
+  const { data: ph } = await admin
+    .from('journey_plan_items')
+    .insert({ plan_id: a.planId, block_type: 'phase', parent_id: null, title: SCAFFOLD_PHASE, sort_order: phaseSort, required: true })
+    .select('id')
+    .maybeSingle()
+  if (!ph) return fail('Could not start the journey shape.')
+  const phaseId = String((ph as { id: string }).id)
+
+  const rows: Omit<NewBlock, 'plan_id' | 'parent_id' | 'sort_order'>[] = [
+    ...PRACTICE_SLOTS.map((s) => ({
+      block_type: 'practice',
+      title: s.label,
+      body: s.prompt,
+      domain_id: pillarIds[s.slug] ?? null,
+      required: true,
+    })),
+    ...CHALLENGE_SLOTS.map((s) => ({ block_type: 'exercise', title: s.label, body: s.prompt, required: true })),
+  ]
+  await insertChildren(admin, a.planId, phaseId, rows)
+  done(slug)
+  return ok({ phaseId })
+}
+
+/** Vera composes the opening week from a one-line description: a Mind, Body, and Spirit practice
+ *  (reused from the library or freshly written) plus two challenges. Falls back to the empty
+ *  scaffold when Vera is off, so the author always gets the shape. */
+export async function composeJourneyAction(
+  slug: string,
+  description: string,
+): Promise<ActionResult<{ aiUsed: boolean }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const desc = description.trim().slice(0, 2000)
+  if (!desc) return fail('Tell Vera what you want to build first.')
+
+  const admin = db()
+  const pillarIds = await pillarIdsBySlug()
+
+  // Candidate library practices per Pillar (real, non-demo, most-adopted first) for Vera to pick.
+  const library = {} as Record<ComposePillar, ComposeCandidate[]>
+  await Promise.all(
+    COMPOSE_PILLARS.map(async (p) => {
+      const pid = pillarIds[p]
+      if (!pid) { library[p] = []; return }
+      const res = await searchLibraryPractices({ pillarId: pid, pageSize: 12, sort: 'top', hideDemo: true })
+      library[p] = res.rows.map((r) => ({ id: r.id, title: r.title, summary: r.summary }))
+    }),
+  )
+
+  const composition = await draftJourneyComposition({ description: desc, library, profileId: a.profileId })
+
+  // Vera off / failed → still give the author the shape to fill by hand.
+  if (!composition) {
+    const r = await scaffoldJourneyAction(slug)
+    if (isError(r)) return r
+    return ok({ aiUsed: false })
+  }
+
+  // A phase to hold the composed week.
+  const phaseSort = await nextSortOrder(admin, a.planId, null)
+  const { data: ph } = await admin
+    .from('journey_plan_items')
+    .insert({ plan_id: a.planId, block_type: 'phase', parent_id: null, title: SCAFFOLD_PHASE, sort_order: phaseSort, required: true })
+    .select('id')
+    .maybeSingle()
+  if (!ph) return fail('Could not build the journey.')
+  const phaseId = String((ph as { id: string }).id)
+
+  // Resolve each Pillar slot: a library pick (carry its real practice_id + domain_id + title) or
+  // a freshly-written inline practice. Any slot Vera left empty falls back to the prompt placeholder.
+  const filled = new Map<ComposePillar, ComposedRow>()
+  for (const slot of composition.practices) {
+    if (slot.mode === 'library') {
+      const { data: pr } = await admin.from('practices').select('title, domain_id').eq('id', slot.practiceId).maybeSingle()
+      const practice = pr as { title: string | null; domain_id: string | null } | null
+      filled.set(slot.pillar, {
+        block_type: 'practice',
+        title: practice?.title ?? 'Practice',
+        body: '',
+        practice_id: slot.practiceId,
+        domain_id: practice?.domain_id ?? pillarIds[slot.pillar] ?? null,
+        required: true,
+      })
+    } else {
+      filled.set(slot.pillar, {
+        block_type: 'practice',
+        title: slot.title,
+        body: slot.body,
+        domain_id: pillarIds[slot.pillar] ?? null,
+        required: true,
+      })
+    }
+  }
+
+  const practiceRows: ComposedRow[] = PRACTICE_SLOTS.map((s) =>
+    filled.get(s.slug) ?? {
+      block_type: 'practice',
+      title: s.label,
+      body: s.prompt,
+      domain_id: pillarIds[s.slug] ?? null,
+      required: true,
+    },
+  )
+  const challengeRows: ComposedRow[] = (composition.challenges.length ? composition.challenges : CHALLENGE_SLOTS.map((s) => ({ title: s.label, body: s.prompt })))
+    .slice(0, 2)
+    .map((c) => ({ block_type: 'exercise', title: c.title.slice(0, 200), body: (c.body ?? '').slice(0, 2000), required: true }))
+
+  await insertChildren(admin, a.planId, phaseId, [...practiceRows, ...challengeRows])
+
+  // Name an untitled Journey from Vera's suggestion.
+  if (composition.title) {
+    const loaded = await getPlan(slug)
+    const current = (loaded?.plan.title ?? '').trim().toLowerCase()
+    if (!current || current === 'untitled journey' || current === 'untitled') {
+      await admin.from('journey_plans').update({ title: composition.title }).eq('id', a.planId)
+    }
+  }
+
+  done(slug)
+  return ok({ aiUsed: true })
+}
+
+type ComposedRow = Omit<NewBlock, 'plan_id' | 'parent_id' | 'sort_order'>
 
 export async function updateBlockAction(
   slug: string,

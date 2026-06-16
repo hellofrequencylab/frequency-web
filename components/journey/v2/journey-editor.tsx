@@ -17,58 +17,11 @@ import {
   updateBlockAction,
   removeBlockAction,
   moveBlockAction,
-  draftOutlineAction,
   draftSlotCoachingAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { isError } from '@/lib/action-result'
+import { JourneyComposer } from '@/components/journey/v2/journey-composer'
 import type { CheckConfig } from '@/lib/journeys/store'
-
-// Vera's "draft my outline" panel (build item §11.1 #4): describe the Journey in a sentence and
-// Vera drafts the Phase -> Lesson structure. Shown on the blank-start path; the author edits from
-// there. Self-contained state; the action inserts the blocks and the editor re-renders on refresh.
-function VeraOutline({ slug }: { slug: string }) {
-  const router = useRouter()
-  const [pending, start] = useTransition()
-  const [desc, setDesc] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const draft = () => {
-    setError(null)
-    start(async () => {
-      const res = await draftOutlineAction(slug, desc)
-      if (isError(res)) setError(res.error ?? 'Vera could not draft an outline.')
-      else {
-        setDesc('')
-        router.refresh()
-      }
-    })
-  }
-  return (
-    <div className="rounded-2xl border border-dashed border-primary/40 bg-primary-bg/30 p-4">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-primary-strong" />
-        <p className="text-sm font-semibold text-text">Draft an outline with Vera</p>
-      </div>
-      <p className="mt-1 text-sm text-muted">Describe the Journey in a sentence or two. Vera drafts the Phases and lessons; you edit from there.</p>
-      <textarea
-        value={desc}
-        disabled={pending}
-        onChange={(e) => setDesc(e.target.value)}
-        rows={2}
-        placeholder="e.g. A 3-week reset for people who want to read more and scroll less."
-        className="mt-2 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
-      />
-      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-      <button
-        type="button"
-        disabled={pending || !desc.trim()}
-        onClick={draft}
-        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
-      >
-        <Sparkles className="h-4 w-4" /> {pending ? 'Drafting…' : 'Draft with Vera'}
-      </button>
-    </div>
-  )
-}
 
 export interface EditorBlock {
   id: string
@@ -444,6 +397,11 @@ export function JourneyEditor({
 
   return (
     <div className="space-y-4">
+      {/* Vera composer — the box at the top: describe the Journey and Vera fills a balanced
+          opening week (Mind/Body/Spirit practice + two challenges). Always available; the empty
+          shape preview shows only on a blank Journey. */}
+      <JourneyComposer slug={slug} isEmpty={empty} />
+
       {/* Section header — the identity/title lives in the Details tab, and Preview + Done live in
           the builder bar above, so this is just the curriculum section's label. */}
       <header>
@@ -453,7 +411,7 @@ export function JourneyEditor({
 
       {empty && (
         <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted">
-          Nothing here yet. Add your first phase, then fill it with lessons.
+          Nothing here yet. Build it with Vera above, or add your first phase by hand.
         </p>
       )}
 
@@ -471,8 +429,6 @@ export function JourneyEditor({
           {stepTools(null, LOOSE_KEY)}
         </section>
       )}
-
-      {empty && <VeraOutline slug={slug} />}
 
       {phases.map((p) => (
         <section key={p.id} className="rounded-2xl border border-border bg-surface p-4">

@@ -13,6 +13,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
+import { FeaturedBadge } from '@/components/ui/featured-badge'
 import { RsvpButton } from '@/components/events/rsvp-button'
 import { EventsMapToggle } from '@/components/events/events-map-client'
 import type { EventMapPin } from '@/components/events/events-map'
@@ -35,6 +36,8 @@ type EventRow = {
   ends_at: string | null
   is_cancelled: boolean
   is_demo: boolean
+  /** Operator-Featured (events.featured_at) — badge it as a curated pick. */
+  featured_at?: string | null
   scope_id: string
   scope_type: string
   // P0 taxonomy + capacity + geo + price (newer than the generated DB types —
@@ -300,7 +303,7 @@ export default async function EventsPage({
   // types — read them through an untyped client (repo convention for
   // not-yet-regenerated columns; see lib/events/geocode.ts).
   const EVENT_SELECT = `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
-       scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
+       featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
        cover_image_path, host:profiles!host_id ( id, display_name, handle )`
 
   // ── (1) In-scope CIRCLE events (the original circle-anchored listing) ────────
@@ -896,8 +899,9 @@ function EventCard({
       title={event.title}
       description={blurb}
       badge={
-        (event.is_demo || warm) ? (
+        (event.featured_at || event.is_demo || warm) ? (
           <span className="flex shrink-0 items-center gap-1.5">
+            {event.featured_at && <FeaturedBadge />}
             {event.is_demo && <DemoBadge />}
             {warm}
           </span>

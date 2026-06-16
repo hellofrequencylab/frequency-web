@@ -146,8 +146,16 @@ rail restored** (a no-rail registration was reverted); and the wiped **join/shar
 `current_season_zaps`, plus one member's missing join created).
 
 **Curation columns (applied to prod + committed):** `circles.featured_at` (`20260616181000`),
-`events.featured_at` (`20260616181100`). Member-card "Featured" badge + featured-first sort are a
-small follow-up; Channels curation rides existing `display_order`.
+`events.featured_at` (`20260616181100`). ✅ **Member-facing Featured badge shipped** (ADR-298):
+reusable `<FeaturedBadge>` (filled star, `signal` tokens) in the `EntityCard` badge slot, threaded
+into the member Circles + Events cards via `featured_at`. Featured-first **sort** is still an optional
+follow-up; Channels curation rides existing `display_order`.
+
+**✅ Vera Journey composer (ADR-298).** New Journeys open pre-propagated with a balanced shape — a
+Mind, Body, and Spirit practice + two challenges — and a Vera box at the top of the Curriculum tab.
+The author describes the Journey; Vera fills the shape, reusing fitting library practices (validated
+ids) or writing new inline ones, challenges as `exercise` blocks. `scaffoldJourneyAction` lays the
+empty shape when AI is off. `lib/ai/journey-composition.ts` (Opus). No schema change.
 
 **✅ Journey course builder — full-page editor (ADR-297).** The Journey editor moved off the Studio
 **popup** onto a full-page **course builder** at `/journeys/[slug]/edit` (both "New journey" and
