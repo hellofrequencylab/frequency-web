@@ -10,6 +10,7 @@ export const MODULE_ROUTES: readonly string[] = [
   '/crew',
   '/admin/content/journeys',
   '/journeys',
+  '/practices',
 ]
 
 /** Whether `pathname` is (or sits under) a module-driven route — drives the Layout

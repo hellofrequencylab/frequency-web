@@ -15,6 +15,9 @@ import { AdminJourneysLibrary } from '@/components/widgets/admin/admin-journeys-
 import { JourneysStart } from '@/components/widgets/journeys/journeys-start'
 import { JourneysMine } from '@/components/widgets/journeys/journeys-mine'
 import { JourneysLibrary } from '@/components/widgets/journeys/journeys-library'
+import { PracticesStats } from '@/components/widgets/practices/practices-stats'
+import { PracticesActivity } from '@/components/widgets/practices/practices-activity'
+import { PracticesMine } from '@/components/widgets/practices/practices-mine'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -42,6 +45,10 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'journeys-start': JourneysStart,
   'journeys-mine': JourneysMine,
   'journeys-library': JourneysLibrary,
+  // Practices page (/practices) — the upper, personal blocks.
+  'practices-stats': PracticesStats,
+  'practices-activity': PracticesActivity,
+  'practices-mine': PracticesMine,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {
