@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentSeason } from '@/lib/seasons'
 import { challengeCompletionRates } from '@/lib/admin/content-signals'
 import { activeSeasonJourneys } from '../actions'
-import { ChallengeEditor, ChallengeCreateForm, type ChallengeRow } from './challenge-editor'
+import { ChallengeEditor, ChallengeCreateLauncher, type ChallengeRow } from './challenge-editor'
 
 // Season challenges editor: tune the active season's challenges (name, story,
 // difficulty, target, Zap reward) and add new ones. Completion numbers ride
@@ -106,6 +106,7 @@ export default async function AdminContentChallengesPage() {
       eyebrow="Content"
       description="The season's challenge board. Edits go live immediately; completion numbers show what members actually finish."
       width="wide"
+      actions={season ? <ChallengeCreateLauncher journeys={journeys} /> : undefined}
     >
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -145,18 +146,11 @@ export default async function AdminContentChallengesPage() {
                 variant="first-use"
                 icon={Target}
                 title="No challenges this season"
-                description="Add the first one below. Members see it on the challenge board right away."
+                description="Use Add challenge above. Members see it on the board right away."
               />
             ) : (
               <ChallengeEditor challenges={current} journeys={journeys} />
             )}
-          </AdminSection>
-
-          <AdminSection
-            title="Add a challenge"
-            description="A season-wide challenge lands on the board for everyone. An Expression Challenge caps one Journey; pick the Journey and the wiring is set for you."
-          >
-            <ChallengeCreateForm journeys={journeys} />
           </AdminSection>
         </>
       ) : (

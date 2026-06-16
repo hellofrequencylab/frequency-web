@@ -349,7 +349,7 @@ type ChallengeKind = 'season' | 'expression'
 const EXPRESSION_DEFAULTS = { difficulty: 'hard', target: 1, zapsReward: 50 }
 const SEASON_DEFAULTS = { difficulty: 'normal', target: 1, zapsReward: 50 }
 
-export function ChallengeCreateForm({ journeys }: { journeys: ExpressionJourneyOption[] }) {
+export function ChallengeCreateForm({ journeys, onCreated }: { journeys: ExpressionJourneyOption[]; onCreated?: () => void }) {
   const [kind, setKind] = useState<ChallengeKind>('season')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -394,6 +394,7 @@ export function ChallengeCreateForm({ journeys }: { journeys: ExpressionJourneyO
         setDescription('')
         setJourneyId('')
         router.refresh()
+        onCreated?.()
       }
     })
   }
@@ -401,7 +402,7 @@ export function ChallengeCreateForm({ journeys }: { journeys: ExpressionJourneyO
   const submitDisabled = pending || !name.trim() || (isExpression && !journeyId)
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div>
       <fieldset className="mb-4">
         <legend className="sr-only">Challenge type</legend>
         <div className="inline-flex rounded-lg border border-border bg-canvas p-0.5">
@@ -526,5 +527,27 @@ export function ChallengeCreateForm({ journeys }: { journeys: ExpressionJourneyO
         </div>
       </div>
     </div>
+  )
+}
+
+// "Add challenge" — launches the create form in the shared Studio popup (parity with every other
+// Add surface), instead of an always-on inline form. Closes on a successful create.
+export function ChallengeCreateLauncher({ journeys }: { journeys: ExpressionJourneyOption[] }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+      >
+        <Plus className="h-4 w-4" /> Add challenge
+      </button>
+      {open && (
+        <StudioWindow open onClose={() => setOpen(false)} eyebrow="Studio · Challenge">
+          <ChallengeCreateForm journeys={journeys} onCreated={() => setOpen(false)} />
+        </StudioWindow>
+      )}
+    </>
   )
 }
