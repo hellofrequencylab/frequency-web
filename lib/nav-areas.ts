@@ -80,31 +80,21 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'messageBoards', href: '/messages',  label: 'Message Boards', section: 'Community', defaultAccess: 'member', surface: 'messageBoards' },
   { key: 'people',        href: '/network',   label: 'Community',    section: 'Community', defaultAccess: 'member',  surface: 'people' },
 
-  // ── Lead → the network-scoped LEADER surface (host+ on the trust ladder), the
-  // member-side home for community leaders after /admin became staff-only. Its OWN
-  // one-item section so it never lands in the staff-gated "Admin" group. The `lead`
-  // surface (access-matrix) resolves to 'full' for host/guide/mentor (+ staff) and
-  // 'none' for member/visitor, so the shell's `itemAccess` reads it straight from the
-  // matrix — and because "Leadership" is a TELESCOPE_SECTION, the item is HIDDEN (not
-  // ghosted) for anyone below host. `defaultAccess: 'host'` mirrors the same floor. ──
-  { key: 'lead',          href: '/lead',      label: 'Leadership',   section: 'Community',  defaultAccess: 'host', surface: 'lead' },
-
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
   { key: 'journeys',   href: '/journeys',        label: 'Journeys',   section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },
   { key: 'practices',  href: '/practices',       label: 'Practices',  section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
   { key: 'vault',      href: '/crew/store',      label: 'The Vault',  section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
 
-  // ── Admin → the operator world (admin + studio + platform rolled into ONE
-  // category, mirroring the back-end admin menu). Telescopes: only the items a
-  // role/staff axis can reach are shown; the rest are hidden, not ghosted. ───────
-  // Admin Home + the operator areas are STAFF-ADMIN gated (owner: "only Admin sees Admin
-  // Home / sensitive settings"). They map to `platformManage` (admin/janitor full; everyone
-  // else 'none'), so a visitor/member/paid/host never sees them. Network-scoped admin for
-  // the volunteer leader roles (host/guide/mentor) is a separate future surface (see notes).
+  // ── Admin → the operator world. Telescopes: only the items a role/staff axis can
+  // reach are shown; the rest are hidden, not ghosted. Most areas are STAFF-ADMIN gated
+  // (platformManage: admin/janitor full), so a member/paid never sees them. EXCEPTIONS
+  // that admit host+ on the community ladder: Leadership (the leader home, surface
+  // 'lead') and Programs/Community/Growth via their community/marketing staff domain.
   { key: 'admin-home',       href: '/admin',            label: 'Dashboard',  section: 'Admin', defaultAccess: 'admin',   surface: 'platformManage' },
-  { key: 'admin-programs',   href: '/admin/programs',   label: 'Programs',   section: 'Admin', defaultAccess: 'host',    staffDomain: 'community',  surface: 'platformManage' },
   { key: 'admin-community',  href: '/admin/community',  label: 'Community',  section: 'Admin', defaultAccess: 'host',    staffDomain: 'community',  surface: 'platformManage' },
+  { key: 'lead',             href: '/lead',             label: 'Leadership', section: 'Admin', defaultAccess: 'host',    surface: 'lead' },
+  { key: 'admin-programs',   href: '/admin/programs',   label: 'Programs',   section: 'Admin', defaultAccess: 'host',    staffDomain: 'community',  surface: 'platformManage' },
   { key: 'admin-growth',     href: '/admin/growth',     label: 'Growth',     section: 'Admin', defaultAccess: 'host',    staffDomain: 'marketing', surface: 'growthStudio' },
   { key: 'admin-vera-ai',    href: '/admin/vera-ai',    label: 'Vera AI',    section: 'Admin', defaultAccess: 'janitor', staffDomain: 'insights',  surface: 'platformManage' },
   { key: 'admin-operations', href: '/admin/operations', label: 'Operations', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'platform',  surface: 'platformManage' },

@@ -1,9 +1,8 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { Eye, Compass } from 'lucide-react'
+import { Eye } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
-import { EmptyState } from '@/components/ui/empty-state'
 import { Banner } from '@/components/admin/status'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SeasonMap } from '@/components/quest/season-map'
@@ -73,17 +72,6 @@ async function SeasonPreviewMap({ id }: { id: string }) {
   const preview = await loadSeasonPreview(id)
   if (!preview) notFound()
 
-  if (preview.journeys.length === 0) {
-    return (
-      <EmptyState
-        variant="first-use"
-        icon={Compass}
-        title="No Journeys to preview yet"
-        description="Once this season's three official Journeys are composed under its Quest, they appear here as a member will see them. Compose them from the season's Composer."
-      />
-    )
-  }
-
   // The real member-facing SeasonMap, fed the preview's neutral standing. Achievements
   // link points at the live member surface (inert in preview — it's a read-only render).
   return (
@@ -92,7 +80,7 @@ async function SeasonPreviewMap({ id }: { id: string }) {
       weeksLeft={preview.weeksLeft}
       rank={preview.rank}
       journeysFinished={preview.journeysFinished}
-      journeys={preview.journeys}
+      pillars={preview.pillars}
     />
   )
 }

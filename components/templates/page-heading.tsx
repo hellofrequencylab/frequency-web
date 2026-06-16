@@ -40,7 +40,7 @@ export function PageHeading({
 }) {
   return (
     <>
-    <div className={`mb-5 sm:mb-6 ${divider ? 'border-b border-border pb-4 sm:pb-5' : ''}`}>
+    <div className="mb-4 sm:mb-5">
       {back && (
         <Link
           href={back.href}
@@ -79,8 +79,10 @@ export function PageHeading({
         )}
       </div>
     </div>
-    {/* The on-page "Settings" split sits on the line under the header. */}
-    <PageAdminBar />
+    {/* The header's hairline rule, with the on-page "Settings" split sitting inline on
+        it (one line). When the page opts out of the divider (Focus), no rule is drawn
+        and the Settings control, if any, sits on its own. */}
+    {divider ? <PageAdminBar asDivider /> : <PageAdminBar />}
     </>
   )
 }

@@ -12,10 +12,13 @@
 //     <AdminSection title="Activation funnel">…</AdminSection>
 //   </AdminTemplate>
 //
-// Presentational + server-friendly (no hooks).
+// Presentational + server-friendly (no hooks). MUST stay client-importable — a few
+// client components render it — so the auto back-link is delegated to a client child
+// (AdminAutoBackLink), never read from next/headers here.
 
 import type { LucideIcon } from 'lucide-react'
 import { PageHeading } from './page-heading'
+import { AdminAutoBackLink } from '@/components/admin/admin-auto-back-link'
 
 const WIDTHS = {
   narrow: 'max-w-2xl',
@@ -44,15 +47,16 @@ export function AdminTemplate({
   actions?: React.ReactNode
   /** Passed to PageHeading — 'end' bottom-aligns actions with the description. */
   actionsAlign?: 'start' | 'end'
-  /** Back-link above the header — the single back affordance on an entity-detail page. */
+  /** Explicit back-link. When omitted, a sub-page auto-links back to its parent domain
+   *  dashboard (resolved client-side from the path); a domain root shows nothing. */
   back?: { href: string; label: string }
   width?: keyof typeof WIDTHS
   children: React.ReactNode
 }) {
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
+      <AdminAutoBackLink back={back} />
       <PageHeading
-        back={back}
         eyebrow={eyebrow}
         title={
           Icon ? (

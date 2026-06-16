@@ -527,3 +527,17 @@ export function pageLabelForPath(pathname: string): string | null {
   }
   return best?.label ?? null
 }
+
+/** The back-link a sub-page shows to its parent DOMAIN dashboard (or null on a domain
+ *  root / unowned path). A folded sub-group (content/rewards/acquisition/crm/marketing)
+ *  resolves UP to its primary domain by stripping the ?tab from its href, so e.g. a
+ *  Journeys editor links back to "Programs", a Campaign back to "Growth". */
+export function backToDomainFor(pathname: string): { href: string; label: string } | null {
+  if (pathname === '/admin') return null
+  const group = domainForPath(pathname)
+  if (!group || pathname === group.href) return null
+  const baseHref = group.href.split('?')[0]
+  const primary = ADMIN_GROUPS.find((g) => g.href === baseHref && g.primary !== false) ?? group
+  if (pathname === primary.href) return null
+  return { href: primary.href, label: primary.label }
+}
