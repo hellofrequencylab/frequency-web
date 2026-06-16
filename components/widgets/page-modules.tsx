@@ -85,6 +85,26 @@ function TemplateGrid({ template, slot }: { template: TemplateId; slot: (id: str
           </div>
         </div>
       )
+    case 'header-side':
+      return (
+        <div className="space-y-6">
+          <div className="@container space-y-4">{slot('header')}</div>
+          <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
+            <div className="@container space-y-4 lg:col-span-2">{slot('main')}</div>
+            <div className="@container space-y-4">{slot('side')}</div>
+          </div>
+        </div>
+      )
+    case 'header-two-col':
+      return (
+        <div className="space-y-6">
+          <div className="@container space-y-4">{slot('header')}</div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="@container space-y-4">{slot('col-1')}</div>
+            <div className="@container space-y-4">{slot('col-2')}</div>
+          </div>
+        </div>
+      )
     default:
       return <div className="@container space-y-4">{slot('main')}</div>
   }
