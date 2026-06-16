@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Pencil, Archive, Check, X } from 'lucide-react'
 import { updateCircle, archiveCircle } from '../actions'
 import { InviteLinkButton } from './invite-link-button'
@@ -10,6 +11,7 @@ import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { StudioWindow } from '@/components/studio/studio-window'
 import type { CircleBase } from '@/lib/types/circle'
 
 type CircleRow = CircleBase & {
@@ -199,11 +201,13 @@ export function CirclesClient({
   )
   const [confirmArchive, setConfirmArchive] = useState<CircleRow | null>(null)
   const [isPending,  startTransition] = useTransition()
+  const router = useRouter()
 
   function handleUpdate(id: string, fd: FormData) {
     startTransition(async () => {
       await updateCircle(id, fd)
       setEditingId(null)
+      router.refresh()
     })
   }
 
@@ -215,6 +219,7 @@ export function CirclesClient({
 
   const active = circles.filter(c => c.status !== 'archived')
   const archived = circles.filter(c => c.status === 'archived')
+  const editingCircle = editingId ? circles.find((c) => c.id === editingId) ?? null : null
 
   const columns: ColumnDef<CircleRow>[] = [
     {
@@ -247,17 +252,6 @@ export function CirclesClient({
         rows={active}
         getRowId={(c) => c.id}
         columns={columns}
-        expandedRowId={editingId ?? undefined}
-        expandedRow={(c) => (
-          <CircleForm
-            initial={c}
-            hubs={hubs}
-            hosts={hosts}
-            onSave={(fd) => handleUpdate(c.id, fd)}
-            onCancel={() => setEditingId(null)}
-            isPending={isPending}
-          />
-        )}
         rowActions={(c) => (
           <div className="flex items-center gap-1">
             <InviteLinkButton circleId={c.id} />
@@ -292,6 +286,19 @@ export function CirclesClient({
             ))}
           </div>
         </details>
+      )}
+
+      {editingCircle && (
+        <StudioWindow open onClose={() => setEditingId(null)} eyebrow="Studio · Circle">
+          <CircleForm
+            initial={editingCircle}
+            hubs={hubs}
+            hosts={hosts}
+            onSave={(fd) => handleUpdate(editingCircle.id, fd)}
+            onCancel={() => setEditingId(null)}
+            isPending={isPending}
+          />
+        </StudioWindow>
       )}
 
       <DangerModal
