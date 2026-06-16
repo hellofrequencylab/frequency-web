@@ -1,7 +1,9 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { LayoutGrid, Search, Eye, type LucideIcon } from 'lucide-react'
 import { PAGE_SETTING_SECTIONS, type PageSettingSection } from '@/lib/page-settings/sections'
+import { isModuleRoute } from '@/lib/widgets/module-routes'
 import { LayoutEditor } from './layout-editor'
 import { SeoEditor } from './seo-editor'
 import { StatusEditor } from './status-editor'
@@ -9,8 +11,9 @@ import { StatusEditor } from './status-editor'
 // The staff-only "Page" group inside the on-page Settings panel (PageAdminBar). It tunes THE
 // INTERIOR of the page (not the app-shell chrome) and renders the page-settings spine
 // (lib/page-settings/sections.ts): a LIVE section shows its real control under a header; a
-// staged one renders an honest, non-interactive "Next" row. SEO is live (ADR-268); Layout +
-// Status stage until their engines land.
+// staged one renders an honest, non-interactive "Next" row. SEO is live (ADR-268); Status
+// too. The LAYOUT editor only shows on module-driven routes (isModuleRoute) — a hand-built
+// page never offers a Layout panel whose modules don't match its real content.
 
 const SECTION_ICON: Record<PageSettingSection['id'], LucideIcon> = {
   layout: LayoutGrid,
@@ -19,6 +22,11 @@ const SECTION_ICON: Record<PageSettingSection['id'], LucideIcon> = {
 }
 
 export function PageSettingsModule() {
+  const pathname = usePathname()
+  // Layout is only meaningful where the page renders <PageModules>; everywhere else,
+  // drop it so Settings shows just the SEO + Status controls that actually apply.
+  const sections = PAGE_SETTING_SECTIONS.filter((s) => s.id !== 'layout' || isModuleRoute(pathname))
+
   return (
     <div className="min-w-0">
       <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Page</p>
@@ -26,7 +34,7 @@ export function PageSettingsModule() {
         Tune what shows inside this page. The app shell (the global rails and header) stays put.
       </p>
       <div className="space-y-4">
-        {PAGE_SETTING_SECTIONS.map((section) => {
+        {sections.map((section) => {
           const Icon = SECTION_ICON[section.id]
 
           if (section.status === 'live') {
