@@ -127,13 +127,13 @@ widgets that show up when assigned… without rebuilding every page."*
 > ✅ **Shipped — the per-route module-assignment engine (ADR-270 + ADR-271 + ADR-272, 2026-06-15).**
 > A page's **interior** modules are assigned per route and tuned from the on-page Layout editor,
 > with a **scope cascade** (route → section → global), a **per-module role gate**, and now an
-> interior **template + slot** model — pick one of four templates and drop each module into an
+> interior **template + slot** model — pick one of six templates and drop each module into an
 > **area (slot)** of it (the concrete landing of the `<WidgetSlot>` sketch below). What exists today:
 >
 > | Concern | Where | Note |
 > |---|---|---|
 > | **Module catalog** (metadata only) | [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) | `LAYOUT_MODULES` / `moduleMeta` (union of every block) + **route scoping** (ADR-294): `ROUTE_MODULE_IDS` / `moduleIdsForScope` map a scope key → the ids that page offers, so a page only shows/renders ITS OWN blocks — no React, so the editor / actions / resolver never import RSCs |
-> | **Templates** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId` — 4 interior templates (Single · Main + side · 2 columns · 3 columns) naming their slots; no React, like the module catalog. Add a template = one entry here + a grid case in `page-modules.tsx` |
+> | **Templates** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId` — 6 interior templates (Single · Main + side · 2 columns · 3 columns · Header + sidebar · Header + 2 columns) naming their slots; no React, like the module catalog. Add a template = one entry here + a grid case in `page-modules.tsx` |
 > | **Component binding** | [`lib/widgets/registry.tsx`](../lib/widgets/registry.tsx) | `componentFor(id)` binds each id to its self-fetching RSC ([`components/widgets/`](../components/widgets)) |
 > | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | `resolveSlots` / `moduleAssignments` — maps each module to one slot of the chosen template (unplaced → default slot), back-compat reader (`parseLayout`) reads a legacy flat config as the Single template's `main` slot |
 > | **Renderer** | [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) | `<PageModules route>` — lays out the template's grid, each slot's modules each in its own `<Suspense>` (§5), `null` when empty |
