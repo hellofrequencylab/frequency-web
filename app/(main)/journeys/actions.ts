@@ -306,7 +306,10 @@ export async function setJourneyVisibility(
   const caller = await getCallerProfile()
   if (!caller) return fail('Not allowed.')
   const author = await planAuthorId(planId)
-  if (!author || author !== caller.id) return fail('Not allowed.')
+  // The author, or an operator (admin.access) managing any Journey — same bypass assertOwner
+  // grants, so an operator who opens a member's Journey in the editor can publish/unpublish it.
+  const isOwnerOrAdmin = author === caller.id || (await getGlobalCapabilities()).has('admin.access')
+  if (!isOwnerOrAdmin) return fail('Not allowed.')
 
   if (visibility === 'public') {
     await publishPlan(planId)
