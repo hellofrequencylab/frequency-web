@@ -1,47 +1,45 @@
 ---
 title: The leaderboard
-description: Season rankings at every scale: your circle, your hub, your nexus, or everyone.
+description: One shared goal first. Where people stand sits below it, scoped to your circle and yours to opt out of.
 category: the-quest
 order: 8
-updated: 2026-06-10
+updated: 2026-06-16
 audience: member
 featureKeys: [leaderboard, gamification]
 status: published
 ---
 
-The leaderboard shows the season's standings: who's been showing up, at whatever
-scale you care about. Open **The Quest** and pick the **Leaderboard** tab.
+The leaderboard leads with one thing: a goal your circle is filling **together**. Individual standings sit below it, start local, and are yours to step out of. Open **The Quest** and pick the **Leaderboard** tab.
 
-## Pick your scope
+## The shared goal comes first
 
-Tabs across the top switch the board:
+At the top is a **collective goal**: the combined season Zaps of everyone in your scope, filling a shared milestone, with a count of how many people have chipped in. This is the headline because the season is something you do together, not a race to beat your friends. Even if you hide yourself from the board below, your Zaps still count toward this goal.
 
-- **Circle** (the default): the top 10 among people in your circles. This is the
-  board that matters most: the people you actually practice and gather with.
-- **Hub**: the top 20 across your [hub](/help/groups/hubs), the cluster of nearby
-  circles yours belongs to.
-- **Nexus**: the top 30 across your nexus, the wider region your hubs sit in.
-- **Global**: the top 50 across all of Frequency.
-- **Gems (All-Time)**: a different race entirely, lifetime
-  [Gems](/help/the-quest/zaps-and-gems) instead of season Zaps. Since Gems never
-  reset, this one rewards the long haul.
-- **Entry points**: a board for Crew who put up flyers and QR codes that bring
-  new people in, ranked by scans and signups. Recruiters climb their own tiers as
-  signups add up: Scout, Connector, Recruiter, Ambassador, Catalyst.
+## Where people stand
 
-## Reading the board
+Below the shared goal is the individual board. Two controls shape it.
 
-Each row shows a member's season **Zaps** (or lifetime Gems on the Gems board),
-their daily **streak**, their **badge** count, and their current
-[season rank](/help/the-quest/season-ranks). Your own row is highlighted, and a
-banner up top tells you where you stand: "Your rank: #4 of 10 in My Circle".
+**Scope** decides who you're compared with. It starts on Circle on purpose: the people you actually practice with, not the whole world.
 
-If you're not in a circle yet, the Circle scope will be empty. That's your cue:
-[join one](/help/getting-started/join-a-circle).
+- **Circle** (the default): people in your circles.
+- **Hub**: everyone across your [hub](/help/groups/hubs), the cluster of nearby circles.
+- **Global**: everyone active across Frequency.
+
+**Track** decides what the board ranks by.
+
+- **Zaps**: season Zaps, the real-world showing up.
+- **Consistency**: your daily practice streak, so the steady person who shows up every day leads on showing up, not only on raw output.
+
+Each row shows the member's standing on the active track, their streak, and their current [season rank](/help/the-quest/season-ranks). Your own row is highlighted.
+
+## You can step off the board
+
+Ranking is opt-in by feel. One tap on **Hide me from the board** removes your row from the list. You still count toward the shared goal up top, you just don't appear as a row. Tap again to show yourself any time.
+
+## Entry points: a separate recognition board
+
+Crew who put up flyers and QR codes that bring new people in have their own board, reached from the leaderboard. It ranks by scans and signups, and recruiters climb their own tiers as signups add up: Scout, Connector, Recruiter, Ambassador, Catalyst. It's a recognition board, kept separate from the season standing.
 
 ## A fresh race every season
 
-The Zap boards reset with the season, so nobody is permanently out of reach; every
-season is a new climb. And remember what the Zaps measure: real-world showing up.
-The leaderboard isn't the Quest; it's the scoreboard for the part of life that
-happens off the screen.
+The season standings reset when the season does, so nobody is permanently out of reach and every season is a new climb. Your [rank](/help/the-quest/season-ranks) comes from the Journeys you finish, and what the Zaps measure is real-world showing up. The leaderboard isn't the Quest, it's the scoreboard for the part of life that happens off the screen.
