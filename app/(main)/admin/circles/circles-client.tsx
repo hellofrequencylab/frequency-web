@@ -16,6 +16,10 @@ type CircleRow = CircleBase & {
   type: string
   hub_id: string | null
   host_id: string | null
+  image_url: string | null
+  city: string | null
+  neighborhood: string | null
+  resonance_public: boolean
   hub: { id: string; name: string } | null
   host: { id: string; display_name: string } | null
 }
@@ -58,6 +62,10 @@ function CircleForm({
   const [hubId,  setHubId]  = useState(initial?.hub_id ?? '')
   const [hostId, setHostId] = useState(initial?.host_id ?? '')
   const [status, setStatus] = useState(initial?.status ?? 'forming')
+  const [imageUrl, setImageUrl] = useState(initial?.image_url ?? '')
+  const [city, setCity] = useState(initial?.city ?? '')
+  const [neighborhood, setNeighborhood] = useState(initial?.neighborhood ?? '')
+  const [resonancePublic, setResonancePublic] = useState(initial?.resonance_public ?? false)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -69,6 +77,11 @@ function CircleForm({
     fd.set('hub_id', hubId)
     fd.set('host_id', hostId)
     fd.set('status', status)
+    fd.set('image_url', imageUrl)
+    fd.set('city', city)
+    fd.set('neighborhood', neighborhood)
+    if (resonancePublic) fd.set('resonance_public', 'on')
+    else fd.set('resonance_public', 'off')
     onSave(fd)
   }
 
@@ -122,6 +135,28 @@ function CircleForm({
         <select value={status} onChange={e => setStatus(e.target.value)} disabled={isPending} className={input}>
           {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
         </select>
+      </div>
+
+      <div className="sm:col-span-2">
+        <label className={lbl}>Cover image URL <span className="font-normal text-subtle">(optional)</span></label>
+        <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://…" disabled={isPending} className={input} />
+      </div>
+
+      <div>
+        <label className={lbl}>City <span className="font-normal text-subtle">(optional)</span></label>
+        <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Encinitas" disabled={isPending} className={input} />
+      </div>
+
+      <div>
+        <label className={lbl}>Neighborhood <span className="font-normal text-subtle">(optional)</span></label>
+        <input type="text" value={neighborhood} onChange={e => setNeighborhood(e.target.value)} placeholder="e.g. Leucadia" disabled={isPending} className={input} />
+      </div>
+
+      <div className="sm:col-span-2">
+        <label className="flex items-center gap-2 text-sm text-text">
+          <input type="checkbox" checked={resonancePublic} onChange={e => setResonancePublic(e.target.checked)} disabled={isPending} className="h-4 w-4 rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/40" />
+          Show this circle&apos;s resonance publicly
+        </label>
       </div>
 
       <div className="flex items-center gap-2 pt-1 sm:col-span-2">

@@ -286,6 +286,14 @@ export async function updateCircle(id: string, fd: FormData) {
   const caps = await getCircleCapabilities(id)
   const caller = await requireScopedManage(await getCallerProfile(), caps.has('circle.editSettings'), 'community')
   const admin = createAdminClient()
+  // Optional fields are only written when present in the form, so a partial form never clears
+  // image/location/resonance it didn't show.
+  const opt: Record<string, unknown> = {}
+  if (fd.has('image_url')) opt.image_url = (fd.get('image_url') as string)?.trim() || null
+  if (fd.has('city')) opt.city = (fd.get('city') as string)?.trim() || null
+  if (fd.has('neighborhood')) opt.neighborhood = (fd.get('neighborhood') as string)?.trim() || null
+  if (fd.has('resonance_public')) opt.resonance_public = fd.get('resonance_public') === 'on'
+
   const { error } = await admin.from('circles').update({
     name:       (fd.get('name') as string).trim(),
     about:      (fd.get('about') as string)?.trim() || null,
@@ -294,10 +302,12 @@ export async function updateCircle(id: string, fd: FormData) {
     hub_id:     (fd.get('hub_id') as string) || null,
     status:     fd.get('status') as Database['public']['Enums']['group_status'],
     host_id:    (fd.get('host_id') as string) || caller.id,
+    ...opt,
   }).eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/circles')
   revalidatePath('/circles')
+  revalidatePath('/circles/[slug]', 'page')
 }
 
 export async function archiveCircle(id: string) {
