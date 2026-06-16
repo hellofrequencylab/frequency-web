@@ -21,6 +21,7 @@ import {
 import { getCurrentSeason } from '@/lib/seasons'
 import { getPillars } from '@/lib/pillars'
 import { searchLibraryPractices } from '@/lib/practices'
+import { DEFAULT_EXTRA_CREDIT_ZAPS } from '@/lib/journeys/grants'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 
 type BlockUpdate = Database['public']['Tables']['journey_plan_items']['Update']
@@ -108,6 +109,24 @@ export async function addLessonAction(
     .select('id')
     .maybeSingle()
   if (error || !data) return fail('Could not add the lesson.')
+  done(slug)
+  return ok({ id: String((data as { id: string }).id) })
+}
+
+/** Add an empty extra-credit Challenge under a phase (ADR-300 Part 2): a bonus, not-required task
+ *  that pays bonus Zaps on completion. The author fills in the title/body and tunes the Zaps. */
+export async function addExtraCreditAction(slug: string, parentId: string | null): Promise<ActionResult<{ id: string }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const admin = db()
+  const sort = await nextSortOrder(admin, a.planId, parentId)
+  const row = extraCreditRow(EXTRA_CREDIT_PLACEHOLDER.title, EXTRA_CREDIT_PLACEHOLDER.body)
+  const { data, error } = await admin
+    .from('journey_plan_items')
+    .insert({ ...row, plan_id: a.planId, parent_id: parentId, sort_order: sort })
+    .select('id')
+    .maybeSingle()
+  if (error || !data) return fail('Could not add the extra credit.')
   done(slug)
   return ok({ id: String((data as { id: string }).id) })
 }
@@ -213,6 +232,24 @@ const PILLAR_SLOTS: { slug: ComposePillar; label: string; prompt: string }[] = [
   { slug: 'expression', label: 'Expression practice', prompt: 'An Expression practice: make something, share something, or connect with someone. Pick one from the library or let Vera draft it.' },
 ]
 
+const EXTRA_CREDIT_PLACEHOLDER = {
+  title: 'Extra credit',
+  body: 'An above-and-beyond bonus challenge. It is optional, and finishing it pays bonus Zaps.',
+}
+
+// An extra-credit block (ADR-300 Part 2): an `exercise` block that is NOT required (does not gate
+// completion) and carries `settings.extra_credit` + `settings.bonus_zaps`. The player pays the
+// bonus Zaps once on completion (lib/journeys/grants.ts). Not one of the four Pillar practices.
+function extraCreditRow(title: string, body: string, zaps = DEFAULT_EXTRA_CREDIT_ZAPS): Omit<NewBlock, 'plan_id' | 'parent_id' | 'sort_order'> {
+  return {
+    block_type: 'exercise',
+    title: title.slice(0, 200),
+    body: body.slice(0, 2000),
+    required: false,
+    settings: { extra_credit: true, bonus_zaps: zaps },
+  }
+}
+
 /** Pillar slug -> id, for tagging the scaffold's slots with their Pillar. */
 async function pillarIdsBySlug(): Promise<Partial<Record<ComposePillar, string>>> {
   const pillars = await getPillars()
@@ -250,13 +287,17 @@ export async function scaffoldJourneyAction(slug: string): Promise<ActionResult<
   if (!ph) return fail('Could not start the journey shape.')
   const phaseId = String((ph as { id: string }).id)
 
-  const rows: Omit<NewBlock, 'plan_id' | 'parent_id' | 'sort_order'>[] = PILLAR_SLOTS.map((s) => ({
-    block_type: 'practice',
-    title: s.label,
-    body: s.prompt,
-    domain_id: pillarIds[s.slug] ?? null,
-    required: true,
-  }))
+  const rows: Omit<NewBlock, 'plan_id' | 'parent_id' | 'sort_order'>[] = [
+    ...PILLAR_SLOTS.map((s) => ({
+      block_type: 'practice',
+      title: s.label,
+      body: s.prompt,
+      domain_id: pillarIds[s.slug] ?? null,
+      required: true,
+    })),
+    // One extra-credit slot (ADR-300 Part 2): seeded alongside the four Pillar practices.
+    extraCreditRow(EXTRA_CREDIT_PLACEHOLDER.title, EXTRA_CREDIT_PLACEHOLDER.body),
+  ]
   await insertChildren(admin, a.planId, phaseId, rows)
   done(slug)
   return ok({ phaseId })
@@ -343,6 +384,12 @@ export async function composeJourneyAction(
       required: true,
     },
   )
+  // Plus one extra-credit Challenge (ADR-300 Part 2): Vera's, or the placeholder she can edit.
+  rows.push(
+    composition.extraCredit
+      ? extraCreditRow(composition.extraCredit.title, composition.extraCredit.body)
+      : extraCreditRow(EXTRA_CREDIT_PLACEHOLDER.title, EXTRA_CREDIT_PLACEHOLDER.body),
+  )
 
   await insertChildren(admin, a.planId, phaseId, rows)
 
@@ -374,6 +421,9 @@ export async function updateBlockAction(
     /** Vera coaching line for a `practice` slot — stored on `settings.coaching_prompt`. The
      *  player shows it when the member reaches the step; '' clears it. */
     coachingPrompt?: string
+    /** Bonus Zaps for an extra-credit block — stored on `settings.bonus_zaps` (keeps
+     *  `extra_credit: true`). Clamped to a sane range. */
+    bonusZaps?: number
   },
 ): Promise<ActionResult> {
   const a = await authorPlan(slug)
@@ -387,6 +437,12 @@ export async function updateBlockAction(
     // A practice slot's `settings` carries only the coaching line, so a whole-object write
     // is safe here (same rationale as the check block above).
     update.settings = { coaching_prompt: patch.coachingPrompt.slice(0, 300) }
+  }
+  if (patch.bonusZaps !== undefined) {
+    // An extra-credit block's `settings` carries only these two keys, so a whole-object write
+    // is safe; clamp the Zaps so a bad client can't mint a fortune.
+    const zaps = Math.min(500, Math.max(0, Math.floor(patch.bonusZaps)))
+    update.settings = { extra_credit: true, bonus_zaps: zaps }
   }
   if (patch.check !== undefined) {
     // `settings` on a check block holds only the check, so a whole-object write is safe here.

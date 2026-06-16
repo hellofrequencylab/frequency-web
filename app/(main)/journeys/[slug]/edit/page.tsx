@@ -32,6 +32,8 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
   const blocks: EditorBlock[] = loaded.items.map((i) => {
     const settings = (i as { settings?: Record<string, unknown> | null }).settings
     const cp = settings?.coaching_prompt
+    const extraCredit = settings?.extra_credit === true
+    const bonusZaps = settings && typeof settings.bonus_zaps === 'number' ? settings.bonus_zaps : 0
     return {
       id: i.id,
       parentId: i.parent_id ?? null,
@@ -42,6 +44,8 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
       check: parseCheck(settings),
       domainId: i.domain_id ?? null,
       coachingPrompt: typeof cp === 'string' ? cp : null,
+      extraCredit,
+      bonusZaps,
     }
   })
 

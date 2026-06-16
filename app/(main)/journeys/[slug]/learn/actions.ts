@@ -11,12 +11,12 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan, completeLesson, uncompleteLesson } from '@/lib/journey-plans'
 import { getJourneyTree } from '@/lib/journeys/store'
 import { rewardEventsForTransition, type JourneyRewardEvent } from '@/lib/journeys/rewards'
-import { grantJourneyRewards, type GrantedJourneyReward } from '@/lib/journeys/grants'
+import { grantJourneyRewards, grantExtraCreditIfAny, type GrantedJourneyReward } from '@/lib/journeys/grants'
 
 export async function completeJourneyLessonAction(
   slug: string,
   itemId: string,
-): Promise<ActionResult<{ events: JourneyRewardEvent[]; granted: GrantedJourneyReward[] }>> {
+): Promise<ActionResult<{ events: JourneyRewardEvent[]; granted: GrantedJourneyReward[]; bonusZaps: number }>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Sign in to track your progress.')
   const loaded = await getPlan(slug)
@@ -44,8 +44,17 @@ export async function completeJourneyLessonAction(
     }
   }
 
+  // Extra-credit Challenge (ADR-300 Part 2): if this block is an above-and-beyond bonus task,
+  // pay its bonus Zaps exactly once. Best-effort — never blocks the check-off.
+  let bonusZaps = 0
+  try {
+    bonusZaps = await grantExtraCreditIfAny(caller.id, planId, itemId)
+  } catch {
+    /* best-effort */
+  }
+
   revalidatePath(`/journeys/${slug}/learn`)
-  return ok({ events, granted })
+  return ok({ events, granted, bonusZaps })
 }
 
 export async function uncompleteJourneyLessonAction(slug: string, itemId: string): Promise<ActionResult> {

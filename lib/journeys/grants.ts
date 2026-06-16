@@ -6,11 +6,15 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { awardZaps } from '@/lib/zaps'
 import type { JourneyRewardEvent } from './rewards'
 
 function db(): SupabaseClient {
   return createAdminClient()
 }
+
+/** Default bonus Zaps for an extra-credit Challenge, when the author hasn't set an amount. */
+export const DEFAULT_EXTRA_CREDIT_ZAPS = 25
 
 /** Gems for finishing a phase (a slice of the journey). */
 const PHASE_COMPLETE_GEMS = 10
@@ -75,4 +79,50 @@ export async function grantJourneyRewards(opts: {
     // unaffected and still pay above.
   }
   return granted
+}
+
+// ── Extra-credit Challenges (ADR-300 Part 2) ────────────────────────────────────────────
+//
+// An "extra credit" block is an above-and-beyond bonus task on a Journey (block_type 'exercise',
+// required=false, settings.extra_credit=true). Completing it pays bonus ZAPS once, via the same
+// claim-then-pay reward_grants idempotency — so a redelivered/repeated check-off never double-pays.
+// It is NOT one of the four Pillar practices and does not feed the Signature; it just rewards
+// regular points for going further.
+
+/** Pay the bonus Zaps for completing one extra-credit block, EXACTLY ONCE (keyed by item id).
+ *  Returns the Zaps newly awarded, or 0 if already granted / invalid. */
+export async function grantExtraCreditZaps(
+  profileId: string,
+  itemId: string,
+  amount: number,
+  label: string,
+): Promise<number> {
+  const amt = Number.isFinite(amount) && amount > 0 ? Math.floor(amount) : 0
+  if (amt <= 0) return 0
+  const admin = db()
+  const ruleKey = `journey_extra_credit:${itemId}`
+  // The unique (rule_key, profile_id) insert is the lock; only a fresh claim pays.
+  const { error } = await admin
+    .from('reward_grants')
+    .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: 'zaps', amount: amt, detail: label.slice(0, 200) })
+  if (error) return 0 // already granted / lost the race
+  const res = await awardZaps(profileId, amt, { actionType: 'journey_extra_credit', metadata: { rule: ruleKey, label } })
+  return res.awarded ? res.amount : 0
+}
+
+/** If `itemId` is an extra-credit block on this plan, pay its bonus Zaps (idempotent). Loads the
+ *  block's own `settings.bonus_zaps` (falls back to the default). Returns Zaps newly awarded. */
+export async function grantExtraCreditIfAny(profileId: string, planId: string, itemId: string): Promise<number> {
+  const admin = db()
+  const { data } = await admin
+    .from('journey_plan_items')
+    .select('title, settings')
+    .eq('id', itemId)
+    .eq('plan_id', planId)
+    .maybeSingle()
+  const row = data as { title: string | null; settings: Record<string, unknown> | null } | null
+  const s = row?.settings
+  if (!s || s.extra_credit !== true) return 0
+  const amount = typeof s.bonus_zaps === 'number' && s.bonus_zaps > 0 ? Math.floor(s.bonus_zaps) : DEFAULT_EXTRA_CREDIT_ZAPS
+  return grantExtraCreditZaps(profileId, itemId, amount, `Extra credit: ${row?.title ?? 'Journey'}`)
 }

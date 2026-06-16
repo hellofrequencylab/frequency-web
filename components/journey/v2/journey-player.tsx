@@ -11,7 +11,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award } from 'lucide-react'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
 import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
@@ -318,6 +318,14 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
                 Lesson {idx + 1} of {order.length}{lesson.estMinutes ? ` · ${lesson.estMinutes} min` : ''}{lesson.required ? '' : ' · optional'}
               </p>
               <h2 className="mt-1 text-xl font-bold text-text">{lesson.title}</h2>
+
+              {/* Extra-credit badge (ADR-300 Part 2): a bonus task, above and beyond, that pays
+                  Zaps once on completion. Optional, never gates finishing the Journey. */}
+              {lesson.extraCredit && (
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-signal/30 bg-signal-bg/50 px-2.5 py-1 text-xs font-semibold text-signal-strong">
+                  <Award className="h-3.5 w-3.5" aria-hidden /> Extra credit{lesson.bonusZaps > 0 ? ` · +${lesson.bonusZaps} Zaps` : ''}
+                </div>
+              )}
 
               {video && (
                 <div className="mt-4 aspect-video overflow-hidden rounded-xl bg-black">

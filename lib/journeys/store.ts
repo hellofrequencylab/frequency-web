@@ -50,6 +50,10 @@ export interface LessonContent {
   check: CheckConfig | null
   /** Vera's per-slot coaching line (practice blocks), from settings.coaching_prompt, else null. */
   coachingPrompt: string | null
+  /** Extra-credit block (ADR-300 Part 2): a bonus task that pays Zaps, not a Pillar practice. */
+  extraCredit: boolean
+  /** Bonus Zaps paid on completing an extra-credit block. */
+  bonusZaps: number
 }
 
 export interface JourneyPlayerView {
@@ -84,6 +88,8 @@ export async function getJourneyPlayerView(slug: string, profileId: string): Pro
   for (const i of items) {
     const bt = i.block_type ?? 'practice'
     if (!LEAF.has(bt)) continue // skip phase/module containers
+    const settings = (i as { settings?: Record<string, unknown> | null }).settings
+    const extraCredit = settings?.extra_credit === true
     lessonsById[i.id] = {
       id: i.id,
       type: (bt === 'section' ? 'lesson' : bt) as LeafType,
@@ -93,8 +99,10 @@ export async function getJourneyPlayerView(slug: string, profileId: string): Pro
       estMinutes: i.est_minutes ?? null,
       practiceId: i.practice_id || null,
       required: i.required ?? true,
-      check: bt === 'check' ? parseCheck((i as { settings?: unknown }).settings) : null,
-      coachingPrompt: coachingFrom(bt, (i as { settings?: Record<string, unknown> | null }).settings),
+      check: bt === 'check' ? parseCheck(settings) : null,
+      coachingPrompt: coachingFrom(bt, settings),
+      extraCredit,
+      bonusZaps: extraCredit && settings && typeof settings.bonus_zaps === 'number' ? settings.bonus_zaps : 0,
     }
   }
 
