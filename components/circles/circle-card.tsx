@@ -4,6 +4,7 @@ import { Users, MapPin, Globe } from 'lucide-react'
 import { joinCircle } from '@/app/(main)/circles/actions'
 import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
+import { FeaturedBadge } from '@/components/ui/featured-badge'
 
 export type CircleCardData = {
   id: string
@@ -19,6 +20,8 @@ export type CircleCardData = {
   imageUrl?: string | null
   /** Beta demo circle — badge it and let it recede behind real circles. */
   isDemo?: boolean
+  /** Operator-Featured (circles.featured_at) — badge it as a curated pick. */
+  isFeatured?: boolean
 }
 
 // Circle card — renders through the shared EntityCard so circles read identically
@@ -33,7 +36,14 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
     <EntityCard
       href={`/circles/${circle.slug}`}
       dimmed={circle.isDemo}
-      badge={circle.isDemo ? <DemoBadge /> : undefined}
+      badge={
+        circle.isFeatured || circle.isDemo ? (
+          <span className="flex shrink-0 items-center gap-1.5">
+            {circle.isFeatured && <FeaturedBadge />}
+            {circle.isDemo && <DemoBadge />}
+          </span>
+        ) : undefined
+      }
       cover={
         circle.imageUrl ? (
           <Image

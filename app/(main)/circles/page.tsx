@@ -23,6 +23,7 @@ type CircleRow = CircleBase & {
   longitude: number | null
   neighborhood: string | null
   image_url: string | null
+  featured_at: string | null
   is_demo: boolean
   topical_channel_id: string | null
   channel: { name: string; pillar_id: string | null } | null
@@ -47,6 +48,7 @@ function toCardData(c: CircleRow): CircleCardData {
     id: c.id, name: c.name, slug: c.slug, about: c.about, type: c.type,
     member_count: c.member_count, member_cap: c.member_cap, status: c.status,
     context: contextFor(c), imageUrl: c.image_url, isDemo: c.is_demo,
+    isFeatured: !!c.featured_at,
   }
 }
 
@@ -104,7 +106,7 @@ export default async function CirclesPage({
     .from('circles')
     .select(
       `id, name, slug, about, type, member_count, member_cap, status, created_at,
-       latitude, longitude, neighborhood, image_url, is_demo, topical_channel_id,
+       latitude, longitude, neighborhood, image_url, is_demo, featured_at, topical_channel_id,
        channel:topical_channels!topical_channel_id ( name, pillar_id ),
        hub:hubs!hub_id (
          id, name, slug,
