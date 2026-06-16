@@ -15,7 +15,7 @@ import {
 import { CompleteButton } from './complete-button'
 import { getInitials } from '@/lib/utils'
 import { getCurrentSeason, type Season } from '@/lib/seasons'
-import { journeyPracticeIds, distinctPracticeDaysInWindow, evaluateJourneyCompletion } from '@/lib/quest/completion'
+import { journeyPracticeIds, distinctPracticeDaysInWindow, distinctPillarDaysInWindow, evaluateJourneyCompletion } from '@/lib/quest/completion'
 import { getMemberJourneyProgress, type MemberJourneyProgress } from '@/lib/journeys/progress'
 import { JourneyProgressCard } from '@/components/quest/journey-progress-card'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -24,7 +24,8 @@ import { ModuleCard } from '@/components/modules/module-card'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { DashboardTemplate } from '@/components/templates'
-import { SeasonMap, type SeasonMapJourney } from '@/components/quest/season-map'
+import { SeasonMap, type PillarProgress } from '@/components/quest/season-map'
+import { getPillars } from '@/lib/pillars'
 import { HeroMoment } from '@/components/quest/hero-moment'
 import { readUnseenCompletion } from '@/lib/quest/celebration'
 import { markJourneyCompletionSeen } from './seen-actions'
@@ -53,9 +54,17 @@ const PILLAR_ORDER: Record<string, number> = { mind: 0, body: 1, spirit: 2 }
 // `quests`/`journey_plans` columns aren't in the generated types yet, so it reads
 // through the admin handle behind a try/catch and degrades to an empty hero.
 
-interface JourneyArc extends SeasonMapJourney {
+interface JourneyArc {
   /** Resolved Journey id (for the Expression-only next-step branch). */
   journeyId: string
+  slug: string
+  title: string
+  pillar: 'Mind' | 'Body' | 'Spirit'
+  emoji: string | null
+  state: 'done' | 'current' | 'upcoming'
+  daysLogged: number
+  daysNeeded: number
+  expression: 'done' | 'pending'
 }
 
 interface SeasonMapData {
@@ -234,6 +243,41 @@ async function readSeasonMap(profileId: string, season: Season | null): Promise<
   }
 }
 
+// ── The four-Pillar gauges read ───────────────────────────────────────────────
+// Each Pillar's gauge fills with the DISTINCT days the member logged a practice in
+// that Pillar this season (Mind / Body / Spirit / Expression). Reuses the completion
+// engine's per-Pillar day counter; degrades to empty gauges if the taxonomy can't be
+// read. One call per Pillar, in parallel.
+const PILLAR_DAYS_TARGET = 14
+
+async function readPillarProgress(profileId: string, season: Season | null): Promise<PillarProgress[]> {
+  const fallback: PillarProgress[] = (['mind', 'body', 'spirit', 'expression'] as const).map((slug) => ({
+    slug,
+    name: slug.charAt(0).toUpperCase() + slug.slice(1),
+    daysLogged: 0,
+    daysTarget: PILLAR_DAYS_TARGET,
+  }))
+
+  if (!season) return fallback
+  try {
+    const pillars = await getPillars()
+    if (pillars.length === 0) return fallback
+    const start = season.starts_at
+    const end = season.ends_at ?? new Date().toISOString()
+    const days = await Promise.all(
+      pillars.map((p) => distinctPillarDaysInWindow(profileId, [p.id], start, end).catch(() => 0)),
+    )
+    return pillars.map((p, i) => ({
+      slug: p.slug,
+      name: p.name,
+      daysLogged: days[i] ?? 0,
+      daysTarget: PILLAR_DAYS_TARGET,
+    }))
+  } catch {
+    return fallback
+  }
+}
+
 // Whole weeks left in the 13-week Quest (rounded up; never negative).
 function weeksLeft(season: Season | null): number | null {
   if (!season?.ends_at) return null
@@ -285,7 +329,10 @@ async function QuestHero({
   rank: SeasonRank
   hasPracticeToLog: boolean
 }) {
-  const map = await readSeasonMap(profileId, season)
+  const [map, pillars] = await Promise.all([
+    readSeasonMap(profileId, season),
+    readPillarProgress(profileId, season),
+  ])
   const current = map.current
 
   // The one time-aware next step. Default: keep going on the current Journey (N of 14
@@ -328,7 +375,7 @@ async function QuestHero({
           weeksLeft={weeksLeft(season)}
           rank={rank}
           journeysFinished={finishedCount}
-          journeys={map.journeys}
+          pillars={pillars}
         />
       ) : (
         // No active Quest Journeys yet — keep the season frame, drop the arcs.
