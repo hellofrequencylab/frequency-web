@@ -920,24 +920,32 @@ export async function logPractice(input: {
     // a secret award check must never break the log
   }
 
-  // The Quest (ADR-Quest completion model): this log may have crossed the
-  // 14-distinct-days bar on a RANKED-ELIGIBLE Journey whose Practices include the one
-  // just logged — an official season Journey OR a Vera-approved member-built library
-  // Journey. Find those Journeys and re-check completion. tryCompleteJourney is
-  // idempotent and resolves each Journey's own window/Expression rule (an un-enrolled
-  // library Journey simply can't complete), so this is safe to run on every log.
-  // Best-effort + dynamic import — a completion check must NEVER break a practice log.
+  // The Quest (ADR-Quest completion model): completion counts "any practice in the
+  // Journey's PILLARS" (the member builds their own daily practice and swaps freely
+  // within a tag). So this log may have advanced any RANKED-ELIGIBLE Journey that covers
+  // this practice's Pillar — an official season Journey OR a Vera-approved library one.
+  // tryCompleteJourney is idempotent and resolves each Journey's own window/Expression
+  // rule (an un-enrolled / out-of-window Journey simply can't complete), so it's safe to
+  // run on every log. Best-effort + dynamic import — a completion check must NEVER break a log.
   try {
     const { tryCompleteJourney } = await import('@/lib/quest/complete')
-    const { data: items } = await db()
-      .from('journey_plan_items')
-      .select('plan_id, plan:journey_plans!inner(id, ranked_eligible)')
-      .eq('practice_id', practiceId)
-      .eq('plan.ranked_eligible', true)
-    type Row = { plan_id: string }
-    const planIds = [...new Set(((items ?? []) as Row[]).map((r) => r.plan_id))]
-    for (const planId of planIds) {
-      await tryCompleteJourney(profileId, planId)
+    const { data: prac } = await db()
+      .from('practices')
+      .select('domain_id')
+      .eq('id', practiceId)
+      .maybeSingle()
+    const pillarId = (prac as { domain_id: string | null } | null)?.domain_id
+    if (pillarId) {
+      const { data: items } = await db()
+        .from('journey_plan_items')
+        .select('plan_id, plan:journey_plans!inner(ranked_eligible)')
+        .eq('domain_id', pillarId)
+        .eq('plan.ranked_eligible', true)
+      type Row = { plan_id: string }
+      const planIds = [...new Set(((items ?? []) as Row[]).map((r) => r.plan_id))]
+      for (const planId of planIds) {
+        await tryCompleteJourney(profileId, planId)
+      }
     }
   } catch {
     // a Quest completion check must never break the log
