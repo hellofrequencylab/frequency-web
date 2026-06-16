@@ -93,6 +93,9 @@ export async function createEvent(formData: FormData) {
   const energyRaw = (formData.get('energyTag') as string | null) || ''
   const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
 
+  // Cover image (a storage path in the public event-media bucket, resolved to a URL at render).
+  const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
+
   if (!title || !scopeId || !startsAt) return
 
   const myProfileId = await getMyProfileId()
@@ -133,6 +136,7 @@ export async function createEvent(formData: FormData) {
       visibility,
       category,
       energy_tag: energyTag,
+      cover_image_path: coverImagePath,
     }).select('id').single()
 
   if (error) {
@@ -198,6 +202,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const category = (formData.get('category') as string | null)?.trim() || 'gathering'
   const energyRaw = (formData.get('energyTag') as string | null) || ''
   const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
+  const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
 
   const admin = createAdminClient()
   const { data: ev } = await admin.from('events').select('slug').eq('id', eventId).maybeSingle()
@@ -216,6 +221,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
       visibility,
       category,
       energy_tag: energyTag,
+      cover_image_path: coverImagePath,
     })
     .eq('id', eventId)
   if (error) {

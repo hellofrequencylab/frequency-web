@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { updateCircleSettings } from '@/app/(main)/admin/actions'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 export interface CircleSettingsInitial {
   name: string
@@ -88,8 +89,14 @@ export function CircleSettingsForm({
       </div>
 
       <div className="sm:col-span-2">
-        <label className={lbl}>Cover image URL <span className="font-normal text-subtle">(optional)</span></label>
-        <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" disabled={pending} className={input} />
+        <ImageUpload
+          label="Cover image"
+          value={imageUrl || null}
+          onChange={(url) => setImageUrl(url ?? '')}
+          folder="circle-covers"
+          hint="Shown on the circle's card and header."
+          disabled={pending}
+        />
       </div>
 
       <div>

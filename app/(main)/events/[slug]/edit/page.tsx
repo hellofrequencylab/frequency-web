@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
-import { FocusTemplate } from '@/components/templates'
 import { EventForm, type EventFormInitial } from '../../new/event-form'
 import { CancelEventButton } from './cancel-event-button'
+import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 
 // Edit an event's details — the host's (and any circle manager's / admin's) self-service editor.
 // Gated by the same `event.editSettings` capability the admin editor + /manage use. Reuses the
@@ -32,6 +32,7 @@ interface EventEditRow {
   postal_code: string | null
   country: string | null
   is_cancelled: boolean | null
+  cover_image_path: string | null
 }
 
 // Event times are stored UTC-naive (the host's datetime-local value is kept as-is, rendered in
@@ -52,7 +53,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     .from('events')
     .select(
       'id, title, description, location, scope_id, starts_at, ends_at, capacity, visibility, category, ' +
-        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled',
+        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -90,19 +91,18 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     region: ev.region ?? '',
     postalCode: ev.postal_code ?? '',
     country: ev.country ?? '',
+    coverImagePath: ev.cover_image_path ?? '',
   }
 
   return (
-    <FocusTemplate title="Edit event" back={{ href: `/events/${slug}`, label: 'Back to event' }}>
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <EventForm
-          groups={[]}
-          initial={initial}
-          eventId={ev.id}
-          currentScopeName={scopeName ?? undefined}
-          backHref={`/events/${slug}`}
-        />
-      </div>
+    <EventEditorWindow backHref={`/events/${slug}`}>
+      <EventForm
+        groups={[]}
+        initial={initial}
+        eventId={ev.id}
+        currentScopeName={scopeName ?? undefined}
+        backHref={`/events/${slug}`}
+      />
 
       {!ev.is_cancelled && (
         <div className="mt-6 rounded-xl border border-danger/30 bg-danger-bg/30 p-4">
@@ -116,6 +116,6 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
           </div>
         </div>
       )}
-    </FocusTemplate>
+    </EventEditorWindow>
   )
 }

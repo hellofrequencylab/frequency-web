@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { createEvent, updateEvent } from '@/app/(main)/events/actions'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 type Group = {
   id: string
@@ -79,6 +80,8 @@ export interface EventFormInitial {
   region: string
   postalCode: string
   country: string
+  /** Storage path in the public event-media bucket (resolved to a URL at render). */
+  coverImagePath: string
 }
 
 export function EventForm({
@@ -122,6 +125,7 @@ export function EventForm({
   const [region, setRegion] = useState(initial?.region ?? '')
   const [postalCode, setPostalCode] = useState(initial?.postalCode ?? '')
   const [country, setCountry] = useState(initial?.country ?? '')
+  const [coverImagePath, setCoverImagePath] = useState<string | null>(initial?.coverImagePath || null)
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -129,6 +133,7 @@ export function EventForm({
 
     const fd = new FormData()
     fd.set('title', title.trim())
+    fd.set('coverImagePath', coverImagePath ?? '')
     fd.set('description', description.trim())
     fd.set('location', location.trim())
     fd.set('scopeId', scopeId)
@@ -185,6 +190,17 @@ export function EventForm({
           disabled={isPending}
         />
       </div>
+
+      {/* Cover image */}
+      <ImageUpload
+        label="Cover image"
+        value={coverImagePath}
+        onChange={setCoverImagePath}
+        mode="path"
+        folder="event-covers"
+        hint="The banner shown at the top of the event."
+        disabled={isPending}
+      />
 
       {/* Group */}
       <div className="space-y-1.5">

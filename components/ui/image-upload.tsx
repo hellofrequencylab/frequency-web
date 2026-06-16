@@ -6,10 +6,17 @@ import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 // One reusable header/cover photo control for every Studio popup editor (Journey, Practice,
-// Circle, Event). Uploads the chosen file to the public `event-media` bucket under the signer's
-// own path prefix (the bucket's RLS gates writes to split_part(name,'/',1) = auth.uid()), then
-// hands back the public URL through onChange. A small URL field stays so existing URL-based
-// covers keep working and a link can be pasted. Controlled: the parent owns the value + save.
+// Circle, Event). Uploads the chosen file to a public Supabase Storage bucket under the signer's
+// own path prefix (the bucket's RLS gates writes to split_part(name,'/',1) = auth.uid()).
+//
+// Two value shapes, by `mode`:
+//   'url'  (default) — onChange hands back the PUBLIC URL. For columns that store a full URL
+//                      (journey cover_image, practice header_image, circle image_url). A
+//                      paste-a-URL fallback stays so existing URL covers keep working.
+//   'path'          — onChange hands back the STORAGE PATH. For columns that store a path and
+//                      resolve it via getPublicUrl at render (event cover_image_path). The
+//                      preview resolves the path to a public URL itself; no URL paste.
+// Controlled: the parent owns the value + the save.
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB, matching the event-media bucket limit.
 
@@ -19,20 +26,30 @@ export function ImageUpload({
   label = 'Header image',
   hint,
   folder = 'covers',
+  bucket = 'event-media',
+  mode = 'url',
   disabled = false,
 }: {
+  /** A public URL (mode 'url') or a storage path (mode 'path'). */
   value: string | null
-  /** Called with the new public URL, or null when cleared. */
-  onChange: (url: string | null) => void
+  /** Called with the new public URL (mode 'url') or storage path (mode 'path'), or null when cleared. */
+  onChange: (value: string | null) => void
   label?: string
   hint?: string
   /** Path segment that groups these uploads, e.g. 'journey-covers'. */
   folder?: string
+  /** Public storage bucket to upload into. */
+  bucket?: string
+  mode?: 'url' | 'path'
   disabled?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // What the <img> preview shows. In path mode the stored value is a path, so resolve it.
+  const previewSrc =
+    value && mode === 'path' ? createClient().storage.from(bucket).getPublicUrl(value).data.publicUrl : value
 
   async function pick(file: File) {
     setError(null)
@@ -59,7 +76,7 @@ export function ImageUpload({
     const ext = (file.name.split('.').pop() ?? 'jpg').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg'
     const path = `${user.id}/${folder}/${Date.now()}.${ext}`
     const { error: upErr } = await supabase.storage
-      .from('event-media')
+      .from(bucket)
       .upload(path, file, { contentType: file.type, upsert: true })
     if (upErr) {
       setError(`Upload failed: ${upErr.message}`)
@@ -67,11 +84,15 @@ export function ImageUpload({
       return
     }
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('event-media').getPublicUrl(path)
-    // Cache-bust so a replace shows immediately.
-    onChange(`${publicUrl}?t=${Date.now()}`)
+    if (mode === 'path') {
+      onChange(path)
+    } else {
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(bucket).getPublicUrl(path)
+      // Cache-bust so a replace shows immediately.
+      onChange(`${publicUrl}?t=${Date.now()}`)
+    }
     setBusy(false)
   }
 
@@ -81,12 +102,12 @@ export function ImageUpload({
         <ImageIcon className="h-3.5 w-3.5" /> {label}
       </span>
 
-      {value ? (
+      {previewSrc ? (
         <div className="relative overflow-hidden rounded-xl border border-border">
           {/* Unoptimized: covers come from user-controlled hosts + Supabase Storage, not the
               configured next/image domains. */}
           <Image
-            src={value}
+            src={previewSrc}
             alt=""
             width={768}
             height={160}
@@ -125,14 +146,16 @@ export function ImageUpload({
         </button>
       )}
 
-      <input
-        type="url"
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value.trim() || null)}
-        disabled={disabled || busy}
-        placeholder="or paste an image URL"
-        className="w-full rounded-lg border border-border bg-canvas px-3 py-1.5 text-xs text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60"
-      />
+      {mode === 'url' && (
+        <input
+          type="url"
+          value={value ?? ''}
+          onChange={(e) => onChange(e.target.value.trim() || null)}
+          disabled={disabled || busy}
+          placeholder="or paste an image URL"
+          className="w-full rounded-lg border border-border bg-canvas px-3 py-1.5 text-xs text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60"
+        />
+      )}
 
       <input
         ref={inputRef}
