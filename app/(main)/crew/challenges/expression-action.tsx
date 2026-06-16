@@ -35,9 +35,9 @@ export function ExpressionAction({ journeyId }: { journeyId: string }) {
           type="button"
           onClick={() => run('circle')}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-60"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-60 motion-reduce:transition-none"
         >
-          {pending && mode === 'circle' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Users className="h-3.5 w-3.5" />}
+          {pending && mode === 'circle' ? <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" /> : <Users className="h-3.5 w-3.5" />}
           Shared at a Circle
           <span className="text-primary-strong">+50 Zaps</span>
         </button>
@@ -45,9 +45,9 @@ export function ExpressionAction({ journeyId }: { journeyId: string }) {
           type="button"
           onClick={() => run('online')}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-60"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-60 motion-reduce:transition-none"
         >
-          {pending && mode === 'online' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
+          {pending && mode === 'online' ? <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" /> : <Globe className="h-3.5 w-3.5" />}
           Posted it online
           <span className="text-primary-strong">+30 Gems</span>
         </button>

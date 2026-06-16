@@ -48,11 +48,13 @@ export function JourneyRank({
 
   // The next requirement, always named and always plain. One Journey finished
   // moves you up one rung; we never narrate feelings, every count is a real act.
+  // At the apex (Master), there is no higher rung, so the line looks forward to the
+  // next Quest's Fresh Start instead of reading as a dead-end "top rank reached".
   const nextLine = next
     ? toNext <= 1
       ? `Finish a Journey to reach ${next.label}.`
       : `${toNext} Journeys to ${next.label}.`
-    : 'Top rank reached. Master.'
+    : 'Master, the season top. The next Quest opens a Fresh Start.'
 
   return (
     <section className="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary-bg/55 via-surface to-surface shadow-sm dark:from-primary-bg/20">

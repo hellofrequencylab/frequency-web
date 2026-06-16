@@ -1,4 +1,4 @@
-// The auto-fire read for the Quest finish/rank-up celebration.
+// The auto-fire read for the Quest finish / rank-up / season-complete celebration.
 //
 // The Quest hub greets a member with the HeroMoment exactly once per finished
 // Journey, on their next visit after the completion lands. The trigger is a
@@ -8,12 +8,27 @@
 // already use, so no migration). A newer completion than the marker = an unseen
 // finish to celebrate. The marker is written by a server action when the member
 // sees it, so the moment fires once and then rests. Server-only (admin client).
+//
+// Master is the season's apex (the 3rd Journey finished). When this unseen finish
+// lands the member ON Master, the read flags `seasonComplete` and resolves the
+// "what's next" pointer (the upcoming season's name/date when one is scheduled,
+// else a plain "the next Quest opens soon"). The hub uses that to fire the bigger,
+// distinct season-complete moment that re-lights the next goal, instead of just
+// another rank-up. Reusing the same seen-marker path so it still shows once.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentSeason } from '@/lib/seasons'
+import { getCurrentSeason, getUpcomingSeason } from '@/lib/seasons'
 import { rankForCompletion, type SeasonRank } from '@/lib/season-ranks'
 
 const SEEN_MARKER_KEY = 'lastSeenJourneyCompletionId'
+
+/** The "what comes next" pointer the season-complete beat re-lights the goal with. */
+export interface NextSeasonPointer {
+  /** The upcoming season's name when one is scheduled (e.g. "Bloom"), else null. */
+  name: string | null
+  /** Its start date (ISO) when known, else null. */
+  startsAt: string | null
+}
 
 /** The celebration the hub should fire — everything the HeroMoment needs. */
 export interface UnseenCompletion {
@@ -25,6 +40,12 @@ export interface UnseenCompletion {
   rank: SeasonRank
   /** True when this finish moved the member up a rung (shows the new-rank line). */
   rankAdvanced: boolean
+  /** True when this finish lands the member on Master — the season's apex. The hub
+   *  fires the distinct season-complete moment, not just another rank-up. */
+  seasonComplete: boolean
+  /** Where the season ends: the next Quest, named/dated when scheduled. Only resolved
+   *  for the seasonComplete case (null otherwise — the regular finish doesn't need it). */
+  next: NextSeasonPointer | null
 }
 
 /**
@@ -35,6 +56,8 @@ export interface UnseenCompletion {
  *
  * Rank-advanced is derived from the completion count: finishing the Nth Journey
  * advances a rung whenever rankForCompletion(N) outranks rankForCompletion(N-1).
+ * Reaching Master (the 3rd finish) also flags `seasonComplete` and resolves the
+ * next-season pointer that re-lights the goal.
  */
 export async function readUnseenCompletion(profileId: string): Promise<UnseenCompletion | null> {
   try {
@@ -69,6 +92,9 @@ export async function readUnseenCompletion(profileId: string): Promise<UnseenCom
     const finishedCount = completions.length
     const rank = rankForCompletion(finishedCount)
     const rankAdvanced = rank !== rankForCompletion(finishedCount - 1)
+    // The season's apex: this unseen finish lands the member on Master AND it's the
+    // finish that got them there (so it reads as the season-complete beat, once).
+    const seasonComplete = rank === 'master' && rankAdvanced
 
     // Name the Journey just finished. Best-effort — fall back to a plain noun.
     const { data: plan } = await admin
@@ -78,7 +104,15 @@ export async function readUnseenCompletion(profileId: string): Promise<UnseenCom
       .maybeSingle()
     const journeyTitle = (plan as { title: string } | null)?.title ?? 'your Journey'
 
-    return { completionId: latest.id, journeyTitle, rank, rankAdvanced }
+    // The "what's next" pointer only matters for the season-complete beat — resolve it
+    // there so the regular finish stays a single light read.
+    let next: NextSeasonPointer | null = null
+    if (seasonComplete) {
+      const upcoming = await getUpcomingSeason()
+      next = { name: upcoming?.name ?? null, startsAt: upcoming?.starts_at ?? null }
+    }
+
+    return { completionId: latest.id, journeyTitle, rank, rankAdvanced, seasonComplete, next }
   } catch {
     return null
   }

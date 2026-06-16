@@ -27,6 +27,7 @@ import { HeroMoment } from '@/components/quest/hero-moment'
 import { readUnseenCompletion } from '@/lib/quest/celebration'
 import { markJourneyCompletionSeen } from './seen-actions'
 import { CircleTasksSection } from './circle-tasks-section'
+import { HubPrimaryCta } from './hub-primary-cta'
 import { Skeleton } from '@/components/ui/skeleton'
 
 const TASK_TYPE_LABEL: Record<string, string> = {
@@ -239,10 +240,12 @@ function weeksLeft(season: Season | null): number | null {
   return Math.ceil(ms / (7 * 24 * 60 * 60 * 1000))
 }
 
-// ── The finish/rank-up celebration — auto-fires on the next hub visit ─────────
+// ── The finish / rank-up / season-complete celebration — auto-fires next visit ─
 // Server-detects the member's most recent UNSEEN journey_completions row this
 // season (compared against the profiles.meta seen-marker) and, when there is one,
-// greets them with the HeroMoment. The HeroMoment marks it seen on mount via the
+// greets them with the HeroMoment. Reaching Master (the 3rd finish) fires the
+// distinct season-complete beat that re-lights the next goal; every other finish
+// fires the regular rank-up read. The HeroMoment marks it seen on mount via the
 // markJourneyCompletionSeen action (profileId from the session), so it fires once.
 // Renders nothing when there's no fresh finish. Its own async unit behind <Suspense>
 // so the read never blocks the shell; best-effort, so it never breaks the hub.
@@ -256,6 +259,8 @@ async function FinishCelebration({ profileId }: { profileId: string }) {
       zaps={75}
       rank={finish.rank}
       rankAdvanced={finish.rankAdvanced}
+      seasonComplete={finish.seasonComplete}
+      next={finish.next}
       trophiesHref="/crew/achievements"
       onSeen={markJourneyCompletionSeen.bind(null, finish.completionId)}
     />
@@ -350,15 +355,13 @@ async function QuestHero({
         <ArrowRight className="mt-1 hidden h-4 w-4 shrink-0 text-subtle sm:block" />
       </Link>
 
-      {/* One dominant primary action. This is a practice app — logging is the move,
-          and on a phone the CTA sits in thumb reach at the bottom of the hero. */}
-      <Link
+      {/* One dominant primary action. This is a practice app, so logging is the move.
+          On a phone the CTA sits in the thumb zone, pinned just above the mobile bottom
+          nav (HubPrimaryCta); on md and up it stays in-flow at the end of the hero. */}
+      <HubPrimaryCta
         href="/practices"
-        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-base font-bold text-on-primary shadow-sm transition-colors hover:bg-primary-hover motion-reduce:transition-none"
-      >
-        <Flame className="h-5 w-5" aria-hidden />
-        {hasPracticeToLog ? 'Log a practice' : 'See your practices'}
-      </Link>
+        label={hasPracticeToLog ? 'Log a practice' : 'See your practices'}
+      />
     </div>
   )
 }
@@ -508,10 +511,11 @@ export default async function CrewPage() {
           </>
         }
       >
-        {/* ── The finish/rank-up celebration. Auto-fires on the next visit after a
-            Journey completion lands, then rests (seen-marker in profiles.meta).
-            Behind its own Suspense so the detection read never blocks the shell;
-            renders nothing when there's no fresh finish. ── */}
+        {/* ── The finish / season-complete celebration. Auto-fires on the next visit
+            after a Journey completion lands, then rests (seen-marker in profiles.meta).
+            Reaching Master fires the distinct season-complete beat that re-lights the
+            next goal. Behind its own Suspense so the detection read never blocks the
+            shell; renders nothing when there's no fresh finish. ── */}
         <Suspense fallback={null}>
           <FinishCelebration profileId={profile.id} />
         </Suspense>
