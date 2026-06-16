@@ -6,11 +6,18 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Plus, Mountain } from 'lucide-react'
+import { Zap, Plus, Mountain, ChevronUp, ChevronDown, Trash2, Eye, EyeOff } from 'lucide-react'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
-import { updateChallengeAction, createChallengeAction, type ExpressionJourneyOption } from '../actions'
+import {
+  updateChallengeAction,
+  createChallengeAction,
+  deleteChallengeAction,
+  moveChallengeAction,
+  type ExpressionJourneyOption,
+} from '../actions'
 
 export interface ChallengeRow {
   id: string
@@ -23,6 +30,7 @@ export interface ChallengeRow {
   target: number
   zaps_reward: number
   sort_order: number
+  is_active: boolean
   /** Set when this is an Expression Challenge — the Journey it caps. */
   journey_id: string | null
   started: number
@@ -36,14 +44,27 @@ const CATEGORIES = ['social', 'events', 'content', 'leadership', 'streak', 'seas
 const selectCls = `${fieldClasses} w-auto py-1 text-xs`
 const numCls = 'rounded-md border border-border bg-canvas px-2 py-1 text-xs text-text text-right'
 
-function EditorRow({ challenge, journeys }: { challenge: ChallengeRow; journeys: ExpressionJourneyOption[] }) {
+function EditorRow({
+  challenge,
+  journeys,
+  index,
+  total,
+}: {
+  challenge: ChallengeRow
+  journeys: ExpressionJourneyOption[]
+  index: number
+  total: number
+}) {
   const [row, setRow] = useState(challenge)
   const [dirty, setDirty] = useState(false)
   const [pending, start] = useTransition()
+  const [acting, act] = useTransition()
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [status, setStatus] = useState<'idle' | 'saved' | string>('idle')
   const router = useRouter()
 
   const isExpression = challenge.journey_id != null
+  const busy = pending || acting
 
   function update(patch: Partial<ChallengeRow>) {
     setRow((r) => ({ ...r, ...patch }))
@@ -60,6 +81,8 @@ function EditorRow({ challenge, journeys }: { challenge: ChallengeRow; journeys:
         difficulty: row.difficulty,
         target: row.target,
         zapsReward: row.zaps_reward,
+        // Category only applies to a season-wide challenge (Expression is always 'special').
+        ...(isExpression ? {} : { category: row.category }),
         // Only send journeyId when an Expression row's Journey actually changed, so editing
         // copy/reward never re-validates (and never re-runs) the Journey link.
         ...(journeyChanged ? { journeyId: row.journey_id! } : {}),
@@ -73,8 +96,32 @@ function EditorRow({ challenge, journeys }: { challenge: ChallengeRow; journeys:
     })
   }
 
+  // Immediate (non-dirty) controls: pause/resume, reorder, delete.
+  function toggleActive() {
+    act(async () => {
+      const next = !row.is_active
+      const r = await updateChallengeAction(row.id, { isActive: next })
+      if (!isError(r)) {
+        setRow((rr) => ({ ...rr, is_active: next }))
+        router.refresh()
+      }
+    })
+  }
+  function move(dir: 'up' | 'down') {
+    act(async () => {
+      const r = await moveChallengeAction(row.id, dir)
+      if (!isError(r)) router.refresh()
+    })
+  }
+  function remove() {
+    act(async () => {
+      const r = await deleteChallengeAction(row.id)
+      if (!isError(r)) router.refresh()
+    })
+  }
+
   return (
-    <div className="space-y-2 px-4 py-3">
+    <div className={`space-y-2 px-4 py-3 ${row.is_active ? '' : 'opacity-60'}`}>
       {isExpression && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
@@ -108,6 +155,20 @@ function EditorRow({ challenge, journeys }: { challenge: ChallengeRow; journeys:
           aria-label="Challenge name"
           className="min-w-48 flex-1 rounded-md border border-border bg-canvas px-2 py-1 text-sm font-medium text-text"
         />
+        {!isExpression && (
+          <select
+            value={row.category}
+            onChange={(e) => update({ category: e.target.value })}
+            aria-label="Category"
+            className={selectCls}
+          >
+            {CATEGORIES.filter((c) => c !== 'special').map((c) => (
+              <option key={c} value={c}>
+                {c.charAt(0).toUpperCase() + c.slice(1)}
+              </option>
+            ))}
+          </select>
+        )}
         <select
           value={row.difficulty}
           onChange={(e) => update({ difficulty: e.target.value })}
@@ -150,10 +211,55 @@ function EditorRow({ challenge, journeys }: { challenge: ChallengeRow; journeys:
         aria-label="Challenge description"
         className="w-full rounded-md border border-border bg-canvas px-2 py-1 text-xs text-text"
       />
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <span className="text-xs tabular-nums text-subtle">
           {row.completed}/{row.started} completed{row.started > 0 ? ` (${row.rate}%)` : ''}
         </span>
+
+        {/* Immediate controls: pause/resume · reorder · delete. */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={toggleActive}
+            disabled={busy}
+            title={row.is_active ? 'Active — click to pause' : 'Paused — click to activate'}
+            className={`inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+              row.is_active ? 'text-success hover:bg-success/10' : 'text-muted hover:bg-surface-elevated'
+            }`}
+          >
+            {row.is_active ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            {row.is_active ? 'Active' : 'Paused'}
+          </button>
+          <button
+            type="button"
+            onClick={() => move('up')}
+            disabled={busy || index === 0}
+            aria-label="Move up"
+            className="rounded-md border border-border p-1 text-muted transition-colors hover:text-text disabled:opacity-30"
+          >
+            <ChevronUp className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => move('down')}
+            disabled={busy || index === total - 1}
+            aria-label="Move down"
+            className="rounded-md border border-border p-1 text-muted transition-colors hover:text-text disabled:opacity-30"
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            disabled={busy}
+            aria-label={`Delete ${row.name}`}
+            title="Delete challenge"
+            className="rounded-md border border-border p-1 text-subtle transition-colors hover:border-danger/40 hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
         <div className="ml-auto flex items-center gap-2">
           {status === 'saved' && <span className="text-xs text-success">Saved.</span>}
           {status !== 'idle' && status !== 'saved' && <span className="text-xs text-danger">{status}</span>}
@@ -162,6 +268,21 @@ function EditorRow({ challenge, journeys }: { challenge: ChallengeRow; journeys:
           </Button>
         </div>
       </div>
+
+      <DangerModal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="Delete challenge"
+        body={
+          <>
+            This removes <span className="font-semibold text-text">{row.name}</span> from the season board
+            for everyone, along with members&apos; progress on it. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete challenge"
+        requireTyping={row.name}
+        onConfirm={remove}
+      />
     </div>
   )
 }
@@ -176,8 +297,8 @@ export function ChallengeEditor({
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-surface">
       <div className="divide-y divide-border/50">
-        {challenges.map((c) => (
-          <EditorRow key={c.id} challenge={c} journeys={journeys} />
+        {challenges.map((c, i) => (
+          <EditorRow key={c.id} challenge={c} journeys={journeys} index={i} total={challenges.length} />
         ))}
       </div>
     </div>

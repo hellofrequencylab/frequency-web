@@ -814,9 +814,13 @@ export async function updateChallengeAction(
   patch: {
     name?: string
     description?: string
+    category?: string
     difficulty?: string
     target?: number
     zapsReward?: number
+    /** Soft enable/disable: a paused challenge stays on the board for history but stops
+     *  counting toward members. */
+    isActive?: boolean
     /** For an Expression Challenge: re-point it to a different official Journey. When set,
      *  `journey_id` and the `criteria.journey_slug` are kept in sync server-side. */
     journeyId?: string
@@ -836,12 +840,17 @@ export async function updateChallengeAction(
     update.name = name
   }
   if (patch.description !== undefined) update.description = patch.description.trim().slice(0, 500)
+  if (patch.category !== undefined) {
+    if (!CATEGORIES.includes(patch.category as (typeof CATEGORIES)[number])) return fail('Unknown category.')
+    update.category = patch.category
+  }
   if (patch.difficulty !== undefined) {
     if (!DIFFICULTIES.includes(patch.difficulty as Difficulty)) return fail('Unknown difficulty.')
     update.difficulty = patch.difficulty
   }
   if (patch.target !== undefined) update.target = clampInt(patch.target, 1, 10000)
   if (patch.zapsReward !== undefined) update.zaps_reward = clampInt(patch.zapsReward, 0, 1000)
+  if (patch.isActive !== undefined) update.is_active = patch.isActive
 
   // Re-pointing an Expression Challenge: only allowed on a row that already caps a Journey,
   // and only to another official Journey in the same season. Keep journey_id + the criteria
@@ -865,6 +874,50 @@ export async function updateChallengeAction(
 
   const { error } = await client.from('season_challenges').update(update).eq('id', id)
   if (error) return fail(error.message)
+  revalidateContent('challenges')
+  return ok()
+}
+
+/** Remove a challenge from the board entirely (curator-gated, irreversible). */
+export async function deleteChallengeAction(id: string): Promise<ActionResult> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  const { error } = await ub().from('season_challenges').delete().eq('id', id)
+  if (error) return fail(error.message)
+  revalidateContent('challenges')
+  return ok()
+}
+
+/** Reorder a challenge within its season by swapping sort_order with its neighbor. */
+export async function moveChallengeAction(id: string, dir: 'up' | 'down'): Promise<ActionResult> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  const client = ub()
+  const { data: self } = await client
+    .from('season_challenges')
+    .select('id, season, sort_order')
+    .eq('id', id)
+    .maybeSingle()
+  const s = self as { id: string; season: number; sort_order: number } | null
+  if (!s) return fail('That challenge no longer exists.')
+  const { data: sibs } = await client
+    .from('season_challenges')
+    .select('id, sort_order')
+    .eq('season', s.season)
+    .order('sort_order', { ascending: true })
+  const list = (sibs ?? []) as { id: string; sort_order: number }[]
+  const idx = list.findIndex((x) => x.id === id)
+  const swapIdx = dir === 'up' ? idx - 1 : idx + 1
+  if (idx < 0 || swapIdx < 0 || swapIdx >= list.length) return ok() // already at the edge
+  const neighbor = list[swapIdx]
+  await client.from('season_challenges').update({ sort_order: neighbor.sort_order }).eq('id', s.id)
+  await client.from('season_challenges').update({ sort_order: s.sort_order }).eq('id', neighbor.id)
   revalidateContent('challenges')
   return ok()
 }
