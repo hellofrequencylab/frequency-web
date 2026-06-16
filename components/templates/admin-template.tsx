@@ -12,12 +12,13 @@
 //     <AdminSection title="Activation funnel">…</AdminSection>
 //   </AdminTemplate>
 //
-// Presentational + server-friendly (no hooks).
+// Presentational + server-friendly (no hooks). MUST stay client-importable — a few
+// client components render it — so the auto back-link is delegated to a client child
+// (AdminAutoBackLink), never read from next/headers here.
 
 import type { LucideIcon } from 'lucide-react'
-import { headers } from 'next/headers'
 import { PageHeading } from './page-heading'
-import { backToDomainFor } from '@/app/(main)/admin/sections'
+import { AdminAutoBackLink } from '@/components/admin/admin-auto-back-link'
 
 const WIDTHS = {
   narrow: 'max-w-2xl',
@@ -25,7 +26,7 @@ const WIDTHS = {
   wide: 'max-w-7xl',
 } as const
 
-export async function AdminTemplate({
+export function AdminTemplate({
   title,
   icon: Icon,
   eyebrow,
@@ -46,28 +47,16 @@ export async function AdminTemplate({
   actions?: React.ReactNode
   /** Passed to PageHeading — 'end' bottom-aligns actions with the description. */
   actionsAlign?: 'start' | 'end'
-  /** Back-link above the header — the single back affordance on an entity-detail page. */
+  /** Explicit back-link. When omitted, a sub-page auto-links back to its parent domain
+   *  dashboard (resolved client-side from the path); a domain root shows nothing. */
   back?: { href: string; label: string }
   width?: keyof typeof WIDTHS
   children: React.ReactNode
 }) {
-  // Auto back-link: a sub-page links back to its parent DOMAIN dashboard (resolved from
-  // the request path, x-pathname set by proxy.ts), unless the caller passed an explicit
-  // `back`. The domain roots resolve to null, so only sub-pages get the affordance.
-  let resolvedBack = back
-  if (!resolvedBack) {
-    try {
-      const pathname = (await headers()).get('x-pathname')
-      if (pathname) resolvedBack = backToDomainFor(pathname) ?? undefined
-    } catch {
-      /* no x-pathname (or non-request render) → no auto back */
-    }
-  }
-
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
+      <AdminAutoBackLink back={back} />
       <PageHeading
-        back={resolvedBack}
         eyebrow={eyebrow}
         title={
           Icon ? (
