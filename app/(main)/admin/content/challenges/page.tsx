@@ -39,7 +39,7 @@ export default async function AdminContentChallengesPage() {
     activeSeasonJourneys(),
     ub
       .from('season_challenges')
-      .select('id, season, slug, name, description, category, difficulty, target, zaps_reward, sort_order, journey_id')
+      .select('id, season, slug, name, description, category, difficulty, target, zaps_reward, sort_order, journey_id, is_active')
       .order('season', { ascending: false })
       .order('sort_order', { ascending: true }),
   ])
