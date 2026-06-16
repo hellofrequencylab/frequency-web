@@ -87,13 +87,12 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // 'none' for member/visitor, so the shell's `itemAccess` reads it straight from the
   // matrix — and because "Leadership" is a TELESCOPE_SECTION, the item is HIDDEN (not
   // ghosted) for anyone below host. `defaultAccess: 'host'` mirrors the same floor. ──
-  { key: 'lead',          href: '/lead',      label: 'Leadership',   section: 'Leadership', defaultAccess: 'host', surface: 'lead' },
+  { key: 'lead',          href: '/lead',      label: 'Leadership',   section: 'Community',  defaultAccess: 'host', surface: 'lead' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
   { key: 'journeys',   href: '/journeys',        label: 'Journeys',   section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },
   { key: 'practices',  href: '/practices',       label: 'Practices',  section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
-  { key: 'challenges', href: '/crew/challenges', label: 'Challenges', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
   { key: 'vault',      href: '/crew/store',      label: 'The Vault',  section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
 
   // ── Admin → the operator world (admin + studio + platform rolled into ONE
@@ -103,15 +102,13 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // Home / sensitive settings"). They map to `platformManage` (admin/janitor full; everyone
   // else 'none'), so a visitor/member/paid/host never sees them. Network-scoped admin for
   // the volunteer leader roles (host/guide/mentor) is a separate future surface (see notes).
-  { key: 'admin-home',       href: '/admin',            label: 'Home',        section: 'Admin', defaultAccess: 'admin', surface: 'platformManage' },
-  { key: 'admin-programs',   href: '/admin/programs',   label: 'Programs',    section: 'Admin', defaultAccess: 'admin', staffDomain: 'community', surface: 'platformManage' },
-  { key: 'admin-operations', href: '/admin/operations', label: 'Operations',  section: 'Admin', defaultAccess: 'admin', staffDomain: 'community', surface: 'platformManage' },
-  { key: 'admin-growth',     href: '/admin/growth',     label: 'Growth',      section: 'Admin', defaultAccess: 'host', staffDomain: 'marketing', surface: 'growthStudio' },
-  { key: 'website',         href: '/coming-soon?feature=website',     label: 'Website',       section: 'Admin', defaultAccess: 'admin', surface: 'website', comingSoon: true },
-  { key: 'hook-network',    href: '/coming-soon?feature=hook',        label: 'Hook Network',  section: 'Admin', defaultAccess: 'admin', surface: 'hookNetwork', comingSoon: true },
-  { key: 'earnings',        href: '/coming-soon?feature=finances',    label: 'Finances',      section: 'Admin', defaultAccess: 'admin', surface: 'earnings', comingSoon: true },
-  { key: 'admin-qr',        href: '/admin/qr',      label: 'QR Studio',     section: 'Admin', defaultAccess: 'admin', staffDomain: 'qr', surface: 'platformManage' },
-  { key: 'financials',     href: '/admin/insights?tab=financials', label: 'Financial', section: 'Admin', defaultAccess: 'janitor', surface: 'financialDashboard' },
+  { key: 'admin-home',       href: '/admin',            label: 'Dashboard',  section: 'Admin', defaultAccess: 'admin',   surface: 'platformManage' },
+  { key: 'admin-programs',   href: '/admin/programs',   label: 'Programs',   section: 'Admin', defaultAccess: 'host',    staffDomain: 'community',  surface: 'platformManage' },
+  { key: 'admin-community',  href: '/admin/community',  label: 'Community',  section: 'Admin', defaultAccess: 'host',    staffDomain: 'community',  surface: 'platformManage' },
+  { key: 'admin-growth',     href: '/admin/growth',     label: 'Growth',     section: 'Admin', defaultAccess: 'host',    staffDomain: 'marketing', surface: 'growthStudio' },
+  { key: 'admin-vera-ai',    href: '/admin/vera-ai',    label: 'Vera AI',    section: 'Admin', defaultAccess: 'janitor', staffDomain: 'insights',  surface: 'platformManage' },
+  { key: 'admin-operations', href: '/admin/operations', label: 'Operations', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'platform',  surface: 'platformManage' },
+  { key: 'admin-qr',         href: '/admin/qr',         label: 'QR Studio',  section: 'Admin', defaultAccess: 'admin',   staffDomain: 'qr',        surface: 'platformManage' },
   // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
   // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".
 ] as const
