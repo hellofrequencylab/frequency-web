@@ -129,10 +129,13 @@ widgets that show up when assigned… without rebuilding every page."*
 > **Add a page's own blocks (ADR-294):** declare its set in `ROUTE_MODULE_IDS` and list the route
 > in [`module-routes.ts`](../lib/widgets/module-routes.ts) so the Layout editor appears there — the
 > page becomes a header + `<PageModules route="…" />`, each block a self-fetching RSC (the
-> migration target: no hand-built sections). **Assign per route:** open the page's on-page
+> migration target: no hand-built sections). **Slot-aware blocks (ADR-295):** each slot is a
+> Tailwind v4 `@container`, so a block sizes to the slot it lands in via `@`-variants
+> (`@lg:`/`@2xl:`), not the viewport — prefer those over `sm:`/`md:` for a block's internal grid
+> so it stays portable across main/side/column slots. **Assign per route:** open the page's on-page
 > **Layout** settings (pick a template, drop each module into a slot, set order + visibility,
 > stored per route); or render `<PageModules route="…" />` on a page (live on `/lead`, `/crew`
-> My Quest, and `/admin/content/journeys`). This is the page's interior column,
+> My Quest, `/journeys`, and `/admin/content/journeys`). This is the page's interior column,
 > **not** the app shell rail (that stays operator-managed in `/admin/page-layout` /
 > `page_chrome_overrides`, ADR-259/260).
 
