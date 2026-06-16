@@ -361,6 +361,27 @@ export default async function EventsPage({
     }
   }
 
+  // Fallback so public events are discoverable WITHOUT a saved location: when the nearby
+  // (geocell) path found nothing — the common case for a viewer who hasn't set a location —
+  // list upcoming standalone public events directly. Without this, a public event only ever
+  // surfaces via location-based discovery, so it never shows for a location-less viewer.
+  if (publicEvents.length === 0) {
+    let fallbackQuery = admin
+      .from('events')
+      .select(EVENT_SELECT)
+      .eq('visibility', 'public')
+      .neq('scope_type', 'circle')
+      .eq('is_cancelled', false)
+      .gte('starts_at', now)
+      .lte('starts_at', future)
+      .order('starts_at', { ascending: true })
+    if (hideDemo) fallbackQuery = fallbackQuery.eq('is_demo', false)
+    const { data: rawFallback } = await fallbackQuery.limit(40)
+    publicEvents = ((rawFallback ?? []) as unknown as EventRow[])
+      .filter((e) => !circleIdSet.has(e.id))
+      .map((e) => ({ ...e, distance_m: null, is_public_standalone: true }))
+  }
+
   const events: EventRow[] = [...circleEvents, ...publicEvents]
   const hasAnyScope = myCircleIds.length > 0 || !!myGeocell
 

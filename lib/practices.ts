@@ -81,6 +81,12 @@ const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
   'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, weight_class, domain_id, subcategory_id, status, slug'
 
+// The same columns MINUS `slug`, for reads against the `practices_ranked` VIEW — the view
+// predates the slug column and does not expose it, so selecting `slug` from the view errors and
+// returns zero rows (which silently emptied the library + 404'd the detail page). The library +
+// detail navigate by id, so dropping slug here is safe; getPractice() keeps slug from the table.
+const RANKED_COLS = PRACTICE_COLS.replace(/,\s*slug$/, '')
+
 // --- Library + reads ------------------------------------------------------
 
 /**
@@ -99,7 +105,7 @@ export async function listPublicPractices(sort: PracticeSort = 'trending'): Prom
 
   let q = db()
     .from('practices_ranked')
-    .select(`${PRACTICE_COLS}, adopters, logs_30d, logs_total, score`)
+    .select(`${RANKED_COLS}, adopters, logs_30d, logs_total, score`)
     .eq('is_public', true)
   for (const o of order) q = q.order(o.col, { ascending: o.asc })
   const rows = (await q).data as (Practice & {
@@ -203,7 +209,7 @@ export async function searchLibraryPractices(opts: LibrarySearchOpts = {}): Prom
 
   let q = db()
     .from('practices_ranked')
-    .select(`${PRACTICE_COLS}, adopters, logs_30d, logs_total, score`, { count: 'exact' })
+    .select(`${RANKED_COLS}, adopters, logs_30d, logs_total, score`, { count: 'exact' })
 
   if (!opts.includeHidden) q = q.eq('is_public', true)
   if (opts.hideDemo) q = q.eq('is_demo', false)
@@ -368,7 +374,7 @@ export async function getMemberPractices(profileId: string): Promise<Practice[]>
 export async function getRankedPractice(id: string): Promise<RankedPractice | null> {
   const { data } = await db()
     .from('practices_ranked')
-    .select(`${PRACTICE_COLS}, adopters, logs_30d, logs_total, score`)
+    .select(`${RANKED_COLS}, adopters, logs_30d, logs_total, score`)
     .eq('id', id)
     .maybeSingle()
   const p = data as
