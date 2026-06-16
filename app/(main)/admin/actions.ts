@@ -310,6 +310,34 @@ export async function updateCircle(id: string, fd: FormData) {
   revalidatePath('/circles/[slug]', 'page')
 }
 
+// Host self-service circle settings (the full-page /circles/[slug]/settings editor). Writes only
+// the fields a host owns — identity, cover, location, resonance — and deliberately NOT hub / host
+// / status (those stay admin/structure concerns), so a host form never reassigns or archives.
+export async function updateCircleSettings(id: string, fd: FormData) {
+  const caps = await getCircleCapabilities(id)
+  await requireScopedManage(await getCallerProfile(), caps.has('circle.editSettings'), 'community')
+  const name = (fd.get('name') as string)?.trim()
+  if (!name) throw new Error('Name is required')
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('circles')
+    .update({
+      name,
+      about: (fd.get('about') as string)?.trim() || null,
+      type: fd.get('type') as Database['public']['Enums']['circle_type'],
+      member_cap: parseInt(fd.get('member_cap') as string) || 12,
+      image_url: (fd.get('image_url') as string)?.trim() || null,
+      city: (fd.get('city') as string)?.trim() || null,
+      neighborhood: (fd.get('neighborhood') as string)?.trim() || null,
+      resonance_public: fd.get('resonance_public') === 'on',
+    })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath('/circles')
+  revalidatePath('/circles/[slug]', 'page')
+  revalidatePath('/admin/circles')
+}
+
 export async function archiveCircle(id: string) {
   const caps = await getCircleCapabilities(id)
   await requireScopedManage(await getCallerProfile(), caps.has('circle.editSettings'), 'community')
