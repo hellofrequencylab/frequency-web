@@ -17,6 +17,7 @@ import {
   claimPractice,
   setPracticeTags,
   setPracticeFlags,
+  setPracticeReward,
   deletePractice,
   type PracticeEdit,
   type LogPracticeResult,
@@ -198,6 +199,28 @@ export async function deletePracticeAction(id: string): Promise<ActionResult> {
   if (!(await requirePracticeAdmin())) return fail('Not allowed')
   await deletePractice(id)
   revalidatePath('/practices')
+  return ok()
+}
+
+// Override a practice's per-log Zap reward + the card's reward note (admin-only: members
+// must not set their own payout, so this is gated apart from the author-editable builder fields).
+export async function setPracticeRewardAction(
+  id: string,
+  patch: { rewardZaps?: number | null; rewardNote?: string | null },
+): Promise<ActionResult> {
+  if (!(await requirePracticeAdmin())) return fail('Not allowed')
+  const clean: { reward_zaps?: number | null; reward_note?: string | null } = {}
+  if (patch.rewardZaps !== undefined) {
+    clean.reward_zaps =
+      patch.rewardZaps == null ? null : Math.max(0, Math.min(1000, Math.floor(patch.rewardZaps)))
+  }
+  if (patch.rewardNote !== undefined) {
+    const n = patch.rewardNote?.trim()
+    clean.reward_note = n ? n.slice(0, 120) : null
+  }
+  await setPracticeReward(id, clean)
+  revalidatePractice(id)
+  revalidatePath(`/practices/${id}/edit`)
   return ok()
 }
 
