@@ -66,28 +66,30 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
   return (
     <JourneyBuilder
       slug={slug}
-      title={plan.title}
+      planId={plan.id}
       status={plan.status}
+      initialTitle={plan.title}
+      initialSummary={plan.summary}
+      initialCover={plan.cover_image}
       curriculum={<JourneyEditor slug={slug} blocks={blocks} practices={practices} pillars={pillars} />}
-      details={
-        <JourneySettings
-          planId={plan.id}
-          initialTitle={plan.title}
-          initialSummary={plan.summary}
-          initialIntro={plan.intro}
-          initialEmoji={plan.emoji}
-          initialAccent={plan.accent}
-          initialVisibility={plan.visibility}
-          initialStatus={plan.status}
-          initialCompletionGems={plan.completion_gems}
-          initialCertificateEnabled={plan.certificate_enabled}
-          initialDripIntervalDays={plan.drip_interval_days}
-          initialCoverImage={plan.cover_image}
-          initialReview={veraReview}
-        />
-      }
       settings={
-        <>
+        <div className="space-y-8">
+          <JourneySettings
+            hideIdentity
+            planId={plan.id}
+            initialTitle={plan.title}
+            initialSummary={plan.summary}
+            initialIntro={plan.intro}
+            initialEmoji={plan.emoji}
+            initialAccent={plan.accent}
+            initialVisibility={plan.visibility}
+            initialStatus={plan.status}
+            initialCompletionGems={plan.completion_gems}
+            initialCertificateEnabled={plan.certificate_enabled}
+            initialDripIntervalDays={plan.drip_interval_days}
+            initialCoverImage={plan.cover_image}
+            initialReview={veraReview}
+          />
           <JourneyAdvanced
             planId={plan.id}
             initialPageConfig={plan.page_config}
@@ -97,7 +99,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
             initialWindowEndsAt={plan.window_ends_at}
           />
           <JourneyDangerZone planId={plan.id} title={plan.title} />
-        </>
+        </div>
       }
     />
   )

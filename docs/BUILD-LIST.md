@@ -165,6 +165,15 @@ exactly once on completion (`reward_grants` lock) without touching the Pillar Si
 the idempotency lock) and pays `zaps_reward` once, no Pillar credit. (Admin authoring UI is a tracked
 follow-up; starter quests are seeded.)
 
+**✅ Single-page Journey editor + deferred creation (ADR-301).** The tabbed builder is now **one page**
+on the `HeaderSidebarTemplate` shell, laid out like the Journey: a **cover upload band up top**,
+**click-to-edit Title + subtitle** (`EditableText`), the curriculum (Vera's four-Pillar composer +
+phases) in the main column, and **all settings in a right sidebar** (`JourneySettings` gains
+`hideIdentity`; `JourneyAdvanced` + `JourneyDangerZone` stack under it). **New journey** no longer
+writes on click: it navigates to `/journeys/new` (draft mode, inert ghosts), and the row is created
+only when the author **names it** (`createJourneyDraftAction` → plan + 3 phases → `/edit`). No more
+untitled drafts. `HeaderSidebarTemplate` gained `sidebarWidth="wide"`.
+
 **✅ Journey course builder — full-page editor (ADR-297).** The Journey editor moved off the Studio
 **popup** onto a full-page **course builder** at `/journeys/[slug]/edit` (both "New journey" and
 "Edit" land here): sticky builder bar + three tabs (Curriculum · Details · Settings), autosave, panels
