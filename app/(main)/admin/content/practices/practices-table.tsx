@@ -17,9 +17,11 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ExternalLink, ChevronUp, ChevronDown, X } from 'lucide-react'
+import { ExternalLink, ChevronUp, ChevronDown, X, Pencil, Trash2 } from 'lucide-react'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { isError } from '@/lib/action-result'
+import { DangerModal } from '@/components/admin/danger-modal'
+import { deletePracticeAction } from '@/app/(main)/practices/actions'
 import { setAllPracticeFlagsAction, bulkUpdatePracticesAction } from '../actions'
 import {
   PracticeFeatureToggle,
@@ -68,9 +70,9 @@ const SORTS: Record<SortKey, (a: LibraryRow, b: LibraryRow) => number> = {
   created_at: (a, b) => b.created_at.localeCompare(a.created_at),
 }
 
-// The 12-column desktop grid: checkbox · Practice · Creator · Adopters · 30d · Total ·
-// Added · Status · Weight · Public · Template · Feature.
-const GRID = 'lg:grid-cols-[36px_1fr_110px_76px_64px_64px_64px_84px_88px_72px_76px_56px]'
+// The 13-column desktop grid: checkbox · Practice · Creator · Adopters · 30d · Total ·
+// Added · Status · Weight · Public · Template · Feature · Manage (edit + delete).
+const GRID = 'lg:grid-cols-[36px_1fr_110px_76px_64px_64px_64px_84px_88px_72px_76px_56px_72px]'
 
 function PlainHeader({ children, center = false }: { children: React.ReactNode; center?: boolean }) {
   return (
@@ -169,6 +171,60 @@ function RowCheckbox({
         className="h-4 w-4 cursor-pointer rounded border-border-strong text-primary focus:ring-2 focus:ring-primary/50"
       />
     </label>
+  )
+}
+
+// Per-row management: a full-page Edit (the shared PracticeBuilder at /practices/[id]/edit,
+// which admins may open on any practice) and a guarded Delete (type-to-confirm; deletePractice
+// is irreversible and admin-gated server-side). Desktop-only column so the dense mobile row
+// keeps its three-slot layout.
+function PracticeRowActions({ id, title }: { id: string; title: string }) {
+  const [open, setOpen] = useState(false)
+  const [pending, start] = useTransition()
+  const router = useRouter()
+
+  function remove() {
+    start(async () => {
+      const r = await deletePracticeAction(id)
+      if (!isError(r)) router.refresh()
+    })
+  }
+
+  return (
+    <div className="hidden items-center justify-center gap-1 lg:flex">
+      <Link
+        href={`/practices/${id}/edit`}
+        title={`Edit ${title}`}
+        aria-label={`Edit ${title}`}
+        className="rounded-md p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+      >
+        <Pencil className="h-4 w-4" />
+      </Link>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        disabled={pending}
+        title={`Delete ${title}`}
+        aria-label={`Delete ${title}`}
+        className="rounded-md p-1 text-subtle transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+      <DangerModal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Delete practice"
+        body={
+          <>
+            This removes <span className="font-semibold text-text">{title}</span> from the library for
+            everyone, along with its logs and adoptions. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete practice"
+        requireTyping={title}
+        onConfirm={remove}
+      />
+    </div>
   )
 }
 
@@ -327,6 +383,7 @@ export function PracticesTable({ rows }: { rows: LibraryRow[] }) {
             <MasterSwitch on={allTemplate} label="Template" count={rows.length} disabled={pending} onToggle={(v) => bulkFlag('is_template', v)} />
           </div>
           <PlainHeader center>Feature</PlainHeader>
+          <PlainHeader center>Manage</PlainHeader>
         </div>
         <div className="divide-y divide-border/60">
           {sorted.map((p) => {
@@ -381,6 +438,7 @@ export function PracticesTable({ rows }: { rows: LibraryRow[] }) {
                 <div className="flex justify-center">
                   <PracticeFeatureToggle id={p.id} featured={p.featured} />
                 </div>
+                <PracticeRowActions id={p.id} title={p.title} />
               </div>
             )
           })}
