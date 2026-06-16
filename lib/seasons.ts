@@ -34,6 +34,23 @@ export async function getCurrentSeason(): Promise<Season | null> {
 }
 
 /**
+ * The next season already on the calendar (status 'upcoming'), soonest first, or
+ * null when none is scheduled yet. Read-only and best-effort: the season-complete
+ * "what's next" beat names it when it exists, and falls back to a plain "the next
+ * Quest opens soon" line when it doesn't. No side effects.
+ */
+export async function getUpcomingSeason(): Promise<Season | null> {
+  const { data } = await db()
+    .from('seasons')
+    .select('id, season_number, name, theme, starts_at, ends_at, status')
+    .eq('status', 'upcoming')
+    .order('starts_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  return (data as Season | null) ?? null
+}
+
+/**
  * End the current season now: mints trophies, converts zaps to gems (rank-based),
  * resets seasonal counters / streaks / challenges, and opens the next season.
  * Destructive and global; callers must gate to admin (janitor).

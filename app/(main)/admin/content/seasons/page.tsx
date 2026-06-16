@@ -5,21 +5,17 @@ import { isJanitor } from '@/lib/core/roles'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EntityHeader } from '@/components/admin/entity-header'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
-import { StatusChip, type StatusTone } from '@/components/admin/status'
+import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SeasonCreateForm } from './season-create'
+import { StateBadge } from './state-badge'
 
-// The season calendar. Entity-Detail template (ADR-233 §3.4): the active season as
-// the entity context band, all seasons in a DataTable below. Status vocabulary via
-// StatusChip (local STATUS_STYLES retired). Creating the NEXT season is janitor-only;
-// ending the current one (the destructive reset) stays in /admin/gamification.
-
-const STATUS_TONE: Record<string, { tone: StatusTone; label: string }> = {
-  active:   { tone: 'success', label: 'Active' },
-  upcoming: { tone: 'info',    label: 'Upcoming' },
-  ended:    { tone: 'neutral', label: 'Ended' },
-}
+// The season calendar. Entity-Detail template (ADR-233 §3.4): the active (Live) season
+// as the entity context band, all seasons in a DataTable below — each row drilling into
+// the Season Composer (/[id]). The lifecycle vocabulary (Draft / Scheduled / Live /
+// Ended) is the shared StateBadge. Creating the NEXT season is janitor-only; ending the
+// running one (the destructive reset) stays in /admin/gamification.
 
 function fmtDate(d: string | null): string {
   if (!d) return 'Open'
@@ -80,32 +76,23 @@ export default async function AdminSeasonsPage() {
     {
       key: 'status',
       header: 'Status',
-      render: (s) => {
-        const st = STATUS_TONE[s.status] ?? STATUS_TONE.ended
-        return <StatusChip tone={st.tone}>{st.label}</StatusChip>
-      },
+      render: (s) => <StateBadge status={s.status} />,
     },
   ]
-
-  const activeStatus = activeSeason ? (STATUS_TONE[activeSeason.status] ?? STATUS_TONE.ended) : null
 
   return (
     <AdminTemplate
       title="Seasons"
       eyebrow="Content"
-      description="The 13-week cycles the Quest runs on. Each season carries a theme, a Quest of official Journeys, and its challenges."
+      description="The 13-week cycles the Quest runs on. Each season carries a theme, a Quest of official Journeys, and its challenges. Open a season to compose it."
       width="default"
     >
-      {/* Entity context band: the active season as the entity */}
+      {/* Entity context band: the live season as the entity */}
       <EntityHeader
         eyebrow="Season"
-        title={activeSeason ? activeSeason.name : 'No active season'}
+        title={activeSeason ? activeSeason.name : 'No season running'}
         badges={
-          activeStatus ? (
-            <StatusChip tone={activeStatus.tone}>{activeStatus.label}</StatusChip>
-          ) : (
-            <StatusChip tone="neutral">No season running</StatusChip>
-          )
+          activeSeason ? <StateBadge status={activeSeason.status} /> : <StatusChip tone="neutral">None live</StatusChip>
         }
         facts={
           activeSeason
@@ -118,21 +105,27 @@ export default async function AdminSeasonsPage() {
                 },
                 {
                   label: 'Status',
-                  value: (
-                    <StatusChip tone={activeStatus!.tone} size="sm">
-                      {activeStatus!.label}
-                    </StatusChip>
-                  ),
+                  value: <StateBadge status={activeSeason.status} size="sm" />,
                 },
               ]
             : []
+        }
+        actions={
+          activeSeason ? (
+            <Link
+              href={`/admin/content/seasons/${activeSeason.id}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+            >
+              Compose <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          ) : undefined
         }
       />
 
       {janitor && (
         <AdminSection
           title={`Create season ${nextNumber}`}
-          description="Opens as upcoming. The season reset in Gamification is what closes the active season."
+          description="Opens as a draft. Take it live (or schedule it) from the season's Composer; the reset in Gamification closes the live season."
         >
           <SeasonCreateForm nextNumber={nextNumber} />
         </AdminSection>
@@ -144,6 +137,7 @@ export default async function AdminSeasonsPage() {
           columns={columns}
           rows={rows}
           getRowId={(s) => s.id}
+          rowHref={(s) => `/admin/content/seasons/${s.id}`}
           empty={
             <EmptyState
               variant="first-use"

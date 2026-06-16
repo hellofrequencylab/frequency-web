@@ -348,7 +348,8 @@ export function SeasonMap({
             className="mt-2 text-xs font-semibold"
             style={{ ...seasonRankStyle('master'), color: 'var(--rank-deep)' }}
           >
-            All three Journeys finished, Expression Challenge and all. You reached Master this season.
+            All three Journeys finished, Expression Challenge and all. Master, the season top.
+            Your Trophies keep. The next Quest opens a Fresh Start.
           </p>
         )}
       </div>

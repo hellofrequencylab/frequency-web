@@ -220,14 +220,15 @@ export async function createSeasonAction(input: {
     .maybeSingle()
   const nextNumber = ((maxRow as { season_number: number } | null)?.season_number ?? 0) + 1
 
-  // New seasons open as 'upcoming' — the season reset (in /admin/gamification)
-  // is what closes the active season and opens the next, and the schema enforces
-  // at most one active season.
+  // New seasons open as 'draft' (the lifecycle entry state): composing, not public.
+  // The Composer's transitions take it Scheduled -> Live (= stored 'active') -> Ended;
+  // the destructive season reset (in /admin/gamification) closes the live season and
+  // opens the next, and the schema enforces at most one 'active' season.
   const { error } = await client.from('seasons').insert({
     season_number: nextNumber,
     name,
     theme: input.theme?.trim().slice(0, 200) || null,
-    status: 'upcoming',
+    status: 'draft',
     ...(startsAt ? { starts_at: startsAt.toISOString() } : {}),
     ...(endsAt ? { ends_at: endsAt.toISOString() } : {}),
   })
@@ -238,6 +239,158 @@ export async function createSeasonAction(input: {
     action: 'content.season.create',
     targetType: 'season',
     detail: { season_number: nextNumber, name },
+  })
+  revalidateContent('seasons')
+  return ok()
+}
+
+/**
+ * Edit an existing season's identity + window (name / theme / starts_at / ends_at).
+ * Janitor-only (the same gate as create), re-checked server-side; the client is never
+ * trusted for authority. A patch is incremental — only the keys present are written —
+ * so a no-op save is cheap. The status/lifecycle is NOT edited here (use the transition
+ * actions below); this is the editable identity only.
+ */
+export async function updateSeasonAction(
+  id: string,
+  patch: {
+    name?: string
+    theme?: string | null
+    startsAt?: string | null
+    endsAt?: string | null
+  },
+): Promise<ActionResult> {
+  let caller: { id: string }
+  try {
+    caller = await requireJanitor()
+  } catch {
+    return fail('Janitor only.')
+  }
+
+  const update: Record<string, unknown> = {}
+  if (patch.name !== undefined) {
+    const name = patch.name.trim().slice(0, 120)
+    if (!name) return fail('Give the season a name.')
+    update.name = name
+  }
+  if (patch.theme !== undefined) {
+    update.theme = patch.theme?.trim().slice(0, 200) || null
+  }
+  let startsAt: Date | null | undefined
+  let endsAt: Date | null | undefined
+  if (patch.startsAt !== undefined) {
+    startsAt = patch.startsAt ? new Date(patch.startsAt) : null
+    if (startsAt && Number.isNaN(startsAt.getTime())) return fail('Start date is not a valid date.')
+    update.starts_at = startsAt ? startsAt.toISOString() : null
+  }
+  if (patch.endsAt !== undefined) {
+    endsAt = patch.endsAt ? new Date(patch.endsAt) : null
+    if (endsAt && Number.isNaN(endsAt.getTime())) return fail('End date is not a valid date.')
+    update.ends_at = endsAt ? endsAt.toISOString() : null
+  }
+  // When both ends of the window are being set together, keep them ordered.
+  if (startsAt && endsAt && endsAt <= startsAt) {
+    return fail('The end date must be after the start date.')
+  }
+
+  if (Object.keys(update).length === 0) return ok()
+
+  const client = ub()
+  const { error } = await client.from('seasons').update(update).eq('id', id)
+  if (error) return fail(error.message)
+
+  await logAdminAction({
+    actorId: caller.id,
+    action: 'content.season.update',
+    targetType: 'season',
+    targetId: id,
+    detail: { fields: Object.keys(update) },
+  })
+  revalidateContent('seasons')
+  return ok()
+}
+
+// The lifecycle a season moves through. Live === the stored 'active' status, so
+// getCurrentSeason() (which reads status='active') keeps working untouched. 'draft'
+// and 'scheduled' are new text values on the same column (no migration; the column is
+// free text and the only DB constraint is "at most one active", which we honor below).
+type SeasonStatus = 'draft' | 'scheduled' | 'active' | 'ended'
+
+/** Read a season's current stored status (for transition guards). */
+async function seasonStatus(client: SupabaseClient, id: string): Promise<string | null> {
+  const { data } = await client.from('seasons').select('status').eq('id', id).maybeSingle()
+  return (data as { status: string } | null)?.status ?? null
+}
+
+/**
+ * Move a season through its lifecycle: Draft -> Scheduled -> Live -> Ended. Janitor-only,
+ * re-checked server-side. Each target enforces only the legal source states + sets the
+ * dates that the state implies (Scheduled needs a future go-live date; Live stamps a
+ * start; Ended stamps a close). Going Live is the one place the "at most one active
+ * season" rule matters: the DB unique index enforces it, and we surface a friendly error
+ * if another season already holds 'active'. The destructive season RESET (trophies, Zap
+ * to Gem conversion) still lives in /admin/gamification; this only moves the status flag.
+ */
+export async function setSeasonStatusAction(
+  id: string,
+  target: SeasonStatus,
+  opts?: { goLiveAt?: string | null },
+): Promise<ActionResult> {
+  let caller: { id: string }
+  try {
+    caller = await requireJanitor()
+  } catch {
+    return fail('Janitor only.')
+  }
+
+  const client = ub()
+  const current = await seasonStatus(client, id)
+  if (current == null) return fail('That season no longer exists.')
+
+  // A legacy 'upcoming' season reads as a pre-live draft, so it may move like one.
+  const isPreLive = (s: string) => s === 'draft' || s === 'scheduled' || s === 'upcoming'
+
+  const update: Record<string, unknown> = { status: target }
+
+  if (target === 'draft') {
+    if (!isPreLive(current)) return fail('Only a season that has not gone live can return to draft.')
+  } else if (target === 'scheduled') {
+    if (!isPreLive(current)) return fail('Only a draft season can be scheduled.')
+    if (!opts?.goLiveAt) return fail('Pick the date the season goes live.')
+    const at = new Date(opts.goLiveAt)
+    if (Number.isNaN(at.getTime())) return fail('The go-live date is not a valid date.')
+    if (at.getTime() <= Date.now()) return fail('The go-live date must be in the future.')
+    update.starts_at = at.toISOString()
+  } else if (target === 'active') {
+    if (!isPreLive(current)) return fail('Only a draft or scheduled season can go live.')
+    // Honor the "at most one active season" rule with a clear message before the
+    // unique index would reject the write.
+    const { data: live } = await client
+      .from('seasons')
+      .select('id, name')
+      .eq('status', 'active')
+      .neq('id', id)
+      .maybeSingle()
+    if (live) {
+      return fail(`${(live as { name: string }).name} is live. End it before another season goes live.`)
+    }
+    update.starts_at = new Date().toISOString()
+  } else if (target === 'ended') {
+    if (current !== 'active') return fail('Only the live season can be ended.')
+    update.ends_at = new Date().toISOString()
+  } else {
+    return fail('Unknown season state.')
+  }
+
+  const { error } = await client.from('seasons').update(update).eq('id', id)
+  if (error) return fail(error.message)
+
+  await logAdminAction({
+    actorId: caller.id,
+    action: 'content.season.status',
+    targetType: 'season',
+    targetId: id,
+    detail: { from: current, to: target },
   })
   revalidateContent('seasons')
   return ok()
