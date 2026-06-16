@@ -534,7 +534,7 @@ function ProfileStandingCard({
   const rows: { icon: React.ElementType; label: string; value: string; href: string | null }[] = [
     { icon: Zap, label: 'Zaps', value: zaps.toLocaleString(), href: isOwner ? '/crew/leaderboard' : null },
     { icon: Gem, label: 'Gems', value: gems.toLocaleString(), href: isOwner ? '/crew/store' : null },
-    { icon: Flame, label: 'Streak', value: `${streak} ${streak === 1 ? 'day' : 'days'}`, href: isOwner ? '/crew/streaks' : null },
+    { icon: Flame, label: 'Streak', value: `${streak} ${streak === 1 ? 'day' : 'days'}`, href: isOwner ? '/crew/leaderboard' : null },
     { icon: Trophy, label: 'Rank', value: rankDef.label, href: isOwner ? '/crew/leaderboard' : null },
   ]
   return (

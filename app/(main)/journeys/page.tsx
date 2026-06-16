@@ -15,7 +15,7 @@ import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
   title: 'Journeys',
-  description: 'Build a journey from the practices you love: a life-development track across Mind, Body, Spirit, and Expression. Keep it for yourself, or share it to the open library for anyone to adopt.',
+  description: 'The library to browse and build journeys: a life-development track across Mind, Body, Spirit, and Expression. Keep one for yourself, or share it to the open library for anyone to adopt. This season’s official Quest lives in My Quest.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2);
@@ -129,9 +129,9 @@ export default async function JourneysPage() {
             </div>
           </div>
 
-          {/* Quests — the official containers that group Journeys for the season. */}
+          {/* This season's Quest — the official, free track that lives in My Quest. */}
           <Link
-            href="/crew/quests"
+            href="/crew"
             className="group flex flex-col justify-between gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm transition-colors hover:border-primary"
           >
             <div className="min-w-0">
@@ -139,14 +139,14 @@ export default async function JourneysPage() {
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
                   <Compass className="h-4 w-4" />
                 </span>
-                Explore Quests
+                This season&apos;s Quest
               </h2>
               <p className="mt-1 text-sm text-muted">
-                The season’s official Quests: guided tracks of practices, free to start, with rewards as you go.
+                The season’s official Journeys: guided tracks of practices, free to start, with rewards as you go.
               </p>
             </div>
             <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary-strong">
-              See this season’s Quests
+              Open My Quest
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </span>
           </Link>

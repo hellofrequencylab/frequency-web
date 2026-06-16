@@ -144,7 +144,8 @@ export async function completeExpression(
 
   // The capstone touches season rank, Zaps/Gems, and the Journey card across surfaces.
   revalidatePath('/crew/challenges')
-  revalidatePath('/crew/journey')
+  revalidatePath('/crew/leaderboard')
+  revalidatePath('/crew/store')
   revalidatePath('/crew')
   revalidatePath('/people', 'layout')
 

@@ -3,7 +3,7 @@ title: Streaks
 description: How your daily practice streak works, the reserve that forgives a slip, the rest you can plan, and the rewards for showing up.
 category: the-quest
 order: 5
-updated: 2026-06-15
+updated: 2026-06-16
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -43,10 +43,11 @@ Reserve days can’t be bought, only earned.
 
 ## Resting (when you’re planning time off)
 
-Going away, sick, or just need a break? On the **Streaks** page you can **set a rest**.
-The days you’re resting don’t count against the streak, so a planned break isn’t a
-miss. Rest runs up to two weeks; end it early whenever you’re ready, and log one
-practice to pick the streak back up right where it was.
+Going away, sick, or just need a break? Open the **Leaderboard** (it lives in **The
+Vault**) and, under your streak, **set a rest**. The days you’re resting don’t count
+against the streak, so a planned break isn’t a miss. Rest runs up to two weeks; end it
+early whenever you’re ready, and log one practice to pick the streak back up right where
+it was.
 
 ## Picking it back up
 
@@ -61,7 +62,7 @@ If you haven’t logged yet today, your home screen notes that today isn’t log
 you don’t miss it by accident. Log one practice and you’re set until tomorrow.
 
 You can see your current streak, your best-ever streak, your reserve and the next
-badge to chase on the **Streaks** page in your dashboard.
+badge to chase on the **Leaderboard**, in the consistency section under the shared goal.
 
 ## Per-practice streaks and the Practice Shelf
 
@@ -78,7 +79,7 @@ the practices you actually keep showing up for, deepest first.
 
 Alongside the daily streak, Frequency also tracks **weekly rhythms**: showing up to
 events, posting, and hosting at least once a week. These power their own achievements
-and live on the same Streaks page, below your daily streak.
+and live with your daily streak on the **Leaderboard**.
 
 ## Practicing together
 

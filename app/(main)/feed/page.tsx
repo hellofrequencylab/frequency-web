@@ -146,7 +146,7 @@ export default async function FeedPage({
   const activeJourney = journeyProgress[0]
     ? {
         title: journeyProgress[0].title,
-        href: '/crew/journey',
+        href: '/crew',
         done: journeyProgress[0].phasesComplete,
         total: journeyProgress[0].phasesTotal,
         nextStepTitle: journeyProgress[0].nextLesson?.title ?? null,

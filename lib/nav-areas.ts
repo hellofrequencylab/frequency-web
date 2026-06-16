@@ -90,11 +90,11 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'lead',          href: '/lead',      label: 'Leadership',   section: 'Leadership', defaultAccess: 'host', surface: 'lead' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
-  { key: 'quest',     href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
-  { key: 'journeys',  href: '/journeys',   label: 'Journeys',  section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },
-  { key: 'practices', href: '/practices',  label: 'Practices', section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
-  { key: 'library',   href: '/library',    label: 'Library',   section: 'The Quest', defaultAccess: 'member', surface: 'library' },
-  { key: 'vault',     href: '/crew/store', label: 'The Vault', section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
+  { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
+  { key: 'journeys',   href: '/journeys',        label: 'Journeys',   section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },
+  { key: 'practices',  href: '/practices',       label: 'Practices',  section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
+  { key: 'challenges', href: '/crew/challenges', label: 'Challenges', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
+  { key: 'vault',      href: '/crew/store',      label: 'The Vault',  section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
 
   // ── Admin → the operator world (admin + studio + platform rolled into ONE
   // category, mirroring the back-end admin menu). Telescopes: only the items a

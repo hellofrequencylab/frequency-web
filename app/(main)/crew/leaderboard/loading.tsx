@@ -1,7 +1,8 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
 // Route-load fallback for the cooperative leaderboard: the shared-goal band first,
-// the standing band, then the control row + the stacked individual board.
+// the standing band, then the control row + the stacked individual board, and the
+// consistency layer (daily streak + weekly rhythms) beneath it.
 
 function BoardRowSkeleton() {
   return (
@@ -41,6 +42,18 @@ export default function LeaderboardLoading() {
           <div className="space-y-1.5">
             {Array.from({ length: 8 }).map((_, i) => (
               <BoardRowSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+
+        {/* Consistency layer: daily practice streak hero + weekly rhythms */}
+        <div className="space-y-4">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-56 w-full rounded-3xl" />
+          <Skeleton className="h-28 w-full rounded-2xl" />
+          <div className="space-y-4 pt-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-36 w-full rounded-2xl" />
             ))}
           </div>
         </div>

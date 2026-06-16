@@ -215,7 +215,7 @@ export function SeasonMap({
   rank,
   journeysFinished,
   journeys,
-  achievementsHref = '/crew/achievements',
+  achievementsHref = '/crew/store',
 }: {
   /** The active Quest's name (e.g. "Stretch"). */
   seasonName: string | null

@@ -72,7 +72,7 @@ export function JourneyBoard({
   /** The member's adopted practices counted per Pillar (all four, zero-filled). */
   pillarBalance?: PillarCount[]
   /** The member's top enrolled journey — a slim "current step" line that links to
-   *  the full /crew/journey tab. Undefined = no enrolled journey. `done`/`total` are
+   *  the My Quest hub. Undefined = no enrolled journey. `done`/`total` are
    *  phases complete vs total; `nextStepTitle` is the next lesson (v2; ADR-253). */
   activeJourney?: {
     title: string
@@ -183,7 +183,7 @@ export function JourneyBoard({
           <div className="flex shrink-0 items-center gap-1.5">
             {rank && (
               <Link
-                href="/crew/achievements"
+                href="/crew"
                 title={`Season rank · ${RANK_LABELS[rank] ?? rank}`}
                 className="rank-badge text-2xs font-bold leading-tight"
                 style={seasonRankStyle(rank)}
@@ -213,7 +213,7 @@ export function JourneyBoard({
             gems={gems}
             streak={streak}
             rank={rank ?? 'ghost'}
-            links={{ zaps: '/crew/leaderboard', gems: '/crew/store', streak: '/crew/streaks' }}
+            links={{ zaps: '/crew/leaderboard', gems: '/crew/store', streak: '/crew/leaderboard' }}
           />
         </div>
 

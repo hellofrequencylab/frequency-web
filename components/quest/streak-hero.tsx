@@ -25,7 +25,7 @@ import { Flame, Shield, Check, Pause, Play, PartyPopper } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { STREAK_MILESTONES } from '@/lib/streak'
 import type { PracticeStreakState } from '@/lib/practice-streak'
-import { pauseStreak, resumeStreak } from '@/app/(main)/crew/streaks/actions'
+import { pauseStreak, resumeStreak } from '@/app/(main)/crew/leaderboard/streak-actions'
 
 interface Progress {
   pct: number

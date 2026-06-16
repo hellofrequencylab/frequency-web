@@ -15,9 +15,9 @@ long record of who you've been in the community.
 
 ## Where to find them
 
-Open **The Quest** and pick the **Achievements** tab. You'll see your whole
-collection: what you've earned, what's still locked, your collection progress, and
-your lifetime Zaps and streaks alongside.
+Open **The Vault** and scroll to **Your Awards**. You'll see your whole collection:
+what you've earned, what's still locked, and your collection progress, sitting right
+beside your Trophy Case.
 
 ## How you earn them
 
@@ -53,6 +53,6 @@ surprise is the point.
 
 ## Where your badges show
 
-Your badges ride with you. Recent ones appear on your Quest dashboard, and your
-full collection lives on the Achievements tab. Collecting them is never required;
-they're a record, not homework.
+Your badges ride with you. Recent ones appear on your **My Quest** dashboard, and your
+full collection lives in **The Vault** under Your Awards. Collecting them is never
+required; they're a record, not homework.

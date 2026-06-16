@@ -3,15 +3,14 @@ title: Spending Gems in the Vault Store
 description: What Gems buy, how redeeming works, and the "how you earned" ledger.
 category: membership
 order: 2
-updated: 2026-06-11
+updated: 2026-06-16
 audience: member
 featureKeys: [vault, gems]
 status: published
 ---
 
 Gems are the currency you **spend**, and the Vault Store is where you spend them.
-Open **The Quest** and pick the **Store** tab. Your Vault and the Vault Store live on
-one page.
+Open **The Vault** from the menu. Your Vault and the Vault Store live on one page.
 
 ## Your Vault, up top
 
