@@ -15,14 +15,16 @@ how deep to go.
 
 ## Start one
 
-From **Journeys**, hit **New journey**. You land straight in the **builder**, a full-page course
-editor with three tabs: **Curriculum**, **Details**, and **Settings**. Everything **saves as you
-go**, so there's no Save button. While you build, the community rail on the right tucks into a slim
-strip to give you room; tap the toggle at its foot to bring it back.
+From **Journeys**, hit **New journey**. You land on the **editor**: one page laid out like the
+Journey itself, with a cover photo up top, a **title and subtitle you click to edit**, the curriculum
+in the middle, and all the settings in a panel on the right. **Nothing is saved until you name it**,
+so hitting the button never leaves a half-made draft behind. The moment you give it a name, the
+Journey is created with **three phases ready to fill**, and from then on everything **saves as you
+go** (there's no Save button).
 
 ## Let Vera build it
 
-The fastest start is the **Vera box at the top of Curriculum**. Tell her what you're making (for
+The fastest start is the **Build with Vera box** in the main column. Tell her what you're making (for
 example, "a 3-week reset for people who want to sleep better and scroll less") and hit **Build with
 Vera**. She lays down a **balanced first week with one practice for each Pillar**: **Mind**, **Body**,
 **Spirit**, and **Expression** (an Expression practice is about putting it out: making something,
@@ -36,7 +38,7 @@ more from **Add extra credit** in the Curriculum (you set the Zaps each one is w
 
 Prefer to start by hand? **Start with the shape** lays the same slots down empty for you to fill.
 
-## Build the structure (Curriculum)
+## Build the structure
 
 - **Add a Phase** for each stage of the program. Phases are the milestones: finishing one earns the
   member a Trophy.
@@ -50,18 +52,18 @@ Prefer to start by hand? **Start with the shape** lays the same slots down empty
   that step in the Journey. Edit it or write your own.
 - **Reorder** with the up and down arrows, and edit titles and content inline.
 
-## Set it up (Details and Settings)
+## Set it up (the settings panel)
 
-In the **Details** tab:
+The **title**, **subtitle**, and **cover photo** live in the header, where you click to edit them.
+Everything else sits in the **settings panel** on the right:
 
-- **Name, icon, accent, cover, and story.** Give the Journey a face and say why it matters.
+- **Icon, accent, and story.** Give the Journey a face and say why it matters.
 - **Completion Gems.** What finishing the Journey earns.
 - **Certificate.** Turn on a printable certificate for people who finish.
 - **Phase drip.** How many days between Phase unlocks (weekly by default), so a Circle moving through
   it together stays in step.
-
-The **Settings** tab holds the advanced bits, and a **Danger zone** if you ever need to delete the
-Journey. Guides and Mentors can mark a Journey **official** and attach it to a Season here.
+- **Who can see it**, the advanced bits, and a **Danger zone** if you ever need to delete the Journey.
+  Guides and Mentors can mark a Journey **official** and attach it to a Season here.
 
 ## Publish or keep it
 
@@ -79,7 +81,7 @@ helper) reads every Journey you publish and checks it against the authoring stan
 from the Guide's listing check, and it never holds up sharing. It's only about whether finishing your
 Journey can move someone's rank.
 
-You'll see her verdict right in the **Details** tab:
+You'll see her verdict right in the **settings panel**:
 
 - **Added to the ranked library.** Vera approved it. Finishing it now counts toward rank, the same as
   a season Journey.

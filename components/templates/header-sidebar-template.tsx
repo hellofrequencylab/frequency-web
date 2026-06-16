@@ -22,6 +22,7 @@ export function HeaderSidebarTemplate({
   back,
   sidebar,
   sidebarSide = 'right',
+  sidebarWidth = 'default',
   children,
 }: {
   /** Small contextual line above the title. */
@@ -36,13 +37,15 @@ export function HeaderSidebarTemplate({
   sidebar: React.ReactNode
   /** Which side the sidebar sits on from `lg` up. Default 'right'. */
   sidebarSide?: 'left' | 'right'
+  /** Sidebar width from `lg` up: 'default' (18rem) or 'wide' (22rem, for a fuller settings panel). */
+  sidebarWidth?: 'default' | 'wide'
   /** The main content column. */
   children: React.ReactNode
 }) {
   // The sidebar orders BELOW the content on mobile (content first) regardless of side; from `lg`
   // it takes its place via the flex order. A fixed-ish width keeps the main column dominant.
   const aside = (
-    <aside className={`lg:w-72 lg:shrink-0 ${sidebarSide === 'left' ? 'lg:order-first' : ''}`}>
+    <aside className={`lg:shrink-0 ${sidebarWidth === 'wide' ? 'lg:w-[22rem]' : 'lg:w-72'} ${sidebarSide === 'left' ? 'lg:order-first' : ''}`}>
       {sidebar}
     </aside>
   )

@@ -31,6 +31,9 @@ export interface JourneySettingsProps {
   initialCoverImage: string | null
   /** Vera's last rank-eligibility review, if this Journey has been published/reviewed. */
   initialReview: StoredVeraReview | null
+  /** Hide the title, subtitle, and cover controls — the single-page editor (ADR-301) owns those in
+   *  the page header, so the sidebar shows only the rest of the settings. */
+  hideIdentity?: boolean
 }
 
 export function JourneySettings(props: JourneySettingsProps) {
@@ -123,22 +126,24 @@ export function JourneySettings(props: JourneySettingsProps) {
             <AccentPicker accent={accent} onChange={(a) => { setAccent(a); meta({ accent: a }) }} />
           </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <input
-            defaultValue={props.initialTitle}
-            onBlur={(e) => meta({ title: e.target.value })}
-            maxLength={120}
-            placeholder="Name your Journey"
-            className="w-full bg-transparent text-xl font-bold text-text outline-none placeholder:text-subtle"
-          />
-          <input
-            defaultValue={props.initialSummary ?? ''}
-            onBlur={(e) => meta({ summary: e.target.value })}
-            maxLength={280}
-            placeholder="One line on what this is and who it's for"
-            className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
-          />
-        </div>
+        {!props.hideIdentity && (
+          <div className="min-w-0 flex-1">
+            <input
+              defaultValue={props.initialTitle}
+              onBlur={(e) => meta({ title: e.target.value })}
+              maxLength={120}
+              placeholder="Name your Journey"
+              className="w-full bg-transparent text-xl font-bold text-text outline-none placeholder:text-subtle"
+            />
+            <input
+              defaultValue={props.initialSummary ?? ''}
+              onBlur={(e) => meta({ summary: e.target.value })}
+              maxLength={280}
+              placeholder="One line on what this is and who it's for"
+              className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
+            />
+          </div>
+        )}
       </div>
 
       {/* Story / intro */}
@@ -162,17 +167,20 @@ export function JourneySettings(props: JourneySettingsProps) {
         </button>
       )}
 
-      {/* Cover image — the banner shown on the Journey's discovery page + cards. */}
-      <ImageUpload
-        label="Cover image"
-        value={coverImage}
-        onChange={(url) => {
-          setCoverImage(url)
-          meta({ coverImage: url })
-        }}
-        folder="journey-covers"
-        hint="Shown on the Journey's discovery page and cards."
-      />
+      {/* Cover image — the banner shown on the Journey's discovery page + cards. Hidden when the
+          single-page editor (ADR-301) renders the cover upload in the page header instead. */}
+      {!props.hideIdentity && (
+        <ImageUpload
+          label="Cover image"
+          value={coverImage}
+          onChange={(url) => {
+            setCoverImage(url)
+            meta({ coverImage: url })
+          }}
+          folder="journey-covers"
+          hint="Shown on the Journey's discovery page and cards."
+        />
+      )}
 
       {/* Delivery + rewards */}
       <div className="space-y-2.5">
