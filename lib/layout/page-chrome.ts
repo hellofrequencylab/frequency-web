@@ -27,7 +27,6 @@ export type Rail = 'global' | 'scoped' | 'none'
 // the app — the rail is now a thin strip, so there's no double-rail/clutter cost,
 // and members asked for a consistent right column site-wide.
 const FOCUS_PREFIXES = [
-  '/lead/training-library', // the two-pane docs library (left index + right content) owns the full width
   '/settings', // narrow account forms
   '/on-air', // the practice timer takeover (ADR-229) — breathe with zero chrome
   '/codes', // personal codes / QR hub (a single centered card)
@@ -180,7 +179,7 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/crew', label: 'Crew', area: 'Member' },
   { route: '/outreach', label: 'Outreach', area: 'Member' },
   { route: '/lead', label: 'Leadership', area: 'Member' },
-  { route: '/lead/training-library', label: 'Leader Training', area: 'Focus surfaces' },
+  { route: '/lead/training-library', label: 'Leader Training', area: 'Member' },
   // ── Focus surfaces (default NONE — full-width, no rail) ──
   { route: '/settings', label: 'Settings', area: 'Focus surfaces' },
   { route: '/settings/profile', label: 'Profile editor', area: 'Focus surfaces' },

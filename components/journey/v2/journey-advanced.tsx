@@ -115,16 +115,16 @@ export function JourneyAdvanced({
   }
 
   return (
-    <details className="group rounded-2xl border border-border bg-surface">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-4">
-        <span className="inline-flex items-center gap-2 text-sm font-bold text-text">
+    <details className="group space-y-4">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-2 text-base font-bold text-text">
           <Layout className="h-4 w-4 text-subtle" /> Advanced
-          <span className="font-normal text-subtle">· discovery layout{canOfficial ? ' · official program' : ''}</span>
+          <span className="text-sm font-normal text-subtle">· discovery layout{canOfficial ? ' · official program' : ''}</span>
         </span>
         <ChevronDown className="h-4 w-4 text-subtle transition-transform group-open:rotate-180" aria-hidden />
       </summary>
 
-      <div className="space-y-5 border-t border-border p-4">
+      <div className="space-y-5">
         {/* Discovery-page layout */}
         <div>
           <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Discovery page</p>
