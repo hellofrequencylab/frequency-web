@@ -5721,6 +5721,7 @@ export type Database = {
           domain_id: string | null
           embedding: string | null
           featured_at: string | null
+          focus_details: Json
           header_image: string | null
           icon: string
           id: string
@@ -5748,6 +5749,7 @@ export type Database = {
           domain_id?: string | null
           embedding?: string | null
           featured_at?: string | null
+          focus_details?: Json
           header_image?: string | null
           icon?: string
           id?: string
@@ -5775,6 +5777,7 @@ export type Database = {
           domain_id?: string | null
           embedding?: string | null
           featured_at?: string | null
+          focus_details?: Json
           header_image?: string | null
           icon?: string
           id?: string

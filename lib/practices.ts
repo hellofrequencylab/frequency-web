@@ -20,6 +20,16 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
+/** The author's instructions + timing for one Focus (Pillar) a practice belongs to. */
+export interface FocusDetail {
+  instructions: string
+  timing: string
+}
+
+/** A practice's per-Focus details, keyed by pillar id. The KEYS are the selected
+ *  Focuses (presence = selected); `domain_id` mirrors the FIRST key for back-compat. */
+export type FocusDetails = Record<string, FocusDetail>
+
 export interface Practice {
   id: string
   title: string
@@ -41,8 +51,12 @@ export interface Practice {
   reward_note: string | null
   /** Payout driver for a log: 'light' (8⚡) | 'standard' (12⚡) | 'heavy' (15⚡). */
   weight_class: string | null
-  /** The Pillar this practice belongs to (domains.id), or null if uncategorized. */
+  /** The PRIMARY Pillar (domains.id), or null if uncategorized. Mirrors the first
+   *  selected Focus in `focus_details`, kept for back-compat (Pillar filtering + cards). */
   domain_id: string | null
+  /** Per-Focus instructions + timing, keyed by pillar id. The keys are the selected
+   *  Focuses (a practice can belong to multiple). Defaults to {} on legacy rows. */
+  focus_details: FocusDetails
   /** The sub-category within the Pillar (practice_subcategories.id), or null. */
   subcategory_id: string | null
   /** Library review status — null/draft until proposed, then pending → approved/rejected. */
@@ -79,7 +93,7 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, weight_class, domain_id, subcategory_id, status, slug'
+  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
 
 // The same columns MINUS `slug`, for reads against the `practices_ranked` VIEW — the view
 // predates the slug column and does not expose it, so selecting `slug` from the view errors and
@@ -530,11 +544,32 @@ export interface PracticeEdit {
   icon?: string | null
   header_image?: string | null
   domain_id?: string | null
+  /** The practice's Focuses (Pillars) with per-Focus instructions + timing, keyed by
+   *  pillar id. Presence of a key = that Focus is selected (a practice can have many).
+   *  When written, `domain_id` is set to the first key for back-compat (Pillar filtering). */
+  focus_details?: Record<string, { instructions: string; timing: string }> | null
   subcategory_id?: string | null
   /** Payout weight for a log (Rewards Economy v2): 'light' (8⚡) | 'standard' (12⚡) |
    *  'heavy' (15⚡). Unlike the reward_zaps amount, this IS author-editable — it's the
    *  effort tier of the practice, which the author knows best (drives practiceLogAction). */
   weight_class?: WeightClass
+}
+
+/** Normalize a focus_details patch into a clean, bounded map (and pick its primary
+ *  pillar for domain_id). Trims/caps the free-text so a bad client can't write junk. */
+function cleanFocusDetails(
+  raw: Record<string, { instructions: string; timing: string }>,
+): { focus_details: FocusDetails; primary: string | null } {
+  const out: FocusDetails = {}
+  for (const [pillarId, detail] of Object.entries(raw)) {
+    if (!pillarId) continue
+    out[pillarId] = {
+      instructions: (detail?.instructions ?? '').slice(0, 2000),
+      timing: (detail?.timing ?? '').slice(0, 80),
+    }
+  }
+  const keys = Object.keys(out)
+  return { focus_details: out, primary: keys[0] ?? null }
 }
 
 /** The three payout tiers a practice log can carry. 'standard' is the default. */
@@ -559,6 +594,14 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
   if (patch.domain_id !== undefined) update.domain_id = patch.domain_id || null
+  // Multi-Focus: write the per-Focus map and keep domain_id as the FIRST selected
+  // Focus (back-compat for Pillar filtering + cards). A focus_details patch wins on
+  // domain_id, since both describe the same Focus set.
+  if (patch.focus_details !== undefined) {
+    const { focus_details, primary } = cleanFocusDetails(patch.focus_details ?? {})
+    update.focus_details = focus_details
+    update.domain_id = primary
+  }
   if (patch.subcategory_id !== undefined) update.subcategory_id = patch.subcategory_id || null
   // Weight class drives the per-log Zap payout (light 8 / standard 12 / heavy 15).
   // Guard against an unexpected value so a bad client can't write a junk tier.
@@ -656,6 +699,7 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
       icon: src.icon,
       header_image: src.header_image,
       domain_id: src.domain_id,
+      focus_details: src.focus_details ?? {},
       subcategory_id: src.subcategory_id,
       created_by: profileId,
       is_public: false,
