@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Hash, EyeOff, Eye, Pencil, Check, X } from 'lucide-react'
 import { archiveChannel, unarchiveChannel, updateChannel } from '../actions'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
+import { DangerModal } from '@/components/admin/danger-modal'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { ChannelRow } from './load-channels'
 
@@ -23,6 +24,7 @@ const inputCls =
 
 function ChannelItem({ ch }: { ch: ChannelRow }) {
   const [editing, setEditing] = useState(false)
+  const [confirmHide, setConfirmHide] = useState(false)
   const [name, setName] = useState(ch.name)
   const [description, setDescription] = useState(ch.description ?? '')
   const [pending, start] = useTransition()
@@ -84,10 +86,19 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
         <button type="button" onClick={() => setEditing(true)} title="Edit" aria-label={`Edit ${ch.name}`} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none">
           <Pencil className="h-3.5 w-3.5" aria-hidden />
         </button>
-        <button type="button" onClick={archive} disabled={pending} title="Hide from discovery" aria-label={`Hide ${ch.name}`} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-warning-bg hover:text-warning disabled:opacity-50 motion-reduce:transition-none">
+        <button type="button" onClick={() => setConfirmHide(true)} disabled={pending} title="Hide from discovery" aria-label={`Hide ${ch.name}`} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-warning-bg hover:text-warning disabled:opacity-50 motion-reduce:transition-none">
           <EyeOff className="h-3.5 w-3.5" aria-hidden />
         </button>
       </div>
+
+      <DangerModal
+        open={confirmHide}
+        onClose={() => setConfirmHide(false)}
+        title={`Hide ${ch.name}?`}
+        body="This pulls the channel out of discovery so people stop finding it. You can restore it any time."
+        confirmLabel="Hide channel"
+        onConfirm={archive}
+      />
     </div>
   )
 }
