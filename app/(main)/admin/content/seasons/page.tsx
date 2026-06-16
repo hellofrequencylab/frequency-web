@@ -9,6 +9,7 @@ import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SeasonCreateForm } from './season-create'
+import { SeasonCloneButton } from './season-clone'
 import { StateBadge } from './state-badge'
 
 // The season calendar. Entity-Detail template (ADR-233 §3.4): the active (Live) season
@@ -44,7 +45,9 @@ export default async function AdminSeasonsPage() {
 
   const rows = (seasons ?? []) as SeasonRow[]
   const activeSeason = rows.find((s) => s.status === 'active') ?? null
-  const nextNumber = (rows[0]?.season_number ?? 0) + 1
+  // The most recent season (highest number) is the clone source — rows are sorted desc.
+  const lastSeason = rows[0] ?? null
+  const nextNumber = (lastSeason?.season_number ?? 0) + 1
 
   const columns: ColumnDef<SeasonRow>[] = [
     {
@@ -124,10 +127,19 @@ export default async function AdminSeasonsPage() {
 
       {janitor && (
         <AdminSection
-          title={`Create season ${nextNumber}`}
-          description="Opens as a draft. Take it live (or schedule it) from the season's Composer; the reset in Gamification closes the live season."
+          title={`Start season ${nextNumber}`}
+          description="Open a fresh Draft, or clone the last season to carry its Quest and Journeys forward. Either way it opens as a Draft; take it live (or schedule it) from the season's Composer. The reset in Gamification closes the live season."
         >
-          <SeasonCreateForm nextNumber={nextNumber} />
+          <div className="space-y-3">
+            {lastSeason && (
+              <SeasonCloneButton
+                sourceSeasonId={lastSeason.id}
+                sourceName={lastSeason.name}
+                nextNumber={nextNumber}
+              />
+            )}
+            <SeasonCreateForm nextNumber={nextNumber} />
+          </div>
         </AdminSection>
       )}
 

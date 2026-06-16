@@ -17,7 +17,7 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logAdminAction } from '@/lib/admin/audit'
 import { setPlanStatus, setPlanOfficial, type PlanStatus } from '@/lib/journey-plans'
-import { setPracticeFlags } from '@/lib/practices'
+import { setPracticeFlags, WEIGHT_CLASSES, type WeightClass } from '@/lib/practices'
 import {
   setJourneyFeatured,
   setPracticeFeatured,
@@ -153,6 +153,61 @@ export async function setAllPracticeFlagsAction(
   }
   revalidateContent('practices')
   return ok()
+}
+
+/** What a multi-select bulk edit may change on the chosen practices. Each field is
+ *  optional; only the ones present are written. Kept to the operator-safe library
+ *  controls (the payout tier + public visibility) — never the content fields. */
+export interface PracticeBulkPatch {
+  /** Payout tier: 'light' (8⚡) | 'standard' (12⚡) | 'heavy' (15⚡). */
+  weightClass?: WeightClass
+  /** Library visibility (publish / unpublish). */
+  isPublic?: boolean
+}
+
+/**
+ * Bulk-edit a chosen set of library practices (the multi-select bulk-action bar). Scoped
+ * to the explicit ids the operator selected — nothing outside the selection can be touched
+ * — and curator-gated, re-checked server-side: the client never carries authority. Every
+ * field is validated before it is written (a junk weight class is rejected, not coerced),
+ * and the patch is built field-by-field as a literal object so no remote key can be
+ * injected (CodeQL). Returns the number of rows the patch was applied to.
+ */
+export async function bulkUpdatePracticesAction(
+  ids: string[],
+  patch: PracticeBulkPatch,
+): Promise<ActionResult<{ count: number }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+
+  // De-dupe + bound the selection server-side (never trust the client's list length).
+  const cleanIds = [...new Set(ids.filter((id) => typeof id === 'string' && id.length > 0))].slice(0, 500)
+  if (cleanIds.length === 0) return fail('Select at least one practice.')
+
+  // Build the update literal field-by-field, validating each value. A precise shape (not
+  // Record<string, unknown>) keeps PostgREST's column typing + avoids remote key injection.
+  const update: { weight_class?: string; is_public?: boolean } = {}
+  if (patch.weightClass !== undefined) {
+    if (!WEIGHT_CLASSES.includes(patch.weightClass)) return fail('Unknown weight class.')
+    update.weight_class = patch.weightClass
+  }
+  if (patch.isPublic !== undefined) {
+    update.is_public = patch.isPublic === true
+  }
+  if (Object.keys(update).length === 0) return fail('Nothing to change.')
+
+  try {
+    const admin = createAdminClient()
+    const { error } = await admin.from('practices').update(update).in('id', cleanIds)
+    if (error) return fail(error.message)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not update the practices.')
+  }
+  revalidateContent('practices')
+  return ok({ count: cleanIds.length })
 }
 
 export async function setPracticeStatusAction(
@@ -394,6 +449,260 @@ export async function setSeasonStatusAction(
   })
   revalidateContent('seasons')
   return ok()
+}
+
+/**
+ * Clone a whole season's STRUCTURE into a brand-new season opened as Draft. The
+ * Shopify safety rule applies: a clone NEVER auto-publishes — the copy lands as a
+ * 'draft' with its windows cleared so the operator re-schedules and renames before
+ * anything goes live. Janitor-only, re-checked server-side; every write goes through
+ * the service-role admin client.
+ *
+ * Copy scope (what's DUPLICATED into the new season):
+ *   - A new `seasons` row: next season_number, name "<source> (copy)", theme carried,
+ *     status='draft', NO starts_at/ends_at (windows cleared).
+ *   - A new `quests` container for the new season (mirrors the source Quest's name /
+ *     description / emoji / accent; a fresh unique slug; season = the new number).
+ *   - Each official Journey under the source Quest → a NEW `journey_plans` row: a fresh
+ *     unique slug (source slug + "-s<n>"), title/summary/intro/accent/emoji/official/
+ *     completion_gems/ranked_eligible carried, windows cleared, linked to the new Quest,
+ *     visibility 'public', status 'approved'.
+ *   - Each Journey's items → new `journey_plan_items` rows (same practice_id + domain_id +
+ *     sort_order + note + cadence + the block fields). Practices are SHARED library rows —
+ *     they are referenced, never duplicated.
+ *   - Each Journey's Expression Challenge → a new `season_challenges` row: season = the new
+ *     number, a fresh unique slug, name/description/category/difficulty/criteria/target/
+ *     zaps_reward carried, journey_id re-pointed to the new Journey, is_active true. The
+ *     criteria.journey_slug is rewritten to the new Journey's slug so the member lookup
+ *     resolves under the new season.
+ *
+ * Best-effort atomicity: there is no single SQL function here, so the writes are ordered
+ * season → quest → journeys → items → challenges, and a failure at any step returns the
+ * error (the half-built draft is inert — nothing public references a draft season).
+ * Returns the new season's id on success.
+ */
+export async function cloneSeasonAction(
+  sourceSeasonId: string,
+): Promise<ActionResult<{ seasonId: string }>> {
+  let caller: { id: string }
+  try {
+    caller = await requireJanitor()
+  } catch {
+    return fail('Janitor only.')
+  }
+
+  const client = ub()
+
+  // 1. The source season identity.
+  const { data: srcSeasonRow } = await client
+    .from('seasons')
+    .select('id, season_number, name, theme')
+    .eq('id', sourceSeasonId)
+    .maybeSingle()
+  const srcSeason = srcSeasonRow as {
+    id: string
+    season_number: number
+    name: string
+    theme: string | null
+  } | null
+  if (!srcSeason) return fail('That season no longer exists.')
+
+  // 2. The next season number (one past the highest existing).
+  const { data: maxRow } = await client
+    .from('seasons')
+    .select('season_number')
+    .order('season_number', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const nextNumber = ((maxRow as { season_number: number } | null)?.season_number ?? 0) + 1
+
+  // 3. The new season — Draft, theme carried, windows CLEARED (operator re-schedules).
+  const newName = `${srcSeason.name} (copy)`.slice(0, 120)
+  const { data: newSeasonRow, error: seasonErr } = await client
+    .from('seasons')
+    .insert({
+      season_number: nextNumber,
+      name: newName,
+      theme: srcSeason.theme,
+      status: 'draft',
+    })
+    .select('id')
+    .maybeSingle()
+  if (seasonErr) return fail(seasonErr.message)
+  const newSeasonId = (newSeasonRow as { id: string } | null)?.id
+  if (!newSeasonId) return fail('Could not open the new season.')
+
+  // 4. The source Quest container (its official Journeys hang under it).
+  const { data: srcQuestRow } = await client
+    .from('quests')
+    .select('id, name, description, emoji, accent')
+    .eq('season', srcSeason.season_number)
+    .order('sort_order', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  const srcQuest = srcQuestRow as {
+    id: string
+    name: string
+    description: string | null
+    emoji: string | null
+    accent: string | null
+  } | null
+
+  // No Quest on the source = an empty season: the new Draft season stands on its own
+  // (the operator can compose it from scratch). Nothing more to copy.
+  if (!srcQuest) {
+    await logAdminAction({
+      actorId: caller.id,
+      action: 'content.season.clone',
+      targetType: 'season',
+      targetId: newSeasonId,
+      detail: { source: srcSeason.season_number, season_number: nextNumber, journeys: 0 },
+    })
+    revalidateContent('seasons')
+    return ok({ seasonId: newSeasonId })
+  }
+
+  // 5. A new Quest container for the new season (mirrors the source; fresh unique slug).
+  const questSlug = `season-quest-${nextNumber}-${Math.random().toString(36).slice(2, 8)}`
+  const { data: newQuestRow, error: questErr } = await client
+    .from('quests')
+    .insert({
+      slug: questSlug,
+      season: nextNumber,
+      name: srcQuest.name,
+      description: srcQuest.description,
+      emoji: srcQuest.emoji,
+      accent: srcQuest.accent,
+      status: 'active',
+      sort_order: 0,
+    })
+    .select('id')
+    .maybeSingle()
+  if (questErr) return fail(questErr.message)
+  const newQuestId = (newQuestRow as { id: string } | null)?.id
+  if (!newQuestId) return fail('Could not create the new Quest.')
+
+  // 6. The source's official Journeys, in their existing order.
+  const { data: srcJourneyRows } = await client
+    .from('journey_plans')
+    .select(
+      'id, slug, title, summary, intro, emoji, accent, official, completion_gems, ranked_eligible',
+    )
+    .eq('quest_id', srcQuest.id)
+    .eq('official', true)
+    .order('window_starts_at', { ascending: true, nullsFirst: true })
+    .order('title', { ascending: true })
+  const srcJourneys = (srcJourneyRows ?? []) as {
+    id: string
+    slug: string
+    title: string
+    summary: string | null
+    intro: string | null
+    emoji: string | null
+    accent: string | null
+    official: boolean
+    completion_gems: number | null
+    ranked_eligible: boolean | null
+  }[]
+
+  let journeyCount = 0
+  for (const j of srcJourneys) {
+    // New Journey: windows CLEARED, linked to the new Quest, fresh unique slug.
+    const newSlug = `${j.slug}-s${nextNumber}-${Math.random().toString(36).slice(2, 6)}`
+    const { data: newJourneyRow, error: journeyErr } = await client
+      .from('journey_plans')
+      .insert({
+        slug: newSlug,
+        title: j.title,
+        summary: j.summary,
+        intro: j.intro,
+        emoji: j.emoji,
+        accent: j.accent,
+        visibility: 'public',
+        official: j.official,
+        quest_id: newQuestId,
+        status: 'approved',
+        completion_gems: j.completion_gems ?? 30,
+        ranked_eligible: j.ranked_eligible ?? false,
+        window_starts_at: null,
+        window_ends_at: null,
+      })
+      .select('id')
+      .maybeSingle()
+    if (journeyErr) return fail(journeyErr.message)
+    const newJourneyId = (newJourneyRow as { id: string } | null)?.id
+    if (!newJourneyId) return fail('Could not copy a Journey.')
+    journeyCount += 1
+
+    // The Journey's items — practices are SHARED, so copy the references only.
+    const { data: itemRows } = await client
+      .from('journey_plan_items')
+      .select(
+        'practice_id, domain_id, sort_order, note, cadence, block_type, parent_id, title, body, media, settings, required, est_minutes',
+      )
+      .eq('plan_id', j.id)
+      .order('sort_order', { ascending: true })
+    const items = (itemRows ?? []) as Record<string, unknown>[]
+    if (items.length > 0) {
+      const { error: itemsErr } = await client
+        .from('journey_plan_items')
+        .insert(items.map((it) => ({ ...it, plan_id: newJourneyId })))
+      if (itemsErr) return fail(itemsErr.message)
+    }
+
+    // The Journey's Expression Challenge (if any) — re-pointed to the new Journey, with
+    // its criteria.journey_slug rewritten so the member lookup resolves this season.
+    const { data: srcChallengeRow } = await client
+      .from('season_challenges')
+      .select('slug, name, description, category, difficulty, criteria, target, zaps_reward, sort_order')
+      .eq('season', srcSeason.season_number)
+      .eq('journey_id', j.id)
+      .maybeSingle()
+    const srcChallenge = srcChallengeRow as {
+      slug: string
+      name: string
+      description: string
+      category: string
+      difficulty: string
+      criteria: Json
+      target: number
+      zaps_reward: number
+      sort_order: number
+    } | null
+    if (srcChallenge) {
+      // Rewrite the criteria's journey_slug to the new Journey's slug; keep everything else.
+      let criteria: Json = srcChallenge.criteria
+      if (criteria && typeof criteria === 'object' && !Array.isArray(criteria)) {
+        criteria = { ...(criteria as Record<string, Json>), journey_slug: newSlug }
+      }
+      const challengeSlug = `${srcChallenge.slug}-s${nextNumber}-${Math.random().toString(36).slice(2, 6)}`.slice(0, 64)
+      const { error: challengeErr } = await client.from('season_challenges').insert({
+        season: nextNumber,
+        slug: challengeSlug,
+        name: srcChallenge.name,
+        description: srcChallenge.description,
+        category: srcChallenge.category,
+        difficulty: srcChallenge.difficulty,
+        criteria,
+        target: srcChallenge.target,
+        zaps_reward: srcChallenge.zaps_reward,
+        sort_order: srcChallenge.sort_order,
+        is_active: true,
+        journey_id: newJourneyId,
+      })
+      if (challengeErr) return fail(challengeErr.message)
+    }
+  }
+
+  await logAdminAction({
+    actorId: caller.id,
+    action: 'content.season.clone',
+    targetType: 'season',
+    targetId: newSeasonId,
+    detail: { source: srcSeason.season_number, season_number: nextNumber, journeys: journeyCount },
+  })
+  revalidateContent('seasons')
+  return ok({ seasonId: newSeasonId })
 }
 
 // --- Challenges ------------------------------------------------------------------

@@ -1,57 +1,41 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import {
   Map,
   BookOpen,
   Trophy,
   CalendarRange,
-  Star,
-  Inbox,
   Sparkles,
   GraduationCap,
   ArrowUpRight,
+  CheckCircle2,
+  Scale,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { isJanitor } from '@/lib/core/roles'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentSeason } from '@/lib/seasons'
+import { EmptyState } from '@/components/ui/empty-state'
+import { StatusChip } from '@/components/admin/status'
+import { StateBadge } from './seasons/state-badge'
+import { getContentHomeData, type NeedsYouItem, type ContentHealth } from '@/lib/admin/content-home'
 
-// The content suite HOME — a lean navigation hub (ADR-267, cleanup pass): the at-a-glance
-// curation numbers (each drills in) + the doors to each working surface. The ranked
-// curation tables (top member Journeys/Practices with feature/official toggles) are NOT
-// duplicated here any more — that curation lives on the dedicated sub-pages
-// (/admin/content/journeys + /practices), which the stats and doors link straight into.
-// Stripped to its primary functions so a fuller Content Studio can build out from a clean
-// base (BACKLOG P3). Gate: host+ / community staff (each sub-surface keeps its own gate).
+// The content suite HOME — the operator "needs you" workspace (QUEST-UI-REDESIGN §4.5/§A7):
+// the work list that needs a decision today, a small at-a-glance health strip, and the
+// doors into each working surface. A dashboard is glance-and-act, not an exploration tool
+// (NN/g), so the action sits next to the metric: every "needs you" item links to the
+// surface that fixes it, and every health number drills in. The ranked curation tables
+// live on the dedicated sub-pages (/journeys, /practices), not here. Gate: host+ /
+// community staff (each sub-surface keeps its own gate).
 
 export default async function AdminContentPage() {
   const { webRole } = await requireAdmin('host', { staff: 'community' })
   const janitor = isJanitor(webRole)
 
-  const admin = createAdminClient()
-  const [
-    season,
-    { count: officialCount },
-    { count: pendingJourneys },
-    { count: pendingPractices },
-    { count: featuredJourneys },
-    { count: featuredPractices },
-  ] = await Promise.all([
-    getCurrentSeason(),
-    admin.from('journey_plans').select('id', { count: 'exact', head: true }).eq('official', true),
-    admin.from('journey_plans').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    admin.from('practices').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    admin.from('journey_plans').select('id', { count: 'exact', head: true }).not('featured_at', 'is', null),
-    admin.from('practices').select('id', { count: 'exact', head: true }).not('featured_at', 'is', null),
-  ] as const)
-
-  const pendingTotal = (pendingJourneys ?? 0) + (pendingPractices ?? 0)
-
   const doors = [
     { href: '/admin/content/seasons', label: 'Seasons', desc: 'The season calendar. Create the next one.', Icon: CalendarRange },
     { href: '/admin/content/journeys', label: 'Journeys', desc: 'Review queue, official marks, and what is performing.', Icon: Map },
-    { href: '/admin/content/practices', label: 'Practices', desc: 'Library curation: visibility, templates, and features.', Icon: BookOpen },
+    { href: '/admin/content/practices', label: 'Practices', desc: 'Library curation: visibility, weight class, and features.', Icon: BookOpen },
     { href: '/admin/content/challenges', label: 'Challenges', desc: 'Edit and add this season’s challenges.', Icon: Trophy },
     { href: '/admin/content/training', label: 'Role training', desc: 'The advancement curriculum each promotion teaches.', Icon: GraduationCap },
     ...(janitor
@@ -63,36 +47,14 @@ export default async function AdminContentPage() {
     <AdminTemplate
       title="Content"
       eyebrow="Engage"
-      description="Curate the Quest: seasons, official Journeys, the practice library, and challenges. Open a surface to do the work."
+      description="The Quest at a glance: what needs a decision today, how the season is doing, and the doors into each working surface."
       width="default"
     >
-      <AdminSection>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard
-            label="Active season"
-            value={season ? season.name : 'None'}
-            detail={season?.theme ?? undefined}
-            icon={CalendarRange}
-            size="sm"
-            href="/admin/content/seasons"
-          />
-          <StatCard label="Official journeys" value={officialCount ?? 0} icon={Map} href="/admin/content/journeys" />
-          <StatCard
-            label="Pending reviews"
-            value={pendingTotal}
-            detail={`${pendingJourneys ?? 0} journeys, ${pendingPractices ?? 0} practices`}
-            icon={Inbox}
-            href="/admin/content/journeys"
-          />
-          <StatCard
-            label="Featured"
-            value={(featuredJourneys ?? 0) + (featuredPractices ?? 0)}
-            detail={`${featuredJourneys ?? 0} journeys, ${featuredPractices ?? 0} practices`}
-            icon={Star}
-            href="/admin/content/practices"
-          />
-        </div>
-      </AdminSection>
+      {/* Speed is structural: the home shell renders instantly; the data-backed strip
+          and work list stream in behind one Suspense (PAGE-FRAMEWORK §5). */}
+      <Suspense fallback={<HomeSkeleton />}>
+        <ContentHomeBody />
+      </Suspense>
 
       <AdminSection title="Work in the suite" description="Each surface is where the real curation happens.">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -117,5 +79,155 @@ export default async function AdminContentPage() {
         </div>
       </AdminSection>
     </AdminTemplate>
+  )
+}
+
+async function ContentHomeBody() {
+  const { health, needsYou } = await getContentHomeData()
+  return (
+    <>
+      <HealthStrip health={health} />
+      <NeedsYouList items={needsYou} />
+    </>
+  )
+}
+
+// --- The health strip: active season + headline counts (each drills in) ----------
+
+function HealthStrip({ health }: { health: ContentHealth }) {
+  const { season, seasonState, daysLeft } = health
+  const seasonValue = season ? season.name : 'No season'
+  const seasonDetail =
+    season && daysLeft != null
+      ? `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`
+      : season?.theme ?? 'Schedule the next one'
+
+  return (
+    <AdminSection>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Link
+          href={season ? `/admin/content/seasons/${season.id}` : '/admin/content/seasons'}
+          className="block rounded-2xl bg-surface-elevated/60 px-3.5 py-2.5 transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <p className="truncate text-sm font-bold text-text">{seasonValue}</p>
+            <StateBadge state={season ? undefined : 'ended'} status={season?.status} size="sm" />
+          </div>
+          <p className="mt-1 text-xs font-medium text-muted">Active season</p>
+          <p className="mt-0.5 text-xs text-subtle">
+            {season ? `${seasonState.label} · ${seasonDetail}` : seasonDetail}
+          </p>
+        </Link>
+        <StatCard
+          label="Official journeys"
+          value={health.officialJourneys}
+          detail={`${health.rankedLibraryJourneys} ranked from the library`}
+          icon={Map}
+          href="/admin/content/journeys"
+        />
+        <StatCard
+          label="Public practices"
+          value={health.publicPractices}
+          detail={
+            health.practicesUncategorized > 0
+              ? `${health.practicesUncategorized} need a Pillar`
+              : 'All sorted into Pillars'
+          }
+          icon={BookOpen}
+          href="/admin/content/practices"
+        />
+        <PillarSpreadCard health={health} />
+      </div>
+    </AdminSection>
+  )
+}
+
+/** The Pillar balance at a glance: the four public-practice counts, flagging any Pillar
+ *  that is thin so the library stays balanced across Mind / Body / Spirit / Expression. */
+function PillarSpreadCard({ health }: { health: ContentHealth }) {
+  const spread = health.pillarSpread
+  const max = Math.max(0, ...spread.map((p) => p.count))
+  const thin = spread.filter((p) => p.count < max).map((p) => p.name)
+  return (
+    <Link
+      href="/admin/content/practices"
+      className="block rounded-2xl bg-surface-elevated/60 px-3.5 py-2.5 transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-bold tabular-nums text-text">
+          {spread.length > 0 ? spread.map((p) => p.count).join(' · ') : '0'}
+        </p>
+        <Scale className="mt-0.5 h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+      </div>
+      <p className="mt-1 text-xs font-medium text-muted">Pillar spread</p>
+      <p className="mt-0.5 text-xs text-subtle">
+        {spread.length === 0
+          ? 'Mind · Body · Spirit · Expression'
+          : thin.length === 0
+            ? 'Balanced across Pillars'
+            : `Thin: ${thin.join(', ')}`}
+      </p>
+    </Link>
+  )
+}
+
+// --- The "needs you" work list ----------------------------------------------------
+
+function NeedsYouList({ items }: { items: NeedsYouItem[] }) {
+  return (
+    <AdminSection
+      title="Needs you"
+      description="Actionable items, most urgent first. Each opens the surface that fixes it."
+    >
+      {items.length === 0 ? (
+        <EmptyState
+          variant="cleared"
+          title="All clear"
+          description="Nothing is waiting on a decision. The season, Journeys, challenges, and the library are in good shape."
+        />
+      ) : (
+        <ul className="overflow-hidden rounded-2xl border border-border bg-surface">
+          {items.map((item) => (
+            <li key={item.id} className="border-b border-border/50 last:border-b-0">
+              <Link
+                href={item.href}
+                className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-elevated/60 motion-reduce:transition-none"
+              >
+                <StatusChip tone={item.tone} size="sm">
+                  {item.tone === 'warning' ? 'Act' : 'Review'}
+                </StatusChip>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-text">{item.title}</span>
+                  <span className="mt-0.5 block text-xs text-muted">{item.detail}</span>
+                </span>
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100 motion-reduce:transition-none" aria-hidden />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </AdminSection>
+  )
+}
+
+// --- Loading skeleton (matches the strip + list shape) ---------------------------
+
+function HomeSkeleton() {
+  return (
+    <>
+      <AdminSection>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-[4.5rem] animate-pulse rounded-2xl bg-surface-elevated/60" />
+          ))}
+        </div>
+      </AdminSection>
+      <AdminSection title="Needs you">
+        <div className="flex items-center gap-2 rounded-2xl border border-dashed border-border bg-surface/50 px-4 py-8 text-sm text-subtle">
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
+          Checking what needs a decision…
+        </div>
+      </AdminSection>
+    </>
   )
 }
