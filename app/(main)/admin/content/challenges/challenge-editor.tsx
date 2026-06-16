@@ -6,10 +6,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, Plus, Mountain, ChevronUp, ChevronDown, Trash2, Eye, EyeOff, Pencil, X } from 'lucide-react'
+import { Zap, Plus, Mountain, ChevronUp, ChevronDown, Trash2, Eye, EyeOff, Pencil } from 'lucide-react'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
+import { StudioWindow } from '@/components/studio/studio-window'
+import { StudioFooter } from '@/components/studio/kit/studio-footer'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
 import {
@@ -42,7 +43,7 @@ export interface ChallengeRow {
 const DIFFICULTIES = ['easy', 'normal', 'hard', 'legendary'] as const
 const CATEGORIES = ['social', 'events', 'content', 'leadership', 'streak', 'seasonal', 'special'] as const
 
-// ── The popup edit form for one challenge (shown in a Dialog) ────────────────
+// ── The popup edit form for one challenge (shown in the shared Studio window) ──
 function ChallengeEditForm({
   challenge,
   journeys,
@@ -89,26 +90,31 @@ function ChallengeEditForm({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-xl">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-base font-bold text-text">
-            {isExpression ? 'Edit Expression Challenge' : 'Edit challenge'}
-          </h3>
-          <p className="mt-0.5 text-xs text-subtle">
-            {row.completed}/{row.started} completed{row.started > 0 ? ` · ${row.rate}%` : ''}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="shrink-0 rounded-lg p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+    <StudioWindow
+      open
+      onClose={onClose}
+      eyebrow={isExpression ? 'Studio · Expression Challenge' : 'Studio · Challenge'}
+      footer={
+        <StudioFooter
+          left={
+            error ? (
+              <span className="text-xs text-danger">{error}</span>
+            ) : (
+              <span className="text-xs text-subtle">
+                {row.completed}/{row.started} completed{row.started > 0 ? ` · ${row.rate}%` : ''}
+              </span>
+            )
+          }
         >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
+          <Button variant="secondary" size="sm" onClick={onClose} disabled={pending}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={save} disabled={pending || !dirty}>
+            {pending ? 'Saving…' : 'Save changes'}
+          </Button>
+        </StudioFooter>
+      }
+    >
       <div className="space-y-3">
         {isExpression && (
           <div className="space-y-1">
@@ -180,17 +186,7 @@ function ChallengeEditForm({
           </div>
         </div>
       </div>
-
-      <div className="mt-5 flex items-center justify-end gap-2">
-        {error && <span className="mr-auto text-xs text-danger">{error}</span>}
-        <Button variant="secondary" size="sm" onClick={onClose} disabled={pending}>
-          Cancel
-        </Button>
-        <Button size="sm" onClick={save} disabled={pending || !dirty}>
-          {pending ? 'Saving…' : 'Save changes'}
-        </Button>
-      </div>
-    </div>
+    </StudioWindow>
   )
 }
 
@@ -306,9 +302,9 @@ function ChallengeListItem({
         </button>
       </div>
 
-      <Dialog open={editing} onClose={() => setEditing(false)} className="max-w-xl">
+      {editing && (
         <ChallengeEditForm challenge={challenge} journeys={journeys} onClose={() => setEditing(false)} />
-      </Dialog>
+      )}
 
       <DangerModal
         open={confirmDelete}

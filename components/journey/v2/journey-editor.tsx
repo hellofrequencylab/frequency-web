@@ -136,12 +136,10 @@ const LOOSE_KEY = '__loose__'
 
 export function JourneyEditor({
   slug,
-  title,
   blocks,
   practices = [],
 }: {
   slug: string
-  title: string
   blocks: EditorBlock[]
   practices?: EditorPractice[]
 }) {
@@ -314,10 +312,12 @@ export function JourneyEditor({
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center justify-between gap-3">
+      {/* Section header — the identity/title lives in the Settings card above, so this is just
+          the structure section's label, not a second page title. */}
+      <header className="flex items-end justify-between gap-3 border-t border-border pt-4">
         <div>
-          <h1 className="text-xl font-bold text-text">{title}</h1>
-          <p className="text-sm text-muted">Build your journey: add phases, then fill each with bite-sized lessons and practices.</p>
+          <h2 className="text-base font-bold text-text">Structure</h2>
+          <p className="text-sm text-muted">Add phases, then fill each with bite-sized lessons and practices.</p>
         </div>
         <Link
           href={`/journeys/${slug}/learn`}
