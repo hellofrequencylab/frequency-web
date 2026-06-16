@@ -22,6 +22,15 @@ describe('moduleIdsForScope', () => {
     expect(j).toEqual(['admin-journeys-stats', 'admin-journeys-review', 'admin-journeys-library'])
   })
 
+  it('the practices page resolves only its upper, personal blocks (the library stays fixed)', () => {
+    const p = moduleIdsForScope('/practices')
+    expect(p).toBe(ROUTE_MODULE_IDS['/practices'])
+    expect(p).toEqual(['practices-stats', 'practices-activity', 'practices-mine'])
+    // No leakage, and the faceted library is NOT a module (it reads searchParams).
+    expect(p).not.toContain('community-pulse')
+    expect(p).not.toContain('practices-library')
+  })
+
   it('an unconverted route falls back through its section to the global set', () => {
     // No '/lead' or '/lead/*' set declared → inherits the global community set.
     expect(moduleIdsForScope('/lead')).toEqual(LAYOUT_MODULE_IDS)
