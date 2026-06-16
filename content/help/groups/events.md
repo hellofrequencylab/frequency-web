@@ -3,7 +3,7 @@ title: Events & RSVPs
 description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
-updated: 2026-06-10
+updated: 2026-06-16
 audience: member
 role: host
 featureKeys: [events]
@@ -35,6 +35,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 ## Finding events
 
 - Browse the events library and filter by **what kind of gathering** it is (ceremony, movement, learning, social, and more), by its **energy** (grounding vs. high-activation), or to show only events that still **have open spots**.
+- An event with a small star is **Featured**: a gathering the Frequency team has highlighted.
 - Set a home location on your profile and you can also filter by **distance**, showing only gatherings hosted within 10, 25, or 50 km of you. (We use your approximate neighborhood, never your exact address.)
 - When we have a sense of what fits you, a **"For You"** lane suggests gatherings you'd be into, and tells you, plainly, *why*. If we don't have enough to go on yet, you'll just see what's soonest and nearest.
 
