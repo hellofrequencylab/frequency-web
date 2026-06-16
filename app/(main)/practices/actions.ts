@@ -218,6 +218,20 @@ export async function deletePracticeAction(id: string): Promise<ActionResult> {
   return ok()
 }
 
+// Delete a practice you created (or any practice as an operator). Owner-or-admin — mirrors the
+// editor's edit gate, so an author can remove their own practice straight from the builder.
+export async function deleteOwnPracticeAction(id: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const existing = await getPractice(id)
+  if (!existing) return fail('Practice not found')
+  if (existing.created_by !== profileId && !(await getGlobalCapabilities()).has('admin.access'))
+    return fail('You can only delete practices you created')
+  await deletePractice(id)
+  revalidatePath('/practices')
+  return ok()
+}
+
 // Override a practice's per-log Zap reward + the card's reward note (admin-only: members
 // must not set their own payout, so this is gated apart from the author-editable builder fields).
 export async function setPracticeRewardAction(

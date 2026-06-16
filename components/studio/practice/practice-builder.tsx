@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useState, createElement } from 'react'
+import { useCallback, useState, useTransition, createElement } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Sparkles, Waves, Footprints, Snowflake, Brain, Flame, Heart, Leaf, Sun, Moon, Eye,
+  Sparkles, Waves, Footprints, Snowflake, Brain, Flame, Heart, Leaf, Sun, Moon, Eye, Trash2,
   type LucideIcon,
 } from 'lucide-react'
 import { StudioWindow } from '../studio-window'
@@ -11,7 +11,9 @@ import { useStudioDraft } from '../kit/use-studio-draft'
 import { StudioField } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { ImageUpload } from '@/components/ui/image-upload'
-import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction } from '@/app/(main)/practices/actions'
+import { DangerModal } from '@/components/admin/danger-modal'
+import { isError } from '@/lib/action-result'
+import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction, deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
 import type { PracticeEdit, WeightClass } from '@/lib/practices'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
@@ -94,6 +96,14 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [iconOpen, setIconOpen] = useState(false)
   const [rewardZaps, setRewardZaps] = useState(props.rewardZaps != null ? String(props.rewardZaps) : '')
   const [rewardNote, setRewardNote] = useState(props.rewardNote ?? '')
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, startDelete] = useTransition()
+
+  const remove = () =>
+    startDelete(async () => {
+      const r = await deleteOwnPracticeAction(props.id)
+      if (!isError(r)) router.push('/practices')
+    })
 
   const saveReward = () =>
     void run(() =>
@@ -309,6 +319,35 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       </div>
 
       <p className="mt-4 text-xs text-subtle">Changes apply everywhere this practice appears.</p>
+
+      {/* Danger zone — delete your own practice (owner-or-admin, re-checked server-side). */}
+      <div className="mt-6 border-t border-border pt-4">
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Danger zone</p>
+        <button
+          type="button"
+          onClick={() => setConfirmDelete(true)}
+          disabled={deleting}
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-danger/30 px-3 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-bg/40 disabled:opacity-60"
+        >
+          <Trash2 className="h-4 w-4" /> Delete this practice
+        </button>
+        <p className="mt-1.5 text-2xs text-muted">Removes it from the library, with its logs and adoptions. This cannot be undone.</p>
+      </div>
+
+      <DangerModal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="Delete practice"
+        body={
+          <>
+            This removes <span className="font-semibold text-text">{title || 'this practice'}</span> from the
+            library for everyone, with its logs and adoptions. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete practice"
+        requireTyping={title || 'this practice'}
+        onConfirm={remove}
+      />
     </StudioWindow>
   )
 }

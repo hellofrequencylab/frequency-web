@@ -26,6 +26,7 @@ import {
   planAuthorId,
   planMeta,
   applyVeraReview,
+  deletePlan,
   type PlanVisibility,
   type PlanStatus,
   type PageWidgetConfig,
@@ -335,6 +336,16 @@ export async function setJourneyVisibility(
  * admin client and `ranked_eligible` is set from it (so a stale approval can't survive a
  * material edit). Returns the fresh verdict + coaching for the builder.
  */
+/** Delete a Journey. The author OR an operator (admin.access) may delete — same owner-or-admin
+ *  gate as every other editor action (assertOwner). Mirrors the admin library delete, but lets
+ *  the author remove their own Journey straight from the editor. */
+export async function deleteJourney(planId: string): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await deletePlan(planId)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
 export async function submitJourneyForReview(
   planId: string,
 ): Promise<ActionResult<{ review: StoredVeraReview }>> {
