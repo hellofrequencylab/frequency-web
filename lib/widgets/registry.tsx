@@ -12,6 +12,9 @@ import { QuestLeaderboard } from '@/components/widgets/quest/quest-leaderboard'
 import { AdminJourneysStats } from '@/components/widgets/admin/admin-journeys-stats'
 import { AdminJourneysReview } from '@/components/widgets/admin/admin-journeys-review'
 import { AdminJourneysLibrary } from '@/components/widgets/admin/admin-journeys-library'
+import { JourneysStart } from '@/components/widgets/journeys/journeys-start'
+import { JourneysMine } from '@/components/widgets/journeys/journeys-mine'
+import { JourneysLibrary } from '@/components/widgets/journeys/journeys-library'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -35,6 +38,10 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'admin-journeys-stats': AdminJourneysStats,
   'admin-journeys-review': AdminJourneysReview,
   'admin-journeys-library': AdminJourneysLibrary,
+  // Journeys member page (/journeys).
+  'journeys-start': JourneysStart,
+  'journeys-mine': JourneysMine,
+  'journeys-library': JourneysLibrary,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {

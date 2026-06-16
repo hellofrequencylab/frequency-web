@@ -36,6 +36,11 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'admin-journeys-stats', label: 'Journey stats', description: 'Headline counts: library size, awaiting review, official, and active adoptions.' },
   { id: 'admin-journeys-review', label: 'Review queue', description: 'Member-submitted Journeys waiting for an approve or reject decision.' },
   { id: 'admin-journeys-library', label: 'Journey library', description: 'The ranked public library with the official, feature, and restore controls.' },
+
+  // ── Journeys blocks (/journeys) — the member browse + build page ──
+  { id: 'journeys-start', label: 'Start a journey', description: 'The two ways in: build your own, or open this season’s official Quest.' },
+  { id: 'journeys-mine', label: 'Your journeys', description: 'The journeys the viewer has kept or built.' },
+  { id: 'journeys-library', label: 'Community library', description: 'The open library of public journeys to browse and adopt.' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
@@ -60,6 +65,9 @@ const ADMIN_JOURNEYS_MODULE_IDS = [
   'admin-journeys-library',
 ] as const
 
+// The Journeys member page (/journeys), in default render order.
+const JOURNEYS_MODULE_IDS = ['journeys-start', 'journeys-mine', 'journeys-library'] as const
+
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section
  *  ('/seg/*'), or an exact route. Add a route's set here when you convert its page to
  *  `<PageModules>` (and list it in lib/widgets/module-routes.ts). */
@@ -67,6 +75,7 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '*': COMMUNITY_MODULE_IDS,
   '/crew': CREW_MODULE_IDS,
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
+  '/journeys': JOURNEYS_MODULE_IDS,
 }
 
 /** Back-compat: the default (global) module id set. */
