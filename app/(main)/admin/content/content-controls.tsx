@@ -7,12 +7,14 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Star, Check, X } from 'lucide-react'
+import { Star, Check, X, Trash2 } from 'lucide-react'
 import { isError, type ActionResult } from '@/lib/action-result'
+import { DangerModal } from '@/components/admin/danger-modal'
 import {
   setJourneyStatusAction,
   setJourneyOfficialAction,
   setJourneyFeaturedAction,
+  deleteJourneyPlanAction,
   setPracticeFlagsAction,
   setPracticeStatusAction,
   setPracticeFeaturedAction,
@@ -177,6 +179,50 @@ export function JourneyRestoreButton({ id }: { id: string }) {
 
 export function JourneyFeatureToggle({ id, featured }: { id: string; featured: boolean }) {
   return <FeatureStar featured={featured} act={(next) => setJourneyFeaturedAction(id, next)} />
+}
+
+/** Delete a Journey from the library — type-to-confirm (irreversible; deleteJourneyPlanAction
+ *  is curator-gated server-side). */
+export function JourneyDeleteButton({ id, title }: { id: string; title: string }) {
+  const [open, setOpen] = useState(false)
+  const [pending, start] = useTransition()
+  const router = useRouter()
+
+  function remove() {
+    start(async () => {
+      const r = await deleteJourneyPlanAction(id)
+      if (!isError(r)) router.refresh()
+    })
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        disabled={pending}
+        title={`Delete ${title}`}
+        aria-label={`Delete ${title}`}
+        className="rounded-md p-1 text-subtle transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+      <DangerModal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Delete journey"
+        body={
+          <>
+            This removes <span className="font-semibold text-text">{title}</span> from the library for
+            everyone, along with its steps and adoptions. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete journey"
+        requireTyping={title}
+        onConfirm={remove}
+      />
+    </>
+  )
 }
 
 /** Official switch + the Quest it files under. Toggling official on attaches the

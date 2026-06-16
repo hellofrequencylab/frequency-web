@@ -33,18 +33,23 @@ import {
 } from '@/lib/journey-plans'
 import { getSeasonalQuests } from '@/lib/quests'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
+import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 
 // Server actions for the Journeys builder (ADR-096; free, ADR-152).
 // Building, editing, publishing to the community library, and adopting/forking
 // anyone's public journey are ALL free — Journeys carry no paywall. FormData-based
 // so the builder works without client JS.
 
-/** Caller must be the plan's author. Returns the caller's profile id, or null. */
+/** Caller must be the plan's author OR an operator (admin.access — they may manage any
+ *  Journey in the library, the same bypass updatePracticeAction grants). Returns the caller's
+ *  profile id, or null. */
 async function assertOwner(planId: string): Promise<string | null> {
   const profileId = await getMyProfileId()
   if (!profileId) return null
   const author = await planAuthorId(planId)
-  return author && author === profileId ? profileId : null
+  if (author && author === profileId) return profileId
+  if ((await getGlobalCapabilities()).has('admin.access')) return profileId
+  return null
 }
 
 const revalidateSlug = (formData: FormData) =>
@@ -301,7 +306,10 @@ export async function setJourneyVisibility(
   const caller = await getCallerProfile()
   if (!caller) return fail('Not allowed.')
   const author = await planAuthorId(planId)
-  if (!author || author !== caller.id) return fail('Not allowed.')
+  // The author, or an operator (admin.access) managing any Journey — same bypass assertOwner
+  // grants, so an operator who opens a member's Journey in the editor can publish/unpublish it.
+  const isOwnerOrAdmin = author === caller.id || (await getGlobalCapabilities()).has('admin.access')
+  if (!isOwnerOrAdmin) return fail('Not allowed.')
 
   if (visibility === 'public') {
     await publishPlan(planId)

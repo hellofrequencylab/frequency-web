@@ -16,7 +16,7 @@ import { authorizeAction } from '@/lib/admin/guard'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logAdminAction } from '@/lib/admin/audit'
-import { setPlanStatus, setPlanOfficial, type PlanStatus } from '@/lib/journey-plans'
+import { setPlanStatus, setPlanOfficial, deletePlan, type PlanStatus } from '@/lib/journey-plans'
 import { setPracticeFlags, WEIGHT_CLASSES, type WeightClass } from '@/lib/practices'
 import {
   setJourneyFeatured,
@@ -67,6 +67,24 @@ export async function setJourneyStatusAction(id: string, status: PlanStatus): Pr
     return fail(e instanceof Error ? e.message : 'Could not update the journey.')
   }
   revalidateContent('journeys')
+  return ok()
+}
+
+/** Delete a Journey from the library entirely (items + adoptions cascade). Curator-gated,
+ *  irreversible; the admin library guards it behind a type-to-confirm modal. */
+export async function deleteJourneyPlanAction(id: string): Promise<ActionResult> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  try {
+    await deletePlan(id)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not delete the journey.')
+  }
+  revalidateContent('journeys')
+  revalidatePath('/journeys', 'layout')
   return ok()
 }
 

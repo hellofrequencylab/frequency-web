@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
+import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { getPlan, getVeraReview } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
 import { JourneyEditor, type EditorBlock, type EditorPractice } from '@/components/journey/v2/journey-editor'
@@ -20,7 +21,10 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
 
   const loaded = await getPlan(slug)
   if (!loaded) notFound()
-  if (loaded.plan.author_id !== caller.id) redirect(`/journeys/${slug}/learn`)
+  // The author, or an operator (admin.access) managing any Journey in the library.
+  if (loaded.plan.author_id !== caller.id && !(await getGlobalCapabilities()).has('admin.access')) {
+    redirect(`/journeys/${slug}/learn`)
+  }
 
   const blocks: EditorBlock[] = loaded.items.map((i) => ({
     id: i.id,

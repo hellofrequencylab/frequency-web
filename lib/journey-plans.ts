@@ -629,6 +629,14 @@ export async function forkPlan(profileId: string, planId: string): Promise<Journ
   return fork
 }
 
+// --- Delete ---------------------------------------------------------------
+
+/** Delete one journey plan (its items + adoptions cascade via FK). The single-plan admin
+ *  removal behind deleteJourneyPlanAction; the action layer gates it (curators only). */
+export async function deletePlan(planId: string): Promise<void> {
+  await db().from('journey_plans').delete().eq('id', planId)
+}
+
 // --- Demo cleanup ---------------------------------------------------------
 
 /** Delete every plan authored by any of these profiles (items + adoptions cascade).
