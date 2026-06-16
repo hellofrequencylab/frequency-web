@@ -28,6 +28,7 @@ export default async function AdminCirclesPage({
     city: string | null
     neighborhood: string | null
     resonance_public: boolean
+    featured_at: string | null
     hub: { id: string; name: string } | null
     host: { id: string; display_name: string } | null
   }
@@ -39,7 +40,7 @@ export default async function AdminCirclesPage({
     const { data } = await admin
       .from('circles')
       .select(`id, name, about, type, status, member_count, member_cap, hub_id, host_id,
-               image_url, city, neighborhood, resonance_public,
+               image_url, city, neighborhood, resonance_public, featured_at,
                hub:hubs!hub_id ( id, name ),
                host:profiles!host_id ( id, display_name )`)
       .order('name')
@@ -48,7 +49,7 @@ export default async function AdminCirclesPage({
     const { data } = await admin
       .from('circles')
       .select(`id, name, about, type, status, member_count, member_cap, hub_id, host_id,
-               image_url, city, neighborhood, resonance_public,
+               image_url, city, neighborhood, resonance_public, featured_at,
                hub:hubs!hub_id ( id, name ),
                host:profiles!host_id ( id, display_name )`)
       .eq('host_id', profileId)
@@ -61,6 +62,7 @@ export default async function AdminCirclesPage({
       const { data } = await admin
         .from('circles')
         .select(`id, name, about, type, status, member_count, member_cap, hub_id, host_id,
+                 featured_at,
                  hub:hubs!hub_id ( id, name ),
                  host:profiles!host_id ( id, display_name )`)
         .in('hub_id', hubIds)

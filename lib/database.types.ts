@@ -889,6 +889,7 @@ export type Database = {
           about: string | null
           city: string | null
           created_at: string | null
+          featured_at: string | null
           geog: unknown
           host_id: string | null
           hub_id: string | null
@@ -914,6 +915,7 @@ export type Database = {
           about?: string | null
           city?: string | null
           created_at?: string | null
+          featured_at?: string | null
           geog?: unknown
           host_id?: string | null
           hub_id?: string | null
@@ -939,6 +941,7 @@ export type Database = {
           about?: string | null
           city?: string | null
           created_at?: string | null
+          featured_at?: string | null
           geog?: unknown
           host_id?: string | null
           hub_id?: string | null

@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getCallerProfile, type CommunityRole } from '@/lib/auth'
 import type { Database } from '@/lib/database.types'
 import { sendDispatchNotificationEmail } from '@/lib/email'
@@ -26,6 +27,7 @@ import {
   getHubCapabilities,
   getNexusCapabilities,
   getEventCapabilities,
+  getGlobalCapabilities,
 } from '@/lib/core/load-capabilities'
 
 // Role-ladder comparison — single source in lib/core/roles.
@@ -346,6 +348,22 @@ export async function archiveCircle(id: string) {
   if (error) throw new Error(error.message)
   revalidatePath('/admin/circles')
   revalidatePath('/circles')
+}
+
+// Operator curation: stamp (or clear) a circle's featured marker. Gated on the
+// platform `admin.access` capability so only operators can hand-pick the circles
+// that surface first in discovery. `featured_at` doubles as the ordering key.
+export async function setCircleFeaturedAction(id: string, on: boolean): Promise<ActionResult> {
+  if (!(await getGlobalCapabilities()).has('admin.access')) return fail('Not allowed')
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('circles')
+    .update({ featured_at: on ? new Date().toISOString() : null })
+    .eq('id', id)
+  if (error) return fail(error.message)
+  revalidatePath('/admin/circles')
+  revalidatePath('/circles')
+  return ok()
 }
 
 // ── Invite links ─────────────────────────────────────────────────────────────
