@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Users, Activity, TrendingUp, Zap, Flame, MapPin } from 'lucide-react'
+import { Users, Activity, TrendingUp, Zap, Flame, MapPin, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
@@ -447,6 +447,15 @@ export default async function CirclePage({
         actions={
           <>
             {canManage && <CircleHostMenu circleId={circle.id} />}
+
+            {canManage && (
+              <Link
+                href={`/circles/${circle.slug}/settings`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              >
+                <Settings className="h-4 w-4" /> Settings
+              </Link>
+            )}
 
             {isMember && !isHost && (
               <form action={leaveCircle.bind(null, circle.id)}>
