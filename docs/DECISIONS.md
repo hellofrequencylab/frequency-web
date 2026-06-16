@@ -6986,3 +6986,61 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 **Consequences:** The library stays open while rank stays meaningful. Review is **synchronous** with publish (one Opus call, low volume, the author waits ~seconds and sees the verdict immediately) — acceptable because publish is infrequent and the result is the point of the interaction; an async/queue path is a later option if volume grows. **Re-review on edit** is an explicit author action (the resubmit button), not an automatic trigger on every save, so a published approval is refreshed deliberately and can't silently go stale across a material change. **Spoofing surface:** authorship + profileId come from the session (`getCallerProfile`/`assertOwner`), the verdict is computed server-side, and the eligibility write is admin-only — there is no client path to set `ranked_eligible`. The honor-system note from ADR-287 (self-attested capstone) is unrelated; this gate concerns only library-Journey rank eligibility.
 
+## ADR-289: The Quest — UI/UX redesign (hub, cooperative-first, forgiving, member-built library)
+
+**Status:** Accepted (2026-06-15) — strategy in [QUEST-UI-REDESIGN.md](QUEST-UI-REDESIGN.md); shipped across PRs #804–#811. Surfaces: `app/(main)/crew/*`, `components/quest/*`, `components/crew/*`, `app/(main)/journeys/*`.
+
+**Context:** The completion model (ADR-283/284) changed what rank *means*, but the UI still spoke the old Zap-XP / 6-rank language across a sprawl of crew tabs. The owner asked for a ground-up redesign of every Quest surface (Journeys, Practices, Challenges; member-facing + admin) with "a super clean way to add, edit and manage." A best-practices review (echoing the cohort-program research behind the Journeys re-scope) confirmed: cooperative beats competitive, global leaderboards demotivate, and endowed-progress + streak-with-freeze + praise drive completion.
+
+**Decision (member-facing):** A single glanceable **hub** at `/crew` (Season Map) as the front door; a **Journey detail** surface (rank ladder + the 14-day completion bar + Expression); a **cooperative** leaderboard (collective goal + Circle framing, never a global rank-shaming board); **forgiving streaks** (streak-with-freeze, no punitive reset); a **Trophy Case** for finished Journeys / season trophies. Built entirely on DAWN tokens (no hex, no `text-[Npx]`), composed from the page kit (templates / PageHeading / StatCard / SectionHeader / EmptyState), reduced-motion-safe.
+
+**Decision (owner calls, locked):** Cooperative-first; the capstone stays **self-attested** (ADR-287 honor-system tradeoff accepted); **member-built Journeys are highly encouraged** — the goal is a massive library, with quality maintained by the **Vera gate** (ADR-288) rather than a human queue; evolve within DAWN (no new design language).
+
+**Consequences:** The Quest now reads in the completion-model language end to end. **Leader Training** (`content/leader-training/how-to-create-a-journey.md` + `/lead/training-library`, `requireLeadFloor`-gated) ships as a help-doc library so operators can author to standard. The redesign **added** the hub next to the existing surfaces rather than replacing them; the resulting information-architecture fragmentation is tracked as open work in ADR-293 / [QUEST-IA-DEBT.md](QUEST-IA-DEBT.md).
+
+## ADR-290: Pillar-based Journey completion + member-anchored window + Expression as the 4th Pillar
+
+**Status:** Accepted (2026-06-16) — refines the completion math of ADR-283/284. Code: `lib/quest/completion.ts`, `lib/quest/complete.ts`, `lib/practices.ts`. Migrations: `20260616010000_one_expression_per_journey.sql`, `20260630040000_library_journey_ranked_eligibility.sql`.
+
+**Context:** ADR-284 counted completion against a Journey's **fixed practice list**, which fights the owner's "massive library where members build and swap their own practices" goal: a member who swaps to a different same-Pillar practice would lose credit. Expression also needed to be a first-class **4th Pillar** (Mind / Body / Spirit / Expression), not a bolt-on capstone, with points balanced so finishing all of a Journey's practices yields an equal Zap total per Pillar.
+
+**Decision (Pillar coverage, not a fixed list):** A Journey is finished when, inside its window, the member logged **any practice whose Pillar the Journey covers** on ≥ `QUEST.DAYS_TO_FINISH_JOURNEY` (14) distinct days **and** completed the Journey's Expression Challenge (if it has one). `journeyPillarIds(journeyId)` reads the distinct `journey_plan_items.domain_id`; `distinctPillarDaysInWindow` joins `practice_logs → practices!inner(domain_id)` filtered to those Pillars. Swap freely within a Pillar and still get credit.
+
+**Decision (window):** OFFICIAL season Journeys keep a **fixed plan window** (`journey_plans.window_*`) and require their Expression Challenge. Member-built LIBRARY Journeys (ranked-eligible, Vera-approved) use a **member-anchored window** — the member's `journey_enrollments.started_at` + `QUEST.JOURNEY_WINDOW_DAYS` (28) — and require no Expression (they have none). Only `ranked_eligible` Journeys count toward rank, and a resolved window is required, so an un-enrolled library Journey can never complete.
+
+**Decision (Expression = 4th Pillar):** Expression appears on every Quest graph / dashboard as a peer Pillar. The model is **small daily expressions** (a Share-One-Thing-class practice in the Expression Pillar) plus the **Expression Challenge** as the final expression; the per-Pillar Zap totals are balanced so a fully-completed Journey awards equal points across the four areas. The Expression Challenge is completed via the capstone control (Circle +50 Zaps / online +30 Gems). A partial unique index enforces **one Expression Challenge per `(season, journey_id)`**.
+
+**Consequences:** Member-built Journeys + "build your own daily practice" work without a fixed-list trap. The practice-log hook (`lib/practices.ts`) resolves the logged practice's Pillar, finds `ranked_eligible` Journeys covering that Pillar, and calls `tryCompleteJourney` for each (idempotent via `journey_completions`).
+
+## ADR-291: Journeys named Clear / Move / Charge; Season 1 renamed "Shine"
+
+**Status:** Accepted (2026-06-16). Migrations: `20260616000000_seed_shine_season.sql`, `20260630030000_rename_stretch_journeys.sql`. Applied to prod (`azsqfeonabsbmemvddqd` — "Frequency Community"), verified.
+
+**Context:** The placeholder season "Stretch" and generic Journey names didn't carry the brand. The owner named the three Journeys **Clear / Move / Charge** and the season **Shine**, and provided full Season 1 content.
+
+**Decision:** Rename the season to **Shine**; the three Journeys are **Clear / Move / Charge**, each covering **all four Pillars** (so every season member touches Mind / Body / Spirit / Expression). Re-tag practices to the right Pillars (e.g. Box Breathing Mind → Spirit), rename the capstones, and seed the per-Journey practice roster (item counts 6 / 7 / 8). Per-Pillar Zap balance is tuned so completing a Journey's practices yields an equal total per Pillar (ADR-290).
+
+**Consequences:** Season 1 "Shine" is live in prod with Clear / Move / Charge across four Pillars. Naming follows `docs/NAMING.md`; member-facing copy follows `docs/CONTENT-VOICE.md` (no em dashes).
+
+## ADR-292: Season Composer (operator authoring) + auto-go-live scheduler
+
+**Status:** Accepted (2026-06-16) — Composer across PRs #809–#811; scheduler PR #812. Code: `app/(main)/admin/content/seasons/*`, `components/admin/pillar-balance.tsx`, `lib/quest/pillar-balance.ts`, `app/api/cron/season-go-live/route.ts`, `lib/seasons.ts`, `vercel.json`.
+
+**Context:** The owner asked for "a super clean way to add, edit and manage" seasons / Journeys / practices / challenges, and operators shouldn't have to be awake at launch time to flip a season Live.
+
+**Decision (Composer):** A **Season Composer** workspace: edit a season, manage its **lifecycle** (draft → scheduled → active=Live → ended via `seasons.status` + `starts_at`/`ends_at`, one active season enforced by a partial unique index), **clone** a season, **preview** it, an operator **content home**, **bulk** practice edits, and a **per-Pillar Zap balance** readout (`pillarZapBalance`) so authors see at a glance whether the four Pillars are point-balanced (ADR-290).
+
+**Decision (Scheduler):** A `CRON_SECRET`-guarded endpoint `app/api/cron/season-go-live/route.ts` runs on a Vercel cron (`*/10 * * * *`) and calls `promoteDueScheduledSeasons()`, which flips a **scheduled** season to **active** only when `starts_at ≤ now` **and** no season is already active (respecting the one-active-season invariant). It **never auto-ends** a season — ending stays a deliberate operator act.
+
+**Consequences:** A scheduled season goes Live on its own at its start time; nothing auto-ends, so there's no risk of the scheduler closing a season early.
+
+## ADR-293: Open — The Quest information-architecture debt (overlapping member surfaces)
+
+**Status:** Open / deferred (2026-06-16) — recorded for the next session in [QUEST-IA-DEBT.md](QUEST-IA-DEBT.md). Needs a product decision before building.
+
+**Context:** A post-build route audit found the redesign (ADR-289) **added** member surfaces without collapsing the old ones. Routes are wired (0 broken links) but a member can't tell which surface is the front door.
+
+**Decision (recorded, not yet built):** Three+ overlapping "journey" surfaces exist — `/crew` hub, `/crew/quests` list, `/crew/journey` progress, `/journeys` library — alongside the old **7-tab `QuestTabs`** and 3 orphaned legacy redirects (`/crew/journeys`, `/crew/arcs`, `/admin/quests`). Recommended consolidation: make **`/crew`** the canonical "My Journey" (fold `/crew/quests` + `/crew/journey` into the hub Season Map), keep `/journeys` as the explicit browse / build library, collapse `QuestTabs`, delete the orphaned redirects, and label the "this season's Quest" vs "the library" distinction.
+
+**Open decision for the owner:** which surface is the canonical "My Journey," and how aggressively to collapse the tab bar. Do **not** build the consolidation until that's chosen — it's an IA / product call, not a wiring fix.
+

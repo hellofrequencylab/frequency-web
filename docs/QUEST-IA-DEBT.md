@@ -1,6 +1,6 @@
 # The Quest — open IA debt (post-build audit, 2026-06-16)
 
-> Captured at the end of a long build thread so the next session has it. The Quest
+> Tracked as **ADR-293** in `DECISIONS.md`. Captured at the end of a long build thread so the next session has it. The Quest
 > redesign shipped end to end (see `QUEST-UI-REDESIGN.md`), but a route audit found the
 > member information architecture is **fragmented**: the redesign *added* surfaces without
 > collapsing the old ones. Routes are technically wired (0 broken links, only 3 legacy
