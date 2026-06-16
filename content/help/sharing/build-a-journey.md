@@ -30,7 +30,9 @@ sharing something, or connecting with someone). For each, she either pulls a fit
 library or writes a new one. You can edit, reorder, or remove anything after.
 
 Starting with all four Pillars means a Journey opens **balanced**, so taking it nudges every side of
-your Signature toward center.
+your Signature toward center. Vera also drops in one **extra-credit Challenge**: an optional,
+above-and-beyond task that pays bonus **Zaps** when someone finishes it. Edit it, remove it, or add
+more from **Add extra credit** in the Curriculum (you set the Zaps each one is worth).
 
 Prefer to start by hand? **Start with the shape** lays the same slots down empty for you to fill.
 

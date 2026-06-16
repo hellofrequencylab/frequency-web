@@ -29,11 +29,19 @@ export type ComposedPractice =
   | { pillar: ComposePillar; mode: 'library'; practiceId: string }
   | { pillar: ComposePillar; mode: 'create'; title: string; body: string }
 
+/** An above-and-beyond extra-credit Challenge (ADR-300 Part 2): a harder, optional bonus task. */
+export interface ComposedExtraCredit {
+  title: string
+  body: string
+}
+
 export interface JourneyComposition {
   /** A refined Journey name, if Vera suggested one. */
   title: string | null
   /** One slot per Pillar (Mind/Body/Spirit/Expression), in Pillar order. */
   practices: ComposedPractice[]
+  /** One optional extra-credit Challenge to seed (bonus task, pays regular Zaps), else null. */
+  extraCredit: ComposedExtraCredit | null
 }
 
 const TOOL_NAME = 'compose_journey'
@@ -64,6 +72,15 @@ const TOOL: Anthropic.Tool = {
           required: ['pillar', 'mode'],
         },
       },
+      extra_credit: {
+        type: 'object',
+        description: 'One optional extra-credit challenge: a harder, above-and-beyond bonus task.',
+        properties: {
+          title: { type: 'string', description: 'A short, concrete challenge name.' },
+          body: { type: 'string', description: 'One or two plain sentences on what to do and how to know it is done.' },
+        },
+        required: ['title', 'body'],
+      },
     },
     required: ['practices'],
   },
@@ -74,6 +91,7 @@ const SYSTEM = `You are Vera, Frequency's warm, plain-spoken guide. An author is
 Rules:
 - Exactly four practices: Mind, Body, Spirit, and Expression. For each, prefer reusing a fitting practice from the candidates listed for that Pillar (mode=library, return its exact id). Only write a new one (mode=create) when no candidate fits; then give a short title and 2 to 4 concrete steps in second person.
 - Expression practices are about putting it out into the world: making something, sharing something, or connecting with someone. Keep them small and doable, like the others.
+- Also include ONE extra-credit challenge: a harder, optional, above-and-beyond task that stretches the member a little. A short name + one or two plain sentences. It is a bonus, not one of the four practices.
 - Plain, specific, sentence case. No hype, no emoji, no em dashes. Never narrate the reader's feelings.
 - Never invent a library id that was not listed. Always call the ${TOOL_NAME} tool.`
 
@@ -155,5 +173,14 @@ function coerce(raw: unknown, allowed: Record<ComposePillar, Set<string>>): Jour
   // Keep Pillar order (mind, body, spirit, expression); only the slots Vera filled validly.
   const practices = COMPOSE_PILLARS.map((p) => byPillar.get(p)).filter((s): s is ComposedPractice => !!s)
   if (practices.length === 0) return null
-  return { title, practices }
+
+  let extraCredit: ComposedExtraCredit | null = null
+  if (r.extra_credit && typeof r.extra_credit === 'object') {
+    const ec = r.extra_credit as Record<string, unknown>
+    const ectitle = typeof ec.title === 'string' ? ec.title.trim().slice(0, 120) : ''
+    const ecbody = typeof ec.body === 'string' ? ec.body.trim().slice(0, 600) : ''
+    if (ectitle) extraCredit = { title: ectitle, body: ecbody }
+  }
+
+  return { title, practices, extraCredit }
 }

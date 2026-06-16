@@ -145,9 +145,15 @@ back to the empty shape ("Start with the shape") when AI is off. Code: `journey-
 `lib/ai/journey-composition.ts` (Opus, forced-tool, every library id re-validated against the
 candidates), `composeJourneyAction` / `scaffoldJourneyAction`.
 
-Two adjacent layers (planned, see DECISIONS ADR-300): **extra-credit Challenges** on a Journey
-(optional above-and-beyond tasks that pay regular Zaps) and **Side Quests** (reward-only missions that
-grant a badge and do not touch the Pillar Signature, built on the `achievements` engine).
+**Extra-credit Challenges (ADR-300 Part 2, shipped).** Above-and-beyond bonus tasks on a Journey that
+pay **regular Zaps** on completion (not a Pillar practice). An `exercise` block with `required=false`
++ `settings.extra_credit` + `settings.bonus_zaps`; Vera seeds one per composed Journey and the author
+can add more (`addExtraCreditAction`). The bonus Zaps are paid exactly once on check-off via the
+`reward_grants` lock (`lib/journeys/grants.ts` `grantExtraCreditIfAny`). The editor shows an Award chip
++ editable Zaps field; the player shows an "Extra credit · +N Zaps" badge.
+
+One adjacent layer is still planned (DECISIONS ADR-300 Part 3): **Side Quests** — reward-only missions
+that grant a badge and do not touch the Pillar Signature, built on the `achievements` engine.
 
 **Structure-first**, template-driven, with live preview:
 

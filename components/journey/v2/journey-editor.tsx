@@ -8,12 +8,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, ChevronUp, ChevronDown, Layers, Search, Dumbbell, X, Check, Sparkles } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap } from 'lucide-react'
 import {
   addPhaseAction,
   addModuleAction,
   addLessonAction,
   addPracticeBlockAction,
+  addExtraCreditAction,
   updateBlockAction,
   removeBlockAction,
   moveBlockAction,
@@ -36,6 +37,10 @@ export interface EditorBlock {
   domainId: string | null
   /** Vera's per-slot coaching line (practice blocks), from settings.coaching_prompt. */
   coachingPrompt: string | null
+  /** Extra-credit block (ADR-300 Part 2): a bonus task that pays Zaps, not a Pillar practice. */
+  extraCredit: boolean
+  /** Bonus Zaps paid on completing an extra-credit block. */
+  bonusZaps: number
 }
 
 // The authoring inspector for a `check` block: question + options (tap the circle to mark the
@@ -240,11 +245,16 @@ export function JourneyEditor({
 
   // ── A single editable step (lesson or practice) — used in phases and the loose section. ──
   const LeafRow = (l: EditorBlock) => {
-    const isPractice = l.blockType === 'practice'
+    const isExtra = l.extraCredit
+    const isPractice = !isExtra && l.blockType === 'practice'
     return (
-      <li key={l.id} className="rounded-xl border border-border bg-canvas p-3">
+      <li key={l.id} className={`rounded-xl border p-3 ${isExtra ? 'border-signal/30 bg-signal-bg/20' : 'border-border bg-canvas'}`}>
         <div className="flex items-center gap-2">
-          {isPractice ? (
+          {isExtra ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-signal/30 bg-signal-bg/60 px-1.5 py-1 text-xs font-medium text-signal-strong" title="Extra credit: a bonus task, above and beyond, that pays Zaps">
+              <Award className="h-3.5 w-3.5" /> extra credit
+            </span>
+          ) : isPractice ? (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-surface px-1.5 py-1 text-xs font-medium text-muted" title="A library practice">
               <Dumbbell className="h-3.5 w-3.5" /> practice
             </span>
@@ -263,8 +273,23 @@ export function JourneyEditor({
             defaultValue={l.title}
             onBlur={(e) => run(() => updateBlockAction(slug, l.id, { title: e.target.value }))}
             className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 text-sm text-text hover:border-border focus:border-primary focus:outline-none"
-            placeholder={isPractice ? 'Practice step' : 'Lesson title'}
+            placeholder={isExtra ? 'Challenge name' : isPractice ? 'Practice step' : 'Lesson title'}
           />
+          {isExtra && (
+            <label className="flex shrink-0 items-center gap-1 text-xs text-muted" title="Bonus Zaps paid on completion">
+              <Zap className="h-3.5 w-3.5 text-signal-strong" aria-hidden />
+              <input
+                type="number"
+                min={0}
+                max={500}
+                defaultValue={l.bonusZaps}
+                onBlur={(e) => run(() => updateBlockAction(slug, l.id, { bonusZaps: Number(e.target.value) }))}
+                className="w-14 rounded-md border border-border bg-surface px-1.5 py-1 text-xs text-text focus:border-primary focus:outline-none"
+                aria-label="Bonus Zaps"
+              />
+              Zaps
+            </label>
+          )}
           <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, l.id, 'up'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
           <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, l.id, 'down'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
           <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, l.id))} className="rounded p-1 text-subtle hover:text-danger" aria-label="Delete step"><Trash2 className="h-3.5 w-3.5" /></button>
@@ -273,10 +298,10 @@ export function JourneyEditor({
           defaultValue={l.body}
           onBlur={(e) => run(() => updateBlockAction(slug, l.id, { body: e.target.value }))}
           rows={2}
-          placeholder={isPractice ? 'A note for this practice step (optional).' : 'Lesson content (markdown). Paste a YouTube/Vimeo/video link to embed it.'}
+          placeholder={isExtra ? 'What is the challenge, and what counts as done?' : isPractice ? 'A note for this practice step (optional).' : 'Lesson content (markdown). Paste a YouTube/Vimeo/video link to embed it.'}
           className="mt-2 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
         />
-        {l.blockType === 'check' && (
+        {!isExtra && l.blockType === 'check' && (
           <CheckEditor
             initial={l.check}
             disabled={pending}
@@ -318,6 +343,15 @@ export function JourneyEditor({
             <Dumbbell className="h-4 w-4" /> Add practice
           </button>
         )}
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => run(() => addExtraCreditAction(slug, parentId))}
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-signal-strong hover:bg-signal-bg/50"
+          title="A bonus task, above and beyond, that pays Zaps"
+        >
+          <Award className="h-4 w-4" /> Add extra credit
+        </button>
       </div>
       {picker === pickerKey && (
         <div className="mt-2 rounded-xl border border-border bg-canvas p-2">
