@@ -9,6 +9,7 @@ import { RoomThread } from '@/components/rooms/room-thread'
 import { RoomSearch } from '@/components/rooms/room-search'
 import { InviteToRoomButton } from '@/components/rooms/invite-to-room-button'
 import { MemberRowActions } from '@/components/rooms/member-row-actions'
+import { RoomSettings } from '@/components/rooms/room-settings'
 
 export default async function RoomPage({
   params,
@@ -155,6 +156,9 @@ export default async function RoomPage({
 
         <div className="flex items-center gap-2 shrink-0">
           {canRead && <RoomSearch roomId={roomId} />}
+          {isAdmin && (
+            <RoomSettings roomId={roomId} name={r.name} description={r.description} visibility={r.visibility} />
+          )}
           {/* Channel rooms aren't "joined" — you tune into the Channel. */}
           {!isChannel && (isMember ? (
             <form action={leaveRoom.bind(null, roomId)}>

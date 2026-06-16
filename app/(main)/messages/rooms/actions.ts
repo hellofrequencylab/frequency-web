@@ -73,6 +73,38 @@ export async function createRoom(fd: FormData): Promise<ActionResult<{ id: strin
   return ok({ id: data.id })
 }
 
+// Edit a room's name / description / visibility. Room-admin only (re-checked here).
+export async function updateRoom(roomId: string, fd: FormData): Promise<ActionResult<void>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Not signed in')
+
+  const admin = createAdminClient()
+  const { data: membership } = await admin
+    .from('room_members')
+    .select('is_admin')
+    .eq('room_id', roomId)
+    .eq('profile_id', caller.id)
+    .maybeSingle()
+  if (!membership?.is_admin) return fail('You must be a room admin to edit this room')
+
+  const name = (fd.get('name') as string)?.trim()
+  const description = (fd.get('description') as string)?.trim() || null
+  const visibility = ((fd.get('visibility') as string) || 'public') as RoomVisibility
+  if (!name) return fail('Name is required')
+  // Only public/private are user-editable; scope-derived visibilities are managed elsewhere.
+  const safeVisibility: RoomVisibility = visibility === 'private' ? 'private' : 'public'
+
+  const { error } = await admin
+    .from('rooms')
+    .update({ name, description, visibility: safeVisibility })
+    .eq('id', roomId)
+  if (error) return fail(error.message)
+
+  revalidatePath('/messages')
+  revalidatePath(`/messages/r/${roomId}`)
+  return ok(undefined)
+}
+
 export async function joinRoom(roomId: string) {
   const caller = await getCallerProfile()
   if (!caller) redirect('/sign-in')
