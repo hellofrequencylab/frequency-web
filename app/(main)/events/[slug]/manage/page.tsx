@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Users, Check, Star, Gauge } from 'lucide-react'
+import { Users, Check, Star, Gauge, Pencil } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { DashboardTemplate } from '@/components/templates'
@@ -72,6 +73,14 @@ export default async function ManageEventPage({
       description="Your behind-the-scenes view: who is coming, who is waiting, what they told you, and the updates you have sent."
       back={{ href: `/events/${event.slug}`, label: 'Back to event' }}
       width="default"
+      actions={
+        <Link
+          href={`/events/${event.slug}/edit`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+        >
+          <Pencil className="h-4 w-4" /> Edit details
+        </Link>
+      }
       stats={
         <>
           <StatCard

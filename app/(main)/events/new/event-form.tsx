@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { createEvent } from '@/app/(main)/events/actions'
+import { createEvent, updateEvent } from '@/app/(main)/events/actions'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 
 type Group = {
@@ -58,28 +58,70 @@ const ATTENDANCE_OPTIONS: { value: 'in_person' | 'online' | 'hybrid'; label: str
   { value: 'hybrid',    label: 'Both'      },
 ]
 
-export function EventForm({ groups }: { groups: Group[] }) {
+// The prefill shape for edit mode — mirrors the form's own fields.
+export interface EventFormInitial {
+  title: string
+  description: string
+  location: string
+  scopeId: string
+  /** datetime-local value (YYYY-MM-DDTHH:mm). */
+  startsAt: string
+  endsAt: string
+  capacity: string
+  visibility: string
+  category: string
+  energyTag: string
+  attendanceMode: 'in_person' | 'online' | 'hybrid'
+  onlineUrl: string
+  venueName: string
+  street: string
+  city: string
+  region: string
+  postalCode: string
+  country: string
+}
+
+export function EventForm({
+  groups,
+  initial,
+  eventId,
+  currentScopeName,
+  backHref,
+}: {
+  groups: Group[]
+  /** When set (with `eventId`), the form prefills and edits the event. */
+  initial?: Partial<EventFormInitial>
+  /** When set, the form edits this event via updateEvent instead of createEvent. */
+  eventId?: string
+  /** In edit mode, the circle the event belongs to (the scope can't be changed here). */
+  currentScopeName?: string
+  /** Where the Cancel link returns to (defaults to /events). */
+  backHref?: string
+}) {
+  const isEdit = !!eventId
   const [isPending, startTransition] = useTransition()
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [location, setLocation] = useState('')
-  const [scopeId, setScopeId] = useState(groups[0]?.id ?? '')
-  const [startsAt, setStartsAt] = useState('')
-  const [endsAt, setEndsAt] = useState('')
+  const [title, setTitle] = useState(initial?.title ?? '')
+  const [description, setDescription] = useState(initial?.description ?? '')
+  const [location, setLocation] = useState(initial?.location ?? '')
+  const [scopeId, setScopeId] = useState(initial?.scopeId ?? groups[0]?.id ?? '')
+  const [startsAt, setStartsAt] = useState(initial?.startsAt ?? '')
+  const [endsAt, setEndsAt] = useState(initial?.endsAt ?? '')
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none')
   const [recurrenceUntil, setRecurrenceUntil] = useState('')
-  const [capacity, setCapacity] = useState('')
-  const [visibility, setVisibility] = useState('circle_only')
-  const [category, setCategory] = useState('gathering')
-  const [energyTag, setEnergyTag] = useState('')
-  const [attendanceMode, setAttendanceMode] = useState<'in_person' | 'online' | 'hybrid'>('in_person')
-  const [onlineUrl, setOnlineUrl] = useState('')
-  const [venueName, setVenueName] = useState('')
-  const [street, setStreet] = useState('')
-  const [city, setCity] = useState('')
-  const [region, setRegion] = useState('')
-  const [postalCode, setPostalCode] = useState('')
-  const [country, setCountry] = useState('')
+  const [capacity, setCapacity] = useState(initial?.capacity ?? '')
+  const [visibility, setVisibility] = useState(initial?.visibility ?? 'circle_only')
+  const [category, setCategory] = useState(initial?.category ?? 'gathering')
+  const [energyTag, setEnergyTag] = useState(initial?.energyTag ?? '')
+  const [attendanceMode, setAttendanceMode] = useState<'in_person' | 'online' | 'hybrid'>(
+    initial?.attendanceMode ?? 'in_person',
+  )
+  const [onlineUrl, setOnlineUrl] = useState(initial?.onlineUrl ?? '')
+  const [venueName, setVenueName] = useState(initial?.venueName ?? '')
+  const [street, setStreet] = useState(initial?.street ?? '')
+  const [city, setCity] = useState(initial?.city ?? '')
+  const [region, setRegion] = useState(initial?.region ?? '')
+  const [postalCode, setPostalCode] = useState(initial?.postalCode ?? '')
+  const [country, setCountry] = useState(initial?.country ?? '')
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -93,9 +135,13 @@ export function EventForm({ groups }: { groups: Group[] }) {
     fd.set('scopeType', 'group')
     fd.set('startsAt', startsAt)
     if (endsAt) fd.set('endsAt', endsAt)
-    fd.set('recurrenceType', recurrenceType)
-    if (recurrenceType !== 'none' && recurrenceUntil) {
-      fd.set('recurrenceUntil', recurrenceUntil)
+    // Recurrence is a create-time decision (it materialises occurrences); editing it later
+    // is out of scope for the per-event editor, so only the create flow sends it.
+    if (!isEdit) {
+      fd.set('recurrenceType', recurrenceType)
+      if (recurrenceType !== 'none' && recurrenceUntil) {
+        fd.set('recurrenceUntil', recurrenceUntil)
+      }
     }
     fd.set('category', category)
     fd.set('visibility', visibility)
@@ -118,7 +164,8 @@ export function EventForm({ groups }: { groups: Group[] }) {
     }
 
     startTransition(async () => {
-      await createEvent(fd)
+      if (isEdit) await updateEvent(eventId, fd)
+      else await createEvent(fd)
     })
   }
 
@@ -142,9 +189,13 @@ export function EventForm({ groups }: { groups: Group[] }) {
       {/* Group */}
       <div className="space-y-1.5">
         <Label className="text-sm text-text">
-          Group <span className="text-danger">*</span>
+          Group {!isEdit && <span className="text-danger">*</span>}
         </Label>
-        {groups.length === 0 ? (
+        {isEdit ? (
+          <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-sm text-muted">
+            {currentScopeName ?? 'This circle'}
+          </p>
+        ) : groups.length === 0 ? (
           <p className="text-sm text-muted">You must be in a group to create an event.</p>
         ) : (
           <select
@@ -207,7 +258,8 @@ export function EventForm({ groups }: { groups: Group[] }) {
         />
       </div>
 
-      {/* Recurrence */}
+      {/* Recurrence — a create-time decision (it materialises occurrences). */}
+      {!isEdit && (
       <div className="space-y-1.5">
         <Label className="text-sm text-text">Repeats</Label>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -250,6 +302,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
           </div>
         )}
       </div>
+      )}
 
       {/* Location */}
       <div className="space-y-1.5">
@@ -441,13 +494,13 @@ export function EventForm({ groups }: { groups: Group[] }) {
       <div className="flex items-center gap-3 pt-1">
         <button
           type="submit"
-          disabled={!title.trim() || !scopeId || !startsAt || isPending || groups.length === 0}
+          disabled={!title.trim() || !scopeId || !startsAt || isPending || (!isEdit && groups.length === 0)}
           className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isPending ? 'Creating…' : 'Create Event'}
+          {isPending ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save changes' : 'Create Event'}
         </button>
         <Link
-          href="/events"
+          href={backHref ?? '/events'}
           className="text-sm text-muted transition-colors hover:text-text"
         >
           Cancel
