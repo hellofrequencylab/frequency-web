@@ -6,10 +6,9 @@ import { Plus, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { createJourney } from '@/app/(main)/journeys/actions'
 
-// "New journey" — opens the full journey editor popup straight away (no separate "name it" step
-// or full page). Creates a private draft (createJourney), then drops you into the fully-featured
-// editor at /journeys/[slug]/edit. Uniform filled button by default, matching Create a practice
-// and the other create entry points.
+// "New journey" — creates a private draft (createJourney) and drops you straight into the
+// full-page course builder at /journeys/[slug]/edit (no separate "name it" step). Uniform filled
+// button by default, matching Create a practice and the other create entry points.
 export function NewJourneyButton({ className, label = 'New journey' }: { className?: string; label?: string }) {
   const router = useRouter()
   const [pending, start] = useTransition()

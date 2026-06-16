@@ -3,11 +3,12 @@ import { getCallerProfile } from '@/lib/auth'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { getPlan, getVeraReview } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
-import { JourneyEditor, type EditorBlock, type EditorPractice } from '@/components/journey/v2/journey-editor'
+import { getPillars } from '@/lib/pillars'
+import { JourneyEditor, type EditorBlock, type EditorPractice, type EditorPillar } from '@/components/journey/v2/journey-editor'
 import { parseCheck } from '@/lib/journeys/store'
 import { JourneySettings } from '@/components/journey/v2/journey-settings'
 import { JourneyAdvanced } from '@/components/journey/v2/journey-advanced'
-import { JourneyEditorWindow } from '@/components/journey/v2/journey-editor-window'
+import { JourneyBuilder } from '@/components/journey/v2/journey-builder'
 import { JourneyDangerZone } from '@/components/journey/v2/journey-danger-zone'
 
 // Journeys v2 — the author-only structure editor route (ADR-252, J4b). Loads the plan's
@@ -28,54 +29,72 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
     redirect(`/journeys/${slug}/learn`)
   }
 
-  const blocks: EditorBlock[] = loaded.items.map((i) => ({
-    id: i.id,
-    parentId: i.parent_id ?? null,
-    blockType: i.block_type ?? 'practice',
-    title: i.title ?? '',
-    body: i.body ?? '',
-    sortOrder: i.sort_order ?? 0,
-    check: parseCheck((i as { settings?: unknown }).settings),
-  }))
+  const blocks: EditorBlock[] = loaded.items.map((i) => {
+    const settings = (i as { settings?: Record<string, unknown> | null }).settings
+    const cp = settings?.coaching_prompt
+    return {
+      id: i.id,
+      parentId: i.parent_id ?? null,
+      blockType: i.block_type ?? 'practice',
+      title: i.title ?? '',
+      body: i.body ?? '',
+      sortOrder: i.sort_order ?? 0,
+      check: parseCheck(settings),
+      domainId: i.domain_id ?? null,
+      coachingPrompt: typeof cp === 'string' ? cp : null,
+    }
+  })
 
   const { plan } = loaded
-  const [practicesRaw, veraReview] = await Promise.all([
+  const [practicesRaw, veraReview, pillarsRaw] = await Promise.all([
     listPublicPractices(),
     getVeraReview(plan.id),
+    getPillars(),
   ])
   const practices: EditorPractice[] = practicesRaw.map((p) => ({
     id: p.id,
     title: p.title,
     description: p.description,
+    pillarId: p.domain_id,
   }))
+  const pillars: EditorPillar[] = pillarsRaw.map((p) => ({ id: p.id, name: p.name, slug: p.slug }))
 
   return (
-    <JourneyEditorWindow>
-      <JourneySettings
-        planId={plan.id}
-        initialTitle={plan.title}
-        initialSummary={plan.summary}
-        initialIntro={plan.intro}
-        initialEmoji={plan.emoji}
-        initialAccent={plan.accent}
-        initialVisibility={plan.visibility}
-        initialStatus={plan.status}
-        initialCompletionGems={plan.completion_gems}
-        initialCertificateEnabled={plan.certificate_enabled}
-        initialDripIntervalDays={plan.drip_interval_days}
-        initialCoverImage={plan.cover_image}
-        initialReview={veraReview}
-      />
-      <JourneyEditor slug={slug} blocks={blocks} practices={practices} />
-      <JourneyAdvanced
-        planId={plan.id}
-        initialPageConfig={plan.page_config}
-        initialOfficial={plan.official}
-        initialQuestId={plan.quest_id}
-        initialWindowStartsAt={plan.window_starts_at}
-        initialWindowEndsAt={plan.window_ends_at}
-      />
-      <JourneyDangerZone planId={plan.id} title={plan.title} />
-    </JourneyEditorWindow>
+    <JourneyBuilder
+      slug={slug}
+      title={plan.title}
+      status={plan.status}
+      curriculum={<JourneyEditor slug={slug} blocks={blocks} practices={practices} pillars={pillars} />}
+      details={
+        <JourneySettings
+          planId={plan.id}
+          initialTitle={plan.title}
+          initialSummary={plan.summary}
+          initialIntro={plan.intro}
+          initialEmoji={plan.emoji}
+          initialAccent={plan.accent}
+          initialVisibility={plan.visibility}
+          initialStatus={plan.status}
+          initialCompletionGems={plan.completion_gems}
+          initialCertificateEnabled={plan.certificate_enabled}
+          initialDripIntervalDays={plan.drip_interval_days}
+          initialCoverImage={plan.cover_image}
+          initialReview={veraReview}
+        />
+      }
+      settings={
+        <>
+          <JourneyAdvanced
+            planId={plan.id}
+            initialPageConfig={plan.page_config}
+            initialOfficial={plan.official}
+            initialQuestId={plan.quest_id}
+            initialWindowStartsAt={plan.window_starts_at}
+            initialWindowEndsAt={plan.window_ends_at}
+          />
+          <JourneyDangerZone planId={plan.id} title={plan.title} />
+        </>
+      }
+    />
   )
 }

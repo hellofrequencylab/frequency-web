@@ -11,7 +11,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles } from 'lucide-react'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
 import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
@@ -338,6 +338,15 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
               {/* Prose body — only when it isn't a bare video URL; constrained measure + text-base. */}
               {lesson.body && !video && (
                 <div className="mt-4 max-w-prose whitespace-pre-wrap text-base leading-relaxed text-text">{lesson.body}</div>
+              )}
+
+              {/* Vera's per-slot coaching nudge (practice steps) — the author's dynamically-drafted
+                  line for this practice, grounded in the season + Pillar. */}
+              {lesson.coachingPrompt && (
+                <div className="mt-4 flex max-w-prose items-start gap-2 rounded-xl border border-primary/20 bg-primary-bg/30 p-3">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+                  <p className="text-sm leading-relaxed text-text">{lesson.coachingPrompt}</p>
+                </div>
               )}
 
               {/* Interactive knowledge-check (build item §11.1 #2), when this check has a question. */}

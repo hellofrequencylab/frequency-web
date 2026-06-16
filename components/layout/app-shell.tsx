@@ -25,6 +25,8 @@ import {
   ChevronRight,
   PanelLeftOpen,
   PanelLeftClose,
+  PanelRightOpen,
+  PanelRightClose,
   Flame,
   QrCode,
   Megaphone,
@@ -55,7 +57,7 @@ import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
-import { railFor, leftRailFor, mergeChrome, type ChromeOverrides } from '@/lib/layout/page-chrome'
+import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, type ChromeOverrides } from '@/lib/layout/page-chrome'
 import type { WebRole } from '@/lib/core/roles'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
@@ -1176,6 +1178,9 @@ export default function AppShell({
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)
+  // Per-route override for the right rail's collapsed state (mini-rail build surfaces). Keyed
+  // by path so it auto-resets on navigation — see the railCollapsed derivation below.
+  const [railOverride, setRailOverride] = useState<{ path: string; collapsed: boolean } | null>(null)
 
   // Mobile right drawer (The Quest stats) — opened only from the tab bar's gem
   // control. The left side is the nav DRAWER (drawerOpen, also bottom-bar
@@ -1241,6 +1246,18 @@ export default function AppShell({
   // loaded server-side and passed in) wins over the code chrome map; absent → code default.
   const effectiveRail = mergeChrome(railFor(pathname), chromeOverrides ?? {}, pathname)
   const showSidebar = !!sidebar && effectiveRail === 'global'
+
+  // Mini rail (immersive build surfaces — the Journey course builder). The GLOBAL rail is
+  // still mounted (never removed), but on these routes it STARTS collapsed to a thin strip
+  // so the builder gets the full center width; a foot toggle expands/collapses it. The
+  // default comes from page-chrome (railStartsCollapsed); a member can flip it for the
+  // current route, and the override resets when they navigate away — so the builder always
+  // opens collapsed, per the design. Pure derivation (no effect): railOverride only applies
+  // when its path matches the live pathname.
+  const railCollapsible = showSidebar && railStartsCollapsed(pathname)
+  const railCollapsed =
+    railOverride?.path === pathname ? railOverride.collapsed : railCollapsible
+  const toggleRail = () => setRailOverride({ path: pathname, collapsed: !railCollapsed })
 
   // The global MEMBER left rail is swapped out on workspace routes (today: /admin/*),
   // which mount their OWN left nav in their layout (the admin sidebar). Suppressing
@@ -1475,9 +1492,43 @@ export default function AppShell({
                 into view as you near the end; its left border is a full-height
                 divider. */}
             {showSidebar && (
-              <aside className="hidden lg:flex flex-col w-80 shrink-0 py-6">
-                {sidebar}
-              </aside>
+              railCollapsed ? (
+                // Mini rail — the global community rail collapsed to a thin strip on an
+                // immersive build surface (the Journey course builder). The rail is NEVER
+                // removed; the foot toggle expands it back to the full w-80 rail.
+                <aside className="hidden lg:flex w-14 shrink-0 flex-col items-center border-l border-border/60 py-6">
+                  <div className="flex-1" />
+                  <button
+                    type="button"
+                    onClick={toggleRail}
+                    title="Show the rail"
+                    aria-label="Show the rail"
+                    className="sticky bottom-6 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
+                  >
+                    <PanelRightOpen className="h-5 w-5" aria-hidden />
+                  </button>
+                </aside>
+              ) : (
+                <aside className="hidden lg:flex flex-col w-80 shrink-0 py-6">
+                  {sidebar}
+                  {railCollapsible && (
+                    // Collapse affordance — only on a mini-rail surface, where the rail can be
+                    // re-collapsed. Sticky at the foot (the GameStatsDock isn't sticky, so no
+                    // collision) so it stays reachable as the page scrolls.
+                    <div className="sticky bottom-4 mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={toggleRail}
+                        title="Collapse the rail"
+                        aria-label="Collapse the rail"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/95 px-3 py-1.5 text-xs font-medium text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border-strong hover:text-text"
+                      >
+                        <PanelRightClose className="h-4 w-4" aria-hidden /> Collapse
+                      </button>
+                    </div>
+                  )}
+                </aside>
+              )
             )}
           </div>
         </div>
