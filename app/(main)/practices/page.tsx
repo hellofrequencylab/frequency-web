@@ -278,9 +278,9 @@ export default async function PracticesPage({
 
       <StatStrip
         items={[
-          { value: mine.length, label: 'Your practices' },
-          { value: daysLogged, label: 'Days logged (14d)' },
-          { value: libraryTotal, label: 'In the library' },
+          { value: mine.length, label: 'Your practices', href: '#practices-mine' },
+          { value: daysLogged, label: 'Days logged (14d)', href: '#practices-activity' },
+          { value: libraryTotal, label: 'In the library', href: '#practices-library' },
         ]}
       />
 

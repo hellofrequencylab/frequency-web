@@ -23,7 +23,7 @@ export async function QuestJourneys() {
 
   return (
     <section>
-      <SectionHeader title="Your Journeys" count={journeys.length} />
+      <SectionHeader title="Your Journeys" count={journeys.length} href="/journeys" />
       <div className="space-y-4">
         {active.length > 0 && (
           <Suspense fallback={<ActiveJourneysSkeleton count={active.length} />}>
