@@ -68,7 +68,7 @@ export async function rankedJourneys(): Promise<RankedJourney[]> {
       .from('journey_plans')
       .select(
         'id, slug, title, emoji, author_id, visibility, status, official, quest_id, ' +
-          'adopt_count, forked_count, featured_at, created_at, author:profiles(display_name, handle)',
+          'adopt_count, forked_count, featured_at, created_at, author:profiles!author_id(display_name, handle)',
       )
       .or('visibility.eq.public,status.eq.pending')
       .neq('status', 'draft')
