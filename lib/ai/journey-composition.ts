@@ -1,8 +1,9 @@
 // Vera's "build my Journey" composer for the course builder (JOURNEYS.md §6). From a one-line
-// description, Vera drafts a balanced opening week: one slot per Pillar — a Mind, Body, and Spirit
-// practice (picked from the library or freshly written) and an Expression slot written as a short,
-// fun challenge-style activity that puts the week to work. So a fresh Journey opens balanced across
-// all four Pillars. Mirrors lib/ai/journey-outline.ts: forced-tool structured output + the voice
+// description, Vera drafts a balanced opening week: one practice per Pillar — Mind, Body, Spirit,
+// and Expression (each picked from the library or freshly written). Expression practices are about
+// putting it out into the world (make/share/connect). So a fresh Journey opens balanced across all
+// four Pillars, and doing the practices feeds the four-Pillar Signature. Mirrors lib/ai/journey-
+// outline.ts: forced-tool structured output + the voice
 // primer + the usage ledger; never trust the raw shape, and every library id is re-validated against
 // the candidates we sent. Degrades to null when AI is off, so the builder falls back to an empty shape.
 
@@ -57,8 +58,8 @@ const TOOL: Anthropic.Tool = {
               description: 'library = reuse one of the candidate practices listed for this Pillar; create = write a new one.',
             },
             practiceId: { type: 'string', description: 'When mode=library: the exact id of a candidate practice for this Pillar.' },
-            title: { type: 'string', description: 'When mode=create: a short, plain name. For expression, a short fun challenge name.' },
-            body: { type: 'string', description: 'When mode=create: 2 to 4 short steps in second person. For expression, what to make/share/do.' },
+            title: { type: 'string', description: 'When mode=create: a short, plain practice name.' },
+            body: { type: 'string', description: 'When mode=create: 2 to 4 short, concrete steps in second person.' },
           },
           required: ['pillar', 'mode'],
         },
@@ -68,12 +69,11 @@ const TOOL: Anthropic.Tool = {
   },
 }
 
-const SYSTEM = `You are Vera, Frequency's warm, plain-spoken guide. An author is building a Journey: a short group-coaching program a Circle moves through together. From their description, compose a balanced opening week with one slot for each of the four Pillars.
+const SYSTEM = `You are Vera, Frequency's warm, plain-spoken guide. An author is building a Journey: a short group-coaching program a Circle moves through together. From their description, compose a balanced opening week with one practice for each of the four Pillars.
 
 Rules:
-- Exactly four slots: Mind, Body, Spirit, and Expression.
-- Mind, Body, Spirit are quiet practices. For each, prefer reusing a fitting practice from the candidates listed for that Pillar (mode=library, return its exact id). Only write a new one (mode=create) when no candidate fits; then give a short title and 2 to 4 concrete steps in second person.
-- Expression is how they put the week to work: write it (mode=create) as a short, fun challenge-style activity. Make something, share something, or do something out loud. Give it a short name and one or two plain sentences on what to do.
+- Exactly four practices: Mind, Body, Spirit, and Expression. For each, prefer reusing a fitting practice from the candidates listed for that Pillar (mode=library, return its exact id). Only write a new one (mode=create) when no candidate fits; then give a short title and 2 to 4 concrete steps in second person.
+- Expression practices are about putting it out into the world: making something, sharing something, or connecting with someone. Keep them small and doable, like the others.
 - Plain, specific, sentence case. No hype, no emoji, no em dashes. Never narrate the reader's feelings.
 - Never invent a library id that was not listed. Always call the ${TOOL_NAME} tool.`
 

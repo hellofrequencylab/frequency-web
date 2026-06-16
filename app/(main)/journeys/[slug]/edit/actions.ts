@@ -197,12 +197,12 @@ export async function draftSlotCoachingAction(
 
 // ── Vera Journey composer (JOURNEYS.md §6) ──────────────────────────────────────────────
 //
-// Every new Journey opens pre-propagated with a balanced shape: one slot per Pillar — a Mind,
-// Body, and Spirit practice, plus an Expression slot written as a short, fun challenge-style
-// activity. So a fresh Journey starts balanced across all four Pillars. The author tells Vera
-// what they're making and she fills the shape (reusing fitting library practices or writing new
-// ones), or starts from the empty shape and fills it by hand. The separate, gamified Challenges
-// feature is its own bonus layer and is not touched here.
+// Every new Journey opens pre-propagated with a balanced shape: one practice per Pillar — Mind,
+// Body, Spirit, and Expression. So a fresh Journey starts balanced across all four Pillars, and
+// doing the practices feeds the four-Pillar Signature. The author tells Vera what they're making
+// and she fills the shape (reusing fitting library practices or writing new ones), or starts from
+// the empty shape and fills it by hand. Extra-credit Challenges (above-and-beyond bonus tasks that
+// pay regular Zaps) and Side Quests (reward-only, badge-granting) are separate layers, not here.
 
 const SCAFFOLD_PHASE = 'Your first week'
 
@@ -210,7 +210,7 @@ const PILLAR_SLOTS: { slug: ComposePillar; label: string; prompt: string }[] = [
   { slug: 'mind', label: 'Mind practice', prompt: 'A Mind practice to steady attention. Pick one from the library or let Vera draft it.' },
   { slug: 'body', label: 'Body practice', prompt: 'A Body practice that is physical and doable. Pick one from the library or let Vera draft it.' },
   { slug: 'spirit', label: 'Spirit practice', prompt: 'A Spirit practice that is reflective or connecting. Pick one from the library or let Vera draft it.' },
-  { slug: 'expression', label: 'Expression challenge', prompt: 'The fun part: a short challenge to put the week to work. Make something, share something, or do something out loud. Let Vera draft it or write your own.' },
+  { slug: 'expression', label: 'Expression practice', prompt: 'An Expression practice: make something, share something, or connect with someone. Pick one from the library or let Vera draft it.' },
 ]
 
 /** Pillar slug -> id, for tagging the scaffold's slots with their Pillar. */
