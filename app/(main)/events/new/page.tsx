@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { FocusTemplate } from '@/components/templates'
 import { EventForm } from './event-form'
+import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 
 export default async function NewEventPage() {
   const supabase = await createClient()
@@ -47,10 +47,8 @@ export default async function NewEventPage() {
   }
 
   return (
-    <FocusTemplate title="Create an Event" back={{ href: '/events', label: 'Events' }}>
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <EventForm groups={circles} />
-      </div>
-    </FocusTemplate>
+    <EventEditorWindow backHref="/events">
+      <EventForm groups={circles} />
+    </EventEditorWindow>
   )
 }

@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
-import { FocusTemplate } from '@/components/templates'
 import { CircleSettingsForm, type CircleSettingsInitial } from './circle-settings-form'
+import { CircleEditorWindow } from '@/components/studio/circle/circle-editor-window'
 
 // The host's full-page circle settings editor (gated by circle.editSettings → host, scope leader,
 // or admin). Reuses updateCircleSettings, which writes only host-owned fields.
@@ -48,10 +48,8 @@ export default async function CircleSettingsPage({ params }: { params: Promise<{
   }
 
   return (
-    <FocusTemplate title="Circle settings" back={{ href: `/circles/${slug}`, label: 'Back to circle' }}>
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <CircleSettingsForm circleId={circle.id} slug={slug} initial={initial} />
-      </div>
-    </FocusTemplate>
+    <CircleEditorWindow slug={slug}>
+      <CircleSettingsForm circleId={circle.id} slug={slug} initial={initial} />
+    </CircleEditorWindow>
   )
 }

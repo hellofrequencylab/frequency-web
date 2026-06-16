@@ -9,6 +9,7 @@ import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DangerModal } from '@/components/admin/danger-modal'
+import { ImageUpload } from '@/components/ui/image-upload'
 import type { CircleBase } from '@/lib/types/circle'
 
 type CircleRow = CircleBase & {
@@ -138,8 +139,14 @@ function CircleForm({
       </div>
 
       <div className="sm:col-span-2">
-        <label className={lbl}>Cover image URL <span className="font-normal text-subtle">(optional)</span></label>
-        <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://…" disabled={isPending} className={input} />
+        <ImageUpload
+          label="Cover image"
+          value={imageUrl || null}
+          onChange={(url) => setImageUrl(url ?? '')}
+          folder="circle-covers"
+          hint="Shown on the circle's card and header."
+          disabled={isPending}
+        />
       </div>
 
       <div>
