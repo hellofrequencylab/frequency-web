@@ -29,6 +29,26 @@ export async function journeyPracticeIds(journeyId: string): Promise<string[]> {
   return [...ids]
 }
 
+/** The distinct Pillar ids (`journey_plan_items.domain_id`) a Journey covers. Completion
+ *  counts any practice in these Pillars — the member builds their own daily practice and
+ *  swaps freely within a Pillar (ADR-Quest "any practice in the Pillars"), so the bar is
+ *  Pillar coverage, not a fixed practice list. */
+export async function journeyPillarIds(journeyId: string): Promise<string[]> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('journey_plan_items')
+    .select('domain_id')
+    .eq('plan_id', journeyId)
+    .not('domain_id', 'is', null)
+
+  const ids = new Set(
+    ((data ?? []) as { domain_id: string | null }[])
+      .map((r) => r.domain_id)
+      .filter((id): id is string => !!id),
+  )
+  return [...ids]
+}
+
 /**
  * Count the DISTINCT days a member logged any of `practiceIds` inside the window.
  * A null window bound leaves that side unconstrained (an open-ended window). Returns
@@ -48,6 +68,34 @@ export async function distinctPracticeDaysInWindow(
     .select('logged_for')
     .eq('profile_id', profileId)
     .in('practice_id', practiceIds)
+
+  if (windowStart) query = query.gte('logged_for', windowStart.slice(0, 10))
+  if (windowEnd) query = query.lte('logged_for', windowEnd.slice(0, 10))
+
+  const { data } = await query
+  const days = new Set(((data ?? []) as { logged_for: string }[]).map((r) => r.logged_for))
+  return days.size
+}
+
+/**
+ * Count the DISTINCT days a member logged any practice whose Pillar is in `pillarIds`,
+ * inside the window. The "any practice in the Journey's Pillars" rule: a swap to any
+ * same-Pillar practice counts. Joins practice_logs -> practices for the Pillar.
+ */
+export async function distinctPillarDaysInWindow(
+  profileId: string,
+  pillarIds: string[],
+  windowStart: string | null,
+  windowEnd: string | null,
+): Promise<number> {
+  if (pillarIds.length === 0) return 0
+
+  const admin = createAdminClient()
+  let query = admin
+    .from('practice_logs')
+    .select('logged_for, practice:practices!inner(domain_id)')
+    .eq('profile_id', profileId)
+    .in('practice.domain_id', pillarIds)
 
   if (windowStart) query = query.gte('logged_for', windowStart.slice(0, 10))
   if (windowEnd) query = query.lte('logged_for', windowEnd.slice(0, 10))
@@ -179,8 +227,10 @@ export async function evaluateJourneyCompletion(
     }
   }
 
-  const practiceIds = await journeyPracticeIds(journeyId)
-  const distinctDays = await distinctPracticeDaysInWindow(profileId, practiceIds, windowStart, windowEnd)
+  // Count by PILLAR coverage, not a fixed practice list: any practice the member logs
+  // whose Pillar this Journey covers counts (swap freely within a tag, ADR-Quest).
+  const pillarIds = await journeyPillarIds(journeyId)
+  const distinctDays = await distinctPillarDaysInWindow(profileId, pillarIds, windowStart, windowEnd)
   const { required: expressionRequired, done: expressionDone } = await expressionRequirement(profileId, journeyId, season)
 
   // A library Journey with no enrollment has no window → the day count would be
