@@ -72,6 +72,22 @@ export async function createPracticeAction(
   return ok({ id: p.id })
 }
 
+// Create a blank DRAFT practice (non-public) and return its id, so the caller can open the full
+// PracticeBuilder popup straight away — no separate "name it" step or full page. The draft stays
+// out of the public library until it's published (the admin table's Public switch).
+export async function createPracticeDraftAction(): Promise<ActionResult<{ id: string }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const p = await createPractice({
+    title: 'Untitled practice',
+    createdBy: profileId,
+    isPublic: false,
+  })
+  if (!p) return fail('Could not create practice')
+  revalidatePath('/practices')
+  return ok({ id: p.id })
+}
+
 // Edit a practice you created. Partial flexibility: members shape content + cadence
 // on their OWN practices (ownership enforced); rewards stay admin-governed.
 export async function updatePracticeAction(id: string, patch: PracticeEdit): Promise<ActionResult> {

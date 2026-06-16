@@ -1,10 +1,11 @@
 import Link from 'next/link'
-import { BookOpen, Inbox, Star, Globe, ExternalLink, Plus } from 'lucide-react'
+import { BookOpen, Inbox, Star, Globe, ExternalLink } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { rankedPractices } from '@/lib/admin/content-signals'
+import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
 import { PracticeReviewButtons } from '../content-controls'
 import { PracticesTable } from './practices-table'
 
@@ -26,14 +27,7 @@ export default async function AdminContentPracticesPage() {
       eyebrow="Content"
       description="The practice library, ranked by real usage. Tune what is public, what is a starter template, and what gets featured."
       width="wide"
-      actions={
-        <Link
-          href="/admin/content/practices/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
-        >
-          <Plus className="h-4 w-4" /> Add practice
-        </Link>
-      }
+      actions={<NewPracticeButton label="Add practice" />}
     >
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
