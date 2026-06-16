@@ -9,7 +9,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { normalizeSeo, type SeoFields } from './seo'
 import { normalizeStatus, type StatusFields } from './status'
 import { parseLayout, moduleAssignments, isLayoutScopeKey, isModuleRole, type LayoutConfig, type ModuleRole, type SlotConfig } from './layout'
-import { LAYOUT_MODULE_IDS, moduleMeta } from '@/lib/widgets/modules'
+import { moduleIdsForScope, moduleMeta } from '@/lib/widgets/modules'
 import { isTemplateId, templateMeta, slotIds, defaultSlotId, DEFAULT_TEMPLATE, type TemplateId } from '@/lib/widgets/templates'
 
 // Server actions for the on-page Page settings panel (ADR-268). STAFF (admin+, ADR-208 —
@@ -123,9 +123,12 @@ export interface LayoutEditorState {
  *  at the level they edit. Staff-gated; defaults to the Single template, all on, no gates. */
 export async function getPageLayoutForEditor(key: string): Promise<LayoutEditorState> {
   await gate()
+  // The module SET is scoped to the key being edited (ADR-294), so each route's Layout panel
+  // offers exactly the blocks that route renders — not the global catalog.
+  const moduleIds = moduleIdsForScope(key)
   const build = (config: LayoutConfig): LayoutEditorState => ({
     template: config.template,
-    items: moduleAssignments(config, LAYOUT_MODULE_IDS).flatMap((a) => {
+    items: moduleAssignments(config, moduleIds).flatMap((a) => {
       const meta = moduleMeta(a.id)
       return meta
         ? [{ id: meta.id, label: meta.label, description: meta.description, enabled: a.enabled, role: isModuleRole(a.role) ? a.role : null, slot: a.slot }]
@@ -153,7 +156,10 @@ export async function savePageLayout(
   const slots = slotIds(template)
   const def = defaultSlotId(template)
 
-  const known = new Set(LAYOUT_MODULE_IDS)
+  // Only the key's own module set is writable (ADR-294) — a crafted id for another page's
+  // block is dropped as unknown, same as an unknown module.
+  const moduleSet = moduleIdsForScope(key)
+  const known = new Set(moduleSet)
   const valid = (input.items ?? []).filter((it) => known.has(it.id))
   const orderedIds = valid.map((it) => it.id)
   // Lookups keyed by module id (VALUES only from the request); the slot is normalized to a real
@@ -170,7 +176,7 @@ export async function savePageLayout(
     const order = orderedIds.filter((id) => slotById.get(id) === s.id)
     const hidden = order.filter((id) => enabledById.get(id) === false)
     const roles: Record<string, ModuleRole> = {}
-    for (const id of LAYOUT_MODULE_IDS) {
+    for (const id of moduleSet) {
       if (slotById.get(id) !== s.id) continue
       const role = roleById.get(id)
       if (isModuleRole(role)) roles[id] = role
