@@ -95,7 +95,7 @@ describe('leftRailFor — the global member left rail vs. the admin workspace', 
     }
   })
 
-  it('swaps the member left rail for the admin sidebar under /admin/*', () => {
+  it('keeps the global member left rail (the one site menu) under /admin/*', () => {
     for (const p of [
       '/admin',
       '/admin/programs',
@@ -104,28 +104,28 @@ describe('leftRailFor — the global member left rail vs. the admin workspace', 
       '/admin/circles',
       '/admin/qr',
       '/admin/members',
-      '/admin/crm', // CRM moved under admin (Phase 3)
-      '/admin/marketing', // Marketing moved under admin (Phase 3)
+      '/admin/crm',
+      '/admin/marketing',
       '/admin/marketing/analytics',
     ]) {
-      expect(leftRailFor(p), p).toBe('none')
+      expect(leftRailFor(p), p).toBe('global')
     }
   })
 
-  it('drops BOTH rails for the admin workspace (full-width, Phase 4 ADR-228)', () => {
-    // The admin workspace suppresses the member LEFT rail AND the right rail — it is a
-    // full-width operator surface framed only by its top-nav menubar.
+  it('drops only the RIGHT member rail in the admin workspace (the left menu stays)', () => {
+    // The admin workspace rides the same left menu as the rest of the site; only the
+    // member community RIGHT rail is suppressed (the admin info rail owns the right).
     for (const p of [
       '/admin',
       '/admin/programs',
       '/admin/circles',
       '/admin/members',
-      '/admin/crm', // CRM moved under admin (Phase 3); full-width like the rest
-      '/admin/marketing', // Marketing too
+      '/admin/crm',
+      '/admin/marketing',
       '/admin/marketing/analytics',
     ]) {
       expect(railFor(p), p).toBe('none')
-      expect(leftRailFor(p), p).toBe('none')
+      expect(leftRailFor(p), p).toBe('global')
     }
     // A non-admin path that merely shares the prefix text keeps the global rails.
     expect(railFor('/administrators')).toBe('global')
