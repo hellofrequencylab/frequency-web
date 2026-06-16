@@ -25,6 +25,10 @@
       "schedule": "0 0 * * *"
     },
     {
+      "path": "/api/cron/season-go-live",
+      "schedule": "*/10 * * * *"
+    },
+    {
       "path": "/api/cron/event-occurrences",
       "schedule": "0 2 * * *"
     },
