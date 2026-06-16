@@ -4,9 +4,9 @@ import { ExternalLink } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
-import { AdminTemplate } from '@/components/templates'
 import { StatusChip } from '@/components/admin/status'
 import { buttonClasses } from '@/components/ui/button'
+import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 import { EventEditClient, type TierEditRow } from './event-edit-client'
 
 export const dynamic = 'force-dynamic'
@@ -57,19 +57,17 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
   const scope = (Array.isArray(event.scope) ? event.scope[0] : event.scope) as unknown as { id: string; name: string } | null | undefined
 
   return (
-    <AdminTemplate
-      width="narrow"
-      eyebrow="Edit event"
-      title={event.title}
-      back={{ href: '/admin/events', label: 'Events' }}
-      description={
-        <span className="flex flex-wrap items-center gap-2">
-          {scope && <span>{scope.name}</span>}
-          {host && <span>· Hosted by {host.display_name}</span>}
-          {event.is_cancelled && <StatusChip tone="danger" size="sm">Cancelled</StatusChip>}
-        </span>
-      }
-      actions={
+    <EventEditorWindow backHref="/admin/events">
+      {/* Context band: who/where + a link out to the live event, then the editor. */}
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-bold text-text">{event.title}</h1>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
+            {scope && <span>{scope.name}</span>}
+            {host && <span>· Hosted by {host.display_name}</span>}
+            {event.is_cancelled && <StatusChip tone="danger" size="sm">Cancelled</StatusChip>}
+          </p>
+        </div>
         <Link
           href={`/events/${event.slug}`}
           target="_blank"
@@ -78,8 +76,8 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
         >
           View <ExternalLink className="h-3 w-3" />
         </Link>
-      }
-    >
+      </div>
+
       {/* Edit form + cancel/reinstate + ticket tiers */}
       <EventEditClient
         event={{
@@ -95,6 +93,6 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
         }}
         tiers={tiers}
       />
-    </AdminTemplate>
+    </EventEditorWindow>
   )
 }
