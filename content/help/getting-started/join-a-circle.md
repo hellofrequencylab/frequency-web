@@ -3,7 +3,7 @@ title: How to join a Circle
 description: Find a local group around what you practice and start showing up.
 category: getting-started
 order: 2
-updated: 2026-06-10
+updated: 2026-06-16
 audience: member
 featureKeys: [circles, memberships]
 status: published
@@ -18,6 +18,8 @@ go from browsing to belonging.
 2. Browse by Channel, or look for Circles near your city. In-person Circles carry
    a location marker so you can see what meets near you.
 3. Open a Circle to see who is in it, what they practice, and when they gather.
+
+A Circle with a small star is **Featured**: one the Frequency team picked as a good place to start.
 
 ## Join and introduce yourself
 

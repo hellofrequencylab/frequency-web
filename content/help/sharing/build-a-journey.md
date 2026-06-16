@@ -1,80 +1,93 @@
 ---
 title: Build and share a Journey
-description: Turn what you know into a guided program, build it phase by phase, share it with the community, and let Vera check it for rank.
+description: Turn what you know into a guided program. Let Vera draft a balanced first week, build it phase by phase, share it with the community, and let Vera check it for rank.
 category: sharing
 order: 3
-updated: 2026-06-15
+updated: 2026-06-16
 audience: member
 featureKeys: [journeys]
 status: published
 ---
 
 A **Journey** is a guided program you build and share: **Phases**, each with a few short
-**Lessons**. It can be a single week or a full multi-week course. You decide how deep to go.
+**Lessons** and **Practices**. It can be a single week or a full multi-week course. You decide
+how deep to go.
 
 ## Start one
 
-From **Journeys**, hit **New journey**. Begin from a **template** (a ready-made structure
-you can change) or a blank canvas. Give it a name and a face, and you land in the editor.
+From **Journeys**, hit **New journey**. You land straight in the **builder**, a full-page course
+editor with three tabs: **Curriculum**, **Details**, and **Settings**. Everything **saves as you
+go**, so there's no Save button. While you build, the community rail on the right tucks into a slim
+strip to give you room; tap the toggle at its foot to bring it back.
 
-## Build the structure
+## Let Vera build it
 
-The editor has two parts: **Settings** up top and the **structure** below.
+The fastest start is the **Vera box at the top of Curriculum**. Tell her what you're making (for
+example, "a 3-week reset for people who want to sleep better and scroll less") and hit **Build with
+Vera**. She lays down a balanced first week: a **Mind**, a **Body**, and a **Spirit** practice, plus
+**two challenges**. For each practice she either pulls a fitting one from the library or writes a new
+one for you. You can edit, reorder, or remove anything after.
 
-- **Add a Phase** for each stage of the program. Phases are the milestones: finishing one
-  earns the member a Trophy.
-- **Add Lessons** inside a Phase: a video (paste a YouTube or Vimeo link), a reading, an
-  exercise, a reflection, or a quick check. Keep them short.
-- **Add a Practice** from the library when a step is something to do in the world, not just
-  read or watch.
-- **Reorder** with the up and down arrows, and edit titles and content inline. Everything
-  **saves as you go**.
+Prefer to start by hand? **Start with the shape** lays the same slots down empty for you to fill.
 
-## Set it up
+## Build the structure (Curriculum)
 
-In **Settings**:
+- **Add a Phase** for each stage of the program. Phases are the milestones: finishing one earns the
+  member a Trophy.
+- **Add Lessons** inside a Phase: a video (paste a YouTube or Vimeo link), a reading, an exercise, a
+  reflection, or a quick check. Keep them short.
+- **Add a Practice** from the library when a step is something to do in the world, not just read or
+  watch. The picker is sorted by **Pillar** (Mind, Body, Spirit, Expression): tap a Pillar to see its
+  practices; the others stay on screen, greyed, one tap away. You can search by name too.
+- **Coach each practice.** Every practice step has a **Vera coaching prompt** you can draft with one
+  tap: a short nudge tuned to the season and the practice's Pillar. Members see it when they reach
+  that step in the Journey. Edit it or write your own.
+- **Reorder** with the up and down arrows, and edit titles and content inline.
 
-- **Name, icon, accent, and story.** Give the Journey a face and say why it matters.
+## Set it up (Details and Settings)
+
+In the **Details** tab:
+
+- **Name, icon, accent, cover, and story.** Give the Journey a face and say why it matters.
 - **Completion Gems.** What finishing the Journey earns.
 - **Certificate.** Turn on a printable certificate for people who finish.
-- **Phase drip.** How many days between Phase unlocks (weekly by default), so a Circle
-  moving through it together stays in step.
+- **Phase drip.** How many days between Phase unlocks (weekly by default), so a Circle moving through
+  it together stays in step.
+
+The **Settings** tab holds the advanced bits, and a **Danger zone** if you ever need to delete the
+Journey. Guides and Mentors can mark a Journey **official** and attach it to a Season here.
 
 ## Publish or keep it
 
 Your Journey starts **private** (just you). When you're ready:
 
 - **Anyone with the link.** Share it directly without listing it.
-- **Community library.** Publish it so anyone can take it. Publishing, taking, and remixing
-  are all **free**. When you publish, a Guide gives it a quick look before it lists in the
-  library, so the shelf stays worth browsing. A Guide or Mentor's own Journey lists right away.
-
-Guides and Mentors can also mark a Journey **official** and attach it to a Season, from the
-editor's **Advanced** section.
+- **Community library.** Publish it so anyone can take it. Publishing, taking, and remixing are all
+  **free**. When you publish, a Guide gives it a quick look before it lists in the library, so the
+  shelf stays worth browsing. A Guide or Mentor's own Journey lists right away.
 
 ## Vera checks it for rank
 
-Getting listed is one thing. Counting toward season **rank** is a higher bar, so **Vera**
-(the app's helper) reads every Journey you publish and checks it against the authoring
-standard. This is separate from the Guide's listing check, and it never holds up sharing.
-It's only about whether finishing your Journey can move someone's rank.
+Getting listed is one thing. Counting toward season **rank** is a higher bar, so **Vera** (the app's
+helper) reads every Journey you publish and checks it against the authoring standard. This is separate
+from the Guide's listing check, and it never holds up sharing. It's only about whether finishing your
+Journey can move someone's rank.
 
-You'll see her verdict right in **Settings**:
+You'll see her verdict right in the **Details** tab:
 
-- **Added to the ranked library.** Vera approved it. Finishing it now counts toward rank,
-  the same as a season Journey.
-- **Notes before it can count.** Vera lists what to tighten, with a button to send it back
-  for another look once you've made changes.
+- **Added to the ranked library.** Vera approved it. Finishing it now counts toward rank, the same as
+  a season Journey.
+- **Notes before it can count.** Vera lists what to tighten, with a button to send it back for another
+  look once you've made changes.
 
-Either way the Journey stays live the whole time. Vera's notes are coaching to make it
-stronger, not a gate on sharing.
+Either way the Journey stays live the whole time. Vera's notes are coaching to make it stronger, not a
+gate on sharing.
 
 ## Run it with a Circle
 
-Once it's shared, a Circle **Host** can launch a **Run**: the whole Circle is enrolled and
-moves through the Journey together, Phase by Phase, with shared progress and group Trophies.
+Once it's shared, a Circle **Host** can launch a **Run**: the whole Circle is enrolled and moves
+through the Journey together, Phase by Phase, with shared progress and group Trophies.
 
 ## The one thing to remember
 
-A Journey is you, shared. Build the path; the people who take it are walking something you
-laid down.
+A Journey is you, shared. Build the path; the people who take it are walking something you laid down.
