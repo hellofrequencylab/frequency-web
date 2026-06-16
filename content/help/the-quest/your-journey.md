@@ -3,20 +3,19 @@ title: Your Journey
 description: Each season gives you three Journeys. Do the practices, share what shifted, and finish to climb the ranks.
 category: the-quest
 order: 4
-updated: 2026-06-15
+updated: 2026-06-16
 audience: member
 featureKeys: [journeys, circles]
 status: published
 ---
 
-A **Journey** is a guided run of **Practices** for one **Pillar**: Mind, Body, or
-Spirit. Every season of **The Quest** gives you three of them, one per Pillar, and they
-run in sequence: one for the mind, then one for the body, then one for the spirit, about
-four weeks each.
+A **Journey** is a guided run of **Practices** that moves through all four **Pillars**:
+Mind, Body, Spirit, and Expression. Every season of **The Quest** gives you three
+Journeys, and they run in sequence, about four weeks each.
 
 ## Start one
 
-Open **The Quest** and pick the Journey that's open this stretch of the season. You can
+Open **My Quest** and pick the Journey that's open this stretch of the season. You can
 walk it on your own or with your Circle. Starting is always free. Each Journey is live
 for about four weeks, and the practices are short, real-world things you can actually fit
 into a day.

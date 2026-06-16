@@ -9,7 +9,7 @@ featureKeys: [leaderboard, gamification]
 status: published
 ---
 
-The leaderboard leads with one thing: a goal your circle is filling **together**. Individual standings sit below it, start local, and are yours to step out of. Open **The Quest** and pick the **Leaderboard** tab.
+The leaderboard leads with one thing: a goal your circle is filling **together**. Individual standings sit below it, start local, and are yours to step out of. You'll find it in **The Vault**, under your standing.
 
 ## The shared goal comes first
 
