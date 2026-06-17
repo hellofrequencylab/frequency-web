@@ -60,7 +60,7 @@ export function JourneySpark() {
   const create = () => {
     if (!title.trim()) return
     setError(null)
-    start(() => createJourneyFromSparkAction({ title, promise, overview, weeks }))
+    start(() => createJourneyFromSparkAction({ title, promise, overview, answers: { who, topic, outcome, weeks, pace } }))
   }
 
   const next = () => {

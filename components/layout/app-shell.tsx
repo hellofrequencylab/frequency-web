@@ -1494,38 +1494,38 @@ export default function AppShell({
               railCollapsed ? (
                 // Mini rail — the global community rail collapsed to a thin strip on an
                 // immersive build surface (the Journey course builder). The rail is NEVER
-                // removed; the foot toggle expands it back to the full w-80 rail.
+                // removed; the toggle (a vertical hamburger, pinned at the TOP so it stays put
+                // and visible) expands it back to the full w-80 rail.
                 <aside className="hidden lg:flex w-14 shrink-0 flex-col items-center border-l border-border/60 py-6">
-                  <div className="flex-1" />
                   <button
                     type="button"
                     onClick={toggleRail}
                     title="Show the rail"
                     aria-label="Show the rail"
-                    className="sticky bottom-6 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
                   >
-                    <Menu className="h-5 w-5" aria-hidden />
+                    <Menu className="h-5 w-5 rotate-90" aria-hidden />
                   </button>
                 </aside>
               ) : (
                 <aside className="hidden lg:flex flex-col w-80 shrink-0 py-6">
-                  {sidebar}
                   {railCollapsible && (
-                    // Collapse affordance — only on a mini-rail surface, where the rail can be
-                    // re-collapsed. Sticky at the foot (the GameStatsDock isn't sticky, so no
-                    // collision) so it stays reachable as the page scrolls.
-                    <div className="sticky bottom-4 mt-2 flex justify-end">
+                    // The SAME open/close toggle, pinned at the TOP of the open rail so it stays
+                    // visible (it used to sit at the foot and scroll out of reach). Vertical
+                    // hamburger, matching the collapsed state.
+                    <div className="mb-3 flex justify-end">
                       <button
                         type="button"
                         onClick={toggleRail}
-                        title="Collapse the rail"
-                        aria-label="Collapse the rail"
-                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/95 px-3 py-1.5 text-xs font-medium text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border-strong hover:text-text"
+                        title="Hide the rail"
+                        aria-label="Hide the rail"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
                       >
-                        <Menu className="h-4 w-4" aria-hidden /> Collapse
+                        <Menu className="h-5 w-5 rotate-90" aria-hidden />
                       </button>
                     </div>
                   )}
+                  {sidebar}
                 </aside>
               )
             )}
