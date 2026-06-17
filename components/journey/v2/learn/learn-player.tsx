@@ -17,6 +17,7 @@ import { isError } from '@/lib/action-result'
 import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
 import { completeJourneyLessonAction } from '@/app/(main)/journeys/[slug]/learn/actions'
 import { TrophyCelebration, type TrophyMilestone } from '@/components/journey/v2/trophy-celebration'
+import { PracticeActions } from '@/components/journey/v2/learn/practice-actions'
 import type { JourneyTree } from '@/lib/journeys/tree'
 import type { LessonContent, CheckConfig } from '@/lib/journeys/store'
 
@@ -34,6 +35,9 @@ interface Props {
   phaseFocusById?: Record<string, string>
   /** Pillar name for a practice step, keyed by lesson id — drives the badge in the syllabus + header. */
   pillarByLesson?: Record<string, string>
+  /** The linked library practice id for a practice step, keyed by lesson id — drives the per-step
+   *  Practice (Mindless overlay) + Log actions. Absent on non-practice steps. */
+  practiceIdByLesson?: Record<string, string>
   /** Show a printable certificate on Journey completion (plan opt-in). */
   certificateEnabled?: boolean
   /** Phase-drip anchor (ISO): the Run's start (cohort) or the member's enrollment start (solo).
@@ -110,6 +114,7 @@ export function LearnPlayer({
   detailById = {},
   phaseFocusById = {},
   pillarByLesson = {},
+  practiceIdByLesson = {},
   certificateEnabled = false,
   anchorStart = null,
   dripIntervalDays = 7,
@@ -177,6 +182,7 @@ export function LearnPlayer({
   const selectedPhaseId = selectedId ? phaseOfLesson.get(selectedId) ?? '' : ''
   const phaseFocus = selectedPhaseId ? phaseFocusById[selectedPhaseId] : undefined
   const selectedPillar = selectedId ? pillarByLesson[selectedId] : undefined
+  const selectedPracticeId = selectedId && !selectedLocked ? practiceIdByLesson[selectedId] : undefined
 
   function togglePhase(id: string) {
     setOpenPhases((prev) => {
@@ -401,6 +407,18 @@ export function LearnPlayer({
               {/* Rich, server-rendered detail for the step (the practice write-up: summary ·
                   cadence · time · Pillar · "Why it works / How to do it / In The Quest"). */}
               {detail}
+
+              {/* Practice-specific actions: open the Mindless timer pre-set to this practice, or log
+                  it (Zaps + streak). Additional to the lesson's "Mark complete & continue" below. */}
+              {selectedPracticeId && (
+                <div className="mt-4 max-w-prose">
+                  <PracticeActions
+                    key={selectedPracticeId}
+                    practiceId={selectedPracticeId}
+                    pillar={selectedPillar}
+                  />
+                </div>
+              )}
 
               {/* Vera's per-slot coaching nudge (practice steps) — the author's dynamically-drafted
                   line for this practice, grounded in the season + Pillar. */}

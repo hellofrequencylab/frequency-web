@@ -74,7 +74,7 @@ function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | nul
             </button>
             <input value={opt} disabled={disabled} onChange={(e) => { const o = [...cfg.options]; o[i] = e.target.value; setCfg({ ...cfg, options: o }) }} onBlur={() => onSave(cfg)} placeholder={`Option ${i + 1}`} className={inputCls} />
             {cfg.options.length > 2 && (
-              <button type="button" disabled={disabled} onClick={() => { const o = cfg.options.filter((_, j) => j !== i); commit({ ...cfg, options: o, answer: Math.min(cfg.answer, o.length - 1) }) }} aria-label="Remove option" className="rounded p-1 text-subtle hover:text-danger">
+              <button type="button" disabled={disabled} onClick={() => { const o = cfg.options.filter((_, j) => j !== i); commit({ ...cfg, options: o, answer: Math.min(cfg.answer, o.length - 1) }) }} aria-label="Remove option" className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-subtle hover:text-danger">
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
@@ -251,17 +251,19 @@ export function JourneyEditor({
   // its leaves + the same add-step tools. The player/tree already render Phase → Module → Lesson.
   const ModuleGroup = (m: EditorBlock) => (
     <div key={m.id} className="rounded-xl border border-border bg-canvas p-3">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-subtle">Module</span>
         <input
           defaultValue={m.title}
           onBlur={(e) => run(() => updateBlockAction(slug, m.id, { title: e.target.value }))}
           placeholder="Module title"
-          className="min-w-0 flex-1 rounded-md border border-border bg-canvas px-1 py-1 text-sm font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
+          className="min-w-[8rem] flex-1 rounded-md border border-border bg-canvas px-1.5 py-1.5 text-sm font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
         />
-        <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'up'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
-        <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'down'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
-        <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, m.id))} className="rounded p-1 text-subtle hover:text-danger" aria-label="Delete module"><Trash2 className="h-3.5 w-3.5" /></button>
+        <span className="ml-auto flex shrink-0 items-center gap-0.5">
+          <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'up'))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
+          <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'down'))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
+          <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, m.id))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-danger" aria-label="Delete module"><Trash2 className="h-3.5 w-3.5" /></button>
+        </span>
       </div>
       {renderLeaves(m.id)}
       {stepTools(m.id, m.id)}
@@ -383,13 +385,13 @@ export function JourneyEditor({
     const open = openLeaves.has(l.id)
     return (
       <li key={l.id} className={`rounded-xl border ${open ? 'p-3' : 'px-3 py-2'} ${isExtra ? 'border-signal/30 bg-signal-bg/20' : 'border-border bg-canvas'}`}>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => toggleLeaf(l.id)}
             aria-expanded={open}
             aria-label={open ? 'Collapse step' : 'Expand step'}
-            className="shrink-0 rounded p-0.5 text-subtle hover:text-text"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-subtle hover:text-text"
           >
             {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
@@ -418,7 +420,7 @@ export function JourneyEditor({
           <input
             defaultValue={l.title}
             onBlur={(e) => run(() => updateBlockAction(slug, l.id, { title: e.target.value }))}
-            className="min-w-0 flex-1 rounded-md border border-border bg-canvas px-1 py-1 text-sm text-text hover:border-border focus:border-primary focus:outline-none"
+            className="min-w-[8rem] flex-1 rounded-md border border-border bg-canvas px-1.5 py-1.5 text-sm text-text hover:border-border focus:border-primary focus:outline-none"
             placeholder={isExtra ? 'Challenge name' : isPractice ? 'Practice step' : 'Lesson title'}
           />
           {isExtra && (
@@ -436,22 +438,24 @@ export function JourneyEditor({
               Zaps
             </label>
           )}
-          {isPractice && l.practiceId && (
-            // An adopted slot links out to its library practice (opens in a new tab) — J4b §5/§8.
-            <a
-              href={`/practices/${l.practiceId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 rounded p-1 text-subtle hover:text-primary-strong"
-              aria-label="Open this practice in the library"
-              title="Open in the library"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          )}
-          <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, l.id, 'up'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
-          <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, l.id, 'down'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
-          <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, l.id))} className="rounded p-1 text-subtle hover:text-danger" aria-label="Delete step"><Trash2 className="h-3.5 w-3.5" /></button>
+          <span className="ml-auto flex shrink-0 items-center gap-0.5">
+            {isPractice && l.practiceId && (
+              // An adopted slot links out to its library practice (opens in a new tab) — J4b §5/§8.
+              <a
+                href={`/practices/${l.practiceId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-primary-strong"
+                aria-label="Open this practice in the library"
+                title="Open in the library"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+            <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, l.id, 'up'))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
+            <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, l.id, 'down'))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
+            <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, l.id))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-danger" aria-label="Delete step"><Trash2 className="h-3.5 w-3.5" /></button>
+          </span>
         </div>
         {open && (
           <>
@@ -617,13 +621,13 @@ export function JourneyEditor({
         const stepCount = lessonsOf(p.id).length + modulesOf(p.id).length
         return (
         <section key={p.id} className="rounded-2xl border border-border bg-surface p-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => togglePhase(p.id)}
               aria-expanded={phaseOpen}
               aria-label={phaseOpen ? 'Collapse phase' : 'Expand phase'}
-              className="shrink-0 rounded p-0.5 text-subtle hover:text-text"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-subtle hover:text-text"
             >
               {phaseOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </button>
@@ -631,13 +635,15 @@ export function JourneyEditor({
             <input
               defaultValue={p.title}
               onBlur={(e) => run(() => updateBlockAction(slug, p.id, { title: e.target.value }))}
-              className="min-w-0 flex-1 rounded-lg border border-border bg-canvas px-1 py-1 text-base font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
+              className="min-w-[8rem] flex-1 rounded-lg border border-border bg-canvas px-1.5 py-1.5 text-base font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
               placeholder="Phase title"
             />
-            <span className="shrink-0 whitespace-nowrap text-xs text-subtle">{stepCount} {stepCount === 1 ? 'step' : 'steps'}</span>
-            <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, p.id, 'up'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-4 w-4" /></button>
-            <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, p.id, 'down'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-4 w-4" /></button>
-            <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, p.id))} className="rounded p-1 text-subtle hover:text-danger" aria-label="Delete phase"><Trash2 className="h-4 w-4" /></button>
+            <span className="ml-auto flex shrink-0 items-center gap-0.5">
+              <span className="mr-1 whitespace-nowrap text-xs text-subtle">{stepCount} {stepCount === 1 ? 'step' : 'steps'}</span>
+              <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, p.id, 'up'))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-4 w-4" /></button>
+              <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, p.id, 'down'))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-4 w-4" /></button>
+              <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, p.id))} className="flex h-9 w-9 items-center justify-center rounded text-subtle hover:text-danger" aria-label="Delete phase"><Trash2 className="h-4 w-4" /></button>
+            </span>
           </div>
 
           {phaseOpen && (

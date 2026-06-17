@@ -256,7 +256,7 @@ export function JourneyBuilder({
             </span>
           </button>
           {iconOpen && (
-            <div className="absolute left-0 top-[3.75rem] z-30 w-64 rounded-2xl border border-border bg-surface p-3 text-left shadow-xl">
+            <div className="absolute left-0 top-[3.75rem] z-30 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 text-left shadow-xl">
               <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Icon</p>
               {/* Picking an icon closes the popover (clear commit). */}
               <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); meta({ emoji: k }); setIconOpen(false) }} />
@@ -272,7 +272,7 @@ export function JourneyBuilder({
                       aria-pressed={on}
                       title={a.label}
                       onClick={() => { setAccent(a.key); meta({ accent: a.key }) }}
-                      className={`flex h-7 w-7 items-center justify-center rounded-full border transition-transform hover:scale-110 ${on ? 'border-text' : 'border-border'}`}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full border transition-transform hover:scale-110 ${on ? 'border-text' : 'border-border'}`}
                       style={{ backgroundColor: accentColor(a.key) }}
                     >
                       {on && <Check className="h-4 w-4 text-on-primary" aria-hidden />}

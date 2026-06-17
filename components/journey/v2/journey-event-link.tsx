@@ -227,7 +227,7 @@ function EventPickerDialog({
           )}
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
           <a
             href="/events/new"
             target="_blank"

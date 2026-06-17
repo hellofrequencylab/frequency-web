@@ -13,10 +13,24 @@ import { logPractice } from '@/lib/practices'
 import { getPracticeStreak } from '@/lib/practice-streak'
 import { amplitudeLevel } from '@/lib/amplitude'
 import { getOrCreateDispatch } from '@/lib/vera-dispatch'
+import { loadOnAirSessionData, type OnAirSessionData } from '@/lib/on-air/session-data'
 import type { OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
 
 function db(): SupabaseClient {
   return createAdminClient()
+}
+
+/** Load the member's On Air setup state for the global Mindless overlay — the
+ *  same assembly the /on-air route does (shared loader), but callable from the
+ *  client so the overlay can open from anywhere in the app. The overlay handles
+ *  the empty (no adopted practices) case in-place, so an empty `practices` list
+ *  is a valid result, not an error; only "not signed in" fails. */
+export async function loadOnAirSession(
+  requestedPracticeId?: string,
+): Promise<ActionResult<OnAirSessionData>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  return ok(await loadOnAirSessionData(profileId, requestedPracticeId ?? null))
 }
 
 export interface CompleteSessionInput {
