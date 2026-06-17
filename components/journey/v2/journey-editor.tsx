@@ -8,7 +8,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, ChevronUp, ChevronDown, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap } from 'lucide-react'
 import {
   addPhaseAction,
   addModuleAction,
@@ -20,7 +20,7 @@ import {
   moveBlockAction,
   draftSlotCoachingAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
-import { isError } from '@/lib/action-result'
+import { isError, type ActionResult } from '@/lib/action-result'
 import type { CheckConfig } from '@/lib/journeys/store'
 
 export interface EditorBlock {
@@ -196,6 +196,32 @@ export function JourneyEditor({
       router.refresh()
     })
 
+  // Tighter, phased builder: every step collapses to a one-line row (title + chip) and expands to
+  // edit (body + coaching), and each phase folds away with a step count — so a full Journey reads as
+  // a short outline, not an endless scroll of open textareas. A freshly added blank step auto-opens.
+  const [openLeaves, setOpenLeaves] = useState<Set<string>>(new Set())
+  const [closedPhases, setClosedPhases] = useState<Set<string>>(new Set())
+  const toggleLeaf = (id: string) =>
+    setOpenLeaves((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  const togglePhase = (id: string) =>
+    setClosedPhases((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  const addAndOpen = (fn: () => Promise<ActionResult<{ id: string }>>) =>
+    start(async () => {
+      const res = await fn()
+      if (!isError(res)) setOpenLeaves((prev) => new Set(prev).add(res.data.id))
+      router.refresh()
+    })
+
   const sorted = [...blocks].sort((a, b) => a.sortOrder - b.sortOrder)
   const isLeaf = (b: EditorBlock) => b.blockType !== 'phase' && b.blockType !== 'module'
   const phases = sorted.filter((b) => b.blockType === 'phase' && b.parentId === null)
@@ -246,9 +272,19 @@ export function JourneyEditor({
   const LeafRow = (l: EditorBlock) => {
     const isExtra = l.extraCredit
     const isPractice = !isExtra && l.blockType === 'practice'
+    const open = openLeaves.has(l.id)
     return (
-      <li key={l.id} className={`rounded-xl border p-3 ${isExtra ? 'border-signal/30 bg-signal-bg/20' : 'border-border bg-canvas'}`}>
+      <li key={l.id} className={`rounded-xl border ${open ? 'p-3' : 'px-3 py-2'} ${isExtra ? 'border-signal/30 bg-signal-bg/20' : 'border-border bg-canvas'}`}>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => toggleLeaf(l.id)}
+            aria-expanded={open}
+            aria-label={open ? 'Collapse step' : 'Expand step'}
+            className="shrink-0 rounded p-0.5 text-subtle hover:text-text"
+          >
+            {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
           {isExtra ? (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-signal/30 bg-signal-bg/60 px-1.5 py-1 text-xs font-medium text-signal-strong" title="Extra credit: a bonus task, above and beyond, that pays Zaps">
               <Award className="h-3.5 w-3.5" /> extra credit
@@ -293,28 +329,32 @@ export function JourneyEditor({
           <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, l.id, 'down'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
           <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, l.id))} className="rounded p-1 text-subtle hover:text-danger" aria-label="Delete step"><Trash2 className="h-3.5 w-3.5" /></button>
         </div>
-        <textarea
-          defaultValue={l.body}
-          onBlur={(e) => run(() => updateBlockAction(slug, l.id, { body: e.target.value }))}
-          rows={2}
-          placeholder={isExtra ? 'What is the challenge, and what counts as done?' : isPractice ? 'A note for this practice step (optional).' : 'Lesson content (markdown). Paste a YouTube/Vimeo/video link to embed it.'}
-          className="mt-2 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
-        />
-        {!isExtra && l.blockType === 'check' && (
-          <CheckEditor
-            initial={l.check}
-            disabled={pending}
-            onSave={(cfg) => run(() => updateBlockAction(slug, l.id, { check: cfg }))}
-          />
-        )}
-        {isPractice && (
-          <SlotCoaching
-            slug={slug}
-            itemId={l.id}
-            initialPrompt={l.coachingPrompt}
-            pillarName={l.domainId ? pillarNameById.get(l.domainId) ?? null : null}
-            disabled={pending}
-          />
+        {open && (
+          <>
+            <textarea
+              defaultValue={l.body}
+              onBlur={(e) => run(() => updateBlockAction(slug, l.id, { body: e.target.value }))}
+              rows={2}
+              placeholder={isExtra ? 'What is the challenge, and what counts as done?' : isPractice ? 'A note for this practice step (optional).' : 'Lesson content (markdown). Paste a YouTube/Vimeo/video link to embed it.'}
+              className="mt-2 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
+            />
+            {!isExtra && l.blockType === 'check' && (
+              <CheckEditor
+                initial={l.check}
+                disabled={pending}
+                onSave={(cfg) => run(() => updateBlockAction(slug, l.id, { check: cfg }))}
+              />
+            )}
+            {isPractice && (
+              <SlotCoaching
+                slug={slug}
+                itemId={l.id}
+                initialPrompt={l.coachingPrompt}
+                pillarName={l.domainId ? pillarNameById.get(l.domainId) ?? null : null}
+                disabled={pending}
+              />
+            )}
+          </>
         )}
       </li>
     )
@@ -328,7 +368,7 @@ export function JourneyEditor({
         <button
           type="button"
           disabled={pending}
-          onClick={() => run(() => addLessonAction(slug, parentId, 'lesson'))}
+          onClick={() => addAndOpen(() => addLessonAction(slug, parentId, 'lesson'))}
           className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg"
         >
           <Plus className="h-4 w-4" /> Add lesson
@@ -345,7 +385,7 @@ export function JourneyEditor({
         <button
           type="button"
           disabled={pending}
-          onClick={() => run(() => addExtraCreditAction(slug, parentId))}
+          onClick={() => addAndOpen(() => addExtraCreditAction(slug, parentId))}
           className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-signal-strong hover:bg-signal-bg/50"
           title="A bonus task, above and beyond, that pays Zaps"
         >
@@ -461,9 +501,21 @@ export function JourneyEditor({
         </section>
       )}
 
-      {phases.map((p) => (
+      {phases.map((p) => {
+        const phaseOpen = !closedPhases.has(p.id)
+        const stepCount = lessonsOf(p.id).length + modulesOf(p.id).length
+        return (
         <section key={p.id} className="rounded-2xl border border-border bg-surface p-4">
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => togglePhase(p.id)}
+              aria-expanded={phaseOpen}
+              aria-label={phaseOpen ? 'Collapse phase' : 'Expand phase'}
+              className="shrink-0 rounded p-0.5 text-subtle hover:text-text"
+            >
+              {phaseOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </button>
             <Layers className="h-4 w-4 shrink-0 text-subtle" />
             <input
               defaultValue={p.title}
@@ -471,24 +523,30 @@ export function JourneyEditor({
               className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-1 text-base font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
               placeholder="Phase title"
             />
+            <span className="shrink-0 whitespace-nowrap text-xs text-subtle">{stepCount} {stepCount === 1 ? 'step' : 'steps'}</span>
             <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, p.id, 'up'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-4 w-4" /></button>
             <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, p.id, 'down'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-4 w-4" /></button>
             <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, p.id))} className="rounded p-1 text-subtle hover:text-danger" aria-label="Delete phase"><Trash2 className="h-4 w-4" /></button>
           </div>
 
-          <ul className="mt-3 space-y-2">{lessonsOf(p.id).map(LeafRow)}</ul>
-          {modulesOf(p.id).length > 0 && <div className="mt-2 space-y-2">{modulesOf(p.id).map(ModuleGroup)}</div>}
-          {stepTools(p.id, p.id)}
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => run(() => addModuleAction(slug, p.id))}
-            className="mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated"
-          >
-            <Layers className="h-4 w-4" /> Add module
-          </button>
+          {phaseOpen && (
+            <>
+              <ul className="mt-3 space-y-2">{lessonsOf(p.id).map(LeafRow)}</ul>
+              {modulesOf(p.id).length > 0 && <div className="mt-2 space-y-2">{modulesOf(p.id).map(ModuleGroup)}</div>}
+              {stepTools(p.id, p.id)}
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => run(() => addModuleAction(slug, p.id))}
+                className="mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated"
+              >
+                <Layers className="h-4 w-4" /> Add module
+              </button>
+            </>
+          )}
         </section>
-      ))}
+        )
+      })}
 
       <button
         type="button"
