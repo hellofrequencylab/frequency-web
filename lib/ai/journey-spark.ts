@@ -43,6 +43,20 @@ export interface SparkSettings {
   dailyMinutes: number | null
 }
 
+/** How a Circle meets around the Journey, lifted from an uploaded outline (ADR-302). A subset of
+ *  JourneyMeeting — only the fields an outline tends to state. All optional; nothing is invented. */
+export interface SparkMeeting {
+  format: 'virtual' | 'in_person' | 'hybrid' | null
+  /** When it meets, free text (e.g. "Sundays 7pm"). */
+  schedule: string | null
+  /** Timezone label for the schedule (e.g. "ET"). */
+  timezone: string | null
+  /** Where it meets (a place, for in-person/hybrid). */
+  location: string | null
+  /** A join link (for virtual/hybrid). */
+  link: string | null
+}
+
 export interface JourneySpark {
   title: string
   /** One line, leading with the outcome. */
@@ -54,6 +68,9 @@ export interface JourneySpark {
   arc: ArcWeek[]
   /** Settings lifted from an uploaded outline (difficulty, category, tags, daily minutes). */
   settings: SparkSettings
+  /** How the group meets, lifted from an uploaded outline (format, schedule, link…). All-null when
+   *  the outline says nothing about it. */
+  meeting: SparkMeeting
 }
 
 const TOOL_NAME = 'draft_journey_spark'
@@ -89,6 +106,17 @@ const TOOL: Anthropic.Tool = {
           daily_minutes: { type: 'integer', description: 'Roughly how many minutes a day the outline asks for, if stated.' },
         },
       },
+      meeting: {
+        type: 'object',
+        description: 'How the group MEETS, ONLY when the outline states it. Omit any field you are unsure about. Never invent these from the short answers; an outline that says nothing about meeting should leave this empty.',
+        properties: {
+          format: { type: 'string', enum: ['virtual', 'in_person', 'hybrid'], description: 'Whether the group meets online, in person, or both, if the outline says.' },
+          schedule: { type: 'string', description: 'When it meets, in the outline\'s own words (e.g. "Sundays 7pm").' },
+          timezone: { type: 'string', description: 'A short timezone label for the schedule if stated (e.g. "ET", "PST").' },
+          location: { type: 'string', description: 'Where it meets, for in-person or hybrid groups, if the outline names a place.' },
+          link: { type: 'string', description: 'A join link for a virtual or hybrid group, if the outline gives one.' },
+        },
+      },
     },
     required: ['title', 'promise', 'overview', 'arc'],
   },
@@ -100,7 +128,7 @@ Draft the Journey's frame: a title, a one-line promise that leads with the outco
 
 The arc is one focus per week, in order, that builds across the Journey like a good course: each week leans on the last, the early weeks are gentle, and the FINAL week is a calm reflection that ties it together. Give EXACTLY one entry per week for the length requested. The four daily practices stay constant underneath; the weekly focus is the lens, not a new set of tasks.
 
-If the author pasted their own course outline, also fill SETTINGS (difficulty, category, tags, daily minutes) from what the outline actually states. Only include a setting when the outline makes it clear; never invent these from the short answers alone, and omit anything you are unsure about.
+If the author pasted their own course outline, also fill SETTINGS (difficulty, category, tags, daily minutes) and MEETING (format, schedule, timezone, location, join link) from what the outline actually states. Only include a field when the outline makes it clear; never invent these from the short answers alone, and omit anything you are unsure about. An outline that says nothing about how the group gathers should leave MEETING empty.
 
 How to write:
 - Plain language, short sentences. Lead with the problem or the feeling.
@@ -193,5 +221,21 @@ function coerce(raw: unknown, weeks: number): JourneySpark | null {
     dailyMinutes: dm,
   }
 
-  return { title, promise, overview, arc, settings }
+  // Meeting / format — only what Vera lifted from the outline; everything else stays null. Bounds
+  // mirror normalizeJourneyMeeting (lib/journey-plans.ts) so what we collect survives that re-normalize.
+  const m = (r.meeting && typeof r.meeting === 'object' ? r.meeting : {}) as Record<string, unknown>
+  const mstr = (v: unknown, max: number): string | null => {
+    const t = typeof v === 'string' ? v.trim() : ''
+    return t ? t.slice(0, max) : null
+  }
+  const fmt = typeof m.format === 'string' ? m.format.trim().toLowerCase() : ''
+  const meeting: SparkMeeting = {
+    format: fmt === 'virtual' || fmt === 'in_person' || fmt === 'hybrid' ? fmt : null,
+    schedule: mstr(m.schedule, 120),
+    timezone: mstr(m.timezone, 40),
+    location: mstr(m.location, 200),
+    link: mstr(m.link, 500),
+  }
+
+  return { title, promise, overview, arc, settings, meeting }
 }

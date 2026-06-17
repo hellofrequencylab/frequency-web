@@ -77,14 +77,18 @@ export interface JourneyPlan {
 /** Meeting / format details for a Journey (ADR-302): how a Circle gathers around it. All optional. */
 export interface JourneyMeeting {
   format: 'virtual' | 'in_person' | 'hybrid' | null
-  /** When it meets, free text (e.g. "Sundays 7pm ET"). */
+  /** When it meets, free text (e.g. "Sundays 7pm"). */
   schedule: string | null
+  /** Timezone label for the schedule (e.g. "ET"). */
+  timezone: string | null
   /** Where it meets (a place, for in-person/hybrid). */
   location: string | null
   /** A join link (for virtual/hybrid). */
   link: string | null
   /** Anything else relevant. */
   notes: string | null
+  /** A linked Event (events.id) this Journey gathers around — set from the "Create Event" flow. */
+  eventId: string | null
 }
 
 /** Coerce a raw `meeting` jsonb value into a clean, bounded JourneyMeeting (defaults all-null). One
@@ -99,9 +103,11 @@ export function normalizeJourneyMeeting(raw: unknown): JourneyMeeting {
   return {
     format: fmt === 'virtual' || fmt === 'in_person' || fmt === 'hybrid' ? fmt : null,
     schedule: str(r.schedule, 120),
+    timezone: str(r.timezone, 40),
     location: str(r.location, 200),
     link: str(r.link, 500),
     notes: str(r.notes, 500),
+    eventId: str(r.eventId, 64),
   }
 }
 

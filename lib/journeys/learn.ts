@@ -6,6 +6,7 @@
 // those over the existing reads — it never edits lib/journey-plans.ts — so the learn page can
 // render rich, cohesive detail. Server-only (rides the same admin handle as the reads it calls).
 
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getPlan, normalizeJourneyMeeting, planPillarMap, type JourneyPlan, type JourneyMeeting, type JourneyPlanItem } from '@/lib/journey-plans'
 import { getRankedPractice, type RankedPractice } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
@@ -109,6 +110,31 @@ export function journeyAttributes(plan: JourneyPlan): JourneyAttributes {
     tags: Array.isArray(p.tags) ? p.tags.filter((t): t is string => typeof t === 'string' && !!t.trim()) : [],
     dailyMinutes: typeof p.daily_minutes === 'number' && p.daily_minutes > 0 ? Math.round(p.daily_minutes) : null,
   }
+}
+
+/** A Journey's linked Event (meeting.eventId), resolved to the bits the learn page links to. */
+export interface LinkedEvent {
+  slug: string
+  title: string
+  /** Event start (ISO), for a date line. May be null on a date-less draft. */
+  startsAt: string | null
+}
+
+/** Resolve a Journey's linked Event by id (the `meeting.eventId` set from the "Create Event" flow)
+ *  to its slug + title + start, so the meeting block can link to `/events/[slug]`. Null when the id
+ *  is unset or the event is gone (the page then falls back to a plain "Linked event" line). Reads
+ *  the events table directly through the same admin handle the other Journey reads use — mirrors
+ *  getKickoffEvent in lib/journeys/runs.ts (no event-lib file is edited). */
+export async function getLinkedEvent(eventId: string | null): Promise<LinkedEvent | null> {
+  if (!eventId) return null
+  const { data } = await createAdminClient()
+    .from('events')
+    .select('slug, title, starts_at')
+    .eq('id', eventId)
+    .maybeSingle()
+  const e = data as { slug: string | null; title: string | null; starts_at: string | null } | null
+  if (!e?.slug) return null
+  return { slug: e.slug, title: e.title?.trim() || 'Linked event', startsAt: e.starts_at }
 }
 
 /** Index a pillar list by id, re-exported so the page doesn't import lib/pillars twice. */

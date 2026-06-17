@@ -7,10 +7,10 @@ import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, type KickoffEvent } from '@/lib/journeys/runs'
 import { getPlanAuthor } from '@/lib/journey-plans'
-import { getJourneyLearnExtras, pillarsById } from '@/lib/journeys/learn'
+import { getJourneyLearnExtras, getLinkedEvent, pillarsById } from '@/lib/journeys/learn'
 import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
 import { PracticeDetail } from '@/components/journey/v2/learn/practice-detail'
-import { OverviewIntro, AboutThisJourney, MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
+import { AboutThisJourneyHero, MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
 import { DetailTemplate } from '@/components/templates'
 import { accentColor, accentTint } from '@/lib/studio/accents'
@@ -51,6 +51,10 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   // copy, the normalized meeting, and the four-Pillar balance — composed over the existing reads
   // (lib/journeys/learn.ts), plus the author. Loaded in parallel with the Run/cohort resolution.
   const [extras, author] = await Promise.all([getJourneyLearnExtras(slug), getPlanAuthor(plan.author_id)])
+
+  // The Event this Journey gathers around (meeting.eventId, set from the "Create Event" flow),
+  // resolved to a link target. Null when unset or gone — the meeting block then shows a plain line.
+  const linkedEvent = await getLinkedEvent(extras.meeting.eventId)
 
   // If the member is in a Circle Run of this Journey, show the shared cohort meter.
   // Best-effort: hidden (and harmless) until the Runs tables are live.
@@ -143,11 +147,11 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
       )}
 
       {/* Overview + course context — what this is, how it's shaped, how it meets, who guides it —
-          read above the player so the Journey lands as a cohesive course, not a bare lesson list. */}
+          read above the player so the Journey lands as a cohesive course, not a bare lesson list.
+          The hero is two-column: the description on the left, the stat band + key details right. */}
       <div className="mb-6 space-y-6">
-        <OverviewIntro intro={plan.intro} />
-        <AboutThisJourney plan={plan} phaseCount={view.tree.phases.length} pillarBalance={extras.pillarBalance} />
-        <MeetingBlock meeting={extras.meeting} />
+        <AboutThisJourneyHero plan={plan} phaseCount={view.tree.phases.length} pillarBalance={extras.pillarBalance} />
+        <MeetingBlock meeting={extras.meeting} linkedEvent={linkedEvent} />
         <AuthorBlock author={author} />
       </div>
 
