@@ -8,15 +8,22 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw } from 'lucide-react'
+import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw, Video, MapPin, Users } from 'lucide-react'
 import { IconAccentFace, AccentPicker, IconGrid } from '@/components/studio/kit/studio-identity'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { DEFAULT_ACCENT } from '@/lib/studio/accents'
 import { isError } from '@/lib/action-result'
-import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes } from '@/app/(main)/journeys/actions'
-import type { PlanStatus, PlanVisibility, StoredVeraReview } from '@/lib/journey-plans'
+import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting } from '@/app/(main)/journeys/actions'
+import { normalizeJourneyMeeting } from '@/lib/journey-plans'
+import type { PlanStatus, PlanVisibility, StoredVeraReview, JourneyMeeting } from '@/lib/journey-plans'
 
 const DIFFICULTIES = ['gentle', 'standard', 'deep'] as const
+// Meeting formats (ADR-302): how a Circle gathers around the Journey. Icon + label per option.
+const MEETING_FORMATS = [
+  ['virtual', Video, 'Virtual'],
+  ['in_person', MapPin, 'In person'],
+  ['hybrid', Users, 'Hybrid'],
+] as const
 
 export interface JourneySettingsProps {
   planId: string
@@ -39,6 +46,9 @@ export interface JourneySettingsProps {
   initialTags?: string[]
   initialDailyMinutes?: number | null
   initialEnrollCap?: number | null
+  /** Meeting + format details (ADR-302): how a Circle gathers around the Journey. Defaults to a
+   *  normalized empty meeting (all null). */
+  initialMeeting?: JourneyMeeting
   /** Hide the title, subtitle, and cover controls — the single-page editor (ADR-301) owns those in
    *  the page header, so the sidebar shows only the rest of the settings. */
   hideIdentity?: boolean
@@ -65,6 +75,13 @@ export function JourneySettings(props: JourneySettingsProps) {
   const [dailyMinutes, setDailyMinutes] = useState(props.initialDailyMinutes ?? 0)
   const [enrollCap, setEnrollCap] = useState(props.initialEnrollCap ?? 0)
   const attrs = (patch: Parameters<typeof setJourneyAttributes>[1]) => save(() => setJourneyAttributes(props.planId, patch))
+
+  // Meeting + format (ADR-302). Held as one normalized object; every change/blur autosaves the
+  // whole meeting through setJourneyMeeting (the action re-normalizes, so partial edits are safe).
+  const [meeting, setMeeting] = useState<JourneyMeeting>(() => normalizeJourneyMeeting(props.initialMeeting))
+  const saveMeeting = (next: JourneyMeeting) => save(() => setJourneyMeeting(props.planId, next))
+  const patchMeeting = (patch: Partial<JourneyMeeting>) => { setMeeting((m) => ({ ...m, ...patch })) }
+  const commitMeeting = (patch: Partial<JourneyMeeting>) => { const next = { ...meeting, ...patch }; setMeeting(next); saveMeeting(next) }
   const [certificate, setCertificate] = useState(props.initialCertificateEnabled)
   const [drip, setDrip] = useState(props.initialDripIntervalDays)
 
@@ -323,6 +340,85 @@ export function JourneySettings(props: JourneySettingsProps) {
             />
           </label>
         </div>
+      </div>
+
+      {/* Meeting + format (ADR-302) — how a Circle gathers around the Journey. All optional; the
+          format toggle clears to none, and Location/Join link surface for the formats they fit. */}
+      <div className="space-y-2.5">
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Meeting and format</p>
+
+        <div>
+          <span className="mb-1 block text-2xs font-medium text-subtle">Format</span>
+          <div className="flex flex-wrap gap-1.5">
+            {MEETING_FORMATS.map(([value, Icon, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => commitMeeting({ format: meeting.format === value ? null : value })}
+                aria-pressed={meeting.format === value}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${meeting.format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
+              >
+                <Icon className="h-3.5 w-3.5" /> {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-2xs font-medium text-subtle">Schedule</span>
+          <input
+            value={meeting.schedule ?? ''}
+            onChange={(e) => patchMeeting({ schedule: e.target.value })}
+            onBlur={(e) => commitMeeting({ schedule: e.target.value })}
+            maxLength={120}
+            placeholder="e.g. Sundays 7pm ET"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          />
+        </label>
+
+        {/* Location fits in-person and hybrid; join link fits virtual and hybrid. Hidden otherwise to
+            keep the section calm, but the saved value is kept (the action re-normalizes on save). */}
+        {(meeting.format === 'in_person' || meeting.format === 'hybrid') && (
+          <label className="flex flex-col gap-1">
+            <span className="text-2xs font-medium text-subtle">Location</span>
+            <input
+              value={meeting.location ?? ''}
+              onChange={(e) => patchMeeting({ location: e.target.value })}
+              onBlur={(e) => commitMeeting({ location: e.target.value })}
+              maxLength={200}
+              placeholder="e.g. The community hall, 14 Main St"
+              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            />
+          </label>
+        )}
+
+        {(meeting.format === 'virtual' || meeting.format === 'hybrid') && (
+          <label className="flex flex-col gap-1">
+            <span className="text-2xs font-medium text-subtle">Join link</span>
+            <input
+              type="url"
+              value={meeting.link ?? ''}
+              onChange={(e) => patchMeeting({ link: e.target.value })}
+              onBlur={(e) => commitMeeting({ link: e.target.value })}
+              maxLength={500}
+              placeholder="https://"
+              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            />
+          </label>
+        )}
+
+        <label className="flex flex-col gap-1">
+          <span className="text-2xs font-medium text-subtle">Notes</span>
+          <textarea
+            value={meeting.notes ?? ''}
+            onChange={(e) => patchMeeting({ notes: e.target.value })}
+            onBlur={(e) => commitMeeting({ notes: e.target.value })}
+            maxLength={500}
+            rows={2}
+            placeholder="Any other details people should know before they join"
+            className="resize-none rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          />
+        </label>
       </div>
 
       {/* Vera's rank gate — coaching for the author. Publishing is open; this is only about

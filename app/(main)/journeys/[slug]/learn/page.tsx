@@ -1,11 +1,16 @@
 import Image from 'next/image'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { Pencil, CalendarClock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, type KickoffEvent } from '@/lib/journeys/runs'
-import { JourneyPlayer } from '@/components/journey/v2/journey-player'
+import { getPlanAuthor } from '@/lib/journey-plans'
+import { getJourneyLearnExtras, pillarsById } from '@/lib/journeys/learn'
+import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
+import { PracticeDetail } from '@/components/journey/v2/learn/practice-detail'
+import { OverviewIntro, AboutThisJourney, MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
 import { DetailTemplate } from '@/components/templates'
 import { accentColor, accentTint } from '@/lib/studio/accents'
@@ -13,9 +18,12 @@ import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons
 import type { CohortProgress } from '@/lib/journeys/cohort'
 
 // Journeys v2 — the learner player route (ADR-252, J1b). The clean, focused "take this journey"
-// surface. Renders the Phase → Module → Lesson tree for the signed-in member. Works on existing
-// (flat) journeys too — the tree wraps loose lessons in an implicit phase — so it's reachable
-// before the full v2 cutover (J5).
+// surface — overhauled into a fully cohesive COURSE a member follows: the intro/overview, an
+// "About this Journey" band (weeks · time · difficulty · reward · cadence · Pillar balance), how
+// the Circle meets, the author, and the lesson player with each week's focus + the real practice
+// detail (cadence · time · Pillar · the "Why it works / How to do it" write-up) inline. Renders the
+// Phase → Module → Lesson tree for the signed-in member. Works on existing (flat) journeys too —
+// the tree wraps loose lessons in an implicit phase — so it's reachable before the full v2 cutover.
 export const dynamic = 'force-dynamic'
 
 export default async function JourneyLearnPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -37,11 +45,17 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const view = await getJourneyPlayerView(slug, profileId)
   if (!view) notFound()
 
+  const { plan } = view
+
+  // The follow-along extras: the library practice behind each `practice` step, each phase's focus
+  // copy, the normalized meeting, and the four-Pillar balance — composed over the existing reads
+  // (lib/journeys/learn.ts), plus the author. Loaded in parallel with the Run/cohort resolution.
+  const [extras, author] = await Promise.all([getJourneyLearnExtras(slug), getPlanAuthor(plan.author_id)])
+
   // If the member is in a Circle Run of this Journey, show the shared cohort meter.
   // Best-effort: hidden (and harmless) until the Runs tables are live.
   // We also resolve the phase-drip ANCHOR here (build item §11.1 #1): a cohort drips from the
   // Run's start, a solo learner from their own enrollment start. null = no drip lock.
-  const { plan } = view
   const planDrip = (plan as { drip_interval_days?: number }).drip_interval_days ?? 7
   let cohort: CohortProgress | null = null
   let kickoff: KickoffEvent | null = null
@@ -63,6 +77,19 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
 
   const isAuthor = view.plan.author_id === profileId
   const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
+
+  // Pre-render the rich practice detail ONCE per practice step (server-rendered markdown, no client
+  // cost) and the per-step Pillar names — the player looks both up by the selected lesson id (the
+  // RSC interleaving pattern: a Server Component handed to a Client Component as a node map).
+  const byId = pillarsById(extras.pillars)
+  const detailById: Record<string, ReactNode> = {}
+  const pillarByLesson: Record<string, string> = {}
+  for (const [itemId, practice] of extras.practiceByItem) {
+    const pillar = practice.domain_id ? byId.get(practice.domain_id) ?? null : null
+    detailById[itemId] = <PracticeDetail practice={practice} pillar={pillar} />
+    if (pillar) pillarByLesson[itemId] = pillar.name
+  }
+  const phaseFocusById = Object.fromEntries(extras.phaseFocus)
 
   return (
     <DetailTemplate
@@ -114,11 +141,24 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
           <CohortMeter progress={cohort} />
         </div>
       )}
-      <JourneyPlayer
+
+      {/* Overview + course context — what this is, how it's shaped, how it meets, who guides it —
+          read above the player so the Journey lands as a cohesive course, not a bare lesson list. */}
+      <div className="mb-6 space-y-6">
+        <OverviewIntro intro={plan.intro} />
+        <AboutThisJourney plan={plan} phaseCount={view.tree.phases.length} pillarBalance={extras.pillarBalance} />
+        <MeetingBlock meeting={extras.meeting} />
+        <AuthorBlock author={author} />
+      </div>
+
+      <LearnPlayer
         slug={slug}
         title={plan.title}
         tree={view.tree}
         lessonsById={view.lessonsById}
+        detailById={detailById}
+        phaseFocusById={phaseFocusById}
+        pillarByLesson={pillarByLesson}
         certificateEnabled={plan.certificate_enabled}
         anchorStart={anchorStart}
         dripIntervalDays={dripIntervalDays}

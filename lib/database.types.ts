@@ -3605,6 +3605,7 @@ export type Database = {
           id: string
           intro: string | null
           intro_video: string | null
+          meeting: Json
           official: boolean
           page_config: Json | null
           published_at: string | null
@@ -3640,6 +3641,7 @@ export type Database = {
           id?: string
           intro?: string | null
           intro_video?: string | null
+          meeting?: Json
           official?: boolean
           page_config?: Json | null
           published_at?: string | null
@@ -3675,6 +3677,7 @@ export type Database = {
           id?: string
           intro?: string | null
           intro_video?: string | null
+          meeting?: Json
           official?: boolean
           page_config?: Json | null
           published_at?: string | null

@@ -75,10 +75,17 @@ export function Breadcrumbs({
     pathname
       .split('/')
       .filter(Boolean)
-      .map((seg, i, all) => ({
-        href: '/' + all.slice(0, i + 1).join('/'),
-        label: SEGMENT_LABELS[seg] ?? titleize(seg),
-      }))
+      .map((seg, i, all) => {
+        // Journey slugs carry a random "-xxxxxx" suffix (lib/journey-plans slugify), so the raw
+        // segment reads as "Come Home T60r32". Strip the suffix for a journey slug (the segment
+        // right after "journeys" that isn't a sub-route) so the crumb reads as the title.
+        const isJourneySlug = all[i - 1] === 'journeys' && seg !== 'new' && seg !== 'mine'
+        const cleaned = isJourneySlug ? seg.replace(/-[a-z0-9]{6}$/i, '') : seg
+        return {
+          href: '/' + all.slice(0, i + 1).join('/'),
+          label: SEGMENT_LABELS[seg] ?? titleize(cleaned),
+        }
+      })
 
   if (crumbs.length < 2) return null
 
