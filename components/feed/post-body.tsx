@@ -25,7 +25,7 @@ function prepare(body: string): string {
 
 export function PostBody({ body, className = '' }: { body: string; className?: string }) {
   return (
-    <div className={className}>
+    <div className={`break-words ${className}`}>
       <ReactMarkdown
         allowedElements={ALLOWED}
         unwrapDisallowed

@@ -3,7 +3,7 @@ title: Mindless, the practice timer
 description: Time your practice with guided breathing, then collect your rewards, streak and next assignment.
 category: the-quest
 order: 4
-updated: 2026-06-11
+updated: 2026-06-17
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -15,9 +15,11 @@ on the spot.
 
 ## Tuning out
 
-Open it from the Zap button (the **Mindless** row), from your home screen (the
-little lotus next to any practice), or from a practice page. Pick three things,
-and it remembers them for next time:
+Open it from the **Mindless button in the header** (it opens right over whatever
+you are doing, anywhere on the site), from the **Practice** button on any practice
+in a Journey, from the Zap button (the **Mindless** row), from your home screen
+(the little lotus next to any practice), or from a practice page. Pick three
+things, and it remembers them for next time:
 
 - **A practice** from your list.
 - **A mode.** *Meditate* is a plain countdown for a silent sit. *Breathe* gives
