@@ -7,11 +7,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { getMemberPractices } from '@/lib/practices'
-import { DEFAULT_PREFS, type OnAirPrefs } from '@/lib/on-air'
+import { loadOnAirSessionData } from '@/lib/on-air/session-data'
 import { FocusTemplate } from '@/components/templates'
-import { OnAirSession, type OnAirPractice } from '@/components/on-air/session'
+import { OnAirSession } from '@/components/on-air/session'
 
 export const metadata: Metadata = {
   title: 'Mindless',
@@ -27,56 +25,12 @@ export default async function OnAirPage({
   if (!profileId) redirect('/sign-in')
   const { practice: requested } = await searchParams
 
-  const admin = createAdminClient()
-  const today = new Date().toISOString().slice(0, 10)
-  const [mine, { data: prof }, { data: todayLogs }, { data: presenceRows }] = await Promise.all([
-    getMemberPractices(profileId),
-    admin.from('profiles').select('meta').eq('id', profileId).maybeSingle(),
-    admin
-      .from('practice_logs')
-      .select('practice_id')
-      .eq('profile_id', profileId)
-      .eq('logged_for', today),
-    // Presence: distinct members with a log today. Row-count + Set in JS —
-    // PostgREST aggregates are disabled on hosted projects.
-    admin.from('practice_logs').select('profile_id').eq('logged_for', today).limit(10000),
-  ])
-
-  const loggedToday = new Set(
-    ((todayLogs ?? []) as { practice_id: string | null }[])
-      .map((l) => l.practice_id)
-      .filter(Boolean) as string[],
+  // Member state assembled by the shared loader — same source the global
+  // Mindless overlay uses, so the route and the overlay always agree.
+  const { practices, defaultPracticeId, prefs, practicedToday } = await loadOnAirSessionData(
+    profileId,
+    requested,
   )
-  const practices: OnAirPractice[] = mine.map((p) => ({
-    id: p.id,
-    title: p.title,
-    loggedToday: loggedToday.has(p.id),
-  }))
-
-  const practicedToday = new Set(
-    ((presenceRows ?? []) as { profile_id: string | null }[])
-      .map((l) => l.profile_id)
-      .filter(Boolean) as string[],
-  ).size
-
-  const meta = (prof?.meta ?? {}) as Record<string, unknown>
-  const stored = (meta.onAir ?? {}) as Partial<OnAirPrefs>
-  const prefs: OnAirPrefs = {
-    mode: stored.mode ?? DEFAULT_PREFS.mode,
-    pattern: stored.pattern ?? DEFAULT_PREFS.pattern,
-    minutes: stored.minutes ?? DEFAULT_PREFS.minutes,
-    customIn: stored.customIn,
-    customHold: stored.customHold,
-    customOut: stored.customOut,
-    bell: stored.bell,
-    bellTone: stored.bellTone,
-    haptics: stored.haptics,
-  }
-
-  const defaultPracticeId =
-    requested && practices.some((p) => p.id === requested)
-      ? requested
-      : practices.find((p) => !p.loggedToday)?.id ?? null
 
   // The session is a full-page takeover from the first screen (ADR-229 P8):
   // entering Mindless means no app chrome at all. The Focus shell only hosts

@@ -61,6 +61,8 @@ import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, type ChromeOver
 import type { WebRole } from '@/lib/core/roles'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
+import { MindlessProvider, useMindless } from '@/components/on-air/mindless'
+import { LotusIcon } from '@/components/on-air/icons'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
 // single source of truth shared with the permission grid). The whole menu is
@@ -1084,6 +1086,29 @@ function MobileRightDrawer({
   )
 }
 
+// ── Mindless launcher (header) ────────────────────────────────────────────────
+// Opens the global Mindless overlay (the On Air timer) from anywhere. Reads the
+// launcher API from MindlessProvider, which wraps the whole shell below — so
+// this must render inside that provider's tree (it does: it sits in the header,
+// which the provider wraps). Styled to sit beside Search/Friends as one of the
+// quiet community controls; the lotus is the On Air mark.
+
+function MindlessLaunch() {
+  const { open } = useMindless()
+  return (
+    <HoverTip label="Mindless">
+      <button
+        type="button"
+        onClick={() => open()}
+        aria-label="Mindless. Open the practice timer"
+        className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full text-muted hover:text-primary-strong hover:bg-surface-elevated transition-colors"
+      >
+        <LotusIcon className="w-5 h-5" />
+      </button>
+    </HoverTip>
+  )
+}
+
 // ── App shell ─────────────────────────────────────────────────────────────────
 
 export default function AppShell({
@@ -1284,9 +1309,13 @@ export default function AppShell({
     theme === 'dark' ? 'Dark mode' : theme === 'light' ? 'Light mode' : 'System theme'
 
   return (
-    // The document itself scrolls (not an inner pane) so the whole page renders in
-    // normal flow — full-page screenshot tools capture everything, and Next's native
-    // scroll restoration works. The header + side rails stay put via `sticky`.
+    // MindlessProvider wraps the whole shell so the header launcher AND every
+    // in-app page can open the global Mindless overlay via useMindless(). The
+    // overlay it renders is `fixed inset-0 z-50`, so it layers over everything.
+    <MindlessProvider>
+    {/* The document itself scrolls (not an inner pane) so the whole page renders in
+        normal flow — full-page screenshot tools capture everything, and Next's native
+        scroll restoration works. The header + side rails stay put via `sticky`. */}
     <div
       data-skin={skin}
       data-generation={generation}
@@ -1375,7 +1404,9 @@ export default function AppShell({
               between Search and these actions) lines up with the right column's left
               border. Below lg (no right rail) it's a natural-width right-aligned cluster. */}
           <div className="flex items-center justify-end gap-1 sm:ml-1 sm:border-l sm:border-border sm:pl-1.5 md:gap-2 lg:ml-0 lg:w-72 lg:justify-start lg:pl-3 lg:pr-4">
-            {/* Community actions: friends · messages · notifications · daily streak. */}
+            {/* Community actions: mindless · friends · messages · notifications · daily streak. */}
+            {/* Mindless — the global practice timer overlay, openable from anywhere. */}
+            <MindlessLaunch />
             {/* Friends — all sizes (mobile reaches Messages via the button on /friends). */}
             <HoverTip label="Friends">
               <Link
@@ -1599,5 +1630,6 @@ export default function AppShell({
       />
 
     </div>
+    </MindlessProvider>
   )
 }

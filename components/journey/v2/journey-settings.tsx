@@ -152,7 +152,7 @@ export function JourneySettings(props: JourneySettingsProps) {
           <div className="relative shrink-0">
             <IconAccentFace icon={icon} accent={accent} size="md" onClick={() => setIconOpen((v) => !v)} />
             {iconOpen && (
-              <div className="absolute left-0 top-[3.25rem] z-10 w-64 rounded-2xl border border-border bg-surface p-3 shadow-xl">
+              <div className="absolute left-0 top-[3.25rem] z-10 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 shadow-xl">
                 <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); setIconOpen(false); meta({ emoji: k }) }} />
               </div>
             )}

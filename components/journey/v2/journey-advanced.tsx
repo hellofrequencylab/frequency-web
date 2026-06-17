@@ -142,13 +142,13 @@ export function JourneyAdvanced({
                     <span className="block text-sm font-medium text-text">{meta?.label ?? d.id}</span>
                     {meta?.hint && <span className="block truncate text-xs text-muted">{meta.hint}</span>}
                   </span>
-                  <button type="button" onClick={() => move(d.id, -1)} disabled={i === 0} className="rounded p-1 text-subtle hover:text-text disabled:opacity-30" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
-                  <button type="button" onClick={() => move(d.id, 1)} disabled={i === disc.length - 1} className="rounded p-1 text-subtle hover:text-text disabled:opacity-30" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
+                  <button type="button" onClick={() => move(d.id, -1)} disabled={i === 0} className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-subtle hover:text-text disabled:opacity-30" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
+                  <button type="button" onClick={() => move(d.id, 1)} disabled={i === disc.length - 1} className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-subtle hover:text-text disabled:opacity-30" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
                   <button
                     type="button"
                     onClick={() => toggle(d.id)}
                     disabled={required}
-                    className={`rounded p-1 ${d.enabled ? 'text-primary-strong' : 'text-subtle'} hover:text-text disabled:opacity-40`}
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded ${d.enabled ? 'text-primary-strong' : 'text-subtle'} hover:text-text disabled:opacity-40`}
                     aria-label={d.enabled ? 'Hide' : 'Show'}
                     title={required ? 'Always shown' : d.enabled ? 'Shown' : 'Hidden'}
                   >

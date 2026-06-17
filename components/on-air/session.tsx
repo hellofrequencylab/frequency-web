@@ -121,12 +121,17 @@ export function OnAirSession({
   defaultPracticeId,
   prefs,
   practicedToday = 0,
+  onExit,
 }: {
   practices: OnAirPractice[]
   defaultPracticeId: string | null
   prefs: OnAirPrefs
   /** Distinct members with a practice log today (presence line, shown at ≥3). */
   practicedToday?: number
+  /** Overlay mode (the global Mindless launcher): when set, leaving the session
+   *  CLOSES the overlay via this callback instead of navigating the router. The
+   *  route page (/on-air) omits it, keeping its back/replace exit unchanged. */
+  onExit?: () => void
 }) {
   const [stage, setStage] = useState<Stage>('setup')
   const [practiceId, setPracticeId] = useState(
@@ -339,11 +344,17 @@ export function OnAirSession({
 
   // --- screens -------------------------------------------------------------------
 
-  // Done or swiped off the last card: drop the takeover and return to the
-  // screen the member came FROM (the page where they hit the Zap button or
-  // the board's radio). Direct entries (PWA shortcut, typed URL) have no app
-  // history, so they land on home instead of exiting the app.
+  // Done or swiped off the last card: drop the takeover. In overlay mode (the
+  // global Mindless launcher) that means closing the overlay in place — no
+  // navigation. On the /on-air route (no onExit) it returns to the screen the
+  // member came FROM (where they hit the Zap button or the board's radio);
+  // direct entries (PWA shortcut, typed URL) have no app history, so they land
+  // on home instead of exiting the app.
   function leave() {
+    if (onExit) {
+      onExit()
+      return
+    }
     if (typeof window !== 'undefined' && window.history.length > 1) {
       router.back()
     } else {

@@ -88,10 +88,12 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const byId = pillarsById(extras.pillars)
   const detailById: Record<string, ReactNode> = {}
   const pillarByLesson: Record<string, string> = {}
+  const practiceIdByLesson: Record<string, string> = {}
   for (const [itemId, practice] of extras.practiceByItem) {
     const pillar = practice.domain_id ? byId.get(practice.domain_id) ?? null : null
     detailById[itemId] = <PracticeDetail practice={practice} pillar={pillar} />
     if (pillar) pillarByLesson[itemId] = pillar.name
+    practiceIdByLesson[itemId] = practice.id
   }
   const phaseFocusById = Object.fromEntries(extras.phaseFocus)
 
@@ -163,6 +165,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         detailById={detailById}
         phaseFocusById={phaseFocusById}
         pillarByLesson={pillarByLesson}
+        practiceIdByLesson={practiceIdByLesson}
         certificateEnabled={plan.certificate_enabled}
         anchorStart={anchorStart}
         dripIntervalDays={dripIntervalDays}

@@ -52,8 +52,10 @@ export function DetailTemplate({
       {/* Hero image (cover) at the very top of the header, when provided. */}
       {hero && <div className="mb-4">{hero}</div>}
       {/* Context header band. On mobile the actions stack BELOW the identity so the
-          title is never crushed into a truncation; from sm up they sit inline right. */}
-      <header className="border-b border-border pb-4 mb-4">
+          title is never crushed into a truncation; from sm up they sit inline right.
+          No bottom border here: the rule is drawn by <PageAdminBar asDivider> below, with
+          the "Settings" split sitting INLINE on it (one line, not two). */}
+      <header className="pb-4">
         {back && (
           <Link
             href={back.href}
@@ -96,8 +98,8 @@ export function DetailTemplate({
         )}
       </header>
 
-      {/* The on-page "Settings" split sits on the line under the header. */}
-      <PageAdminBar />
+      {/* The header's hairline rule, with the on-page "Settings" split inline on it (one line). */}
+      <PageAdminBar asDivider />
 
       {/* Body — usually a Stream or Index */}
       {children}

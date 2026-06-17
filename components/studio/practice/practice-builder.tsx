@@ -200,7 +200,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             )}
           </button>
           {iconOpen && (
-            <div className="absolute left-0 top-[4.5rem] z-10 w-64 rounded-2xl border border-border bg-surface p-3 shadow-xl">
+            <div className="absolute left-0 top-[4.5rem] z-10 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 shadow-xl">
               <div className="grid grid-cols-5 gap-1">
                 {ICONS.map(({ key, Icon }) => (
                   <button
