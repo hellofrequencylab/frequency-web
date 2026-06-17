@@ -70,6 +70,39 @@ export interface JourneyPlan {
   drip_interval_days: number
   /** Show a printable certificate on Journey completion. ADR-252. */
   certificate_enabled: boolean
+  /** Meeting / format details: how a Circle gathers around the Journey. Defaults to {} (jsonb). */
+  meeting: JourneyMeeting
+}
+
+/** Meeting / format details for a Journey (ADR-302): how a Circle gathers around it. All optional. */
+export interface JourneyMeeting {
+  format: 'virtual' | 'in_person' | 'hybrid' | null
+  /** When it meets, free text (e.g. "Sundays 7pm ET"). */
+  schedule: string | null
+  /** Where it meets (a place, for in-person/hybrid). */
+  location: string | null
+  /** A join link (for virtual/hybrid). */
+  link: string | null
+  /** Anything else relevant. */
+  notes: string | null
+}
+
+/** Coerce a raw `meeting` jsonb value into a clean, bounded JourneyMeeting (defaults all-null). One
+ *  source of truth for both the settings editor (initial value) and the learn page (display). */
+export function normalizeJourneyMeeting(raw: unknown): JourneyMeeting {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const str = (v: unknown, max: number): string | null => {
+    const t = typeof v === 'string' ? v.trim() : ''
+    return t ? t.slice(0, max) : null
+  }
+  const fmt = typeof r.format === 'string' ? r.format : ''
+  return {
+    format: fmt === 'virtual' || fmt === 'in_person' || fmt === 'hybrid' ? fmt : null,
+    schedule: str(r.schedule, 120),
+    location: str(r.location, 200),
+    link: str(r.link, 500),
+    notes: str(r.notes, 500),
+  }
 }
 
 /** Block kinds an item can be (ADR-244). Existing rows are 'practice'. */
@@ -117,7 +150,7 @@ const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, visibility, fork_of, ' +
   'forked_count, adopt_count, cover_image, created_at, updated_at, published_at, ' +
   'quest_id, official, window_starts_at, window_ends_at, status, page_config, completion_gems, ' +
-  'drip_interval_days, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap'
+  'drip_interval_days, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap, meeting'
 
 const ITEM_COLS =
   'id, plan_id, practice_id, domain_id, sort_order, note, cadence, ' +
@@ -708,6 +741,7 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
       daily_minutes: src.daily_minutes,
       enroll_cap: src.enroll_cap,
       source_overview: src.source_overview,
+      meeting: src.meeting,
     })
     .select(PLAN_COLS)
     .maybeSingle()
