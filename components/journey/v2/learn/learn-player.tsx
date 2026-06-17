@@ -1,36 +1,43 @@
 'use client'
 
-// Journeys v2 — the lesson player (ADR-252, J1b, JOURNEYS.md §5; design rules in
-// docs/JOURNEYS-DESIGN.md). A clean learning surface: a progressive-disclosure syllabus
-// (Phase accordion → Module → Lesson, with done/current/LOCKED states and per-phase counts)
-// and the active lesson with ONE clear next action. Phases drip on a schedule (build item
-// §11.1 #1): given a Run/solo anchor + interval, future Phases lock and show "unlocks in N days"
-// (lib/journeys/schedule.ts). Reading content sits at a ~prose measure in text-base; on mobile
-// the syllabus collapses behind a Contents drawer. Minimal client state (selected lesson + which
-// phases are open); progress + completion + the lock schedule come from the server.
+// Journeys v2 — the LEARN player (the "follow-along course" overhaul of the lesson player). A
+// richer sibling of components/journey/v2/journey-player.tsx: it keeps the working surface intact
+// (progressive-disclosure Phase → Module → Lesson syllabus, drip lock, the "Mark complete &
+// continue" completion flow via completeJourneyLessonAction, the trophy celebration) and layers
+// in the cohesion a follower needs — each week's focus copy, a Pillar badge on practice steps, and
+// the real practice/lesson content in the lesson pane (the rich detail is PRE-RENDERED on the
+// server and handed in as a node map, the RSC interleaving pattern, so this client bundle stays
+// lean). Minimal client state: selected lesson + open phases; progress + lock come from the server.
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass } from 'lucide-react'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
 import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
 import { completeJourneyLessonAction } from '@/app/(main)/journeys/[slug]/learn/actions'
-import { TrophyCelebration, type TrophyMilestone } from './trophy-celebration'
+import { TrophyCelebration, type TrophyMilestone } from '@/components/journey/v2/trophy-celebration'
 import type { JourneyTree } from '@/lib/journeys/tree'
 import type { LessonContent, CheckConfig } from '@/lib/journeys/store'
 
 interface Props {
   slug: string
-  /** The journey's name — used only for the completion celebration (the page header
-   *  carries the visible title now, so the progress card doesn't repeat it). */
+  /** The journey's name — used only for the completion celebration (the page header carries the
+   *  visible title, so the progress card doesn't repeat it). */
   title: string
   tree: JourneyTree
   lessonsById: Record<string, LessonContent>
+  /** Pre-rendered rich detail for a step (practice write-up etc.), keyed by lesson/item id. The
+   *  player renders this node in the lesson pane when present (server-rendered, no client cost). */
+  detailById?: Record<string, ReactNode>
+  /** Each phase's focus copy (the week's "what we're working on"), keyed by phase id. */
+  phaseFocusById?: Record<string, string>
+  /** Pillar name for a practice step, keyed by lesson id — drives the badge in the syllabus + header. */
+  pillarByLesson?: Record<string, string>
   /** Show a printable certificate on Journey completion (plan opt-in). */
   certificateEnabled?: boolean
-  /** Phase-drip anchor (ISO): the Run's start (cohort) or the member's enrollment start
-   *  (solo). null = no drip; every phase is open. */
+  /** Phase-drip anchor (ISO): the Run's start (cohort) or the member's enrollment start (solo).
+   *  null = no drip; every phase is open. */
   anchorStart?: string | null
   /** Days between phase unlocks (snapshot from the Run, else the plan default). */
   dripIntervalDays?: number
@@ -44,9 +51,9 @@ function unlockLabel(d: Date | null): string {
   return `Unlocks in ${days} days`
 }
 
-// An interactive knowledge-check (build item §11.1 #2): pick an option → instant feedback +
-// retry. Low-stakes by design (testing effect, docs/JOURNEYS-DESIGN.md §1) — it never gates the
-// "Mark complete" action. Self-contained state; the player remounts it per lesson via `key`.
+// An interactive knowledge-check: pick an option → instant feedback + retry. Low-stakes by design
+// (testing effect) — it never gates "Mark complete". Self-contained; the player remounts it per
+// lesson via `key`. (Mirrors journey-player.tsx so the learn surface keeps the same behavior.)
 function KnowledgeCheck({ config }: { config: CheckConfig }) {
   const [picked, setPicked] = useState<number | null>(null)
   const correct = picked !== null && picked === config.answer
@@ -95,7 +102,18 @@ function KnowledgeCheck({ config }: { config: CheckConfig }) {
   )
 }
 
-export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabled = false, anchorStart = null, dripIntervalDays = 7 }: Props) {
+export function LearnPlayer({
+  slug,
+  title,
+  tree,
+  lessonsById,
+  detailById = {},
+  phaseFocusById = {},
+  pillarByLesson = {},
+  certificateEnabled = false,
+  anchorStart = null,
+  dripIntervalDays = 7,
+}: Props) {
   const router = useRouter()
   const [pending, start] = useTransition()
 
@@ -155,6 +173,10 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
   const nextLocked = lessonLocked(nextId)
   const selectedLocked = lessonLocked(selectedId)
   const video = lesson?.body && !selectedLocked ? parseVideoEmbed(lesson.body) : null
+  const detail = selectedId && !selectedLocked ? detailById[selectedId] : null
+  const selectedPhaseId = selectedId ? phaseOfLesson.get(selectedId) ?? '' : ''
+  const phaseFocus = selectedPhaseId ? phaseFocusById[selectedPhaseId] : undefined
+  const selectedPillar = selectedId ? pillarByLesson[selectedId] : undefined
 
   function togglePhase(id: string) {
     setOpenPhases((prev) => {
@@ -192,10 +214,8 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
   }
 
   return (
-    // No local data-skin: the player is regular in-app content and inherits the
-    // active Space's skin from the shell root (components/layout/app-shell.tsx).
-    // The previous hardcoded `data-skin="default"` predated the skin registry and
-    // wrongly pinned the Dawn look inside a non-default Space (e.g. Midnight).
+    // No local data-skin: the player is regular in-app content and inherits the active Space's
+    // skin from the shell root (components/layout/app-shell.tsx).
     <div className="space-y-4">
       {milestone && <TrophyCelebration milestone={milestone} onDismiss={() => setMilestone(null)} />}
 
@@ -240,6 +260,9 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
                 >
                   <ChevronDown className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? '' : '-rotate-90'}`} />
                   <span className="min-w-0 flex-1">
+                    {/* The "Week N" eyebrow only when the phase is a real, titled phase (a flat/
+                        legacy journey has one untitled implicit phase — no week label there). */}
+                    {p.title && <span className="block text-2xs font-semibold uppercase tracking-wide text-subtle">Week {pi + 1}</span>}
                     <span className="block truncate text-sm font-semibold text-text">{p.title || `Phase ${pi + 1}`}</span>
                     {locked && <span className="block text-2xs font-medium text-subtle">{unlockLabel(lock?.unlockAt ?? null)}</span>}
                   </span>
@@ -254,6 +277,10 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
 
                 {open && (
                   <div className="space-y-2 border-t border-border px-1.5 pb-2 pt-1.5">
+                    {/* The week's focus — the phase body, so the syllabus reads as a course arc. */}
+                    {!locked && phaseFocusById[p.id] && (
+                      <p className="px-2 pt-1 text-2xs leading-relaxed text-muted">{phaseFocusById[p.id]}</p>
+                    )}
                     {p.modules.map((m) => (
                       <div key={m.id}>
                         {m.title && (
@@ -272,6 +299,7 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
                               )
                             }
                             const active = l.id === selectedId
+                            const pillar = pillarByLesson[l.id]
                             return (
                               <li key={l.id}>
                                 <button
@@ -285,7 +313,12 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
                                   <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${l.done ? 'border-success bg-success text-on-primary' : active ? 'border-primary' : 'border-border'}`}>
                                     {l.done && <Check className="h-2.5 w-2.5" />}
                                   </span>
-                                  <span className="min-w-0 truncate">{l.title}</span>
+                                  <span className="min-w-0 flex-1 truncate">{l.title}</span>
+                                  {pillar && (
+                                    <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-subtle">
+                                      {pillar}
+                                    </span>
+                                  )}
                                 </button>
                               </li>
                             )
@@ -314,13 +347,28 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
             </div>
           ) : (
             <>
+              {/* The week's focus — orients the follower before the step. */}
+              {phaseFocus && (
+                <div className="mb-4 flex items-start gap-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+                  <Compass className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                  <p className="text-sm leading-relaxed text-muted">
+                    <span className="font-semibold text-text">This week:</span> {phaseFocus}
+                  </p>
+                </div>
+              )}
+
               <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">
                 Lesson {idx + 1} of {order.length}{lesson.estMinutes ? ` · ${lesson.estMinutes} min` : ''}{lesson.required ? '' : ' · optional'}
               </p>
-              <h2 className="mt-1 text-xl font-bold text-text">{lesson.title}</h2>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-bold text-text">{lesson.title}</h2>
+                {selectedPillar && (
+                  <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">{selectedPillar}</span>
+                )}
+              </div>
 
-              {/* Extra-credit badge (ADR-300 Part 2): a bonus task, above and beyond, that pays
-                  Zaps once on completion. Optional, never gates finishing the Journey. */}
+              {/* Extra-credit badge: a bonus task, above and beyond, that pays Zaps once on
+                  completion. Optional, never gates finishing the Journey. */}
               {lesson.extraCredit && (
                 <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-signal/30 bg-signal-bg/50 px-2.5 py-1 text-xs font-semibold text-signal-strong">
                   <Award className="h-3.5 w-3.5" aria-hidden /> Extra credit{lesson.bonusZaps > 0 ? ` · +${lesson.bonusZaps} Zaps` : ''}
@@ -343,10 +391,16 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
                 </div>
               )}
 
-              {/* Prose body — only when it isn't a bare video URL; constrained measure + text-base. */}
+              {/* Prose body — only when it isn't a bare video URL; constrained measure + text-base.
+                  (Lesson / extra-credit blocks carry their own body here; practice steps render
+                  their full library write-up in the pre-rendered detail node below.) */}
               {lesson.body && !video && (
                 <div className="mt-4 max-w-prose whitespace-pre-wrap text-base leading-relaxed text-text">{lesson.body}</div>
               )}
+
+              {/* Rich, server-rendered detail for the step (the practice write-up: summary ·
+                  cadence · time · Pillar · "Why it works / How to do it / In The Quest"). */}
+              {detail}
 
               {/* Vera's per-slot coaching nudge (practice steps) — the author's dynamically-drafted
                   line for this practice, grounded in the season + Pillar. */}
@@ -357,7 +411,7 @@ export function JourneyPlayer({ slug, title, tree, lessonsById, certificateEnabl
                 </div>
               )}
 
-              {/* Interactive knowledge-check (build item §11.1 #2), when this check has a question. */}
+              {/* Interactive knowledge-check, when this check has a question. */}
               {lesson.type === 'check' && lesson.check && <KnowledgeCheck key={selectedId} config={lesson.check} />}
 
               {/* One clear next action */}

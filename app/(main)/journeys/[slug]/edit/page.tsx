@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
-import { getPlan, getVeraReview } from '@/lib/journey-plans'
+import { getPlan, getVeraReview, normalizeJourneyMeeting } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
 import { getPillars } from '@/lib/pillars'
 import { JourneyEditor, type EditorBlock, type EditorPractice, type EditorPillar } from '@/components/journey/v2/journey-editor'
@@ -44,6 +44,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
       sortOrder: i.sort_order ?? 0,
       check: parseCheck(settings),
       domainId: i.domain_id ?? null,
+      practiceId: i.practice_id || null,
       coachingPrompt: typeof cp === 'string' ? cp : null,
       extraCredit,
       bonusZaps,
@@ -110,6 +111,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
             initialTags={(plan as unknown as { tags?: string[] }).tags ?? []}
             initialDailyMinutes={(plan as unknown as { daily_minutes?: number | null }).daily_minutes ?? null}
             initialEnrollCap={(plan as unknown as { enroll_cap?: number | null }).enroll_cap ?? null}
+            initialMeeting={normalizeJourneyMeeting(plan.meeting)}
           />
           {/* Advanced — discovery layout + official program, with the delete control tucked in
               its footer (ADR-301: "put delete in the advanced box"). */}

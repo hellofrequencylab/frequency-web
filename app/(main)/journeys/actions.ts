@@ -28,10 +28,12 @@ import {
   planMeta,
   applyVeraReview,
   deletePlan,
+  normalizeJourneyMeeting,
   type PlanVisibility,
   type PlanStatus,
   type PageWidgetConfig,
   type StoredVeraReview,
+  type JourneyMeeting,
 } from '@/lib/journey-plans'
 import { getSeasonalQuests } from '@/lib/quests'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
@@ -266,6 +268,23 @@ export async function setJourneyAttributes(
   if (Object.keys(update).length) {
     await admin.from('journey_plans').update(update as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
   }
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/** Meeting and format section (ADR-302, owner's item 13): how a Circle gathers around the Journey —
+ *  virtual/in-person/hybrid, when it meets, where, a join link, and any other details. Sanitized +
+ *  bounded through normalizeJourneyMeeting (one source of truth with the learn page). The `meeting`
+ *  jsonb column is `Json` in the generated types, so cast the payload (ADR-246), never the admin
+ *  client. */
+export async function setJourneyMeeting(
+  planId: string,
+  meeting: JourneyMeeting,
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  const admin = createAdminClient()
+  const payload = { meeting: normalizeJourneyMeeting(meeting) }
+  await admin.from('journey_plans').update(payload as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
   revalidatePath('/journeys', 'layout')
   return ok()
 }

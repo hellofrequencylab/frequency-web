@@ -194,6 +194,37 @@ export async function addPracticeBlockAction(
   return ok({ id: String((data as { id: string }).id) })
 }
 
+/** Re-link a practice slot to a different library practice (build item §11.1, J4b "Replace"). The
+ *  author taps Replace on an adopted practice block and picks another from the library; this swaps
+ *  the block's `practice_id`, and pulls the new practice's `title` + `domain_id` (its Pillar) so the
+ *  slot reads as the newly adopted practice. Owner-gated like every edit action. */
+export async function setBlockPracticeAction(
+  slug: string,
+  itemId: string,
+  practiceId: string,
+): Promise<ActionResult> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  if (!practiceId) return fail('No practice given.')
+  const admin = db()
+  const { data: pr } = await admin.from('practices').select('title, domain_id').eq('id', practiceId).maybeSingle()
+  const practice = pr as { title: string | null; domain_id: string | null } | null
+  if (!practice) return fail('That practice is no longer in the library.')
+  const { error } = await admin
+    .from('journey_plan_items')
+    .update({
+      practice_id: practiceId,
+      domain_id: practice.domain_id ?? null,
+      title: practice.title ?? 'Practice',
+    })
+    .eq('id', itemId)
+    .eq('plan_id', a.planId)
+    .eq('block_type', 'practice')
+  if (error) return fail('Could not swap the practice.')
+  done(slug)
+  return ok()
+}
+
 /** Vera drafts a per-slot coaching line for a practice block (JOURNEYS.md §6), grounded in the
  *  season, the Journey's name, the practice, and its Pillar — generated dynamically on demand.
  *  Stores it on `settings.coaching_prompt`; the author can edit it after. Degrades to a clear

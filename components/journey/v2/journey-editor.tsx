@@ -8,7 +8,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap, ExternalLink, RefreshCw } from 'lucide-react'
 import {
   addPhaseAction,
   addModuleAction,
@@ -20,9 +20,11 @@ import {
   moveBlockAction,
   draftSlotCoachingAction,
   populateWeekAction,
+  setBlockPracticeAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { CheckConfig } from '@/lib/journeys/store'
+import { PillarChip } from './pillar-chip'
 
 export interface EditorBlock {
   id: string
@@ -35,6 +37,9 @@ export interface EditorBlock {
   check: CheckConfig | null
   /** The slot's Pillar (practice blocks) — drives the pillar chip + Vera grounding. */
   domainId: string | null
+  /** The library practice this slot adopts (practice_id), or null. When set, the slot reads as
+   *  adopted: pillar badge + a link out to the library practice + a Replace control to swap it. */
+  practiceId: string | null
   /** Vera's per-slot coaching line (practice blocks), from settings.coaching_prompt. */
   coachingPrompt: string | null
   /** Extra-credit block (ADR-300 Part 2): a bonus task that pays Zaps, not a Pillar practice. */
@@ -179,11 +184,15 @@ export function JourneyEditor({
   const router = useRouter()
   const [pending, start] = useTransition()
   const [picker, setPicker] = useState<string | null>(null) // phase id, or LOOSE_KEY
+  // The practice block whose slot is being swapped (the "Replace" flow, J4b §9). Independent of
+  // `picker` (the add-a-new-block flow) — both share the same pillar-faceted picker UI below.
+  const [replacing, setReplacing] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   // Pillar facets for the practice selector: which Pillars are toggled on. Empty = all Pillars.
   // Unselected Pillars stay on screen (greyed), so the author sees the full set to choose from.
   const [pillarFilter, setPillarFilter] = useState<Set<string>>(new Set())
   const pillarNameById = new Map(pillars.map((p) => [p.id, p.name]))
+  const pillarSlugById = new Map(pillars.map((p) => [p.id, p.slug]))
   const togglePillar = (id: string) =>
     setPillarFilter((prev) => {
       const next = new Set(prev)
@@ -254,7 +263,7 @@ export function JourneyEditor({
         <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'down'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
         <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, m.id))} className="rounded p-1 text-subtle hover:text-danger" aria-label="Delete module"><Trash2 className="h-3.5 w-3.5" /></button>
       </div>
-      <ul className="mt-2 space-y-2">{lessonsOf(m.id).map(LeafRow)}</ul>
+      {renderLeaves(m.id)}
       {stepTools(m.id, m.id)}
     </div>
   )
@@ -278,6 +287,95 @@ export function JourneyEditor({
     run(() => addPracticeBlockAction(slug, parentId, practiceId))
   }
 
+  // Replace flow (J4b §9): re-link an existing practice slot to a different library practice.
+  const swapPractice = (itemId: string, practiceId: string) => {
+    setReplacing(null)
+    setQuery('')
+    run(() => setBlockPracticeAction(slug, itemId, practiceId))
+  }
+
+  // ── The pillar-faceted practice picker panel, shared by the Add-a-practice flow (stepTools) and
+  //    the per-slot Replace flow (a practice row). A render function (not a component) so the search
+  //    box + Pillar facets keep their state across renders. `onPick` is what to do with the chosen
+  //    practice (add a block, or swap this slot's practice); `onClose` dismisses the panel. ──
+  const practicePicker = (onPick: (practiceId: string) => void, onClose: () => void) => (
+    <div className="mt-2 rounded-xl border border-border bg-canvas p-2">
+      {/* Pillar facets — tap a Pillar to preload its practices. Unselected Pillars stay
+          on screen, greyed, so the whole set is always one tap away (Mind/Body/Spirit/
+          Expression). No selection = the whole library. */}
+      {pillars.length > 0 && (
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          {pillars.map((pl) => {
+            const on = pillarFilter.has(pl.id)
+            return (
+              <button
+                key={pl.id}
+                type="button"
+                onClick={() => togglePillar(pl.id)}
+                aria-pressed={on}
+                className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                  on
+                    ? 'border-primary/40 bg-primary-bg text-primary-strong'
+                    : 'border-border bg-surface text-subtle opacity-60 hover:opacity-100 hover:text-text'
+                }`}
+              >
+                {pl.name}
+              </button>
+            )
+          })}
+          {pillarFilter.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setPillarFilter(new Set())}
+              className="rounded-full px-2 py-1 text-xs font-medium text-muted hover:text-text"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+      <div className="mb-2 flex items-center gap-2">
+        <Search className="h-4 w-4 shrink-0 text-subtle" />
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search practices…"
+          className="w-full bg-transparent text-sm text-text outline-none placeholder:text-subtle"
+        />
+        <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 text-subtle hover:text-text"><X className="h-4 w-4" /></button>
+      </div>
+      <ul className="max-h-56 space-y-0.5 overflow-y-auto">
+        {pickList.length === 0 ? (
+          <li className="px-2 py-2 text-sm text-muted">
+            No matching practices.{' '}
+            <a href="/practices" target="_blank" rel="noopener noreferrer" className="font-medium text-primary-strong hover:underline">
+              Create one in the library
+            </a>{' '}
+            and it will show up here.
+          </li>
+        ) : (
+          pickList.map((pr) => (
+            <li key={pr.id}>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onPick(pr.id)}
+                className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-primary-bg/50"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-text">{pr.title}</span>
+                  {pr.description && <span className="block truncate text-xs text-muted">{pr.description}</span>}
+                </span>
+                <Plus className="h-4 w-4 shrink-0 text-primary-strong" />
+              </button>
+            </li>
+          ))
+        )}
+      </ul>
+    </div>
+  )
+
   // ── A single editable step (lesson or practice) — used in phases and the loose section. ──
   const LeafRow = (l: EditorBlock) => {
     const isExtra = l.extraCredit
@@ -300,9 +398,12 @@ export function JourneyEditor({
               <Award className="h-3.5 w-3.5" /> extra credit
             </span>
           ) : isPractice ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-surface px-1.5 py-1 text-xs font-medium text-muted" title="A library practice">
-              <Dumbbell className="h-3.5 w-3.5" /> practice
-            </span>
+            // The Pillar this practice covers, as a tinted chip (J4b §12). Falls back to a neutral
+            // "Practice" chip when the slot has no Pillar yet.
+            <PillarChip
+              slug={l.domainId ? pillarSlugById.get(l.domainId) ?? null : null}
+              name={l.domainId ? pillarNameById.get(l.domainId) ?? null : null}
+            />
           ) : (
             <select
               defaultValue={LEAF_TYPES.includes(l.blockType as (typeof LEAF_TYPES)[number]) ? l.blockType : 'lesson'}
@@ -335,6 +436,19 @@ export function JourneyEditor({
               Zaps
             </label>
           )}
+          {isPractice && l.practiceId && (
+            // An adopted slot links out to its library practice (opens in a new tab) — J4b §5/§8.
+            <a
+              href={`/practices/${l.practiceId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 rounded p-1 text-subtle hover:text-primary-strong"
+              aria-label="Open this practice in the library"
+              title="Open in the library"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
           <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, l.id, 'up'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
           <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, l.id, 'down'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
           <button type="button" disabled={pending} onClick={() => run(() => removeBlockAction(slug, l.id))} className="rounded p-1 text-subtle hover:text-danger" aria-label="Delete step"><Trash2 className="h-3.5 w-3.5" /></button>
@@ -356,17 +470,70 @@ export function JourneyEditor({
               />
             )}
             {isPractice && (
-              <SlotCoaching
-                slug={slug}
-                itemId={l.id}
-                initialPrompt={l.coachingPrompt}
-                pillarName={l.domainId ? pillarNameById.get(l.domainId) ?? null : null}
-                disabled={pending}
-              />
+              <>
+                {/* Adopt / Replace (J4b §8–§10). An adopted slot (practice_id set) reads as adopted
+                    and offers Replace; an unlinked slot offers "Add a Practice". Both open the same
+                    pillar-faceted picker, scoped to THIS block — choosing one re-links the slot. */}
+                <div className="mt-2 flex items-center gap-2">
+                  {l.practiceId ? (
+                    <span className="inline-flex items-center gap-1 text-2xs font-medium text-success" title="This slot adopts a library practice">
+                      <Check className="h-3.5 w-3.5" /> Adopted from the library
+                    </span>
+                  ) : (
+                    <span className="text-2xs text-subtle">No library practice linked yet.</span>
+                  )}
+                  {practices.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { setReplacing((v) => (v === l.id ? null : l.id)); setQuery('') }}
+                      className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-primary-strong hover:bg-primary-bg"
+                    >
+                      {l.practiceId ? <><RefreshCw className="h-3.5 w-3.5" /> Replace</> : <><Plus className="h-3.5 w-3.5" /> Add a Practice</>}
+                    </button>
+                  )}
+                </div>
+                {replacing === l.id &&
+                  practicePicker(
+                    (practiceId) => swapPractice(l.id, practiceId),
+                    () => { setReplacing(null); setQuery('') },
+                  )}
+                <SlotCoaching
+                  slug={slug}
+                  itemId={l.id}
+                  initialPrompt={l.coachingPrompt}
+                  pillarName={l.domainId ? pillarNameById.get(l.domainId) ?? null : null}
+                  disabled={pending}
+                />
+              </>
             )}
           </>
         )}
       </li>
+    )
+  }
+
+  // ── A parent's leaves (lessons, extra credit, and practices), with the practice blocks gathered
+  //    under a small "Practices" heading (J4b §11). Lessons and extra-credit stay where they are, in
+  //    sort order; the practice group comes after, so a phase reads as "the lessons, then the four
+  //    Pillar practices". Returns null when the parent has no leaves at all. ──
+  const renderLeaves = (parentId: string) => {
+    const leaves = lessonsOf(parentId)
+    if (leaves.length === 0) return null
+    const isPracticeLeaf = (l: EditorBlock) => l.blockType === 'practice' && !l.extraCredit
+    const practiceLeaves = leaves.filter(isPracticeLeaf)
+    const otherLeaves = leaves.filter((l) => !isPracticeLeaf(l))
+    return (
+      <>
+        {otherLeaves.length > 0 && <ul className="mt-3 space-y-2">{otherLeaves.map(LeafRow)}</ul>}
+        {practiceLeaves.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+              <Dumbbell className="h-3.5 w-3.5" /> Practices
+            </p>
+            <ul className="space-y-2">{practiceLeaves.map(LeafRow)}</ul>
+          </div>
+        )}
+      </>
     )
   }
 
@@ -402,83 +569,11 @@ export function JourneyEditor({
           <Award className="h-4 w-4" /> Add extra credit
         </button>
       </div>
-      {picker === pickerKey && (
-        <div className="mt-2 rounded-xl border border-border bg-canvas p-2">
-          {/* Pillar facets — tap a Pillar to preload its practices. Unselected Pillars stay
-              on screen, greyed, so the whole set is always one tap away (Mind/Body/Spirit/
-              Expression). No selection = the whole library. */}
-          {pillars.length > 0 && (
-            <div className="mb-2 flex flex-wrap items-center gap-1.5">
-              {pillars.map((pl) => {
-                const on = pillarFilter.has(pl.id)
-                return (
-                  <button
-                    key={pl.id}
-                    type="button"
-                    onClick={() => togglePillar(pl.id)}
-                    aria-pressed={on}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                      on
-                        ? 'border-primary/40 bg-primary-bg text-primary-strong'
-                        : 'border-border bg-surface text-subtle opacity-60 hover:opacity-100 hover:text-text'
-                    }`}
-                  >
-                    {pl.name}
-                  </button>
-                )
-              })}
-              {pillarFilter.size > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setPillarFilter(new Set())}
-                  className="rounded-full px-2 py-1 text-xs font-medium text-muted hover:text-text"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          )}
-          <div className="mb-2 flex items-center gap-2">
-            <Search className="h-4 w-4 shrink-0 text-subtle" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search practices…"
-              className="w-full bg-transparent text-sm text-text outline-none placeholder:text-subtle"
-            />
-            <button type="button" onClick={() => { setPicker(null); setQuery('') }} aria-label="Close" className="rounded p-1 text-subtle hover:text-text"><X className="h-4 w-4" /></button>
-          </div>
-          <ul className="max-h-56 space-y-0.5 overflow-y-auto">
-            {pickList.length === 0 ? (
-              <li className="px-2 py-2 text-sm text-muted">
-                No matching practices.{' '}
-                <a href="/practices" target="_blank" rel="noopener noreferrer" className="font-medium text-primary-strong hover:underline">
-                  Create one in the library
-                </a>{' '}
-                and it will show up here.
-              </li>
-            ) : (
-              pickList.map((pr) => (
-                <li key={pr.id}>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => addPractice(parentId, pr.id)}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-primary-bg/50"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium text-text">{pr.title}</span>
-                      {pr.description && <span className="block truncate text-xs text-muted">{pr.description}</span>}
-                    </span>
-                    <Plus className="h-4 w-4 shrink-0 text-primary-strong" />
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      )}
+      {picker === pickerKey &&
+        practicePicker(
+          (practiceId) => addPractice(parentId, practiceId),
+          () => { setPicker(null); setQuery('') },
+        )}
     </>
   )
 
@@ -570,7 +665,7 @@ export function JourneyEditor({
                   <p className="mt-1.5 text-center text-2xs text-subtle">Vera follows your outline and pulls matching practices from the library. Or add your own below.</p>
                 </div>
               )}
-              <ul className="mt-3 space-y-2">{lessonsOf(p.id).map(LeafRow)}</ul>
+              {renderLeaves(p.id)}
               {modulesOf(p.id).length > 0 && <div className="mt-2 space-y-2">{modulesOf(p.id).map(ModuleGroup)}</div>}
               {stepTools(p.id, p.id)}
               <button
