@@ -109,7 +109,6 @@ export interface JourneyPlanItem {
         description: string | null
         domain_id: string | null
         cadence: string | null
-        est_minutes?: number | null
       }
     | null
 }
@@ -124,7 +123,10 @@ const ITEM_COLS =
   'id, plan_id, practice_id, domain_id, sort_order, note, cadence, ' +
   // Block model (ADR-244). Existing rows are block_type='practice' with these null/default.
   'block_type, parent_id, title, body, media, settings, required, est_minutes, ' +
-  'practice:practices(id, title, description, domain_id, cadence, est_minutes)'
+  // NOTE: est_minutes lives on journey_plan_items (the item, above), NOT on practices — embedding
+  // practices(est_minutes) errored ("column practices_1.est_minutes does not exist") on every
+  // journey-view load. The item's own est_minutes is the source of truth for a step's time.
+  'practice:practices(id, title, description, domain_id, cadence)'
 
 /** A url-safe slug from the title + a short random suffix (slugs are unique). */
 function slugify(title: string): string {

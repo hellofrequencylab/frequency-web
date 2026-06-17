@@ -195,9 +195,10 @@ export function topicListSchema(channels: TopicalChannel[], listName: string) {
 
 export function journeySchema(plan: JourneyPlan, items: JourneyPlanItem[]) {
   const url = abs(`/discover/journeys/${plan.slug}`)
-  // Estimated total time from each step's practice base est_minutes, when known.
+  // Estimated total time from each step's own est_minutes, when known (lives on the item, not the
+  // embedded practice — see ITEM_COLS in lib/journey-plans.ts).
   const totalMinutes = items.reduce((sum, it) => {
-    return sum + (it.est_minutes ?? it.practice?.est_minutes ?? 0)
+    return sum + (it.est_minutes ?? 0)
   }, 0)
 
   return {
