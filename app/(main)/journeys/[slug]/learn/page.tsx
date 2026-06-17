@@ -2,7 +2,8 @@ import Image from 'next/image'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { Pencil, CalendarClock } from 'lucide-react'
+import { CalendarClock } from 'lucide-react'
+import { JourneyAuthorActions } from '@/components/journey/v2/learn/journey-author-actions'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, type KickoffEvent } from '@/lib/journeys/runs'
@@ -121,12 +122,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
       subtitle={plan.summary ? <span className="block leading-relaxed">{plan.summary}</span> : undefined}
       actions={
         isAuthor ? (
-          <Link
-            href={`/journeys/${slug}/edit`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated"
-          >
-            <Pencil className="h-3.5 w-3.5" /> Edit journey
-          </Link>
+          <JourneyAuthorActions slug={slug} planId={plan.id} visibility={plan.visibility} />
         ) : undefined
       }
     >

@@ -94,9 +94,12 @@ export default async function JourneyPlanPage({
   const isAuthor = !!profileId && plan.author_id === profileId
   if (!isAuthor && plan.visibility === 'private') notFound()
 
-  // ── AUTHOR → the v2 editor (ADR-252, J5): identity + delivery + publish settings
-  //    and the Phase → Module → Lesson structure tree, at /journeys/[slug]/edit. ──
-  if (isAuthor && !preview) redirect(`/journeys/${plan.slug}/edit`)
+  // ── AUTHOR. Once the Journey is PUBLISHED it opens in VIEW mode (the course page, which carries
+  //    the "Edit Journey" + "Published" controls) — owner's button-convention pass. A DRAFT still
+  //    opens straight in the v2 editor (identity + delivery + the Phase -> Module -> Lesson tree). ──
+  if (isAuthor && !preview) {
+    redirect(plan.visibility === 'public' ? `/journeys/${plan.slug}/learn` : `/journeys/${plan.slug}/edit`)
+  }
 
   const [pillars, author] = await Promise.all([getPillars(), getPlanAuthor(plan.author_id)])
   const byId = indexPillars(pillars)

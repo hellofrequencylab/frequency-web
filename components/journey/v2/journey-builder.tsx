@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Globe, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { IconAccentFace, IconGrid } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
@@ -43,63 +43,72 @@ function StatusPill({ status }: { status: string }) {
   )
 }
 
-// The Save / Preview / Publish action set — rendered at the TOP of the header and again at the
-// FOOT of the editor (ADR-301: an autosaving editor still wants explicit, reassuring controls).
-// Save flushes + confirms (every field already autosaves on blur); Publish toggles the Journey
-// public (Vera's rank gate runs server-side), and reads "Unpublish" once it's live.
+// The Save Draft / Preview / Publish action set — at the TOP of the header and again at the FOOT of
+// the editor. The convention (owner's button-convention pass): every field autosaves on blur, so
+// SAVE DRAFT just flips to VIEW mode (/learn), where the control reads "Edit Journey" — "Save Draft
+// becomes Edit when clicked". PUBLISH publishes to the community library, turns to "Published", and
+// lands on the published page. Once live, the control reads "Published" (unpublish lives in Settings).
 function JourneyActions({
   slug,
   planId,
   visibility,
+  align = 'right',
 }: {
   slug: string | null
   planId: string | null
   visibility: PlanVisibility
+  /** 'left' aligns the column to the start (the foot bar); 'right' is the header default. */
+  align?: 'left' | 'right'
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
-  const [saved, setSaved] = useState(false)
+  const [justPublished, setJustPublished] = useState(false)
   const [note, setNote] = useState<string | null>(null)
-  const isPublic = visibility === 'public'
+  const live = visibility === 'public' || justPublished
+  const viewHref = slug ? `/journeys/${slug}/learn` : '/journeys'
 
-  const save = () =>
-    start(async () => {
-      // Fields autosave on blur; clicking Save blurs the active field first, then we re-pull so the
-      // editor reflects the saved state and confirm with a transient "Saved".
-      router.refresh()
-      setSaved(true)
-      setTimeout(() => setSaved(false), 1800)
-    })
+  // Save Draft → View mode. Fields already autosave on blur, so this just takes the author to the
+  // course view, where the control becomes "Edit Journey".
+  const saveAndView = () => {
+    if (!slug) return
+    start(() => router.push(viewHref))
+  }
 
+  // Publish to the community library, then land on the now-published page.
   const publish = () => {
-    if (!planId) return
+    if (!planId || !slug) return
     setNote(null)
     start(async () => {
-      const res = await setJourneyVisibility(planId, isPublic ? 'private' : 'public')
+      const res = await setJourneyVisibility(planId, 'public')
       if (isError(res)) { setNote(res.error); return }
-      setNote(isPublic ? 'Set back to private.' : res.data.status === 'pending' ? 'Sent to the library for review.' : 'Published to the community library.')
-      router.refresh()
+      setJustPublished(true)
+      router.push(viewHref)
     })
   }
 
   const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-60'
   return (
-    <div className="flex flex-col gap-1">
+    <div className={`flex flex-col gap-1 ${align === 'left' ? 'items-start' : ''}`}>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={save} disabled={pending} className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
-          {saved ? <Check className="h-4 w-4 text-success" /> : <Save className="h-4 w-4" />} {saved ? 'Saved' : 'Save Draft'}
+        <button type="button" onClick={saveAndView} disabled={pending || !slug} className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
+          <Save className="h-4 w-4" /> Save Draft
         </button>
         {slug && (
-          <Link href={`/journeys/${slug}/learn`} target="_blank" className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
+          <Link href={viewHref} target="_blank" className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
             <Eye className="h-4 w-4" /> Preview
           </Link>
         )}
-        <button type="button" onClick={publish} disabled={pending} className={`${btn} ${isPublic ? 'border border-border text-text hover:bg-surface-elevated' : 'bg-primary text-on-primary hover:bg-primary-hover'}`}>
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : isPublic ? <Globe className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-          {isPublic ? 'Unpublish' : 'Publish'}
-        </button>
+        {live ? (
+          <Link href={viewHref} className={`${btn} border border-success/40 bg-success-bg text-success`}>
+            <Check className="h-4 w-4" /> Published
+          </Link>
+        ) : (
+          <button type="button" onClick={publish} disabled={pending} className={`${btn} bg-primary text-on-primary hover:bg-primary-hover`}>
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {pending ? 'Publishing…' : 'Publish'}
+          </button>
+        )}
       </div>
-      {note && <p className="text-2xs text-muted">{note}</p>}
+      {note && <p className="text-2xs text-danger">{note}</p>}
     </div>
   )
 }
@@ -410,12 +419,12 @@ export function JourneyBuilder({
           </aside>
         </div>
 
-        {/* Foot action bar — the same Save / Preview / Publish set, so the author never has to
-            scroll back up after working down a long curriculum (build item §14). */}
+        {/* Foot action bar — the same Save Draft / Preview / Publish set, left-aligned (owner's
+            button-convention pass), so the author never has to scroll back up after a long curriculum. */}
         {!draft && (
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
+          <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-5">
+            <JourneyActions slug={slug} planId={planId} visibility={visibility} align="left" />
             <span className="text-2xs text-subtle">Every field saves automatically as you go.</span>
-            <JourneyActions slug={slug} planId={planId} visibility={visibility} />
           </div>
         )}
       </div>
