@@ -68,7 +68,7 @@ export function JourneyEventLink({
               {linked && formatEventDate(linked.startsAt) ? (
                 <span className="text-muted"> · {formatEventDate(linked.startsAt)}</span>
               ) : null}
-              {eventId && linked === null ? <span className="text-muted"> · no longer available</span> : null}
+              {linked === null ? <span className="text-muted"> · no longer available</span> : null}
             </span>
           </span>
           <span className="flex shrink-0 items-center gap-1">

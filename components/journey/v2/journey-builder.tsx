@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Globe, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
@@ -241,11 +242,11 @@ export function JourneyBuilder({
             title="Set a logo image, icon, or color"
             className="group/icn relative rounded-2xl outline-none ring-2 ring-transparent transition hover:ring-border focus-visible:ring-primary"
           >
-            {cover ? (
-              // The uploaded image doubles as the Journey's logo (build item 1). User-controlled
-              // Supabase Storage host, so a plain img (not next/image).
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={cover} alt="" className="h-14 w-14 rounded-2xl object-cover" />
+            {cover && /^https:\/\//i.test(cover) ? (
+              // The uploaded image doubles as the Journey's logo (build item 1). next/image (the
+              // Supabase Storage host is allowlisted in next.config); guarded to https so the URL
+              // can never carry a javascript:/data: scheme.
+              <Image src={cover} alt="" width={56} height={56} unoptimized className="h-14 w-14 rounded-2xl object-cover" />
             ) : (
               <IconAccentFace icon={icon} accent={accent} size="md" />
             )}
