@@ -1,14 +1,14 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Eye, Layers, Lock, Sparkles, SlidersHorizontal, PanelRightClose } from 'lucide-react'
+import { ArrowLeft, Check, ChevronDown, Eye, Layers, Lock, Sparkles, SlidersHorizontal } from 'lucide-react'
 import { PageHeading } from '@/components/templates'
 import { ImageUpload } from '@/components/ui/image-upload'
-import { IconAccentFace, IconGrid, AccentPicker } from '@/components/studio/kit/studio-identity'
-import { DEFAULT_ACCENT } from '@/lib/studio/accents'
+import { IconAccentFace, IconGrid } from '@/components/studio/kit/studio-identity'
+import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
 import { saveJourneyMeta } from '@/app/(main)/journeys/actions'
 import { createJourneyDraftAction } from '@/app/(main)/journeys/create-actions'
 import { EditableText } from './editable-text'
@@ -69,8 +69,25 @@ export function JourneyBuilder({
   const [icon, setIcon] = useState(initialEmoji ?? 'compass')
   const [accent, setAccent] = useState(initialAccent ?? DEFAULT_ACCENT)
   const [iconOpen, setIconOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(true)
   const [creating, setCreating] = useState(false)
+  const pickerRef = useRef<HTMLSpanElement>(null)
+
+  // Close the icon/color popover on an outside click or Escape (it used to get stuck open).
+  useEffect(() => {
+    if (!iconOpen) return
+    const onDown = (e: PointerEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setIconOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIconOpen(false)
+    }
+    document.addEventListener('pointerdown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [iconOpen])
 
   const meta = (patch: Parameters<typeof saveJourneyMeta>[1]) => {
     if (!planId) return
@@ -99,14 +116,46 @@ export function JourneyBuilder({
   const title = (
     <span className="flex items-center gap-3">
       {!draft && planId && (
-        <span className="relative shrink-0 font-normal">
-          <IconAccentFace icon={icon} accent={accent} size="md" onClick={() => setIconOpen((v) => !v)} />
+        <span ref={pickerRef} className="relative shrink-0 font-normal">
+          {/* A clearly-tappable trigger: the icon tile + a caret badge + a hover ring, so it
+              reads as an "edit icon and color" button (not flat decoration). */}
+          <button
+            type="button"
+            onClick={() => setIconOpen((v) => !v)}
+            aria-expanded={iconOpen}
+            title="Edit icon and color"
+            className="group/icn relative rounded-2xl outline-none ring-2 ring-transparent transition hover:ring-border focus-visible:ring-primary"
+          >
+            <IconAccentFace icon={icon} accent={accent} size="md" />
+            <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-subtle shadow-sm group-hover/icn:text-text">
+              <ChevronDown className="h-3 w-3" aria-hidden />
+            </span>
+          </button>
           {iconOpen && (
-            <div className="absolute left-0 top-[3.5rem] z-30 w-64 rounded-2xl border border-border bg-surface p-3 text-left shadow-xl">
+            <div className="absolute left-0 top-[3.75rem] z-30 w-64 rounded-2xl border border-border bg-surface p-3 text-left shadow-xl">
               <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Icon</p>
-              <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); meta({ emoji: k }) }} />
+              {/* Picking an icon closes the popover (clear commit). */}
+              <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); meta({ emoji: k }); setIconOpen(false) }} />
               <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Color</p>
-              <AccentPicker accent={accent} onChange={(a) => { setAccent(a); meta({ accent: a }) }} />
+              <div className="flex flex-wrap gap-2">
+                {STUDIO_ACCENTS.map((a) => {
+                  const on = accent === a.key
+                  return (
+                    <button
+                      key={a.key}
+                      type="button"
+                      aria-label={a.label}
+                      aria-pressed={on}
+                      title={a.label}
+                      onClick={() => { setAccent(a.key); meta({ accent: a.key }) }}
+                      className={`flex h-7 w-7 items-center justify-center rounded-full border transition-transform hover:scale-110 ${on ? 'border-text' : 'border-border'}`}
+                      style={{ backgroundColor: accentColor(a.key) }}
+                    >
+                      {on && <Check className="h-4 w-4 text-on-primary" aria-hidden />}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
         </span>
@@ -184,43 +233,17 @@ export function JourneyBuilder({
         {/* Vera composer — full width, under the header line. */}
         <div className="mb-6">{draft ? <DraftGhostVera /> : vera}</div>
 
-        {/* Body — curriculum (main) + a collapsible settings rail (best-practice course-builder
-            split: structure left, configuration right, tucked away when the host wants room). */}
+        {/* Body — curriculum (main) + the in-page Settings column (always shown; the global app
+            right rail is the collapsible one, in the app shell). */}
         <div className="flex flex-col gap-6 lg:flex-row">
           <div className="min-w-0 flex-1">{draft ? <DraftGhostMain /> : curriculum}</div>
 
-          {settingsOpen ? (
-            <aside className="lg:w-[22rem] lg:shrink-0">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-text">
-                  <SlidersHorizontal className="h-4 w-4 text-subtle" aria-hidden /> Settings
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSettingsOpen(false)}
-                  className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-                  aria-label="Collapse settings"
-                  title="Collapse settings"
-                >
-                  <PanelRightClose className="h-4 w-4" />
-                </button>
-              </div>
-              {draft ? <DraftGhostSidebar /> : settings}
-            </aside>
-          ) : (
-            <aside className="lg:w-12 lg:shrink-0">
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(true)}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-surface p-2.5 text-sm font-medium text-subtle transition-colors hover:text-text lg:flex-col"
-                aria-label="Show settings"
-                title="Show settings"
-              >
-                <SlidersHorizontal className="h-5 w-5" />
-                <span className="lg:hidden">Settings</span>
-              </button>
-            </aside>
-          )}
+          <aside className="lg:w-[22rem] lg:shrink-0">
+            <div className="mb-3 inline-flex items-center gap-1.5 text-sm font-bold text-text">
+              <SlidersHorizontal className="h-4 w-4 text-subtle" aria-hidden /> Settings
+            </div>
+            {draft ? <DraftGhostSidebar /> : settings}
+          </aside>
         </div>
       </div>
     </div>
