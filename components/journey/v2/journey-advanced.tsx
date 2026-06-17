@@ -6,7 +6,7 @@
 // the season "active" widgets it used to configure were retired in the J5 cutover, so only the
 // live discovery widgets are surfaced here. Reuses the owner-checked plan actions.
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronUp, ChevronDown, Eye, EyeOff, Sparkles, Layout, CalendarRange } from 'lucide-react'
 import { isError } from '@/lib/action-result'
@@ -22,6 +22,8 @@ interface Props {
   /** Quest play-window (ISO yyyy-mm-dd), or null = always open. */
   initialWindowStartsAt: string | null
   initialWindowEndsAt: string | null
+  /** Rendered at the bottom of the Advanced panel (e.g. the delete / danger zone). */
+  footer?: ReactNode
 }
 
 /** A stored ISO timestamp/date → the yyyy-mm-dd a <input type="date"> expects. */
@@ -38,6 +40,7 @@ export function JourneyAdvanced({
   initialQuestId,
   initialWindowStartsAt,
   initialWindowEndsAt,
+  footer,
 }: Props) {
   const router = useRouter()
   const [, start] = useTransition()
@@ -226,6 +229,8 @@ export function JourneyAdvanced({
             </div>
           </div>
         )}
+
+        {footer && <div className="border-t border-border pt-4">{footer}</div>}
       </div>
     </details>
   )

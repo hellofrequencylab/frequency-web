@@ -4,32 +4,29 @@ import type { ReactNode } from 'react'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Eye, Layers, Lock, Sparkles } from 'lucide-react'
-import { HeaderSidebarTemplate } from '@/components/templates'
+import { ArrowLeft, Eye, Layers, Lock, Sparkles, SlidersHorizontal, PanelRightClose } from 'lucide-react'
+import { PageHeading } from '@/components/templates'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { IconAccentFace, IconGrid, AccentPicker } from '@/components/studio/kit/studio-identity'
+import { DEFAULT_ACCENT } from '@/lib/studio/accents'
 import { saveJourneyMeta } from '@/app/(main)/journeys/actions'
 import { createJourneyDraftAction } from '@/app/(main)/journeys/create-actions'
 import { EditableText } from './editable-text'
 
-// Journeys v2 — the SINGLE-PAGE editor shell (ADR-301, supersedes the tabbed builder). One page,
-// laid out like the Journey it builds: a cover header up top (standard upload), a click-to-edit
-// Title + subtitle, the curriculum (Vera's four-Pillar composer + the phases) in the main column,
-// and ALL settings in a right sidebar — the new Header + sidebar template (HeaderSidebarTemplate).
-// Details, Settings, and Curriculum now live together; there are no tabs.
+// Journeys v2 — the SINGLE-PAGE editor shell (ADR-301). Laid out like the Journey it builds and
+// following course-builder best practice: a cover band up top, then the identity row (icon + accent
+// picker beside a click-to-edit Title + subtitle), then Vera's four-Pillar composer FULL WIDTH, then
+// a two-column body — the curriculum in the main column and ALL settings in a collapsible right rail.
+// No tabs; every field autosaves on blur.
 //
-// DEFERRED CREATION: on `/journeys/new` the shell runs in `draft` mode and persists NOTHING until
-// the author names the Journey. Committing a title calls createJourneyDraftAction (creates the row
-// + three phases) and drops them into the live editor. No untitled drafts from "pushing the button".
-// Existing Journeys autosave every field on blur, so there is no Save button — Done just returns.
+// DEFERRED CREATION: on `/journeys/new` the shell runs in `draft` mode and persists NOTHING until the
+// author names the Journey. Committing a title calls createJourneyDraftAction (creates the row + the
+// standard three phases) and drops them into the live editor. No untitled drafts from a button press.
 
 function StatusPill({ status }: { status: string }) {
   const live = status === 'published' || status === 'approved'
   return (
-    <span
-      className={`rounded-full px-1.5 py-0.5 text-2xs font-semibold ${
-        live ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted'
-      }`}
-    >
+    <span className={`rounded-full px-1.5 py-0.5 text-2xs font-semibold ${live ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted'}`}>
       {live ? 'Published' : 'Draft'}
     </span>
   )
@@ -43,6 +40,9 @@ export function JourneyBuilder({
   initialTitle = '',
   initialSummary = null,
   initialCover = null,
+  initialEmoji = null,
+  initialAccent = null,
+  vera,
   curriculum,
   settings,
 }: {
@@ -54,14 +54,22 @@ export function JourneyBuilder({
   initialTitle?: string
   initialSummary?: string | null
   initialCover?: string | null
-  /** The curriculum editor (Vera composer + phases) — only in edit mode. */
+  initialEmoji?: string | null
+  initialAccent?: string | null
+  /** Vera's four-Pillar composer — rendered full-width above the body (edit mode). */
+  vera?: ReactNode
+  /** The curriculum editor (phases) — main column, edit mode. */
   curriculum?: ReactNode
-  /** The settings panel for the sidebar — only in edit mode. */
+  /** The settings panel for the right rail — edit mode. */
   settings?: ReactNode
 }) {
   const router = useRouter()
   const [, start] = useTransition()
   const [cover, setCover] = useState<string | null>(initialCover)
+  const [icon, setIcon] = useState(initialEmoji ?? 'compass')
+  const [accent, setAccent] = useState(initialAccent ?? DEFAULT_ACCENT)
+  const [iconOpen, setIconOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(true)
   const [creating, setCreating] = useState(false)
 
   const meta = (patch: Parameters<typeof saveJourneyMeta>[1]) => {
@@ -72,8 +80,8 @@ export function JourneyBuilder({
     })
   }
 
-  // Draft: naming the Journey is the only thing that persists. It creates the row (+ 3 phases) and
-  // redirects into the live editor.
+  // Draft: naming the Journey is the only thing that persists. It creates the row (+ standard phases)
+  // and redirects into the live editor.
   const createFromTitle = (title: string) => {
     if (!title.trim() || creating) return
     setCreating(true)
@@ -86,19 +94,38 @@ export function JourneyBuilder({
     </span>
   )
 
+  // Identity row: the icon/accent picker sits BESIDE the title (one intentional picker — no loose
+  // accent dots in the sidebar), then the click-to-edit Title.
   const title = (
-    <EditableText
-      value={draft ? '' : initialTitle}
-      placeholder="Name your Journey"
-      autoFocus={draft}
-      ariaLabel="Journey title"
-      onSave={draft ? createFromTitle : (t) => meta({ title: t })}
-      inputClassName="text-xl font-bold text-text sm:text-2xl"
-    />
+    <span className="flex items-center gap-3">
+      {!draft && planId && (
+        <span className="relative shrink-0 font-normal">
+          <IconAccentFace icon={icon} accent={accent} size="md" onClick={() => setIconOpen((v) => !v)} />
+          {iconOpen && (
+            <div className="absolute left-0 top-[3.5rem] z-30 w-64 rounded-2xl border border-border bg-surface p-3 text-left shadow-xl">
+              <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Icon</p>
+              <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); meta({ emoji: k }) }} />
+              <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Color</p>
+              <AccentPicker accent={accent} onChange={(a) => { setAccent(a); meta({ accent: a }) }} />
+            </div>
+          )}
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        <EditableText
+          value={draft ? '' : initialTitle}
+          placeholder="Name your Journey"
+          autoFocus={draft}
+          ariaLabel="Journey title"
+          onSave={draft ? createFromTitle : (t) => meta({ title: t })}
+          inputClassName="text-xl font-bold text-text sm:text-2xl"
+        />
+      </span>
+    </span>
   )
 
   const description = draft ? (
-    <span className="block px-1.5 text-sm text-subtle">Name your Journey first, then add a one-line subtitle.</span>
+    <span className="block px-1 text-sm text-subtle">Name your Journey first, then add a one-line subtitle.</span>
   ) : (
     <EditableText
       value={initialSummary ?? ''}
@@ -131,9 +158,9 @@ export function JourneyBuilder({
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl">
-        {/* Cover header — up top, propagated as the standard upload band with an Upload overlay. */}
-        <div className="mb-6">
+      <div className="mx-auto max-w-6xl">
+        {/* Cover header — up top, the standard upload band with an Upload overlay. */}
+        <div className="mb-5">
           {draft ? (
             <div className="flex h-32 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-sm text-subtle">
               <Lock className="h-4 w-4" aria-hidden /> Add a cover photo once you name it
@@ -152,34 +179,77 @@ export function JourneyBuilder({
           )}
         </div>
 
-        <HeaderSidebarTemplate
-          eyebrow={eyebrow}
-          title={title}
-          description={description}
-          actions={actions}
-          sidebarWidth="wide"
-          sidebar={draft ? <DraftGhostSidebar /> : settings}
-        >
-          {draft ? <DraftGhostMain /> : curriculum}
-        </HeaderSidebarTemplate>
+        <PageHeading eyebrow={eyebrow} title={title} description={description} actions={actions} />
+
+        {/* Vera composer — full width, under the header line. */}
+        <div className="mb-6">{draft ? <DraftGhostVera /> : vera}</div>
+
+        {/* Body — curriculum (main) + a collapsible settings rail (best-practice course-builder
+            split: structure left, configuration right, tucked away when the host wants room). */}
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <div className="min-w-0 flex-1">{draft ? <DraftGhostMain /> : curriculum}</div>
+
+          {settingsOpen ? (
+            <aside className="lg:w-[22rem] lg:shrink-0">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-text">
+                  <SlidersHorizontal className="h-4 w-4 text-subtle" aria-hidden /> Settings
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen(false)}
+                  className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                  aria-label="Collapse settings"
+                  title="Collapse settings"
+                >
+                  <PanelRightClose className="h-4 w-4" />
+                </button>
+              </div>
+              {draft ? <DraftGhostSidebar /> : settings}
+            </aside>
+          ) : (
+            <aside className="lg:w-12 lg:shrink-0">
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-surface p-2.5 text-sm font-medium text-subtle transition-colors hover:text-text lg:flex-col"
+                aria-label="Show settings"
+                title="Show settings"
+              >
+                <SlidersHorizontal className="h-5 w-5" />
+                <span className="lg:hidden">Settings</span>
+              </button>
+            </aside>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-// What the editor will hold, shown inert until the Journey is named (so the page reads whole from
-// the first moment without creating an untitled draft).
+// ── Draft-mode placeholders — the page reads whole from the first moment, inert until it is named
+//    (so naming, not a button press, is what creates the Journey). ──
+
+function DraftGhostVera() {
+  return (
+    <div className="rounded-2xl border border-dashed border-primary/30 bg-primary-bg/10 p-4 opacity-70" aria-hidden>
+      <p className="flex items-center gap-2 text-base font-bold text-text">
+        <Sparkles className="h-5 w-5 text-primary-strong" /> Build your Journey with Vera
+      </p>
+      <p className="mt-1 text-sm text-muted">
+        Name your Journey, then describe it and Vera fills a balanced four-Pillar week (Mind, Body, Spirit, Expression).
+      </p>
+    </div>
+  )
+}
+
 function DraftGhostMain() {
   return (
-    <div className="space-y-4 opacity-60" aria-hidden>
-      <div className="rounded-2xl border border-dashed border-border bg-surface p-4">
-        <p className="flex items-center gap-2 text-sm font-semibold text-text">
-          <Sparkles className="h-4 w-4 text-primary-strong" /> Build it with Vera
-        </p>
-        <p className="mt-1 text-xs text-muted">
-          Name your Journey, then describe it and Vera fills a balanced four-Pillar week (Mind, Body, Spirit, Expression).
-        </p>
-      </div>
+    <div className="space-y-4 opacity-70" aria-hidden>
+      <header>
+        <h2 className="text-base font-bold text-text">Curriculum</h2>
+        <p className="text-sm text-muted">Three phases are ready to fill the moment you name your Journey.</p>
+      </header>
       {[1, 2, 3].map((n) => (
         <div key={n} className="rounded-2xl border border-border bg-surface p-4">
           <p className="flex items-center gap-2 text-sm font-semibold text-text">
@@ -197,7 +267,7 @@ function DraftGhostSidebar() {
     <div className="rounded-2xl border border-dashed border-border bg-surface p-4 opacity-70" aria-hidden>
       <p className="text-sm font-semibold text-text">Settings</p>
       <p className="mt-1 text-xs text-muted">
-        Cover, story, visibility, rewards, and delivery unlock once your Journey has a name.
+        Cover, story, visibility, rewards, delivery, and the advanced options unlock once your Journey has a name.
       </p>
     </div>
   )

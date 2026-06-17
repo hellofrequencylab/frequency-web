@@ -113,20 +113,22 @@ export function JourneySettings(props: JourneySettingsProps) {
         </div>
       )}
 
-      {/* Identity */}
-      <div className="flex items-start gap-3">
-        <div className="relative shrink-0">
-          <IconAccentFace icon={icon} accent={accent} size="md" onClick={() => setIconOpen((v) => !v)} />
-          {iconOpen && (
-            <div className="absolute left-0 top-[3.25rem] z-10 w-64 rounded-2xl border border-border bg-surface p-3 shadow-xl">
-              <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); setIconOpen(false); meta({ emoji: k }) }} />
+      {/* Identity — icon, accent, title, subtitle. Hidden in the single-page editor (ADR-301),
+          which renders the icon/accent picker beside the title in the page header instead (so the
+          accent dots are never loose in the sidebar). */}
+      {!props.hideIdentity && (
+        <div className="flex items-start gap-3">
+          <div className="relative shrink-0">
+            <IconAccentFace icon={icon} accent={accent} size="md" onClick={() => setIconOpen((v) => !v)} />
+            {iconOpen && (
+              <div className="absolute left-0 top-[3.25rem] z-10 w-64 rounded-2xl border border-border bg-surface p-3 shadow-xl">
+                <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); setIconOpen(false); meta({ emoji: k }) }} />
+              </div>
+            )}
+            <div className="mt-2 flex justify-center">
+              <AccentPicker accent={accent} onChange={(a) => { setAccent(a); meta({ accent: a }) }} />
             </div>
-          )}
-          <div className="mt-2 flex justify-center">
-            <AccentPicker accent={accent} onChange={(a) => { setAccent(a); meta({ accent: a }) }} />
           </div>
-        </div>
-        {!props.hideIdentity && (
           <div className="min-w-0 flex-1">
             <input
               defaultValue={props.initialTitle}
@@ -143,8 +145,8 @@ export function JourneySettings(props: JourneySettingsProps) {
               className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
             />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Story / intro */}
       {showIntro || intro ? (
