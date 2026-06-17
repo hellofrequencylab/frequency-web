@@ -42,6 +42,7 @@ export function JourneyBuilder({
   initialCover = null,
   initialEmoji = null,
   initialAccent = null,
+  initialIntro = null,
   vera,
   curriculum,
   settings,
@@ -56,6 +57,8 @@ export function JourneyBuilder({
   initialCover?: string | null
   initialEmoji?: string | null
   initialAccent?: string | null
+  /** The story/overview write-up, shown above the curriculum (moved out of Settings). */
+  initialIntro?: string | null
   /** Vera's four-Pillar composer — rendered full-width above the body (edit mode). */
   vera?: ReactNode
   /** The curriculum editor (phases) — main column, edit mode. */
@@ -178,10 +181,12 @@ export function JourneyBuilder({
   ) : (
     <EditableText
       value={initialSummary ?? ''}
-      placeholder="One line on what this is and who it's for"
+      placeholder="A line or two on what this is and who it's for"
       ariaLabel="Journey subtitle"
       onSave={(s) => meta({ summary: s })}
       inputClassName="text-sm text-muted"
+      multiline
+      rows={3}
     />
   )
 
@@ -236,7 +241,29 @@ export function JourneyBuilder({
         {/* Body — curriculum (main) + the in-page Settings column (always shown; the global app
             right rail is the collapsible one, in the app shell). */}
         <div className="flex flex-col gap-6 lg:flex-row">
-          <div className="min-w-0 flex-1">{draft ? <DraftGhostMain /> : curriculum}</div>
+          <div className="min-w-0 flex-1">
+            {draft ? (
+              <DraftGhostMain />
+            ) : (
+              <>
+                {/* Introductory write-up — the story/overview, moved out of Settings to sit above
+                    the curriculum (the reader's first thing). */}
+                <div className="mb-6">
+                  <p className="mb-1.5 text-sm font-bold text-text">Introduction</p>
+                  <EditableText
+                    value={initialIntro ?? ''}
+                    placeholder="The why, the how, what they'll get from it. A few lines is plenty."
+                    ariaLabel="Journey introduction"
+                    onSave={(t) => meta({ intro: t })}
+                    inputClassName="text-sm leading-relaxed text-text"
+                    multiline
+                    rows={4}
+                  />
+                </div>
+                {curriculum}
+              </>
+            )}
+          </div>
 
           <aside className="lg:w-[22rem] lg:shrink-0">
             <div className="mb-3 inline-flex items-center gap-1.5 text-sm font-bold text-text">

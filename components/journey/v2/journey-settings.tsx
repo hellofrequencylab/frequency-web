@@ -8,7 +8,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { PencilLine, Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw } from 'lucide-react'
+import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw } from 'lucide-react'
 import { IconAccentFace, AccentPicker, IconGrid } from '@/components/studio/kit/studio-identity'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { DEFAULT_ACCENT } from '@/lib/studio/accents'
@@ -47,8 +47,6 @@ export function JourneySettings(props: JourneySettingsProps) {
 
   const [icon, setIcon] = useState(props.initialEmoji ?? 'compass')
   const [accent, setAccent] = useState(props.initialAccent ?? DEFAULT_ACCENT)
-  const [intro, setIntro] = useState(props.initialIntro ?? '')
-  const [showIntro, setShowIntro] = useState(!!props.initialIntro)
   const [iconOpen, setIconOpen] = useState(false)
 
   const [coverImage, setCoverImage] = useState<string | null>(props.initialCoverImage)
@@ -148,26 +146,7 @@ export function JourneySettings(props: JourneySettingsProps) {
         </div>
       )}
 
-      {/* Story / intro */}
-      {showIntro || intro ? (
-        <textarea
-          value={intro}
-          onChange={(e) => setIntro(e.target.value)}
-          onBlur={(e) => meta({ intro: e.target.value })}
-          rows={3}
-          maxLength={8000}
-          placeholder="The why, the how, what they'll get from it. A line, or a full curriculum."
-          className="w-full resize-y rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm leading-relaxed text-text outline-none focus:border-primary"
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setShowIntro(true)}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-strong hover:text-primary-hover"
-        >
-          <PencilLine className="h-4 w-4" /> Add the story behind it
-        </button>
-      )}
+      {/* The story/intro write-up moved out of Settings to sit above the curriculum (ADR-302). */}
 
       {/* Cover image — the banner shown on the Journey's discovery page + cards. Hidden when the
           single-page editor (ADR-301) renders the cover upload in the page header instead. */}
