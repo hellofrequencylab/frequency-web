@@ -3614,6 +3614,7 @@ export type Database = {
           reviewed_by: string | null
           sequential: boolean
           slug: string
+          source_overview: string | null
           status: string
           summary: string | null
           title: string
@@ -3648,6 +3649,7 @@ export type Database = {
           reviewed_by?: string | null
           sequential?: boolean
           slug: string
+          source_overview?: string | null
           status?: string
           summary?: string | null
           title: string
@@ -3682,6 +3684,7 @@ export type Database = {
           reviewed_by?: string | null
           sequential?: boolean
           slug?: string
+          source_overview?: string | null
           status?: string
           summary?: string | null
           title?: string

@@ -108,7 +108,9 @@ export async function draftJourneyComposition(input: {
 }): Promise<JourneyComposition | null> {
   const client = getAnthropic()
   if (!client) return null
-  const description = input.description.trim().slice(0, 2000)
+  // Roomy cap: the description can carry the author's uploaded course outline (ADR-302), which we
+  // want Vera to read in full rather than truncate to a couple of sentences.
+  const description = input.description.trim().slice(0, 8000)
   if (!description) return null
 
   // Candidate lists per Pillar, in the prompt (ids Vera may reference for mode=library). Each

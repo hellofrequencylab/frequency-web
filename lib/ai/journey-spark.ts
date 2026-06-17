@@ -34,6 +34,15 @@ export interface ArcWeek {
   focus: string
 }
 
+/** Journey settings Vera can lift from an uploaded outline (ADR-302). All optional — only filled
+ *  when the source states them, so nothing is invented on the questions path. */
+export interface SparkSettings {
+  difficulty: 'gentle' | 'standard' | 'deep' | null
+  category: string | null
+  tags: string[]
+  dailyMinutes: number | null
+}
+
 export interface JourneySpark {
   title: string
   /** One line, leading with the outcome. */
@@ -43,6 +52,8 @@ export interface JourneySpark {
   /** The weekly arc — one focus per week, building across the Journey (last week a gentle
    *  reflection). Length matches the requested weeks; empty when Vera couldn't draft it. */
   arc: ArcWeek[]
+  /** Settings lifted from an uploaded outline (difficulty, category, tags, daily minutes). */
+  settings: SparkSettings
 }
 
 const TOOL_NAME = 'draft_journey_spark'
@@ -68,6 +79,16 @@ const TOOL: Anthropic.Tool = {
           required: ['title', 'focus'],
         },
       },
+      settings: {
+        type: 'object',
+        description: 'Settings to pre-fill, ONLY when the author\'s uploaded outline clearly states them. Omit any you are not sure about. Never invent these from the short answers.',
+        properties: {
+          difficulty: { type: 'string', enum: ['gentle', 'standard', 'deep'], description: 'How demanding the Journey is, if the outline says.' },
+          category: { type: 'string', description: 'A short theme/category if the outline names one (e.g. "Rest and recovery").' },
+          tags: { type: 'array', items: { type: 'string' }, description: 'Up to 6 short topic tags if the outline lists or implies them (e.g. sleep, calm, screens).' },
+          daily_minutes: { type: 'integer', description: 'Roughly how many minutes a day the outline asks for, if stated.' },
+        },
+      },
     },
     required: ['title', 'promise', 'overview', 'arc'],
   },
@@ -78,6 +99,8 @@ const SYSTEM = `You are Vera, Frequency's guide: warm, grounded, and practical, 
 Draft the Journey's frame: a title, a one-line promise that leads with the outcome, a short overview, and the WEEKLY ARC.
 
 The arc is one focus per week, in order, that builds across the Journey like a good course: each week leans on the last, the early weeks are gentle, and the FINAL week is a calm reflection that ties it together. Give EXACTLY one entry per week for the length requested. The four daily practices stay constant underneath; the weekly focus is the lens, not a new set of tasks.
+
+If the author pasted their own course outline, also fill SETTINGS (difficulty, category, tags, daily minutes) from what the outline actually states. Only include a setting when the outline makes it clear; never invent these from the short answers alone, and omit anything you are unsure about.
 
 How to write:
 - Plain language, short sentences. Lead with the problem or the feeling.
@@ -156,5 +179,19 @@ function coerce(raw: unknown, weeks: number): JourneySpark | null {
     }
   }
 
-  return { title, promise, overview, arc }
+  // Settings — only what Vera lifted from the outline; everything else stays null/empty.
+  const s = (r.settings && typeof r.settings === 'object' ? r.settings : {}) as Record<string, unknown>
+  const diff = typeof s.difficulty === 'string' ? s.difficulty.trim().toLowerCase() : ''
+  const tags = Array.isArray(s.tags)
+    ? s.tags.filter((t): t is string => typeof t === 'string').map((t) => t.trim().slice(0, 40)).filter(Boolean).slice(0, 6)
+    : []
+  const dm = typeof s.daily_minutes === 'number' && Number.isFinite(s.daily_minutes) ? Math.max(1, Math.min(600, Math.floor(s.daily_minutes))) : null
+  const settings: SparkSettings = {
+    difficulty: diff === 'gentle' || diff === 'standard' || diff === 'deep' ? diff : null,
+    category: typeof s.category === 'string' && s.category.trim() ? s.category.trim().slice(0, 60) : null,
+    tags,
+    dailyMinutes: dm,
+  }
+
+  return { title, promise, overview, arc, settings }
 }

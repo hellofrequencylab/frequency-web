@@ -9,10 +9,12 @@ import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
 import { createPlan } from '@/lib/journey-plans'
 import { getTemplate, templateToBlocks } from '@/lib/journeys/templates'
-import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek } from '@/lib/ai/journey-spark'
+import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek, type SparkSettings } from '@/lib/ai/journey-spark'
 import { composeJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
+import { composeIntoPhase } from '@/lib/journeys/compose'
 import { extractOverviewText } from '@/lib/journeys/extract-text'
 
 /** Deferred creation (no untitled drafts): a Journey row is created ONLY once the author commits a
@@ -86,6 +88,8 @@ export async function createJourneyFromSparkAction(input: {
   overview: string
   answers: SparkAnswers
   arc: ArcWeek[]
+  /** Settings Vera lifted from the uploaded outline (difficulty/category/tags/daily minutes). */
+  settings?: SparkSettings
   /** The author's pasted/uploaded overview, when they built from a document. */
   sourceText?: string
 }): Promise<void> {
@@ -98,36 +102,87 @@ export async function createJourneyFromSparkAction(input: {
   if (!plan) redirect('/journeys')
 
   const admin = createAdminClient()
+  const a = input.answers
+  const source = input.sourceText?.trim()
+
+  // Identity + settings in one write: the overview, the author's outline (kept so Vera can read it
+  // when populating EVERY week, not just the first), and the settings Vera lifted from the outline
+  // (difficulty/category/tags). Daily minutes come from the outline, else the chosen pace.
   const overview = input.overview.trim().slice(0, 8000)
-  if (overview) await admin.from('journey_plans').update({ intro: overview }).eq('id', plan.id)
+  const s = input.settings
+  const planUpdate: Record<string, unknown> = {
+    daily_minutes: s?.dailyMinutes ?? (a.pace === 'medium' ? 15 : 5),
+  }
+  if (overview) planUpdate.intro = overview
+  if (source) planUpdate.source_overview = source.slice(0, 20000)
+  if (s?.difficulty) planUpdate.difficulty = s.difficulty
+  if (s?.category) planUpdate.category = s.category
+  if (s?.tags?.length) planUpdate.tags = s.tags
+  // difficulty/category/tags/daily_minutes aren't in the generated types yet — cast the payload
+  // (ADR-246: cast the payload, never the admin client). source_overview was added to the types.
+  await admin
+    .from('journey_plans')
+    .update(planUpdate as unknown as Database['public']['Tables']['journey_plans']['Update'])
+    .eq('id', plan.id)
 
   // One Phase per week, titled + described by Vera's weekly ARC (so every week is filled with a
   // focus, not an empty "Week N"). Falls back to a plain week label when the arc is missing.
-  const a = input.answers
   const weeks = Math.min(12, Math.max(1, Math.floor(a.weeks) || 4))
   const arc = input.arc ?? []
-  await admin.from('journey_plan_items').insert(
-    Array.from({ length: weeks }, (_, i) => ({
-      plan_id: plan.id,
-      block_type: 'phase',
-      parent_id: null,
-      title: arc[i]?.title ? `Week ${i + 1}: ${arc[i].title}` : `Week ${i + 1}`,
-      body: arc[i]?.focus?.trim() || null,
-      sort_order: i,
-      required: true,
-    })),
-  )
+  const { data: phaseRows } = await admin
+    .from('journey_plan_items')
+    .insert(
+      Array.from({ length: weeks }, (_, i) => ({
+        plan_id: plan.id,
+        block_type: 'phase',
+        parent_id: null,
+        title: arc[i]?.title ? `Week ${i + 1}: ${arc[i].title}` : `Week ${i + 1}`,
+        body: arc[i]?.focus?.trim() || null,
+        sort_order: i,
+        required: true,
+      })),
+    )
+    .select('id, sort_order')
+  const phases = ((phaseRows ?? []) as { id: string; sort_order: number }[]).sort((x, y) => x.sort_order - y.sort_order)
 
-  // Pre-seed the opening week's four Pillar practices (library picks + write-ups) from the
-  // interview — composeJourneyAction fills the first empty phase (Week 1). Best-effort: a Journey
-  // is still usable if Vera is offline (the author fills the practices in the editor).
-  const description = input.sourceText?.trim()
-    ? `Build the opening week's practices from the author's own overview: """${input.sourceText.trim().slice(0, 4000)}""". A ${weeks}-week Journey. Daily time: ${a.pace}.`
-    : `A ${weeks}-week Journey for ${a.who.trim() || 'anyone'}. About: ${a.topic.trim() || 'general wellbeing'}. People should walk away with: ${a.outcome.trim() || 'a steadier week'}. Daily time: ${a.pace}.`
-  try {
-    await composeJourneyAction(plan.slug, description)
-  } catch {
-    /* best-effort pre-seed */
+  if (source) {
+    // Built from a document: populate EVERY week from the outline (not just the opening one), each
+    // grounded in that week's focus + the practices already used earlier so weeks don't repeat.
+    // Sequential + best-effort: each phase commits before the next, so a slow/offline run still
+    // leaves the completed weeks intact (the rest stay one outline-aware click away in the editor).
+    const usedTitles: string[] = []
+    for (let i = 0; i < phases.length; i++) {
+      const w = arc[i]
+      const focus = w?.title ? `Week ${i + 1}: ${w.title}${w.focus ? `. ${w.focus}` : ''}` : `Week ${i + 1}`
+      const description = [
+        `Compose this week's four Pillar practices so they fit this week's focus and follow the author's outline.`,
+        `This week's focus: ${focus}.`,
+        usedTitles.length ? `Practices already used in earlier weeks (do not repeat): ${usedTitles.join('; ')}.` : '',
+        `The author's own course outline follows. Follow it closely and use the practices it names for THIS week where it gives them:\n"""\n${source.slice(0, 4000)}\n"""`,
+      ]
+        .filter(Boolean)
+        .join(' ')
+      try {
+        await composeIntoPhase({ admin, planId: plan.id, phaseId: phases[i].id, description, profileId: caller.id })
+        const { data: kids } = await admin
+          .from('journey_plan_items')
+          .select('title')
+          .eq('parent_id', phases[i].id)
+          .eq('block_type', 'practice')
+        for (const k of (kids ?? []) as { title: string | null }[]) if (k.title) usedTitles.push(k.title)
+      } catch {
+        /* best-effort: a failed week stays empty and fillable in the editor */
+      }
+    }
+  } else {
+    // Questions path: pre-seed only the opening week's four Pillar practices (the existing model);
+    // the later weeks carry their arc focus and fill on demand. Best-effort.
+    const description = `A ${weeks}-week Journey for ${a.who.trim() || 'anyone'}. About: ${a.topic.trim() || 'general wellbeing'}. People should walk away with: ${a.outcome.trim() || 'a steadier week'}. Daily time: ${a.pace}.`
+    try {
+      await composeJourneyAction(plan.slug, description)
+    } catch {
+      /* best-effort pre-seed */
+    }
   }
 
   redirect(`/journeys/${plan.slug}/edit`)

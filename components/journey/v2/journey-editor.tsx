@@ -451,7 +451,13 @@ export function JourneyEditor({
           </div>
           <ul className="max-h-56 space-y-0.5 overflow-y-auto">
             {pickList.length === 0 ? (
-              <li className="px-2 py-2 text-sm text-muted">No practices match.</li>
+              <li className="px-2 py-2 text-sm text-muted">
+                No matching practices.{' '}
+                <a href="/practices" target="_blank" rel="noopener noreferrer" className="font-medium text-primary-strong hover:underline">
+                  Create one in the library
+                </a>{' '}
+                and it will show up here.
+              </li>
             ) : (
               pickList.map((pr) => (
                 <li key={pr.id}>
@@ -550,15 +556,19 @@ export function JourneyEditor({
                 className="mt-3 w-full resize-y rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-muted focus:border-primary focus:outline-none"
               />
               {stepCount === 0 && (
-                // An unfilled week: let Vera read the Journey + earlier weeks and fill this one.
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => run(() => populateWeekAction(slug, p.id))}
-                  className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary-bg/30 px-3 py-2.5 text-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg disabled:opacity-60"
-                >
-                  <Sparkles className="h-4 w-4" /> {pending ? 'Building…' : 'Populate this week with Vera'}
-                </button>
+                // An unfilled week: let Vera read the outline + earlier weeks and fill this one. She
+                // pulls relevant library practices; the author can also add or create their own below.
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => run(() => populateWeekAction(slug, p.id))}
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary-bg/30 px-3 py-2.5 text-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg disabled:opacity-60"
+                  >
+                    <Sparkles className="h-4 w-4" /> {pending ? 'Building…' : 'Populate this week with Vera'}
+                  </button>
+                  <p className="mt-1.5 text-center text-2xs text-subtle">Vera follows your outline and pulls matching practices from the library. Or add your own below.</p>
+                </div>
               )}
               <ul className="mt-3 space-y-2">{lessonsOf(p.id).map(LeafRow)}</ul>
               {modulesOf(p.id).length > 0 && <div className="mt-2 space-y-2">{modulesOf(p.id).map(ModuleGroup)}</div>}
