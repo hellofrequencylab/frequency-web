@@ -13,6 +13,7 @@ import { createPlan } from '@/lib/journey-plans'
 import { getTemplate, templateToBlocks } from '@/lib/journeys/templates'
 import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek } from '@/lib/ai/journey-spark'
 import { composeJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
+import { extractOverviewText } from '@/lib/journeys/extract-text'
 
 /** Deferred creation (no untitled drafts): a Journey row is created ONLY once the author commits a
  *  title from the single-page editor. Seeds 3 empty phases so the curriculum opens ready to edit,
@@ -49,12 +50,30 @@ export async function createJourneyDraftAction(title: string): Promise<void> {
 
 /** Vera drafts the Journey identity from the spark answers. Returns the draft for the author to
  *  review/edit; creates nothing. Null-safe: when Vera is offline, the wizard lets them type it. */
-export async function sparkJourneyAction(answers: SparkAnswers): Promise<ActionResult<JourneySpark>> {
+export async function sparkJourneyAction(answers: SparkAnswers, sourceText?: string): Promise<ActionResult<JourneySpark>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Sign in to build a Journey.')
-  const spark = await draftJourneySpark({ ...answers, profileId: caller.id })
+  const spark = await draftJourneySpark({ ...answers, sourceText, profileId: caller.id })
   if (!spark) return fail('Vera is offline right now. Name it yourself and keep going.')
   return ok(spark)
+}
+
+/** Pull plain text out of an uploaded course write-up (PDF / Word / plain text) so the author can
+ *  drop in their own overview and have Vera rebuild it (ADR-302). Returns the extracted text. */
+export async function extractOverviewAction(formData: FormData): Promise<ActionResult<{ text: string }>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Sign in first.')
+  const file = formData.get('file')
+  if (!(file instanceof File)) return fail('No file to read.')
+  if (file.size > 5 * 1024 * 1024) return fail('That file is over 5 MB. Trim it or paste the text instead.')
+  try {
+    const buf = Buffer.from(await file.arrayBuffer())
+    const text = await extractOverviewText(buf, file.type, file.name)
+    if (!text) return fail("Couldn't read any text from that file. Try plain text, or paste it instead.")
+    return ok({ text: text.slice(0, 20000) })
+  } catch {
+    return fail("Couldn't read that file. Try plain text, or paste the overview instead.")
+  }
 }
 
 /** Create the Journey from the reviewed identity, seed N weekly Phases, AND pre-seed the opening
@@ -67,6 +86,8 @@ export async function createJourneyFromSparkAction(input: {
   overview: string
   answers: SparkAnswers
   arc: ArcWeek[]
+  /** The author's pasted/uploaded overview, when they built from a document. */
+  sourceText?: string
 }): Promise<void> {
   const caller = await getCallerProfile()
   if (!caller) redirect('/journeys')
@@ -100,7 +121,9 @@ export async function createJourneyFromSparkAction(input: {
   // Pre-seed the opening week's four Pillar practices (library picks + write-ups) from the
   // interview — composeJourneyAction fills the first empty phase (Week 1). Best-effort: a Journey
   // is still usable if Vera is offline (the author fills the practices in the editor).
-  const description = `A ${weeks}-week Journey for ${a.who.trim() || 'anyone'}. About: ${a.topic.trim() || 'general wellbeing'}. People should walk away with: ${a.outcome.trim() || 'a steadier week'}. Daily time: ${a.pace}.`
+  const description = input.sourceText?.trim()
+    ? `Build the opening week's practices from the author's own overview: """${input.sourceText.trim().slice(0, 4000)}""". A ${weeks}-week Journey. Daily time: ${a.pace}.`
+    : `A ${weeks}-week Journey for ${a.who.trim() || 'anyone'}. About: ${a.topic.trim() || 'general wellbeing'}. People should walk away with: ${a.outcome.trim() || 'a steadier week'}. Daily time: ${a.pace}.`
   try {
     await composeJourneyAction(plan.slug, description)
   } catch {
