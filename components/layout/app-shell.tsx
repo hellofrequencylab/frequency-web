@@ -25,8 +25,7 @@ import {
   ChevronRight,
   PanelLeftOpen,
   PanelLeftClose,
-  PanelRightOpen,
-  PanelRightClose,
+  Menu,
   Flame,
   QrCode,
   Megaphone,
@@ -1505,7 +1504,7 @@ export default function AppShell({
                     aria-label="Show the rail"
                     className="sticky bottom-6 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
                   >
-                    <PanelRightOpen className="h-5 w-5" aria-hidden />
+                    <Menu className="h-5 w-5" aria-hidden />
                   </button>
                 </aside>
               ) : (
@@ -1523,7 +1522,7 @@ export default function AppShell({
                         aria-label="Collapse the rail"
                         className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/95 px-3 py-1.5 text-xs font-medium text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border-strong hover:text-text"
                       >
-                        <PanelRightClose className="h-4 w-4" aria-hidden /> Collapse
+                        <Menu className="h-4 w-4" aria-hidden /> Collapse
                       </button>
                     </div>
                   )}
