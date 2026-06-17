@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Map } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getMyPlans } from '@/lib/journey-plans'
@@ -14,15 +15,21 @@ export async function JourneysMine() {
 
   return (
     <section>
-      <SectionHeader title="Your journeys" count={mine.length} />
+      {/* The header links to the full management space (store / edit / publish / duplicate / delete). */}
+      <SectionHeader title="Your journeys" count={mine.length} href="/journeys/mine" />
       {mine.length === 0 ? (
         <EmptyState icon={Map} title="No journeys yet" description="Hit “New journey” to open the builder and lay out your path." />
       ) : (
-        <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2">
-          {mine.map((p) => (
-            <PlanCard key={p.id} plan={p} mine />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-3 @2xl:grid-cols-2">
+            {mine.slice(0, 4).map((p) => (
+              <PlanCard key={p.id} plan={p} mine />
+            ))}
+          </div>
+          <Link href="/journeys/mine" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary-strong hover:underline">
+            Manage all your journeys{mine.length > 4 ? ` (${mine.length})` : ''} →
+          </Link>
+        </>
       )}
     </section>
   )
