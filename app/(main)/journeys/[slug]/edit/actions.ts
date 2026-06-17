@@ -61,6 +61,33 @@ function done(slug: string): void {
   revalidatePath(`/journeys/${slug}/learn`)
 }
 
+/** The phase Vera should fill: the FIRST EMPTY top-level phase (e.g. a Spark-seeded "Week 1"), so
+ *  she fills the existing arc instead of stacking a new phase beside it. Falls back to a new phase
+ *  when every phase already has content (or there are none). */
+async function reuseOrCreatePhase(admin: ReturnType<typeof createAdminClient>, planId: string, title: string): Promise<string | null> {
+  const { data: phases } = await admin
+    .from('journey_plan_items')
+    .select('id')
+    .eq('plan_id', planId)
+    .eq('block_type', 'phase')
+    .is('parent_id', null)
+    .order('sort_order', { ascending: true })
+  for (const ph of (phases ?? []) as { id: string }[]) {
+    const { count } = await admin
+      .from('journey_plan_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('parent_id', ph.id)
+    if (!count) return ph.id
+  }
+  const sort = await nextSortOrder(admin, planId, null)
+  const { data } = await admin
+    .from('journey_plan_items')
+    .insert({ plan_id: planId, block_type: 'phase', parent_id: null, title, sort_order: sort, required: true })
+    .select('id')
+    .maybeSingle()
+  return (data as { id: string } | null)?.id ?? null
+}
+
 export async function addPhaseAction(slug: string): Promise<ActionResult<{ id: string }>> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
@@ -278,14 +305,8 @@ export async function scaffoldJourneyAction(slug: string): Promise<ActionResult<
   if (!a) return fail('Only the author can edit this journey.')
   const admin = db()
   const pillarIds = await pillarIdsBySlug()
-  const phaseSort = await nextSortOrder(admin, a.planId, null)
-  const { data: ph } = await admin
-    .from('journey_plan_items')
-    .insert({ plan_id: a.planId, block_type: 'phase', parent_id: null, title: SCAFFOLD_PHASE, sort_order: phaseSort, required: true })
-    .select('id')
-    .maybeSingle()
-  if (!ph) return fail('Could not start the journey shape.')
-  const phaseId = String((ph as { id: string }).id)
+  const phaseId = await reuseOrCreatePhase(admin, a.planId, SCAFFOLD_PHASE)
+  if (!phaseId) return fail('Could not start the journey shape.')
 
   const rows: Omit<NewBlock, 'plan_id' | 'parent_id' | 'sort_order'>[] = [
     ...PILLAR_SLOTS.map((s) => ({
@@ -339,14 +360,8 @@ export async function composeJourneyAction(
   }
 
   // A phase to hold the composed week.
-  const phaseSort = await nextSortOrder(admin, a.planId, null)
-  const { data: ph } = await admin
-    .from('journey_plan_items')
-    .insert({ plan_id: a.planId, block_type: 'phase', parent_id: null, title: SCAFFOLD_PHASE, sort_order: phaseSort, required: true })
-    .select('id')
-    .maybeSingle()
-  if (!ph) return fail('Could not build the journey.')
-  const phaseId = String((ph as { id: string }).id)
+  const phaseId = await reuseOrCreatePhase(admin, a.planId, SCAFFOLD_PHASE)
+  if (!phaseId) return fail('Could not build the journey.')
 
   // Resolve each Pillar slot: a library pick (carry its real practice_id + domain_id + title) or
   // a freshly-written inline practice. Any slot Vera left empty falls back to the prompt placeholder.
