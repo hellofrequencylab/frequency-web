@@ -64,11 +64,22 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
   }))
   const pillars: EditorPillar[] = pillarsRaw.map((p) => ({ id: p.id, name: p.name, slug: p.slug }))
 
+  // Quick stats for the header's Journey Details card.
+  const details = {
+    phases: blocks.filter((b) => b.blockType === 'phase').length,
+    steps: blocks.filter((b) => b.blockType !== 'phase' && b.blockType !== 'module').length,
+    completionGems: plan.completion_gems,
+    dailyMinutes: (plan as unknown as { daily_minutes?: number | null }).daily_minutes ?? null,
+    difficulty: (plan as unknown as { difficulty?: string | null }).difficulty ?? null,
+  }
+
   return (
     <JourneyBuilder
       slug={slug}
       planId={plan.id}
       status={plan.status}
+      visibility={plan.visibility}
+      details={details}
       initialTitle={plan.title}
       initialSummary={plan.summary}
       initialCover={plan.cover_image}

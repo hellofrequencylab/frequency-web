@@ -4,14 +4,24 @@ import type { ReactNode } from 'react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Check, ChevronDown, Eye, Layers, Lock, Sparkles, SlidersHorizontal } from 'lucide-react'
-import { PageHeading } from '@/components/templates'
+import { ArrowLeft, Check, ChevronDown, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Globe, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { IconAccentFace, IconGrid } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
-import { saveJourneyMeta } from '@/app/(main)/journeys/actions'
+import { saveJourneyMeta, setJourneyVisibility } from '@/app/(main)/journeys/actions'
 import { createJourneyDraftAction } from '@/app/(main)/journeys/create-actions'
+import { isError } from '@/lib/action-result'
+import type { PlanVisibility } from '@/lib/journey-plans'
 import { EditableText } from './editable-text'
+
+/** Quick-stats shown in the header's "Journey Details" card. */
+export interface JourneyDetailsData {
+  phases: number
+  steps: number
+  completionGems: number
+  dailyMinutes: number | null
+  difficulty: string | null
+}
 
 // Journeys v2 — the SINGLE-PAGE editor shell (ADR-301). Laid out like the Journey it builds and
 // following course-builder best practice: a cover band up top, then the identity row (icon + accent
@@ -32,17 +42,116 @@ function StatusPill({ status }: { status: string }) {
   )
 }
 
+// The Save / Preview / Publish action set — rendered at the TOP of the header and again at the
+// FOOT of the editor (ADR-301: an autosaving editor still wants explicit, reassuring controls).
+// Save flushes + confirms (every field already autosaves on blur); Publish toggles the Journey
+// public (Vera's rank gate runs server-side), and reads "Unpublish" once it's live.
+function JourneyActions({
+  slug,
+  planId,
+  visibility,
+}: {
+  slug: string | null
+  planId: string | null
+  visibility: PlanVisibility
+}) {
+  const router = useRouter()
+  const [pending, start] = useTransition()
+  const [saved, setSaved] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const isPublic = visibility === 'public'
+
+  const save = () =>
+    start(async () => {
+      // Fields autosave on blur; clicking Save blurs the active field first, then we re-pull so the
+      // editor reflects the saved state and confirm with a transient "Saved".
+      router.refresh()
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1800)
+    })
+
+  const publish = () => {
+    if (!planId) return
+    setNote(null)
+    start(async () => {
+      const res = await setJourneyVisibility(planId, isPublic ? 'private' : 'public')
+      if (isError(res)) { setNote(res.error); return }
+      setNote(isPublic ? 'Set back to private.' : res.data.status === 'pending' ? 'Sent to the library for review.' : 'Published to the community library.')
+      router.refresh()
+    })
+  }
+
+  const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-60'
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <button type="button" onClick={save} disabled={pending} className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
+          {saved ? <Check className="h-4 w-4 text-success" /> : <Save className="h-4 w-4" />} {saved ? 'Saved' : 'Save'}
+        </button>
+        {slug && (
+          <Link href={`/journeys/${slug}/learn`} target="_blank" className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
+            <Eye className="h-4 w-4" /> Preview
+          </Link>
+        )}
+        <button type="button" onClick={publish} disabled={pending} className={`${btn} ${isPublic ? 'border border-border text-text hover:bg-surface-elevated' : 'bg-primary text-on-primary hover:bg-primary-hover'}`}>
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : isPublic ? <Globe className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+          {isPublic ? 'Unpublish' : 'Publish'}
+        </button>
+      </div>
+      {note && <p className="text-2xs text-muted">{note}</p>}
+    </div>
+  )
+}
+
+// The "Journey Details" quick-stats card, top-right of the header — phases, steps, daily time,
+// completion reward, difficulty. A compact read-only snapshot so the author sees the shape of the
+// course at a glance without opening Settings.
+function JourneyDetails({ status, visibility, details }: { status: string; visibility: PlanVisibility; details: JourneyDetailsData }) {
+  const vis = visibility === 'public' ? 'Public' : visibility === 'unlisted' ? 'Unlisted' : 'Private'
+  const rows: { icon: typeof Layers; label: string; value: string }[] = [
+    { icon: Layers, label: 'Phases', value: String(details.phases) },
+    { icon: ListChecks, label: 'Steps', value: String(details.steps) },
+    { icon: Clock, label: 'Daily time', value: details.dailyMinutes ? `${details.dailyMinutes} min` : 'Not set' },
+    { icon: Gem, label: 'Completion', value: `${details.completionGems} gems` },
+    { icon: BarChart3, label: 'Difficulty', value: details.difficulty ? details.difficulty[0].toUpperCase() + details.difficulty.slice(1) : 'Not set' },
+  ]
+  return (
+    <div className="w-full rounded-2xl border border-border bg-surface p-3.5 lg:w-72">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Journey Details</span>
+        <span className="inline-flex items-center gap-1 text-2xs font-medium text-muted">
+          <StatusPill status={status} /> · {vis}
+        </span>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center gap-1.5">
+            <r.icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+            <dt className="sr-only">{r.label}</dt>
+            <dd className="min-w-0">
+              <span className="block truncate text-sm font-bold tabular-nums text-text">{r.value}</span>
+              <span className="block text-2xs text-subtle">{r.label}</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  )
+}
+
 export function JourneyBuilder({
   draft = false,
   slug = null,
   planId = null,
   status = 'draft',
+  visibility = 'private',
   initialTitle = '',
   initialSummary = null,
   initialCover = null,
   initialEmoji = null,
   initialAccent = null,
   initialIntro = null,
+  details = null,
   vera,
   curriculum,
   settings,
@@ -52,6 +161,7 @@ export function JourneyBuilder({
   slug?: string | null
   planId?: string | null
   status?: string
+  visibility?: PlanVisibility
   initialTitle?: string
   initialSummary?: string | null
   initialCover?: string | null
@@ -59,6 +169,8 @@ export function JourneyBuilder({
   initialAccent?: string | null
   /** The story/overview write-up, shown above the curriculum (moved out of Settings). */
   initialIntro?: string | null
+  /** Quick stats for the header's Journey Details card (edit mode). */
+  details?: JourneyDetailsData | null
   /** Vera's four-Pillar composer — rendered full-width above the body (edit mode). */
   vera?: ReactNode
   /** The curriculum editor (phases) — main column, edit mode. */
@@ -190,26 +302,6 @@ export function JourneyBuilder({
     />
   )
 
-  const actions = (
-    <div className="flex items-center gap-2">
-      {!draft && slug && (
-        <Link
-          href={`/journeys/${slug}/learn`}
-          target="_blank"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text hover:bg-surface-elevated"
-        >
-          <Eye className="h-4 w-4" /> Preview
-        </Link>
-      )}
-      <Link
-        href="/journeys"
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
-      >
-        <ArrowLeft className="h-4 w-4" /> Done
-      </Link>
-    </div>
-  )
-
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -233,7 +325,26 @@ export function JourneyBuilder({
           )}
         </div>
 
-        <PageHeading eyebrow={eyebrow} title={title} description={description} actions={actions} />
+        {/* Header — a two-column band: the identity (eyebrow/status, title, subtitle) on the left,
+            and the action set + Journey Details quick-stats card on the right. */}
+        <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-primary-strong">{eyebrow}</div>
+            <div className="text-text">{title}</div>
+            <div className="mt-1.5 max-w-xl">{description}</div>
+            {draft && (
+              <Link href="/journeys" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text">
+                <ArrowLeft className="h-4 w-4" /> Back to Journeys
+              </Link>
+            )}
+          </div>
+          {!draft && (
+            <div className="flex w-full shrink-0 flex-col gap-3 lg:w-auto lg:items-end">
+              <JourneyActions slug={slug} planId={planId} visibility={visibility} />
+              {details && <JourneyDetails status={status} visibility={visibility} details={details} />}
+            </div>
+          )}
+        </header>
 
         {/* Vera composer — full width, under the header line. */}
         <div className="mb-6">{draft ? <DraftGhostVera /> : vera}</div>
@@ -272,6 +383,15 @@ export function JourneyBuilder({
             {draft ? <DraftGhostSidebar /> : settings}
           </aside>
         </div>
+
+        {/* Foot action bar — the same Save / Preview / Publish set, so the author never has to
+            scroll back up after working down a long curriculum (build item §14). */}
+        {!draft && (
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
+            <span className="text-2xs text-subtle">Every field saves automatically as you go.</span>
+            <JourneyActions slug={slug} planId={planId} visibility={visibility} />
+          </div>
+        )}
       </div>
     </div>
   )
