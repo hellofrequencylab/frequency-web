@@ -82,7 +82,7 @@ export function PostReplies({
         <button
           onClick={() => setOpen((o) => !o)}
           aria-label={open ? 'Hide comments' : 'Show comments'}
-          className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+          className={`flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
             open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
           }`}
         >
@@ -163,7 +163,7 @@ export function PostReplies({
               type="submit"
               disabled={!body.trim() || isPending}
               aria-label="Send comment"
-              className="shrink-0 rounded-xl bg-primary p-2.5 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40 sm:h-auto sm:w-auto sm:p-2.5"
             >
               {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             </button>

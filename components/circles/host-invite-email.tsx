@@ -27,18 +27,18 @@ export function HostInviteEmail({ circleId }: { circleId: string }) {
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       <input
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Invite by email"
-        className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+        className="w-full min-w-0 rounded-lg border border-border bg-surface px-2.5 py-2 text-xs text-text placeholder:text-subtle focus:border-border-strong focus:outline-none sm:w-auto sm:py-1.5"
       />
       <button
         onClick={submit}
         disabled={pending || !email}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-primary hover:text-primary-strong disabled:opacity-50 transition-colors"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted hover:border-primary hover:text-primary-strong disabled:opacity-50 transition-colors sm:w-auto sm:py-1.5"
       >
         {sent ? <Check className="w-3.5 h-3.5" /> : <Mail className="w-3.5 h-3.5" />}
         {pending ? 'Sending…' : sent ? 'Sent' : 'Send invite'}
