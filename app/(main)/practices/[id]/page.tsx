@@ -2,11 +2,11 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Zap, Users, Flame, Pencil, Repeat, Wand2 } from 'lucide-react'
+import { Zap, Users, Flame, Pencil, Repeat, Wand2, Clock } from 'lucide-react'
 import { LotusIcon } from '@/components/on-air/icons'
 import { getMyProfileId } from '@/lib/auth'
 import { getRankedPractice, getPracticeMemberState } from '@/lib/practices'
-import { practiceLogZaps } from '@/lib/zaps'
+import { practiceZapValue } from '@/lib/zaps'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { DetailTemplate } from '@/components/templates'
 import { HelpMarkdown } from '@/components/help/help-markdown'
@@ -103,18 +103,27 @@ export default async function PracticeDetailPage({ params }: Params) {
         />
       )}
 
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard
           bordered
           size="sm"
           icon={Zap}
           label="Reward per log"
-          value={`+${practiceLogZaps(practice.weight_class)} zaps`}
+          value={`+${practiceZapValue(practice)} zaps`}
         />
         <StatCard bordered size="sm" icon={Repeat} label="Cadence" value={practice.cadence ?? 'Your call'} />
+        {practice.duration_min != null && (
+          <StatCard bordered size="sm" icon={Clock} label="Time" value={`${practice.duration_min} min`} />
+        )}
         <StatCard bordered size="sm" icon={Users} label="Practising now" value={practice.adopters.toLocaleString()} />
         <StatCard bordered size="sm" icon={Flame} label="Times logged" value={practice.logs_total.toLocaleString()} />
       </div>
+
+      {/* The member intro — the plain-language "what this is", above the full guide. Shown only
+          when it adds something beyond the hook already in the subtitle. */}
+      {practice.description && practice.description !== (practice.summary ?? practice.description) && (
+        <p className="mb-5 text-base leading-relaxed text-muted">{practice.description}</p>
+      )}
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         {!profileId ? (

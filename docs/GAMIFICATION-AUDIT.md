@@ -76,7 +76,7 @@ chain in the currency of its real-world steps.
 | Provisional **Zap→Gem rank ladder** | Flat **5:1** + one-time final-rank Gem bonus (10/25/50/100/250), claim-then-pay in `reset_season()` | ✅ done — **superseded by ADR-283**: final-rank bonus retired; per-Journey Trophy rewards replace it |
 | **Lifetime layer** | **Amplitude** = lifetime Zaps (hosting 2×), levels `50·L·(L+1)`, milestones 1k/5k seeded; supersedes the lifetime-rank display (column stays for retro rules) | ✅ done |
 | **Gem tiers** (New→Legend) | Retired — gems are purely spendable; Amplitude is the progression layer | ✅ done |
-| Flat practice-log Zap | **Weight classes** light 8 / standard 12 / heavy 15 (`practices.weight_class`; `reward_zaps` deprecated + backfilled) | ✅ done |
+| Flat practice-log Zap | Per-log VALUE = `reward_zaps` when set (Quest library values by CADENCE: Daily 10 / 3x-wk 15 / Weekly 25, ADR-303), else **weight class** light 8 / standard 12 / heavy 15 (`practices.weight_class`) | ✅ done |
 | S1 challenge sprawl (39) | Re-seeded to the **15-template**; purse of the 14 non-Completionist = **1,000⚡**; the 24 extras archived (`is_active=false`), never deleted | ✅ done |
 | New bonus mechanics | Co-op Pulse +3⚡ (nightly), Welcome Back +10⚡, freeze second path (5 Full Days = +1), per-practice streaks + **Practice Shelf**, Full Cycle +50⚡ | ✅ done |
 | S1 award set | Quiet Ones (5 secret), Witnessed peer grants, rank/journey cosmetics (granted-only store items), circle banner + Co-op Synchrony, Vault S1 SKUs (rank/stock/season gates) | ✅ done |

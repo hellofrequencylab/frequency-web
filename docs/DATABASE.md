@@ -64,8 +64,9 @@ You" lane — ADR entries 2026-06)
 `witnessed_grants` (peer-granted awards, UNIQUE (season, award, granter) — ADR-219),
 `circle_awards` (circle-level awards: Circle Current banner, Co-op Synchrony — ADR-219).
 Profiles gained `amplitude` (lifetime XP, accrued only by `after_zap_transaction()`);
-practices gained `weight_class` (the per-log payout driver; `reward_zaps` deprecated);
-nodes gained `city` (admin-entered, for the long-range award).
+practices gained `weight_class` (the per-log payout FALLBACK; `reward_zaps` is the explicit
+per-log value when set — cadence-based in the Quest library, ADR-303) and `duration_min`
+(typical session length in minutes); nodes gained `city` (admin-entered, for the long-range award).
 
 **Circle Current & circle challenges (collaborative)**
 `circle_current_transactions` (append-only ledger; trigger owns `circles.season_current`

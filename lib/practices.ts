@@ -12,7 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { track } from '@/lib/analytics/track'
-import { awardZapsForAction } from '@/lib/zaps'
+import { awardZaps, awardZapsForAction } from '@/lib/zaps'
 import { recordStreakActivity, processGamificationEvent } from '@/lib/achievements'
 import { recordPracticeStreak } from '@/lib/practice-streak'
 
@@ -45,11 +45,15 @@ export interface Practice {
   summary: string | null
   header_image: string | null
   body: string | null
+  /** How OFTEN the practice is done (e.g. 'Daily', '3x/week', 'Weekly'). */
   cadence: string | null
-  /** DEPRECATED (Rewards Economy v2): weight_class drives the payout now. */
+  /** Typical session length in minutes (the Notion "Duration (min)"). Length, not frequency. */
+  duration_min: number | null
+  /** The explicit per-log Zap VALUE. When set, it OVERRIDES weight_class (the Quest library
+   *  values practices by cadence: Daily 10 / 3x-week 15 / Weekly 25). Null → weight-class default. */
   reward_zaps: number | null
   reward_note: string | null
-  /** Payout driver for a log: 'light' (8⚡) | 'standard' (12⚡) | 'heavy' (15⚡). */
+  /** Fallback per-log payout tier when reward_zaps is null: 'light' (8⚡) | 'standard' (12⚡) | 'heavy' (15⚡). */
   weight_class: string | null
   /** The PRIMARY Pillar (domains.id), or null if uncategorized. Mirrors the first
    *  selected Focus in `focus_details`, kept for back-compat (Pillar filtering + cards). */
@@ -93,7 +97,7 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
+  'category, icon, summary, header_image, body, cadence, duration_min, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
 
 // The same columns MINUS `slug`, for reads against the `practices_ranked` VIEW — the view
 // predates the slug column and does not expose it, so selecting `slug` from the view errors and
@@ -540,6 +544,8 @@ export interface PracticeEdit {
   description?: string | null
   body?: string | null
   cadence?: string | null
+  /** Typical session length in minutes (null clears it). */
+  duration_min?: number | null
   category?: string | null
   icon?: string | null
   header_image?: string | null
@@ -593,6 +599,9 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (patch.description !== undefined) update.description = STR(patch.description, 280)
   if (patch.body !== undefined) update.body = STR(patch.body, 8000)
   if (patch.cadence !== undefined) update.cadence = STR(patch.cadence, 40)
+  if (patch.duration_min !== undefined)
+    update.duration_min =
+      patch.duration_min == null ? null : Math.max(0, Math.min(1440, Math.floor(patch.duration_min)))
   if (patch.category !== undefined) update.category = STR(patch.category, 40)
   if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
@@ -698,6 +707,7 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
       summary: src.summary,
       body: src.body,
       cadence: src.cadence,
+      duration_min: src.duration_min,
       category: src.category,
       icon: src.icon,
       header_image: src.header_image,
@@ -912,25 +922,36 @@ export async function logPractice(input: {
       { onConflict: 'profile_id,practice_id,logged_for', ignoreDuplicates: true },
     )
 
-  // Verified practice earns zaps + an attendance streak tick (same as a check-in).
-  // The practice's WEIGHT CLASS drives the payout (Rewards Economy v2: light 8 /
-  // standard 12 / heavy 15, live-tunable in zap_config). Supersedes reward_zaps.
+  // Verified practice earns zaps + an attendance streak tick (same as a check-in). The
+  // payout is the practice's per-log Zap VALUE: `reward_zaps` when set is the explicit
+  // override (the Quest library values practices by CADENCE — Daily 10 / 3x-week 15 /
+  // Weekly 25 — so effort does not change value), otherwise the WEIGHT CLASS default
+  // (light 8 / standard 12 / heavy 15, live-tunable in zap_config). One source of truth:
+  // lib/zaps.practiceZapValue mirrors this for every display.
   let weightClass: string | null = null
+  let rewardZaps: number | null = null
   try {
     const { data } = await db()
       .from('practices')
-      .select('weight_class')
+      .select('weight_class, reward_zaps')
       .eq('id', practiceId)
       .maybeSingle()
-    weightClass = (data as { weight_class: string | null } | null)?.weight_class ?? null
+    const row = data as { weight_class: string | null; reward_zaps: number | null } | null
+    weightClass = row?.weight_class ?? null
+    rewardZaps = row?.reward_zaps ?? null
   } catch {
     // fall back to the standard class
   }
 
   let zapsAwarded = 0
   try {
-    const { practiceLogAction } = await import('@/lib/zaps')
-    zapsAwarded = (await awardZapsForAction(profileId, practiceLogAction(weightClass))).amount
+    if (typeof rewardZaps === 'number' && rewardZaps > 0) {
+      // Explicit per-practice value (cadence-based): pay it exactly, ledgered as a practice log.
+      zapsAwarded = (await awardZaps(profileId, rewardZaps, { actionType: 'practice_logged' })).amount
+    } else {
+      const { practiceLogAction } = await import('@/lib/zaps')
+      zapsAwarded = (await awardZapsForAction(profileId, practiceLogAction(weightClass))).amount
+    }
   } catch {
     // never let a reward read break the log
   }

@@ -140,9 +140,12 @@ pays gems. The single source of truth is `currencyForCriteria` /
   (`lib/amplitude.ts`); shown beside the season rank. Supersedes the
   lifetime-rank *display* (the `lifetime_rank` column stays for the retro rules). Gem
   tiers (New→Legend) are retired.
-- **Practice weight class** — `practices.weight_class ∈ light|standard|heavy` drives the
-  per-log Zap payout (8/12/15, live in `zap_config`; ADR-219). A property of the
-  practice, never the member's depth tier. Supersedes the deprecated `reward_zaps`.
+- **Practice weight class** — `practices.weight_class ∈ light|standard|heavy` is the
+  per-log Zap payout **fallback** (8/12/15, live in `zap_config`; ADR-219), used when a
+  practice has no explicit `reward_zaps`. A property of the practice, never the member's
+  depth tier. The explicit per-log VALUE is **`reward_zaps`** when set (the Quest library
+  values by CADENCE: Daily 10 / 3x-week 15 / Weekly 25 — ADR-303); `practiceZapValue()`
+  resolves value-then-fallback for both the award path and every display.
 - **Practice Shelf** — the profile module of per-practice awards (ADR-219): the
   consistency ladder (In Motion 2w / Groove 4w / Deep Groove 8w / **Full Cycle** 13w —
   only Full Cycle pays, +50⚡ once per practice) and the depth ladder (10/25/50/100

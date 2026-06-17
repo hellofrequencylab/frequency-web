@@ -126,14 +126,15 @@ rank driver; the table below covers base activity:
 | An invite you sent joins | 40 | RSVP to an event | 5 |
 | Show up (verified check-in) | 25 | Join a circle | 5 |
 | Outreach task (flyer/QR) | 20 | Post (≤3/day) | 3 |
-| Log a practice — light / standard / heavy | 8 / 12 / 15 | Reply (≤5/day) | 2 |
+| Log a practice — by cadence (Daily / 3x-wk / Weekly) | 10 / 15 / 25 | Reply (≤5/day) | 2 |
 | Expression Challenge (in person at Circle) | 50 | Daily login (1/day) · React (≤5/day) | 2 · 1 |
 | Capture a ghost node | 10 | | |
 | Finish a Journey | 75 | | |
 
 **Rewards Economy v2 additions** (all live-tunable in `zap_config`):
-`practices.weight_class` drives the per-log payout (8/12/15 — supersedes the
-`reward_zaps` override) · **Co-op Pulse +3⚡** (3+ circle members log the same
+A practice's per-log payout is its **per-log Zap value** — `reward_zaps` when set (the
+Quest library values by CADENCE: Daily 10 / 3x-week 15 / Weekly 25, ADR-303), else the
+`practices.weight_class` default (8/12/15) · **Co-op Pulse +3⚡** (3+ circle members log the same
 adopted Journey the same day; nightly job, once per member/journey/day) ·
 **Welcome Back +10⚡** (first log after a 7+ day gap, once per gap, warm re-entry
 UI — never streak shame) · **Full Cycle +50⚡** (13 consecutive on-track weeks on

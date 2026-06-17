@@ -28,9 +28,10 @@
   **weight class only** (below). The words **Initiate / Adept / Master are now SEASON RANKS**
   (see Season ranks), never a practice setting — the two no longer coexist.
 - **Practice weight classes: light / standard / heavy** (`practices.weight_class`,
-  Rewards Economy v2) = the per-log Zap payout driver (8/12/15). A property of the
-  PRACTICE, distinct from the member's depth tier above — the two never mix.
-  Supersedes the `reward_zaps` override (deprecated column, kept for history).
+  Rewards Economy v2) = the per-log Zap payout **fallback** (8/12/15), used when a practice
+  has no explicit `reward_zaps`. A property of the PRACTICE, distinct from the member's depth
+  tier above — the two never mix. The explicit per-log VALUE is **`reward_zaps`** when set; the
+  Quest library values it by CADENCE (Daily 10 / 3x-week 15 / Weekly 25, ADR-303).
 - **Amplitude** = lifetime XP: cumulative Zaps ever earned, hosting-class acts at 2×.
   Never resets, never spent, never gates play. Levels derive from
   `50 · L · (L+1)`; displayed beside the season rank ("Beacon · 14,200").

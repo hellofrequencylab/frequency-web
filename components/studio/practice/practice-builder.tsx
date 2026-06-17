@@ -51,6 +51,8 @@ export interface PracticeBuilderProps {
   description: string | null
   body: string | null
   cadence: string | null
+  /** Typical session length in minutes (null = unset). */
+  durationMin: number | null
   category: string | null
   icon: string | null
   domainId: string | null
@@ -87,6 +89,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [description, setDescription] = useState(props.description ?? '')
   const [body, setBody] = useState(props.body ?? '')
   const [cadence, setCadence] = useState(props.cadence ?? '')
+  const [durationMin, setDurationMin] = useState(props.durationMin != null ? String(props.durationMin) : '')
   const [category, setCategory] = useState(props.category ?? '')
   const [icon, setIcon] = useState(props.icon ?? '')
   // Multi-Focus: focus_details is keyed by pillar id; the KEYS are the selected Focuses.
@@ -313,6 +316,18 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </StudioField>
+        <StudioField label="Time (minutes)">
+          <input
+            type="number"
+            min={0}
+            max={1440}
+            value={durationMin}
+            onChange={(e) => setDurationMin(e.target.value)}
+            onBlur={() => queueSave({ duration_min: durationMin.trim() === '' ? null : Number(durationMin) })}
+            placeholder="e.g. 10"
+            className={FIELD}
+          />
+        </StudioField>
         <StudioField label="Category">
           <select value={category} onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }} className={FIELD}>
             <option value="">None</option>
@@ -357,7 +372,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             )
           })}
         </div>
-        <p className="mt-1 text-xs text-subtle">How much a single log pays. Light 8 · Standard 12 · Heavy 15 Zaps.</p>
+        <p className="mt-1 text-xs text-subtle">The fallback per-log payout when no Zap override is set. Light 8 · Standard 12 · Heavy 15 Zaps.</p>
       </fieldset>
 
       {/* Reward override — admin only. Overrides the weight-class payout + sets the card note. */}

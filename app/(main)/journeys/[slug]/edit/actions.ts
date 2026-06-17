@@ -347,7 +347,7 @@ export async function composeJourneyAction(
       const pid = pillarIds[p]
       if (!pid) { library[p] = []; return }
       const res = await searchLibraryPractices({ pillarId: pid, pageSize: 12, sort: 'top', hideDemo: true })
-      library[p] = res.rows.map((r) => ({ id: r.id, title: r.title, summary: r.summary }))
+      library[p] = res.rows.map((r) => ({ id: r.id, title: r.title, summary: r.summary, cadence: r.cadence, durationMin: r.duration_min }))
     }),
   )
 
@@ -493,7 +493,7 @@ export async function populateWeekAction(slug: string, phaseId: string): Promise
       const pid = pillarIds[p]
       if (!pid) { library[p] = []; return }
       const res = await searchLibraryPractices({ pillarId: pid, pageSize: 12, sort: 'top', hideDemo: true })
-      library[p] = res.rows.map((r) => ({ id: r.id, title: r.title, summary: r.summary }))
+      library[p] = res.rows.map((r) => ({ id: r.id, title: r.title, summary: r.summary, cadence: r.cadence, durationMin: r.duration_min }))
     }),
   )
   const composition = await draftJourneyComposition({ description, library, profileId: a.profileId })
