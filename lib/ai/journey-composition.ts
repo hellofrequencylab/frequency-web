@@ -17,11 +17,16 @@ import { withVoice } from './voice'
 export type ComposePillar = 'mind' | 'body' | 'spirit' | 'expression'
 export const COMPOSE_PILLARS: ComposePillar[] = ['mind', 'body', 'spirit', 'expression']
 
-/** A candidate library practice offered to Vera for one Pillar. */
+/** A candidate library practice offered to Vera for one Pillar. Carries the shape she needs to
+ *  pick well: the hook (summary), how often it's done (cadence), and how long (durationMin). */
 export interface ComposeCandidate {
   id: string
   title: string
   summary: string | null
+  /** How often it's done, e.g. 'Daily', '3x/week', 'Weekly'. */
+  cadence?: string | null
+  /** Typical session length in minutes. */
+  durationMin?: number | null
 }
 
 /** One filled Pillar slot: either a library pick (by id) or a freshly written practice/activity. */
@@ -106,11 +111,19 @@ export async function draftJourneyComposition(input: {
   const description = input.description.trim().slice(0, 2000)
   if (!description) return null
 
-  // Candidate lists per Pillar, in the prompt (ids Vera may reference for mode=library).
+  // Candidate lists per Pillar, in the prompt (ids Vera may reference for mode=library). Each
+  // line carries the hook + cadence + length so Vera can match the right practice to the brief.
   const candidateText = COMPOSE_PILLARS.map((p) => {
     const rows = (input.library[p] ?? []).slice(0, 12)
     const lines = rows.length
-      ? rows.map((c) => `  - id=${c.id} · ${c.title}${c.summary ? ` — ${c.summary.slice(0, 80)}` : ''}`).join('\n')
+      ? rows
+          .map((c) => {
+            const meta = [c.cadence?.trim(), c.durationMin != null ? `${c.durationMin} min` : null]
+              .filter(Boolean)
+              .join(', ')
+            return `  - id=${c.id} · ${c.title}${c.summary ? ` — ${c.summary.slice(0, 80)}` : ''}${meta ? ` (${meta})` : ''}`
+          })
+          .join('\n')
       : '  (none yet — write a new one)'
     return `${p.toUpperCase()} candidates:\n${lines}`
   }).join('\n\n')

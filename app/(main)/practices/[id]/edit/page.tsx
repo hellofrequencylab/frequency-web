@@ -39,6 +39,7 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
       description={practice.description}
       body={practice.body}
       cadence={practice.cadence}
+      durationMin={practice.duration_min}
       category={practice.category}
       icon={practice.icon}
       domainId={practice.domain_id}

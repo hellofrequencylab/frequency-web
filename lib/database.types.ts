@@ -5719,6 +5719,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           domain_id: string | null
+          duration_min: number | null
           embedding: string | null
           featured_at: string | null
           focus_details: Json
@@ -5747,6 +5748,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           domain_id?: string | null
+          duration_min?: number | null
           embedding?: string | null
           featured_at?: string | null
           focus_details?: Json
@@ -5775,6 +5777,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           domain_id?: string | null
+          duration_min?: number | null
           embedding?: string | null
           featured_at?: string | null
           focus_details?: Json
@@ -8112,8 +8115,10 @@ export type Database = {
           created_by: string | null
           description: string | null
           domain_id: string | null
+          duration_min: number | null
           embedding: string | null
           featured_at: string | null
+          focus_details: Json | null
           header_image: string | null
           icon: string | null
           id: string | null

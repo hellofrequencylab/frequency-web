@@ -114,14 +114,17 @@ export async function loadSeasonDetail(id: string): Promise<SeasonDetail | null>
     journey_id: string | null
   }[]
 
-  // The weight class lives on the practice, not the item snapshot — fetch the practices
-  // referenced by these items so the balance reads the real per-log Zap value.
+  // The per-log Zap value lives on the practice, not the item snapshot — fetch the practices
+  // referenced by these items so the balance reads the real value (reward_zaps override → weight
+  // class fallback).
   const practiceIds = Array.from(new Set(items.map((i) => i.practice_id)))
   const { data: practiceRows } = practiceIds.length
-    ? await db.from('practices').select('id, weight_class').in('id', practiceIds)
-    : { data: [] as { id: string; weight_class: string | null }[] }
-  const weightById = new Map(
-    ((practiceRows ?? []) as { id: string; weight_class: string | null }[]).map((p) => [p.id, p.weight_class]),
+    ? await db.from('practices').select('id, weight_class, reward_zaps').in('id', practiceIds)
+    : { data: [] as { id: string; weight_class: string | null; reward_zaps: number | null }[] }
+  const valueById = new Map(
+    ((practiceRows ?? []) as { id: string; weight_class: string | null; reward_zaps: number | null }[]).map(
+      (p) => [p.id, { weightClass: p.weight_class, rewardZaps: p.reward_zaps }],
+    ),
   )
 
   const itemsByJourney = new Map<string, typeof items>()
@@ -137,10 +140,14 @@ export async function loadSeasonDetail(id: string): Promise<SeasonDetail | null>
 
   const detailJourneys: SeasonJourney[] = journeys.map((j) => {
     const journeyItems = itemsByJourney.get(j.id) ?? []
-    const practices: BalancePractice[] = journeyItems.map((it) => ({
-      pillar: (it.domain_id ? pillarMap.get(it.domain_id)?.slug : null) ?? null,
-      weightClass: weightById.get(it.practice_id) ?? null,
-    }))
+    const practices: BalancePractice[] = journeyItems.map((it) => {
+      const v = valueById.get(it.practice_id)
+      return {
+        pillar: (it.domain_id ? pillarMap.get(it.domain_id)?.slug : null) ?? null,
+        weightClass: v?.weightClass ?? null,
+        rewardZaps: v?.rewardZaps ?? null,
+      }
+    })
     // Distinct Pillars the Journey touches, in canonical pillar order.
     const touched = new Set(
       journeyItems

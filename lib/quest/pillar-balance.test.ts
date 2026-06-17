@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { pillarZapBalance, type BalancePractice } from './pillar-balance'
 
 // The owner-locked rule made testable: a Journey is balanced only when all four
-// Pillars earn the same total daily Zaps. Zaps come from weight class (Light 8 /
-// Standard 12 / Heavy 15, lib/zaps.ts). Pure math — pinned here so the indicator and
-// the future editor check share one tested source of truth.
+// Pillars earn the same total daily Zaps. Zaps come from the per-log VALUE: reward_zaps
+// when set, else weight class (Light 8 / Standard 12 / Heavy 15, lib/zaps.ts). Pure math
+// — pinned here so the indicator and the future editor check share one tested source of truth.
 
 const p = (pillar: BalancePractice['pillar'], weightClass: BalancePractice['weightClass']): BalancePractice => ({
   pillar,
@@ -75,6 +75,31 @@ describe('pillarZapBalance', () => {
     expect(b.spirit).toBe(24)
     expect(b.expression).toBe(36)
     expect(b.balanced).toBe(false)
+  })
+
+  it('uses reward_zaps as the per-log value when set, overriding weight class', () => {
+    // The Quest library values by cadence: every Pillar a Daily 10⚡ practice → balanced at 10,
+    // even though the weight classes differ. reward_zaps wins over the weight-class default.
+    const b = pillarZapBalance([
+      { pillar: 'mind', weightClass: 'heavy', rewardZaps: 10 },
+      { pillar: 'body', weightClass: 'light', rewardZaps: 10 },
+      { pillar: 'spirit', weightClass: 'standard', rewardZaps: 10 },
+      { pillar: 'expression', weightClass: null, rewardZaps: 10 },
+    ])
+    expect(b.mind).toBe(10)
+    expect(b.body).toBe(10)
+    expect(b.spirit).toBe(10)
+    expect(b.expression).toBe(10)
+    expect(b.balanced).toBe(true)
+  })
+
+  it('falls back to the weight class when reward_zaps is null or zero', () => {
+    const b = pillarZapBalance([
+      { pillar: 'mind', weightClass: 'heavy', rewardZaps: null },
+      { pillar: 'body', weightClass: 'light', rewardZaps: 0 },
+    ])
+    expect(b.mind).toBe(15) // heavy
+    expect(b.body).toBe(8) // light (rewardZaps 0 ignored)
   })
 
   it('treats an empty Journey as trivially balanced (all zero)', () => {

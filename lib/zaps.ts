@@ -79,6 +79,18 @@ export function practiceLogZaps(weightClass: string | null | undefined): number 
   return ZAP_AMOUNTS[practiceLogAction(weightClass)]
 }
 
+/** The per-log Zap value a practice actually pays. `reward_zaps`, when set, is an explicit
+ *  per-practice override (the Quest library uses it to value practices by CADENCE, not effort:
+ *  Daily 10 / 3x-week 15 / Weekly 25); otherwise the weight-class default applies. One source
+ *  of truth for both the award path (lib/practices.logPractice) and every display. */
+export function practiceZapValue(p: {
+  reward_zaps?: number | null
+  weight_class?: string | null
+}): number {
+  if (typeof p.reward_zaps === 'number' && p.reward_zaps > 0) return Math.floor(p.reward_zaps)
+  return practiceLogZaps(p.weight_class)
+}
+
 export type ZapAction = keyof typeof ZAP_AMOUNTS
 
 export interface ZapAwardResult {

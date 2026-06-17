@@ -7159,3 +7159,19 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 **Locked scope (owner calls).** Length = however many weekly Phases (no Month/Quarter labels — "Quest" is reserved for the season). Practices-only for now: **weekly gathering prompts + a reflection week are deferred** to a separate project. Step 3 will **surface 2–3 ranked library practices per Pillar** ("use this" / "write a new one").
 
 **Consequences.** New-Journey overwhelm drops to one decision per screen; the editor becomes the refine surface, not the create surface. The four daily Pillar practices live in the opening week (the existing composer model); the weeks carry the arc. Steps 2 (Arc review) + 3 (per-Pillar library-first Practices) are the next PRs.
+
+## ADR-303: Quest practice library — per-log Zaps valued by CADENCE (`reward_zaps` override re-instated, `weight_class` becomes the fallback)
+
+**Status:** Accepted (2026-06-17) · partially reverses ADR-104's deprecation in the Rewards-Economy-v2 brief (ADR around §"Weight classes", line ~6196): "I want you to set the Zap value of each practice based on its cadence. Daily = 10⚡, 3×/week = 15⚡, Weekly = 25⚡. The session length or effort does not change the value." Source of truth: the Quest Practices Notion database.
+
+**Context.** Rewards Economy v2 made `practices.weight_class` (light 8 / standard 12 / heavy 15) the ONLY per-log payout driver and **deprecated** the `reward_zaps` override (ADR-104 had it, and `logPractice` had applied it). The new Quest practice library values a practice by **how often** it's done, not how hard it is — a model `weight_class` (an effort tier) structurally can't express, and whose three values (8/12/15) don't include 10. The owner's locked rule also needs the four **daily core** practices (one per Pillar) to each total exactly **280⚡ over 28 days** (10 × 28), and the four Pillars to be equal — which requires a daily log to pay exactly 10⚡.
+
+**Decision.**
+- **`reward_zaps` is the per-log Zap VALUE when set (> 0); `weight_class` is the fallback when it's null.** One resolver, `practiceZapValue({ reward_zaps, weight_class })` (`lib/zaps.ts`), backs both the award path (`logPractice` now reads `reward_zaps` and pays it via `awardZaps`, ledgered as `practice_logged`) and every display (detail page "Reward per log", `pillarZapBalance`, the Season Composer indicator). This re-wires the override that `setPracticeReward` always documented but `logPractice` had stopped honoring.
+- **Cadence → value:** Daily **10** · 3×/week **15** · Weekly **25**. Set on the 10 seeded library practices; effort/length never changes the value.
+- **Duration gets a home:** new nullable `practices.duration_min` (the Notion "Duration (min)"). Cadence = frequency, `duration_min` = length. Exposed in `practices_ranked`, the detail page, the builder, and Vera's `ComposeCandidate` (so she matches the right rhythm + length).
+- **`weight_class` is NOT removed** — it stays the default for every practice without an explicit `reward_zaps`, so nothing else in the economy changes.
+
+**Verification (the locked math).** The four daily core practices — Morning Stillness (Mind), one of Daily Walk / Heart Coherence (Body), one of Felt Gratitude / Evening Reflection (Spirit), One Small Reach (Expression) — each pay 10⚡ × 28 = **280⚡**, all four Pillars equal. Every loaded record matches the cadence rule (7 Daily = 10, 2 thrice-weekly = 15, 1 weekly = 25); none breaks it. Mind/Body/Spirit each carry a second daily option beyond the core (library breadth), which the "core four" balance claim doesn't include.
+
+**Consequences.** The library reads as a clean four-Pillar set Vera can pick from by name + cadence + length. Authors still can't set their own payout (the override stays admin-only via `setPracticeReward`). If a future season wants effort-weighted payouts again, leaving `reward_zaps` null restores the weight-class behavior with no code change.

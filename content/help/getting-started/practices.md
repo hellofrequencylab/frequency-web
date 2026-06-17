@@ -52,9 +52,9 @@ You can shape practices, not just pick them:
   yours? Hit **Customize** to make your own private copy and edit it freely. The
   original stays exactly as it was for everyone else.
 
-(Editing covers the content and cadence. The weight class a practice carries, and so
-the Zaps it rewards (Light 8, Standard 12, Heavy 15), is set by the team so the Quest
-stays fair.)
+(Editing covers the content and cadence. What a log is worth in Zaps is set by the team
+so the Quest stays fair: most Quest practices are valued by how often you do them, not how
+hard they are.)
 
 ## Claim a starter template
 
@@ -106,8 +106,10 @@ thousands:
 
 ## Rewards vary by practice
 
-Every practice has a **weight class** that sets its payout per log: **Light (8
-Zaps)**, **Standard (12 Zaps)**, or **Heavy (15 Zaps)**. A cold plunge or a dawn
-surf asks more of you, so it gives back more. Each practice page shows its reward up
-front, so you know what logging it is worth before you commit. Whatever the class,
-logging any practice always earns Zaps.
+What a log is worth depends on the practice. Most Quest practices are valued by their
+**cadence**, how often you do them: **Daily (10 Zaps)**, **a few times a week (15
+Zaps)**, or **Weekly (25 Zaps)**. The rarer the ask, the more each log gives back, so
+the value comes from showing up to the rhythm, not from how hard the practice is. Some
+other practices instead carry a **weight class** (Light 8, Standard 12, Heavy 15 Zaps).
+Either way, each practice page shows its reward up front, so you know what logging it is
+worth before you commit, and logging any practice always earns Zaps.
