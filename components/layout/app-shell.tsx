@@ -25,7 +25,8 @@ import {
   ChevronRight,
   PanelLeftOpen,
   PanelLeftClose,
-  Menu,
+  ChevronsLeft,
+  ChevronsRight,
   Flame,
   QrCode,
   Megaphone,
@@ -1492,40 +1493,53 @@ export default function AppShell({
                 divider. */}
             {showSidebar && (
               railCollapsed ? (
-                // Mini rail — the global community rail collapsed to a thin strip on an
-                // immersive build surface (the Journey course builder). The rail is NEVER
-                // removed; the toggle (a vertical hamburger, pinned at the TOP so it stays put
-                // and visible) expands it back to the full w-80 rail.
+                // Mini rail — the global community rail collapsed to a thin strip. It shows ICONS
+                // for the rail's items (the Quest stats); clicking any reopens the rail. The
+                // collapse/expand TOGGLE sits at the BOTTOM. The rail is never removed.
                 <aside className="hidden lg:flex w-14 shrink-0 flex-col items-center border-l border-border/60 py-6">
+                  <div className="flex flex-col items-center gap-1.5">
+                    {([['Quest', Zap], ['Gems', Gem], ['Streak', Flame]] as const).map(([label, Icon]) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={toggleRail}
+                        title={`${label} — open the rail`}
+                        aria-label={`${label} — open the rail`}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                      >
+                        <Icon className="h-5 w-5" aria-hidden />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex-1" />
                   <button
                     type="button"
                     onClick={toggleRail}
                     title="Show the rail"
                     aria-label="Show the rail"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
+                    className="sticky bottom-6 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
                   >
-                    <Menu className="h-5 w-5 rotate-90" aria-hidden />
+                    <ChevronsLeft className="h-5 w-5" aria-hidden />
                   </button>
                 </aside>
               ) : (
                 <aside className="hidden lg:flex flex-col w-80 shrink-0 py-6">
+                  {sidebar}
                   {railCollapsible && (
-                    // The SAME open/close toggle, pinned at the TOP of the open rail so it stays
-                    // visible (it used to sit at the foot and scroll out of reach). Vertical
-                    // hamburger, matching the collapsed state.
-                    <div className="mb-3 flex justify-end">
+                    // The collapse TOGGLE at the BOTTOM, sticky so it stays visible as the rail
+                    // scrolls. A chevron toggle (not a hamburger), mirroring the collapsed state.
+                    <div className="sticky bottom-4 mt-2 flex justify-end">
                       <button
                         type="button"
                         onClick={toggleRail}
                         title="Hide the rail"
                         aria-label="Hide the rail"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/95 text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border-strong hover:text-text"
                       >
-                        <Menu className="h-5 w-5 rotate-90" aria-hidden />
+                        <ChevronsRight className="h-5 w-5" aria-hidden />
                       </button>
                     </div>
                   )}
-                  {sidebar}
                 </aside>
               )
             )}
