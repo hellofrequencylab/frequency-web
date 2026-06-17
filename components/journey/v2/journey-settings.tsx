@@ -13,8 +13,10 @@ import { IconAccentFace, AccentPicker, IconGrid } from '@/components/studio/kit/
 import { ImageUpload } from '@/components/ui/image-upload'
 import { DEFAULT_ACCENT } from '@/lib/studio/accents'
 import { isError } from '@/lib/action-result'
-import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview } from '@/app/(main)/journeys/actions'
+import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes } from '@/app/(main)/journeys/actions'
 import type { PlanStatus, PlanVisibility, StoredVeraReview } from '@/lib/journey-plans'
+
+const DIFFICULTIES = ['gentle', 'standard', 'deep'] as const
 
 export interface JourneySettingsProps {
   planId: string
@@ -31,6 +33,12 @@ export interface JourneySettingsProps {
   initialCoverImage: string | null
   /** Vera's last rank-eligibility review, if this Journey has been published/reviewed. */
   initialReview: StoredVeraReview | null
+  // Discovery + delivery attributes (ADR-302).
+  initialDifficulty?: string | null
+  initialCategory?: string | null
+  initialTags?: string[]
+  initialDailyMinutes?: number | null
+  initialEnrollCap?: number | null
   /** Hide the title, subtitle, and cover controls — the single-page editor (ADR-301) owns those in
    *  the page header, so the sidebar shows only the rest of the settings. */
   hideIdentity?: boolean
@@ -51,6 +59,12 @@ export function JourneySettings(props: JourneySettingsProps) {
 
   const [coverImage, setCoverImage] = useState<string | null>(props.initialCoverImage)
   const [gems, setGems] = useState(props.initialCompletionGems)
+  const [difficulty, setDifficulty] = useState<string>(props.initialDifficulty ?? '')
+  const [category, setCategory] = useState(props.initialCategory ?? '')
+  const [tags, setTags] = useState((props.initialTags ?? []).join(', '))
+  const [dailyMinutes, setDailyMinutes] = useState(props.initialDailyMinutes ?? 0)
+  const [enrollCap, setEnrollCap] = useState(props.initialEnrollCap ?? 0)
+  const attrs = (patch: Parameters<typeof setJourneyAttributes>[1]) => save(() => setJourneyAttributes(props.planId, patch))
   const [certificate, setCertificate] = useState(props.initialCertificateEnabled)
   const [drip, setDrip] = useState(props.initialDripIntervalDays)
 
@@ -236,6 +250,78 @@ export function JourneySettings(props: JourneySettingsProps) {
         {visibility === 'public' && status === 'pending' && (
           <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2.5 py-1 text-warning">In review</span>
         )}
+        </div>
+      </div>
+
+      {/* Discovery + delivery attributes (ADR-302) */}
+      <div className="space-y-2.5">
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">More</p>
+
+        <div>
+          <span className="mb-1 block text-2xs font-medium text-subtle">Difficulty</span>
+          <div className="flex flex-wrap gap-1.5">
+            {DIFFICULTIES.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => { const next = difficulty === d ? '' : d; setDifficulty(next); attrs({ difficulty: next || null }) }}
+                aria-pressed={difficulty === d}
+                className={`rounded-full border px-2.5 py-1 text-xs font-medium capitalize transition-colors ${difficulty === d ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-2xs font-medium text-subtle">Category</span>
+          <input
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            onBlur={() => attrs({ category: category || null })}
+            placeholder="e.g. Rest and recovery"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-2xs font-medium text-subtle">Tags (comma-separated)</span>
+          <input
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            onBlur={() => attrs({ tags: tags.split(',').map((t) => t.trim()).filter(Boolean) })}
+            placeholder="e.g. sleep, calm, screens"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          />
+        </label>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            <span className="text-2xs font-medium text-subtle">Minutes a day</span>
+            <input
+              type="number"
+              min={0}
+              max={600}
+              value={dailyMinutes || ''}
+              onChange={(e) => setDailyMinutes(Number(e.target.value))}
+              onBlur={() => attrs({ dailyMinutes: dailyMinutes || null })}
+              placeholder="optional"
+              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-2xs font-medium text-subtle">Max people</span>
+            <input
+              type="number"
+              min={0}
+              value={enrollCap || ''}
+              onChange={(e) => setEnrollCap(Number(e.target.value))}
+              onBlur={() => attrs({ enrollCap: enrollCap || null })}
+              placeholder="no limit"
+              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+            />
+          </label>
         </div>
       </div>
 

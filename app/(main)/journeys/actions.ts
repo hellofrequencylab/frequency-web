@@ -35,6 +35,8 @@ import {
 import { getSeasonalQuests } from '@/lib/quests'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
+import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
 
 // Server actions for the Journeys builder (ADR-096; free, ADR-152).
 // Building, editing, publishing to the community library, and adopting/forking
@@ -220,6 +222,35 @@ export async function saveJourneyMeta(
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   await updatePlan(planId, patch)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/** Discovery + delivery attributes (ADR-302 settings expansion): difficulty, category + tags,
+ *  daily time, and an optional enrollment cap. New columns (migration 20260630000000) aren't in the
+ *  generated types yet, so this uses the untyped admin handle (the repo convention). */
+export async function setJourneyAttributes(
+  planId: string,
+  patch: {
+    difficulty?: string | null
+    category?: string | null
+    tags?: string[]
+    dailyMinutes?: number | null
+    enrollCap?: number | null
+  },
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  const admin = createAdminClient()
+  const update: Record<string, unknown> = {}
+  if (patch.difficulty !== undefined) update.difficulty = patch.difficulty?.trim() ? patch.difficulty.trim().slice(0, 40) : null
+  if (patch.category !== undefined) update.category = patch.category?.trim() ? patch.category.trim().slice(0, 60) : null
+  if (patch.tags !== undefined) update.tags = patch.tags.map((t) => t.trim().slice(0, 40)).filter(Boolean).slice(0, 12)
+  if (patch.dailyMinutes !== undefined) update.daily_minutes = patch.dailyMinutes && patch.dailyMinutes > 0 ? Math.min(600, Math.floor(patch.dailyMinutes)) : null
+  if (patch.enrollCap !== undefined) update.enroll_cap = patch.enrollCap && patch.enrollCap > 0 ? Math.min(100000, Math.floor(patch.enrollCap)) : null
+  // New columns (migration 20260630000000) aren't in the generated types yet — cast the payload.
+  if (Object.keys(update).length) {
+    await admin.from('journey_plans').update(update as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
+  }
   revalidatePath('/journeys', 'layout')
   return ok()
 }
