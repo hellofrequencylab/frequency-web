@@ -1,12 +1,21 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
-import { Sparkles, ArrowLeft, Loader2, Upload } from 'lucide-react'
+import { Sparkles, ArrowLeft, Loader2, Upload, Video, MapPin, Users } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { isError } from '@/lib/action-result'
 import { sparkJourneyAction, createJourneyFromSparkAction, extractOverviewAction } from '@/app/(main)/journeys/create-actions'
-import type { JourneyPace, ArcWeek, SparkSettings } from '@/lib/ai/journey-spark'
+import type { JourneyPace, ArcWeek, SparkSettings, SparkMeeting } from '@/lib/ai/journey-spark'
 import { JourneyBuilder } from './journey-builder'
+
+// Meeting formats (ADR-302) — matches the editor's Settings panel so the chips read the same.
+const MEETING_FORMATS = [
+  ['virtual', Video, 'Virtual'],
+  ['in_person', MapPin, 'In person'],
+  ['hybrid', Users, 'Hybrid'],
+] as const
+
+const EMPTY_MEETING: SparkMeeting = { format: null, schedule: null, timezone: null, location: null, link: null }
 
 // The guided Journey builder, Step 1 "Spark" (ADR-302). Two ways in:
 //   • QUESTIONS — a short stepped form (who / about / outcome / shape), or
@@ -42,6 +51,10 @@ export function JourneySpark() {
   const [overview, setOverview] = useState('')
   const [arc, setArc] = useState<ArcWeek[]>([])
   const [settings, setSettings] = useState<SparkSettings | null>(null)
+  // How the group meets (ADR-302). Pre-filled from Vera's extraction on review; the author can
+  // confirm or edit. Stays all-null when nothing is set, so the Journey persists no meeting.
+  const [meeting, setMeeting] = useState<SparkMeeting>(EMPTY_MEETING)
+  const patchMeeting = (patch: Partial<SparkMeeting>) => setMeeting((m) => ({ ...m, ...patch }))
 
   if (mode === 'manual') return <JourneyBuilder draft />
 
@@ -62,6 +75,7 @@ export function JourneySpark() {
         setOverview(res.data.overview)
         setArc(res.data.arc ?? [])
         setSettings(res.data.settings ?? null)
+        setMeeting(res.data.meeting ?? EMPTY_MEETING)
       }
       setStep(5)
     })
@@ -78,6 +92,7 @@ export function JourneySpark() {
         answers: { who, topic, outcome, weeks, pace },
         arc,
         settings: settings ?? undefined,
+        meeting,
         sourceText: usingOverview ? sourceText : undefined,
       }),
     )
@@ -258,6 +273,64 @@ export function JourneySpark() {
                       <p className="mt-1.5 text-2xs text-subtle">Vera lays these out as weekly Phases. Edit them in the next step.</p>
                     </div>
                   )}
+
+                  {/* How the group meets (ADR-302). Optional and pre-filled from Vera's read of the
+                      outline; the full editor lives in the Journey's Settings panel later. */}
+                  <div className="rounded-xl border border-border bg-canvas px-3 py-3">
+                    <span className="mb-1.5 block text-2xs font-semibold uppercase tracking-wide text-subtle">How will you meet?</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {MEETING_FORMATS.map(([value, Icon, lbl]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => patchMeeting({ format: meeting.format === value ? null : value })}
+                          aria-pressed={meeting.format === value}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${meeting.format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
+                        >
+                          <Icon className="h-3.5 w-3.5" /> {lbl}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <input
+                        value={meeting.schedule ?? ''}
+                        onChange={(e) => patchMeeting({ schedule: e.target.value || null })}
+                        maxLength={120}
+                        placeholder="When, e.g. Sundays 7pm"
+                        className={`${FIELD} sm:col-span-2`}
+                      />
+                      <input
+                        value={meeting.timezone ?? ''}
+                        onChange={(e) => patchMeeting({ timezone: e.target.value || null })}
+                        maxLength={40}
+                        placeholder="Timezone, e.g. ET"
+                        className={FIELD}
+                      />
+                    </div>
+
+                    {(meeting.format === 'in_person' || meeting.format === 'hybrid') && (
+                      <input
+                        value={meeting.location ?? ''}
+                        onChange={(e) => patchMeeting({ location: e.target.value || null })}
+                        maxLength={200}
+                        placeholder="Where you meet, e.g. The community hall"
+                        className={`${FIELD} mt-2`}
+                      />
+                    )}
+                    {(meeting.format === 'virtual' || meeting.format === 'hybrid') && (
+                      <input
+                        type="url"
+                        value={meeting.link ?? ''}
+                        onChange={(e) => patchMeeting({ link: e.target.value || null })}
+                        maxLength={500}
+                        placeholder="Join link, https://"
+                        className={`${FIELD} mt-2`}
+                      />
+                    )}
+
+                    <p className="mt-1.5 text-2xs text-subtle">Optional. You can fine-tune this in Settings later.</p>
+                  </div>
                 </>
               )}
             </div>

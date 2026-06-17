@@ -12,7 +12,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { createPlan } from '@/lib/journey-plans'
 import { getTemplate, templateToBlocks } from '@/lib/journeys/templates'
-import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek, type SparkSettings } from '@/lib/ai/journey-spark'
+import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek, type SparkSettings, type SparkMeeting } from '@/lib/ai/journey-spark'
+import { normalizeJourneyMeeting } from '@/lib/journey-plans'
 import { composeJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { composeIntoPhase } from '@/lib/journeys/compose'
 import { extractOverviewText } from '@/lib/journeys/extract-text'
@@ -90,6 +91,8 @@ export async function createJourneyFromSparkAction(input: {
   arc: ArcWeek[]
   /** Settings Vera lifted from the uploaded outline (difficulty/category/tags/daily minutes). */
   settings?: SparkSettings
+  /** How the Circle meets, confirmed/edited on review (lifted from the outline, or set by hand). */
+  meeting?: Partial<SparkMeeting>
   /** The author's pasted/uploaded overview, when they built from a document. */
   sourceText?: string
 }): Promise<void> {
@@ -118,6 +121,13 @@ export async function createJourneyFromSparkAction(input: {
   if (s?.difficulty) planUpdate.difficulty = s.difficulty
   if (s?.category) planUpdate.category = s.category
   if (s?.tags?.length) planUpdate.tags = s.tags
+  // Meeting / format (ADR-302): normalize what Vera lifted (or the author confirmed) into a clean
+  // JourneyMeeting and only write it when something is set, so an unset Journey keeps the column's
+  // {} default. normalizeJourneyMeeting drops empties to null, so we test for any real value.
+  const meeting = normalizeJourneyMeeting(input.meeting ?? {})
+  if (meeting.format || meeting.schedule || meeting.timezone || meeting.location || meeting.link || meeting.notes) {
+    planUpdate.meeting = meeting
+  }
   // difficulty/category/tags/daily_minutes aren't in the generated types yet — cast the payload
   // (ADR-246: cast the payload, never the admin client). source_overview was added to the types.
   await admin

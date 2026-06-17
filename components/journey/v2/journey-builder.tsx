@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Check, ChevronDown, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Globe, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Globe, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { IconAccentFace, IconGrid } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
@@ -83,10 +83,10 @@ function JourneyActions({
 
   const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-60'
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={save} disabled={pending} className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
-          {saved ? <Check className="h-4 w-4 text-success" /> : <Save className="h-4 w-4" />} {saved ? 'Saved' : 'Save'}
+          {saved ? <Check className="h-4 w-4 text-success" /> : <Save className="h-4 w-4" />} {saved ? 'Saved' : 'Save Draft'}
         </button>
         {slug && (
           <Link href={`/journeys/${slug}/learn`} target="_blank" className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
@@ -238,12 +238,20 @@ export function JourneyBuilder({
             type="button"
             onClick={() => setIconOpen((v) => !v)}
             aria-expanded={iconOpen}
-            title="Edit icon and color"
+            title="Set a logo image, icon, or color"
             className="group/icn relative rounded-2xl outline-none ring-2 ring-transparent transition hover:ring-border focus-visible:ring-primary"
           >
-            <IconAccentFace icon={icon} accent={accent} size="md" />
+            {cover ? (
+              // The uploaded image doubles as the Journey's logo (build item 1). User-controlled
+              // Supabase Storage host, so a plain img (not next/image).
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={cover} alt="" className="h-14 w-14 rounded-2xl object-cover" />
+            ) : (
+              <IconAccentFace icon={icon} accent={accent} size="md" />
+            )}
+            {/* A camera badge cues that the logo is clickable (build item 1). */}
             <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-subtle shadow-sm group-hover/icn:text-text">
-              <ChevronDown className="h-3 w-3" aria-hidden />
+              <Camera className="h-3 w-3" aria-hidden />
             </span>
           </button>
           {iconOpen && (
@@ -271,6 +279,16 @@ export function JourneyBuilder({
                   )
                 })}
               </div>
+              {/* Or upload an image to use as the Journey's logo (build item 1). It doubles as the
+                  cover, so the small face + the cover band stay in sync. */}
+              <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Logo image</p>
+              <ImageUpload
+                label="Upload an image"
+                value={cover}
+                onChange={(url) => { setCover(url ?? null); meta({ coverImage: url }) }}
+                folder="journey-covers"
+                hint="Used as the Journey's logo and cover. Replaces the icon."
+              />
             </div>
           )}
         </span>
@@ -325,23 +343,30 @@ export function JourneyBuilder({
           )}
         </div>
 
-        {/* Header — a two-column band: the identity (eyebrow/status, title, subtitle) on the left,
-            and the action set + Journey Details quick-stats card on the right. */}
+        {/* Header — a two-column band: the identity (eyebrow/status, title, subtitle) + the action
+            set on the left, and the Journey Details quick-stats card on the right. */}
         <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 flex-1">
             <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-primary-strong">{eyebrow}</div>
             <div className="text-text">{title}</div>
-            <div className="mt-1.5 max-w-xl">{description}</div>
+            {/* No max-width: title + subtitle share the column width, so their right edges line up. */}
+            <div className="mt-1.5">{description}</div>
+            {/* Save / Preview / Publish sit UNDER the title + subtitle (build item 2). */}
+            {!draft && (
+              <div className="mt-4">
+                <JourneyActions slug={slug} planId={planId} visibility={visibility} />
+              </div>
+            )}
             {draft && (
               <Link href="/journeys" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text">
                 <ArrowLeft className="h-4 w-4" /> Back to Journeys
               </Link>
             )}
           </div>
-          {!draft && (
-            <div className="flex w-full shrink-0 flex-col gap-3 lg:w-auto lg:items-end">
-              <JourneyActions slug={slug} planId={planId} visibility={visibility} />
-              {details && <JourneyDetails status={status} visibility={visibility} details={details} />}
+          {/* Journey Details quick-stats card stays top-right. */}
+          {!draft && details && (
+            <div className="w-full shrink-0 lg:w-72">
+              <JourneyDetails status={status} visibility={visibility} details={details} />
             </div>
           )}
         </header>
