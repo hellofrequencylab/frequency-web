@@ -153,6 +153,35 @@ export async function getMyPlans(authorId: string): Promise<JourneyPlan[]> {
   return (data as JourneyPlan[] | null) ?? []
 }
 
+/** A plan plus lightweight structure counts, for the "Your Journeys" management space. */
+export interface MyPlanSummary extends JourneyPlan {
+  /** Top-level weekly Phases. */
+  phaseCount: number
+  /** Fillable steps (practices + lessons + checks…), i.e. every block that isn't a phase/module. */
+  stepCount: number
+}
+
+/** A member's own plans + their phase/step counts, newest-touched first — for the management
+ *  dashboard. One extra grouped read over getMyPlans (counts the block tree in JS; the set is
+ *  a single member's journeys, so it stays small). */
+export async function getMyPlanSummaries(authorId: string): Promise<MyPlanSummary[]> {
+  const plans = await getMyPlans(authorId)
+  if (plans.length === 0) return []
+  const { data } = await db()
+    .from('journey_plan_items')
+    .select('plan_id, block_type')
+    .in('plan_id', plans.map((p) => p.id))
+  const rows = (data as { plan_id: string; block_type: string | null }[] | null) ?? []
+  const phaseBy = new Map<string, number>()
+  const stepBy = new Map<string, number>()
+  for (const r of rows) {
+    const bt = r.block_type ?? 'practice'
+    if (bt === 'phase') phaseBy.set(r.plan_id, (phaseBy.get(r.plan_id) ?? 0) + 1)
+    else if (bt !== 'module') stepBy.set(r.plan_id, (stepBy.get(r.plan_id) ?? 0) + 1)
+  }
+  return plans.map((p) => ({ ...p, phaseCount: phaseBy.get(p.id) ?? 0, stepCount: stepBy.get(p.id) ?? 0 }))
+}
+
 /** Public, published plans for the open library, most-adopted first. */
 export async function listPublicPlans(): Promise<JourneyPlan[]> {
   const { data } = await db()
@@ -629,6 +658,108 @@ export async function forkPlan(profileId: string, planId: string): Promise<Journ
   await client.from('journey_plans').update({ forked_count: forked + 1 }).eq('id', planId)
 
   return fork
+}
+
+/** Duplicate one of the caller's OWN journeys into a fresh PRIVATE draft, deep-copying the whole
+ *  v2 block tree (phases -> modules -> lessons/practices) with parent ids remapped, plus the
+ *  authoring settings (difficulty/category/tags/daily minutes/source outline/rewards/delivery).
+ *  Unlike forkPlan (public-only, legacy practice-combo copy), this copies any plan you own with
+ *  its full structure. Caller enforces ownership. Returns the new private-draft plan. */
+export async function duplicatePlan(profileId: string, planId: string): Promise<JourneyPlan | null> {
+  const client = db()
+  const { data: srcRow } = await client
+    .from('journey_plans')
+    .select(`${PLAN_COLS}, source_overview`)
+    .eq('id', planId)
+    .maybeSingle()
+  const src = srcRow as
+    | (JourneyPlan & {
+        difficulty: string | null
+        category: string | null
+        tags: string[] | null
+        daily_minutes: number | null
+        enroll_cap: number | null
+        source_overview: string | null
+      })
+    | null
+  if (!src) return null
+
+  // The new plan: a private draft owned by the caller, never official/quest-linked. (Untyped
+  // admin handle, so the newer columns need no cast — the whole module reads/writes untyped.)
+  const { data: dupRow } = await client
+    .from('journey_plans')
+    .insert({
+      slug: slugify(src.title),
+      title: `${src.title} (copy)`.slice(0, 120),
+      summary: src.summary,
+      intro: src.intro,
+      emoji: src.emoji,
+      accent: src.accent,
+      cover_image: src.cover_image,
+      author_id: profileId,
+      visibility: 'private',
+      status: 'draft',
+      completion_gems: src.completion_gems,
+      drip_interval_days: src.drip_interval_days,
+      certificate_enabled: src.certificate_enabled,
+      difficulty: src.difficulty,
+      category: src.category,
+      tags: src.tags,
+      daily_minutes: src.daily_minutes,
+      enroll_cap: src.enroll_cap,
+      source_overview: src.source_overview,
+    })
+    .select(PLAN_COLS)
+    .maybeSingle()
+  const dup = dupRow as unknown as JourneyPlan | null
+  if (!dup) return null
+
+  const { data: itemRows } = await client
+    .from('journey_plan_items')
+    .select('id, practice_id, domain_id, sort_order, note, cadence, block_type, parent_id, title, body, media, settings, required, est_minutes')
+    .eq('plan_id', planId)
+    .order('sort_order', { ascending: true })
+  type SrcItem = {
+    id: string; practice_id: string | null; domain_id: string | null; sort_order: number | null
+    note: string | null; cadence: string | null; block_type: string | null; parent_id: string | null
+    title: string | null; body: string | null; media: unknown; settings: unknown; required: boolean | null; est_minutes: number | null
+  }
+  const items = (itemRows ?? []) as SrcItem[]
+
+  // Iterative two-pass insert: a row goes in once its parent has a new id (or it has no parent),
+  // so phases land before their lessons. Bounded passes guard against an orphaned parent_id.
+  const idMap = new Map<string, string>()
+  let remaining = items
+  for (let pass = 0; pass < 8 && remaining.length; pass++) {
+    const ready = remaining.filter((it) => !it.parent_id || idMap.has(it.parent_id))
+    if (ready.length === 0) break
+    for (const it of ready) {
+      const { data: ins } = await client
+        .from('journey_plan_items')
+        .insert({
+          plan_id: dup.id,
+          practice_id: it.practice_id,
+          domain_id: it.domain_id,
+          sort_order: it.sort_order ?? 0,
+          note: it.note,
+          cadence: it.cadence,
+          block_type: it.block_type ?? 'practice',
+          parent_id: it.parent_id ? idMap.get(it.parent_id) ?? null : null,
+          title: it.title,
+          body: it.body,
+          media: it.media,
+          settings: it.settings,
+          required: it.required ?? true,
+          est_minutes: it.est_minutes,
+        })
+        .select('id')
+        .maybeSingle()
+      if (ins) idMap.set(it.id, (ins as { id: string }).id)
+    }
+    remaining = remaining.filter((it) => !idMap.has(it.id))
+  }
+
+  return dup
 }
 
 // --- Delete ---------------------------------------------------------------

@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { FolderOpen } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
 import { PageModules } from '@/components/widgets/page-modules'
@@ -37,6 +39,13 @@ export default async function JourneysPage() {
       action={
         <div className="flex items-center gap-2">
           <NewJourneyButton />
+          {/* The member's own management space (store / edit / publish / duplicate / delete). */}
+          <Link
+            href="/journeys/mine"
+            className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+          >
+            <FolderOpen className="h-4 w-4" /> Your journeys
+          </Link>
           {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
           {ctaLabel && ctaHref && (
             <a

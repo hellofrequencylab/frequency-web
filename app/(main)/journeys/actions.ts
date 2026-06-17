@@ -18,6 +18,7 @@ import {
   setPlanWindow,
   adoptPlan,
   forkPlan,
+  duplicatePlan,
   completeLesson,
   addBlock,
   updateBlock,
@@ -171,6 +172,20 @@ export async function forkPlanAction(formData: FormData) {
   const planId = String(formData.get('planId') ?? '')
   const fork = await forkPlan(profileId, planId)
   if (fork) redirect(`/journeys/${fork.slug}`)
+}
+
+/** Duplicate one of your OWN Journeys (owner-or-admin) into a fresh private draft, full v2
+ *  structure + settings copied. Returns the copy's slug so the management space can open its
+ *  editor. JSON action for the "Your Journeys" workspace (the FormData forkPlanAction is the
+ *  legacy public-remix path). */
+export async function duplicateJourney(planId: string): Promise<ActionResult<{ slug: string }>> {
+  const profileId = await assertOwner(planId)
+  if (!profileId) return fail('Not allowed.')
+  const dup = await duplicatePlan(profileId, planId)
+  if (!dup) return fail('Could not duplicate this journey.')
+  revalidatePath('/journeys/mine')
+  revalidatePath('/journeys', 'layout')
+  return ok({ slug: dup.slug })
 }
 
 /** Check off a lesson/check block for the caller (ADR-244). Idempotent; member-owned
