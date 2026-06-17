@@ -423,6 +423,86 @@ export async function composeJourneyAction(
 
 type ComposedRow = Omit<NewBlock, 'plan_id' | 'parent_id' | 'sort_order'>
 
+/** Resolve a Vera composition into the four Pillar practice rows + an extra-credit slot. */
+async function compositionRows(admin: AdminDb, pillarIds: Partial<Record<ComposePillar, string>>, composition: Awaited<ReturnType<typeof draftJourneyComposition>>): Promise<ComposedRow[]> {
+  const filled = new Map<ComposePillar, ComposedRow>()
+  for (const slot of composition?.practices ?? []) {
+    if (slot.mode === 'library') {
+      const { data: pr } = await admin.from('practices').select('title, domain_id').eq('id', slot.practiceId).maybeSingle()
+      const practice = pr as { title: string | null; domain_id: string | null } | null
+      filled.set(slot.pillar, { block_type: 'practice', title: practice?.title ?? 'Practice', body: '', practice_id: slot.practiceId, domain_id: practice?.domain_id ?? pillarIds[slot.pillar] ?? null, required: true })
+    } else {
+      filled.set(slot.pillar, { block_type: 'practice', title: slot.title, body: slot.body, domain_id: pillarIds[slot.pillar] ?? null, required: true })
+    }
+  }
+  const rows: ComposedRow[] = PILLAR_SLOTS.map((s) =>
+    filled.get(s.slug) ?? { block_type: 'practice', title: s.label, body: s.prompt, domain_id: pillarIds[s.slug] ?? null, required: true },
+  )
+  rows.push(
+    composition?.extraCredit
+      ? extraCreditRow(composition.extraCredit.title, composition.extraCredit.body)
+      : extraCreditRow(EXTRA_CREDIT_PLACEHOLDER.title, EXTRA_CREDIT_PLACEHOLDER.body),
+  )
+  return rows
+}
+
+/** Fill ONE empty week (ADR-302): Vera reads the Journey + this week's focus + the practices already
+ *  in earlier weeks, then composes this week's four Pillar practices to fit — building on what exists
+ *  rather than repeating it. Degrades to the empty four-Pillar shape when Vera is offline. */
+export async function populateWeekAction(slug: string, phaseId: string): Promise<ActionResult<{ aiUsed: boolean }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const admin = db()
+
+  const { data: ph } = await admin
+    .from('journey_plan_items')
+    .select('id, title, body')
+    .eq('id', phaseId)
+    .eq('plan_id', a.planId)
+    .eq('block_type', 'phase')
+    .maybeSingle()
+  const phase = ph as { id: string; title: string | null; body: string | null } | null
+  if (!phase) return fail('Week not found.')
+  const { count } = await admin.from('journey_plan_items').select('id', { count: 'exact', head: true }).eq('parent_id', phaseId)
+  if (count) return fail('That week already has content. Clear it first to rebuild.')
+
+  // Build the context for Vera: the Journey + this week's focus + the practices in earlier weeks.
+  const loaded = await getPlan(slug)
+  const plan = loaded?.plan
+  const { data: priorRows } = await admin
+    .from('journey_plan_items')
+    .select('title')
+    .eq('plan_id', a.planId)
+    .eq('block_type', 'practice')
+  const priorTitles = ((priorRows ?? []) as { title: string | null }[]).map((r) => r.title).filter((t): t is string => !!t).slice(0, 24)
+  const description = [
+    plan?.title ? `Journey: ${plan.title}.` : '',
+    plan?.summary ? `Promise: ${plan.summary}.` : '',
+    `This week's focus: ${phase.title ?? ''}${phase.body ? ` — ${phase.body}` : ''}.`,
+    priorTitles.length ? `Practices already used in earlier weeks (do not repeat; build on these): ${priorTitles.join('; ')}.` : '',
+    'Compose this week\'s four Pillar practices so they fit the focus and follow on from the earlier weeks.',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const pillarIds = await pillarIdsBySlug()
+  const library = {} as Record<ComposePillar, ComposeCandidate[]>
+  await Promise.all(
+    COMPOSE_PILLARS.map(async (p) => {
+      const pid = pillarIds[p]
+      if (!pid) { library[p] = []; return }
+      const res = await searchLibraryPractices({ pillarId: pid, pageSize: 12, sort: 'top', hideDemo: true })
+      library[p] = res.rows.map((r) => ({ id: r.id, title: r.title, summary: r.summary }))
+    }),
+  )
+  const composition = await draftJourneyComposition({ description, library, profileId: a.profileId })
+
+  const rows = await compositionRows(admin, pillarIds, composition)
+  await insertChildren(admin, a.planId, phaseId, rows)
+  done(slug)
+  return ok({ aiUsed: !!composition })
+}
+
 export async function updateBlockAction(
   slug: string,
   itemId: string,
