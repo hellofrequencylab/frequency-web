@@ -94,6 +94,11 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
             initialDripIntervalDays={plan.drip_interval_days}
             initialCoverImage={plan.cover_image}
             initialReview={veraReview}
+            initialDifficulty={(plan as unknown as { difficulty?: string | null }).difficulty ?? null}
+            initialCategory={(plan as unknown as { category?: string | null }).category ?? null}
+            initialTags={(plan as unknown as { tags?: string[] }).tags ?? []}
+            initialDailyMinutes={(plan as unknown as { daily_minutes?: number | null }).daily_minutes ?? null}
+            initialEnrollCap={(plan as unknown as { enroll_cap?: number | null }).enroll_cap ?? null}
           />
           {/* Advanced — discovery layout + official program, with the delete control tucked in
               its footer (ADR-301: "put delete in the advanced box"). */}

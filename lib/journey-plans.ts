@@ -117,7 +117,7 @@ const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, visibility, fork_of, ' +
   'forked_count, adopt_count, cover_image, created_at, updated_at, published_at, ' +
   'quest_id, official, window_starts_at, window_ends_at, status, page_config, completion_gems, ' +
-  'drip_interval_days, certificate_enabled'
+  'drip_interval_days, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap'
 
 const ITEM_COLS =
   'id, plan_id, practice_id, domain_id, sort_order, note, cadence, ' +
