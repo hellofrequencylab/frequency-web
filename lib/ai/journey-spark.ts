@@ -85,11 +85,17 @@ How to write:
 - No jargon, no mysticism, no emoji, no em dashes.
 - Always call the ${TOOL_NAME} tool.`
 
-export async function draftJourneySpark(input: SparkAnswers & { profileId?: string | null }): Promise<JourneySpark | null> {
+export async function draftJourneySpark(
+  input: SparkAnswers & { profileId?: string | null; sourceText?: string },
+): Promise<JourneySpark | null> {
   const client = getAnthropic()
   if (!client) return null
 
+  const src = input.sourceText?.trim().slice(0, 8000)
   const userText = [
+    src
+      ? `The author pasted their own course write-up. Read it closely and draft the Journey (title, promise, overview, weekly arc) FROM it, staying faithful to their intent and wording where it helps:\n"""\n${src}\n"""\n`
+      : '',
     `Who it is for: ${input.who.trim().slice(0, 400) || 'anyone'}`,
     `What it is about: ${input.topic.trim().slice(0, 400) || 'general wellbeing'}`,
     `What they walk away with: ${input.outcome.trim().slice(0, 400) || 'a steadier week'}`,
@@ -97,7 +103,9 @@ export async function draftJourneySpark(input: SparkAnswers & { profileId?: stri
     `Time a day: ${input.pace}`,
     '',
     `Draft the identity and call ${TOOL_NAME}.`,
-  ].join('\n')
+  ]
+    .filter(Boolean)
+    .join('\n')
 
   try {
     const res = await client.messages.create({
