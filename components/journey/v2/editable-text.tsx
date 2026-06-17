@@ -44,7 +44,9 @@ export function EditableText({
         autoFocus={autoFocus}
         placeholder={placeholder}
         aria-label={ariaLabel ?? placeholder}
-        className={`w-full rounded-md border border-transparent bg-transparent px-1.5 py-0.5 pr-7 outline-none transition-colors placeholder:font-normal placeholder:text-subtle hover:border-border focus:border-primary ${inputClassName}`}
+        // A visible, lighter-than-canvas field so it clearly reads as editable (not flat text):
+        // a subtle surface fill + border, brightening on hover/focus.
+        className={`w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 pr-8 outline-none transition-colors placeholder:font-normal placeholder:text-subtle hover:border-border-strong focus:border-primary focus:bg-canvas ${inputClassName}`}
       />
       <Pencil
         className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle opacity-0 transition-opacity group-hover:opacity-100"

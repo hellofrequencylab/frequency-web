@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Wand2, LayoutTemplate } from 'lucide-react'
+import { Sparkles, Wand2, LayoutTemplate, ChevronDown } from 'lucide-react'
 import { composeJourneyAction, scaffoldJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { isError } from '@/lib/action-result'
 
@@ -24,6 +24,9 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
+  // Collapsible: a host who already knows the shape can fold Vera away. Open by default on a blank
+  // Journey (the highest-leverage first move), folded once there's a curriculum to focus on.
+  const [open, setOpen] = useState(isEmpty)
 
   const build = () => {
     setError(null)
@@ -52,10 +55,21 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
 
   return (
     <section className="rounded-2xl border border-primary/30 bg-primary-bg/20 p-4">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-primary-strong" />
-        <h2 className="text-base font-bold text-text">Build your Journey with Vera</h2>
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 text-left"
+      >
+        <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" />
+        <h2 className="flex-1 text-base font-bold text-text">Build your Journey with Vera</h2>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
+      </button>
+      {!open && (
+        <p className="mt-1 text-sm text-muted">Describe what you&apos;re making and Vera fills a balanced four-Pillar week.</p>
+      )}
+      {open && (
+      <>
       <p className="mt-1 text-sm text-muted">
         Tell Vera what you&apos;re making. She&apos;ll fill one practice per Pillar (Mind, Body, Spirit, and
         Expression, new or picked from the library), so the Journey starts balanced across all four. You can
@@ -104,6 +118,8 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
             ))}
           </ul>
         </div>
+      )}
+      </>
       )}
     </section>
   )

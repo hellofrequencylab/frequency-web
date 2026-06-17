@@ -9,6 +9,7 @@ import { parseCheck } from '@/lib/journeys/store'
 import { JourneySettings } from '@/components/journey/v2/journey-settings'
 import { JourneyAdvanced } from '@/components/journey/v2/journey-advanced'
 import { JourneyBuilder } from '@/components/journey/v2/journey-builder'
+import { JourneyComposer } from '@/components/journey/v2/journey-composer'
 import { JourneyDangerZone } from '@/components/journey/v2/journey-danger-zone'
 
 // Journeys v2 — the author-only structure editor route (ADR-252, J4b). Loads the plan's
@@ -71,9 +72,12 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
       initialTitle={plan.title}
       initialSummary={plan.summary}
       initialCover={plan.cover_image}
+      initialEmoji={plan.emoji}
+      initialAccent={plan.accent}
+      vera={<JourneyComposer slug={slug} isEmpty={blocks.length === 0} />}
       curriculum={<JourneyEditor slug={slug} blocks={blocks} practices={practices} pillars={pillars} />}
       settings={
-        <div className="space-y-8">
+        <div className="space-y-6">
           <JourneySettings
             hideIdentity
             planId={plan.id}
@@ -90,6 +94,8 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
             initialCoverImage={plan.cover_image}
             initialReview={veraReview}
           />
+          {/* Advanced — discovery layout + official program, with the delete control tucked in
+              its footer (ADR-301: "put delete in the advanced box"). */}
           <JourneyAdvanced
             planId={plan.id}
             initialPageConfig={plan.page_config}
@@ -97,8 +103,8 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
             initialQuestId={plan.quest_id}
             initialWindowStartsAt={plan.window_starts_at}
             initialWindowEndsAt={plan.window_ends_at}
+            footer={<JourneyDangerZone planId={plan.id} title={plan.title} />}
           />
-          <JourneyDangerZone planId={plan.id} title={plan.title} />
         </div>
       }
     />

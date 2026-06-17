@@ -21,7 +21,6 @@ import {
   draftSlotCoachingAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { isError } from '@/lib/action-result'
-import { JourneyComposer } from '@/components/journey/v2/journey-composer'
 import type { CheckConfig } from '@/lib/journeys/store'
 
 export interface EditorBlock {
@@ -431,13 +430,11 @@ export function JourneyEditor({
 
   return (
     <div className="space-y-4">
-      {/* Vera composer — the box at the top: describe the Journey and Vera fills a balanced
-          opening week (Mind/Body/Spirit practice + two challenges). Always available; the empty
-          shape preview shows only on a blank Journey. */}
-      <JourneyComposer slug={slug} isEmpty={empty} />
+      {/* The Vera composer now lives full-width at the top of the editor shell (journey-builder),
+          above this two-column body, so it is not rendered here. */}
 
-      {/* Section header — the identity/title lives in the Details tab, and Preview + Done live in
-          the builder bar above, so this is just the curriculum section's label. */}
+      {/* Section header — identity/title + Vera live in the header above, so this is just the
+          curriculum section's label. */}
       <header>
         <h2 className="text-base font-bold text-text">Curriculum</h2>
         <p className="text-sm text-muted">Add phases, then fill each with bite-sized lessons and practices.</p>
