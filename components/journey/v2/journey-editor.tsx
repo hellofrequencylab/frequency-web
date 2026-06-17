@@ -238,7 +238,7 @@ export function JourneyEditor({
           defaultValue={m.title}
           onBlur={(e) => run(() => updateBlockAction(slug, m.id, { title: e.target.value }))}
           placeholder="Module title"
-          className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 text-sm font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
+          className="min-w-0 flex-1 rounded-md border border-border bg-canvas px-1 py-1 text-sm font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
         />
         <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'up'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move up"><ChevronUp className="h-3.5 w-3.5" /></button>
         <button type="button" disabled={pending} onClick={() => run(() => moveBlockAction(slug, m.id, 'down'))} className="rounded p-1 text-subtle hover:text-text" aria-label="Move down"><ChevronDown className="h-3.5 w-3.5" /></button>
@@ -307,7 +307,7 @@ export function JourneyEditor({
           <input
             defaultValue={l.title}
             onBlur={(e) => run(() => updateBlockAction(slug, l.id, { title: e.target.value }))}
-            className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 text-sm text-text hover:border-border focus:border-primary focus:outline-none"
+            className="min-w-0 flex-1 rounded-md border border-border bg-canvas px-1 py-1 text-sm text-text hover:border-border focus:border-primary focus:outline-none"
             placeholder={isExtra ? 'Challenge name' : isPractice ? 'Practice step' : 'Lesson title'}
           />
           {isExtra && (
@@ -520,7 +520,7 @@ export function JourneyEditor({
             <input
               defaultValue={p.title}
               onBlur={(e) => run(() => updateBlockAction(slug, p.id, { title: e.target.value }))}
-              className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-1 text-base font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
+              className="min-w-0 flex-1 rounded-lg border border-border bg-canvas px-1 py-1 text-base font-semibold text-text hover:border-border focus:border-primary focus:outline-none"
               placeholder="Phase title"
             />
             <span className="shrink-0 whitespace-nowrap text-xs text-subtle">{stepCount} {stepCount === 1 ? 'step' : 'steps'}</span>
