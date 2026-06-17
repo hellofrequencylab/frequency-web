@@ -19,6 +19,7 @@ import {
   removeBlockAction,
   moveBlockAction,
   draftSlotCoachingAction,
+  populateWeekAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { CheckConfig } from '@/lib/journeys/store'
@@ -548,6 +549,17 @@ export function JourneyEditor({
                 placeholder="What this week is about (its focus). Optional."
                 className="mt-3 w-full resize-y rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-muted focus:border-primary focus:outline-none"
               />
+              {stepCount === 0 && (
+                // An unfilled week: let Vera read the Journey + earlier weeks and fill this one.
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => run(() => populateWeekAction(slug, p.id))}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary-bg/30 px-3 py-2.5 text-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg disabled:opacity-60"
+                >
+                  <Sparkles className="h-4 w-4" /> {pending ? 'Building…' : 'Populate this week with Vera'}
+                </button>
+              )}
               <ul className="mt-3 space-y-2">{lessonsOf(p.id).map(LeafRow)}</ul>
               {modulesOf(p.id).length > 0 && <div className="mt-2 space-y-2">{modulesOf(p.id).map(ModuleGroup)}</div>}
               {stepTools(p.id, p.id)}
