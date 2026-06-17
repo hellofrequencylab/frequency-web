@@ -74,6 +74,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
       initialCover={plan.cover_image}
       initialEmoji={plan.emoji}
       initialAccent={plan.accent}
+      initialIntro={plan.intro}
       vera={<JourneyComposer slug={slug} isEmpty={blocks.length === 0} />}
       curriculum={<JourneyEditor slug={slug} blocks={blocks} practices={practices} pillars={pillars} />}
       settings={

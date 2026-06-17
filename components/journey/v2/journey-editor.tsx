@@ -200,7 +200,16 @@ export function JourneyEditor({
   // edit (body + coaching), and each phase folds away with a step count — so a full Journey reads as
   // a short outline, not an endless scroll of open textareas. A freshly added blank step auto-opens.
   const [openLeaves, setOpenLeaves] = useState<Set<string>>(new Set())
-  const [closedPhases, setClosedPhases] = useState<Set<string>>(new Set())
+  // Empty phases (e.g. the wizard's not-yet-filled later weeks) start COLLAPSED; phases that already
+  // have content (Week 1) start open — so after onboarding the editor reads as a tidy outline.
+  const [closedPhases, setClosedPhases] = useState<Set<string>>(() => {
+    const hasChild = new Set(blocks.filter((b) => b.parentId).map((b) => b.parentId as string))
+    const closed = new Set<string>()
+    for (const b of blocks) {
+      if (b.blockType === 'phase' && b.parentId === null && !hasChild.has(b.id)) closed.add(b.id)
+    }
+    return closed
+  })
   const toggleLeaf = (id: string) =>
     setOpenLeaves((prev) => {
       const next = new Set(prev)
