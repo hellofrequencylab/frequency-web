@@ -531,6 +531,14 @@ export function JourneyEditor({
 
           {phaseOpen && (
             <>
+              {/* The week's focus (the arc) — Vera fills it from onboarding; editable here. */}
+              <textarea
+                defaultValue={p.body}
+                onBlur={(e) => run(() => updateBlockAction(slug, p.id, { body: e.target.value }))}
+                rows={2}
+                placeholder="What this week is about (its focus). Optional."
+                className="mt-3 w-full resize-y rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-muted focus:border-primary focus:outline-none"
+              />
               <ul className="mt-3 space-y-2">{lessonsOf(p.id).map(LeafRow)}</ul>
               {modulesOf(p.id).length > 0 && <div className="mt-2 space-y-2">{modulesOf(p.id).map(ModuleGroup)}</div>}
               {stepTools(p.id, p.id)}

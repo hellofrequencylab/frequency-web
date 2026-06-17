@@ -28,12 +28,21 @@ export interface SparkAnswers {
   pace: JourneyPace
 }
 
+/** One week of the arc: a short focus title + a one-line description. */
+export interface ArcWeek {
+  title: string
+  focus: string
+}
+
 export interface JourneySpark {
   title: string
   /** One line, leading with the outcome. */
   promise: string
   /** A short, warm paragraph. */
   overview: string
+  /** The weekly arc — one focus per week, building across the Journey (last week a gentle
+   *  reflection). Length matches the requested weeks; empty when Vera couldn't draft it. */
+  arc: ArcWeek[]
 }
 
 const TOOL_NAME = 'draft_journey_spark'
@@ -47,14 +56,28 @@ const TOOL: Anthropic.Tool = {
       title: { type: 'string', description: 'A short, plain, evocative name (<= 60 chars). Title case.' },
       promise: { type: 'string', description: 'One line that leads with the outcome, plain, no hype (<= 140 chars).' },
       overview: { type: 'string', description: 'Two to four short sentences on what this is and who it is for. Lead with the problem or feeling.' },
+      arc: {
+        type: 'array',
+        description: 'The weekly arc: EXACTLY one entry per week, in order, each building on the last; the final week is a gentle reflection.',
+        items: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', description: "The week's focus as a short title (<= 40 chars), e.g. 'Wind down the evening'." },
+            focus: { type: 'string', description: "One plain sentence on what this week is about and why it comes here." },
+          },
+          required: ['title', 'focus'],
+        },
+      },
     },
-    required: ['title', 'promise', 'overview'],
+    required: ['title', 'promise', 'overview', 'arc'],
   },
 }
 
 const SYSTEM = `You are Vera, Frequency's guide: warm, grounded, and practical, a camp counselor you actually respect, not a guru and not a hype machine. An author answered a few questions about a Journey they want to build. A Journey is a themed path of small daily practices a Circle travels together, balanced underneath across four Pillars (Mind, Body, Spirit, Expression).
 
-Draft the Journey's IDENTITY only (not the practices yet): a title, a one-line promise that leads with the outcome, and a short overview.
+Draft the Journey's frame: a title, a one-line promise that leads with the outcome, a short overview, and the WEEKLY ARC.
+
+The arc is one focus per week, in order, that builds across the Journey like a good course: each week leans on the last, the early weeks are gentle, and the FINAL week is a calm reflection that ties it together. Give EXACTLY one entry per week for the length requested. The four daily practices stay constant underneath; the weekly focus is the lens, not a new set of tasks.
 
 How to write:
 - Plain language, short sentences. Lead with the problem or the feeling.
@@ -97,18 +120,33 @@ export async function draftJourneySpark(input: SparkAnswers & { profileId?: stri
     const block = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
     )
-    return block ? coerce(block.input) : null
+    return block ? coerce(block.input, input.weeks) : null
   } catch {
     return null
   }
 }
 
-function coerce(raw: unknown): JourneySpark | null {
+function coerce(raw: unknown, weeks: number): JourneySpark | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
   const title = typeof r.title === 'string' ? r.title.trim().slice(0, 80) : ''
   const promise = typeof r.promise === 'string' ? r.promise.trim().slice(0, 200) : ''
   const overview = typeof r.overview === 'string' ? r.overview.trim().slice(0, 1200) : ''
   if (!title) return null
-  return { title, promise, overview }
+
+  // The weekly arc — one entry per week, clamped to the requested length.
+  const want = Math.min(12, Math.max(1, Math.floor(weeks) || 4))
+  const arc: ArcWeek[] = []
+  if (Array.isArray(r.arc)) {
+    for (const w of r.arc) {
+      if (arc.length >= want) break
+      if (!w || typeof w !== 'object') continue
+      const ww = w as Record<string, unknown>
+      const wt = typeof ww.title === 'string' ? ww.title.trim().slice(0, 80) : ''
+      const wf = typeof ww.focus === 'string' ? ww.focus.trim().slice(0, 300) : ''
+      if (wt) arc.push({ title: wt, focus: wf })
+    }
+  }
+
+  return { title, promise, overview, arc }
 }

@@ -5,7 +5,7 @@ import { Sparkles, ArrowLeft, Loader2 } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { isError } from '@/lib/action-result'
 import { sparkJourneyAction, createJourneyFromSparkAction } from '@/app/(main)/journeys/create-actions'
-import type { JourneyPace } from '@/lib/ai/journey-spark'
+import type { JourneyPace, ArcWeek } from '@/lib/ai/journey-spark'
 import { JourneyBuilder } from './journey-builder'
 
 // The guided Journey builder, Step 1 "Spark" (ADR-302). A short stepped form (one question per
@@ -35,6 +35,7 @@ export function JourneySpark() {
   const [title, setTitle] = useState('')
   const [promise, setPromise] = useState('')
   const [overview, setOverview] = useState('')
+  const [arc, setArc] = useState<ArcWeek[]>([])
 
   if (mode === 'manual') return <JourneyBuilder draft />
 
@@ -52,6 +53,7 @@ export function JourneySpark() {
         setTitle(res.data.title)
         setPromise(res.data.promise)
         setOverview(res.data.overview)
+        setArc(res.data.arc ?? [])
       }
       setStep(5)
     })
@@ -60,7 +62,7 @@ export function JourneySpark() {
   const create = () => {
     if (!title.trim()) return
     setError(null)
-    start(() => createJourneyFromSparkAction({ title, promise, overview, answers: { who, topic, outcome, weeks, pace } }))
+    start(() => createJourneyFromSparkAction({ title, promise, overview, answers: { who, topic, outcome, weeks, pace }, arc }))
   }
 
   const next = () => {
@@ -160,6 +162,22 @@ export function JourneySpark() {
                     <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Overview</span>
                     <textarea value={overview} onChange={(e) => setOverview(e.target.value)} rows={4} className={FIELD} placeholder="What this is and who it's for." />
                   </label>
+                  {arc.length > 0 && (
+                    <div>
+                      <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">
+                        Your {arc.length} {arc.length === 1 ? 'week' : 'weeks'}
+                      </span>
+                      <ol className="space-y-1.5">
+                        {arc.map((w, i) => (
+                          <li key={i} className="rounded-lg border border-border bg-surface px-3 py-2">
+                            <span className="block text-sm font-medium text-text">Week {i + 1}: {w.title}</span>
+                            {w.focus && <span className="block text-xs leading-snug text-muted">{w.focus}</span>}
+                          </li>
+                        ))}
+                      </ol>
+                      <p className="mt-1.5 text-2xs text-subtle">Vera will lay these out as weekly Phases. Edit them in the next step.</p>
+                    </div>
+                  )}
                 </>
               )}
             </div>

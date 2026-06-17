@@ -11,7 +11,7 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createPlan } from '@/lib/journey-plans'
 import { getTemplate, templateToBlocks } from '@/lib/journeys/templates'
-import { draftJourneySpark, type SparkAnswers, type JourneySpark } from '@/lib/ai/journey-spark'
+import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek } from '@/lib/ai/journey-spark'
 import { composeJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
 
 /** Deferred creation (no untitled drafts): a Journey row is created ONLY once the author commits a
@@ -66,6 +66,7 @@ export async function createJourneyFromSparkAction(input: {
   promise: string
   overview: string
   answers: SparkAnswers
+  arc: ArcWeek[]
 }): Promise<void> {
   const caller = await getCallerProfile()
   if (!caller) redirect('/journeys')
@@ -79,15 +80,18 @@ export async function createJourneyFromSparkAction(input: {
   const overview = input.overview.trim().slice(0, 8000)
   if (overview) await admin.from('journey_plans').update({ intro: overview }).eq('id', plan.id)
 
-  // One Phase per week (the arc), clamped to a sane range.
+  // One Phase per week, titled + described by Vera's weekly ARC (so every week is filled with a
+  // focus, not an empty "Week N"). Falls back to a plain week label when the arc is missing.
   const a = input.answers
   const weeks = Math.min(12, Math.max(1, Math.floor(a.weeks) || 4))
+  const arc = input.arc ?? []
   await admin.from('journey_plan_items').insert(
     Array.from({ length: weeks }, (_, i) => ({
       plan_id: plan.id,
       block_type: 'phase',
       parent_id: null,
-      title: `Week ${i + 1}`,
+      title: arc[i]?.title ? `Week ${i + 1}: ${arc[i].title}` : `Week ${i + 1}`,
+      body: arc[i]?.focus?.trim() || null,
       sort_order: i,
       required: true,
     })),
