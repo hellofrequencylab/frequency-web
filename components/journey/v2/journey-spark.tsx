@@ -5,7 +5,7 @@ import { Sparkles, ArrowLeft, Loader2, Upload } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { isError } from '@/lib/action-result'
 import { sparkJourneyAction, createJourneyFromSparkAction, extractOverviewAction } from '@/app/(main)/journeys/create-actions'
-import type { JourneyPace, ArcWeek } from '@/lib/ai/journey-spark'
+import type { JourneyPace, ArcWeek, SparkSettings } from '@/lib/ai/journey-spark'
 import { JourneyBuilder } from './journey-builder'
 
 // The guided Journey builder, Step 1 "Spark" (ADR-302). Two ways in:
@@ -41,6 +41,7 @@ export function JourneySpark() {
   const [promise, setPromise] = useState('')
   const [overview, setOverview] = useState('')
   const [arc, setArc] = useState<ArcWeek[]>([])
+  const [settings, setSettings] = useState<SparkSettings | null>(null)
 
   if (mode === 'manual') return <JourneyBuilder draft />
 
@@ -60,6 +61,7 @@ export function JourneySpark() {
         setPromise(res.data.promise)
         setOverview(res.data.overview)
         setArc(res.data.arc ?? [])
+        setSettings(res.data.settings ?? null)
       }
       setStep(5)
     })
@@ -75,6 +77,7 @@ export function JourneySpark() {
         overview,
         answers: { who, topic, outcome, weeks, pace },
         arc,
+        settings: settings ?? undefined,
         sourceText: usingOverview ? sourceText : undefined,
       }),
     )
@@ -111,7 +114,7 @@ export function JourneySpark() {
     : usingOverview
       ? { title: 'Paste or upload your overview', description: 'Drop in your own write-up (PDF, Word, or text) and Vera rebuilds it as a balanced Journey.' }
       : [
-          { title: 'Who is this Journey for?', description: 'A sentence is plenty. It shapes everything Vera drafts.' },
+          { title: 'Who is this Journey for?', description: 'Tell Vera who it is for in a sentence and she drafts the whole Journey. Or, you can upload your course outline below.' },
           { title: 'What is it about?', description: 'A topic, or just general wellbeing. Either works.' },
           { title: 'What should people walk away with?', description: 'The outcome, in plain words. Lead with the feeling.' },
           { title: 'How long, and how much a day?', description: 'One Phase per week. Keep the daily ask honest.' },
@@ -170,7 +173,21 @@ export function JourneySpark() {
 
           {/* QUESTIONS path */}
           {!usingOverview && step === 1 && (
-            <textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={3} className={FIELD} placeholder="e.g. People who feel wired and tired and want their evenings back." />
+            <>
+              <textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={3} className={FIELD} placeholder="e.g. People who feel wired and tired and want their evenings back." />
+              {/* Prominent second path: drop in a full outline and let Vera build the whole thing. */}
+              <button
+                type="button"
+                onClick={() => { setUsingOverview(true); setStep(1) }}
+                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary-bg/20 px-4 py-3 text-left transition-colors hover:bg-primary-bg/40"
+              >
+                <Upload className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-text">Already have your course written?</span>
+                  <span className="block text-xs leading-snug text-muted">Upload or paste your outline (PDF, Word, or text) and Vera builds the whole Journey, week by week, from it.</span>
+                </span>
+              </button>
+            </>
           )}
           {!usingOverview && step === 2 && (
             <textarea autoFocus value={topic} onChange={(e) => setTopic(e.target.value)} rows={3} className={FIELD} placeholder="e.g. Sleep and screen habits. Or: general wellbeing." />
