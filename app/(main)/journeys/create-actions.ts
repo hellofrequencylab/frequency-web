@@ -7,9 +7,11 @@
 
 import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
+import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createPlan } from '@/lib/journey-plans'
 import { getTemplate, templateToBlocks } from '@/lib/journeys/templates'
+import { draftJourneySpark, type SparkAnswers, type JourneySpark } from '@/lib/ai/journey-spark'
 
 /** Deferred creation (no untitled drafts): a Journey row is created ONLY once the author commits a
  *  title from the single-page editor. Seeds 3 empty phases so the curriculum opens ready to edit,
@@ -31,6 +33,57 @@ export async function createJourneyDraftAction(title: string): Promise<void> {
       block_type: 'phase',
       parent_id: null,
       title: `Phase ${i + 1}`,
+      sort_order: i,
+      required: true,
+    })),
+  )
+
+  redirect(`/journeys/${plan.slug}/edit`)
+}
+
+// ── Guided builder (ADR-302) ────────────────────────────────────────────────────────────
+// Step 1 "Spark": Vera drafts the identity from the onboarding answers (no row created yet — the
+// author reviews the draft first). Step 1 commit: create the row with that identity + seed one
+// weekly Phase per week (the arc), then drop into the editor where Vera fills the practices.
+
+/** Vera drafts the Journey identity from the spark answers. Returns the draft for the author to
+ *  review/edit; creates nothing. Null-safe: when Vera is offline, the wizard lets them type it. */
+export async function sparkJourneyAction(answers: SparkAnswers): Promise<ActionResult<JourneySpark>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Sign in to build a Journey.')
+  const spark = await draftJourneySpark({ ...answers, profileId: caller.id })
+  if (!spark) return fail('Vera is offline right now. Name it yourself and keep going.')
+  return ok(spark)
+}
+
+/** Create the Journey from the reviewed identity + seed N weekly Phases. The deferred-creation rule
+ *  holds: a row exists only once the author commits a (reviewed) title here. */
+export async function createJourneyFromSparkAction(input: {
+  title: string
+  promise: string
+  overview: string
+  weeks: number
+}): Promise<void> {
+  const caller = await getCallerProfile()
+  if (!caller) redirect('/journeys')
+  const title = input.title.trim().slice(0, 120)
+  if (!title) redirect('/journeys/new')
+
+  const plan = await createPlan({ authorId: caller.id, title, summary: input.promise.trim().slice(0, 280) || null })
+  if (!plan) redirect('/journeys')
+
+  const admin = createAdminClient()
+  const overview = input.overview.trim().slice(0, 8000)
+  if (overview) await admin.from('journey_plans').update({ intro: overview }).eq('id', plan.id)
+
+  // One Phase per week (the arc), clamped to a sane range. Vera fills the practices from the editor.
+  const weeks = Math.min(12, Math.max(1, Math.floor(input.weeks) || 4))
+  await admin.from('journey_plan_items').insert(
+    Array.from({ length: weeks }, (_, i) => ({
+      plan_id: plan.id,
+      block_type: 'phase',
+      parent_id: null,
+      title: `Week ${i + 1}`,
       sort_order: i,
       required: true,
     })),
