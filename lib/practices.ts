@@ -49,6 +49,9 @@ export interface Practice {
   cadence: string | null
   /** Typical session length in minutes (the Notion "Duration (min)"). Length, not frequency. */
   duration_min: number | null
+  /** true = the practice runs through the On Air timer (its "Practice" button); false = a simple
+   *  self-report (its "Log It" button). Drives the single action button on a Journey practice. */
+  uses_timer: boolean
   /** The explicit per-log Zap VALUE. When set, it OVERRIDES weight_class (the Quest library
    *  values practices by cadence: Daily 10 / 3x-week 15 / Weekly 25). Null → weight-class default. */
   reward_zaps: number | null
@@ -97,7 +100,7 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, duration_min, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
+  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
 
 // The same columns MINUS `slug`, for reads against the `practices_ranked` VIEW — the view
 // predates the slug column and does not expose it, so selecting `slug` from the view errors and
@@ -546,6 +549,8 @@ export interface PracticeEdit {
   cadence?: string | null
   /** Typical session length in minutes (null clears it). */
   duration_min?: number | null
+  /** true = runs through the On Air timer (Practice); false = a simple self-report (Log It). */
+  uses_timer?: boolean
   category?: string | null
   icon?: string | null
   header_image?: string | null
@@ -602,6 +607,7 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (patch.duration_min !== undefined)
     update.duration_min =
       patch.duration_min == null ? null : Math.max(0, Math.min(1440, Math.floor(patch.duration_min)))
+  if (patch.uses_timer !== undefined) update.uses_timer = !!patch.uses_timer
   if (patch.category !== undefined) update.category = STR(patch.category, 40)
   if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
@@ -708,6 +714,7 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
       body: src.body,
       cadence: src.cadence,
       duration_min: src.duration_min,
+      uses_timer: src.uses_timer,
       category: src.category,
       icon: src.icon,
       header_image: src.header_image,

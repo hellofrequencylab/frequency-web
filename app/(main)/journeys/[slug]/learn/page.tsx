@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, type KickoffEvent } from '@/lib/journeys/runs'
 import { getPlanAuthor } from '@/lib/journey-plans'
-import { getJourneyLearnExtras, getLinkedEvent, pillarsById } from '@/lib/journeys/learn'
+import { getJourneyLearnExtras, getLinkedEvent, getLoggedTodayPracticeIds, pillarsById } from '@/lib/journeys/learn'
 import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
 import { PracticeDetail } from '@/components/journey/v2/learn/practice-detail'
 import { AboutThisJourneyHero, MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
@@ -51,7 +51,11 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   // The follow-along extras: the library practice behind each `practice` step, each phase's focus
   // copy, the normalized meeting, and the four-Pillar balance — composed over the existing reads
   // (lib/journeys/learn.ts), plus the author. Loaded in parallel with the Run/cohort resolution.
-  const [extras, author] = await Promise.all([getJourneyLearnExtras(slug), getPlanAuthor(plan.author_id)])
+  const [extras, author, loggedToday] = await Promise.all([
+    getJourneyLearnExtras(slug),
+    getPlanAuthor(plan.author_id),
+    getLoggedTodayPracticeIds(profileId),
+  ])
 
   // The Event this Journey gathers around (meeting.eventId, set from the "Create Event" flow),
   // resolved to a link target. Null when unset or gone — the meeting block then shows a plain line.
@@ -90,11 +94,13 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const detailById: Record<string, ReactNode> = {}
   const pillarByLesson: Record<string, string> = {}
   const practiceIdByLesson: Record<string, string> = {}
+  const usesTimerByLesson: Record<string, boolean> = {}
   for (const [itemId, practice] of extras.practiceByItem) {
     const pillar = practice.domain_id ? byId.get(practice.domain_id) ?? null : null
     detailById[itemId] = <PracticeDetail practice={practice} pillar={pillar} />
     if (pillar) pillarByLesson[itemId] = pillar.name
     practiceIdByLesson[itemId] = practice.id
+    usesTimerByLesson[itemId] = practice.uses_timer
   }
   const phaseFocusById = Object.fromEntries(extras.phaseFocus)
 
@@ -162,6 +168,8 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         phaseFocusById={phaseFocusById}
         pillarByLesson={pillarByLesson}
         practiceIdByLesson={practiceIdByLesson}
+        usesTimerByLesson={usesTimerByLesson}
+        loggedPracticeIds={loggedToday}
         certificateEnabled={plan.certificate_enabled}
         anchorStart={anchorStart}
         dripIntervalDays={dripIntervalDays}

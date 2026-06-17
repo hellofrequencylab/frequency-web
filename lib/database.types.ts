@@ -5744,6 +5744,7 @@ export type Database = {
           subcategory_id: string | null
           summary: string | null
           title: string
+          uses_timer: boolean
           weight_class: string
         }
         Insert: {
@@ -5773,6 +5774,7 @@ export type Database = {
           subcategory_id?: string | null
           summary?: string | null
           title: string
+          uses_timer?: boolean
           weight_class?: string
         }
         Update: {
@@ -5802,6 +5804,7 @@ export type Database = {
           subcategory_id?: string | null
           summary?: string | null
           title?: string
+          uses_timer?: boolean
           weight_class?: string
         }
         Relationships: [
@@ -8142,6 +8145,7 @@ export type Database = {
           subcategory_id: string | null
           summary: string | null
           title: string | null
+          uses_timer: boolean | null
           weight_class: string | null
         }
         Relationships: [

@@ -11,7 +11,7 @@
 
 import { useState, useTransition, useMemo, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass, AlertTriangle } from 'lucide-react'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
 import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
@@ -38,6 +38,12 @@ interface Props {
   /** The linked library practice id for a practice step, keyed by lesson id — drives the per-step
    *  Practice (Mindless overlay) + Log actions. Absent on non-practice steps. */
   practiceIdByLesson?: Record<string, string>
+  /** Whether each practice step runs On Air's timer (Practice button) vs a one-tap Log it, keyed by
+   *  lesson id. Defaults to timer when unknown. */
+  usesTimerByLesson?: Record<string, boolean>
+  /** Practice ids the member has logged TODAY — gates a practice step's "Mark complete & continue"
+   *  until the practice is done (run the timer, or Log it). */
+  loggedPracticeIds?: string[]
   /** Show a printable certificate on Journey completion (plan opt-in). */
   certificateEnabled?: boolean
   /** Phase-drip anchor (ISO): the Run's start (cohort) or the member's enrollment start (solo).
@@ -115,6 +121,8 @@ export function LearnPlayer({
   phaseFocusById = {},
   pillarByLesson = {},
   practiceIdByLesson = {},
+  usesTimerByLesson = {},
+  loggedPracticeIds = [],
   certificateEnabled = false,
   anchorStart = null,
   dripIntervalDays = 7,
@@ -125,6 +133,17 @@ export function LearnPlayer({
   const order = tree.lessonOrder
   const [milestone, setMilestone] = useState<TrophyMilestone | null>(null)
   const [mobileToc, setMobileToc] = useState(false)
+
+  // A practice step's "Mark complete & continue" is gated until the practice is logged today (#7):
+  // run the timer or tap Log it. `locallyLogged` reflects a just-logged practice instantly; the
+  // server truth (loggedPracticeIds) catches up on router.refresh. `forceContinue` is the escape
+  // hatch (#8): one click on the greyed button reveals "Continue without logging".
+  const [locallyLogged, setLocallyLogged] = useState<Set<string>>(new Set())
+  const [forceContinue, setForceContinue] = useState(false)
+  const loggedSet = useMemo(
+    () => new Set<string>([...loggedPracticeIds, ...locallyLogged]),
+    [loggedPracticeIds, locallyLogged],
+  )
 
   // Per-lesson status + which phase a lesson lives in (so navigating opens its phase).
   const { statusOf, phaseOfLesson } = useMemo(() => {
@@ -183,6 +202,10 @@ export function LearnPlayer({
   const phaseFocus = selectedPhaseId ? phaseFocusById[selectedPhaseId] : undefined
   const selectedPillar = selectedId ? pillarByLesson[selectedId] : undefined
   const selectedPracticeId = selectedId && !selectedLocked ? practiceIdByLesson[selectedId] : undefined
+  const selectedUsesTimer = selectedId ? usesTimerByLesson[selectedId] ?? true : true
+  const selectedPracticeLogged = selectedPracticeId ? loggedSet.has(selectedPracticeId) : true
+  // Gate completion only on a practice step that isn't logged yet and isn't already done.
+  const gateOnLog = !!selectedPracticeId && !selectedPracticeLogged && !isDone
 
   function togglePhase(id: string) {
     setOpenPhases((prev) => {
@@ -197,6 +220,7 @@ export function LearnPlayer({
   function goTo(id: string | null) {
     if (!id) return
     setSelectedId(id)
+    setForceContinue(false)
     setMobileToc(false)
     const ph = phaseOfLesson.get(id)
     if (ph) setOpenPhases((prev) => (prev.has(ph) ? prev : new Set(prev).add(ph)))
@@ -408,14 +432,18 @@ export function LearnPlayer({
                   cadence · time · Pillar · "Why it works / How to do it / In The Quest"). */}
               {detail}
 
-              {/* Practice-specific actions: open the Mindless timer pre-set to this practice, or log
-                  it (Zaps + streak). Additional to the lesson's "Mark complete & continue" below. */}
+              {/* The step's single practice action — Practice (opens the Mindless timer pre-set to
+                  this practice) for a timer practice, or Log it for the rest. Logging it clears the
+                  "Mark complete & continue" gate below. */}
               {selectedPracticeId && (
                 <div className="mt-4 max-w-prose">
                   <PracticeActions
                     key={selectedPracticeId}
                     practiceId={selectedPracticeId}
+                    usesTimer={selectedUsesTimer}
                     pillar={selectedPillar}
+                    logged={selectedPracticeLogged}
+                    onLogged={(pid) => setLocallyLogged((s) => new Set(s).add(pid))}
                   />
                 </div>
               )}
@@ -431,6 +459,16 @@ export function LearnPlayer({
 
               {/* Interactive knowledge-check, when this check has a question. */}
               {lesson.type === 'check' && lesson.check && <KnowledgeCheck key={selectedId} config={lesson.check} />}
+
+              {/* Completion gate (#8): a practice step warns once before letting you skip logging. */}
+              {gateOnLog && forceContinue && (
+                <div className="mt-5 flex max-w-prose items-start gap-2 rounded-xl border border-warning/30 bg-warning-bg/30 p-3">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+                  <p className="text-sm leading-relaxed text-text">
+                    You haven&rsquo;t logged this practice yet. {selectedUsesTimer ? 'Run the timer' : 'Tap Log it'} above so it counts toward your graph, or continue without logging.
+                  </p>
+                </div>
+              )}
 
               {/* One clear next action */}
               <div className="mt-6 flex items-center gap-2 border-t border-border pt-4">
@@ -452,6 +490,25 @@ export function LearnPlayer({
                     ) : (
                       <span className="inline-flex items-center gap-1 text-sm font-semibold text-success"><Check className="h-4 w-4" /> Completed</span>
                     )
+                  ) : gateOnLog && !forceContinue ? (
+                    // Grey until the practice is logged (#7). A first click reveals the escape hatch.
+                    <button
+                      type="button"
+                      onClick={() => setForceContinue(true)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-4 py-2 text-sm font-semibold text-muted transition-colors hover:text-text"
+                    >
+                      <Check className="h-4 w-4" /> Mark complete & continue
+                    </button>
+                  ) : gateOnLog && forceContinue ? (
+                    // Escape hatch (#8): complete without logging, after the warning above.
+                    <button
+                      type="button"
+                      onClick={complete}
+                      disabled={pending}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-warning/50 bg-surface px-4 py-2 text-sm font-semibold text-warning transition-colors hover:bg-warning-bg/40 disabled:opacity-60"
+                    >
+                      {pending ? 'Saving…' : 'Continue without logging'}
+                    </button>
                   ) : (
                     <button type="button" onClick={complete} disabled={pending} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
                       <Check className="h-4 w-4" /> {pending ? 'Saving…' : 'Mark complete & continue'}
