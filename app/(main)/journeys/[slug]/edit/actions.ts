@@ -18,6 +18,7 @@ import {
   type ComposePillar,
   type ComposeCandidate,
 } from '@/lib/ai/journey-composition'
+import { planJourneyEdits, type JourneyForEdit } from '@/lib/ai/journey-edit'
 import { getCurrentSeason } from '@/lib/seasons'
 import { getPillars } from '@/lib/pillars'
 import { searchLibraryPractices } from '@/lib/practices'
@@ -501,6 +502,92 @@ export async function populateWeekAction(slug: string, phaseId: string): Promise
   await insertChildren(admin, a.planId, phaseId, rows)
   done(slug)
   return ok({ aiUsed: !!composition })
+}
+
+type PlanUpdate = Database['public']['Tables']['journey_plans']['Update']
+
+/** Vera "apply the change" (ADR-302): the author types a plain-language change; Vera reads the whole
+ *  Journey and returns constrained edit ops, which we re-validate (every id must belong to this plan)
+ *  and apply in place. Powers the editor's "tell Vera what to change" box on a populated Journey. */
+export async function applyVeraChangeAction(slug: string, request: string): Promise<ActionResult<{ applied: number }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const req = request.trim().slice(0, 1000)
+  if (!req) return fail('Tell Vera what to change first.')
+  const admin = db()
+
+  const loaded = await getPlan(slug)
+  if (!loaded) return fail('Journey not found.')
+  const plan = loaded.plan
+  const items = loaded.items as Array<{ id: string; block_type: string | null; parent_id: string | null; title: string | null; body: string | null; domain_id: string | null; sort_order: number | null }>
+
+  const pillars = await getPillars()
+  const pillarSlugById = new Map(pillars.map((p) => [p.id, p.slug]))
+  const phases = items
+    .filter((b) => b.block_type === 'phase' && b.parent_id === null)
+    .sort((x, y) => (x.sort_order ?? 0) - (y.sort_order ?? 0))
+
+  const journey: JourneyForEdit = {
+    title: plan.title ?? '',
+    subtitle: plan.summary ?? '',
+    intro: plan.intro ?? '',
+    phases: phases.map((ph) => ({
+      id: ph.id,
+      title: ph.title ?? '',
+      focus: ph.body ?? '',
+      practices: items
+        .filter((b) => b.parent_id === ph.id && b.block_type !== 'module')
+        .map((pr) => ({
+          id: pr.id,
+          pillar: pr.domain_id ? pillarSlugById.get(pr.domain_id) ?? 'practice' : pr.block_type ?? 'practice',
+          title: pr.title ?? '',
+          body: pr.body ?? '',
+        })),
+    })),
+  }
+
+  const ops = await planJourneyEdits({ request: req, journey, profileId: a.profileId })
+  if (!ops) return fail('Vera is offline right now. Try again in a moment, or edit by hand.')
+  if (ops.length === 0) return fail('Vera could not make that change. Try rephrasing it.')
+
+  const validIds = new Set(items.map((b) => b.id))
+  const phaseIds = new Set(phases.map((p) => p.id))
+  const pillarIds = await pillarIdsBySlug()
+  let applied = 0
+
+  for (const op of ops) {
+    if (op.op === 'identity') {
+      const upd: PlanUpdate = {}
+      if (op.title) upd.title = op.title
+      if (op.subtitle !== undefined) upd.summary = op.subtitle || null
+      if (op.intro !== undefined) upd.intro = op.intro || null
+      if (Object.keys(upd).length) { await admin.from('journey_plans').update(upd).eq('id', a.planId); applied++ }
+    } else if (op.op === 'phase') {
+      if (!phaseIds.has(op.id)) continue
+      const upd: BlockUpdate = {}
+      if (op.title) upd.title = op.title
+      if (op.focus !== undefined) upd.body = op.focus || null
+      if (Object.keys(upd).length) { await admin.from('journey_plan_items').update(upd).eq('id', op.id).eq('plan_id', a.planId); applied++ }
+    } else if (op.op === 'practice') {
+      if (!validIds.has(op.id) || phaseIds.has(op.id)) continue
+      const upd: BlockUpdate = {}
+      if (op.title) upd.title = op.title
+      if (op.body !== undefined) upd.body = op.body || null
+      if (Object.keys(upd).length) { await admin.from('journey_plan_items').update(upd).eq('id', op.id).eq('plan_id', a.planId); applied++ }
+    } else if (op.op === 'add_practice') {
+      if (!phaseIds.has(op.phaseId)) continue
+      const sort = await nextSortOrder(admin, a.planId, op.phaseId)
+      await admin.from('journey_plan_items').insert({ plan_id: a.planId, parent_id: op.phaseId, block_type: 'practice', title: op.title, body: op.body, domain_id: pillarIds[op.pillar] ?? null, sort_order: sort, required: true })
+      applied++
+    } else if (op.op === 'remove') {
+      if (!validIds.has(op.id)) continue
+      await admin.from('journey_plan_items').delete().eq('id', op.id).eq('plan_id', a.planId)
+      applied++
+    }
+  }
+
+  done(slug)
+  return ok({ applied })
 }
 
 export async function updateBlockAction(
