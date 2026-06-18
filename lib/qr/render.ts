@@ -21,7 +21,13 @@ export function renderQrSvg(text: string, size = 256): Promise<string> {
   return QRCode.toString(text, { ...BASE, type: 'svg', width: size })
 }
 
-/** A QR code for `text` as a PNG buffer. */
-export function renderQrPng(text: string, size = 512): Promise<Buffer> {
-  return QRCode.toBuffer(text, { ...BASE, type: 'png', width: size })
+/** A QR code for `text` as a PNG buffer. With `transparent`, the light modules render with
+ *  a 0-alpha background (the plain-fallback counterpart to the styled transparent export). */
+export function renderQrPng(text: string, size = 512, opts?: { transparent?: boolean }): Promise<Buffer> {
+  return QRCode.toBuffer(text, {
+    ...BASE,
+    type: 'png',
+    width: size,
+    ...(opts?.transparent ? { color: { dark: '#000000ff', light: '#00000000' } } : {}),
+  })
 }

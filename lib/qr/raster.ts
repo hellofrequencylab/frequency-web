@@ -78,12 +78,18 @@ export async function rasterizeSvg(
   return Buffer.from(r.render().asPng())
 }
 
-/** Render a QR for `text` with `style` as a PNG buffer (gradients, shapes, logo). */
-export async function renderStyledQrPng(text: string, style: QrStyle, size = 1024): Promise<Buffer> {
+/** Render a QR for `text` with `style` as a PNG buffer (gradients, shapes, logo). With
+ *  `transparent`, the outer background field is omitted so the PNG has an alpha background. */
+export async function renderStyledQrPng(
+  text: string,
+  style: QrStyle,
+  size = 1024,
+  opts?: { transparent?: boolean },
+): Promise<Buffer> {
   let effective = style
   if (style.logo && isSafeLogoSrc(style.logo)) {
     effective = { ...style, logo: await inlineLogo(style.logo) }
   }
-  const svg = renderStyledQrSvg(text, effective, size)
+  const svg = renderStyledQrSvg(text, effective, size, opts)
   return rasterizeSvg(svg, { width: size })
 }
