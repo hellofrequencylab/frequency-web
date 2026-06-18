@@ -7306,3 +7306,13 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 **Decision.** Added one additive, nullable column `page_settings.header_image_url` (the wide banner); `og_image_url` keeps its meaning (compact social/OG). The on-page **SEO & meta** panel now shows two `ImageUpload` uploaders ("Header image" / "Share image") instead of the URL text box; both reuse the existing `isSafeOgUrl` validation (https or root-relative). `getPageHeaderImage(route)` reads the banner (via the request-cached `loadPageSettings`), and the dashboard/index pages that show a hero — My Quest (`/crew`) and Practices (`/practices`) — render it. Link-preview metadata uses `og_image_url`, falling back to `header_image_url`. The older `page_content.hero_image` (ADR-180) is untouched and still serves pages that read it.
 
 **Consequences.** Operators set a page banner and a separate link-preview image from one panel, by upload rather than pasted URL. Additive + nullable, so reads fail-safe before/after the migration (`loadPageSettings` already returns null on any miss). Scope note: the header image renders only on pages wired to `getPageHeaderImage` (My Quest, Practices today); entity pages (events/circles) keep their own cover images. Validation: `tsc` 0 · `lint` 0 · `test` ✅ · `build` ✅.
+
+## ADR-310: Season 1 renamed "Shine" → "Stretch"
+
+**Status:** Accepted (2026-06-18).
+
+**Context.** ADR-291 renamed the placeholder Season 1 from "Stretch" to "Shine" (to fit the Shine/Shed/Sit/Sprout summer-to-spring scheme). The owner has renamed it back to **Stretch** (which keeps the same S-alliteration), and updated the season's header image to a "Stretch!" banner.
+
+**Decision.** Season 1's display name is **Stretch**. Updated all forward-looking website content + docs that hardcoded the season name: the season-name example in `components/quest/season-map.tsx`, `docs/REWARDS-ECONOMY.md`, `docs/QUEST-IA-DEBT.md`, and the Leader Training foundations (`content/leader-training/foundations/circles-and-journeys.md`, incl. the four-season rhythm line "Stretch in summer …"). The season NAME itself lives in the DB (`seasons.name`) and is edited by an operator at **/admin/content/seasons → the season → name/theme/lifecycle**, not hardcoded — so no migration here. ADR-291 and the historical seed migration `20260616000000_seed_shine_season.sql` are left untouched as records of what happened at the time.
+
+**Consequences.** Member-facing copy + docs read "Stretch" consistently. The live "The Quest is open: {name}" line reads the DB season name, so it follows the operator's rename automatically once saved in the season editor.

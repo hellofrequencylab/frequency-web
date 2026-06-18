@@ -61,7 +61,7 @@ One rule of thumb. The default Journey already balances the four pillars and car
 
 ## Seasons and the game
 
-All of Frequency runs on one rhythm. The year has four seasons, and every Circle is in the same one at the same time. Shine in summer, Shed in autumn, Sit in winter, Sprout in spring. Inside each season, your Circle runs its own Journey.
+All of Frequency runs on one rhythm. The year has four seasons, and every Circle is in the same one at the same time. Stretch in summer, Shed in autumn, Sit in winter, Sprout in spring. Inside each season, your Circle runs its own Journey.
 
 There is a light game underneath to keep it moving. Daily practice earns points across the season. Those points build your rank, from Initiate to Adept to Master, as you complete each of a Journey's challenges. At the end of a season your points convert into a lasting currency you keep. The game is the same everywhere, so the whole community is playing together even as each Circle does its own thing.
 
@@ -81,6 +81,6 @@ For the craft of actually holding a group together, turning a first season into 
 
 ## The first Circle
 
-Frequency is starting with one catch-all Circle, run by Daniel. It leads with the four pillars rather than a single topic, and its first Journey is Shine. The point of it is to get the ball rolling, build real community on the ground, and show other people what a Circle can be, so they go and start their own.
+Frequency is starting with one catch-all Circle, run by Daniel. It leads with the four pillars rather than a single topic, and its first Journey is Stretch. The point of it is to get the ball rolling, build real community on the ground, and show other people what a Circle can be, so they go and start their own.
 
 That is the whole model. One Circle becomes many. Each one runs Journeys. The four pillars hold underneath. And the communities last.

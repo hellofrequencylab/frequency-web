@@ -25,6 +25,7 @@ export function DashboardTemplate({
   actions,
   back,
   stats,
+  banner,
   width = 'wide',
   children,
 }: {
@@ -36,11 +37,14 @@ export function DashboardTemplate({
   back?: { href: string; label: string }
   /** A row of <StatCard>s, laid out in a responsive grid above the body. */
   stats?: React.ReactNode
+  /** Full-width header media rendered ABOVE the title (e.g. the operator header image). */
+  banner?: React.ReactNode
   width?: keyof typeof WIDTHS
   children: React.ReactNode
 }) {
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
+      {banner}
       <PageHeading eyebrow={eyebrow} title={title} description={description} actions={actions} back={back} />
       {stats && (
         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{stats}</div>
