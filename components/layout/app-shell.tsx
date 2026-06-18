@@ -24,8 +24,7 @@ import {
   Monitor,
   ChevronUp,
   ChevronRight,
-  PanelLeftOpen,
-  PanelLeftClose,
+  Menu,
   ChevronsLeft,
   ChevronsRight,
   Flame,
@@ -922,8 +921,11 @@ function MobileTabBar({
   /** Stripped shells (e.g. Studio) hide the app destinations; only the menu arrow remains. */
   hideAppNav?: boolean
 }) {
+  // Every item — the two edge buttons AND the destination tabs — is flex-1 with the same
+  // icon size + stroke weight, so the row reads as one evenly-spaced, uniform set. Active is
+  // shown by COLOR only (not a heavier stroke), so weights never differ across the row.
   const tabClass = (active: boolean) =>
-    `flex flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-3xs font-medium transition-colors ${
+    `flex flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium transition-colors ${
       active ? 'text-primary-strong' : 'text-muted hover:text-text'
     }`
 
@@ -932,22 +934,21 @@ function MobileTabBar({
     const active = isActive(tab.href)
     return (
       <Link key={tab.key} href={tab.href} aria-label={tab.label} className={tabClass(active)}>
-        <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.5 : 2} />
+        <Icon className="h-[22px] w-[22px]" strokeWidth={2} />
         <span className="leading-none">{tab.label}</span>
       </Link>
     )
   }
 
-  // Edge buttons (menu + stats) read as plain tab icons like the rest of the bar — no
-  // bordered thumbnail behind them — just a touch narrower than the flex-1 destination tabs.
+  // The edge buttons (menu + stats) are plain tabs too — same flex-1 width, icon, and weight.
   const handle =
-    'flex shrink-0 flex-col items-center justify-end gap-1 px-1.5 pb-1.5 text-3xs font-medium text-muted transition-colors active:text-text'
+    'flex flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium text-muted transition-colors active:text-text'
 
   return (
     <nav
       className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border bg-surface/95 backdrop-blur-sm"
       style={{
-        height: 'calc(4rem + env(safe-area-inset-bottom))',
+        height: 'calc(3.5rem + env(safe-area-inset-bottom))',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
@@ -959,7 +960,7 @@ function MobileTabBar({
         aria-expanded={menuOpen}
         className={`${handle} ${menuOpen ? 'text-primary-strong' : ''}`}
       >
-        {menuOpen ? <PanelLeftClose className="h-[22px] w-[22px]" strokeWidth={2} /> : <PanelLeftOpen className="h-[22px] w-[22px]" strokeWidth={2} />}
+        {menuOpen ? <X className="h-[22px] w-[22px]" strokeWidth={2} /> : <Menu className="h-[22px] w-[22px]" strokeWidth={2} />}
         <span className="leading-none">Menu</span>
       </button>
 
@@ -975,7 +976,7 @@ function MobileTabBar({
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode: 'post' } }))}
           aria-label="Zap, capture a moment"
-          className="relative flex flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-3xs font-semibold text-primary-strong"
+          className="relative flex flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-semibold text-primary-strong"
         >
           {/* The circle sits a touch lower than dead-center on the bar's top edge so
               it reads balanced against the flat tabs (its center is 6px below the
@@ -1013,7 +1014,7 @@ function MobileTabBar({
           aria-expanded={statsOpen}
           className={`${handle} ${statsOpen ? 'text-signal-strong' : ''}`}
         >
-          <Gem className="h-[22px] w-[22px]" strokeWidth={statsOpen ? 2.5 : 2} />
+          <Gem className="h-[22px] w-[22px]" strokeWidth={2} />
           <span className="leading-none">Stats</span>
         </button>
       )}
@@ -1478,7 +1479,7 @@ export default function AppShell({
       <div className="flex flex-1">
         <div
           data-feed-scroll
-          className="flex-1 min-w-0 pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0"
+          className="flex-1 min-w-0 pb-[calc(3.5rem_+_env(safe-area-inset-bottom))] md:pb-0"
         >
           <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-3.5rem)]">
 
