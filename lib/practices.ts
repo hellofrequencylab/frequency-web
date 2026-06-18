@@ -878,7 +878,7 @@ export async function getPracticesToLogToday(profileId: string): Promise<Practic
 
 /** Generic bonus container plumbed into the practice-log toast. Journey/season rewards
  *  were retired (ADR-253) — daily logs no longer grant journey/co-op rewards — so this now
- *  carries only the surviving daily-loop bonuses (Surprises + The Quiet Ones). Kept under the
+ *  carries only the surviving daily-loop bonus (Spark, the v3 variable layer). Kept under the
  *  `journey` key for a stable toast/action contract (on-air/actions → reveal.tsx). */
 export interface LogBonusResult {
   bonuses: { label: string; kind: 'zaps' | 'gems'; amount: number }[]
@@ -890,7 +890,7 @@ export interface LogPracticeResult {
   /** false = already logged this practice today (idempotent). */
   logged: boolean
   zapsAwarded: number
-  /** Daily-loop bonuses this log unlocked (Surprises / The Quiet Ones), for the toast. */
+  /** Daily-loop bonus this log unlocked (Spark, the v3 variable layer), for the toast. */
   journey?: LogBonusResult
   /** First log after a 7+ day gap: render the warm re-entry state (one line —
    *  good to see you + one small next step). NEVER broken-streak shame UI. */
@@ -1027,27 +1027,9 @@ export async function logPractice(input: {
   // Daily-loop bonus container for the toast. Journey/season + co-op rewards were retired
   // (ADR-253): a daily practice log no longer grants journey rewards (journey rewards now come
   // solely from completing lessons/phases in a Run; practices still pay their own Zaps per
-  // ADR-139). The blocks below populate this with the surviving daily-loop bonuses only —
-  // Surprises and The Quiet Ones.
+  // ADR-139). The block below populates this with the surviving daily-loop bonus only — Spark
+  // (the v3 variable layer; the v2 Surprises subsystem it replaced has been retired, ADR-305).
   let journey: LogBonusResult | undefined
-
-  // Surprises (ADR-210): a variable, unannounced bonus on the daily loop — at most
-  // once per day, gems-only so a lucky roll never distorts season rank. Best-effort
-  // + dynamic import; merged into the toast bonus container.
-  try {
-    const { fireSurpriseForLog } = await import('@/lib/surprises')
-    const surprise = await fireSurpriseForLog(profileId, day)
-    if (surprise) {
-      const base = journey ?? { bonuses: [], zaps: 0, gems: 0 }
-      journey = {
-        bonuses: [...base.bonuses, { label: surprise.label, kind: 'gems', amount: surprise.amount }],
-        zaps: base.zaps,
-        gems: base.gems + surprise.amount,
-      }
-    }
-  } catch {
-    // never let a surprise break the log
-  }
 
   // Spark (Rewards Economy v3, ADR-305): the capped, low-frequency surprise bonus ON TOP
   // of the base Zaps already awarded above — never replacing them. Capped to once per
