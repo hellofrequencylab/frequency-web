@@ -692,10 +692,10 @@ function NavLinkList({
             }
             const active = isActive(href)
             return (
-              <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, isHomeAnchor)}>
+              <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active)}>
                 <Icon
-                  className={`w-[18px] h-[18px] shrink-0 ${isHomeAnchor ? 'text-[var(--brand-mark)]' : active ? 'text-primary-strong' : 'text-subtle'}`}
-                  strokeWidth={active || isHomeAnchor ? 2.5 : 2}
+                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
+                  strokeWidth={active ? 2.5 : 2}
                 />
                 {label}
               </Link>
@@ -1501,7 +1501,10 @@ export default function AppShell({
                     (no sticky pin, no inner scrollbar): the menu rides up as you scroll and
                     the profile card sits at the bottom of the column, revealed as you reach
                     the end of the page — like the right rail's dock. */}
-                <nav className="flex-1 px-3 py-3 space-y-1">
+                {/* No outer px here: items carry their own px-3, so their hover boxes sit flush
+                    to the column edge — matching the right rail's cards, so the outer margin reads
+                    the same on both sides. */}
+                <nav className="flex-1 py-3 space-y-1">
                   <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={navSections} />
                 </nav>
                 {/* Mirrors the right rail's stats dock: sticky to the column bottom, rises
@@ -1574,7 +1577,7 @@ export default function AppShell({
                   </button>
                 </aside>
               ) : (
-                <aside className="hidden lg:flex flex-col w-80 shrink-0 py-6">
+                <aside className="hidden lg:flex flex-col w-72 shrink-0 py-6">
                   {sidebar}
                   {railCollapsible && (
                     // The collapse TOGGLE at the BOTTOM, sticky so it stays visible as the rail

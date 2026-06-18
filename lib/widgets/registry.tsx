@@ -19,6 +19,7 @@ import { PracticesStats } from '@/components/widgets/practices/practices-stats'
 import { PracticesActivity } from '@/components/widgets/practices/practices-activity'
 import { PracticesBalance } from '@/components/widgets/practices/practices-balance'
 import { PracticesMine } from '@/components/widgets/practices/practices-mine'
+import { PracticesLibrary } from '@/components/widgets/practices/practices-library'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -46,11 +47,12 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'journeys-start': JourneysStart,
   'journeys-mine': JourneysMine,
   'journeys-library': JourneysLibrary,
-  // Practices page (/practices) — the upper, personal blocks.
+  // Practices page (/practices) — the upper personal blocks + the faceted library.
   'practices-stats': PracticesStats,
   'practices-activity': PracticesActivity,
   'practices-balance': PracticesBalance,
   'practices-mine': PracticesMine,
+  'practices-library': PracticesLibrary,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {

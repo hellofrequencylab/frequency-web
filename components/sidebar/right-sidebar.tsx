@@ -189,31 +189,39 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   // route decision lives in the rail resolver (isQuestSurface); the rail just reads the flag.
   // Off-Quest (feed, channels, …) the page shows no standing, so the rail keeps it.
   const onQuest = isQuestSurface(pathname)
+  // No duplicate functions: a rail panel never shows on the page that already features that
+  // function. The Your Quest box is the only always-on panel; the rest are contextual.
+  const showActivity = pathname !== '/practices'
+  const showSignature = !pathname.startsWith('/people/')
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1 space-y-4 pt-1 pb-6">
         {/* Site-wide demo notice — pinned ABOVE the Quest box when demo content is
             present (it self-hides otherwise). */}
         <DemoNotice />
-        {/* Quest control center: rank/standing + (when live) the next onboarding step.
-            Hidden on Quest surfaces, where the page already owns this standing. */}
+        {/* Quest control center: rank/standing + (when live) the next onboarding step. The ONE
+            always-on rail box. Hidden on Quest surfaces, where the page already owns this standing. */}
         {!onQuest && (
           <Suspense fallback={<PanelSkeleton />}>
             <ControlCenterPanel profileId={profileId} />
           </Suspense>
         )}
-        {/* Your activity — sits directly under the Season Standing block. */}
-        <Suspense fallback={<PanelSkeleton />}>
-          <ActivityPanel profileId={profileId} />
-        </Suspense>
+        {/* Your activity — under Season Standing, except on /practices which already shows it. */}
+        {showActivity && (
+          <Suspense fallback={<PanelSkeleton />}>
+            <ActivityPanel profileId={profileId} />
+          </Suspense>
+        )}
         {/* Page panels — stats specific to this route. */}
         <Suspense fallback={<PanelSkeleton />}>
           <PagePanels profileId={profileId} role={role} pathname={pathname} />
         </Suspense>
-        {/* The viewer's Frequency Signature — sits under the current blocks on every rail. */}
-        <Suspense fallback={<PanelSkeleton />}>
-          <SignaturePanel profileId={profileId} />
-        </Suspense>
+        {/* The viewer's Frequency Signature — except on profile pages, which already show it. */}
+        {showSignature && (
+          <Suspense fallback={<PanelSkeleton />}>
+            <SignaturePanel profileId={profileId} />
+          </Suspense>
+        )}
       </div>
       {/* Standing panel — the player's progress cockpit, pinned to the bottom.
           Hidden on Quest surfaces (the page owns standing there). */}

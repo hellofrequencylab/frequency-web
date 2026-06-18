@@ -34,11 +34,14 @@ export async function proxy(request: NextRequest) {
 
   // Expose the current route to server components — next/headers can't see the URL
   // otherwise. The right rail reads `x-pathname` to choose its page-specific panels
-  // while staying server-rendered (ADR-161). Recomputed per response so it always
-  // reflects the latest (cookie-mutated) request headers.
+  // while staying server-rendered (ADR-161). `x-search` carries the query string so a
+  // deep server component (e.g. a layout-engine block) can read the page's facets —
+  // searchParams are a PAGE prop and never reach a nested module otherwise. Recomputed
+  // per response so it always reflects the latest (cookie-mutated) request headers.
   const withPath = (req: NextRequest) => {
     const headers = new Headers(req.headers)
     headers.set('x-pathname', pathname)
+    headers.set('x-search', req.nextUrl.search)
     return headers
   }
 

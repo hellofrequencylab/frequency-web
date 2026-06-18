@@ -47,6 +47,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'practices-activity', label: 'Your activity', description: 'The member’s practice as a bar chart with Days, Weeks, and Months views.' },
   { id: 'practices-balance', label: 'Pillar balance', description: 'How the member’s adopted practices spread across the four Pillars.' },
   { id: 'practices-mine', label: 'Your practices', description: 'The member’s adopted and built practices, each with its log and edit controls.' },
+  { id: 'practices-library', label: 'Practice library', description: 'The full, faceted community library — filterable by Pillar, tag, and search, paginated.' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
@@ -74,10 +75,10 @@ const ADMIN_JOURNEYS_MODULE_IDS = [
 // The Journeys member page (/journeys), in default render order.
 const JOURNEYS_MODULE_IDS = ['journeys-start', 'journeys-mine', 'journeys-library'] as const
 
-// The Practices page (/practices) upper, personal blocks, in default render order. The faceted
-// Practice Library below them stays a FIXED section the page renders (it reads searchParams, which
-// blocks never receive), so only these three are module-driven.
-const PRACTICES_MODULE_IDS = ['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine'] as const
+// The Practices page (/practices) blocks, in default render order. The faceted Practice Library is
+// a module too (practices-library): it's URL-driven, so it reads the page's facets from the
+// `x-search` request header (proxy.ts) rather than searchParams, which a nested module never gets.
+const PRACTICES_MODULE_IDS = ['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine', 'practices-library'] as const
 
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section
  *  ('/seg/*'), or an exact route. Add a route's set here when you convert its page to
