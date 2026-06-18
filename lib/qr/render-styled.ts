@@ -34,8 +34,14 @@ function eyeSvg(gx: number, gy: number, frame: EyeShape, pupil: EyeShape, fill: 
 }
 
 /** Render a QR for `text` as a designed inline SVG string. `size` is the pixel
- *  width; height follows automatically when a CTA frame is present. */
-export function renderStyledQrSvg(text: string, style: QrStyle, size = 256): string {
+ *  width; height follows automatically when a CTA frame is present. `transparent`
+ *  omits the outer background field (for a transparent PNG export). */
+export function renderStyledQrSvg(
+  text: string,
+  style: QrStyle,
+  size = 256,
+  opts?: { transparent?: boolean },
+): string {
   const ecc = style.logo ? 'H' : 'M'
   const qr = QRCode.create(text, { errorCorrectionLevel: ecc })
   const N = qr.modules.size
@@ -73,12 +79,15 @@ export function renderStyledQrSvg(text: string, style: QrStyle, size = 256): str
     )
   }
 
-  // Background — a rounded card when framed, a plain fill otherwise.
+  // Background — a rounded card when framed, a plain fill otherwise. A transparent export
+  // (the PNG download) omits the outer field entirely, so only the code and its structural
+  // quiet bits (the eye middles + the logo halo, both still drawn in style.bg) paint and the
+  // modules stay scannable on any surface.
   if (hasFrame) {
     parts.push(
       `<rect x="0" y="0" width="${W}" height="${H}" rx="2.5" fill="${style.bg}" stroke="${eyeFill}" stroke-width="0.4"/>`,
     )
-  } else {
+  } else if (!opts?.transparent) {
     parts.push(`<rect x="0" y="0" width="${W}" height="${H}" fill="${style.bg}"/>`)
   }
 

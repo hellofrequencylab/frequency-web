@@ -162,4 +162,12 @@ describe('renderStyledQrSvg', () => {
     expect(svg).toContain('&lt;b&gt;&amp;')
     expect(svg).not.toContain('<b>&<')
   })
+
+  it('draws the outer background by default but omits it for a transparent export', () => {
+    const bgRect = /<rect x="0" y="0" width="\d+(\.\d+)?" height="\d+(\.\d+)?" fill="#ffffff"\/>/
+    expect(renderStyledQrSvg(url, { ...DEFAULT_STYLE, logo: null }, 256)).toMatch(bgRect)
+    const transparent = renderStyledQrSvg(url, { ...DEFAULT_STYLE, logo: null }, 256, { transparent: true })
+    expect(transparent).not.toMatch(bgRect)
+    expect(transparent).toContain('<rect') // the code itself still renders
+  })
 })

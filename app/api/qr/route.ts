@@ -68,8 +68,10 @@ export async function GET(request: Request) {
     target = toAbsoluteSiteUrl(text)
   }
 
+  // `size` is optional; an absent param is Number(null) === 0 (finite!), so guard on > 0 or the
+  // download silently clamps to the 64px floor instead of the intended default (the "tiny PNG" bug).
   const requested = Number(url.searchParams.get('size'))
-  const size = Number.isFinite(requested)
+  const size = Number.isFinite(requested) && requested > 0
     ? Math.min(Math.max(Math.round(requested), 64), 2048)
     : format === 'png'
       ? 1024
@@ -83,13 +85,16 @@ export async function GET(request: Request) {
   }
 
   if (format === 'png') {
-    // Styled codes rasterize their design (gradients/shapes/logo) via resvg; any
-    // failure degrades to the plain code so a download never breaks.
+    // PNG downloads are large + transparent (no white card) so the code drops onto any design.
+    // Styled codes rasterize their design (gradients/shapes/logo) via resvg; any failure degrades
+    // to a plain transparent code so a download never breaks.
     let png: Buffer
     try {
-      png = style ? await renderStyledQrPng(target, style, size) : await renderQrPng(target, size)
+      png = style
+        ? await renderStyledQrPng(target, style, size, { transparent: true })
+        : await renderQrPng(target, size, { transparent: true })
     } catch {
-      png = await renderQrPng(target, size)
+      png = await renderQrPng(target, size, { transparent: true })
     }
     return new Response(new Uint8Array(png), { headers: { ...headers, 'Content-Type': 'image/png' } })
   }
