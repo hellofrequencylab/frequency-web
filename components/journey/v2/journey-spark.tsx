@@ -2,10 +2,10 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, ArrowLeft, Loader2, Upload, Video, MapPin, Users, Compass } from 'lucide-react'
+import { Sparkles, ArrowLeft, Loader2, Upload, Video, MapPin, Users, Compass, LayoutTemplate } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { isError } from '@/lib/action-result'
-import { sparkJourneyAction, createJourneyFromSparkAction, extractOverviewAction, createMasterFrameworkAction } from '@/app/(main)/journeys/create-actions'
+import { sparkJourneyAction, createJourneyFromSparkAction, extractOverviewAction, createMasterFrameworkAction, createJourneyFromTemplateAction } from '@/app/(main)/journeys/create-actions'
 import type { JourneyPace, ArcWeek, SparkSettings, SparkMeeting } from '@/lib/ai/journey-spark'
 import { JourneyBuilder } from './journey-builder'
 
@@ -30,10 +30,22 @@ const FIELD =
 
 const WEEK_CHOICES = [2, 4, 6, 8] as const
 
-export function JourneySpark() {
+/** Client-safe template metadata for the "Start from a template" picker (the full template trees
+ *  in lib/journeys/templates.ts pull server-only compose code, so the page maps to this shape). */
+export interface JourneyTemplateMeta {
+  id: string
+  name: string
+  description: string
+  emoji: string
+  phases: number
+  lessons: number
+}
+
+export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMeta[] }) {
   const router = useRouter()
   const [mode, setMode] = useState<'wizard' | 'manual'>('wizard')
   const [usingOverview, setUsingOverview] = useState(false)
+  const [picking, setPicking] = useState(false)
   const [step, setStep] = useState(1)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -61,9 +73,9 @@ export function JourneySpark() {
   if (mode === 'manual') return <JourneyBuilder draft />
 
   const onReview = step === 5
-  const total = usingOverview ? 2 : 5
-  const current = onReview ? total : usingOverview ? 1 : step
-  const label = onReview ? 'Review' : usingOverview ? 'Your overview' : ['Who', 'About', 'Outcome', 'Shape'][step - 1]
+  const total = picking ? 1 : usingOverview ? 2 : 5
+  const current = picking ? 1 : onReview ? total : usingOverview ? 1 : step
+  const label = picking ? 'Template' : onReview ? 'Review' : usingOverview ? 'Your overview' : ['Who', 'About', 'Outcome', 'Shape'][step - 1]
 
   const generate = () => {
     setError(null)
@@ -111,6 +123,13 @@ export function JourneySpark() {
     })
   }
 
+  // Instantiate one of the simple template skeletons into a fresh private draft, then (the action
+  // redirects server-side) drop into the editor to make it yours.
+  const chooseTemplate = (id: string) => {
+    setError(null)
+    start(() => createJourneyFromTemplateAction(id))
+  }
+
   const onFile = (file: File) => {
     setError(null)
     setExtracting(true)
@@ -137,7 +156,9 @@ export function JourneySpark() {
       (step === 3 && outcome.trim().length > 0) ||
       step === 4
 
-  const heading = onReview
+  const heading = picking
+    ? { title: 'Start from a template', description: 'Pick a ready-made structure. We create it as a private draft and open the editor so you can make it yours.' }
+    : onReview
     ? { title: 'Here is your Journey', description: "Vera's draft. Edit anything, then create it." }
     : usingOverview
       ? { title: 'Paste or upload your overview', description: 'Drop in your own write-up (PDF, Word, or text) and Vera rebuilds it as a balanced Journey.' }
@@ -158,8 +179,33 @@ export function JourneySpark() {
         <p className="mt-1 text-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
+          {/* TEMPLATE picker — instantiate a simple proven skeleton (ADR-252, J4). */}
+          {picking && (
+            <div className="space-y-2.5">
+              {templates.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => chooseTemplate(t.id)}
+                  disabled={pending}
+                  className="flex w-full items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-surface-elevated disabled:opacity-60"
+                >
+                  <span className="text-2xl leading-none" aria-hidden>{t.emoji}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-text">{t.name}</span>
+                    <span className="block text-xs leading-snug text-muted">{t.description}</span>
+                    <span className="mt-1 block text-2xs font-medium uppercase tracking-wide text-subtle">
+                      {t.phases} {t.phases === 1 ? 'phase' : 'phases'} · {t.lessons} {t.lessons === 1 ? 'lesson' : 'lessons'}
+                    </span>
+                  </span>
+                  {pending ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary-strong" /> : null}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* OVERVIEW path */}
-          {usingOverview && !onReview && (
+          {!picking && usingOverview && !onReview && (
             <div className="space-y-3">
               <textarea
                 autoFocus
@@ -200,7 +246,7 @@ export function JourneySpark() {
           )}
 
           {/* QUESTIONS path */}
-          {!usingOverview && step === 1 && (
+          {!picking && !usingOverview && step === 1 && (
             <>
               <textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={3} className={FIELD} placeholder="e.g. People who feel wired and tired and want their evenings back." />
               {/* Prominent second path: drop in a full outline and let Vera build the whole thing. */}
@@ -228,6 +274,21 @@ export function JourneySpark() {
                   <span className="block text-xs leading-snug text-muted">Stamp the proven shape: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone. Fill it in as you go.</span>
                 </span>
               </button>
+              {/* Simpler skeletons: a reset, a coaching arc, an onboarding program. */}
+              {templates.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPicking(true)}
+                  disabled={pending}
+                  className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-surface-elevated disabled:opacity-60"
+                >
+                  <LayoutTemplate className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-text">Start from a template</span>
+                    <span className="block text-xs leading-snug text-muted">Pick a ready-made structure (a reset, a coaching arc, an onboarding program) and fill in the lessons.</span>
+                  </span>
+                </button>
+              )}
             </>
           )}
           {!usingOverview && step === 2 && (
@@ -366,6 +427,12 @@ export function JourneySpark() {
         {error && <p className="mt-4 text-sm text-warning">{error}</p>}
 
         <div className="mt-7 flex gap-3">
+          {picking ? (
+            <button type="button" onClick={() => setPicking(false)} disabled={pending} className={`${wizardSecondaryClass} w-full`}>
+              <ArrowLeft className="h-4 w-4" /> Back
+            </button>
+          ) : (
+          <>
           {(step > 1 || (usingOverview && !onReview)) && (
             <button type="button" onClick={usingOverview && !onReview ? () => setUsingOverview(false) : back} disabled={pending} className={`${wizardSecondaryClass} flex-1`}>
               <ArrowLeft className="h-4 w-4" /> Back
@@ -381,16 +448,18 @@ export function JourneySpark() {
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Create Journey
             </button>
           )}
+          </>
+          )}
         </div>
       </div>
 
       <p className="mt-8 text-center text-xs text-subtle">
-        {!onReview && !usingOverview && (
+        {!onReview && !usingOverview && !picking && (
           <button type="button" onClick={() => { setUsingOverview(true); setStep(1) }} className="underline-offset-4 transition-colors hover:text-muted hover:underline">
             Have an overview already? Paste or upload it
           </button>
         )}
-        {!onReview && (
+        {!onReview && !picking && (
           <>
             {!usingOverview && <span className="px-1.5 text-border" aria-hidden>·</span>}
             <button type="button" onClick={() => setMode('manual')} className="underline-offset-4 transition-colors hover:text-muted hover:underline">

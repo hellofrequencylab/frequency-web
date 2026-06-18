@@ -67,6 +67,15 @@ const nextConfig: NextConfig = {
     '/api/cron/embed-help': ['./content/help/**/*'],
     '/admin/vera-ai': ['./content/help/**/*'],
     '/**': ['./content/help/**/*'],
+    // The resvg WASM rasterizer (lib/qr/raster.ts) reads index_bg.wasm from node_modules at
+    // RUNTIME via fs (the package is in serverExternalPackages, so it is never bundled). Next's
+    // tracer follows the JS entry but NOT that derived `readFile` path, so without an explicit
+    // include the .wasm is absent from the serverless bundle on Vercel — initWasm throws and every
+    // styled PNG export silently degrades to a plain code. Bundle it into the two routes that
+    // rasterize: the styled QR download + the entry-point flyer.
+    '/api/qr': ['./node_modules/@resvg/resvg-wasm/index_bg.wasm'],
+    // `*` (not the literal `[slug]`, which globs as a character class) matches the dynamic segment.
+    '/api/entry-points/*/flyer': ['./node_modules/@resvg/resvg-wasm/index_bg.wasm'],
   },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
