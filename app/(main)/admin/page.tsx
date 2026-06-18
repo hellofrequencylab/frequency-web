@@ -675,7 +675,6 @@ type MembershipRow = {
     community_role: string
     current_season_rank: string | null
     current_season_zaps: number
-    season_challenges_complete: boolean
     is_crew_lead: boolean | null
   }
   circle: { name: string } | null
@@ -694,12 +693,11 @@ function toMemberItems(rows: MembershipRow[]): MemberItem[] {
     isCrewLead: m.profile.is_crew_lead ?? false,
     currentSeasonRank: (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
     currentSeasonZaps: m.profile.current_season_zaps ?? 0,
-    seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
   }))
 }
 
 const MEMBERSHIP_SELECT = `id, joined_at,
-   profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
+   profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, is_crew_lead ),
    circle:circles!circle_id ( name )`
 
 // ── Host: circle + member overview ───────────────────────────────────────────

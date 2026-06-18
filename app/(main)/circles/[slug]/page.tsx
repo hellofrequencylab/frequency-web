@@ -31,7 +31,6 @@ import { ClaimCircle } from '@/components/circles/claim-circle'
 import { CircleCover } from '@/components/circles/circle-cover'
 import { GroupMapSection } from '@/components/connections/group-map-section'
 import { CircleMomentum } from '@/components/connections/circle-momentum'
-import { CircleCurrentStanding } from '@/components/circles/circle-current-standing'
 
 type CircleDetail = {
   id: string
@@ -317,20 +316,6 @@ export default async function CirclePage({
       <CircleMomentum circleId={circle.id} />
     </Suspense>
   )
-
-  // Circle Current — the circle's collective seasonal standing (EVENTS-SYSTEM §6.2).
-  // Members always see it; non-members only when the circle opted in to a public
-  // standing (resonance_public). Collaborative, never an inter-circle ranking. The
-  // widget self-hides until the circle has built Current; Suspense keeps it off
-  // the shell's critical path. (Rail key stays 'field' — it is a persisted
-  // sidebar_order identifier, not a member-facing string.)
-  if (isMember || circle.resonance_public) {
-    railMap.field = (
-      <Suspense fallback={null}>
-        <CircleCurrentStanding circleId={circle.id} circleName={circle.name} />
-      </Suspense>
-    )
-  }
 
   if (canManage) {
     railMap.invite = (

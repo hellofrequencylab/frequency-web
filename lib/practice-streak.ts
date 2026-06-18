@@ -410,6 +410,61 @@ export async function recordPracticeStreak(profileId: string): Promise<void> {
     .eq('id', profileId)
 }
 
+// --- buy-a-freeze sink (Rewards Economy v3, ADR-305) -----------------------
+
+export interface GrantFreezeResult {
+  /** A freeze token was banked. */
+  granted: boolean
+  /** The freeze reserve after the call. */
+  freezeTokens: number
+  /** True when the grant was refused because the member is already at the cap. */
+  atCap: boolean
+}
+
+/**
+ * Bank ONE daily-streak freeze token for a member (the Vault "buy a streak freeze"
+ * sink, ADR-305 / REWARDS-ECONOMY.md §8–§9). The reserve lives in
+ * `profiles.meta.practiceStreak.freezeTokens`, the same slot the earned freezes use
+ * (lib/streak earn paths), and is capped at STREAK_FREEZE_CAP — a member already at the
+ * cap is refused (`atCap: true`, `granted: false`) so the store can refund / not charge.
+ * Idempotency / charge is the store's job (the store_redemptions row debits the Gems);
+ * this just moves the reserve. Service-role path.
+ *
+ * NOTE: the "Freezes are never purchasable" note in lib/streak predates ADR-305, which
+ * adds buying one with Gems as an explicit second sink. The cap still holds for both
+ * the earned and the bought freeze, so buying can never exceed STREAK_FREEZE_CAP.
+ */
+export async function grantStreakFreeze(profileId: string): Promise<GrantFreezeResult> {
+  const admin = createAdminClient()
+
+  const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
+  const meta = (prof?.meta ?? {}) as Record<string, unknown>
+  const stored = readStored(meta)
+
+  if (stored.freezeTokens >= STREAK_FREEZE_CAP) {
+    return { granted: false, freezeTokens: stored.freezeTokens, atCap: true }
+  }
+
+  const freezeTokens = Math.min(STREAK_FREEZE_CAP, stored.freezeTokens + 1)
+
+  const nextMeta = {
+    ...meta,
+    practiceStreak: {
+      ...(meta.practiceStreak as Record<string, unknown> | undefined),
+      freezeTokens,
+      frozenDates: stored.frozenDates,
+      milestonesPaid: stored.milestonesPaid,
+      longest: stored.longest,
+      fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
+      rest: stored.rest ?? null,
+      updatedAt: new Date().toISOString(),
+    } satisfies StoredStreak,
+  }
+
+  await admin.from('profiles').update({ meta: nextMeta as unknown as Json }).eq('id', profileId)
+  return { granted: true, freezeTokens, atCap: false }
+}
+
 // --- rest-window writers (the "life happens" pause) ------------------------
 
 export interface SetPauseResult {

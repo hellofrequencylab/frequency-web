@@ -62,7 +62,6 @@ export const AREA_ICONS: Record<string, ElementType> = {
   crew: Zap,
   quest: Compass,
   quests: Compass,
-  sideQuests: Flag,
   store: Store,
   vault: Gem,
   messageBoards: MessageSquare,

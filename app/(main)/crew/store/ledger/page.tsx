@@ -65,7 +65,7 @@ export default async function VaultLedgerPage() {
       stats={
         <>
           <StatCard label="Zaps · season" value={totals.seasonZaps.toLocaleString()} icon={Zap} />
-          <StatCard label="Gems · season" value={totals.seasonGems.toLocaleString()} icon={Gem} />
+          <StatCard label="Gems" value={totals.lifetimeGems.toLocaleString()} icon={Gem} />
           <StatCard label="Streak" value={`${totals.currentStreak}w`} icon={Flame} />
           <StatCard
             label={`Amplitude · L${amplitudeLevel(totals.amplitude)}`}

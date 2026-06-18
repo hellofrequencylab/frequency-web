@@ -6576,6 +6576,45 @@ export type Database = {
           },
         ]
       }
+      gem_gifts: {
+        Row: {
+          amount: number
+          created_at: string
+          giver_id: string
+          id: string
+          recipient_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          giver_id: string
+          id?: string
+          recipient_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          giver_id?: string
+          id?: string
+          recipient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gem_gifts_giver_id_fkey"
+            columns: ["giver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gem_gifts_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reward_grants: {
         Row: {
           amount: number

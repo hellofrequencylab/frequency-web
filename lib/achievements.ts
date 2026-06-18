@@ -8,7 +8,6 @@ import { STREAK_CONFIG } from '@/lib/gamification'
 import { awardGems } from '@/lib/gems'
 import { awardZaps } from '@/lib/zaps'
 import { currencyForCriteria, type EngagementCurrency } from '@/lib/engagement/currency'
-import { awardCircleCurrentForChallengeCompletion } from '@/lib/events/circle-current'
 import type { Database } from '@/lib/database.types'
 
 type AdminClient = ReturnType<typeof createAdminClient>
@@ -68,15 +67,9 @@ export async function processGamificationEvent(
   try {
     const newAchievements = await evaluateAchievements(admin, event)
     await advanceChallenges(admin, event)
-    // Zap Surprise (ADR-210): a variable, unannounced bonus on appropriate real-world
-    // acts (attend / host / refer / task / scan). No-op for other event types and at
-    // most once per day; isolated so a surprise can never affect the achievement flow.
-    try {
-      const { fireZapSurpriseForAct } = await import('@/lib/surprises')
-      await fireZapSurpriseForAct(event.profileId, event.type)
-    } catch {
-      // never let a surprise break gamification processing
-    }
+    // Note: the v2 Zap-Surprise-on-real-world-acts hook was retired with the Surprises
+    // subsystem (ADR-305). The v3 variable layer (Spark) covers only the practice log by
+    // design, so there is no variable bonus on the gamification chokepoint.
     return newAchievements
   } catch (err) {
     console.error('[gamification] event processing failed:', err)
@@ -381,8 +374,6 @@ function isCriteriaMet(
     case 'amplitude':
       return stats.amplitude >= criteria.count
     default:
-      // The Quiet Ones (dawn_patrol / radio_silence / four_pillars / carrier_wave /
-      // long_range) are evaluated by lib/awards/secret.ts, never here.
       return false
   }
 }
@@ -463,9 +454,6 @@ async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
       await grantReward(event.profileId, currency, challenge.zaps_reward ?? 0, 'challenge_complete', {
         challenge: challenge.id,
       })
-      // Collaborative roll-up: if any circle this member belongs to has adopted
-      // this challenge together, credit that circle's Circle Current. Best-effort.
-      await awardCircleCurrentForChallengeCompletion(challenge.id, event.profileId)
       await checkAllChallengesComplete(admin, event.profileId)
     }
   }
@@ -514,11 +502,6 @@ async function checkAllChallengesComplete(admin: AdminClient, profileId: string)
   const completedIds = new Set((completed ?? []).map(c => c.challenge_id))
   const allDone = others.every(c => completedIds.has(c.id))
   if (!allDone) return
-
-  await admin
-    .from('profiles')
-    .update({ season_challenges_complete: true })
-    .eq('id', profileId)
 
   // Complete + pay the Completionist itself (250⚡ ON TOP of the 1,000⚡ purse),
   // and grant the "Every Frequency" prismatic border (S1-exclusive cosmetic).

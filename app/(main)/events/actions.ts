@@ -13,7 +13,6 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
-import { awardCircleCurrentForCheckin } from '@/lib/events/circle-current'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
@@ -169,6 +168,15 @@ export async function createEvent(formData: FormData) {
   awardZapsForAction(myProfileId, 'event_host').catch((e) => console.error('[events gamification]', e))
   recordStreakActivity(myProfileId, 'hosting').catch((e) => console.error('[events gamification]', e))
 
+  // Creation token (Rewards Economy v3, ADR-305): creating an event is its first publish.
+  // The host gets the small Gem token, idempotent per event id + best-effort (never blocks
+  // the create). Fired only when the insert succeeded (inserted.id exists).
+  if (inserted) {
+    import('@/lib/rewards/creation')
+      .then(({ awardCreationToken }) => awardCreationToken(myProfileId, 'event', inserted.id))
+      .catch((e) => console.error('[events creation token]', e))
+  }
+
   revalidatePath('/events')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
@@ -323,6 +331,24 @@ async function sendRsvpConfirmation(
   }
 }
 
+// Validated creation (Rewards Economy v3, ADR-305): an RSVP 'going' is the "use" that
+// validates an event. The event's HOST (the beneficiary) is paid off the RSVPer's (the
+// actor's) use when the RSVPer is an established member. Idempotent per event id + best-
+// effort: pays the host exactly once across all attendees, never blocks the RSVP. Reads the
+// host_id, then defers to the creation module (which runs the established-member gate).
+async function fireEventValidation(eventId: string, rsvperId: string): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    const { data: ev } = await admin.from('events').select('host_id').eq('id', eventId).maybeSingle()
+    const hostId = (ev as { host_id: string | null } | null)?.host_id
+    if (!hostId) return
+    const { awardValidatedCreation } = await import('@/lib/rewards/creation')
+    await awardValidatedCreation(hostId, 'event', eventId, rsvperId)
+  } catch (e) {
+    console.error('[events creation validation]', e)
+  }
+}
+
 export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
@@ -347,6 +373,8 @@ export async function toggleRSVP(eventId: string) {
       // One row per (event, profile); the gem fires once on the first RSVP.
       awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
     }
+    // Validated creation pays the host (idempotent per event, so any 'going' is safe).
+    fireEventValidation(eventId, myProfileId).catch((e) => console.error('[events creation validation]', e))
   }
 
   if (existing) {
@@ -425,6 +453,8 @@ export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' |
     if (firstTime) {
       awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
     }
+    // Validated creation pays the host (idempotent per event, so any 'going' is safe).
+    fireEventValidation(eventId, myProfileId).catch((e) => console.error('[events creation validation]', e))
   }
 
   if (intent === 'going') {
@@ -565,8 +595,6 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     // never let a reward read break the check-in
   }
   await recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
-  // Collective gamification: credit the event's circle (no-op for non-circle events).
-  await awardCircleCurrentForCheckin(eventId, myProfileId).catch((e) => console.error('[circle current]', e))
   return { ok: true, zapsAwarded }
 }
 

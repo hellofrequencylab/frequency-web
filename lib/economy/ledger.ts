@@ -34,7 +34,6 @@ export interface EarningLog {
   totals: {
     seasonZaps: number
     lifetimeZaps: number
-    seasonGems: number
     lifetimeGems: number
     currentStreak: number
     longestStreak: number
@@ -79,7 +78,7 @@ export async function getEarningLog(profileId: string, limit = 80): Promise<Earn
     supabase
       .from('profiles')
       .select(
-        'current_season_zaps, lifetime_zaps, current_season_gems, lifetime_gems, current_streak, longest_streak, current_season_rank, lifetime_rank, amplitude',
+        'current_season_zaps, lifetime_zaps, lifetime_gems, current_streak, longest_streak, current_season_rank, lifetime_rank, amplitude',
       )
       .eq('id', profileId)
       .maybeSingle(),
@@ -120,7 +119,6 @@ export async function getEarningLog(profileId: string, limit = 80): Promise<Earn
   const p = profRes.data as {
     current_season_zaps: number | null
     lifetime_zaps: number | null
-    current_season_gems: number | null
     lifetime_gems: number | null
     current_streak: number | null
     longest_streak: number | null
@@ -135,7 +133,6 @@ export async function getEarningLog(profileId: string, limit = 80): Promise<Earn
     totals: {
       seasonZaps: p?.current_season_zaps ?? 0,
       lifetimeZaps: p?.lifetime_zaps ?? 0,
-      seasonGems: p?.current_season_gems ?? 0,
       lifetimeGems: p?.lifetime_gems ?? 0,
       currentStreak: p?.current_streak ?? 0,
       longestStreak: p?.longest_streak ?? 0,

@@ -15,9 +15,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentSeason } from '@/lib/seasons'
 import { awardZapsForAction } from '@/lib/zaps'
+import { awardGems } from '@/lib/gems'
 import { higherRank, rankForCompletion, type SeasonRank } from '@/lib/season-ranks'
 import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
 import { evaluateJourneyCompletion } from '@/lib/quest/completion'
+import { grantJourneyBadgeOnCompletion, grantStoreItem } from '@/lib/awards/cosmetics'
 import { QUEST } from '@/lib/gamification'
 
 export interface CompleteJourneyResult {
@@ -26,6 +28,66 @@ export interface CompleteJourneyResult {
   rank?: SeasonRank
   zaps?: number
   gems?: number
+  /** The season capstone fired on this completion (3rd Journey → Master). */
+  certificate?: boolean
+}
+
+/**
+ * The season CAPSTONE (Rewards Economy v3, ADR-305 / REWARDS-ECONOMY.md §7): finishing the
+ * THIRD Journey of a season (Master rank) grants, ONCE per member per season:
+ *   · the 'certificate' achievement (a user_achievements row), and
+ *   · the 'certificate-seal' cosmetic (grantStoreItem), and
+ *   · 100 Gems (awardGems action_type 'certificate_bonus').
+ * Idempotent via the reward_grants rule_key `certificate:{season}` (claim-then-pay): the
+ * unique (rule_key, profile_id) insert is the lock; only a fresh claim grants. Best-effort:
+ * the 'certificate' achievement row + 'certificate-seal' store item are seeded separately,
+ * so a missing row here is a no-op (grantStoreItem returns false, the achievement insert is
+ * skipped on a lookup miss) and NEVER throws. Returns true when the capstone newly fired.
+ */
+async function grantCertificate(
+  admin: ReturnType<typeof createAdminClient>,
+  profileId: string,
+  season: number,
+): Promise<boolean> {
+  try {
+    // Claim-then-pay: one row per (member, season) is the idempotency lock. The amount
+    // mirrors the Gem bonus written below (the ledger row carries the live grant).
+    const { error } = await admin.from('reward_grants').insert({
+      rule_key: `certificate:${season}`,
+      profile_id: profileId,
+      reward_kind: 'gems',
+      amount: 100,
+      detail: 'Certificate (season capstone)',
+    })
+    if (error) return false // already granted / lost the race
+
+    // The 'certificate' achievement (seeded separately — skip cleanly if absent).
+    const { data: ach } = await admin
+      .from('achievements')
+      .select('id')
+      .eq('slug', 'certificate')
+      .maybeSingle()
+    const achId = (ach as { id: string } | null)?.id
+    if (achId) {
+      await admin
+        .from('user_achievements')
+        .upsert(
+          { profile_id: profileId, achievement_id: achId },
+          { onConflict: 'profile_id,achievement_id', ignoreDuplicates: true },
+        )
+    }
+
+    // The unique 'certificate-seal' cosmetic (no-op if the store item isn't seeded yet).
+    await grantStoreItem(profileId, 'certificate-seal')
+
+    // 100 Gems — the capstone purse (no extra Zaps; §7).
+    await awardGems(profileId, 'certificate_bonus', 100, { rule: `certificate:${season}`, season })
+
+    return true
+  } catch (err) {
+    console.error('[grantCertificate]', err instanceof Error ? err.message : err)
+    return false
+  }
 }
 
 /** Claim-then-pay Gem grant (mirrors lib/journeys/grants.ts grantGemsOnce): the
@@ -123,7 +185,20 @@ export async function tryCompleteJourney(
       'journey_finish_bonus',
     )
 
-    return { completed: true, rank: newRank, zaps: QUEST.JOURNEY_FINISH_ZAPS, gems: bonus }
+    // The Trophy cosmetic: finishing a Journey mints its Pillar (Mind/Body/Spirit) badge
+    // (REWARDS-ECONOMY.md §7), and the Full Spectrum banner once all four are held.
+    // Idempotent + best-effort — granted directly here so the Trophy lands with the finish
+    // (the batch sweepJourneyBadges is keyed on legacy journey.complete grants).
+    await grantJourneyBadgeOnCompletion(profileId, journeyId).catch(() => false)
+
+    // The Certificate (season capstone): finishing the THIRD Journey this season = Master.
+    // Granted once per member per season (claim-then-pay on reward_grants), best-effort.
+    let certificate = false
+    if (newRank === 'master' && count >= 3) {
+      certificate = await grantCertificate(admin, profileId, season)
+    }
+
+    return { completed: true, rank: newRank, zaps: QUEST.JOURNEY_FINISH_ZAPS, gems: bonus, certificate }
   } catch (err) {
     console.error('[tryCompleteJourney]', err instanceof Error ? err.message : err)
     return { completed: false }

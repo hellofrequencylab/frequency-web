@@ -3,7 +3,7 @@ title: Your Journey
 description: Each season gives you three Journeys. Do the practices, share what shifted, and finish to climb the ranks.
 category: the-quest
 order: 4
-updated: 2026-06-16
+updated: 2026-06-18
 audience: member
 featureKeys: [journeys, circles]
 status: published
@@ -47,13 +47,12 @@ the practice turns into something other people can see.
 The moment a Journey is finished you earn:
 
 - **+75 Zaps**
-- **A Trophy**, stamped with the rank you reached
-- **Gems** that scale with your new rank: 25 for your first Journey, 50 for your second,
-  100 for your third
+- **A Pillar Trophy** for that Journey (Mind, Body, or Spirit)
 
 And your **season rank** moves on its own: one Journey makes you **Initiate**, two makes
-you **Adept**, all three makes you **Master**. Finish the work and the rank follows. See
-[Season ranks](/help/the-quest/season-ranks) for the full ladder.
+you **Adept**, all three makes you **Master**. Finish all three and you also earn the
+**Certificate**, the season capstone (a unique cosmetic plus 100 Gems). Finish the work and
+the rank follows. See [Season ranks](/help/the-quest/season-ranks) for the full ladder.
 
 ## Doing it with your circle
 

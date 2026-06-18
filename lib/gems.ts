@@ -18,6 +18,23 @@ type GemAction =
   | 'quest_complete'
   | 'challenge_complete'
   | 'season_convert'
+  // Creation rewards (Rewards Economy v3 / ADR-305, lib/rewards/creation.ts):
+  // the small Gem token on first publish, and the Gem bonus on first validated use.
+  | 'create_journey_token'
+  | 'create_event_token'
+  | 'create_practice_token'
+  | 'create_journey_bonus'
+  | 'create_event_bonus'
+  | 'create_practice_bonus'
+  // The season capstone Certificate bonus (lib/quest/complete.ts).
+  | 'certificate_bonus'
+  // Gift Gems sink (Rewards Economy v3 / ADR-305, lib/rewards/gifts.ts): credits the
+  // RECIPIENT's gem ledger (raising their lifetime_gems). The giver's spendable balance
+  // falls via the gem_gifts sink in lib/store/balance, not a debit ledger row.
+  | 'gift_received'
+  // Spark variable layer (Rewards Economy v3 / ADR-305, lib/rewards/spark.ts): the
+  // capped, low-frequency surprise Gem bonus on top of the deterministic base.
+  | 'spark_bonus'
 
 interface AwardResult {
   awarded: boolean

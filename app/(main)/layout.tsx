@@ -23,7 +23,6 @@ import { accessTo, type AccessLevel, type Hats, type Surface } from '@/lib/core/
 import { NAV_AREAS } from '@/lib/nav-areas'
 import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ZapToastContainer } from '@/components/zap-toast'
-import { SurpriseToaster } from '@/components/surprise-toaster'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
 import { VeraLauncher } from '@/components/vera/vera-launcher'
@@ -347,7 +346,6 @@ export default async function MainLayout({
       {children}
       <AchievementToastContainer />
       <ZapToastContainer />
-      <SurpriseToaster />
       <PresenceHeartbeat />
       <PushRegistration />
       <VeraLauncher index={helpIndex} />

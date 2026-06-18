@@ -77,3 +77,54 @@ export function currencyForCriteria(
   }
   return ZAP_CRITERIA_TYPES.has(criteriaType) ? 'zaps' : 'gems'
 }
+
+// ── The single payout-profile classifier (Rewards Economy v3, ADR-305) ──────────
+//
+// REWARDS-ECONOMY.md §2: there is ONE source of truth that maps any act to a payout
+// profile `{ zaps, gems }`. currencyForSource / currencyForCriteria above pick a SINGLE
+// currency (the routing decision the engagement orchestration needs); the profile is
+// the richer answer that lets a CREATION act pay BOTH currencies at once. Both stay so
+// existing callers are untouched while new creation hooks read the profile.
+//
+// The two-question test (REWARDS-ECONOMY.md §2):
+//   1. Did they do something REAL or DURABLE?              → Zaps.
+//   2. Is this online participation VALUABLE IN ITSELF?    → Gems.
+// An act can answer yes to both — that is CREATION (a Gem token now, the big payout on
+// validation). The edge case the test settles: LOGGING A PRACTICE is Zaps only. The
+// practice is the real-world doing; the log is just the record of it, not a valuable
+// online act, so we never pay Gems for the act of logging.
+
+/** What an act pays, in both ledgers at once. `{ zaps, gems }` are flat fallback amounts;
+ *  the live, tunable numbers come from zap_config / gem_config in the award path. A zero
+ *  in either field means "this act does not pay that currency." */
+export type PayoutProfile = { zaps: number; gems: number }
+
+/** A classifiable act. `'creation'` is the only kind that pays BOTH currencies (the small
+ *  Gem token at publish + the validated Zaps/Gems on first established use, paid by the
+ *  creation reward module, not here). `'practice_log'` is the Zaps-only edge case. */
+export type PayoutAct =
+  | 'real_world'    // a real / durable act (attend, host, outreach, found a circle) → Zaps
+  | 'practice_log'  // logging a practice → Zaps only (the log is the record, not the point)
+  | 'online'        // online participation valuable in itself (post, react, RSVP, join) → Gems
+  | 'creation'      // a thing others can use (publish a Journey / event / practice) → both
+
+/**
+ * The payout profile for an act — the single source of truth the two-question test
+ * resolves to. Real / durable acts and practice logs pay Zaps; online acts pay Gems;
+ * CREATION pays both (a Gem token now, the validated Zaps/Gems later). The amounts here
+ * are display-fallbacks only — the live numbers live in zap_config / gem_config and the
+ * creation registry (lib/rewards/creation.ts). Pure + framework-independent.
+ */
+export function payoutProfileForAct(act: PayoutAct): PayoutProfile {
+  switch (act) {
+    case 'real_world':
+    case 'practice_log':
+      return { zaps: 1, gems: 0 } // Zaps only — the real-world / durable doing
+    case 'online':
+      return { zaps: 0, gems: 1 } // Gems only — online participation valuable in itself
+    case 'creation':
+      return { zaps: 1, gems: 1 } // BOTH — creation is the act that answers yes to both questions
+    default:
+      return { zaps: 0, gems: 0 }
+  }
+}

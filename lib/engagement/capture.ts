@@ -71,15 +71,6 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     verified: true,
   })
 
-  // 3b) Secret award check (long_range: captures in 3 distinct cities). Hidden
-  //     until earned; best-effort + dynamic import — never blocks the capture.
-  try {
-    const { evaluateSecretAwardsForCapture } = await import('@/lib/awards/secret')
-    await evaluateSecretAwardsForCapture(attempt.actorProfileId)
-  } catch {
-    // never let a badge check break a capture
-  }
-
   // 4) Reward — physical = zaps.
   const amount = Number(node.zaps_value ?? 0)
   if (amount > 0 && currencyForSource(source) === 'zaps') {
