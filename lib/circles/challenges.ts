@@ -9,8 +9,8 @@
 //
 // circle_challenge_adoptions lags the generated Database types (fresh migration),
 // so this module reads through an untyped admin handle — the repo convention from
-// lib/practices.ts / lib/events/circle-current.ts. The capability gate in the caller
-// (admin-actions.ts) is the authority for writes either way.
+// lib/practices.ts. The capability gate in the caller (admin-actions.ts) is the
+// authority for writes either way.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'

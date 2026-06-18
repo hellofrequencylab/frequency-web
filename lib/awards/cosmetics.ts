@@ -4,7 +4,7 @@
 // The granted-only items are seeded with gem_cost 0 + is_active false, so they
 // can never be bought — only awarded here. Idempotent per (member, item).
 //
-// Two award families ride the nightly sweep (lib/practice-streaks-job.ts):
+// Two award families are granted by sweeps:
 //   * Rank cosmetics — auto at promotion: every rank at or below the member's
 //     current season rank grants its cosmetic (Ghost flair → Master tokens).
 //   * Journey cosmetics — completing an OFFICIAL Journey (journey_plans.official,

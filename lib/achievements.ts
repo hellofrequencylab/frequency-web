@@ -8,7 +8,6 @@ import { STREAK_CONFIG } from '@/lib/gamification'
 import { awardGems } from '@/lib/gems'
 import { awardZaps } from '@/lib/zaps'
 import { currencyForCriteria, type EngagementCurrency } from '@/lib/engagement/currency'
-import { awardCircleCurrentForChallengeCompletion } from '@/lib/events/circle-current'
 import type { Database } from '@/lib/database.types'
 
 type AdminClient = ReturnType<typeof createAdminClient>
@@ -381,8 +380,6 @@ function isCriteriaMet(
     case 'amplitude':
       return stats.amplitude >= criteria.count
     default:
-      // The Quiet Ones (dawn_patrol / radio_silence / four_pillars / carrier_wave /
-      // long_range) are evaluated by lib/awards/secret.ts, never here.
       return false
   }
 }
@@ -463,9 +460,6 @@ async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
       await grantReward(event.profileId, currency, challenge.zaps_reward ?? 0, 'challenge_complete', {
         challenge: challenge.id,
       })
-      // Collaborative roll-up: if any circle this member belongs to has adopted
-      // this challenge together, credit that circle's Circle Current. Best-effort.
-      await awardCircleCurrentForChallengeCompletion(challenge.id, event.profileId)
       await checkAllChallengesComplete(admin, event.profileId)
     }
   }

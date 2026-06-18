@@ -13,7 +13,6 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
-import { awardCircleCurrentForCheckin } from '@/lib/events/circle-current'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
@@ -565,8 +564,6 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     // never let a reward read break the check-in
   }
   await recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
-  // Collective gamification: credit the event's circle (no-op for non-circle events).
-  await awardCircleCurrentForCheckin(eventId, myProfileId).catch((e) => console.error('[circle current]', e))
   return { ok: true, zapsAwarded }
 }
 

@@ -84,7 +84,6 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
   { key: 'journeys',   href: '/journeys',        label: 'Journeys',   section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },
   { key: 'practices',  href: '/practices',       label: 'Practices',  section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
-  { key: 'sideQuests', href: '/crew/side-quests', label: 'Side Quests', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
   { key: 'vault',      href: '/crew/store',      label: 'The Vault',  section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
 
   // ── Admin → the operator world. Telescopes: only the items a role/staff axis can

@@ -956,14 +956,6 @@ export async function logPractice(input: {
     // never let a reward read break the log
   }
 
-  // Depth ladder (Practice Shelf): lifetime_logs increments on every log; the
-  // nightly job owns the weekly consistency ladder. Best-effort.
-  try {
-    const { bumpPracticeDepth } = await import('@/lib/practice-shelf')
-    await bumpPracticeDepth(profileId, practiceId)
-  } catch {
-    // shelf state must never break the log
-  }
   await recordStreakActivity(profileId, 'attendance').catch(() => {})
   // The daily practice streak (the headline streak members feel) — advances the
   // consecutive-day count, spends a freeze to bridge a slip, and pays milestone
@@ -997,15 +989,6 @@ export async function logPractice(input: {
     }
   } catch {
     // never let a surprise break the log
-  }
-
-  // The Quiet Ones (Rewards Economy v2): secret awards a log can complete
-  // (Dawn Patrol / Radio Silence / Four Pillars). Hidden until earned; best-effort.
-  try {
-    const { evaluateSecretAwardsForLog } = await import('@/lib/awards/secret')
-    await evaluateSecretAwardsForLog(profileId)
-  } catch {
-    // a secret award check must never break the log
   }
 
   // The Quest (ADR-Quest completion model): completion counts "any practice in the

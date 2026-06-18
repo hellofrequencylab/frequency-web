@@ -46,7 +46,6 @@ import {
   FileText,
   BadgeCheck,
   Lightbulb,
-  Gift,
   ScrollText,
   LifeBuoy,
   ShoppingBag,
@@ -189,7 +188,6 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       { href: '/admin/gamification', label: 'Gamification & rewards', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community', section: 'Rewards' },
       { href: '/admin/store', label: 'Store', desc: 'Manage gem store items and catalog.', Icon: ShoppingBag, min: 'host', staffDomain: 'community', section: 'Rewards' },
-      { href: '/admin/rewards', label: 'Retroactive rewards', desc: 'Reward past behavior. Define a rule, grant once.', Icon: Gift, min: 'admin', section: 'Rewards' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community', section: 'Rewards' },
     ],
   },

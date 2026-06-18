@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import {
   Gamepad2, ArrowUpRight, CalendarDays, BookOpen, Sparkles, Target,
-  GraduationCap, Lightbulb, Trophy, ShoppingBag, Gift, ClipboardList,
+  GraduationCap, Lightbulb, Trophy, ShoppingBag, ClipboardList,
   type LucideIcon,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
@@ -216,7 +216,6 @@ async function ManageSections() {
     { label: "Vera's tips", desc: 'Draft tips and prompts to content creators. Review and send.', stat: '', statLabel: 'Manage', href: '/admin/content/tips', Icon: Lightbulb },
     { label: 'Gamification', desc: 'Season ranks, achievements, and reward config.', stat: '', statLabel: 'Manage', href: '/admin/gamification', Icon: Trophy },
     { label: 'Store', desc: 'Manage gem store items and the catalog.', stat: `${storeC.count ?? 0}`, statLabel: 'items', href: '/admin/store', Icon: ShoppingBag },
-    { label: 'Retroactive rewards', desc: 'Reward past behavior. Define a rule, grant once.', stat: '', statLabel: 'Manage', href: '/admin/rewards', Icon: Gift },
     { label: 'Crew tasks', desc: 'Define and verify member tasks.', stat: `${tasksC.count ?? 0}`, statLabel: 'tasks', href: '/admin/crew-tasks', Icon: ClipboardList },
   ]
 

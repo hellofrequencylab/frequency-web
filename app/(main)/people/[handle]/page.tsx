@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
@@ -35,9 +34,6 @@ import { getMemberSignature } from '@/lib/frequency-signature-data'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
 import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
-import { PracticeShelf } from '@/components/profile/practice-shelf'
-import { GiveAwardButton } from './give-award-button'
-import { giveableAwards } from './award-actions'
 import { connectUrl } from '@/lib/qr/links'
 import { ProfileShareDisclosure } from './profile-share-disclosure'
 
@@ -169,10 +165,6 @@ export default async function ProfilePage({
     isBlocked = await hasBlocked(myProfileId, profileId)
   }
 
-  // Witnessed awards the viewer can still give this season (the quiet give —
-  // shown only when giving is actually possible, never a prompt).
-  const giveable = myProfileId && myProfileId !== profileId ? await giveableAwards() : []
-
   const [zapsResult, completionsCountResult, postsCountResult, circlesResult, signature] = await Promise.all([
     admin.from('crew_completions').select('zaps_earned').eq('profile_id', profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
@@ -299,10 +291,6 @@ export default async function ProfilePage({
       {!isBlocked && canTipRecipient && (
         <TipButton toProfileId={profileId} recipientName={firstName} />
       )}
-      {/* Witnessed awards — the quiet give, only when the viewer has one left. */}
-      {!isBlocked && giveable.length > 0 && (
-        <GiveAwardButton recipientId={profileId} giveable={giveable} />
-      )}
       {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
       {canModerateProfile && (
         <ModerateProfileButton
@@ -398,12 +386,6 @@ export default async function ProfilePage({
             handle={profile.handle as string}
             bio={profile.bio ?? ''}
           />
-
-          {/* Practice Shelf — per-practice consistency + depth awards, plus any
-              Witnessed awards (Rewards v2). Hidden until something is earned. */}
-          <Suspense fallback={null}>
-            <PracticeShelf profileId={profileId} isOwner={isOwner} firstName={firstName} />
-          </Suspense>
 
           {/* Your private contact card — only the viewer who merged their own personal
               contact with this member sees this (their own logged data). */}
