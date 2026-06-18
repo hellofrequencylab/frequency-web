@@ -48,6 +48,16 @@ describe('moduleIdsForScope', () => {
     expect(v).not.toContain('community-pulse')
   })
 
+  it('a practice detail page resolves the shared detail blocks via the /practices/* section scope', () => {
+    const d = moduleIdsForScope('/practices/some-practice-id')
+    expect(d).toBe(ROUTE_MODULE_IDS['/practices/*'])
+    expect(d).toContain('practice-detail-stats')
+    expect(d).toContain('practice-detail-guide')
+    // Distinct from the index's own set.
+    expect(moduleIdsForScope('/practices')).not.toContain('practice-detail-stats')
+    expect(d).not.toContain('practices-library')
+  })
+
   it("a section scope of a converted route does NOT inherit the exact route's blocks", () => {
     // '/crew/*' is a wildcard for crew SUB-pages (challenges, …) — distinct from '/crew' AND from
     // the now-converted exact '/crew/store' — so the wildcard still gets the generic set.

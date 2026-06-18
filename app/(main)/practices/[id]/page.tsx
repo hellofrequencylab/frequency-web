@@ -1,31 +1,28 @@
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Zap, Users, Flame, Pencil, Repeat, Wand2, Clock } from 'lucide-react'
+import { Zap, Pencil, Wand2 } from 'lucide-react'
 import { LotusIcon } from '@/components/on-air/icons'
 import { getMyProfileId } from '@/lib/auth'
 import { getRankedPractice, getPracticeMemberState } from '@/lib/practices'
-import { practiceZapValue } from '@/lib/zaps'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { DetailTemplate } from '@/components/templates'
-import { HelpMarkdown } from '@/components/help/help-markdown'
+import { PageModules } from '@/components/widgets/page-modules'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { ClaimPractice } from '@/components/practice/claim-practice'
-import { UsedInSection, UsedInSkeleton } from '@/components/practices/used-in-section'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
-import { StatCard } from '@/components/ui/stat-card'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { forkPracticeAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
 
-// The member-facing practice page (ADR-116): the hero image, the full write-up,
-// the stats (reward · cadence · who's practising · times logged), and the claim /
-// adopt / log / edit actions. This is where a library TEMPLATE becomes something
-// you get excited to claim and make your own.
+// The member-facing practice page (ADR-116): the hero image + identity + claim / adopt / log / edit
+// actions stay fixed; the BODY (stats · intro · guide · tags · used-in) is module-driven (ADR-270/
+// 294) so staff arrange it from Settings → Layout, shared across every /practices/<id> via the
+// '/practices/*' scope. The body blocks self-fetch the practice from the URL (lib/practices/
+// detail-data); the page keeps the member-state-dependent header here.
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -103,28 +100,8 @@ export default async function PracticeDetailPage({ params }: Params) {
         />
       )}
 
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard
-          bordered
-          size="sm"
-          icon={Zap}
-          label="Reward per log"
-          value={`+${practiceZapValue(practice)} zaps`}
-        />
-        <StatCard bordered size="sm" icon={Repeat} label="Cadence" value={practice.cadence ?? 'Your call'} />
-        {practice.duration_min != null && (
-          <StatCard bordered size="sm" icon={Clock} label="Time" value={`${practice.duration_min} min`} />
-        )}
-        <StatCard bordered size="sm" icon={Users} label="Practising now" value={practice.adopters.toLocaleString()} />
-        <StatCard bordered size="sm" icon={Flame} label="Times logged" value={practice.logs_total.toLocaleString()} />
-      </div>
-
-      {/* The member intro — the plain-language "what this is", above the full guide. Shown only
-          when it adds something beyond the hook already in the subtitle. */}
-      {practice.description && practice.description !== (practice.summary ?? practice.description) && (
-        <p className="mb-5 text-base leading-relaxed text-muted">{practice.description}</p>
-      )}
-
+      {/* Claim / adopt / log / edit — interactive + member-state dependent, so they stay fixed
+          (not a layout block). */}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         {!profileId ? (
           <Link
@@ -190,25 +167,8 @@ export default async function PracticeDetailPage({ params }: Params) {
         {!isOwner && <StaffEditButton href={`/practices/${practice.id}/edit`} label="Edit practice" />}
       </div>
 
-      {practice.body && <HelpMarkdown>{practice.body}</HelpMarkdown>}
-
-      {practice.tags.length > 0 && (
-        <div className="mt-6 flex flex-wrap gap-1.5 border-t border-border pt-4">
-          {practice.tags.map((t) => (
-            <span key={t.slug} className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-subtle">
-              #{t.label}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* "Used in" — the journeys + circles running this practice (the inverse of
-          journey_plan_items / circle_practices). Behind <Suspense> so its two
-          joined reads never block the page; it renders nothing when both lists
-          are empty (visibility enforced in getPracticeBacklinks). */}
-      <Suspense fallback={<UsedInSkeleton />}>
-        <UsedInSection practiceId={practice.id} />
-      </Suspense>
+      {/* The arrangeable body — stats · intro · guide · tags · used-in (Settings → Layout). */}
+      <PageModules route={`/practices/${practice.id}`} />
     </DetailTemplate>
   )
 }

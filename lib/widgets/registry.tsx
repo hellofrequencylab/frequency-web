@@ -26,6 +26,11 @@ import { VaultSummary } from '@/components/widgets/vault/vault-summary'
 import { VaultTrophies } from '@/components/widgets/vault/vault-trophies'
 import { VaultAwards } from '@/components/widgets/vault/vault-awards'
 import { VaultStore } from '@/components/widgets/vault/vault-store'
+import { PracticeDetailStats } from '@/components/widgets/practice-detail/practice-detail-stats'
+import { PracticeDetailAbout } from '@/components/widgets/practice-detail/practice-detail-about'
+import { PracticeDetailGuide } from '@/components/widgets/practice-detail/practice-detail-guide'
+import { PracticeDetailTags } from '@/components/widgets/practice-detail/practice-detail-tags'
+import { PracticeDetailUsedIn } from '@/components/widgets/practice-detail/practice-detail-usedin'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -66,6 +71,12 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'vault-trophies': VaultTrophies,
   'vault-awards': VaultAwards,
   'vault-store': VaultStore,
+  // Practice detail (/practices/<id>) — the arrangeable body sections.
+  'practice-detail-stats': PracticeDetailStats,
+  'practice-detail-about': PracticeDetailAbout,
+  'practice-detail-guide': PracticeDetailGuide,
+  'practice-detail-tags': PracticeDetailTags,
+  'practice-detail-usedin': PracticeDetailUsedIn,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {

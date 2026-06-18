@@ -56,6 +56,13 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'vault-trophies', label: 'Your Trophies', description: 'The lifetime Trophy Case — every finished Journey, kept across seasons.' },
   { id: 'vault-awards', label: 'Your Awards', description: 'The badge collection, grouped by category, earned vs. secret.' },
   { id: 'vault-store', label: 'Gem Store', description: 'The redeemable categories — cosmetics, titles, badges, membership credits (paid-gated).' },
+
+  // ── Practice detail blocks (/practices/<id>) — the arrangeable body of one practice ──
+  { id: 'practice-detail-stats', label: 'Practice stats', description: 'The headline band: reward, cadence, time, practising now, and times logged.' },
+  { id: 'practice-detail-about', label: 'Intro', description: 'The plain-language “what this is”, when it adds to the subtitle.' },
+  { id: 'practice-detail-guide', label: 'The guide', description: 'The full write-up: why it works, how to do it, and logging it in The Quest.' },
+  { id: 'practice-detail-tags', label: 'Tags', description: 'The practice’s tags.' },
+  { id: 'practice-detail-usedin', label: 'Used in', description: 'The Journeys and Circles running this practice.' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
@@ -88,6 +95,17 @@ const JOURNEYS_MODULE_IDS = ['journeys-start', 'journeys-mine', 'journeys-librar
 // `x-search` request header (proxy.ts) rather than searchParams, which a nested module never gets.
 const PRACTICES_MODULE_IDS = ['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine', 'practices-library'] as const
 
+// Every practice DETAIL page (/practices/<id>) shares one layout, keyed at the '/practices/*'
+// section scope — the body sections below, in default order. The page header (title · image ·
+// actions) stays fixed; only the body is arrangeable.
+const PRACTICE_DETAIL_MODULE_IDS = [
+  'practice-detail-stats',
+  'practice-detail-about',
+  'practice-detail-guide',
+  'practice-detail-tags',
+  'practice-detail-usedin',
+] as const
+
 // The Vault (/crew/store), in default render order (the original hand-built order).
 const VAULT_MODULE_IDS = [
   'vault-standing',
@@ -107,6 +125,8 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
   '/practices': PRACTICES_MODULE_IDS,
+  // Section scope: applies to every /practices/<id> detail page (shared layout).
+  '/practices/*': PRACTICE_DETAIL_MODULE_IDS,
   '/crew/store': VAULT_MODULE_IDS,
 }
 
