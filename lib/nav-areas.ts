@@ -69,8 +69,12 @@ export type NavArea = {
 // access matrix (the function-level permission view); `defaultAccess` is the live nav
 // visibility gate. Items whose page isn't built yet carry `comingSoon`.
 const BASE_NAV_AREAS: readonly NavArea[] = [
+  // ── Home anchor (headerless, pinned at the very top above the worlds) ─────────
+  // Feed leads the rail in its own label-less group; the shell drops the member's
+  // Profile in beside it (dynamic href, so it's injected at render time).
+  { key: 'feed',          href: '/feed',      label: 'Feed',         section: null,        defaultAccess: 'visitor', surface: 'feed' },
+
   // ── Community ────────────────────────────────────────────────────────────────
-  { key: 'feed',          href: '/feed',      label: 'Feed',         section: 'Community', defaultAccess: 'visitor', surface: 'feed' },
   { key: 'broadcast',     href: '/broadcast', label: 'Around You',   section: 'Community', defaultAccess: 'visitor', surface: 'broadcast' },
   { key: 'circles',       href: '/circles',   label: 'Circles',      section: 'Community', defaultAccess: 'visitor', surface: 'circles' },
   { key: 'channels',      href: '/channels',  label: 'Channels',     section: 'Community', defaultAccess: 'visitor', surface: 'channels' },

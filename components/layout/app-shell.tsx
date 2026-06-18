@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
   UserPlus,
   Users,
+  UserRound,
   X,
   Gem,
   Monitor,
@@ -124,6 +125,25 @@ function sectionsFromKeys(keys: string[] | undefined): NavSectionGroup[] {
   if (!keys || keys.length === 0) return NAV_SECTIONS
   const areas = keys.map((k) => AREA_BY_KEY.get(k)).filter((a): a is NavArea => !!a)
   return areas.length > 0 ? buildSections(areas) : NAV_SECTIONS
+}
+
+// Drop the member's Profile into the headerless home group beside Feed (it can't be a
+// static NAV_AREA — its href is the viewer's own /people/<handle>). Result: the rail opens
+// with Feed · Profile pinned above the worlds. If Feed's leading null group is missing
+// (e.g. an operator menu order without it), Profile still leads in its own home group.
+function withHomeProfile(sections: NavSectionGroup[], profileHref: string): NavSectionGroup[] {
+  const profileItem: MainNavItem = {
+    key: 'profile',
+    href: profileHref,
+    label: 'Profile',
+    Icon: UserRound,
+    defaultAccess: 'member',
+  }
+  const [first, ...rest] = sections
+  if (first && first.label === null) {
+    return [{ label: null, items: [...first.items, profileItem] }, ...rest]
+  }
+  return [{ label: null, items: [profileItem] }, ...sections]
 }
 
 // The Manage sections TELESCOPE: an item the viewer can't reach is hidden (not
@@ -1191,15 +1211,15 @@ export default function AppShell({
   occasion?: string
 }) {
   const pathname = usePathname()
+  const profileHref = `/people/${profile.handle}`
   // The rail's sections, built from the operator's GLOBAL order + visibility
-  // (menuAreaKeys). Same set everywhere; per-role gating still filters within it.
-  const navSections = sectionsFromKeys(menuAreaKeys)
+  // (menuAreaKeys). Same set everywhere; per-role gating still filters within it. Profile
+  // is injected into the home anchor (beside Feed) since its href is viewer-specific.
+  const navSections = withHomeProfile(sectionsFromKeys(menuAreaKeys), profileHref)
   const role = (profile.community_role ?? 'member') as CommunityRole
   const effectiveRealRole = realRole ?? role
   // Nav gating role: a visitor preview gates as a logged-out visitor (null).
   const gateRole: CommunityRole | null = previewVisitor ? null : role
-  // Stewards (host+) and Studio staff get a mobile quick-add for the Profile
-  const profileHref = `/people/${profile.handle}`
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)

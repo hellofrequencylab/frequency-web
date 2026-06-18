@@ -13,8 +13,12 @@ export const MODULE_ROUTES: readonly string[] = [
   '/practices',
 ]
 
-/** Whether `pathname` is (or sits under) a module-driven route — drives the Layout
- *  editor's visibility. Exact match or a child segment of a listed route. */
+/** Whether `pathname` is a module-driven route — drives the Layout editor's visibility.
+ *  EXACT match only: a route is module-driven solely if its own page renders <PageModules>.
+ *  Bespoke CHILD pages (e.g. /crew/store — the Vault, /journeys/<slug>, /practices/<id>) are
+ *  hand-built and do NOT render <PageModules>, so they must NOT offer a Layout editor — its
+ *  blocks would be disconnected from the page (the "Settings don't make sense" trap). Add a
+ *  child route here only when its page is actually converted to <PageModules>. */
 export function isModuleRoute(pathname: string): boolean {
-  return MODULE_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))
+  return MODULE_ROUTES.includes(pathname)
 }
