@@ -249,9 +249,9 @@ Two new sinks beyond the catalog:
 | **Actor / beneficiary** | A grant records who acted and who is paid (validated-creation pays the creator off another member's use) |
 | **Season as a column** | A grant carries its season; reset zeroes `season_zaps` and rolls to Gems, leaving continuous Gems and Amplitude untouched |
 
-The `earn_rules` registry holds the amounts/caps from §3–§4 as data, so tuning is a row
-change, not a code change. Exact columns are set during the build (open follow-up in
-[ADR-305](DECISIONS.md)).
+The tunable `zap_config` / `gem_config` tables ARE the registry: they hold the amounts/caps
+from §3–§4 as data, so tuning is a row change, not a code change. The classifier reads them;
+there is no separate `earn_rules` table.
 
 ---
 
@@ -292,7 +292,7 @@ Beta reward data is **wiped** and Season 1 ("Shine") is **reseeded** from this m
 - three Journeys (Mind / Body / Spirit), each capped by one Expression Challenge;
 - the lean achievement set (§9);
 - the lean store catalog (§8);
-- an `earn_rules` registry holding the amounts/caps (§3–§4).
+- the `zap_config` / `gem_config` registry holding the amounts/caps (§3–§4).
 
 After S1 the model is additive; the wipe is a one-time event.
 
