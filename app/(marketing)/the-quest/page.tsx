@@ -30,6 +30,8 @@ import {
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
+import { JsonLd } from '@/components/json-ld'
+import { breadcrumbSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
@@ -79,10 +81,18 @@ const RANKS: { icon: IconType; name: string; tag: string; body: string }[] = [
 
 export default async function TheQuestPage() {
   const data = await getPublishedData('the-quest')
-  if (data && Array.isArray(data.content) && data.content.length > 0) {
-    return <Render config={config} data={data} />
-  }
-  return <LegacyTheQuest />
+  return (
+    <>
+      <JsonLd
+        data={breadcrumbSchema([{ name: 'The Quest', path: '/the-quest' }])}
+      />
+      {data && Array.isArray(data.content) && data.content.length > 0 ? (
+        <Render config={config} data={data} />
+      ) : (
+        <LegacyTheQuest />
+      )}
+    </>
+  )
 }
 
 function LegacyTheQuest() {

@@ -29,6 +29,11 @@ export const metadata: Metadata = {
     description: 'Browse the local circles forming on Frequency and find your people.',
     url: '/discover/circles',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Local circles · ${SITE_NAME}`,
+    description: 'Browse the local circles forming on Frequency and find your people.',
+  },
 }
 
 export const revalidate = 3600

@@ -178,6 +178,19 @@ export function isSafeLogoSrc(src: string): boolean {
   }
 }
 
+/** A member's personal "connect" code centers their CURRENT profile pic in a round buffer.
+ *  The avatar is applied only at render time, so a new photo shows up without a reprint — the
+ *  stored style keeps the standard format (lib/qr/member-codes.ts). It replaces the DEFAULT
+ *  center mark only (an empty logo or the Frequency app icon), so a member who deliberately
+ *  sets a custom logo via Customize keeps it; a member with no safe avatar keeps the Frequency
+ *  mark as the fallback. */
+export function withMemberAvatar(base: QrStyle, avatarUrl: string | null | undefined): QrStyle {
+  const usingDefaultMark = !base.logo || base.logo === DEFAULT_STYLE.logo
+  return avatarUrl && usingDefaultMark && isSafeLogoSrc(avatarUrl)
+    ? { ...base, logo: avatarUrl.trim(), logoShape: 'circle' }
+    : base
+}
+
 /** Coerce arbitrary stored/edited JSON into a valid, safe QrStyle (defaults fill
  *  the gaps; anything malformed is dropped). */
 export function parseStyle(raw: unknown): QrStyle {

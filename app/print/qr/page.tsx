@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
-import { parseStyle } from '@/lib/qr/style'
+import { parseStyle, withMemberAvatar } from '@/lib/qr/style'
 import { shortLinkUrl, nodeUrl } from '@/lib/qr/links'
 import { PrintToolbar } from './print-toolbar'
 
@@ -32,11 +32,25 @@ export default async function QrPrintPage({
   let style
 
   if (code) {
-    const { data } = await db.from('qr_codes').select('slug, title, style').eq('id', code).maybeSingle()
+    const { data } = await db
+      .from('qr_codes')
+      .select('slug, title, style, purpose, owner_profile_id')
+      .eq('id', code)
+      .maybeSingle()
     if (!data) notFound()
     url = shortLinkUrl(data.slug)
     title = data.title || `/q/${data.slug}`
     style = parseStyle(data.style)
+    // A member's personal `connect` code prints with their current profile pic centered, in sync
+    // with /codes and the downloads (avatar layered on at render, never baked into the stored style).
+    if (data.purpose === 'connect' && data.owner_profile_id) {
+      const { data: owner } = await db
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', data.owner_profile_id)
+        .maybeSingle()
+      style = withMemberAvatar(style, owner?.avatar_url ?? null)
+    }
   } else if (node) {
     const { data } = await db.from('nodes').select('label, type, style, secret').eq('id', node).maybeSingle()
     if (!data) notFound()

@@ -32,8 +32,12 @@ function preset(key: string): QrStyle {
   return STYLE_PRESETS.find((p) => p.key === key)?.style ?? DEFAULT_STYLE
 }
 
+// The personal `connect` code mints in the STANDARD format (DEFAULT_STYLE: connected modules,
+// rounded eyes/pupils, round logo buffer). Its center logo is the member's profile pic, layered
+// on at render (withMemberAvatar) so a new photo never needs a reprint; the stored Frequency mark
+// is the fallback for a member with no avatar.
 const SPEC: Record<MemberCodePurpose, { title: string; destination_type: string; style: QrStyle }> = {
-  connect: { title: 'My personal code', destination_type: 'url', style: preset('sunset') },
+  connect: { title: 'My personal code', destination_type: 'url', style: { ...DEFAULT_STYLE } },
   referral: { title: 'Invite to Frequency', destination_type: 'action', style: preset('forest') },
   gift_zap: { title: 'Gift me a zap', destination_type: 'action', style: preset('midnight') },
 }

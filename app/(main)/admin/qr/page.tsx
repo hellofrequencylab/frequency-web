@@ -6,7 +6,7 @@ import { AdminTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { nodeUrl, shortLinkUrl } from '@/lib/qr/links'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
-import { parseStyle } from '@/lib/qr/style'
+import { parseStyle, withMemberAvatar } from '@/lib/qr/style'
 import { parseVcard } from '@/lib/vcard'
 import { summarizeScans, type ScanRow } from '@/lib/qr/analytics'
 import { QrStudioDashboard } from './qr-studio-dashboard'
@@ -231,8 +231,8 @@ export default async function QrStudioPage() {
     ),
   ] as string[]
   const { data: owners } = ownerIds.length
-    ? await db.from('profiles').select('id, handle, display_name, vcard').in('id', ownerIds)
-    : { data: [] as { id: string; handle: string; display_name: string; vcard: unknown }[] }
+    ? await db.from('profiles').select('id, handle, display_name, avatar_url, vcard').in('id', ownerIds)
+    : { data: [] as { id: string; handle: string; display_name: string; avatar_url: string | null; vcard: unknown }[] }
   const ownerMap = new Map((owners ?? []).map((o) => [o.id, o]))
   const memberCodes: MemberProfileCode[] = memberConnectRows
     .filter((r) => r.owner_profile_id)
@@ -247,7 +247,9 @@ export default async function QrStudioPage() {
         displayName: o?.display_name ?? '',
         url,
         scans: r.scan_count,
-        svg: renderStyledQrSvg(url, style, 140),
+        // Preview the member's current profile pic centered (matches /codes); the editor below
+        // still tunes the base design, so saving never bakes a soon-stale avatar URL.
+        svg: renderStyledQrSvg(url, withMemberAvatar(style, o?.avatar_url ?? null), 140),
         style,
         vcard: parseVcard(o?.vcard),
       }

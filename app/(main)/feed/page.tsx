@@ -68,17 +68,29 @@ export default async function FeedPage({
       firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
       streak = (profile.current_streak as number | null) ?? 0
 
-      // Member geo (ADR-088) — read through an untyped handle since the new columns
-      // aren't in the generated types yet (cast pattern, per lib/practices.ts).
-      const { data: geoRow } = await (admin)
-        .from('profiles')
-        .select('home_lat, home_lng, feed_radius_m')
-        .eq('id', profile.id)
-        .maybeSingle()
+      // Member geo (ADR-088) + primary circle — independent reads, fetched together rather
+      // than back-to-back (site audit 2026-06-18). Geo goes through an untyped handle since the
+      // new columns aren't in the generated types yet (cast pattern, per lib/practices.ts).
+      const [{ data: geoRow }, { data: membership }] = await Promise.all([
+        (admin)
+          .from('profiles')
+          .select('home_lat, home_lng, feed_radius_m')
+          .eq('id', profile.id)
+          .maybeSingle(),
+        admin
+          .from('memberships')
+          .select('circle_id')
+          .eq('profile_id', profile.id)
+          .eq('status', 'active')
+          .order('joined_at', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+      ])
       const geo = (geoRow ?? null) as { home_lat: number | null; home_lng: number | null; feed_radius_m: number | null } | null
       homeLat = geo?.home_lat ?? null
       homeLng = geo?.home_lng ?? null
       feedRadiusM = geo?.feed_radius_m ?? 25000
+      primaryCircleId = (membership?.circle_id as string) ?? null
 
       // Vera's onboarding lightbox continues from what induction already learned
       // (profiles.meta.beta), so she never opens cold. Built only when arriving
@@ -98,17 +110,6 @@ export default async function FeedPage({
         veraWelcome = { slides: buildWelcomeSlides(ctx), opening: buildVeraOpening(ctx) }
       }
       canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes(myRole)
-
-      const { data: membership } = await admin
-        .from('memberships')
-        .select('circle_id')
-        .eq('profile_id', profile.id)
-        .eq('status', 'active')
-        .order('joined_at', { ascending: true })
-        .limit(1)
-        .maybeSingle()
-
-      primaryCircleId = (membership?.circle_id as string) ?? null
     }
   }
 
@@ -117,21 +118,19 @@ export default async function FeedPage({
   const hasCircle = !!primaryCircleId
   const hasHome = homeLat != null && homeLng != null
 
-  // Adopted practices not yet logged today -> the feed "log today" nudge (WAM).
-  const practicesToLog = myProfileId ? await getPracticesToLogToday(myProfileId) : []
-
-  // The member progress spine — one read that folds activation, the daily practice
-  // streak, Journeys and rank into a stage. It drives the hero: a teal onboarding
-  // guide until set up, then the JourneyBoard, which reveals more panels as the
-  // stage climbs (progressive disclosure, ADR-146). It also carries the activation
-  // status, the streak and the Journeys, so the feed reads them all just once.
-  const progress = myProfileId ? await getMemberProgress(myProfileId) : null
-  // Amplitude level-up moment (Rewards v2) — one cheap read, exactly-once banner.
-  const amplitudeMoment = myProfileId ? await getAmplitudeCelebration(myProfileId) : null
+  // The feed's independent reads, fetched together (they were serial — a visible slice of the
+  // page's latency, site audit 2026-06-18): the adopted-practices "log today" nudge (WAM); the
+  // member-progress spine (one read folding activation, the daily practice streak, Journeys and
+  // rank into a stage — it drives the hero and is read once for all of them, ADR-146); the
+  // exactly-once Amplitude level-up banner (Rewards v2); and the two operator switches (default off).
+  const [practicesToLog, progress, amplitudeMoment, nextSteps, autoPopups] = await Promise.all([
+    myProfileId ? getPracticesToLogToday(myProfileId) : Promise.resolve([]),
+    myProfileId ? getMemberProgress(myProfileId) : Promise.resolve(null),
+    myProfileId ? getAmplitudeCelebration(myProfileId) : Promise.resolve(null),
+    nextStepsEnabled(),
+    autoPopupsEnabled(),
+  ])
   const onboarding = progress?.onboarding ?? null
-  // Operator switches (platform_flags, /admin/onboarding-controls). Both default off.
-  const nextSteps = await nextStepsEnabled()
-  const autoPopups = await autoPopupsEnabled()
   const practiceStreak = progress?.streakState ?? null
   const stageIndex = progress?.stage.index ?? 0
 
@@ -320,17 +319,42 @@ export default async function FeedPage({
           </p>
         )}
 
-        <FeedList
-          myProfileId={myProfileId}
-          sort={sort}
-          viewerRole={myRole}
-          nearby={hasHome && homeLat != null && homeLng != null ? { lat: homeLat, lng: homeLng, radiusM: feedRadiusM } : null}
-          emptyMessage={hasCircle
-            ? 'Your circle’s quiet right now. Share what’s on your mind.'
-            : 'Find your people to fill this up, or share something with the community.'}
-        />
+        {/* The feed query is the heaviest read on the page; stream it behind Suspense so the
+            greeting, hero and composer paint immediately and posts fill in (PAGE-FRAMEWORK §5). */}
+        <Suspense fallback={<FeedListSkeleton />}>
+          <FeedList
+            myProfileId={myProfileId}
+            sort={sort}
+            viewerRole={myRole}
+            nearby={hasHome && homeLat != null && homeLng != null ? { lat: homeLat, lng: homeLng, radiusM: feedRadiusM } : null}
+            emptyMessage={hasCircle
+              ? 'Your circle’s quiet right now. Share what’s on your mind.'
+              : 'Find your people to fill this up, or share something with the community.'}
+          />
+        </Suspense>
       </section>
       </StreamTemplate>
+    </div>
+  )
+}
+
+// Lightweight placeholder while the feed query resolves — a few post-shaped pulses so the
+// stream has visible structure before the real cards stream in.
+function FeedListSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="rounded-2xl border border-border bg-surface p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-surface-elevated animate-pulse" />
+            <div className="h-3 w-32 rounded bg-surface-elevated animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-3 w-full rounded bg-surface-elevated animate-pulse" />
+            <div className="h-3 w-4/5 rounded bg-surface-elevated animate-pulse" />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

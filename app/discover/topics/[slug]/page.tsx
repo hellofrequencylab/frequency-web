@@ -48,6 +48,11 @@ export async function generateMetadata({
       description,
       url: `/discover/topics/${channel.slug}`,
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${channel.name} · ${SITE_NAME}`,
+      description,
+    },
   }
 }
 

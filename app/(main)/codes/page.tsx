@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { shortLinkUrl } from '@/lib/qr/links'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
-import { parseStyle, isSafeLogoSrc, type QrStyle } from '@/lib/qr/style'
+import { parseStyle, withMemberAvatar, type QrStyle } from '@/lib/qr/style'
 import { ensureMemberCodes, type MemberCodePurpose } from '@/lib/qr/member-codes'
 import { listMarketingTargets, MARKETING_CODE_LIMIT } from '@/lib/qr/marketing'
 import { parseVcard } from '@/lib/vcard'
@@ -43,13 +43,14 @@ export default async function CodesPage() {
 
   const isCrew = await isPaidViewer()
 
-  const avatar = me.avatar_url && isSafeLogoSrc(me.avatar_url) ? me.avatar_url : null
-
   const cards: MemberCodeCard[] = codes.map((c) => {
     const base = parseStyle(c.style)
-    // Drop the member's avatar into the center by default (they can change it).
-    const style: QrStyle = !base.logo && avatar ? { ...base, logo: avatar } : base
     const url = shortLinkUrl(c.slug)
+    // The personal `connect` code always centers the member's CURRENT profile pic, rounded; the
+    // avatar is layered on for the rendered SVG only, so the editor below still tunes the base
+    // design (and saving never bakes a soon-stale avatar URL into the stored style).
+    const renderStyle: QrStyle =
+      c.purpose === 'connect' ? withMemberAvatar(base, me.avatar_url) : base
     return {
       id: c.id,
       purpose: c.purpose as MemberCodePurpose,
@@ -57,8 +58,8 @@ export default async function CodesPage() {
       slug: c.slug,
       url,
       scans: c.scan_count,
-      style,
-      svg: renderStyledQrSvg(url, style, 220),
+      style: base,
+      svg: renderStyledQrSvg(url, renderStyle, 220),
     }
   })
 

@@ -112,32 +112,61 @@ export default async function MainLayout({
   // (nav + capabilities) previews a role under them; realRole is the true role, used
   // to show the view-as control + the roles below it. See lib/view-as.ts.
   const realRole = (profile.community_role ?? 'member') as CommunityRole
-  const effectiveRole = await applyViewAs(realRole)
-  // Janitor previewing the logged-out experience: server caps drop to member
-  // (effectiveRole), and the NAV gates as a visitor (driven by this flag).
-  const previewVisitor = await viewingAsVisitor(realRole)
 
-  // Unread notification count. Non-blocking, falls back to 0 on error
-  const unreadCount = await getUnreadCount().catch(() => 0)
+  // Request headers (host + current route) — read once and reused below.
+  const reqHeaders = await headers()
+  const reqPath = reqHeaders.get('x-pathname')
 
-  // Per-area access overrides (janitor-set from /admin/roles). Drives which menu
-  // items are usable vs. muted. Falls back to {} (code defaults) on error.
-  const permissions = await getAreaPermissions()
-
-  // GLOBAL menu config (janitor-set from /admin/menu): the ONE shared rail order +
-  // per-item visibility, applied to EVERYONE. Best-effort — falls back to the code
-  // order with nothing hidden if the table is absent or the query errors. The
-  // resolved key order drives buildSections in the shell; per-role gating still flows
-  // through `permissions` / `navAccess` on top of whatever stays visible.
-  const menuConfig = await getMenuConfig()
+  // ONE parallel wave of the shell's independent reads. Every entry depends only on
+  // `profile` / `realRole` (or nothing), so they run concurrently instead of as ~16 serial
+  // round-trips — that serial chain is what made every authed navigation feel laggy (site
+  // audit 2026-06-18). Values that depend on the result of this wave (previewingDown, staffRole,
+  // navHats) and the theme chain are derived AFTER it; the redirect guards above still run first.
+  // getStaffMember is fetched speculatively here and discarded when previewing down — one cheap
+  // read beats a serial hop. Per-promise fail-safes match the originals (each helper has its own
+  // default; the externally-fallible reads are `.catch`'d).
+  const [
+    effectiveRole,
+    previewVisitor,
+    unreadCount,
+    permissions,
+    menuConfig,
+    realHats,
+    helpIndex,
+    analyticsConsent,
+    [demoMode, demoHidden, hasDemoContent],
+    nextSteps,
+    autoPopups,
+    chromeOverrides,
+    space,
+    chores,
+    staffMember,
+  ] = await Promise.all([
+    applyViewAs(realRole),
+    viewingAsVisitor(realRole),
+    getUnreadCount().catch(() => 0),
+    getAreaPermissions(),
+    getMenuConfig(),
+    getViewerHats(),
+    getSearchIndex(),
+    hasConsent(profile.id, 'analytics'),
+    Promise.all([demoModeEnabled(), viewerHidesDemo(), demoContentExists()]),
+    nextStepsEnabled(),
+    autoPopupsEnabled(),
+    loadChromeOverrides(),
+    resolveSpaceForHost(reqHeaders.get('host')).catch(() => null),
+    BETA_INDUCTION_ACTIVE ? getProfileChores(profile.id) : Promise.resolve(null),
+    getStaffMember().catch(() => null),
+  ])
   const menuAreaKeys = orderedVisibleAreas(menuConfig).map((a) => a.key)
 
-  // Staff axis (team_members) — unlocks the Studio nav group independent of trust
-  // role (ADR-027). Suppressed while previewing a lower role/visitor so the janitor
-  // "view as" accurately reflects what that role sees.
+  // Janitor previewing the logged-out experience: server caps drop to member
+  // (effectiveRole), and the NAV gates as a visitor (driven by this flag).
+  // Staff axis (team_members) — unlocks the Studio nav group independent of trust role
+  // (ADR-027). Suppressed while previewing a lower role/visitor so the janitor "view as"
+  // accurately reflects what that role sees (the speculative staff read is dropped here).
   const previewingDown = previewVisitor || effectiveRole !== realRole
-  const staff = previewingDown ? null : await getStaffMember()
-  const staffRole = staff?.role ?? null
+  const staffRole = previewingDown ? null : (staffMember?.role ?? null)
 
   // Staff web_role axis (ADR-208) — gates the staff-only on-page "Page" settings group
   // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
@@ -150,7 +179,6 @@ export default async function MainLayout({
   // AND the viewer's resolved role. LOCKOUT-PROOF + FAIL-SAFE: staff (view-as-aware) always
   // pass so an operator can preview drafts and is never locked out; any error is ignored
   // (no gate); and we never redirect /feed itself, so a mis-set home can't loop.
-  const reqPath = (await headers()).get('x-pathname')
   if (reqPath && reqPath !== '/feed' && isSafeRoute(reqPath) && !isStaff(pageWebRole)) {
     const ps = await loadPageSettings(reqPath)
     if (ps) {
@@ -164,7 +192,7 @@ export default async function MainLayout({
   // Matrix-driven nav visibility (owner directive): resolve each nav item's access for
   // this viewer — respecting "view as" (effectiveRole) and suppressing personas/staff
   // when previewing down — so the menu shows every item they can reach, wherever it sits.
-  const realHats = await getViewerHats()
+  // (realHats / staffRole / effectiveRole were resolved in the parallel wave above.)
   const navHats: Hats = previewVisitor
     ? { loggedIn: false }
     : {
@@ -178,9 +206,8 @@ export default async function MainLayout({
     NAV_AREAS.map((a) => [a.key, a.surface ? accessTo(a.surface as Surface, navHats) : 'full']),
   )
 
-  // Help index for the app-wide support launcher (docs/SUPPORT-SYSTEM.md §1).
-  // Small + read from local Markdown; cheap to load with the shell.
-  const helpIndex = await getSearchIndex()
+  // Help index for the app-wide support launcher (docs/SUPPORT-SYSTEM.md §1) was loaded
+  // in the parallel wave above (helpIndex). Small + read from local Markdown.
 
   // Deterministic onboarding tour state from profiles.meta.tour (ADR-047 P1).
   const tourMeta = (profile.meta as { tour?: Partial<TourState> } | null)?.tour
@@ -217,26 +244,10 @@ export default async function MainLayout({
     </Suspense>
   )
 
-  // Analytics consent (ADR-069). A member who opted out has GA suppressed client-side
-  // (GaConsentGate sets gtag's native opt-out flag); the server mirror is gated too.
-  const analyticsConsent = await hasConsent(profile.id, 'analytics')
+  // Analytics consent (ADR-069), the beta-content toggle (demoMode/demoHidden/hasDemoContent),
+  // Vera's "chores" (BETA-ACTIVATION §2; beta-only via the induction flag), and the operator
+  // switches (nextSteps/autoPopups, both default off) were all resolved in the parallel wave above.
 
-  // Beta-content toggle: only offered when seeded demo content actually exists
-  // (global demo_mode on AND at least one is_demo row); reflects the member's own
-  // hide/show cookie.
-  const [demoMode, demoHidden, hasDemoContent] = await Promise.all([
-    demoModeEnabled(),
-    viewerHidesDemo(),
-    demoContentExists(),
-  ])
-
-  // Vera's "chores" — the matriarch full-stop (BETA-ACTIVATION §2). Beta-only (the
-  // oath justifies the friction); retires once everything's done + rewarded. Off at
-  // launch with the induction flag (back to the non-blocking model).
-  const chores = BETA_INDUCTION_ACTIVE ? await getProfileChores(profile.id) : null
-  // Operator switches (platform_flags, /admin/onboarding-controls). Both default off.
-  const nextSteps = await nextStepsEnabled()
-  const autoPopups = await autoPopupsEnabled()
   // Once chores are done, Vera keeps coaching (build item 1.3, folded into the same
   // surface — no competing card): surface the single next activation step.
   let coachNext = chores?.complete ? (await getOnboardingStatus(profile.id)).current : null
@@ -279,19 +290,15 @@ export default async function MainLayout({
     </Suspense>
   )
 
-  // Resolve the active Space for this host (a custom domain → that Space, otherwise the
-  // root) so the shell can apply its skin AND hide vertical nav the Space hasn't switched
-  // on (ADR-249/250 step 6). Resilient: any failure falls back to the default skin + no
-  // vertical filtering (the current look). The root space enables every vertical, so this
-  // filtering is a no-op there — it only narrows nav for a non-root sub-brand Space.
+  // Apply the active Space for this host (resolved in the parallel wave above): use its skin
+  // AND hide vertical nav the Space hasn't switched on (ADR-249/250 step 6). Resilient: a null
+  // space (lookup failure / pre-migration) falls back to the default skin + no vertical filtering
+  // (the current look). The root space enables every vertical, so this filtering is a no-op there
+  // — it only narrows nav for a non-root sub-brand Space. (chromeOverrides also came from the wave.)
   let activeSkin = 'default'
   let activeBrandName: string | null = null
   let activeBrandLogoUrl: string | null = null
-  // Operator route -> rail overrides, loaded once server-side (fail-safe → {}); the client
-  // shell merges them over the code chrome map per route.
-  const chromeOverrides = await loadChromeOverrides()
   try {
-    const space = await resolveSpaceForHost((await headers()).get('host'))
     if (space) {
       activeSkin = space.skin
       activeBrandName = space.brandName
@@ -303,7 +310,7 @@ export default async function MainLayout({
       }
     }
   } catch {
-    /* pre-migration / lookup failure → default skin, no filtering */
+    /* vertical-filtering failure → default skin, no filtering */
   }
 
   // Resolve the member's theme for the in-app shell: the personal `fxtheme` cookie (skin /

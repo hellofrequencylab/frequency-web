@@ -3,6 +3,8 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { HelpMarkdown } from '@/components/help/help-markdown'
 import { StreamTemplate } from '@/components/templates'
+import { JsonLd } from '@/components/json-ld'
+import { breadcrumbSchema } from '@/lib/jsonld'
 
 // "What's new" renders the human-facing CHANGELOG (docs/CHANGELOG.md) directly,
 // so the public version history IS the changelog: one source, auto-updated on
@@ -31,6 +33,12 @@ export default async function ChangelogPage() {
       title="What's new"
       description="Recent changes and improvements to Frequency."
     >
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Help', path: '/help' },
+          { name: "What's new", path: '/help/changelog' },
+        ])}
+      />
       <div className="max-w-3xl">
         <HelpMarkdown>{content}</HelpMarkdown>
       </div>
