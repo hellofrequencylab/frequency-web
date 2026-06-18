@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAllCategories, helpHref } from '@/lib/help/content'
 import { IndexTemplate } from '@/components/templates'
+import { JsonLd } from '@/components/json-ld'
+import { breadcrumbSchema } from '@/lib/jsonld'
 
 type Params = { params: Promise<{ category: string }> }
 
@@ -33,6 +35,12 @@ export default async function HelpCategoryPage({ params }: Params) {
       description={cat.description}
       back={{ href: '/help', label: 'Help center' }}
     >
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Help', path: '/help' },
+          { name: cat.title, path: `/help/${cat.slug}` },
+        ])}
+      />
       <ul className="divide-y divide-border rounded-xl border border-border bg-surface-elevated">
         {cat.articles.map((a) => (
           <li key={a.slug}>

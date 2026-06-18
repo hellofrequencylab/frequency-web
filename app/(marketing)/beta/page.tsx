@@ -4,6 +4,8 @@ import { Users, CalendarHeart, Sparkles, ShieldCheck } from 'lucide-react'
 import { PhotoHero, Section, Statement } from '@/components/marketing/marketing-ui'
 import { BetaForm } from '@/components/marketing/beta-form'
 import { FOUNDING_PLACE } from '@/lib/site'
+import { JsonLd } from '@/components/json-ld'
+import { breadcrumbSchema } from '@/lib/jsonld'
 
 export const metadata: Metadata = {
   title: 'Join the Beta',
@@ -29,6 +31,9 @@ const WHAT_YOU_GET = [
 export default function BetaPage() {
   return (
     <>
+      <JsonLd
+        data={breadcrumbSchema([{ name: 'Join the Beta', path: '/beta' }])}
+      />
       <PhotoHero
         image="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
         alt="A Frequency community dancing together outdoors at golden hour, arms raised"

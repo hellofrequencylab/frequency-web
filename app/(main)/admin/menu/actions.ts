@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
+import { isJanitor } from '@/lib/core/roles'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NAV_AREA_DEFAULTS } from '@/lib/nav-areas'
 
@@ -11,10 +12,11 @@ import { NAV_AREA_DEFAULTS } from '@/lib/nav-areas'
 // role; the menu is built in the authed layout, so each action revalidates the
 // whole layout to refresh the rail for everyone.
 
-/** Janitor-only guard, mirroring setAreaPermission. */
+/** Janitor-only guard, mirroring setAreaPermission. Gated on the web_role staff axis
+ *  (ADR-208) — the canonical platform-owner check — not the deprecated community_role ladder. */
 async function requireJanitor() {
   const caller = await getCallerProfile()
-  if (!caller || caller.community_role !== 'janitor') throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
   return caller
 }
 

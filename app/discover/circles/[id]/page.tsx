@@ -6,7 +6,7 @@ import { getPublicCircleById } from '@/lib/discover'
 import { SignInCta } from '@/components/discover/cards'
 import { RippleRings } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
-import { SITE_NAME } from '@/lib/site'
+import { SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 
@@ -34,6 +34,11 @@ export async function generateMetadata({
       description,
       url: `/discover/circles/${circle.id}`,
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${circle.name} · ${SITE_NAME}`,
+      description,
+    },
   }
 }
 
@@ -54,11 +59,30 @@ export default async function CirclePage({
         className="pointer-events-none absolute -top-24 -right-24 w-[30rem] max-w-none text-primary opacity-[0.05]"
       />
       <JsonLd
-        data={breadcrumbSchema([
-          { name: 'Discover', path: '/discover' },
-          { name: 'Circles', path: '/discover/circles' },
-          { name: circle.name, path: `/discover/circles/${circle.id}` },
-        ])}
+        data={[
+          breadcrumbSchema([
+            { name: 'Discover', path: '/discover' },
+            { name: 'Circles', path: '/discover/circles' },
+            { name: circle.name, path: `/discover/circles/${circle.id}` },
+          ]),
+          // Minimal entity for the circle: a small local group, mapped to
+          // Organization. Only fields the page already loads, never a fabricated count.
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: circle.name,
+            url: `${SITE_URL}/discover/circles/${circle.id}`,
+            ...(circle.about ? { description: circle.about } : {}),
+            ...(circle.city
+              ? {
+                  location: {
+                    '@type': 'Place',
+                    address: { '@type': 'PostalAddress', addressLocality: circle.city },
+                  },
+                }
+              : {}),
+          },
+        ]}
       />
 
       <Link

@@ -14,6 +14,8 @@ import {
   Card,
 } from '@/components/marketing/marketing-ui'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
+import { JsonLd } from '@/components/json-ld'
+import { breadcrumbSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
@@ -34,6 +36,9 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <>
+      <JsonLd
+        data={breadcrumbSchema([{ name: 'About', path: '/about' }])}
+      />
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <PhotoHero
         image="/images/site/moonlight-1.jpg"

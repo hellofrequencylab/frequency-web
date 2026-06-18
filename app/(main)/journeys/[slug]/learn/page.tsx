@@ -86,11 +86,17 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
     if (run) {
       runId = run.id
       isRunHost = run.hostId === profileId
-      cohort = await getCohortProgress(run.id, view.plan.id)
       anchorStart = run.startedAt
       dripIntervalDays = run.dripIntervalDays
-      kickoff = await getKickoffEvent(run.id)
-      const pe = await getPhaseEvents(run.id)
+      // Three independent run reads — cohort progress, the kickoff Event, and the per-week
+      // scheduled touchpoints — fetched together instead of in series (site audit 2026-06-18).
+      const [cohortProgress, kickoffEvent, pe] = await Promise.all([
+        getCohortProgress(run.id, view.plan.id),
+        getKickoffEvent(run.id),
+        getPhaseEvents(run.id),
+      ])
+      cohort = cohortProgress
+      kickoff = kickoffEvent
       phaseEventsById = Object.fromEntries(
         [...pe.entries()].map(([pid, v]) => [
           pid,

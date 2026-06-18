@@ -4,6 +4,8 @@ import { LifeBuoy } from 'lucide-react'
 import { getAllCategories, helpHref } from '@/lib/help/content'
 import { EmptyState } from '@/components/ui/empty-state'
 import { IndexTemplate } from '@/components/templates'
+import { JsonLd } from '@/components/json-ld'
+import { breadcrumbSchema } from '@/lib/jsonld'
 
 export const metadata: Metadata = {
   title: 'Help Center',
@@ -20,6 +22,9 @@ export default async function HelpHomePage() {
       title="How can we help?"
       description="Everything you need to find your people, show up, and make the most of Frequency."
     >
+      <JsonLd
+        data={breadcrumbSchema([{ name: 'Help', path: '/help' }])}
+      />
       <div className="grid gap-5 sm:grid-cols-2">
         {categories.map((cat) => (
           <section

@@ -73,6 +73,12 @@ export const metadata: Metadata = {
       'Browse local circles, upcoming real-world events, and topics across the Frequency community.',
     url: '/discover',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Discover the community · ${SITE_NAME}`,
+    description:
+      'Browse local circles, upcoming real-world events, and topics across the Frequency community.',
+  },
 }
 
 // Revalidate hourly — community content changes often enough to keep fresh,

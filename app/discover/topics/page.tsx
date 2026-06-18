@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     description: 'Explore the topics neighbors gather around on Frequency.',
     url: '/discover/topics',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Topics · ${SITE_NAME}`,
+    description: 'Explore the topics neighbors gather around on Frequency.',
+  },
 }
 
 export const revalidate = 3600

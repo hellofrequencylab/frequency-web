@@ -178,6 +178,17 @@ export function isSafeLogoSrc(src: string): boolean {
   }
 }
 
+/** A member's personal "connect" code centers their CURRENT profile pic in a round buffer,
+ *  over whatever base format the code stores. The avatar overrides the stored logo and is
+ *  applied only at render time, so a new photo shows up without a reprint — the stored style
+ *  stays the standard format (lib/qr/member-codes.ts). Falls back to the stored logo (the
+ *  Frequency mark) when the member has no safe avatar. */
+export function withMemberAvatar(base: QrStyle, avatarUrl: string | null | undefined): QrStyle {
+  return avatarUrl && isSafeLogoSrc(avatarUrl)
+    ? { ...base, logo: avatarUrl.trim(), logoShape: 'circle' }
+    : base
+}
+
 /** Coerce arbitrary stored/edited JSON into a valid, safe QrStyle (defaults fill
  *  the gaps; anything malformed is dropped). */
 export function parseStyle(raw: unknown): QrStyle {

@@ -14,7 +14,7 @@ import { isSiteLink, toAbsoluteSiteUrl, shortLinkUrl, nodeUrl } from '@/lib/qr/l
 import { renderQrPng, renderQrSvg } from '@/lib/qr/render'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { renderStyledQrPng } from '@/lib/qr/raster'
-import { parseStyle, type QrStyle } from '@/lib/qr/style'
+import { parseStyle, withMemberAvatar, type QrStyle } from '@/lib/qr/style'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,11 +34,25 @@ export async function GET(request: Request) {
   const nodeId = url.searchParams.get('node')
   if (codeId) {
     const admin = createAdminClient()
-    const { data } = await admin.from('qr_codes').select('slug, style').eq('id', codeId).maybeSingle()
+    const { data } = await admin
+      .from('qr_codes')
+      .select('slug, style, purpose, owner_profile_id')
+      .eq('id', codeId)
+      .maybeSingle()
     if (!data) return new Response('Unknown code.', { status: 404 })
     target = shortLinkUrl(data.slug)
     style = parseStyle(data.style)
     defaultName = data.slug
+    // A member's personal `connect` code centers their current profile pic, matching /codes —
+    // so a downloaded PNG/SVG stays in sync with no reprint (the avatar is layered on at render).
+    if (data.purpose === 'connect' && data.owner_profile_id) {
+      const { data: owner } = await admin
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', data.owner_profile_id)
+        .maybeSingle()
+      style = withMemberAvatar(style, owner?.avatar_url ?? null)
+    }
   } else if (nodeId) {
     // A check-in code (nodes): encodes /n/<id>, styled like a dynamic link.
     const admin = createAdminClient()

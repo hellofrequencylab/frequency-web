@@ -172,34 +172,33 @@ export default async function CirclePage({
   let isHost = false
   let isCrew = false
 
-  if (user) {
-    const { data: myProfile } = await admin
-      .from('profiles')
-      .select('id, community_role')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-    if (myProfile) {
-      myProfileId = myProfile.id
-      isMember = members.some((m) => m.profile.id === myProfileId)
-      isHost = circle.host?.id === myProfileId
-      isCrew = await isPaidViewer()
-    }
+  // Four independent reads — the viewer's profile, paid-viewer status, this circle's inline-admin
+  // capabilities, and scoped Insight access — fetched together instead of in series (site audit
+  // 2026-06-18). The profile/paid checks only run for a signed-in viewer; caps + Insight are
+  // viewer-aware internally and resolve to "none" for a visitor, so they're always safe to ask.
+  const [myProfile, isCrewResolved, caps, insightAccess] = await Promise.all([
+    user
+      ? admin.from('profiles').select('id, community_role').eq('auth_user_id', user.id).maybeSingle().then((r) => r.data)
+      : Promise.resolve(null),
+    user ? isPaidViewer() : Promise.resolve(false),
+    // Inline-admin gating via the one capability resolver: host + janitors, plus
+    // guides/mentors who lead this circle's hub/nexus (scope-aware).
+    getCircleCapabilities(circle.id),
+    // Scoped Insight surface (P1.6 adoption, ADR-225): ask the matrix the IN-SCOPE question, so a
+    // steward who leads THIS circle by stewardship edge — even a global-member Host — gets the
+    // circle's Insight view at the matrix-granted depth (Host ⇒ limited basic view; a Guide/Mentor
+    // who leads the parent ⇒ full). Additive: a non-leader resolves `none` and stays hidden.
+    surfaceAccess('insight', { type: 'circle', id: circle.id }),
+  ])
+  if (myProfile) {
+    myProfileId = myProfile.id
+    isMember = members.some((m) => m.profile.id === myProfileId)
+    isHost = circle.host?.id === myProfileId
+    isCrew = isCrewResolved
   }
-
-  // Inline-admin gating via the one capability resolver: host + janitors, plus
-  // guides/mentors who lead this circle's hub/nexus (scope-aware).
-  const caps = await getCircleCapabilities(circle.id)
   const canManage = caps.has('circle.editSettings')
-
-  // Scoped Insight surface (P1.6 adoption, ADR-225): ask the matrix the IN-SCOPE
-  // question, so a steward who leads THIS circle by stewardship edge — even a
-  // global-member Host — gets the circle's Insight view at the matrix-granted depth
-  // (Host ⇒ limited basic view; a Guide/Mentor who leads the parent ⇒ full). Purely
-  // additive: a non-leader resolves `none` and the affordance stays hidden exactly as
-  // today. The health rail below lights for managers (capability) OR in-scope Insight.
-  const insight = insightAffordance(
-    await surfaceAccess('insight', { type: 'circle', id: circle.id }),
-  )
+  // The health rail below lights for managers (capability) OR in-scope Insight.
+  const insight = insightAffordance(insightAccess)
   const showsHealth = canManage || insight.visible
 
   // This week's practice (host-assigned). Library only needed for the host picker.

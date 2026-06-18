@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { MapPin, Navigation, Loader2 } from 'lucide-react'
 import { distanceKm } from '@/lib/distance'
 import { getBrowserPosition } from '@/lib/geo-browser'
@@ -28,8 +29,15 @@ function Card({ l, distance }: { l: GridListing; distance: number | null }) {
   return (
     <Link href={`/market/${l.id}`} className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-colors hover:border-primary/60">
       {l.images[0] && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={l.images[0]} alt={l.title} className="h-36 w-full object-cover" />
+        <div className="relative h-36 w-full">
+          <Image
+            src={l.images[0]}
+            alt={l.title}
+            fill
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover"
+          />
+        </div>
       )}
       <div className="flex flex-1 flex-col p-4">
         <div className="flex items-center justify-between gap-2">

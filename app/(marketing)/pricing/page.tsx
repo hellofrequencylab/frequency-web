@@ -28,6 +28,8 @@ import {
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { JsonLd } from '@/components/json-ld'
+import { breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
@@ -46,10 +48,23 @@ export const metadata: Metadata = {
 
 export default async function PricingPage() {
   const data = await getPublishedData('pricing')
-  if (data && Array.isArray(data.content) && data.content.length > 0) {
-    return <Render config={config} data={data} />
-  }
-  return <LegacyPricing />
+  return (
+    <>
+      <JsonLd
+        data={[
+          breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
+          // FAQPage built from the same Q&A rendered on the page (FaqList below),
+          // so the schema matches what visitors read. Answers are plain strings.
+          faqSchema(FAQS.map((f) => ({ q: f.q, a: String(f.a) }))),
+        ]}
+      />
+      {data && Array.isArray(data.content) && data.content.length > 0 ? (
+        <Render config={config} data={data} />
+      ) : (
+        <LegacyPricing />
+      )}
+    </>
+  )
 }
 
 function LegacyPricing() {

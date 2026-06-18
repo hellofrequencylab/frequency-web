@@ -9,7 +9,7 @@ import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCallerProfile } from '@/lib/auth'
 import { isStaff } from '@/lib/core/roles'
-import { getStaffMember } from '@/lib/staff'
+import { getStaffMember, staffCan } from '@/lib/staff'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { isEntryTemplateId } from '@/lib/entry-points/templates'
@@ -20,8 +20,11 @@ async function requireMarketer(): Promise<{ id: string } | string> {
   const me = await getCallerProfile()
   if (!me) return 'Sign in first.'
   if (isStaff(me.webRole)) return { id: me.id }
+  // A team staffer needs the marketing capability specifically — a read-only analyst with a
+  // team_members row must not be able to mutate campaigns/variants/nurture (site audit 2026-06-18,
+  // matching the /marketing layout's `staffCan(role, 'marketing', …)` gate; these are writes).
   const staff = await getStaffMember().catch(() => null)
-  if (staff) return { id: me.id }
+  if (staff && staffCan(staff.role, 'marketing', 'write')) return { id: me.id }
   return 'Marketing access required.'
 }
 

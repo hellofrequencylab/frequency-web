@@ -27,6 +27,8 @@ import {
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
+import { JsonLd } from '@/components/json-ld'
+import { breadcrumbSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
@@ -78,10 +80,18 @@ const INSIDE = [
 
 export default async function TheLabPage() {
   const data = await getPublishedData('the-lab')
-  if (data && Array.isArray(data.content) && data.content.length > 0) {
-    return <Render config={config} data={data} />
-  }
-  return <LegacyTheLab />
+  return (
+    <>
+      <JsonLd
+        data={breadcrumbSchema([{ name: 'The Lab', path: '/the-lab' }])}
+      />
+      {data && Array.isArray(data.content) && data.content.length > 0 ? (
+        <Render config={config} data={data} />
+      ) : (
+        <LegacyTheLab />
+      )}
+    </>
+  )
 }
 
 function LegacyTheLab() {
