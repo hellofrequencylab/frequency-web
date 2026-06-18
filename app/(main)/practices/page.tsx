@@ -157,6 +157,7 @@ export default async function PracticesPage({
     <IndexTemplate
       title={title}
       description={description}
+      adminBar={false}
       action={
         (profileId || (ctaLabel && ctaHref)) ? (
           <div className="flex items-center gap-2">
