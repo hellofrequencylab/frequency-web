@@ -112,7 +112,7 @@ function AwardsCollection({
                 }
               />
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
                 {items.map((a) => {
                   const tier = TIER_CONFIG[a.tier as AchievementTier]
                   const isSecret = a.is_secret && !a.earned

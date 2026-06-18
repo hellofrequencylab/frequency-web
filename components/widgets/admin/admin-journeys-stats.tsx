@@ -11,7 +11,7 @@ export async function AdminJourneysStats() {
 
   return (
     <AdminSection>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
         <StatCard label="In the library" value={journeys.length} icon={BookOpen} href="/journeys" />
         <StatCard label="Awaiting review" value={pending.length} icon={Inbox} />
         <StatCard label="Official" value={officialCount} icon={Map} />
