@@ -18,6 +18,16 @@ type GemAction =
   | 'quest_complete'
   | 'challenge_complete'
   | 'season_convert'
+  // Creation rewards (Rewards Economy v3 / ADR-305, lib/rewards/creation.ts):
+  // the small Gem token on first publish, and the Gem bonus on first validated use.
+  | 'create_journey_token'
+  | 'create_event_token'
+  | 'create_practice_token'
+  | 'create_journey_bonus'
+  | 'create_event_bonus'
+  | 'create_practice_bonus'
+  // The season capstone Certificate bonus (lib/quest/complete.ts).
+  | 'certificate_bonus'
 
 interface AwardResult {
   awarded: boolean

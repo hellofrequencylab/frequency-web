@@ -296,6 +296,24 @@ export async function setPracticeFlags(
   if (flags.is_public !== undefined) update.is_public = flags.is_public
   if (Object.keys(update).length === 0) return
   await db().from('practices').update(update).eq('id', id)
+
+  // Creation token (Rewards Economy v3, ADR-305): a practice going PUBLIC is published.
+  // Pay the creator the small Gem token on FIRST publish only — idempotent per asset id
+  // (the create_token:practice:{id} rule_key), so a practice created public (already paid
+  // in createPractice) or toggled public→private→public never double-pays. Best-effort:
+  // never blocks the flag change. The token pays the AUTHOR (created_by), not the toggler.
+  if (flags.is_public === true) {
+    try {
+      const { data } = await db().from('practices').select('created_by').eq('id', id).maybeSingle()
+      const createdBy = (data as { created_by: string | null } | null)?.created_by
+      if (createdBy) {
+        const { awardCreationToken } = await import('@/lib/rewards/creation')
+        await awardCreationToken(createdBy, 'practice', id)
+      }
+    } catch {
+      // a reward failure must never block changing visibility
+    }
+  }
 }
 
 /** Set a practice's per-log Zap reward override + the reward note shown on its card
@@ -518,18 +536,34 @@ export async function createPractice(input: {
   createdBy: string
   isPublic?: boolean
 }): Promise<Practice | null> {
+  const isPublic = input.isPublic ?? true
   const { data } = await db()
     .from('practices')
     .insert({
       title: input.title,
       description: input.description ?? null,
       created_by: input.createdBy,
-      is_public: input.isPublic ?? true,
+      is_public: isPublic,
       slug: await uniquePracticeSlug(input.title),
     })
     .select(PRACTICE_COLS)
     .maybeSingle()
-  return (data as Practice | null) ?? null
+  const practice = (data as Practice | null) ?? null
+
+  // Creation token (Rewards Economy v3, ADR-305): the small Gem token on FIRST publish.
+  // A practice created PUBLIC is published at birth; a private draft pays its token later
+  // when it first goes public (setPracticeFlags). Idempotent per asset id + best-effort:
+  // never double-pays, never blocks the create.
+  if (practice && isPublic && input.createdBy) {
+    try {
+      const { awardCreationToken } = await import('@/lib/rewards/creation')
+      await awardCreationToken(input.createdBy, 'practice', practice.id)
+    } catch {
+      // a reward failure must never block creating a practice
+    }
+  }
+
+  return practice
 }
 
 /** A single practice by id (for the editor + ownership checks). */
@@ -937,17 +971,34 @@ export async function logPractice(input: {
   // lib/zaps.practiceZapValue mirrors this for every display.
   let weightClass: string | null = null
   let rewardZaps: number | null = null
+  let createdBy: string | null = null
   try {
     const { data } = await db()
       .from('practices')
-      .select('weight_class, reward_zaps')
+      .select('weight_class, reward_zaps, created_by')
       .eq('id', practiceId)
       .maybeSingle()
-    const row = data as { weight_class: string | null; reward_zaps: number | null } | null
+    const row = data as { weight_class: string | null; reward_zaps: number | null; created_by: string | null } | null
     weightClass = row?.weight_class ?? null
     rewardZaps = row?.reward_zaps ?? null
+    createdBy = row?.created_by ?? null
   } catch {
     // fall back to the standard class
+  }
+
+  // Validated creation (Rewards Economy v3, ADR-305): logging a practice is the "use" that
+  // validates it. The practice's CREATOR (created_by, the beneficiary) is paid off the
+  // logger's (the actor's) use when the logger is an established member. This block only
+  // runs on a genuinely fresh log (recordEngagementEvent above returned recorded=true), and
+  // the payout is idempotent per asset, so it pays the creator exactly once across all
+  // members who ever log it. Best-effort + dynamic import — never breaks the log.
+  if (createdBy) {
+    try {
+      const { awardValidatedCreation } = await import('@/lib/rewards/creation')
+      await awardValidatedCreation(createdBy, 'practice', practiceId, profileId)
+    } catch {
+      // a reward failure must never break the log
+    }
   }
 
   let zapsAwarded = 0

@@ -555,10 +555,11 @@ export async function publishPlan(planId: string): Promise<void> {
   const client = db()
   const { data: existing } = await client
     .from('journey_plans')
-    .select('published_at')
+    .select('published_at, author_id')
     .eq('id', planId)
     .maybeSingle()
-  const firstPublish = !(existing as { published_at: string | null } | null)?.published_at
+  const existingRow = existing as { published_at: string | null; author_id: string | null } | null
+  const firstPublish = !existingRow?.published_at
   await client
     .from('journey_plans')
     .update({
@@ -567,6 +568,18 @@ export async function publishPlan(planId: string): Promise<void> {
       ...touch(),
     })
     .eq('id', planId)
+
+  // Creation token (Rewards Economy v3, ADR-305): the small Gem token on FIRST publish
+  // only (firstPublish = published_at was previously null). Idempotent + best-effort: keyed
+  // by asset id, so it never double-pays and never blocks the publish.
+  if (firstPublish && existingRow?.author_id) {
+    try {
+      const { awardCreationToken } = await import('@/lib/rewards/creation')
+      await awardCreationToken(existingRow.author_id, 'journey', planId)
+    } catch {
+      // a reward failure must never block publishing
+    }
+  }
 }
 
 export async function setPlanVisibility(planId: string, visibility: PlanVisibility): Promise<void> {
@@ -657,9 +670,23 @@ export async function adoptPlan(profileId: string, planId: string): Promise<void
 
   if (!existing) {
     await client.from('journey_plan_adoptions').insert({ plan_id: planId, profile_id: profileId, active: true })
-    const { data: planRow } = await client.from('journey_plans').select('adopt_count').eq('id', planId).maybeSingle()
-    const count = (planRow as { adopt_count: number } | null)?.adopt_count ?? 0
+    const { data: planRow } = await client.from('journey_plans').select('adopt_count, author_id').eq('id', planId).maybeSingle()
+    const planMeta = planRow as { adopt_count: number; author_id: string | null } | null
+    const count = planMeta?.adopt_count ?? 0
     await client.from('journey_plans').update({ adopt_count: count + 1 }).eq('id', planId)
+
+    // Validated creation (Rewards Economy v3, ADR-305): adopting a Journey is the "use"
+    // that validates it. The CREATOR (author_id, the beneficiary) is paid off the adopter's
+    // (the actor's) FIRST adoption when the adopter is an established member. Idempotent
+    // per asset + best-effort: never blocks the adopt. Only on a genuinely fresh adoption.
+    if (planMeta?.author_id) {
+      try {
+        const { awardValidatedCreation } = await import('@/lib/rewards/creation')
+        await awardValidatedCreation(planMeta.author_id, 'journey', planId, profileId)
+      } catch {
+        // a reward failure must never block adopting
+      }
+    }
   } else if (!existing.active) {
     await client.from('journey_plan_adoptions').update({ active: true }).eq('id', existing.id)
   }
