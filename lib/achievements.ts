@@ -509,11 +509,6 @@ async function checkAllChallengesComplete(admin: AdminClient, profileId: string)
   const allDone = others.every(c => completedIds.has(c.id))
   if (!allDone) return
 
-  await admin
-    .from('profiles')
-    .update({ season_challenges_complete: true })
-    .eq('id', profileId)
-
   // Complete + pay the Completionist itself (250⚡ ON TOP of the 1,000⚡ purse),
   // and grant the "Every Frequency" prismatic border (S1-exclusive cosmetic).
   if (completionist && !completedIds.has(completionist.id)) {

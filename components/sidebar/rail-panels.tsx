@@ -282,16 +282,16 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
     getOnboardingStatus(profileId).catch(() => null),
     createAdminClient()
       .from('profiles')
-      .select('current_season_zaps, current_season_gems, current_streak')
+      .select('current_season_zaps, lifetime_gems, current_streak')
       .eq('id', profileId)
       .maybeSingle(),
     nextStepsEnabled(),
   ])
   const p = prof.data as {
-    current_season_zaps?: number; current_season_gems?: number; current_streak?: number
+    current_season_zaps?: number; lifetime_gems?: number; current_streak?: number
   } | null
   const zaps = p?.current_season_zaps ?? 0
-  const gems = p?.current_season_gems ?? 0
+  const gems = p?.lifetime_gems ?? 0
   const streak = p?.current_streak ?? 0
   const finishedCount = await journeysFinishedThisSeason(profileId)
   const rank = rankForCompletion(finishedCount)
