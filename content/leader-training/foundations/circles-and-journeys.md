@@ -20,11 +20,11 @@ What makes it a Circle and not a club is that it is built to last. Groups come t
 
 ## The Journey
 
-A Journey is what a Circle does together. It is a shared arc with a beginning and an end, usually a season long, that the whole Circle moves through at the same time. Daily practice on your own, a gathering each week, and a real-world challenge to finish.
+A Journey is what a Circle does together. It is a shared arc with a beginning and an end, a month long, that the whole group moves through at the same time. The whole group going through one Journey together is a Run. Daily practice on your own, two gatherings a week, and a real-world challenge to finish.
 
 A Circle does not run one Journey and stop. It runs Journeys one after another, and the community deepens with each one. The Journey is the thing you do. The Circle is the thing that lasts.
 
-Every Journey comes with a default format, and the Host can change it to fit the group. The format is a starting point, not a rulebook.
+Every Journey comes with a default shape, and you can change it to fit your group. The shape is a starting point, not a rulebook. The full shape and how to build one are in [How to Create a Journey](/lead/training-library/authoring/how-to-create-a-journey). This page is the why. That one is the how.
 
 ## The four pillars
 
@@ -46,18 +46,18 @@ Both balance the four. They just lead with different things.
 
 ## What is fixed, and what is yours
 
-A modifiable format only works if it is clear what holds and what is open.
+A modifiable shape only works if it is clear what holds and what is open.
 
-Four things make a Journey a Frequency Journey, and they do not change.
+A few things make a Journey a Frequency Journey, and they do not change.
 
-1. It balances the four pillars.
-2. It has a daily practice.
-3. The Circle gathers each week.
-4. It builds to a real-world challenge, something done out in life, not just in the room.
+1. It balances the four pillars, every week.
+2. It has an Anchor practice. One practice you do daily, all month, unchanged. It is the through-line, the habit that stays after the month is done. It is strongly recommended, not forced. The builder will nudge you to set one and warn you if you skip it, but it lets you carry on.
+3. The group meets twice a week. A Circle Meetup mid-week, in person or online, where you connect and process the week. A Weekend Gathering, an in-person social event that fits your group. You set what each one is for.
+4. Expression shows up each week as a challenge, the doing, not a quiet practice. A small one each week, and one big one at the end that closes the Journey, something done out in life, not just in the room.
 
-Everything else is yours to set. The topic, how long the Journey runs, the specific practices, and the challenge itself.
+Everything else is yours to set. The topic, the specific practices, whether the weekly practices rotate or hold, and the challenge itself.
 
-One rule of thumb. The default Journey already balances the four pillars, so if you start from it and adjust, you stay balanced without having to think about it. Balance is meant to be the easy path, not extra work.
+One rule of thumb. The default Journey already balances the four pillars and carries the Anchor and the two gatherings, so if you start from it and adjust, you stay balanced without having to think about it. Balance is meant to be the easy path, not extra work.
 
 ## Seasons and the game
 
@@ -73,8 +73,8 @@ You do not need to be an expert or a teacher. You need to be willing to gather a
 
 1. **Gather a few people.** Start small, six to ten, people you would actually want in your life. Local first, so you can be in the same room.
 2. **Pick your topic, or go catch-all.** Anything that gives people a reason to come. Or no topic at all, and let the four pillars be the point.
-3. **Set your Journey.** Take the default format and shape it to your group. Keep the four pillars, the daily practice, the weekly gathering, and the closing challenge. Change the rest.
-4. **Set your cadence.** Once a week is the heartbeat. Meet in person whenever you can.
+3. **Set your Journey.** Take the default shape and fit it to your group. Keep the four pillars, the Anchor practice, the two weekly gatherings, and the closing challenge. Change the rest.
+4. **Set your cadence.** Two gatherings a week is the heartbeat: a Circle Meetup mid-week and a Weekend Gathering. Meet in person whenever you can.
 5. **Run it, then run the next one.** Move through the Journey together, finish the challenge, and start the next Journey when the new season comes. The community grows each time.
 
 For the craft of actually holding a group together, turning a first season into a community that lasts, see the [Circle Host Guide](/lead/training-library/host-training/circle-host-guide). This guide is the what. That one is the how.

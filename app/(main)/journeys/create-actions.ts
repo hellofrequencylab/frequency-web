@@ -11,7 +11,8 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { createPlan } from '@/lib/journey-plans'
-import { getTemplate, templateToBlocks } from '@/lib/journeys/templates'
+import { getTemplate, templateToBlocks, MASTER_FRAMEWORK, masterFrameworkToBlocks } from '@/lib/journeys/templates'
+import { pillarIdsBySlug } from '@/lib/journeys/compose'
 import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek, type SparkSettings, type SparkMeeting } from '@/lib/ai/journey-spark'
 import { normalizeJourneyMeeting } from '@/lib/journey-plans'
 import { composeJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
@@ -233,4 +234,46 @@ export async function createJourneyFromTemplateAction(templateId: string | null)
   }
 
   redirect(`/journeys/${plan.slug}/learn`)
+}
+
+/** Stamp a new Journey to the recommended "Master Framework" shape — deterministic, no AI (ADR-302):
+ *  an Onboarding phase (welcome + the anchor practice + an intro prompt), N week-Phases (the week's
+ *  focus lesson + Mind/Body/Spirit practices + a light weekly Expression Challenge + a reflection),
+ *  and a Close phase (the heavy capstone Expression Challenge + a final reflection). `fixed` holds
+ *  the same weekly practices across every week instead of leaving distinct slots to fill (a
+ *  scaffold-time choice, not a persisted flag). Gated to a signed-in member; returns the new slug so
+ *  the caller can route into the editor. */
+export async function createMasterFrameworkAction(input: {
+  title?: string
+  weeks?: number
+  fixed?: boolean
+}): Promise<ActionResult<{ slug: string }>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Sign in to build a Journey.')
+
+  const title = input.title?.trim().slice(0, 120) || MASTER_FRAMEWORK.name
+  const plan = await createPlan({ authorId: caller.id, title, emoji: MASTER_FRAMEWORK.emoji })
+  if (!plan) return fail('Could not create the Journey. Try again in a moment.')
+
+  // Resolve real Pillar ids the way the composer does, then stamp the framework's blocks in order
+  // (parents before children) so each child's parent_id resolves to a real inserted id.
+  const pillarIds = await pillarIdsBySlug()
+  const admin = createAdminClient()
+  const idMap = new Map<string, string>()
+  for (const b of masterFrameworkToBlocks(pillarIds, { weeks: input.weeks, fixed: input.fixed })) {
+    const parentId = b.parentTempId ? idMap.get(b.parentTempId) ?? null : null
+    const insert =
+      b.block.kind === 'phase'
+        ? { plan_id: plan.id, block_type: 'phase' as const, parent_id: parentId, title: b.block.title, body: b.block.body, sort_order: b.sortOrder, required: true }
+        : { ...b.block.row, plan_id: plan.id, parent_id: parentId, sort_order: b.sortOrder }
+    const { data } = await admin
+      .from('journey_plan_items')
+      .insert(insert as unknown as Database['public']['Tables']['journey_plan_items']['Insert'])
+      .select('id')
+      .maybeSingle()
+    const realId = (data as { id: string } | null)?.id
+    if (realId) idMap.set(b.tempId, realId)
+  }
+
+  return ok({ slug: plan.slug })
 }

@@ -1,11 +1,13 @@
 // Vera's "build my Journey" composer for the course builder (JOURNEYS.md §6). From a one-line
-// description, Vera drafts a balanced opening week: one practice per Pillar — Mind, Body, Spirit,
-// and Expression (each picked from the library or freshly written). Expression practices are about
-// putting it out into the world (make/share/connect). So a fresh Journey opens balanced across all
-// four Pillars, and doing the practices feeds the four-Pillar Signature. Mirrors lib/ai/journey-
-// outline.ts: forced-tool structured output + the voice
-// primer + the usage ledger; never trust the raw shape, and every library id is re-validated against
-// the candidates we sent. Degrades to null when AI is off, so the builder falls back to an empty shape.
+// description, Vera drafts a balanced week: the three weekly practices (Mind, Body, Spirit) plus a
+// weekly Expression Challenge (the Expression Pillar's active, social, light doing), each picked
+// from the library or freshly written. The three practices COMPLEMENT the week's Anchor (the daily
+// through-line) instead of repeating it, and the week can reach back to a prior-week summary, so the
+// composition tracks the Master Journey Template. So a fresh Journey opens balanced across all four
+// Pillars, and doing the practices feeds the four-Pillar Signature. Mirrors lib/ai/journey-outline.ts:
+// forced-tool structured output + the voice + Journey-shape primers + the usage ledger; never trust
+// the raw shape, and every library id is re-validated against the candidates we sent. Degrades to
+// null when AI is off, so the builder falls back to an empty shape.
 
 import Anthropic from '@anthropic-ai/sdk'
 import { getAnthropic } from './client'
@@ -13,6 +15,7 @@ import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
 import { withVoice } from './voice'
+import { withJourneyShape } from './journey-shape'
 
 export type ComposePillar = 'mind' | 'body' | 'spirit' | 'expression'
 export const COMPOSE_PILLARS: ComposePillar[] = ['mind', 'body', 'spirit', 'expression']
@@ -91,13 +94,15 @@ const TOOL: Anthropic.Tool = {
   },
 }
 
-const SYSTEM = `You are Vera, Frequency's warm, plain-spoken guide. An author is building a Journey: a short group-coaching program a Circle moves through together. From their description, compose a balanced opening week with one practice for each of the four Pillars.
+const SYSTEM = `You are Vera, Frequency's warm, plain-spoken guide. An author is building a Journey: a short group-coaching program a Circle moves through together. From their description, compose a balanced week with one slot for each of the four Pillars.
 
 Rules:
-- Exactly four practices: Mind, Body, Spirit, and Expression. For each, prefer reusing a fitting practice from the candidates listed for that Pillar (mode=library, return its exact id). Only write a new one (mode=create) when no candidate fits; then give a short title and 2 to 4 concrete steps in second person.
-- Expression practices are about putting it out into the world: making something, sharing something, or connecting with someone. Keep them small and doable, like the others.
-- Also include ONE extra-credit challenge: a harder, optional, above-and-beyond task that stretches the member a little. A short name + one or two plain sentences. It is a bonus, not one of the four practices.
-- Plain, specific, sentence case. No hype, no emoji, no em dashes. Never narrate the reader's feelings.
+- Exactly four slots: Mind, Body, Spirit, and Expression. For each, prefer reusing a fitting practice from the candidates listed for that Pillar (mode=library, return its exact id). Only write a new one (mode=create) when no candidate fits; then give a short title and 2 to 4 concrete steps in second person.
+- Mind, Body, and Spirit are the three weekly practices. They COMPLEMENT the week's Anchor practice (the small daily through-line), they do not repeat it. If an Anchor is given below, pick practices that add to it rather than restate it.
+- The Expression slot is the week's EXPRESSION CHALLENGE: the Expression Pillar's active, social doing. Keep the weekly one LIGHT and tangible: make something small, share it, or connect with one person. Small and doable, like the others.
+- Also include ONE extra-credit challenge: a harder, optional, above-and-beyond task that stretches the member a little. A short name + one or two plain sentences. It is a bonus, not one of the four slots.
+- If a prior-week summary is given below, let this week reach back to it: build on where the last week left off instead of starting fresh.
+- Plain, specific, sentence case. No hype, no emoji, no em dashes. Never narrate the reader's feelings. Never use the word "Mission".
 - Never invent a library id that was not listed. Always call the ${TOOL_NAME} tool.`
 
 export async function draftJourneyComposition(input: {
@@ -105,6 +110,12 @@ export async function draftJourneyComposition(input: {
   /** Candidate library practices per Pillar, for Vera to pick from. */
   library: Record<ComposePillar, ComposeCandidate[]>
   profileId?: string | null
+  /** OPTIONAL. A short recap of the previous week, so this week can reach back to it instead of
+   *  starting fresh. Omit (or leave empty) for the opening week. */
+  priorWeekSummary?: string
+  /** OPTIONAL. The week's Anchor practice (the small daily through-line). When given, Vera composes
+   *  the Mind/Body/Spirit slots to COMPLEMENT it rather than duplicate it. */
+  anchorTitle?: string
 }): Promise<JourneyComposition | null> {
   const client = getAnthropic()
   if (!client) return null
@@ -112,6 +123,21 @@ export async function draftJourneyComposition(input: {
   // want Vera to read in full rather than truncate to a couple of sentences.
   const description = input.description.trim().slice(0, 8000)
   if (!description) return null
+
+  // Optional week context. Safe defaults: when neither is given the prompt reads exactly as the
+  // opening-week composer always did, so the existing caller keeps working unchanged.
+  const anchorTitle = input.anchorTitle?.trim().slice(0, 200) ?? ''
+  const priorWeekSummary = input.priorWeekSummary?.trim().slice(0, 1000) ?? ''
+  const contextLines = [
+    anchorTitle
+      ? `This week's Anchor practice (the daily through-line): ${anchorTitle}\nCompose the Mind, Body, and Spirit slots to COMPLEMENT this Anchor, not repeat it.`
+      : '',
+    priorWeekSummary
+      ? `Previous week, to reach back to:\n${priorWeekSummary}\nLet this week build on it.`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 
   // Candidate lists per Pillar, in the prompt (ids Vera may reference for mode=library). Each
   // line carries the hook + cadence + length so Vera can match the right practice to the brief.
@@ -134,14 +160,21 @@ export async function draftJourneyComposition(input: {
   const allowed = {} as Record<ComposePillar, Set<string>>
   for (const p of COMPOSE_PILLARS) allowed[p] = new Set((input.library[p] ?? []).map((c) => c.id))
 
-  const userText = `Journey description:\n${description}\n\n${candidateText}\n\nCompose the opening week and call ${TOOL_NAME}.`
+  const userText = [
+    `Journey description:\n${description}`,
+    contextLines,
+    candidateText,
+    `Compose the week and call ${TOOL_NAME}.`,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 
   try {
     const res = await client.messages.create({
       model: MODELS.opus,
       max_tokens: 1500,
       thinking: { type: 'disabled' },
-      system: withVoice(SYSTEM),
+      system: withVoice(withJourneyShape(SYSTEM)),
       tools: [TOOL],
       tool_choice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],

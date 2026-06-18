@@ -57,9 +57,12 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
     getLoggedTodayPracticeIds(profileId),
   ])
 
-  // The Event this Journey gathers around (meeting.eventId, set from the "Create Event" flow),
-  // resolved to a link target. Null when unset or gone — the meeting block then shows a plain line.
-  const linkedEvent = await getLinkedEvent(extras.meeting.eventId)
+  // The Events each touchpoint gathers around (the Circle Meetup + the Weekend Gathering, ADR-307),
+  // resolved to link targets. Null when unset or gone — the block then shows a plain line.
+  const [meetupEvent, gatheringEvent] = await Promise.all([
+    getLinkedEvent(extras.meeting.eventId),
+    getLinkedEvent(extras.meeting.gathering?.eventId ?? null),
+  ])
 
   // If the member is in a Circle Run of this Journey, show the shared cohort meter.
   // Best-effort: hidden (and harmless) until the Runs tables are live.
@@ -155,7 +158,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
           The hero is two-column: the description on the left, the stat band + key details right. */}
       <div className="mb-6 space-y-6">
         <AboutThisJourneyHero plan={plan} phaseCount={view.tree.phases.length} pillarBalance={extras.pillarBalance} />
-        <MeetingBlock meeting={extras.meeting} linkedEvent={linkedEvent} />
+        <MeetingBlock meeting={extras.meeting} meetupEvent={meetupEvent} gatheringEvent={gatheringEvent} />
         <AuthorBlock author={author} />
       </div>
 

@@ -48,8 +48,13 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
       coachingPrompt: typeof cp === 'string' ? cp : null,
       extraCredit,
       bonusZaps,
+      anchor: settings?.anchor === true,
     }
   })
+
+  // The Master Template recommends one Anchor practice (ADR-307). The builder warns on save when
+  // none is set (non-blocking); null would mean "unknown", so pass an explicit boolean.
+  const hasAnchor = blocks.some((b) => b.blockType === 'practice' && b.anchor)
 
   const { plan } = loaded
   const [practicesRaw, veraReview, pillarsRaw] = await Promise.all([
@@ -81,6 +86,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
       status={plan.status}
       visibility={plan.visibility}
       details={details}
+      hasAnchor={hasAnchor}
       initialTitle={plan.title}
       initialSummary={plan.summary}
       initialCover={plan.cover_image}
@@ -88,7 +94,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
       initialAccent={plan.accent}
       initialIntro={plan.intro}
       vera={<JourneyComposer slug={slug} isEmpty={blocks.length === 0} />}
-      curriculum={<JourneyEditor slug={slug} blocks={blocks} practices={practices} pillars={pillars} />}
+      curriculum={<JourneyEditor slug={slug} planId={plan.id} blocks={blocks} practices={practices} pillars={pillars} />}
       settings={
         <div className="space-y-6">
           <JourneySettings

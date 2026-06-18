@@ -145,7 +145,33 @@
   **circle-collaborative REWARD mechanics are RETIRED** (Rewards Economy v3, ADR-305): Co-op
   Pulse, Co-op Synchrony, Carrier Wave, and Circle Current pay nothing. A Run still reads as a
   shared, non-competitive thing (the leaderboard is cooperative + local only), but there is no
-  group reward payout and never a global leaderboard.
+  group reward payout and never a global leaderboard. **Member/host copy always says
+  "Run," never "cohort"** (cohort is internal/research framing only), and the person who holds
+  a Run is the **Host, never a "facilitator."**
+- **Anchor practice** (NOUN, ADR-307) = the one practice a Journey runs **daily, all month,
+  unchanged** — the keystone-habit through-line of the Master Template. STRONGLY RECOMMENDED,
+  not required: the builder prompts the creator to set one and warns on save when it is missing,
+  but lets them publish without it. **Collision guard:** distinct from the existing VERB "anchor
+  a practice" / "anchor to a daily routine" (tying any practice to a moment in the day). The
+  Anchor practice is the single practice you anchor every day; the verb applies to any practice.
+  Stored on `journey_plan_items.settings.anchor` (no migration).
+- **Circle Meetup** and **Weekend Gathering** (ADR-307) = the Master Template's two standing
+  weekly touchpoints, the group's to purpose. **Circle Meetup** = the mid-week connect-and-process
+  session (in person or virtual). **Weekend Gathering** = the weekend in-person social event that
+  fits the group's vibe. Both ride the existing Events system; both stored under a widened
+  `journey_runs.meeting` jsonb (no migration). Capitalized as proper nouns in member/host copy.
+- **Expression Challenge — per-week vs capstone (collision guard, ADR-307/ADR-299).** The
+  Expression Pillar shows up each week as the **weekly Expression Challenge**: the active/social
+  *doing*, never a fourth quiet practice. The weekly version is **LIGHT** (small or no Zaps). The
+  **capstone Expression Challenge** is the **HEAVY** one at the Journey's Close that carries the
+  Journey-completion reward (the `season_challenges.journey_id` capstone, +50 Zaps in person /
+  +30 Gems solo). Both are "Expression Challenge"; copy carries the qualifier (**weekly** vs
+  **capstone**) when the distinction matters. Same Pillar, two weights, one name family.
+- **No game object named "Mission."** A Journey week carries plain **lesson** content (a hook,
+  one open/essential question, a short teaching, a reach-back) — there is **no object called a
+  "Mission."** **Mission** stays the **movement's** word (the mission: help people heal /
+  community connection, per CONTENT-VOICE §1, §6d). Never name a Journey block, slot, or feature
+  "Mission" — it collides with the movement's mission.
 - Internal-only timers: **rhythm clock** (rolling streak/cadence) and **quest clock**
   (13-week season). Never member-facing — UI says "streak" and "season."
 

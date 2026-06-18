@@ -8,7 +8,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap, ExternalLink, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap, ExternalLink, RefreshCw, Anchor } from 'lucide-react'
 import {
   addPhaseAction,
   addModuleAction,
@@ -21,6 +21,7 @@ import {
   draftSlotCoachingAction,
   populateWeekAction,
   setBlockPracticeAction,
+  setLeafAnchorAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { CheckConfig } from '@/lib/journeys/store'
@@ -46,7 +47,19 @@ export interface EditorBlock {
   extraCredit: boolean
   /** Bonus Zaps paid on completing an extra-credit block. */
   bonusZaps: number
+  /** Anchor (Master Template): this practice is the daily through-line. Read from settings.anchor.
+   *  Optional + read defensively so a loaded block that doesn't surface it yet just reads false. */
+  anchor?: boolean
+  /** The raw block settings, when the loader passes them through. Lets the Anchor flag be read
+   *  defensively via `settings.anchor` even when `anchor` isn't mapped explicitly. */
+  settings?: { anchor?: boolean } | null
 }
+
+/** Whether a block is the daily Anchor (Master Template). Reads the mapped `anchor` first, then
+ *  falls back to the raw `settings.anchor` (the contract's defensive read), so it works whichever
+ *  way the loader exposes it. */
+const isAnchor = (b: EditorBlock): boolean =>
+  b.anchor === true || (b.settings as { anchor?: boolean } | null)?.anchor === true
 
 // The authoring inspector for a `check` block: question + options (tap the circle to mark the
 // correct one) + explanation. Members get instant feedback + retries in the player. Local state;
@@ -172,11 +185,15 @@ function SlotCoaching({
 
 export function JourneyEditor({
   slug,
+  planId = null,
   blocks,
   practices = [],
   pillars = [],
 }: {
   slug: string
+  /** The plan id — required for the Anchor toggle (setLeafAnchorAction takes a planId). The page
+   *  passes it through; when absent the Anchor control just shows as read-only. */
+  planId?: string | null
   blocks: EditorBlock[]
   practices?: EditorPractice[]
   pillars?: EditorPillar[]
@@ -242,6 +259,13 @@ export function JourneyEditor({
     })
 
   const sorted = [...blocks].sort((a, b) => a.sortOrder - b.sortOrder)
+  // The current Anchor practice, if any — used to note "an anchor already exists" when turning a new
+  // one on. Only one Anchor is expected; uniqueness isn't enforced in the UI (the orchestrator can).
+  const anchorBlock = blocks.find((b) => b.blockType === 'practice' && isAnchor(b)) ?? null
+  const toggleAnchor = (itemId: string, next: boolean) => {
+    if (!planId) return
+    run(() => setLeafAnchorAction(planId, itemId, next))
+  }
   const isLeaf = (b: EditorBlock) => b.blockType !== 'phase' && b.blockType !== 'module'
   const phases = sorted.filter((b) => b.blockType === 'phase' && b.parentId === null)
   const lessonsOf = (phaseId: string) => sorted.filter((b) => b.parentId === phaseId && isLeaf(b))
@@ -383,6 +407,7 @@ export function JourneyEditor({
     const isExtra = l.extraCredit
     const isPractice = !isExtra && l.blockType === 'practice'
     const open = openLeaves.has(l.id)
+    const anchored = isPractice && isAnchor(l)
     return (
       <li key={l.id} className={`rounded-xl border ${open ? 'p-3' : 'px-3 py-2'} ${isExtra ? 'border-signal/30 bg-signal-bg/20' : 'border-border bg-canvas'}`}>
         <div className="flex flex-wrap items-center gap-2">
@@ -416,6 +441,12 @@ export function JourneyEditor({
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
+          )}
+          {anchored && (
+            // The daily through-line, badged like the extra-credit chip so it reads at a glance.
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-primary/30 bg-primary-bg px-1.5 py-1 text-xs font-medium text-primary-strong" title="Anchor: the daily through-line of this Journey">
+              <Anchor className="h-3.5 w-3.5" /> Anchor
+            </span>
           )}
           <input
             defaultValue={l.title}
@@ -501,6 +532,27 @@ export function JourneyEditor({
                     (practiceId) => swapPractice(l.id, practiceId),
                     () => { setReplacing(null); setQuery('') },
                   )}
+                {/* Anchor (Master Template): mark this practice as the daily through-line. Styled like
+                    the Adopt/Replace affordances on this row. Only one is expected; turning a new one
+                    on notes that an anchor already exists, but never blocks (the orchestrator can
+                    enforce uniqueness later). */}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={pending || !planId}
+                    onClick={() => toggleAnchor(l.id, !anchored)}
+                    aria-pressed={anchored}
+                    title="Anchor: the one daily practice that runs through the whole Journey"
+                    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors disabled:opacity-60 ${anchored ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
+                  >
+                    <Anchor className="h-3.5 w-3.5" /> {anchored ? 'Anchor (daily through-line)' : 'Make this the Anchor'}
+                  </button>
+                  {!anchored && anchorBlock && (
+                    <span className="text-2xs text-subtle">
+                      An anchor is already set on {anchorBlock.title || 'another practice'}.
+                    </span>
+                  )}
+                </div>
                 <SlotCoaching
                   slug={slug}
                   itemId={l.id}

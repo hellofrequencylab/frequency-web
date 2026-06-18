@@ -16,7 +16,7 @@ import {
   CalendarClock,
   ArrowUpRight,
 } from 'lucide-react'
-import type { JourneyPlan, JourneyMeeting, PlanAuthor } from '@/lib/journey-plans'
+import type { JourneyPlan, JourneyMeeting, JourneyTouchpoint, PlanAuthor } from '@/lib/journey-plans'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { HelpMarkdown } from '@/components/help/help-markdown'
@@ -157,99 +157,134 @@ export function AboutThisJourneyHero({
   )
 }
 
-/** "How it meets" — the meeting / format details, when the author set any. Now also surfaces the
- *  timezone (next to the schedule) and the linked Event (a cross-link to its page). Renders nothing
- *  when the whole meeting is empty (the common solo-Journey case). */
-export function MeetingBlock({ meeting, linkedEvent }: { meeting: JourneyMeeting; linkedEvent?: LinkedEvent | null }) {
-  const hasAny =
-    meeting.format || meeting.schedule || meeting.location || meeting.link || meeting.notes || meeting.eventId
-  if (!hasAny) return null
-  const fmt = meeting.format ? MEETING_FORMAT[meeting.format] : null
+/** Does a touchpoint carry anything worth showing? */
+function touchpointHasAny(t: JourneyTouchpoint): boolean {
+  return !!(t.format || t.schedule || t.timezone || t.location || t.link || t.notes || t.eventId)
+}
 
+/** One standing touchpoint (a Circle Meetup or a Weekend Gathering): its format, when/where/join,
+ *  the linked Event (cross-linked when resolved), and any notes. */
+function TouchpointDetails({
+  tp,
+  event,
+  label,
+  hint,
+}: {
+  tp: JourneyTouchpoint
+  event?: LinkedEvent | null
+  label: string
+  hint: string
+}) {
+  const fmt = tp.format ? MEETING_FORMAT[tp.format] : null
   const rows: { icon: typeof CalendarDays; label: string; node: React.ReactNode }[] = []
-  if (meeting.schedule)
+  if (tp.schedule)
     rows.push({
       icon: CalendarDays,
       label: 'When',
-      // Timezone rides alongside the schedule so "Sundays 7pm" reads with its zone.
-      node: meeting.timezone ? `${meeting.schedule} (${meeting.timezone})` : meeting.schedule,
+      node: tp.timezone ? `${tp.schedule} (${tp.timezone})` : tp.schedule,
     })
-  else if (meeting.timezone) rows.push({ icon: Globe, label: 'Timezone', node: meeting.timezone })
-  if (meeting.location) rows.push({ icon: MapPin, label: 'Where', node: meeting.location })
-  if (meeting.link)
+  else if (tp.timezone) rows.push({ icon: Globe, label: 'Timezone', node: tp.timezone })
+  if (tp.location) rows.push({ icon: MapPin, label: 'Where', node: tp.location })
+  if (tp.link)
     rows.push({
       icon: Link2,
       label: 'Join',
       node: (
-        <a
-          href={meeting.link}
-          target="_blank"
-          rel="noreferrer"
-          className="break-all text-primary-strong underline underline-offset-2"
-        >
-          {meeting.link}
+        <a href={tp.link} target="_blank" rel="noreferrer" className="break-all text-primary-strong underline underline-offset-2">
+          {tp.link}
         </a>
       ),
     })
 
   return (
+    <div className="rounded-2xl border border-border bg-surface p-5">
+      <div className="mb-3">
+        <p className="flex items-center gap-2 text-sm font-semibold text-text">
+          {label}
+          {fmt && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+              <fmt.icon className="h-3 w-3 shrink-0" aria-hidden /> {fmt.label}
+            </span>
+          )}
+        </p>
+        <p className="mt-0.5 text-xs text-muted">{hint}</p>
+      </div>
+      {rows.length > 0 && (
+        <dl className="space-y-2.5">
+          {rows.map((r) => (
+            <div key={r.label} className="flex items-start gap-2.5 text-sm">
+              <r.icon className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
+              <dt className="w-16 shrink-0 text-muted">{r.label}</dt>
+              <dd className="min-w-0 text-text">{r.node}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {/* The linked Event — gathers the Circle around a real meetup. Cross-links when resolved. */}
+      {tp.eventId &&
+        (event ? (
+          <Link
+            href={`/events/${event.slug}`}
+            className={`flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/40 px-3 py-2.5 text-sm transition-colors hover:border-primary ${
+              rows.length > 0 ? 'mt-3' : ''
+            }`}
+          >
+            <CalendarClock className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium text-text">{event.title}</span>
+              {event.startsAt && (
+                <span className="block text-2xs text-muted">
+                  {new Date(event.startsAt).toLocaleString(undefined, {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </span>
+              )}
+            </span>
+            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+          </Link>
+        ) : (
+          <p className={`flex items-center gap-2 text-sm text-muted ${rows.length > 0 ? 'mt-3' : ''}`}>
+            <CalendarClock className="h-4 w-4 shrink-0 text-subtle" aria-hidden /> Linked event
+          </p>
+        ))}
+
+      {tp.notes && <p className="mt-3 border-t border-border pt-3 text-sm leading-relaxed text-muted">{tp.notes}</p>}
+    </div>
+  )
+}
+
+/** "How it meets" — the two standing weekly touchpoints (ADR-307): the mid-week **Circle Meetup**
+ *  and the weekend **Weekend Gathering**. Each is the group's to purpose. Renders nothing when both
+ *  are empty (the common solo-Journey case). The flat meeting fields are the Circle Meetup. */
+export function MeetingBlock({
+  meeting,
+  meetupEvent,
+  gatheringEvent,
+}: {
+  meeting: JourneyMeeting
+  meetupEvent?: LinkedEvent | null
+  gatheringEvent?: LinkedEvent | null
+}) {
+  const meetup: JourneyTouchpoint = meeting
+  const gathering = meeting.gathering
+  const showMeetup = touchpointHasAny(meetup)
+  const showGathering = !!gathering && touchpointHasAny(gathering)
+  if (!showMeetup && !showGathering) return null
+
+  return (
     <section>
       <SectionHeader title="How it meets" />
-      <div className="rounded-2xl border border-border bg-surface p-5">
-        {fmt && (
-          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-1 text-xs font-semibold text-primary-strong">
-            <fmt.icon className="h-3.5 w-3.5 shrink-0" aria-hidden /> {fmt.label}
-          </span>
+      <div className="space-y-3">
+        {showMeetup && (
+          <TouchpointDetails tp={meetup} event={meetupEvent} label="Circle Meetup" hint="Mid-week. Connect as a Circle and process the week." />
         )}
-        {rows.length > 0 && (
-          <dl className="space-y-2.5">
-            {rows.map((r) => (
-              <div key={r.label} className="flex items-start gap-2.5 text-sm">
-                <r.icon className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                <dt className="w-16 shrink-0 text-muted">{r.label}</dt>
-                <dd className="min-w-0 text-text">{r.node}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-
-        {/* The linked Event — gathers the Circle around a real meetup. Cross-links to its page when
-            resolved; falls back to a plain line when the event is gone or date-less. */}
-        {meeting.eventId &&
-          (linkedEvent ? (
-            <Link
-              href={`/events/${linkedEvent.slug}`}
-              className={`flex items-center gap-2 rounded-xl border border-border bg-surface-elevated/40 px-3 py-2.5 text-sm transition-colors hover:border-primary ${
-                rows.length > 0 ? 'mt-3' : ''
-              }`}
-            >
-              <CalendarClock className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium text-text">{linkedEvent.title}</span>
-                {linkedEvent.startsAt && (
-                  <span className="block text-2xs text-muted">
-                    {new Date(linkedEvent.startsAt).toLocaleString(undefined, {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                )}
-              </span>
-              <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-            </Link>
-          ) : (
-            <p
-              className={`flex items-center gap-2 text-sm text-muted ${rows.length > 0 ? 'mt-3' : ''}`}
-            >
-              <CalendarClock className="h-4 w-4 shrink-0 text-subtle" aria-hidden /> Linked event
-            </p>
-          ))}
-
-        {meeting.notes && (
-          <p className="mt-3 border-t border-border pt-3 text-sm leading-relaxed text-muted">{meeting.notes}</p>
+        {showGathering && gathering && (
+          <TouchpointDetails tp={gathering} event={gatheringEvent} label="Weekend Gathering" hint="A weekend get-together that fits your Circle's vibe." />
         )}
       </div>
     </section>

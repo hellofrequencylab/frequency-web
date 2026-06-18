@@ -1,10 +1,11 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
-import { Sparkles, ArrowLeft, Loader2, Upload, Video, MapPin, Users } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Sparkles, ArrowLeft, Loader2, Upload, Video, MapPin, Users, Compass } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { isError } from '@/lib/action-result'
-import { sparkJourneyAction, createJourneyFromSparkAction, extractOverviewAction } from '@/app/(main)/journeys/create-actions'
+import { sparkJourneyAction, createJourneyFromSparkAction, extractOverviewAction, createMasterFrameworkAction } from '@/app/(main)/journeys/create-actions'
 import type { JourneyPace, ArcWeek, SparkSettings, SparkMeeting } from '@/lib/ai/journey-spark'
 import { JourneyBuilder } from './journey-builder'
 
@@ -30,6 +31,7 @@ const FIELD =
 const WEEK_CHOICES = [2, 4, 6, 8] as const
 
 export function JourneySpark() {
+  const router = useRouter()
   const [mode, setMode] = useState<'wizard' | 'manual'>('wizard')
   const [usingOverview, setUsingOverview] = useState(false)
   const [step, setStep] = useState(1)
@@ -96,6 +98,17 @@ export function JourneySpark() {
         sourceText: usingOverview ? sourceText : undefined,
       }),
     )
+  }
+
+  // The recommended path: stamp the new Journey to the Master Framework (deterministic, no AI) and
+  // open its editor. Uses the chosen number of weeks; the rest is the recommended shape, ready to fill.
+  const framework = () => {
+    setError(null)
+    start(async () => {
+      const res = await createMasterFrameworkAction({ weeks })
+      if (isError(res)) setError(res.error)
+      else router.push(`/journeys/${res.data.slug}/edit`)
+    })
   }
 
   const onFile = (file: File) => {
@@ -200,6 +213,19 @@ export function JourneySpark() {
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-text">Already have your course written?</span>
                   <span className="block text-xs leading-snug text-muted">Upload or paste your outline (PDF, Word, or text) and Vera builds the whole Journey, week by week, from it.</span>
+                </span>
+              </button>
+              {/* The recommended path: stamp the proven shape and start filling — no questions, no AI. */}
+              <button
+                type="button"
+                onClick={framework}
+                disabled={pending}
+                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-primary/40 bg-primary-bg/30 px-4 py-3 text-left transition-colors hover:bg-primary-bg/50 disabled:opacity-60"
+              >
+                {pending ? <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary-strong" /> : <Compass className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />}
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-text">Start from the recommended framework</span>
+                  <span className="block text-xs leading-snug text-muted">Stamp the proven shape: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone. Fill it in as you go.</span>
                 </span>
               </button>
             </>

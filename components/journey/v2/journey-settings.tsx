@@ -15,7 +15,7 @@ import { DEFAULT_ACCENT } from '@/lib/studio/accents'
 import { isError } from '@/lib/action-result'
 import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting } from '@/app/(main)/journeys/actions'
 import { normalizeJourneyMeeting } from '@/lib/journey-plans'
-import type { PlanStatus, PlanVisibility, StoredVeraReview, JourneyMeeting } from '@/lib/journey-plans'
+import type { PlanStatus, PlanVisibility, StoredVeraReview, JourneyMeeting, JourneyTouchpoint } from '@/lib/journey-plans'
 import { Toggle } from '@/components/admin/toggle'
 import { JourneyEventLink } from './journey-event-link'
 
@@ -26,6 +26,18 @@ const MEETING_FORMATS = [
   ['in_person', MapPin, 'In person'],
   ['hybrid', Users, 'Hybrid'],
 ] as const
+
+/** A blank touchpoint (all fields null) — the starting shape for the Weekend Gathering before the
+ *  author fills anything in. The action re-normalizes on save. */
+const emptyTouchpoint = (): JourneyTouchpoint => ({
+  format: null,
+  schedule: null,
+  timezone: null,
+  location: null,
+  link: null,
+  notes: null,
+  eventId: null,
+})
 
 export interface JourneySettingsProps {
   planId: string
@@ -78,12 +90,29 @@ export function JourneySettings(props: JourneySettingsProps) {
   const [enrollCap, setEnrollCap] = useState(props.initialEnrollCap ?? 0)
   const attrs = (patch: Parameters<typeof setJourneyAttributes>[1]) => save(() => setJourneyAttributes(props.planId, patch))
 
-  // Meeting + format (ADR-302). Held as one normalized object; every change/blur autosaves the
-  // whole meeting through setJourneyMeeting (the action re-normalizes, so partial edits are safe).
+  // Two touchpoints, one record (ADR-302). The FLAT fields are the mid-week Circle Meetup; the
+  // nested `gathering` is the weekend Gathering. Held as one normalized object; every change/blur
+  // autosaves the whole meeting through setJourneyMeeting (the action re-normalizes, so partial
+  // edits are safe).
   const [meeting, setMeeting] = useState<JourneyMeeting>(() => normalizeJourneyMeeting(props.initialMeeting))
   const saveMeeting = (next: JourneyMeeting) => save(() => setJourneyMeeting(props.planId, next))
-  const patchMeeting = (patch: Partial<JourneyMeeting>) => { setMeeting((m) => ({ ...m, ...patch })) }
-  const commitMeeting = (patch: Partial<JourneyMeeting>) => { const next = { ...meeting, ...patch }; setMeeting(next); saveMeeting(next) }
+
+  // Circle Meetup edits the flat touchpoint fields in place.
+  const patchMeeting = (patch: Partial<JourneyTouchpoint>) => { setMeeting((m) => ({ ...m, ...patch })) }
+  const commitMeeting = (patch: Partial<JourneyTouchpoint>) => { const next = { ...meeting, ...patch }; setMeeting(next); saveMeeting(next) }
+
+  // Weekend Gathering edits the nested `gathering` touchpoint. Editing any field for the first time
+  // lifts `gathering` from null into a fresh touchpoint; an empty (all-null) gathering is left as a
+  // record (the action re-normalizes), which keeps the form's controlled inputs simple.
+  const gathering = meeting.gathering
+  const patchGathering = (patch: Partial<JourneyTouchpoint>) => {
+    setMeeting((m) => ({ ...m, gathering: { ...emptyTouchpoint(), ...m.gathering, ...patch } }))
+  }
+  const commitGathering = (patch: Partial<JourneyTouchpoint>) => {
+    const next = { ...meeting, gathering: { ...emptyTouchpoint(), ...meeting.gathering, ...patch } }
+    setMeeting(next)
+    saveMeeting(next)
+  }
   const [certificate, setCertificate] = useState(props.initialCertificateEnabled)
   const [drip, setDrip] = useState(props.initialDripIntervalDays)
 
@@ -347,119 +376,32 @@ export function JourneySettings(props: JourneySettingsProps) {
         </div>
       </div>
 
-      {/* Meeting + format (ADR-302) — how a Circle gathers around the Journey. All optional; the
-          format toggle clears to none, and the fields surface for the formats they fit:
-          virtual -> join link, in person -> location, hybrid -> both. The action re-normalizes on
-          save, so a value kept hidden after a format switch is preserved. */}
-      <div className="space-y-2.5">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Meeting and format</p>
+      {/* Two touchpoints (ADR-302) — how a Circle gathers around the Journey. The Circle Meetup is the
+          mid-week check-in; the Weekend Gathering is the weekend social event whose purpose the group
+          chooses. Both share the same controls and persist through one setJourneyMeeting call (the
+          flat fields for the Meetup, the nested `gathering` for the Gathering). */}
+      <div className="space-y-5">
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">How the Circle gathers</p>
 
-        <div>
-          <span className="mb-1 block text-2xs font-medium text-subtle">Format</span>
-          <div className="flex flex-wrap gap-1.5">
-            {MEETING_FORMATS.map(([value, Icon, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => commitMeeting({ format: meeting.format === value ? null : value })}
-                aria-pressed={meeting.format === value}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${meeting.format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
-              >
-                <Icon className="h-3.5 w-3.5" /> {label}
-              </button>
-            ))}
-          </div>
-          {meeting.format && (
-            <p className="mt-1.5 text-2xs text-subtle">
-              {meeting.format === 'virtual' && 'People join online. Add a join link below.'}
-              {meeting.format === 'in_person' && 'People meet in person. Add a location below.'}
-              {meeting.format === 'hybrid' && 'Some join online, some in person. Add both a location and a join link.'}
-            </p>
-          )}
-        </div>
-
-        {/* Schedule + its timezone, side by side so "when" reads as one thing. */}
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <label className="flex flex-col gap-1">
-            <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
-              <CalendarClock className="h-3.5 w-3.5" aria-hidden /> Schedule
-            </span>
-            <input
-              value={meeting.schedule ?? ''}
-              onChange={(e) => patchMeeting({ schedule: e.target.value })}
-              onBlur={(e) => commitMeeting({ schedule: e.target.value })}
-              maxLength={120}
-              placeholder="e.g. Sundays 7pm"
-              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
-            />
-          </label>
-          <label className="flex flex-col gap-1 sm:w-28">
-            <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
-              <Clock className="h-3.5 w-3.5" aria-hidden /> Timezone
-            </span>
-            <input
-              value={meeting.timezone ?? ''}
-              onChange={(e) => patchMeeting({ timezone: e.target.value })}
-              onBlur={(e) => commitMeeting({ timezone: e.target.value })}
-              maxLength={40}
-              placeholder="e.g. ET"
-              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
-            />
-          </label>
-        </div>
-
-        {(meeting.format === 'in_person' || meeting.format === 'hybrid') && (
-          <label className="flex flex-col gap-1">
-            <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
-              <MapPin className="h-3.5 w-3.5" aria-hidden /> Location
-            </span>
-            <input
-              value={meeting.location ?? ''}
-              onChange={(e) => patchMeeting({ location: e.target.value })}
-              onBlur={(e) => commitMeeting({ location: e.target.value })}
-              maxLength={200}
-              placeholder="e.g. The community hall, 14 Main St"
-              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
-            />
-          </label>
-        )}
-
-        {(meeting.format === 'virtual' || meeting.format === 'hybrid') && (
-          <label className="flex flex-col gap-1">
-            <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
-              <Video className="h-3.5 w-3.5" aria-hidden /> Join link
-            </span>
-            <input
-              type="url"
-              value={meeting.link ?? ''}
-              onChange={(e) => patchMeeting({ link: e.target.value })}
-              onBlur={(e) => commitMeeting({ link: e.target.value })}
-              maxLength={500}
-              placeholder="https://"
-              className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
-            />
-          </label>
-        )}
-
-        {/* Link or create an event the meeting ties to (stores meeting.eventId via setJourneyMeeting). */}
-        <JourneyEventLink
+        {/* Circle Meetup — the mid-week touchpoint, on the flat fields. */}
+        <TouchpointForm
           planId={props.planId}
-          eventId={meeting.eventId}
-          onChange={(eventId) => commitMeeting({ eventId })}
+          title="Circle Meetup"
+          hint="The mid-week check-in where the Circle keeps the Journey on track."
+          touchpoint={meeting}
+          onPatch={patchMeeting}
+          onCommit={commitMeeting}
         />
 
-        <label className="flex flex-col gap-1">
-          <span className="text-2xs font-medium text-subtle">Notes</span>
-          <textarea
-            value={meeting.notes ?? ''}
-            onChange={(e) => patchMeeting({ notes: e.target.value })}
-            onBlur={(e) => commitMeeting({ notes: e.target.value })}
-            maxLength={500}
-            rows={2}
-            placeholder="Any other details people should know before they join"
-            className="resize-none rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
-          />
-        </label>
+        {/* Weekend Gathering — the weekend touchpoint, on the nested `gathering`. Same controls. */}
+        <TouchpointForm
+          planId={props.planId}
+          title="Weekend Gathering"
+          hint="The weekend social event. The group chooses what it is for: a meal, a walk, a project, or just time together."
+          touchpoint={gathering}
+          onPatch={patchGathering}
+          onCommit={commitGathering}
+        />
       </div>
 
       {/* Vera's rank gate — coaching for the author. Publishing is open; this is only about
@@ -468,6 +410,146 @@ export function JourneySettings(props: JourneySettingsProps) {
         <VeraRankPanel review={review} reviewing={reviewing} onResubmit={resubmitForReview} />
       )}
     </section>
+  )
+}
+
+/** One touchpoint's form (ADR-302) — the same set of controls for the Circle Meetup and the Weekend
+ *  Gathering: format, schedule + timezone, the format-fitted location/join-link, a linked event, and
+ *  notes. `touchpoint` may be null (a Gathering that hasn't been started); a blank touchpoint renders
+ *  with empty fields. All tokens only; no hex, no hardcoded sizes. */
+function TouchpointForm({
+  planId,
+  title,
+  hint,
+  touchpoint,
+  onPatch,
+  onCommit,
+}: {
+  planId: string
+  title: string
+  hint: string
+  touchpoint: JourneyTouchpoint | null
+  /** Update local state without saving (text-field onChange). */
+  onPatch: (patch: Partial<JourneyTouchpoint>) => void
+  /** Update local state and autosave (toggles, blur). */
+  onCommit: (patch: Partial<JourneyTouchpoint>) => void
+}) {
+  const t = touchpoint
+  const format = t?.format ?? null
+  return (
+    <div className="space-y-2.5 rounded-xl border border-border bg-canvas/40 p-3">
+      <div>
+        <p className="text-sm font-semibold text-text">{title}</p>
+        <p className="mt-0.5 text-2xs text-subtle">{hint}</p>
+      </div>
+
+      <div>
+        <span className="mb-1 block text-2xs font-medium text-subtle">Format</span>
+        <div className="flex flex-wrap gap-1.5">
+          {MEETING_FORMATS.map(([value, Icon, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onCommit({ format: format === value ? null : value })}
+              aria-pressed={format === value}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
+            >
+              <Icon className="h-3.5 w-3.5" /> {label}
+            </button>
+          ))}
+        </div>
+        {format && (
+          <p className="mt-1.5 text-2xs text-subtle">
+            {format === 'virtual' && 'People join online. Add a join link below.'}
+            {format === 'in_person' && 'People meet in person. Add a location below.'}
+            {format === 'hybrid' && 'Some join online, some in person. Add both a location and a join link.'}
+          </p>
+        )}
+      </div>
+
+      {/* Schedule + its timezone, side by side so "when" reads as one thing. */}
+      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <label className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
+            <CalendarClock className="h-3.5 w-3.5" aria-hidden /> Schedule
+          </span>
+          <input
+            value={t?.schedule ?? ''}
+            onChange={(e) => onPatch({ schedule: e.target.value })}
+            onBlur={(e) => onCommit({ schedule: e.target.value })}
+            maxLength={120}
+            placeholder="e.g. Sundays 7pm"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          />
+        </label>
+        <label className="flex flex-col gap-1 sm:w-28">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
+            <Clock className="h-3.5 w-3.5" aria-hidden /> Timezone
+          </span>
+          <input
+            value={t?.timezone ?? ''}
+            onChange={(e) => onPatch({ timezone: e.target.value })}
+            onBlur={(e) => onCommit({ timezone: e.target.value })}
+            maxLength={40}
+            placeholder="e.g. ET"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          />
+        </label>
+      </div>
+
+      {(format === 'in_person' || format === 'hybrid') && (
+        <label className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
+            <MapPin className="h-3.5 w-3.5" aria-hidden /> Location
+          </span>
+          <input
+            value={t?.location ?? ''}
+            onChange={(e) => onPatch({ location: e.target.value })}
+            onBlur={(e) => onCommit({ location: e.target.value })}
+            maxLength={200}
+            placeholder="e.g. The community hall, 14 Main St"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          />
+        </label>
+      )}
+
+      {(format === 'virtual' || format === 'hybrid') && (
+        <label className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle">
+            <Video className="h-3.5 w-3.5" aria-hidden /> Join link
+          </span>
+          <input
+            type="url"
+            value={t?.link ?? ''}
+            onChange={(e) => onPatch({ link: e.target.value })}
+            onBlur={(e) => onCommit({ link: e.target.value })}
+            maxLength={500}
+            placeholder="https://"
+            className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+          />
+        </label>
+      )}
+
+      {/* Link or create an event this touchpoint ties to (stores eventId via setJourneyMeeting). */}
+      <JourneyEventLink
+        planId={planId}
+        eventId={t?.eventId ?? null}
+        onChange={(eventId) => onCommit({ eventId })}
+      />
+
+      <label className="flex flex-col gap-1">
+        <span className="text-2xs font-medium text-subtle">Notes</span>
+        <textarea
+          value={t?.notes ?? ''}
+          onChange={(e) => onPatch({ notes: e.target.value })}
+          onBlur={(e) => onCommit({ notes: e.target.value })}
+          maxLength={500}
+          rows={2}
+          placeholder="Any other details people should know before they join"
+          className="resize-none rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
+        />
+      </label>
+    </div>
   )
 }
 

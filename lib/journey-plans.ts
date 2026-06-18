@@ -74,8 +74,9 @@ export interface JourneyPlan {
   meeting: JourneyMeeting
 }
 
-/** Meeting / format details for a Journey (ADR-302): how a Circle gathers around it. All optional. */
-export interface JourneyMeeting {
+/** One standing touchpoint a Circle gathers at (ADR-302/307): a Circle Meetup or a Weekend
+ *  Gathering. All optional. */
+export interface JourneyTouchpoint {
   format: 'virtual' | 'in_person' | 'hybrid' | null
   /** When it meets, free text (e.g. "Sundays 7pm"). */
   schedule: string | null
@@ -87,13 +88,20 @@ export interface JourneyMeeting {
   link: string | null
   /** Anything else relevant. */
   notes: string | null
-  /** A linked Event (events.id) this Journey gathers around — set from the "Create Event" flow. */
+  /** A linked Event (events.id) this touchpoint gathers around — set from the "Create Event" flow. */
   eventId: string | null
 }
 
-/** Coerce a raw `meeting` jsonb value into a clean, bounded JourneyMeeting (defaults all-null). One
- *  source of truth for both the settings editor (initial value) and the learn page (display). */
-export function normalizeJourneyMeeting(raw: unknown): JourneyMeeting {
+/** How a Circle gathers around a Journey (ADR-307): the mid-week **Circle Meetup** (the flat
+ *  fields, kept flat for back-compat with pre-touchpoint rows) plus an optional weekend
+ *  **Weekend Gathering**. The group decides what each is for. */
+export interface JourneyMeeting extends JourneyTouchpoint {
+  /** The weekend social gathering. Null when unset. */
+  gathering: JourneyTouchpoint | null
+}
+
+/** Coerce a raw value into a clean, bounded JourneyTouchpoint (defaults all-null). */
+function normalizeTouchpoint(raw: unknown): JourneyTouchpoint {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const str = (v: unknown, max: number): string | null => {
     const t = typeof v === 'string' ? v.trim() : ''
@@ -109,6 +117,21 @@ export function normalizeJourneyMeeting(raw: unknown): JourneyMeeting {
     notes: str(r.notes, 500),
     eventId: str(r.eventId, 64),
   }
+}
+
+/** True when nothing is filled in (so we store null instead of a blank Gathering object). */
+export function touchpointIsEmpty(t: JourneyTouchpoint): boolean {
+  return !t.format && !t.schedule && !t.timezone && !t.location && !t.link && !t.notes && !t.eventId
+}
+
+/** Coerce a raw `meeting` jsonb value into a clean, bounded JourneyMeeting (defaults all-null). One
+ *  source of truth for both the settings editor (initial value) and the learn page (display). The
+ *  flat fields are the Circle Meetup (back-compat); `gathering` is the optional Weekend Gathering. */
+export function normalizeJourneyMeeting(raw: unknown): JourneyMeeting {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const meetup = normalizeTouchpoint(r)
+  const gathering = normalizeTouchpoint(r.gathering)
+  return { ...meetup, gathering: touchpointIsEmpty(gathering) ? null : gathering }
 }
 
 /** Block kinds an item can be (ADR-244). Existing rows are 'practice'. */

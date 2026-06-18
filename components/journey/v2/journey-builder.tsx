@@ -52,11 +52,15 @@ function JourneyActions({
   slug,
   planId,
   visibility,
+  hasAnchor = null,
   align = 'right',
 }: {
   slug: string | null
   planId: string | null
   visibility: PlanVisibility
+  /** Whether an Anchor practice exists (Master Template). `false` warns before save/publish; `null`
+   *  (unknown — the page didn't compute it) never warns. */
+  hasAnchor?: boolean | null
   /** 'left' aligns the column to the start (the foot bar); 'right' is the header default. */
   align?: 'left' | 'right'
 }) {
@@ -65,19 +69,26 @@ function JourneyActions({
   const [justPublished, setJustPublished] = useState(false)
   const [adopt, setAdopt] = useState(true)
   const [note, setNote] = useState<string | null>(null)
+  // The no-anchor warning is non-blocking: the first save/publish without an Anchor shows it and
+  // holds; a second click proceeds. Once acknowledged, it stays acknowledged for the session.
+  const [anchorAck, setAnchorAck] = useState(false)
+  const missingAnchor = hasAnchor === false
   const live = visibility === 'public' || justPublished
   const viewHref = slug ? `/journeys/${slug}/learn` : '/journeys'
 
   // Save Draft → View mode. Fields already autosave on blur, so this just takes the author to the
-  // course view, where the control becomes "Edit Journey".
+  // course view, where the control becomes "Edit Journey". A missing Anchor warns once first.
   const saveAndView = () => {
     if (!slug) return
+    if (missingAnchor && !anchorAck) { setAnchorAck(true); return }
     start(() => router.push(viewHref))
   }
 
-  // Publish to the community library, then land on the now-published page.
+  // Publish to the community library, then land on the now-published page. A missing Anchor warns
+  // once first (non-blocking — a second click publishes anyway).
   const publish = () => {
     if (!planId || !slug) return
+    if (missingAnchor && !anchorAck) { setAnchorAck(true); return }
     setNote(null)
     start(async () => {
       const res = await setJourneyVisibility(planId, 'public')
@@ -126,6 +137,13 @@ function JourneyActions({
         )}
       </div>
       {note && <p className="text-2xs text-danger">{note}</p>}
+      {missingAnchor && anchorAck && !live && (
+        // Non-blocking nudge: the Master Template recommends an Anchor but never requires one. After
+        // this shows, the same button proceeds on the next click.
+        <p className="max-w-md text-2xs text-warning">
+          No anchor practice set. Journeys build habits best with one daily through-line. You can add one, or continue.
+        </p>
+      )}
     </div>
   )
 }
@@ -179,6 +197,7 @@ export function JourneyBuilder({
   initialAccent = null,
   initialIntro = null,
   details = null,
+  hasAnchor = null,
   vera,
   curriculum,
   settings,
@@ -198,6 +217,9 @@ export function JourneyBuilder({
   initialIntro?: string | null
   /** Quick stats for the header's Journey Details card (edit mode). */
   details?: JourneyDetailsData | null
+  /** Whether an Anchor practice exists (Master Template). Computed by the page (which holds the
+   *  blocks); `false` warns before save/publish, `null`/unset never warns. */
+  hasAnchor?: boolean | null
   /** Vera's four-Pillar composer — rendered full-width above the body (edit mode). */
   vera?: ReactNode
   /** The curriculum editor (phases) — main column, edit mode. */
@@ -381,7 +403,7 @@ export function JourneyBuilder({
             {/* Save / Preview / Publish sit UNDER the title + subtitle (build item 2). */}
             {!draft && (
               <div className="mt-4">
-                <JourneyActions slug={slug} planId={planId} visibility={visibility} />
+                <JourneyActions slug={slug} planId={planId} visibility={visibility} hasAnchor={hasAnchor} />
               </div>
             )}
             {draft && (
@@ -440,7 +462,7 @@ export function JourneyBuilder({
             button-convention pass), so the author never has to scroll back up after a long curriculum. */}
         {!draft && (
           <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-5">
-            <JourneyActions slug={slug} planId={planId} visibility={visibility} align="left" />
+            <JourneyActions slug={slug} planId={planId} visibility={visibility} hasAnchor={hasAnchor} align="left" />
             <span className="text-2xs text-subtle">Every field saves automatically as you go.</span>
           </div>
         )}

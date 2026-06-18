@@ -75,6 +75,52 @@ date and skips the cohort/meetup layer. Same content, same individual trophies.
 
 ---
 
+## 3.5 The Master Journey Template (recommended baseline)
+
+A **best-practice framework** for a Journey: a strong default the **builder and Vera scaffold
+toward**, and the rubric the Vera review gate reads. It is a **recommendation, not a hard
+requirement** — every part is departable on purpose; nothing here blocks a publish. Decision
+record + the authoring rubric: [ADR-307](DECISIONS.md) and
+`content/leader-training/authoring/how-to-create-a-journey.md` (the literal Vera-gate spec).
+
+**The container.** A one-month **Run**: a small group (~8–12) with a **Host**, a fixed start,
+moving on the weekly drip. **Four week-Phases** (one Phase ≈ one week) on the arc *arrive →
+deepen → apply → integrate*, wrapped by an **Onboarding** phase before week 1 and a **Close**
+phase at the end. All four **Pillars** (Mind/Body/Spirit/Expression) carry every week.
+
+**The week shape (per Phase).** Same parts every week, fresh content:
+
+| Part | What it is |
+|---|---|
+| **Lesson** | A hook, **one open/essential question** for discussion, a short teaching, and a **reach-back** to the prior week. Plain lesson content — there is **no "Mission" object** (NAMING). |
+| **Anchor practice** | One practice done **daily, all month, unchanged** — the keystone-habit through-line. **Strong-suggest, warn-on-save, departable** (below). |
+| **Three weekly practices** | One each for **Mind / Body / Spirit**. **Rotate each week by default**, or hold **fixed** for the whole Journey (a scaffold-time choice). |
+| **Weekly Expression Challenge** | The Expression Pillar as the active/social *doing*, **LIGHT** (small/no Zaps). The **Close** carries the **capstone Expression Challenge**, **HEAVY** (the Journey-completion reward). |
+| **Reflection** | A weekly checkpoint. |
+
+**The two-touchpoint meeting model.** Two standing weekly touchpoints, the group's to purpose:
+a **Circle Meetup** (mid-week, in person or virtual — connect + process the week) and a
+**Weekend Gathering** (a weekend in-person social event). Both ride the Events system; both
+stored under a **widened `journey_plans.meeting` jsonb** (Circle Meetup + Weekend Gathering, no
+migration), alongside the per-Run `kickoff_event_id` touchpoint of §3.
+
+**Build backward.** Name the **outcome** and its **evidence** first, then choose the
+practices/challenge/assets that get there.
+
+**Implementation (no migrations).**
+- **Anchor flag** = `journey_plan_items.settings.anchor` on the chosen practice block. The
+  builder **prompts** for one and **warns on save** when none is set, but never blocks publish
+  (strong recommendation, not a gate) — Vera coaches toward it.
+- **Rotation vs fixed** = a **scaffold-time choice** in the builder (how the three weekly
+  practices are laid into the Phases), not a schema concept; no migration.
+- **The two touchpoints** = the widened `journey_plans.meeting` jsonb (above).
+- The Vera review gate reads the authoring rubric file as its **fixed rubric-loader path**, so
+  that doc is the canonical spec the scaffold + review align to.
+
+Because it is a baseline, a creator can drop the Anchor, hold practices fixed, run a different
+arc, or skip a touchpoint — the builder and Vera **nudge** back toward the template, they never
+enforce it.
+
 ## 4. Completion, points & trophies
 
 Completion is **phase- and program-based** (the season/8-of-13 model is gone):
