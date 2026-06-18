@@ -72,7 +72,7 @@ export async function PracticesMine() {
   const byId = pillarsById(pillars)
 
   return (
-    <section id="practices-mine" className="max-w-2xl scroll-mt-20">
+    <section id="practices-mine" className="scroll-mt-20">
       <SectionHeader title="Your practices" count={mine.length} />
       <ul className="space-y-3">
         {mine.map((p) => (

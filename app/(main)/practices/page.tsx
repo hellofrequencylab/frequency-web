@@ -224,9 +224,11 @@ export default async function PracticesPage({
           self-fetching widget blocks arranged by the operator through the page's Settings ▾ → Page →
           Layout control (the standard module-driven layout every page uses, ADR-270/271). Each block
           self-fetches the signed-in member's own data and renders nothing for a logged-out viewer.
-          The faceted Practice Library below stays a FIXED page section: it reads searchParams
-          (Pillar / tag / sort / page), which blocks never receive, so it must not move into a block. */}
-      <div className="max-w-2xl space-y-8">
+          Full width so the operator's template (e.g. Main + side) fills the page — each block sizes
+          itself to the slot it lands in via container queries. The faceted Practice Library below
+          stays a FIXED page section: it reads searchParams (Pillar / tag / sort / page), which blocks
+          never receive, so it must not move into a block. */}
+      <div className="space-y-8">
         <PageModules route="/practices" />
       </div>
 

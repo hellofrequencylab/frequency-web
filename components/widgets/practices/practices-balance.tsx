@@ -20,7 +20,7 @@ export async function PracticesBalance() {
   const isExpression = (p: PillarCount) => p.slug === 'expression'
 
   return (
-    <section id="practices-balance" className="max-w-2xl scroll-mt-20">
+    <section id="practices-balance" className="scroll-mt-20">
       <SectionHeader title="Pillar balance" />
       <div className="rounded-2xl border border-border bg-surface p-4">
         <div className="flex items-center gap-1.5">
