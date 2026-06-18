@@ -137,5 +137,24 @@ export async function getLinkedEvent(eventId: string | null): Promise<LinkedEven
   return { slug: e.slug, title: e.title?.trim() || 'Linked event', startsAt: e.starts_at }
 }
 
+/** The practice ids the member has already logged TODAY — the player uses this to gate a practice
+ *  step's "Mark complete & continue" until the practice is done (run the timer, or Log it). Reads
+ *  practice_logs through the same admin handle the other learn reads use; de-duped. */
+export async function getLoggedTodayPracticeIds(profileId: string): Promise<string[]> {
+  const today = new Date().toISOString().slice(0, 10)
+  const { data } = await createAdminClient()
+    .from('practice_logs')
+    .select('practice_id')
+    .eq('profile_id', profileId)
+    .eq('logged_for', today)
+  return [
+    ...new Set(
+      ((data ?? []) as { practice_id: string | null }[])
+        .map((r) => r.practice_id)
+        .filter((id): id is string => !!id),
+    ),
+  ]
+}
+
 /** Index a pillar list by id, re-exported so the page doesn't import lib/pillars twice. */
 export { pillarsById }

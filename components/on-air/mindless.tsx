@@ -10,6 +10,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { loadOnAirSession } from '@/app/(main)/on-air/actions'
@@ -42,9 +43,16 @@ type OverlayState =
   | { phase: 'error' }
 
 export function MindlessProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const [state, setState] = useState<OverlayState>({ phase: 'closed' })
 
-  const close = useCallback(() => setState({ phase: 'closed' }), [])
+  // Closing the overlay refreshes the page underneath so anything the sit just changed (a practice
+  // logged, the streak) lands without a navigation — e.g. a Journey step's "logged today" gating
+  // (docs/JOURNEYS.md) clears the moment the timer overlay closes. A no-op when nothing changed.
+  const close = useCallback(() => {
+    setState({ phase: 'closed' })
+    router.refresh()
+  }, [router])
 
   const open = useCallback((opts?: { practiceId?: string }) => {
     setState({ phase: 'loading', practiceId: opts?.practiceId })

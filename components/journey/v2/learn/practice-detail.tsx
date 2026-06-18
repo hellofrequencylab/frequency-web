@@ -5,7 +5,6 @@ import type { Pillar } from '@/lib/pillars'
 import { practiceZapValue } from '@/lib/zaps'
 import { HelpMarkdown } from '@/components/help/help-markdown'
 import { PillarBadge } from '@/components/practice/pillar-badge'
-import { PracticeOverlayLink } from '@/components/journey/v2/learn/practice-overlay-link'
 
 // Journeys v2 — the rich practice detail for a selected `practice` step in the learn player. A
 // follower opening a practice lesson should see the real thing they're being asked to do: the
@@ -62,10 +61,9 @@ export function PracticeDetail({
         <p className="border-t border-border pt-4 text-sm leading-relaxed text-muted">{practice.description}</p>
       ) : null}
 
-      {/* Do it now (the Mindless timer overlay, no navigation) + a quiet cross-link to the
-          practice's own page. The overlay trigger is a client island; the page link stays plain. */}
+      {/* A quiet cross-link to the practice's own page. The follower's "do it now" action (Practice
+          or Log it) lives on the step itself, just below this card — so no duplicate launcher here. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
-        <PracticeOverlayLink practiceId={practice.id} />
         <Link
           href={`/practices/${practice.slug ?? practice.id}`}
           className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"

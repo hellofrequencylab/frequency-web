@@ -636,7 +636,15 @@ export async function isPlanAdopted(profileId: string, planId: string): Promise<
 export async function adoptPlan(profileId: string, planId: string): Promise<void> {
   const client = db()
   const { data: itemRows } = await client.from('journey_plan_items').select('practice_id').eq('plan_id', planId)
-  const practiceIds = ((itemRows as { practice_id: string }[] | null) ?? []).map((r) => r.practice_id)
+  // Only practice blocks carry a practice_id (phase/module blocks are null); adopt each DISTINCT one
+  // so joining a Journey flows its practices into the member's list and auto-links them in On Air.
+  const practiceIds = [
+    ...new Set(
+      ((itemRows as { practice_id: string | null }[] | null) ?? [])
+        .map((r) => r.practice_id)
+        .filter((id): id is string => !!id),
+    ),
+  ]
   for (const pid of practiceIds) await adoptPractice(profileId, pid)
 
   const { data: existingRow } = await client

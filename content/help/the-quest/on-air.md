@@ -16,8 +16,8 @@ on the spot.
 ## Tuning out
 
 Open it from the **Mindless button in the header** (it opens right over whatever
-you are doing, anywhere on the site), from the **Practice** button on any practice
-in a Journey, from the Zap button (the **Mindless** row), from your home screen
+you are doing, anywhere on the site), from the **Practice** button on a timer
+practice in a Journey, from the Zap button (the **Mindless** row), from your home screen
 (the little lotus next to any practice), or from a practice page. Pick three
 things, and it remembers them for next time:
 
