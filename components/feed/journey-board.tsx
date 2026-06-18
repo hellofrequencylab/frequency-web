@@ -155,7 +155,7 @@ export function JourneyBoard({
               <Flame className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-sm font-bold leading-tight text-text">
+              <p className="flex flex-wrap items-center gap-1.5 text-sm font-bold leading-tight text-text">
                 <span>{streak > 0 ? `${streak} day streak` : 'Your journey'}</span>
                 {!p.maxed && p.next && (
                   <span className="font-medium text-muted">
@@ -332,7 +332,7 @@ export function JourneyBoard({
       {/* Resource center — a few warm doors back into the place. Held back until a
           member is past the very first days so the board stays focused early on. */}
       {stageIndex >= 2 && (
-        <div className="mt-3 flex items-center gap-1.5 border-t border-primary-bg bg-surface/40 px-3 py-2.5">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-primary-bg bg-surface/40 px-3 py-2.5">
           <Compass className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <span className="mr-0.5 text-xs font-medium text-subtle">Keep exploring</span>
           {RESOURCES.map(({ href, label, Icon }) => (

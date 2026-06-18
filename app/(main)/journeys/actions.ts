@@ -28,10 +28,12 @@ import {
   planMeta,
   applyVeraReview,
   deletePlan,
+  normalizeJourneyMeeting,
   type PlanVisibility,
   type PlanStatus,
   type PageWidgetConfig,
   type StoredVeraReview,
+  type JourneyMeeting,
 } from '@/lib/journey-plans'
 import { getSeasonalQuests } from '@/lib/quests'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
@@ -268,6 +270,74 @@ export async function setJourneyAttributes(
   }
   revalidatePath('/journeys', 'layout')
   return ok()
+}
+
+/** Meeting and format section (ADR-302, owner's item 13): how a Circle gathers around the Journey —
+ *  virtual/in-person/hybrid, when it meets, where, a join link, and any other details. Sanitized +
+ *  bounded through normalizeJourneyMeeting (one source of truth with the learn page). The `meeting`
+ *  jsonb column is `Json` in the generated types, so cast the payload (ADR-246), never the admin
+ *  client. */
+export async function setJourneyMeeting(
+  planId: string,
+  meeting: JourneyMeeting,
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  const admin = createAdminClient()
+  const payload = { meeting: normalizeJourneyMeeting(meeting) }
+  await admin.from('journey_plans').update(payload as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/** A lightweight Event row for the Meeting section's link/picker: enough to choose one and to
+ *  show the currently-linked event (its title + when). The `events` table carries newer columns
+ *  than the generated types, so reads go through the untyped admin handle (repo convention; see
+ *  app/(main)/events/page.tsx). */
+export interface JourneyEventOption {
+  id: string
+  title: string
+  slug: string
+  startsAt: string | null
+}
+
+/** List the caller's own (hosted) upcoming + recent events to LINK to a Journey's meeting
+ *  (ADR-302, owner's item 14). Owner-gated through assertOwner: only the Journey's author (or an
+ *  operator) may read the picker, and the events are scoped to that same caller as host. Cancelled
+ *  events are excluded; soonest-first, capped. */
+export async function listMyJourneyEvents(
+  planId: string,
+): Promise<ActionResult<{ events: JourneyEventOption[] }>> {
+  const profileId = await assertOwner(planId)
+  if (!profileId) return fail('Not allowed.')
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('events')
+    .select('id, title, slug, starts_at, is_cancelled')
+    .eq('host_id', profileId)
+    .eq('is_cancelled', false)
+    .order('starts_at', { ascending: false })
+    .limit(50)
+  const rows = (data as { id: string; title: string; slug: string; starts_at: string | null }[] | null) ?? []
+  return ok({ events: rows.map((e) => ({ id: e.id, title: e.title, slug: e.slug, startsAt: e.starts_at })) })
+}
+
+/** Resolve a single linked Event for the Meeting section's linked-event chip (title + when +
+ *  slug to open it). Owner-gated. Returns null when the event is gone (so the chip can show a
+ *  graceful "linked event unavailable" and let the author unlink). */
+export async function getJourneyMeetingEvent(
+  planId: string,
+  eventId: string,
+): Promise<ActionResult<{ event: JourneyEventOption | null }>> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  if (!eventId) return ok({ event: null })
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('events')
+    .select('id, title, slug, starts_at')
+    .eq('id', eventId)
+    .maybeSingle()
+  const e = data as { id: string; title: string; slug: string; starts_at: string | null } | null
+  return ok({ event: e ? { id: e.id, title: e.title, slug: e.slug, startsAt: e.starts_at } : null })
 }
 
 export async function addPracticeToJourney(

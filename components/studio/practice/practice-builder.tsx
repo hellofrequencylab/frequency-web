@@ -54,6 +54,9 @@ export interface PracticeBuilderProps {
   /** Typical session length in minutes (null = unset). */
   durationMin: number | null
   category: string | null
+  /** Does this practice run On Air's timer (Practice button) or just get logged (Log It)? Drives the
+   *  single action a follower sees on a Journey step. Sits/breathing → timer; actions/reflections → log. */
+  usesTimer: boolean
   icon: string | null
   domainId: string | null
   /** Per-Focus instructions + timing, keyed by pillar id. The keys are the selected
@@ -91,6 +94,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [cadence, setCadence] = useState(props.cadence ?? '')
   const [durationMin, setDurationMin] = useState(props.durationMin != null ? String(props.durationMin) : '')
   const [category, setCategory] = useState(props.category ?? '')
+  const [usesTimer, setUsesTimer] = useState(props.usesTimer ?? true)
   const [icon, setIcon] = useState(props.icon ?? '')
   // Multi-Focus: focus_details is keyed by pillar id; the KEYS are the selected Focuses.
   // A legacy row may have a domain_id but no focus_details yet — seed that primary Pillar
@@ -200,7 +204,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             )}
           </button>
           {iconOpen && (
-            <div className="absolute left-0 top-[4.5rem] z-10 w-64 rounded-2xl border border-border bg-surface p-3 shadow-xl">
+            <div className="absolute left-0 top-[4.5rem] z-10 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 shadow-xl">
               <div className="grid grid-cols-5 gap-1">
                 {ICONS.map(({ key, Icon }) => (
                   <button
@@ -373,6 +377,39 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           })}
         </div>
         <p className="mt-1 text-xs text-subtle">The fallback per-log payout when no Zap override is set. Light 8 · Standard 12 · Heavy 15 Zaps.</p>
+      </fieldset>
+
+      {/* How it's done — drives the single action a follower sees on a Journey step: a timer practice
+          (a sit, breathwork) opens On Air; a Log It practice (an action, a reflection) just records it. */}
+      <fieldset className="mt-4">
+        <legend className="text-2xs font-semibold uppercase tracking-wide text-subtle">How it&rsquo;s done</legend>
+        <div role="radiogroup" aria-label="How it's done" className="mt-1 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={usesTimer}
+            onClick={() => { setUsesTimer(true); queueSave({ uses_timer: true }) }}
+            className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+              usesTimer ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
+            }`}
+          >
+            <span>Timer</span>
+            <span className={`text-2xs font-normal ${usesTimer ? 'text-primary-strong' : 'text-subtle'}`}>Opens On Air to sit or breathe</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={!usesTimer}
+            onClick={() => { setUsesTimer(false); queueSave({ uses_timer: false }) }}
+            className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+              !usesTimer ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
+            }`}
+          >
+            <span>Log it</span>
+            <span className={`text-2xs font-normal ${!usesTimer ? 'text-primary-strong' : 'text-subtle'}`}>Records it in one tap</span>
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-subtle">On a Journey, a Timer practice shows a Practice button; a Log it practice shows Log it.</p>
       </fieldset>
 
       {/* Reward override — admin only. Overrides the weight-class payout + sets the card note. */}

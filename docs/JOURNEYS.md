@@ -110,6 +110,13 @@ A Netflix-simple **lesson player**:
 - **Right:** the active lesson — title, a ≤6-min video or markdown body or exercise prompt,
   and **one clear next action** ("Mark complete & continue"). Knowledge-check lessons give
   **instant feedback + retries** (the testing effect, §10).
+- **Practice steps → On Air (ADR-304):** a practice step shows a SINGLE action keyed to the
+  practice's `uses_timer` — **"Practice"** (opens the global On Air timer overlay pre-set to this
+  practice, no navigation) for a sit/breathwork, or **"Log it"** (one-tap log) for an action or
+  reflection. Completion is **log-gated**: "Mark complete & continue" stays grey until the practice
+  is logged today; clicking it unlogged reveals a warning + a "Continue without logging" escape
+  hatch. Enrolling a Journey **auto-adopts** its practices (`adoptPlan`), which **auto-links** them
+  in On Air (it reads the member's adopted set).
 - **Resume where you left off** (last lesson + video position).
 - **Celebration moments:** confetti + trophy at each **phase complete** and at **journey
   complete**; a certificate to keep/share.

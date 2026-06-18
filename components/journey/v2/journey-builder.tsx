@@ -3,15 +3,26 @@
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Check, ChevronDown, Eye, Layers, Lock, Sparkles, SlidersHorizontal } from 'lucide-react'
-import { PageHeading } from '@/components/templates'
+import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { IconAccentFace, IconGrid } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
-import { saveJourneyMeta } from '@/app/(main)/journeys/actions'
+import { saveJourneyMeta, setJourneyVisibility } from '@/app/(main)/journeys/actions'
 import { createJourneyDraftAction } from '@/app/(main)/journeys/create-actions'
+import { isError } from '@/lib/action-result'
+import type { PlanVisibility } from '@/lib/journey-plans'
 import { EditableText } from './editable-text'
+
+/** Quick-stats shown in the header's "Journey Details" card. */
+export interface JourneyDetailsData {
+  phases: number
+  steps: number
+  completionGems: number
+  dailyMinutes: number | null
+  difficulty: string | null
+}
 
 // Journeys v2 — the SINGLE-PAGE editor shell (ADR-301). Laid out like the Journey it builds and
 // following course-builder best practice: a cover band up top, then the identity row (icon + accent
@@ -32,17 +43,125 @@ function StatusPill({ status }: { status: string }) {
   )
 }
 
+// The Save Draft / Preview / Publish action set — at the TOP of the header and again at the FOOT of
+// the editor. The convention (owner's button-convention pass): every field autosaves on blur, so
+// SAVE DRAFT just flips to VIEW mode (/learn), where the control reads "Edit Journey" — "Save Draft
+// becomes Edit when clicked". PUBLISH publishes to the community library, turns to "Published", and
+// lands on the published page. Once live, the control reads "Published" (unpublish lives in Settings).
+function JourneyActions({
+  slug,
+  planId,
+  visibility,
+  align = 'right',
+}: {
+  slug: string | null
+  planId: string | null
+  visibility: PlanVisibility
+  /** 'left' aligns the column to the start (the foot bar); 'right' is the header default. */
+  align?: 'left' | 'right'
+}) {
+  const router = useRouter()
+  const [pending, start] = useTransition()
+  const [justPublished, setJustPublished] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const live = visibility === 'public' || justPublished
+  const viewHref = slug ? `/journeys/${slug}/learn` : '/journeys'
+
+  // Save Draft → View mode. Fields already autosave on blur, so this just takes the author to the
+  // course view, where the control becomes "Edit Journey".
+  const saveAndView = () => {
+    if (!slug) return
+    start(() => router.push(viewHref))
+  }
+
+  // Publish to the community library, then land on the now-published page.
+  const publish = () => {
+    if (!planId || !slug) return
+    setNote(null)
+    start(async () => {
+      const res = await setJourneyVisibility(planId, 'public')
+      if (isError(res)) { setNote(res.error); return }
+      setJustPublished(true)
+      router.push(viewHref)
+    })
+  }
+
+  const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-60'
+  return (
+    <div className={`flex flex-col gap-1 ${align === 'left' ? 'items-start' : ''}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={saveAndView} disabled={pending || !slug} className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
+          <Save className="h-4 w-4" /> Save Draft
+        </button>
+        {slug && (
+          <Link href={viewHref} target="_blank" className={`${btn} border border-border text-text hover:bg-surface-elevated`}>
+            <Eye className="h-4 w-4" /> Preview
+          </Link>
+        )}
+        {live ? (
+          <Link href={viewHref} className={`${btn} border border-success/40 bg-success-bg text-success`}>
+            <Check className="h-4 w-4" /> Published
+          </Link>
+        ) : (
+          <button type="button" onClick={publish} disabled={pending} className={`${btn} bg-primary text-on-primary hover:bg-primary-hover`}>
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {pending ? 'Publishing…' : 'Publish'}
+          </button>
+        )}
+      </div>
+      {note && <p className="text-2xs text-danger">{note}</p>}
+    </div>
+  )
+}
+
+// The "Journey Details" quick-stats card, top-right of the header — phases, steps, daily time,
+// completion reward, difficulty. A compact read-only snapshot so the author sees the shape of the
+// course at a glance without opening Settings.
+function JourneyDetails({ status, visibility, details }: { status: string; visibility: PlanVisibility; details: JourneyDetailsData }) {
+  const vis = visibility === 'public' ? 'Public' : visibility === 'unlisted' ? 'Unlisted' : 'Private'
+  const rows: { icon: typeof Layers; label: string; value: string }[] = [
+    { icon: Layers, label: 'Phases', value: String(details.phases) },
+    { icon: ListChecks, label: 'Steps', value: String(details.steps) },
+    { icon: Clock, label: 'Daily time', value: details.dailyMinutes ? `${details.dailyMinutes} min` : 'Not set' },
+    { icon: Gem, label: 'Completion', value: `${details.completionGems} gems` },
+    { icon: BarChart3, label: 'Difficulty', value: details.difficulty ? details.difficulty[0].toUpperCase() + details.difficulty.slice(1) : 'Not set' },
+  ]
+  return (
+    <div className="w-full rounded-2xl border border-border bg-surface p-3.5 lg:w-72">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Journey Details</span>
+        <span className="inline-flex items-center gap-1 text-2xs font-medium text-muted">
+          <StatusPill status={status} /> · {vis}
+        </span>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center gap-1.5">
+            <r.icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+            <dt className="sr-only">{r.label}</dt>
+            <dd className="min-w-0">
+              <span className="block truncate text-sm font-bold tabular-nums text-text">{r.value}</span>
+              <span className="block text-2xs text-subtle">{r.label}</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  )
+}
+
 export function JourneyBuilder({
   draft = false,
   slug = null,
   planId = null,
   status = 'draft',
+  visibility = 'private',
   initialTitle = '',
   initialSummary = null,
   initialCover = null,
   initialEmoji = null,
   initialAccent = null,
   initialIntro = null,
+  details = null,
   vera,
   curriculum,
   settings,
@@ -52,6 +171,7 @@ export function JourneyBuilder({
   slug?: string | null
   planId?: string | null
   status?: string
+  visibility?: PlanVisibility
   initialTitle?: string
   initialSummary?: string | null
   initialCover?: string | null
@@ -59,6 +179,8 @@ export function JourneyBuilder({
   initialAccent?: string | null
   /** The story/overview write-up, shown above the curriculum (moved out of Settings). */
   initialIntro?: string | null
+  /** Quick stats for the header's Journey Details card (edit mode). */
+  details?: JourneyDetailsData | null
   /** Vera's four-Pillar composer — rendered full-width above the body (edit mode). */
   vera?: ReactNode
   /** The curriculum editor (phases) — main column, edit mode. */
@@ -126,16 +248,24 @@ export function JourneyBuilder({
             type="button"
             onClick={() => setIconOpen((v) => !v)}
             aria-expanded={iconOpen}
-            title="Edit icon and color"
+            title="Set a logo image, icon, or color"
             className="group/icn relative rounded-2xl outline-none ring-2 ring-transparent transition hover:ring-border focus-visible:ring-primary"
           >
-            <IconAccentFace icon={icon} accent={accent} size="md" />
+            {cover && /^https:\/\//i.test(cover) ? (
+              // The uploaded image doubles as the Journey's logo (build item 1). next/image (the
+              // Supabase Storage host is allowlisted in next.config); guarded to https so the URL
+              // can never carry a javascript:/data: scheme.
+              <Image src={cover} alt="" width={56} height={56} unoptimized className="h-14 w-14 rounded-2xl object-cover" />
+            ) : (
+              <IconAccentFace icon={icon} accent={accent} size="md" />
+            )}
+            {/* A camera badge cues that the logo is clickable (build item 1). */}
             <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-subtle shadow-sm group-hover/icn:text-text">
-              <ChevronDown className="h-3 w-3" aria-hidden />
+              <Camera className="h-3 w-3" aria-hidden />
             </span>
           </button>
           {iconOpen && (
-            <div className="absolute left-0 top-[3.75rem] z-30 w-64 rounded-2xl border border-border bg-surface p-3 text-left shadow-xl">
+            <div className="absolute left-0 top-[3.75rem] z-30 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 text-left shadow-xl">
               <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Icon</p>
               {/* Picking an icon closes the popover (clear commit). */}
               <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); meta({ emoji: k }); setIconOpen(false) }} />
@@ -151,7 +281,7 @@ export function JourneyBuilder({
                       aria-pressed={on}
                       title={a.label}
                       onClick={() => { setAccent(a.key); meta({ accent: a.key }) }}
-                      className={`flex h-7 w-7 items-center justify-center rounded-full border transition-transform hover:scale-110 ${on ? 'border-text' : 'border-border'}`}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full border transition-transform hover:scale-110 ${on ? 'border-text' : 'border-border'}`}
                       style={{ backgroundColor: accentColor(a.key) }}
                     >
                       {on && <Check className="h-4 w-4 text-on-primary" aria-hidden />}
@@ -159,6 +289,16 @@ export function JourneyBuilder({
                   )
                 })}
               </div>
+              {/* Or upload an image to use as the Journey's logo (build item 1). It doubles as the
+                  cover, so the small face + the cover band stay in sync. */}
+              <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Logo image</p>
+              <ImageUpload
+                label="Upload an image"
+                value={cover}
+                onChange={(url) => { setCover(url ?? null); meta({ coverImage: url }) }}
+                folder="journey-covers"
+                hint="Used as the Journey's logo and cover. Replaces the icon."
+              />
             </div>
           )}
         </span>
@@ -190,26 +330,6 @@ export function JourneyBuilder({
     />
   )
 
-  const actions = (
-    <div className="flex items-center gap-2">
-      {!draft && slug && (
-        <Link
-          href={`/journeys/${slug}/learn`}
-          target="_blank"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text hover:bg-surface-elevated"
-        >
-          <Eye className="h-4 w-4" /> Preview
-        </Link>
-      )}
-      <Link
-        href="/journeys"
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
-      >
-        <ArrowLeft className="h-4 w-4" /> Done
-      </Link>
-    </div>
-  )
-
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -233,7 +353,33 @@ export function JourneyBuilder({
           )}
         </div>
 
-        <PageHeading eyebrow={eyebrow} title={title} description={description} actions={actions} />
+        {/* Header — a two-column band: the identity (eyebrow/status, title, subtitle) + the action
+            set on the left, and the Journey Details quick-stats card on the right. */}
+        <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-primary-strong">{eyebrow}</div>
+            <div className="text-text">{title}</div>
+            {/* No max-width: title + subtitle share the column width, so their right edges line up. */}
+            <div className="mt-1.5">{description}</div>
+            {/* Save / Preview / Publish sit UNDER the title + subtitle (build item 2). */}
+            {!draft && (
+              <div className="mt-4">
+                <JourneyActions slug={slug} planId={planId} visibility={visibility} />
+              </div>
+            )}
+            {draft && (
+              <Link href="/journeys" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text">
+                <ArrowLeft className="h-4 w-4" /> Back to Journeys
+              </Link>
+            )}
+          </div>
+          {/* Journey Details quick-stats card stays top-right. */}
+          {!draft && details && (
+            <div className="w-full shrink-0 lg:w-72">
+              <JourneyDetails status={status} visibility={visibility} details={details} />
+            </div>
+          )}
+        </header>
 
         {/* Vera composer — full width, under the header line. */}
         <div className="mb-6">{draft ? <DraftGhostVera /> : vera}</div>
@@ -272,6 +418,15 @@ export function JourneyBuilder({
             {draft ? <DraftGhostSidebar /> : settings}
           </aside>
         </div>
+
+        {/* Foot action bar — the same Save Draft / Preview / Publish set, left-aligned (owner's
+            button-convention pass), so the author never has to scroll back up after a long curriculum. */}
+        {!draft && (
+          <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-5">
+            <JourneyActions slug={slug} planId={planId} visibility={visibility} align="left" />
+            <span className="text-2xs text-subtle">Every field saves automatically as you go.</span>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -249,7 +249,7 @@ export function PostCard({
                 <form action={toggleReaction.bind(null, post.id, 'heart')}>
                   <button
                     type="submit"
-                    className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                    className={`flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
                       myHeart ? 'text-danger' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                     }`}
                   >
@@ -260,7 +260,7 @@ export function PostCard({
                 <form action={toggleReaction.bind(null, post.id, 'plus_one')}>
                   <button
                     type="submit"
-                    className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                    className={`flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
                       myPlus ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                     }`}
                   >

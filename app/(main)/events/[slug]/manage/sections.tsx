@@ -34,11 +34,11 @@ const STATUS_CHIP: Record<
 
 function GuestName({ guest }: { guest: ManageGuest }) {
   return guest.handle ? (
-    <Link href={`/people/${guest.handle}`} className="font-medium text-text hover:underline">
+    <Link href={`/people/${guest.handle}`} className="block truncate font-medium text-text hover:underline">
       {guest.displayName}
     </Link>
   ) : (
-    <span className="font-medium text-text">{guest.displayName}</span>
+    <span className="block truncate font-medium text-text">{guest.displayName}</span>
   )
 }
 
@@ -130,13 +130,13 @@ export async function ApprovalsSection({ eventId, slug }: { eventId: string; slu
         <li key={p.profileId} className="flex items-center gap-3 px-4 py-3">
           <div className="min-w-0 flex-1">
             {p.handle ? (
-              <Link href={`/people/${p.handle}`} className="font-medium text-text hover:underline">
+              <Link href={`/people/${p.handle}`} className="block truncate font-medium text-text hover:underline">
                 {p.displayName}
               </Link>
             ) : (
-              <span className="font-medium text-text">{p.displayName}</span>
+              <span className="block truncate font-medium text-text">{p.displayName}</span>
             )}
-            <span className="ml-2 text-xs text-subtle">requested {fmtDate(p.createdAt)}</span>
+            <span className="text-xs text-subtle">requested {fmtDate(p.createdAt)}</span>
           </div>
           <ApproveButton eventId={eventId} slug={slug} guestProfileId={p.profileId} />
         </li>
