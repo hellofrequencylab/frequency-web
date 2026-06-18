@@ -3,6 +3,7 @@
 // progress (aggregateCohort). Server-only — typed admin handle (journey_runs / journey_enrollments
 // are in the generated types as of ADR-253 step 5).
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildJourneyTree, type BlockRow } from './tree'
 import { aggregateCohort, type MemberCompletion, type CohortProgress } from './cohort'
@@ -131,6 +132,98 @@ export async function getKickoffEvent(runId: string): Promise<KickoffEvent | nul
   if (!ev) return null
   const e = ev as { id: string; slug: string; title: string; starts_at: string }
   return { id: e.id, slug: e.slug, title: e.title, startsAt: e.starts_at }
+}
+
+// ── Per-week scheduled touchpoints (ADR-307 follow-up) ──────────────────────────────────────────
+// A Run Host can put a real, dated Event on the calendar for a given week (phase) and kind — the
+// mid-week Circle Meetup or the weekend Gathering. Stored in journey_phase_events (run, phase, kind)
+// -> event_id. The table isn't in the generated types yet, so it's read/written through an untyped
+// admin handle (repo convention; see lib/journey-plans.ts). The learner player shows the dated event
+// when one exists, else the standing descriptor from journey_plans.meeting.
+
+export type PhaseEventKind = 'meetup' | 'gathering'
+
+/** Both scheduled touchpoint Events for one week (phase), either null when unscheduled. */
+export interface PhaseTouchpointEvents {
+  meetup: KickoffEvent | null
+  gathering: KickoffEvent | null
+}
+
+/** Untyped admin handle for the not-yet-in-types journey_phase_events table (return-type widening,
+ *  same convention as lib/journey-plans.ts — no cast). */
+function phaseDb(): SupabaseClient {
+  return createAdminClient()
+}
+
+/** Schedule (or relink) a dated Event for a Run's (phase, kind) touchpoint. Mirrors scheduleKickoff:
+ *  creates an `events` row scoped to the Run's Circle, then upserts the journey_phase_events link
+ *  on the (run, phase, kind) unique index. Returns the event id, or null on failure. */
+export async function setPhaseEvent(input: {
+  runId: string
+  phaseId: string
+  kind: PhaseEventKind
+  circleId: string
+  hostId: string
+  title: string
+  startsAt: string
+}): Promise<string | null> {
+  const admin = db()
+  const slug = `${input.kind}-${input.runId.slice(0, 8)}-${input.phaseId.slice(0, 8)}-${Math.random().toString(36).slice(2, 5)}`
+  const { data, error } = await admin
+    .from('events')
+    .insert({
+      title: input.title,
+      description:
+        input.kind === 'meetup'
+          ? 'A mid-week Circle Meetup for this week of the Journey.'
+          : 'A weekend Gathering for this week of the Journey.',
+      scope_id: input.circleId,
+      scope_type: 'circle',
+      starts_at: new Date(input.startsAt).toISOString(),
+      host_id: input.hostId,
+      slug,
+    })
+    .select('id')
+    .maybeSingle()
+  if (error || !data) return null
+  const eventId = String((data as { id: string }).id)
+  const { error: linkErr } = await phaseDb()
+    .from('journey_phase_events')
+    .upsert(
+      { run_id: input.runId, phase_id: input.phaseId, kind: input.kind, event_id: eventId, updated_at: new Date().toISOString() },
+      { onConflict: 'run_id,phase_id,kind' },
+    )
+  if (linkErr) return null
+  return eventId
+}
+
+/** Every scheduled touchpoint Event for a Run, keyed by phase id (cancelled events dropped). */
+export async function getPhaseEvents(runId: string): Promise<Map<string, PhaseTouchpointEvents>> {
+  const { data: links } = await phaseDb()
+    .from('journey_phase_events')
+    .select('phase_id, kind, event_id')
+    .eq('run_id', runId)
+  const rows = (links ?? []) as { phase_id: string; kind: string; event_id: string }[]
+  if (!rows.length) return new Map()
+
+  const eventIds = [...new Set(rows.map((r) => r.event_id))]
+  const { data: evs } = await db().from('events').select('id, slug, title, starts_at, is_cancelled').in('id', eventIds)
+  const evById = new Map(
+    ((evs ?? []) as { id: string; slug: string; title: string; starts_at: string; is_cancelled: boolean | null }[])
+      .filter((e) => !e.is_cancelled)
+      .map((e) => [e.id, { id: e.id, slug: e.slug, title: e.title, startsAt: e.starts_at } as KickoffEvent]),
+  )
+
+  const out = new Map<string, PhaseTouchpointEvents>()
+  for (const r of rows) {
+    const ev = evById.get(r.event_id)
+    if (!ev) continue
+    const cur = out.get(r.phase_id) ?? { meetup: null, gathering: null }
+    if (r.kind === 'meetup') cur.meetup = ev
+    else if (r.kind === 'gathering') cur.gathering = ev
+    out.set(r.phase_id, cur)
+  }
+  return out
 }
 
 /** The Run a member is enrolled in for a plan (their cohort), or null (solo / no run). */

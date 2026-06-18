@@ -6,7 +6,8 @@ import { CalendarClock } from 'lucide-react'
 import { JourneyAuthorActions } from '@/components/journey/v2/learn/journey-author-actions'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
-import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, type KickoffEvent } from '@/lib/journeys/runs'
+import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, getPhaseEvents, type KickoffEvent } from '@/lib/journeys/runs'
+import { HostSchedule } from '@/components/journey/v2/learn/host-schedule'
 import { getPlanAuthor } from '@/lib/journey-plans'
 import { getJourneyLearnExtras, getLinkedEvent, getLoggedTodayPracticeIds, pillarsById } from '@/lib/journeys/learn'
 import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
@@ -73,13 +74,32 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   let kickoff: KickoffEvent | null = null
   let anchorStart: string | null = null
   let dripIntervalDays = planDrip
+  let runId: string | null = null
+  let isRunHost = false
+  // Per-week scheduled touchpoint Events (ADR-307), keyed by phase id, serialized for the client.
+  let phaseEventsById: Record<
+    string,
+    { meetup: { slug: string; title: string; startsAt: string } | null; gathering: { slug: string; title: string; startsAt: string } | null }
+  > = {}
   try {
     const run = await getMemberRunForPlan(profileId, view.plan.id)
     if (run) {
+      runId = run.id
+      isRunHost = run.hostId === profileId
       cohort = await getCohortProgress(run.id, view.plan.id)
       anchorStart = run.startedAt
       dripIntervalDays = run.dripIntervalDays
       kickoff = await getKickoffEvent(run.id)
+      const pe = await getPhaseEvents(run.id)
+      phaseEventsById = Object.fromEntries(
+        [...pe.entries()].map(([pid, v]) => [
+          pid,
+          {
+            meetup: v.meetup ? { slug: v.meetup.slug, title: v.meetup.title, startsAt: v.meetup.startsAt } : null,
+            gathering: v.gathering ? { slug: v.gathering.slug, title: v.gathering.title, startsAt: v.gathering.startsAt } : null,
+          },
+        ]),
+      )
     } else {
       anchorStart = await getSoloEnrollmentStart(profileId, view.plan.id)
     }
@@ -163,6 +183,16 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
           )}
         </div>
       )}
+      {isRunHost && runId && (
+        <HostSchedule
+          slug={slug}
+          runId={runId}
+          phases={view.tree.phases
+            .map((p, i) => ({ id: p.id, label: p.title?.trim() || `Week ${i + 1}` }))
+            .filter((p) => p.id !== 'implicit-phase')}
+          scheduled={phaseEventsById}
+        />
+      )}
 
       {/* Overview + course context — what this is, how it's shaped, how it meets, who guides it —
           read above the player so the Journey lands as a cohesive course, not a bare lesson list.
@@ -184,6 +214,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         practiceIdByLesson={practiceIdByLesson}
         usesTimerByLesson={usesTimerByLesson}
         anchorLessonId={extras.anchorItemId}
+        phaseEventsById={phaseEventsById}
         loggedPracticeIds={loggedToday}
         certificateEnabled={plan.certificate_enabled}
         anchorStart={anchorStart}

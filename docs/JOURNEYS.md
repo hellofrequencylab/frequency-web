@@ -269,8 +269,13 @@ person per take. The drip anchor is `run.started_at` (cohort) or `enrollment.sta
 season buckets). Phase complete = every required leaf under that phase has a row; journey
 complete = every phase complete.
 
-**`journey_phase_events`** (NEW, optional) — links a phase to its check-in `event_id` for a
-Run (or store on a Run-scoped map). Phase check-in meetups.
+**`journey_phase_events`** ✅ shipped (ADR-307 follow-up, migration
+`20260702000000_journey_phase_events.sql`) — `(run_id, phase_id, kind ∈ meetup|gathering) → event_id`,
+unique per `(run, phase, kind)`, RLS service-role only. A Run Host schedules each week's **Circle
+Meetup** + **Weekend Gathering** as dated Events (`setPhaseEvent`/`getPhaseEvents` in
+`lib/journeys/runs.ts`, `schedulePhaseEventAction` in `run-actions.ts`, the host panel
+`components/journey/v2/learn/host-schedule.tsx`); the learner player shows the dated event per week,
+falling back to the standing `journey_plans.meeting` descriptor.
 
 Retire: `journey_plan_adoptions` (→ `journey_enrollments`), and the season-coupled progress
 derivation in `lib/journey-plans.ts`.

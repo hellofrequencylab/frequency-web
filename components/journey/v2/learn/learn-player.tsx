@@ -11,7 +11,7 @@
 
 import { useState, useTransition, useMemo, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass, AlertTriangle, Anchor } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass, AlertTriangle, Anchor, CalendarClock } from 'lucide-react'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
 import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
@@ -44,6 +44,12 @@ interface Props {
   /** The lesson id of the Journey's Anchor practice (ADR-307): the daily through-line, badged
    *  "Daily anchor" in the syllabus + lesson pane. Null when none is set. */
   anchorLessonId?: string | null
+  /** Per-phase scheduled touchpoint Events (ADR-307), keyed by phase id — the dated Circle Meetup
+   *  and Weekend Gathering for that week, shown in the syllabus under the week's focus. */
+  phaseEventsById?: Record<
+    string,
+    { meetup: { slug: string; title: string; startsAt: string } | null; gathering: { slug: string; title: string; startsAt: string } | null }
+  >
   /** Practice ids the member has logged TODAY — gates a practice step's "Mark complete & continue"
    *  until the practice is done (run the timer, or Log it). */
   loggedPracticeIds?: string[]
@@ -126,6 +132,7 @@ export function LearnPlayer({
   practiceIdByLesson = {},
   usesTimerByLesson = {},
   anchorLessonId = null,
+  phaseEventsById = {},
   loggedPracticeIds = [],
   certificateEnabled = false,
   anchorStart = null,
@@ -314,6 +321,22 @@ export function LearnPlayer({
                     {/* The week's focus — the phase body, so the syllabus reads as a course arc. */}
                     {!locked && phaseFocusById[p.id] && (
                       <p className="px-2 pt-1 text-2xs leading-relaxed text-muted">{phaseFocusById[p.id]}</p>
+                    )}
+                    {/* This week's scheduled touchpoints (ADR-307): the dated Circle Meetup + Gathering. */}
+                    {!locked && (phaseEventsById[p.id]?.meetup || phaseEventsById[p.id]?.gathering) && (
+                      <div className="space-y-0.5 px-2 pt-1">
+                        {(['meetup', 'gathering'] as const).map((k) => {
+                          const ev = phaseEventsById[p.id]?.[k]
+                          if (!ev) return null
+                          return (
+                            <a key={k} href={`/events/${ev.slug}`} className="flex items-center gap-1.5 text-2xs text-primary-strong hover:underline">
+                              <CalendarClock className="h-3 w-3 shrink-0" aria-hidden />
+                              {k === 'meetup' ? 'Circle Meetup' : 'Weekend Gathering'}:{' '}
+                              {new Date(ev.startsAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                            </a>
+                          )
+                        })}
+                      </div>
                     )}
                     {p.modules.map((m) => (
                       <div key={m.id}>
