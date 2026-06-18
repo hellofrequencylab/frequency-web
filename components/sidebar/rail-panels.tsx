@@ -310,22 +310,22 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
           rank crest, live progress-to-next-rank bar, and the season scoreboard so
           the whole "where am I in the game" answer is scannable at a glance. */}
       <div className="overflow-hidden rounded-2xl border border-primary-bg bg-gradient-to-br from-primary-bg/60 via-warning-bg/40 to-surface shadow-sm">
-        <div className="flex items-center justify-between gap-2 border-b border-primary-bg/60 bg-primary-bg/40 px-3 py-2">
-          <span className="inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wide text-primary-strong">
-            <Trophy className="h-3.5 w-3.5" /> Season standing
+        <div className="flex items-center justify-between gap-2 border-b border-primary-bg/60 bg-primary-bg/40 px-3.5 py-2.5">
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary-strong">
+            <Trophy className="h-4 w-4" /> Season standing
           </span>
-          <span className="rank-badge text-2xs font-bold leading-tight" style={seasonRankStyle(rank)}>
+          <span className="rank-badge text-xs font-bold leading-tight" style={seasonRankStyle(rank)}>
             {RANK_LABELS[rank] ?? rank}
           </span>
         </div>
 
-        <div className="space-y-2.5 px-3 py-3">
+        <div className="space-y-3 px-3.5 py-3.5">
           {/* Rank progress to next tier → leaderboard */}
           <Link
             href="/crew/leaderboard"
             className="block space-y-1.5 rounded-lg px-1.5 py-1 transition-colors hover:bg-primary-bg/60"
           >
-            <div className="flex items-center justify-between gap-2 text-2xs">
+            <div className="flex items-center justify-between gap-2 text-xs">
               <span className="font-semibold text-text">{next ? `Climbing to ${next.label}` : 'Top rank reached'}</span>
               <span className="tabular-nums text-subtle">
                 {next ? <>{next.minJourneys - finishedCount} {next.minJourneys - finishedCount === 1 ? 'Journey' : 'Journeys'} to go</> : 'Max'}
@@ -347,8 +347,8 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
           />
 
           {streak > 0 && (
-            <p className="flex items-center gap-1 text-2xs font-semibold text-primary-strong">
-              <Flame className="h-3 w-3" /> {streak}-day streak, keep it alive
+            <p className="flex items-center gap-1 text-xs font-semibold text-primary-strong">
+              <Flame className="h-3.5 w-3.5" /> {streak}-day streak, keep it alive
             </p>
           )}
         </div>
@@ -376,7 +376,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
           </p>
         </Link>
       ) : (
-        <p className="mt-2.5 rounded-xl bg-surface-elevated/50 px-3 py-2.5 text-xs text-muted">
+        <p className="mt-2.5 rounded-xl bg-surface-elevated/50 px-3.5 py-3 text-sm text-muted">
           You’re all set up. Keep your streak alive and climb the ranks.
         </p>
       )}

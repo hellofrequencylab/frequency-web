@@ -88,13 +88,13 @@ function ScoreTile({
 }) {
   const inner = (
     <>
-      <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
-        <Icon className={`h-3 w-3 ${iconCls}`} /> {value}
+      <span className="flex items-center justify-center gap-1 text-base font-bold tabular-nums text-text">
+        <Icon className={`h-3.5 w-3.5 ${iconCls}`} /> {value}
       </span>
-      <span className="text-3xs font-medium uppercase tracking-wide text-subtle">{label}</span>
+      <span className="text-2xs font-medium uppercase tracking-wide text-subtle">{label}</span>
     </>
   )
-  const cls = 'rounded-lg bg-primary-bg/40 px-2 py-1.5 text-center'
+  const cls = 'rounded-lg bg-primary-bg/40 px-2 py-2 text-center'
   return href ? (
     <Link href={href} className={`${cls} transition-colors hover:bg-primary-bg/60 motion-reduce:transition-none`}>
       {inner}
