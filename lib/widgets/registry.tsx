@@ -17,6 +17,7 @@ import { JourneysMine } from '@/components/widgets/journeys/journeys-mine'
 import { JourneysLibrary } from '@/components/widgets/journeys/journeys-library'
 import { PracticesStats } from '@/components/widgets/practices/practices-stats'
 import { PracticesActivity } from '@/components/widgets/practices/practices-activity'
+import { PracticesBalance } from '@/components/widgets/practices/practices-balance'
 import { PracticesMine } from '@/components/widgets/practices/practices-mine'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
@@ -48,6 +49,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   // Practices page (/practices) — the upper, personal blocks.
   'practices-stats': PracticesStats,
   'practices-activity': PracticesActivity,
+  'practices-balance': PracticesBalance,
   'practices-mine': PracticesMine,
 }
 

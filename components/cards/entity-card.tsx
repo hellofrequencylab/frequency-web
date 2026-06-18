@@ -32,6 +32,7 @@ export function EntityCard({
   description,
   meta,
   action,
+  footer,
   dimmed = false,
 }: {
   href: string
@@ -52,17 +53,20 @@ export function EntityCard({
   meta?: React.ReactNode
   /** Optional top-right action; its own client component (handles its click). */
   action?: React.ReactNode
+  /** Optional full-width action pinned to the BOTTOM of the card, below a divider (its own client
+   *  component — e.g. an Adopt toggle). Sits outside the link so it never nests a control in the
+   *  anchor, while reading as part of the card. */
+  footer?: React.ReactNode
   /** Recede the card (muted + desaturated) — used for Beta demo content. */
   dimmed?: boolean
 }) {
   return (
-    <div className="group relative">
-      <Link
-        href={href}
-        className={`flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-colors hover:border-primary-bg hover:shadow-md motion-reduce:transition-none ${
-          dimmed ? 'opacity-[0.72]' : ''
-        }`}
-      >
+    <div
+      className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-colors hover:border-primary-bg hover:shadow-md motion-reduce:transition-none ${
+        dimmed ? 'opacity-[0.72]' : ''
+      }`}
+    >
+      <Link href={href} className="flex flex-1 flex-col">
         {cover && (
           <div className={`relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-surface-elevated ${dimmed ? 'grayscale-[0.5]' : ''}`}>
             {cover}
@@ -89,6 +93,7 @@ export function EntityCard({
           )}
         </div>
       </Link>
+      {footer && <div className="border-t border-border p-3">{footer}</div>}
       {action && <div className={`absolute ${cover ? 'right-3 top-3' : 'right-4 top-4'}`}>{action}</div>}
     </div>
   )

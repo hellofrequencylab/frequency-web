@@ -25,7 +25,7 @@ describe('moduleIdsForScope', () => {
   it('the practices page resolves only its upper, personal blocks (the library stays fixed)', () => {
     const p = moduleIdsForScope('/practices')
     expect(p).toBe(ROUTE_MODULE_IDS['/practices'])
-    expect(p).toEqual(['practices-stats', 'practices-activity', 'practices-mine'])
+    expect(p).toEqual(['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine'])
     // No leakage, and the faceted library is NOT a module (it reads searchParams).
     expect(p).not.toContain('community-pulse')
     expect(p).not.toContain('practices-library')
