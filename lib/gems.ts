@@ -28,6 +28,13 @@ type GemAction =
   | 'create_practice_bonus'
   // The season capstone Certificate bonus (lib/quest/complete.ts).
   | 'certificate_bonus'
+  // Gift Gems sink (Rewards Economy v3 / ADR-305, lib/rewards/gifts.ts): credits the
+  // RECIPIENT's gem ledger (raising their lifetime_gems). The giver's spendable balance
+  // falls via the gem_gifts sink in lib/store/balance, not a debit ledger row.
+  | 'gift_received'
+  // Spark variable layer (Rewards Economy v3 / ADR-305, lib/rewards/spark.ts): the
+  // capped, low-frequency surprise Gem bonus on top of the deterministic base.
+  | 'spark_bonus'
 
 interface AwardResult {
   awarded: boolean

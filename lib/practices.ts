@@ -1049,6 +1049,26 @@ export async function logPractice(input: {
     // never let a surprise break the log
   }
 
+  // Spark (Rewards Economy v3, ADR-305): the capped, low-frequency surprise bonus ON TOP
+  // of the base Zaps already awarded above — never replacing them. Capped to once per
+  // member per UTC day (reward_grants `spark:{profileId}:{day}`), gems-only so a lucky
+  // roll never touches season rank. Best-effort + dynamic import; merged into the toast
+  // bonus container so the UI could surface it.
+  try {
+    const { maybeSpark } = await import('@/lib/rewards/spark')
+    const spark = await maybeSpark(profileId, { source: 'practice_log', day })
+    if (spark.sparked && spark.amount > 0) {
+      const base = journey ?? { bonuses: [], zaps: 0, gems: 0 }
+      journey = {
+        bonuses: [...base.bonuses, { label: `A Spark. Plus ${spark.amount} gems.`, kind: 'gems', amount: spark.amount }],
+        zaps: base.zaps,
+        gems: base.gems + spark.amount,
+      }
+    }
+  } catch {
+    // never let a Spark break the log
+  }
+
   // The Quest (ADR-Quest completion model): completion counts "any practice in the
   // Journey's PILLARS" (the member builds their own daily practice and swaps freely
   // within a tag). So this log may have advanced any RANKED-ELIGIBLE Journey that covers
