@@ -450,8 +450,9 @@ export default async function ProfilePage({
           </div>
         </div>
 
-        {/* SIDEBAR (1/3) — tiled info: Standing, Frequency Signature, Achievements. */}
-        <aside className="order-1 min-w-0 space-y-4 self-start xl:order-2 xl:col-span-1 xl:sticky xl:top-20">
+        {/* SIDEBAR (1/3) — tiled info: Standing, Frequency Signature, Achievements. Scrolls
+            with the main content (no sticky) so the whole column reads as one page. */}
+        <aside className="order-1 min-w-0 space-y-4 self-start xl:order-2 xl:col-span-1">
           {/* Standing — Zaps · Gems · Streak · Rank as a tidy menu under a rank header. */}
           {(rankEndorsed || isOwner) && (
             <ProfileStandingCard

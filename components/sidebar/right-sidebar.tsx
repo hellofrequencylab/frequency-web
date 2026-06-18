@@ -9,6 +9,8 @@ import { DemoNotice } from '@/components/sidebar/demo-notice'
 import { pageRailPanels, isQuestSurface } from '@/lib/layout/rail-panels'
 import { ControlCenterPanel, PanelSkeleton } from '@/components/sidebar/rail-panels'
 import { RAIL_PANELS } from '@/components/sidebar/rail-registry'
+import { getMemberSignature } from '@/lib/frequency-signature-data'
+import { FrequencySignature } from '@/components/profile/frequency-signature'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -110,6 +112,21 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
   return { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems: gems }
 }
 
+// The viewer's Frequency Signature — their practice spread across the four Pillars as the
+// circular Mind/Body/Spirit/Expression dial. A site-wide standing panel: it rides under the
+// page panels on every rail so a member always has their evolving identity in view.
+async function SignaturePanel({ profileId }: { profileId: string }) {
+  const signature = await getMemberSignature(profileId)
+  return (
+    <section>
+      <div className="mb-2 px-1">
+        <h3 className="text-sm font-bold tracking-tight text-text">Your Frequency Signature</h3>
+      </div>
+      <FrequencySignature signature={signature} variant="full" layout="stack" />
+    </section>
+  )
+}
+
 // Render the page panels for the current route (each its own Suspense boundary).
 async function PagePanels({ profileId, role, pathname }: RightSidebarProps & { pathname: string }) {
   const keys = pageRailPanels(pathname)
@@ -170,6 +187,10 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
         {/* Page panels — stats specific to this route. */}
         <Suspense fallback={<PanelSkeleton />}>
           <PagePanels profileId={profileId} role={role} pathname={pathname} />
+        </Suspense>
+        {/* The viewer's Frequency Signature — sits under the current blocks on every rail. */}
+        <Suspense fallback={<PanelSkeleton />}>
+          <SignaturePanel profileId={profileId} />
         </Suspense>
       </div>
       {/* Standing panel — the player's progress cockpit, pinned to the bottom.

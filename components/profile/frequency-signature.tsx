@@ -15,18 +15,18 @@ import type { FrequencySignature, PillarKey } from '@/lib/frequency-signature'
 import { PILLAR_KEYS } from '@/lib/frequency-signature'
 
 // Pillar → accent key (matches components/studio/journey/journey-builder.tsx) and the
-// axis position on the constellation. Mind top, Body right, Spirit bottom,
-// Expression left — a compass of the four Pillars.
+// axis position on the dial. Mind left, Body top, Spirit right, Expression bottom —
+// a compass of the four Pillars.
 const PILLARS: Record<PillarKey, { label: string; accent: string; angle: number }> = {
-  mind: { label: 'Mind', accent: 'indigo', angle: -90 }, // top
-  body: { label: 'Body', accent: 'jade', angle: 0 }, // right
-  spirit: { label: 'Spirit', accent: 'plum', angle: 90 }, // bottom
-  expression: { label: 'Expression', accent: 'gold', angle: 180 }, // left
+  mind: { label: 'Mind', accent: 'indigo', angle: 180 }, // left
+  body: { label: 'Body', accent: 'jade', angle: -90 }, // top
+  spirit: { label: 'Spirit', accent: 'plum', angle: 0 }, // right
+  expression: { label: 'Expression', accent: 'gold', angle: 90 }, // bottom
 }
 
 // Axis order matched to the four cardinal points (top → right → bottom → left), so the
 // polygon is drawn in a consistent winding.
-const AXIS_ORDER: PillarKey[] = ['mind', 'body', 'spirit', 'expression']
+const AXIS_ORDER: PillarKey[] = ['body', 'spirit', 'expression', 'mind']
 
 /** Point on a circle of `radius` at `angleDeg`, centred at (cx, cy). */
 function point(cx: number, cy: number, radius: number, angleDeg: number): [number, number] {
@@ -128,14 +128,16 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
       }
       className={compact ? '' : stacked ? 'h-full w-full' : 'mx-auto'}
     >
-      {/* Concentric grid rings — neutral border token so they read as structure. */}
+      {/* On-brand backdrop — a soft disc the dial sits in, faintly tinted to the dominant
+          Pillar so the whole mark reads as one cohesive, rounded piece (not a bare diagram). */}
+      <circle cx={cx} cy={cy} r={maxR.toFixed(2)} fill={accentTint(domAccent, 7)} />
+      {/* Concentric grid rings — CIRCULAR (a dial, not a diamond). Neutral border token. */}
       {gridLevels.map((lvl) => (
-        <polygon
+        <circle
           key={lvl}
-          points={AXIS_ORDER.map((k) => {
-            const [x, y] = point(cx, cy, maxR * lvl, PILLARS[k].angle)
-            return `${x.toFixed(2)},${y.toFixed(2)}`
-          }).join(' ')}
+          cx={cx}
+          cy={cy}
+          r={(maxR * lvl).toFixed(2)}
           fill="none"
           stroke="var(--color-border)"
           strokeWidth={1}
@@ -208,10 +210,10 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
           style={stacked ? undefined : { width: size, height: size }}
         >
           {svg}
-          <AxisLabel pillar="mind" pos="top" dominant={dominant} />
-          <AxisLabel pillar="body" pos="right" dominant={dominant} />
-          <AxisLabel pillar="spirit" pos="bottom" dominant={dominant} />
-          <AxisLabel pillar="expression" pos="left" dominant={dominant} />
+          <AxisLabel pillar="mind" pos="left" dominant={dominant} />
+          <AxisLabel pillar="body" pos="top" dominant={dominant} />
+          <AxisLabel pillar="spirit" pos="right" dominant={dominant} />
+          <AxisLabel pillar="expression" pos="bottom" dominant={dominant} />
         </div>
 
         {/* Legend — balance read + per-pillar bars. */}
