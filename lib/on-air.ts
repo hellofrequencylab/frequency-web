@@ -142,7 +142,7 @@ export function ringScaleAt(pattern: BreathPattern, elapsed: number): number {
 
 /** Session duration presets (minutes). The 2-minute floor is deliberate: a
  *  sustainable daily sit beats an ambitious abandoned one. */
-export const DURATION_PRESETS = [2, 5, 10, 20] as const
+export const DURATION_PRESETS = [2, 5, 10, 15, 20, 30] as const
 
 export type SessionMode = 'timer' | 'breath' | 'log'
 
@@ -161,12 +161,29 @@ export const BELL_TONES: BellTone[] = [
   // Warm singing-bowl-leaning voices: a low fundamental + harmonic shimmer, long ring.
   { slug: 'soft', name: 'Soft', freqs: [528, 1056], decay: 1.8 },
   { slug: 'low', name: 'Warm', freqs: [320, 480, 640], decay: 2.6 },
+  { slug: 'amber', name: 'Amber', freqs: [256, 384, 512, 768], decay: 3.0 },
   { slug: 'bowl', name: 'Bowl', freqs: [288, 432, 519, 864], decay: 3.6 },
 ]
 
 export function bellToneBySlug(slug: string | null | undefined): BellTone {
   return BELL_TONES.find((t) => t.slug === slug) ?? BELL_TONES[0]
 }
+
+/** Bell loudness: scales the synth peak. Quiet/Loud sit either side of the
+ *  default. Kept well under earbud-hostile levels even at Loud. */
+export type BellVolume = 'quiet' | 'medium' | 'loud'
+
+export function bellVolumeScale(v: BellVolume | null | undefined): number {
+  return v === 'quiet' ? 0.6 : v === 'loud' ? 1.5 : 1
+}
+
+/** Interval-bell choices for Meditate mode (minutes between strikes). 0 = off. */
+export const BELL_INTERVALS = [
+  { value: 0, label: 'Off' },
+  { value: 1, label: '1 min' },
+  { value: 2, label: '2 min' },
+  { value: 5, label: '5 min' },
+] as const
 
 /** Free-form session length (the stepper): 1–120 minutes. */
 export function clampMinutes(m: number): number {
@@ -184,13 +201,27 @@ export interface OnAirPrefs {
   customOut?: number
   /** Soft bell on phase changes (breath) / minute marks (timer). Default off. */
   bell?: boolean
-  /** Which bell voice (P5): soft | low | bowl. */
+  /** Which bell voice (P5): soft | low | amber | bowl. */
   bellTone?: string
+  /** Bell loudness — scales the synth peak. Default medium. */
+  bellVolume?: BellVolume
+  /** The closing double-strike at the end of a sit. Default on. */
+  endBell?: boolean
+  /** Meditate-mode interval bell: strike every N minutes. 0 = off, default 1
+   *  (the original every-minute behavior). Ignored in breath mode (phase cues). */
+  bellEveryMin?: number
   /** Vibration on phase changes, where the device supports it. Default off. */
   haptics?: boolean
 }
 
-export const DEFAULT_PREFS: OnAirPrefs = { mode: 'breath', pattern: 'box', minutes: 5 }
+export const DEFAULT_PREFS: OnAirPrefs = {
+  mode: 'breath',
+  pattern: 'box',
+  minutes: 5,
+  bellVolume: 'medium',
+  endBell: true,
+  bellEveryMin: 1,
+}
 
 // ---------------------------------------------------------------------------
 // The reveal payload — everything the post-session screens show, gathered once

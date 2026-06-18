@@ -19,6 +19,7 @@ export function IndexTemplate({
   action,
   back,
   toolbar,
+  adminBar = true,
   children,
 }: {
   /** Small contextual line above the title. */
@@ -31,11 +32,14 @@ export function IndexTemplate({
   back?: { href: string; label: string }
   /** Optional filter/search row under the header. */
   toolbar?: React.ReactNode
+  /** Render the operator on-page "Settings" admin bar (default on). Set false on a page that has
+   *  its own customizer so the old operator page-layout control doesn't double up. */
+  adminBar?: boolean
   children: React.ReactNode
 }) {
   return (
     <div>
-      <PageHeading eyebrow={eyebrow} title={title} description={description} actions={action} back={back} />
+      <PageHeading eyebrow={eyebrow} title={title} description={description} actions={action} back={back} adminBar={adminBar} />
       {toolbar && <div className="mb-4">{toolbar}</div>}
       {children}
     </div>

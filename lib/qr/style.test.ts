@@ -4,9 +4,13 @@ import { renderStyledQrSvg } from './render-styled'
 
 describe('parseStyle', () => {
   it('fills defaults for empty/garbage input', () => {
-    expect(parseStyle(null)).toEqual(DEFAULT_STYLE)
-    expect(parseStyle('nope')).toEqual(DEFAULT_STYLE)
-    expect(parseStyle({})).toEqual(DEFAULT_STYLE)
+    // parseStyle never auto-applies the creation-default LOGO (so existing logo-less codes stay
+    // logo-less) and defaults logoShape to 'square' independently; every other field falls back to
+    // DEFAULT_STYLE. The logo + its crop are a CREATION default (the generator), not a parse default.
+    const parsedDefault = { ...DEFAULT_STYLE, logo: null, logoShape: 'square' as const }
+    expect(parseStyle(null)).toEqual(parsedDefault)
+    expect(parseStyle('nope')).toEqual(parsedDefault)
+    expect(parseStyle({})).toEqual(parsedDefault)
   })
 
   it('keeps valid hex colors and rejects bad ones', () => {
@@ -23,7 +27,7 @@ describe('parseStyle', () => {
   })
 
   it('drops invalid module/eye shapes and gradients', () => {
-    expect(parseStyle({ moduleShape: 'hexagon' }).moduleShape).toBe('square')
+    expect(parseStyle({ moduleShape: 'hexagon' }).moduleShape).toBe(DEFAULT_STYLE.moduleShape)
     expect(parseStyle({ gradient: { from: 'nope', to: '#000' } }).gradient).toBeNull()
   })
 

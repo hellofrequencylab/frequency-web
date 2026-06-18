@@ -52,17 +52,19 @@ export function QrGenerator({
         <p className="mt-0.5 text-xs text-muted">Preview and pick a look, design it, then configure it.</p>
       </div>
 
-      {/* Three columns: [preview + presets + type] | [design] | [config] */}
+      {/* Three columns, read left→right: [preview + presets + type] | [design] |
+          [destination]. A 1px border gap (gap-px on a bordered track) gives the three
+          panes a clean shared seam without hand-rolled dividers. */}
       <div className="grid grid-cols-1 gap-px bg-border lg:grid-cols-[240px_minmax(0,300px)_minmax(0,1fr)]">
         {/* ── Column 1 — preview, presets, type selector ──────────────────── */}
-        <div className="space-y-4 bg-surface p-4">
+        <div className="space-y-5 bg-surface p-5">
           <div
             className="mx-auto aspect-square w-full max-w-[200px] rounded-xl border border-border bg-white p-2 shadow-sm [&>svg]:h-full [&>svg]:w-full"
             dangerouslySetInnerHTML={{ __html: svg }}
           />
 
-          <div>
-            <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-subtle">Presets</p>
+          <div className="space-y-2">
+            <p className="text-2xs font-semibold uppercase tracking-wider text-subtle">Presets</p>
             <div className="flex flex-wrap gap-1.5">
               {STYLE_PRESETS.map((p) => (
                 <button
@@ -76,7 +78,7 @@ export function QrGenerator({
               ))}
             </div>
             {warnings.length > 0 && (
-              <div className="mt-2 rounded-lg border border-warning/40 bg-warning-bg/50 p-2">
+              <div className="rounded-lg border border-warning/40 bg-warning-bg/50 p-2">
                 <p className="flex items-center gap-1 text-2xs font-semibold text-warning">
                   <TriangleAlert className="h-3 w-3" /> Scannability
                 </p>
@@ -89,13 +91,13 @@ export function QrGenerator({
             )}
           </div>
 
-          <div>
-            <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-subtle">Type</p>
+          <div className="space-y-2">
+            <p className="text-2xs font-semibold uppercase tracking-wider text-subtle">Type</p>
             <div className="inline-flex w-full rounded-lg border border-border bg-canvas p-0.5">
               <Seg active={kind === 'link'} onClick={() => setKind('link')} Icon={Link2} label="Dynamic link" />
               <Seg active={kind === 'node'} onClick={() => setKind('node')} Icon={MapPin} label="Check-in code" />
             </div>
-            <p className="mt-2 text-2xs text-subtle">
+            <p className="text-2xs leading-relaxed text-subtle">
               {kind === 'link'
                 ? 'A retargetable /q/… short link. Point it anywhere, track every scan.'
                 : 'A check-in code that runs the verified earn pipeline (Zaps + practice).'}
@@ -105,13 +107,22 @@ export function QrGenerator({
 
         {/* ── Column 2 — design controls ──────────────────────────────────── */}
         {/* Controls-only StyleEditor: the preview + presets live in column 1 (same
-            style state), so here we render just the module/eye/logo/frame controls. */}
-        <div className="bg-surface p-4">
+            style state), so here we render just the grouped Colors/Shape/Logo/Frame
+            controls under their own "Design" header. */}
+        <div className="bg-surface p-5">
           <StyleEditor value={style} onChange={setStyle} previewUrl={previewUrl} variant="controls" />
         </div>
 
-        {/* ── Column 3 — config form ──────────────────────────────────────── */}
-        <div className="bg-surface p-4">
+        {/* ── Column 3 — destination / config form ────────────────────────── */}
+        <div className="space-y-3 bg-surface p-5">
+          <div className="flex items-center gap-1.5">
+            {kind === 'link' ? (
+              <Link2 className="h-3.5 w-3.5 text-primary-strong" />
+            ) : (
+              <MapPin className="h-3.5 w-3.5 text-primary-strong" />
+            )}
+            <h4 className="text-2xs font-semibold uppercase tracking-wider text-text">Destination</h4>
+          </div>
           {kind === 'link' ? (
             <LinkForm
               nodes={nodes}

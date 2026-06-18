@@ -43,12 +43,15 @@ export const DEFAULT_STYLE: QrStyle = {
   fg: '#0b0b0c',
   bg: '#ffffff',
   gradient: null,
-  moduleShape: 'square',
-  eyeShape: 'square',
-  pupilShape: 'square',
+  moduleShape: 'connected',
+  eyeShape: 'rounded',
+  pupilShape: 'rounded',
   eyeColor: null,
-  logo: null,
-  logoShape: 'square',
+  // The Frequency app-icon mark, centered. logoShape 'circle' makes the renderer
+  // draw a round quiet-zone buffer around it for free, so the round logo stays
+  // scannable. The path is root-relative (same origin) — see isSafeLogoSrc below.
+  logo: '/icons/icon-512.png',
+  logoShape: 'circle',
   logoTint: 'none',
   frameLabel: null,
   margin: 2,
@@ -157,11 +160,16 @@ function isBlockedLogoHost(hostname: string): boolean {
   return isPrivateIp(h)
 }
 
-/** A logo src is safe to inline only if it's a data:image URL, or an https URL whose host is
- *  not an internal/private/metadata address (the value is fetched server-side, ADR-274). */
+/** A logo src is safe to inline if it's a data:image URL, a same-origin root-relative
+ *  path (e.g. our own `/icons/icon-512.png` — the browser loads it directly and the
+ *  server resolves it against SITE_URL in lib/qr/raster.ts), or an https URL whose host
+ *  is not an internal/private/metadata address (it's fetched server-side, ADR-274). */
 export function isSafeLogoSrc(src: string): boolean {
   const s = src.trim()
   if (/^data:image\/(png|jpeg|jpg|gif|svg\+xml|webp);/i.test(s)) return true
+  // Same-origin root-relative asset: a single leading slash, then word chars / dots /
+  // slashes / hyphens only — no `//` (protocol-relative) and no `..` (path traversal).
+  if (/^\/[\w./-]+$/.test(s) && !s.startsWith('//') && !s.includes('..')) return true
   if (!/^https:\/\//i.test(s)) return false
   try {
     return !isBlockedLogoHost(new URL(s).hostname)

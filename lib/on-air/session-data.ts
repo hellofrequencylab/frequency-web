@@ -128,6 +128,9 @@ export async function loadOnAirSessionData(
     customOut: stored.customOut,
     bell: stored.bell,
     bellTone: stored.bellTone,
+    bellVolume: stored.bellVolume ?? DEFAULT_PREFS.bellVolume,
+    endBell: stored.endBell ?? DEFAULT_PREFS.endBell,
+    bellEveryMin: stored.bellEveryMin ?? DEFAULT_PREFS.bellEveryMin,
     haptics: stored.haptics,
   }
 

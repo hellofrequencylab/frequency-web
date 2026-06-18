@@ -15,17 +15,20 @@ import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import {
+  BELL_INTERVALS,
   BELL_TONES,
   BREATH_PATTERNS,
   CUSTOM_PHASE_MAX,
   CUSTOM_PHASE_MIN,
   DURATION_PRESETS,
   bellToneBySlug,
+  bellVolumeScale,
   breathPositionAt,
   buildCustomPattern,
   clampMinutes,
   patternBySlug,
   type BellTone,
+  type BellVolume,
   type BreathPhase,
   type OnAirPrefs,
   type RevealPayload,
@@ -72,31 +75,32 @@ function ding(ctx: AudioContext, at: number, freq: number, durationSec: number, 
 }
 
 // One strike of a voice at `at`: fundamental loudest, overtones progressively
-// quieter + a touch shorter, for a warm bell/bowl body.
-function strike(ctx: AudioContext, tone: BellTone, at: number) {
+// quieter + a touch shorter, for a warm bell/bowl body. `vol` scales the peak
+// (the member's bell-volume choice; 1 = the tuned default).
+function strike(ctx: AudioContext, tone: BellTone, at: number, vol = 1) {
   tone.freqs.forEach((f, i) => {
-    const peak = 0.08 * Math.pow(0.55, i)
+    const peak = 0.08 * Math.pow(0.55, i) * vol
     const dur = tone.decay * (i === 0 ? 1 : 0.8)
     ding(ctx, at, f, dur, peak)
   })
 }
 
-/** One strike of the chosen voice. */
-function chime(ctx: AudioContext | null, tone: BellTone) {
+/** One strike of the chosen voice, at the given loudness. */
+function chime(ctx: AudioContext | null, tone: BellTone, vol = 1) {
   if (!ctx) return
   try {
-    strike(ctx, tone, ctx.currentTime)
+    strike(ctx, tone, ctx.currentTime, vol)
   } catch {
     // the bell is a nicety, never a blocker
   }
 }
 
 /** A gentle double strike to close the session, the second a touch softer. */
-function endChime(ctx: AudioContext | null, tone: BellTone) {
+function endChime(ctx: AudioContext | null, tone: BellTone, vol = 1) {
   if (!ctx) return
   try {
-    strike(ctx, tone, ctx.currentTime)
-    strike(ctx, tone, ctx.currentTime + 0.55)
+    strike(ctx, tone, ctx.currentTime, vol)
+    strike(ctx, tone, ctx.currentTime + 0.55, vol)
   } catch {
     // the bell is a nicety, never a blocker
   }
@@ -157,6 +161,9 @@ export function OnAirSession({
   const [customOut, setCustomOut] = useState(prefs.customOut ?? 6)
   const [bell, setBell] = useState(prefs.bell ?? false)
   const [bellToneSlug, setBellToneSlug] = useState(prefs.bellTone ?? 'soft')
+  const [bellVolume, setBellVolume] = useState<BellVolume>(prefs.bellVolume ?? 'medium')
+  const [endBell, setEndBell] = useState(prefs.endBell ?? true)
+  const [bellEveryMin, setBellEveryMin] = useState(prefs.bellEveryMin ?? 1)
   const [haptics, setHaptics] = useState(prefs.haptics ?? false)
   const router = useRouter()
   const [startedAt, setStartedAt] = useState(0)
@@ -245,14 +252,15 @@ export function OnAirSession({
       const elapsed = (Date.now() - startedAt) / 1000
       const left = Math.max(0, total - elapsed)
       setRemaining(left)
-      // Cues: a phase-change ding/tap in breath mode, a minute ding on the
-      // timer. At zero the end bell rings ONCE and the screen waits — the
-      // member collects with Finish in their own time (P10), no auto-advance.
+      // Cues: a phase-change ding/tap in breath mode, an interval ding on the
+      // timer (Meditate). At zero the end bell rings ONCE and the screen waits —
+      // the member collects with Finish in their own time (P10), no auto-advance.
+      const vol = bellVolumeScale(bellVolume)
       if (left > 0) {
         if (mode === 'breath') {
           const { phase } = breathPositionAt(pattern, elapsed)
           if (lastPhase.current && phase !== lastPhase.current) {
-            if (bell) chime(audio.current, bellToneBySlug(bellToneSlug))
+            if (bell) chime(audio.current, bellToneBySlug(bellToneSlug), vol)
             if (haptics) buzz(15)
           }
           lastPhase.current = phase
@@ -260,12 +268,16 @@ export function OnAirSession({
           const minute = Math.floor(elapsed / 60)
           if (minute > lastMinute.current) {
             lastMinute.current = minute
-            if (bell) chime(audio.current, bellToneBySlug(bellToneSlug))
+            // The interval bell: only when enabled and this minute lands on a
+            // multiple of the chosen interval (bellEveryMin 0 = off).
+            if (bell && bellEveryMin > 0 && minute % bellEveryMin === 0) {
+              chime(audio.current, bellToneBySlug(bellToneSlug), vol)
+            }
           }
         }
       } else if (!endCued.current) {
         endCued.current = true
-        if (bell) endChime(audio.current, bellToneBySlug(bellToneSlug))
+        if (bell && endBell) endChime(audio.current, bellToneBySlug(bellToneSlug), vol)
         if (haptics) buzz([30, 80, 30])
       }
     }, 250)
@@ -376,6 +388,9 @@ export function OnAirSession({
       customOut,
       bell,
       bellTone: bellToneSlug,
+      bellVolume,
+      endBell,
+      bellEveryMin,
       haptics,
     })
     finishing.current = false
@@ -510,15 +525,21 @@ export function OnAirSession({
   }
 
   // setup — the same full-page takeover as the sit (P8): entering Mindless means
-  // the world steps back BEFORE the timer starts. No app chrome, one compact
-  // viewport, the wordmark on top (same mark as the live screen, still rather
-  // than pulsing) and Tune out pinned above the fold in a sticky footer.
+  // the world steps back BEFORE the timer starts. No app chrome, the wordmark on
+  // top (same mark as the live screen, still rather than pulsing) and Tune out
+  // pinned above the fold in a sticky footer.
+  //
+  // The shell here is the setup's OWN wrapper, not the shared Overlay: on a wide
+  // browser it widens to a calm two-column panel (lg:max-w-3xl), while the live /
+  // saving / reveal stages keep the narrow centered Overlay untouched. Below lg
+  // the grid collapses to the original single column, so mobile is unchanged.
   return (
-    <Overlay>
-      <div className="flex flex-1 flex-col px-2 pt-3">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-canvas">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-6 py-5 lg:max-w-3xl lg:px-10 lg:py-8">
+      <div className="flex flex-1 flex-col px-2 pt-3 lg:px-0 lg:pt-2">
       <div className="relative flex items-center justify-center pb-2">
-        <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-primary-strong">
-          <LotusIcon className="h-6 w-6" /> Mindless
+        <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-primary-strong lg:text-lg">
+          <LotusIcon className="h-6 w-6 lg:h-7 lg:w-7" /> Mindless
         </p>
         <button
           type="button"
@@ -529,16 +550,19 @@ export function OnAirSession({
           <X className="h-4 w-4" />
         </button>
       </div>
-      <p className="pb-6 text-center text-xs text-subtle">The world can wait a few minutes.</p>
+      <p className="pb-6 text-center text-xs text-subtle lg:pb-7">The world can wait a few minutes.</p>
 
-      <div className="space-y-5">
+      {/* Two columns on desktop: chooser (practice, mode, pattern, minutes) on
+          the left; cues + the Dispatches link on the right. One column on mobile. */}
+      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-6 lg:space-y-0">
+        <div className="space-y-5 lg:space-y-6">
         {practices.length > 1 && (
         <div>
           <Label>Practice</Label>
           {/* One scrollable chip row — stays compact however long the list grows.
               With a single adopted practice it's auto-selected and the section
               hides entirely (owner ask: no badge when there's nothing to pick). */}
-          <div className="-mx-8 mt-2 flex gap-1.5 overflow-x-auto px-8 pb-0.5">
+          <div className="-mx-8 mt-2 flex gap-1.5 overflow-x-auto px-8 pb-0.5 lg:-mx-0 lg:flex-wrap lg:px-0">
             {practices.map((p) => (
               <button
                 key={p.id}
@@ -614,13 +638,13 @@ export function OnAirSession({
         {mode !== 'log' && (
           <div>
             <Label>Minutes</Label>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
               {DURATION_PRESETS.map((m) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => setMinutes(m)}
-                  className={`flex-1 rounded-xl border px-2 py-1.5 text-sm tabular-nums transition-colors ${
+                  className={`rounded-xl border px-2 py-1.5 text-sm tabular-nums transition-colors ${
                     m === minutes
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -630,7 +654,7 @@ export function OnAirSession({
                 </button>
               ))}
               {/* The stepper: any length, one minute at a time (1–120). */}
-              <div className="flex flex-[1.6] items-center justify-between rounded-xl border border-border px-1.5">
+              <div className="col-span-3 flex items-center justify-between rounded-xl border border-border px-1.5 sm:col-span-4 lg:col-span-3">
                 <button
                   type="button"
                   onClick={() => setMinutes((m) => clampMinutes(m - 1))}
@@ -652,7 +676,9 @@ export function OnAirSession({
             </div>
           </div>
         )}
+        </div>
 
+        <div className="space-y-5 lg:space-y-6">
         {mode !== 'log' && (
           <div>
             <Label>Cues</Label>
@@ -665,7 +691,7 @@ export function OnAirSession({
                 title={
                   mode === 'breath'
                     ? 'A soft bell at each phase change.'
-                    : 'A soft bell at each minute.'
+                    : 'A soft bell at each interval.'
                 }
               />
               <ToggleChip
@@ -677,45 +703,123 @@ export function OnAirSession({
               />
             </div>
             {bell && (
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {BELL_TONES.map((t) => (
-                  <button
-                    key={t.slug}
-                    type="button"
-                    onClick={() => {
-                      setBellToneSlug(t.slug)
-                      // A one-strike preview on the tap (the gesture unlocks audio).
-                      try {
-                        audio.current = audio.current ?? new AudioContext()
-                        void audio.current.resume()
-                        chime(audio.current, t)
-                      } catch {
-                        // preview is a nicety
-                      }
-                    }}
-                    className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
-                      t.slug === bellToneSlug
-                        ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                        : 'border-border text-muted hover:bg-surface-elevated'
-                    }`}
-                  >
-                    {t.name}
-                  </button>
-                ))}
+              <div className="mt-3 space-y-3 rounded-xl border border-border px-3.5 py-3">
+                {/* Voice */}
+                <div>
+                  <SubLabel>Voice</SubLabel>
+                  <div className="mt-1.5 grid grid-cols-4 gap-2">
+                    {BELL_TONES.map((t) => (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => {
+                          setBellToneSlug(t.slug)
+                          // A one-strike preview on the tap (the gesture unlocks audio).
+                          try {
+                            audio.current = audio.current ?? new AudioContext()
+                            void audio.current.resume()
+                            chime(audio.current, t, bellVolumeScale(bellVolume))
+                          } catch {
+                            // preview is a nicety
+                          }
+                        }}
+                        className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                          t.slug === bellToneSlug
+                            ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                            : 'border-border text-muted hover:bg-surface-elevated'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Volume — scales the synth peak; previews the current voice. */}
+                <div>
+                  <SubLabel>Volume</SubLabel>
+                  <div className="mt-1.5 grid grid-cols-3 gap-2">
+                    {(['quiet', 'medium', 'loud'] as BellVolume[]).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => {
+                          setBellVolume(v)
+                          try {
+                            audio.current = audio.current ?? new AudioContext()
+                            void audio.current.resume()
+                            chime(audio.current, bellToneBySlug(bellToneSlug), bellVolumeScale(v))
+                          } catch {
+                            // preview is a nicety
+                          }
+                        }}
+                        className={`rounded-xl border px-2 py-1.5 text-xs capitalize transition-colors ${
+                          v === bellVolume
+                            ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                            : 'border-border text-muted hover:bg-surface-elevated'
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Interval bell — Meditate only (breath cues on phase change). */}
+                {mode === 'timer' && (
+                  <div>
+                    <SubLabel>Interval bell</SubLabel>
+                    <div className="mt-1.5 grid grid-cols-4 gap-2">
+                      {BELL_INTERVALS.map((iv) => (
+                        <button
+                          key={iv.value}
+                          type="button"
+                          onClick={() => setBellEveryMin(iv.value)}
+                          className={`rounded-xl border px-2 py-1.5 text-xs tabular-nums transition-colors ${
+                            iv.value === bellEveryMin
+                              ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                              : 'border-border text-muted hover:bg-surface-elevated'
+                          }`}
+                        >
+                          {iv.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* End bell — the closing double-strike, default on. */}
+                <button
+                  type="button"
+                  aria-pressed={endBell}
+                  onClick={() => setEndBell(!endBell)}
+                  title="A double strike when the sit ends."
+                  className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-xs transition-colors ${
+                    endBell
+                      ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                      : 'border-border text-muted hover:bg-surface-elevated'
+                  }`}
+                >
+                  <span>End bell</span>
+                  <span className={endBell ? 'text-primary-strong' : 'text-subtle'}>
+                    {endBell ? 'on' : 'off'}
+                  </span>
+                </button>
               </div>
             )}
           </div>
         )}
 
-        <p className="text-center">
+        <p className="text-center lg:text-left">
           <a href="/on-air/dispatches" className="text-2xs font-medium text-subtle hover:text-text">
             Past Dispatches from Vera
           </a>
         </p>
+        </div>
       </div>
 
       {/* Pinned: Tune out never sinks below the fold, even with Custom open. */}
-      <div className="sticky bottom-0 -mx-8 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-8 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6">
+      <div className="sticky bottom-0 -mx-8 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-8 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6 lg:-mx-10 lg:px-10">
         {practice?.loggedToday && mode !== 'log' && (
           <p className="pb-1.5 text-center text-2xs text-subtle">
             {practice.title} is already counted today. The sit still banks airtime.
@@ -730,13 +834,14 @@ export function OnAirSession({
           type="button"
           onClick={() => void start()}
           disabled={!practiceId}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
         >
           <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Tune out'}
         </button>
       </div>
       </div>
-    </Overlay>
+      </div>
+    </div>
   )
 }
 
@@ -744,6 +849,10 @@ function Label({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-xs font-semibold uppercase tracking-wider text-subtle">{children}</p>
   )
+}
+
+function SubLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-2xs font-medium uppercase tracking-wider text-subtle">{children}</p>
 }
 
 function ModeButton({

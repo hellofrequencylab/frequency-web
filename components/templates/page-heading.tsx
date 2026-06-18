@@ -18,6 +18,7 @@ export function PageHeading({
   divider = true,
   inlineActions = false,
   actionsAlign = 'start',
+  adminBar = true,
 }: {
   /** Small contextual kicker above the title (date, section, status). */
   eyebrow?: React.ReactNode
@@ -37,6 +38,10 @@ export function PageHeading({
    *  (default, top-aligned) or 'end' — bottom-aligned with the last line of the
    *  description (dashboard header stats sit on the subtitle's baseline). */
   actionsAlign?: 'start' | 'end'
+  /** Render the operator on-page "Settings" admin bar on the header rule (default on). Set false on
+   *  pages that carry their own customizer (e.g. Practices' per-user "Customize this page"), so the
+   *  old operator page-layout customizer doesn't double up. A plain divider is drawn instead. */
+  adminBar?: boolean
 }) {
   return (
     <>
@@ -81,8 +86,13 @@ export function PageHeading({
     </div>
     {/* The header's hairline rule, with the on-page "Settings" split sitting inline on
         it (one line). When the page opts out of the divider (Focus), no rule is drawn
-        and the Settings control, if any, sits on its own. */}
-    {divider ? <PageAdminBar asDivider /> : <PageAdminBar />}
+        and the Settings control, if any, sits on its own. A page can opt out of the admin
+        bar entirely (adminBar=false) when it owns its own customizer — a plain rule is drawn. */}
+    {adminBar ? (
+      divider ? <PageAdminBar asDivider /> : <PageAdminBar />
+    ) : divider ? (
+      <div className="mb-5 border-b border-border sm:mb-6" />
+    ) : null}
     </>
   )
 }

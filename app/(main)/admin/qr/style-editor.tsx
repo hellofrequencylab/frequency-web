@@ -104,170 +104,178 @@ export function StyleEditor({
   )
 
   const controls = (
-    <div className="space-y-3 text-xs">
-      <div className="flex flex-wrap gap-3">
-        <Swatch label="Modules" value={value.fg} onChange={(c) => set('fg', c)} />
-        <Swatch label="Background" value={value.bg} onChange={(c) => set('bg', c)} />
-        {!compact && (
-          <label className="flex items-center gap-1.5">
-            <input
-              type="checkbox"
-              checked={!!value.eyeColor}
-              onChange={(e) => set('eyeColor', e.target.checked ? value.fg : null)}
-              className="accent-primary"
-            />
-            <span className="text-subtle">Eye color</span>
-            {value.eyeColor && (
-              <input
-                type="color"
-                value={value.eyeColor}
-                onChange={(e) => set('eyeColor', e.target.value)}
-                className="h-5 w-6 rounded border border-border bg-transparent p-0"
-              />
-            )}
-          </label>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        <Select
-          label="Module shape"
-          value={value.moduleShape}
-          options={[
-            ['square', 'Square'],
-            ['rounded', 'Rounded'],
-            ['dots', 'Dots'],
-            ['connected', 'Connected'],
-          ]}
-          onChange={(v) => set('moduleShape', v as ModuleShape)}
-        />
-        <Select
-          label=""
-          value={value.eyeShape}
-          options={[
-            ['square', 'Square'],
-            ['rounded', 'Rounded'],
-            ['circle', 'Circle'],
-          ]}
-          onChange={(v) => set('eyeShape', v as EyeShape)}
-        />
-        <Select
-          label="Eye pupil"
-          value={value.pupilShape}
-          options={[
-            ['square', 'Square'],
-            ['rounded', 'Rounded'],
-            ['circle', 'Circle'],
-          ]}
-          onChange={(v) => set('pupilShape', v as EyeShape)}
-        />
-      </div>
-
-      {/* Gradient */}
-      {!compact && (
-      <div>
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={!!value.gradient}
-            onChange={(e) =>
-              set('gradient', e.target.checked ? { from: value.fg, to: '#db2777', angle: 45 } : null)
-            }
-            className="accent-primary"
-          />
-          <span className="text-subtle">Gradient fill</span>
-        </label>
-        {value.gradient && (
-          <div className="mt-2 flex flex-wrap items-center gap-3 pl-5">
-            <Swatch
-              label="From"
-              value={value.gradient.from}
-              onChange={(c) => set('gradient', { ...value.gradient!, from: c })}
-            />
-            <Swatch
-              label="To"
-              value={value.gradient.to}
-              onChange={(c) => set('gradient', { ...value.gradient!, to: c })}
-            />
+    <div className="space-y-4 text-xs">
+      {/* ── Colors ─────────────────────────────────────────────────────────── */}
+      <Group label="Colors">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Swatch label="Modules" value={value.fg} onChange={(c) => set('fg', c)} />
+          <Swatch label="Background" value={value.bg} onChange={(c) => set('bg', c)} />
+          {!compact && (
             <label className="flex items-center gap-1.5">
-              <span className="text-subtle">Angle</span>
               <input
-                type="range"
-                min={0}
-                max={359}
-                value={value.gradient.angle}
-                onChange={(e) => set('gradient', { ...value.gradient!, angle: Number(e.target.value) })}
+                type="checkbox"
+                checked={!!value.eyeColor}
+                onChange={(e) => set('eyeColor', e.target.checked ? value.fg : null)}
                 className="accent-primary"
               />
+              <span className="text-subtle">Eye color</span>
+              {value.eyeColor && (
+                <input
+                  type="color"
+                  value={value.eyeColor}
+                  onChange={(e) => set('eyeColor', e.target.value)}
+                  className="h-5 w-6 rounded border border-border bg-transparent p-0"
+                />
+              )}
             </label>
+          )}
+        </div>
+
+        {!compact && (
+          <div>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={!!value.gradient}
+                onChange={(e) =>
+                  set('gradient', e.target.checked ? { from: value.fg, to: '#db2777', angle: 45 } : null)
+                }
+                className="accent-primary"
+              />
+              <span className="text-subtle">Gradient fill</span>
+            </label>
+            {value.gradient && (
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 pl-5">
+                <Swatch
+                  label="From"
+                  value={value.gradient.from}
+                  onChange={(c) => set('gradient', { ...value.gradient!, from: c })}
+                />
+                <Swatch
+                  label="To"
+                  value={value.gradient.to}
+                  onChange={(c) => set('gradient', { ...value.gradient!, to: c })}
+                />
+                <label className="flex items-center gap-1.5">
+                  <span className="text-subtle">Angle</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={359}
+                    value={value.gradient.angle}
+                    onChange={(e) => set('gradient', { ...value.gradient!, angle: Number(e.target.value) })}
+                    className="accent-primary"
+                  />
+                </label>
+              </div>
+            )}
           </div>
         )}
-      </div>
-      )}
+      </Group>
 
-      {/* Logo */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-subtle">Center logo</span>
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-muted hover:text-text hover:bg-surface-elevated transition-colors"
-        >
-          <Upload className="w-3 h-3" /> Upload
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => onLogoFile(e.target.files?.[0])}
-        />
-        {value.logo && (
-          <button
-            type="button"
-            onClick={() => set('logo', null)}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-muted hover:text-danger transition-colors"
-          >
-            <X className="w-3 h-3" /> Remove
-          </button>
-        )}
-      </div>
-
-      {value.logo && (
-        <div className="flex flex-wrap gap-3 pl-1">
+      {/* ── Shape ──────────────────────────────────────────────────────────── */}
+      <Group label="Shape">
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
           <Select
-            label="Logo shape"
-            value={value.logoShape}
+            label="Modules"
+            value={value.moduleShape}
             options={[
               ['square', 'Square'],
-              ['circle', 'Circle'],
+              ['rounded', 'Rounded'],
+              ['dots', 'Dots'],
+              ['connected', 'Connected'],
             ]}
-            onChange={(v) => set('logoShape', v as QrStyle['logoShape'])}
+            onChange={(v) => set('moduleShape', v as ModuleShape)}
           />
           <Select
-            label="Logo color"
-            value={value.logoTint}
+            label="Eyes"
+            value={value.eyeShape}
             options={[
-              ['none', 'Original'],
-              ['solid', 'Module color'],
-              ['gradient', 'Gradient'],
+              ['square', 'Square'],
+              ['rounded', 'Rounded'],
+              ['circle', 'Circle'],
             ]}
-            onChange={(v) => set('logoTint', v as QrStyle['logoTint'])}
+            onChange={(v) => set('eyeShape', v as EyeShape)}
+          />
+          <Select
+            label="Pupils"
+            value={value.pupilShape}
+            options={[
+              ['square', 'Square'],
+              ['rounded', 'Rounded'],
+              ['circle', 'Circle'],
+            ]}
+            onChange={(v) => set('pupilShape', v as EyeShape)}
           />
         </div>
-      )}
+      </Group>
 
-      {/* Frame + CTA */}
-      <label className="block">
-        <span className="block text-subtle mb-1">Frame label (optional, adds a “scan me” card)</span>
-        <input
-          value={value.frameLabel ?? ''}
-          onChange={(e) => set('frameLabel', e.target.value || null)}
-          placeholder="e.g. Scan me"
-          maxLength={28}
-          className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-text"
-        />
-      </label>
+      {/* ── Logo ───────────────────────────────────────────────────────────── */}
+      <Group label="Logo">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+          >
+            <Upload className="w-3 h-3" /> Upload
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => onLogoFile(e.target.files?.[0])}
+          />
+          {value.logo && (
+            <button
+              type="button"
+              onClick={() => set('logo', null)}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-muted hover:text-danger transition-colors"
+            >
+              <X className="w-3 h-3" /> Remove
+            </button>
+          )}
+        </div>
+
+        {value.logo && (
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <Select
+              label="Crop"
+              value={value.logoShape}
+              options={[
+                ['square', 'Square'],
+                ['circle', 'Circle'],
+              ]}
+              onChange={(v) => set('logoShape', v as QrStyle['logoShape'])}
+            />
+            <Select
+              label="Color"
+              value={value.logoTint}
+              options={[
+                ['none', 'Original'],
+                ['solid', 'Module color'],
+                ['gradient', 'Gradient'],
+              ]}
+              onChange={(v) => set('logoTint', v as QrStyle['logoTint'])}
+            />
+          </div>
+        )}
+      </Group>
+
+      {/* ── Frame ──────────────────────────────────────────────────────────── */}
+      <Group label="Frame">
+        <label className="block">
+          <span className="mb-1 block text-subtle">Card label (optional, adds a “scan me” frame)</span>
+          <input
+            value={value.frameLabel ?? ''}
+            onChange={(e) => set('frameLabel', e.target.value || null)}
+            placeholder="e.g. Scan me"
+            maxLength={28}
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-text"
+          />
+        </label>
+      </Group>
 
       <button
         type="button"
@@ -284,7 +292,7 @@ export function StyleEditor({
   if (variant === 'controls') {
     return (
       <div>
-        <div className="mb-2 flex items-center gap-1.5">
+        <div className="mb-3 flex items-center gap-1.5">
           <Palette className="h-3.5 w-3.5 text-primary-strong" />
           <h4 className="text-2xs font-semibold uppercase tracking-wider text-text">Design</h4>
         </div>
@@ -371,6 +379,18 @@ export function StyleEditor({
         {/* Controls */}
         {controls}
       </div>
+    </div>
+  )
+}
+
+// A labeled control group — a small uppercase header over its rows, so the design
+// controls read as tight, named sections (Colors · Shape · Logo · Frame) instead of
+// an undifferentiated stack.
+function Group({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <p className="text-3xs font-semibold uppercase tracking-wider text-subtle">{label}</p>
+      {children}
     </div>
   )
 }
