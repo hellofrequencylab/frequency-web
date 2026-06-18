@@ -22,13 +22,13 @@ describe('moduleIdsForScope', () => {
     expect(j).toEqual(['admin-journeys-stats', 'admin-journeys-review', 'admin-journeys-library'])
   })
 
-  it('the practices page resolves only its upper, personal blocks (the library stays fixed)', () => {
+  it('the practices page resolves its blocks, including the URL-driven library', () => {
     const p = moduleIdsForScope('/practices')
     expect(p).toBe(ROUTE_MODULE_IDS['/practices'])
-    expect(p).toEqual(['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine'])
-    // No leakage, and the faceted library is NOT a module (it reads searchParams).
+    expect(p).toEqual(['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine', 'practices-library'])
+    // No leakage; the faceted library IS a module now (it reads the URL from the x-search header).
     expect(p).not.toContain('community-pulse')
-    expect(p).not.toContain('practices-library')
+    expect(p).toContain('practices-library')
   })
 
   it('an unconverted route falls back through its section to the global set', () => {
