@@ -3,7 +3,7 @@ import { DashboardTemplate } from '@/components/templates'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { PageModules } from '@/components/widgets/page-modules'
 import { getCrewContext } from '@/lib/quest/crew-context'
-import { getPageContent } from '@/lib/page-content'
+import { getPageHeaderImage } from '@/lib/page-settings/store'
 
 // My Quest (/crew) — the member's season home. Module-driven (ADR-270/294): the page composes the
 // shared header grammar, then renders <PageModules>, which lays out the /crew blocks (the Season
@@ -18,8 +18,8 @@ export default async function CrewPage() {
   const ctx = await getCrewContext()
   if (!ctx) notFound()
 
-  // Operator-set header image (the SEO/share image) — set from Settings → SEO & meta.
-  const content = await getPageContent('/crew')
+  // Operator-set wide header image — set from Settings → SEO & meta → Header image.
+  const headerImage = await getPageHeaderImage('/crew')
 
   return (
     <>
@@ -48,10 +48,10 @@ export default async function CrewPage() {
           </>
         }
       >
-        {content?.heroImage && (
+        {headerImage && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={content.heroImage}
+            src={headerImage}
             alt=""
             className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
           />

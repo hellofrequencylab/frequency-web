@@ -12,13 +12,16 @@ export interface PageSettingsRow {
   route: string
   seo_title: string | null
   seo_description: string | null
+  /** Compact social-share / OG image (link previews). */
   og_image_url: string | null
+  /** Wide page header / banner image. */
+  header_image_url: string | null
   status: string
   visibility_role: string | null
   layout: unknown
 }
 
-const SELECT = 'route, seo_title, seo_description, og_image_url, status, visibility_role, layout'
+const SELECT = 'route, seo_title, seo_description, og_image_url, header_image_url, status, visibility_role, layout'
 
 export const loadPageSettings = cache(async (route: string): Promise<PageSettingsRow | null> => {
   try {
@@ -32,6 +35,13 @@ export const loadPageSettings = cache(async (route: string): Promise<PageSetting
     return null
   }
 })
+
+/** The operator-set WIDE header/banner image for a route (or null). Cached via loadPageSettings,
+ *  so the page header + metadata share one read. */
+export async function getPageHeaderImage(route: string): Promise<string | null> {
+  const row = await loadPageSettings(route)
+  return row?.header_image_url?.trim() || null
+}
 
 /** The effective LAYOUT config for a route, resolved across the SCOPE CASCADE (ADR-271): the
  *  exact route → its section ('/seg/*') → the global default ('*'), most-specific wins. One

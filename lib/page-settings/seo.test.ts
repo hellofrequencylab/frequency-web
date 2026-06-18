@@ -17,8 +17,12 @@ describe('page-settings SEO validation', () => {
   })
 
   it('normalizes + bounds the fields, trimming and emptying to null', () => {
-    const f = normalizeSeo({ title: '  Hello  ', description: '  ', ogImage: ' /og.png ' })
-    expect(f).toEqual({ seo_title: 'Hello', seo_description: null, og_image_url: '/og.png' })
+    const f = normalizeSeo({ title: '  Hello  ', description: '  ', ogImage: ' /og.png ', headerImage: ' /header.png ' })
+    expect(f).toEqual({ seo_title: 'Hello', seo_description: null, og_image_url: '/og.png', header_image_url: '/header.png' })
+  })
+
+  it('rejects the save when the header image URL is unsafe', () => {
+    expect(normalizeSeo({ title: 'ok', headerImage: 'http://x' })).toBeNull()
   })
 
   it('clamps an over-long title + description', () => {
