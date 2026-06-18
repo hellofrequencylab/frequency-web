@@ -1,6 +1,6 @@
 import { headers } from 'next/headers'
 import Link from 'next/link'
-import { Flame, Sparkles, Library, Zap, Wand2, Users, ChevronLeft, ChevronRight, EyeOff, X } from 'lucide-react'
+import { Flame, Library, Zap, Wand2, Users, ChevronLeft, ChevronRight, EyeOff, X } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import {
   searchLibraryPractices,
@@ -10,6 +10,7 @@ import {
   type PracticeSort,
 } from '@/lib/practices'
 import { getPillars, pillarsById } from '@/lib/pillars'
+import { pillarIcon } from '@/lib/practices/pillar-icon'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { PracticeAdminMenu } from '@/components/practice/practice-admin-menu'
@@ -157,10 +158,14 @@ export async function PracticesLibrary() {
         />
       ) : (
         <>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Container-query sizing (the slot is an @container): the grid reflows to the COLUMN it
+              lands in, not the viewport — full-width gets three across, a narrow rail slot one. */}
+          <ul className="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
             {result.rows.map((p) => {
+              const pillarSlug = p.domain_id ? byId.get(p.domain_id)?.slug ?? null : null
               const pillarName = p.domain_id ? byId.get(p.domain_id)?.name ?? null : null
               const context = [pillarName, p.subcategory?.name, p.category?.replace(/-/g, ' ')].filter(Boolean).join(' · ')
+              const PillarIcon = pillarIcon(pillarSlug)
               return (
                 <li key={p.id}>
                   <EntityCard
@@ -171,7 +176,7 @@ export async function PracticesLibrary() {
                         <img src={p.header_image} alt="" className="h-11 w-11 rounded-lg object-cover" />
                       ) : (
                         <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
-                          <Sparkles className="h-5 w-5" />
+                          <PillarIcon className="h-5 w-5" />
                         </div>
                       )
                     }

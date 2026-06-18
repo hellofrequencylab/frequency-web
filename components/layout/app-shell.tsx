@@ -902,7 +902,7 @@ function MobileLeftDrawer({
 const MOBILE_TABS: { key: string; href: string; label: string }[] = [
   { key: 'feed', href: '/feed', label: 'Feed' },
   { key: 'circles', href: '/circles', label: 'Circles' },
-  { key: 'channels', href: '/channels', label: 'Channels' },
+  { key: 'quest', href: '/crew', label: 'Quest' },
   { key: 'events', href: '/events', label: 'Events' },
 ]
 
@@ -938,11 +938,10 @@ function MobileTabBar({
     )
   }
 
-  // Edge handles — the same flush-tab language as the Vera / Next-steps pills:
-  // a half-pill growing out of its screen edge reads "something slides from
-  // here", and stays compact at phone widths.
+  // Edge buttons (menu + stats) read as plain tab icons like the rest of the bar — no
+  // bordered thumbnail behind them — just a touch narrower than the flex-1 destination tabs.
   const handle =
-    'self-center flex h-10 w-8 shrink-0 items-center justify-center border border-border bg-surface-elevated/70 text-muted transition-colors active:bg-primary-bg'
+    'flex shrink-0 flex-col items-center justify-end gap-1 px-1.5 pb-1.5 text-3xs font-medium text-muted transition-colors active:text-text'
 
   return (
     <nav
@@ -952,24 +951,16 @@ function MobileTabBar({
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      {/* One continuous arch — a bump in the bar's top edge that rises up & over the
-          Capture button, so the whole bar reads as a single shape. */}
-      {!hideAppNav && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute bottom-full left-1/2 -mb-px h-[30px] w-[4.5rem] -translate-x-1/2 rounded-t-full border-x border-t border-border bg-surface"
-        />
-      )}
-
-      {/* Left handle → the nav drawer: flush to the edge, rounded inward. */}
+      {/* Left → the nav drawer. */}
       <button
         type="button"
         onClick={onOpenMenu}
         aria-label={menuOpen ? 'Close menu' : 'Open menu'}
         aria-expanded={menuOpen}
-        className={`${handle} mr-1 rounded-r-2xl border-l-0 ${menuOpen ? 'bg-primary-bg text-text' : ''}`}
+        className={`${handle} ${menuOpen ? 'text-primary-strong' : ''}`}
       >
-        {menuOpen ? <PanelLeftClose className="h-[18px] w-[18px]" strokeWidth={2} /> : <PanelLeftOpen className="h-[18px] w-[18px]" strokeWidth={2} />}
+        {menuOpen ? <PanelLeftClose className="h-[22px] w-[22px]" strokeWidth={2} /> : <PanelLeftOpen className="h-[22px] w-[22px]" strokeWidth={2} />}
+        <span className="leading-none">Menu</span>
       </button>
 
       {!hideAppNav && MOBILE_TABS.slice(0, 2).map(renderTab)}
@@ -990,6 +981,8 @@ function MobileTabBar({
               it reads balanced against the flat tabs (its center is 6px below the
               line); the arch above drops to match, keeping the even 12px margin. */}
           <span aria-hidden className="h-[26px] w-[22px]" />
+          {/* The fully-rounded white catch the bolt sits in — a floating disc, not a bar bump. */}
+          <span aria-hidden className="absolute left-1/2 top-0 h-14 w-14 -translate-x-1/2 -translate-y-[22px] rounded-full border border-border bg-surface" />
           <span className="absolute left-1/2 top-0 flex h-12 w-12 -translate-x-1/2 -translate-y-[18px] items-center justify-center rounded-full bg-primary shadow-pop">
             {/* the catch behind the glyph — a soft shadow under the bolt (flips with
                 the glyph so the carve always reads) */}
@@ -1011,17 +1004,17 @@ function MobileTabBar({
 
       {!hideAppNav && MOBILE_TABS.slice(2).map(renderTab)}
 
-      {/* Right handle → The Quest drawer. The gem IS the label — the currency
-          you go there to see. */}
+      {/* Right → the stats drawer (zaps · gems · streak). */}
       {!hideAppNav && (
         <button
           type="button"
           onClick={onOpenStats}
           aria-label={statsOpen ? 'Close stats' : 'Open stats'}
           aria-expanded={statsOpen}
-          className={`${handle} ml-1 rounded-l-2xl border-r-0 ${statsOpen ? 'bg-signal-bg/60 text-signal-strong' : 'text-signal'}`}
+          className={`${handle} ${statsOpen ? 'text-signal-strong' : ''}`}
         >
-          <Gem className="h-[18px] w-[18px]" strokeWidth={statsOpen ? 2.5 : 2} />
+          <Gem className="h-[22px] w-[22px]" strokeWidth={statsOpen ? 2.5 : 2} />
+          <span className="leading-none">Stats</span>
         </button>
       )}
     </nav>

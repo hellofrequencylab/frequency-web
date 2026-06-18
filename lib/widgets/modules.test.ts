@@ -38,9 +38,19 @@ describe('moduleIdsForScope', () => {
     expect(moduleIdsForScope('/settings/*')).toEqual(LAYOUT_MODULE_IDS)
   })
 
+  it('the Vault (/crew/store) resolves its own blocks, not /crew’s', () => {
+    const v = moduleIdsForScope('/crew/store')
+    expect(v).toBe(ROUTE_MODULE_IDS['/crew/store'])
+    expect(v).toContain('vault-standing')
+    expect(v).toContain('vault-store')
+    // It's a distinct exact route — it does NOT inherit My Quest's blocks or the global set.
+    expect(v).not.toContain('quest-season-map')
+    expect(v).not.toContain('community-pulse')
+  })
+
   it("a section scope of a converted route does NOT inherit the exact route's blocks", () => {
-    // '/crew/*' is a wildcard for crew SUB-pages (store, challenges) — distinct from '/crew'
-    // itself — so it gets the generic set, not the My Quest blocks.
+    // '/crew/*' is a wildcard for crew SUB-pages (challenges, …) — distinct from '/crew' AND from
+    // the now-converted exact '/crew/store' — so the wildcard still gets the generic set.
     expect(moduleIdsForScope('/crew/*')).toEqual(LAYOUT_MODULE_IDS)
   })
 })
