@@ -36,6 +36,9 @@ export interface JourneyLearnExtras {
   pillarBalance: PillarBalanceSlice[]
   /** The pillars taxonomy, for mapping a practice's domain_id → its Pillar on a step. */
   pillars: Pillar[]
+  /** The ITEM id of the Anchor practice (ADR-307: `settings.anchor`), the Journey's daily
+   *  through-line, or null when none is set. The player badges this step "Daily anchor". */
+  anchorItemId: string | null
 }
 
 /** Load the learn-page extras for a plan's items. `items` is the already-loaded item list (the
@@ -69,12 +72,22 @@ export async function getJourneyLearnExtras(slug: string): Promise<JourneyLearnE
     if (p) practiceByItem.set(it.id, p)
   }
 
+  // The Anchor practice (ADR-307): the practice block flagged `settings.anchor`, the daily
+  // through-line. At most one per Journey (the editor enforces it).
+  const anchorItemId =
+    items.find(
+      (it) =>
+        (it.block_type ?? 'practice') === 'practice' &&
+        (it as { settings?: { anchor?: boolean } | null }).settings?.anchor === true,
+    )?.id ?? null
+
   return {
     practiceByItem,
     phaseFocus,
     meeting: normalizeJourneyMeeting(loaded?.plan.meeting),
     pillarBalance: buildPillarBalance(items, pillars),
     pillars,
+    anchorItemId,
   }
 }
 

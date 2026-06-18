@@ -11,7 +11,7 @@
 
 import { useState, useTransition, useMemo, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass, AlertTriangle } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass, AlertTriangle, Anchor } from 'lucide-react'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
 import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
@@ -41,6 +41,9 @@ interface Props {
   /** Whether each practice step runs On Air's timer (Practice button) vs a one-tap Log it, keyed by
    *  lesson id. Defaults to timer when unknown. */
   usesTimerByLesson?: Record<string, boolean>
+  /** The lesson id of the Journey's Anchor practice (ADR-307): the daily through-line, badged
+   *  "Daily anchor" in the syllabus + lesson pane. Null when none is set. */
+  anchorLessonId?: string | null
   /** Practice ids the member has logged TODAY — gates a practice step's "Mark complete & continue"
    *  until the practice is done (run the timer, or Log it). */
   loggedPracticeIds?: string[]
@@ -122,6 +125,7 @@ export function LearnPlayer({
   pillarByLesson = {},
   practiceIdByLesson = {},
   usesTimerByLesson = {},
+  anchorLessonId = null,
   loggedPracticeIds = [],
   certificateEnabled = false,
   anchorStart = null,
@@ -344,6 +348,9 @@ export function LearnPlayer({
                                     {l.done && <Check className="h-2.5 w-2.5" />}
                                   </span>
                                   <span className="min-w-0 flex-1 truncate">{l.title}</span>
+                                  {l.id === anchorLessonId && (
+                                    <Anchor className="h-3 w-3 shrink-0 text-primary-strong" aria-label="Daily anchor" />
+                                  )}
                                   {pillar && (
                                     <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-subtle">
                                       {pillar}
@@ -392,10 +399,18 @@ export function LearnPlayer({
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <h2 className="text-xl font-bold text-text">{lesson.title}</h2>
+                {selectedId === anchorLessonId && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+                    <Anchor className="h-3 w-3" aria-hidden /> Daily anchor
+                  </span>
+                )}
                 {selectedPillar && (
                   <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">{selectedPillar}</span>
                 )}
               </div>
+              {selectedId === anchorLessonId && (
+                <p className="mt-1 text-xs text-muted">Your through-line. Do this one every day, all the way through.</p>
+              )}
 
               {/* Extra-credit badge: a bonus task, above and beyond, that pays Zaps once on
                   completion. Optional, never gates finishing the Journey. */}

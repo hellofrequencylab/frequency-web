@@ -372,6 +372,7 @@ export function JourneySettings(props: JourneySettingsProps) {
               placeholder="no limit"
               className="rounded-lg border border-border bg-canvas px-2.5 py-1.5 text-sm text-text outline-none focus:border-primary"
             />
+            <span className="text-2xs text-subtle">A Run of about 8 to 12 keeps real accountability.</span>
           </label>
         </div>
       </div>

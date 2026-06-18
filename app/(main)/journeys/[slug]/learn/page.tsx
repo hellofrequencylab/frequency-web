@@ -148,8 +148,19 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         </Link>
       )}
       {cohort && (
-        <div className="mb-4">
+        <div className="mb-4 space-y-2">
           <CohortMeter progress={cohort} />
+          {anchorStart && (
+            <p className="flex items-center gap-2 text-xs text-muted">
+              <CalendarClock className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+              Your Run runs{' '}
+              {new Date(anchorStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} through{' '}
+              {new Date(
+                new Date(anchorStart).getTime() + view.tree.phases.length * dripIntervalDays * 86_400_000,
+              ).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              .
+            </p>
+          )}
         </div>
       )}
 
@@ -172,6 +183,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         pillarByLesson={pillarByLesson}
         practiceIdByLesson={practiceIdByLesson}
         usesTimerByLesson={usesTimerByLesson}
+        anchorLessonId={extras.anchorItemId}
         loggedPracticeIds={loggedToday}
         certificateEnabled={plan.certificate_enabled}
         anchorStart={anchorStart}
