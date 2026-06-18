@@ -2,8 +2,8 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { QrCode, Plus, Pencil, Download, Copy, Check, ExternalLink, Zap, Printer, MapPin } from 'lucide-react'
-import { createNode, updateNode, setNodeActive, type NodeInput } from './actions'
+import { QrCode, Plus, Pencil, Download, Copy, Check, ExternalLink, Zap, Printer, MapPin, Trash2 } from 'lucide-react'
+import { createNode, updateNode, setNodeActive, deleteNode, type NodeInput } from './actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
 import { NfcWriter } from './nfc-writer'
@@ -153,6 +153,14 @@ function NodeCard({
     })
   }
 
+  function remove() {
+    if (!confirm('Delete this code? Its check-in history goes too. This can’t be undone.')) return
+    start(async () => {
+      await deleteNode(node.id)
+      router.refresh()
+    })
+  }
+
   function copyLink() {
     navigator.clipboard?.writeText(node.url).then(() => {
       setCopied(true)
@@ -254,13 +262,22 @@ function NodeCard({
             >
               <ExternalLink className="w-3 h-3" /> Open
             </a>
-            <button
-              onClick={toggleActive}
-              disabled={pending}
-              className="ml-auto text-xs font-semibold text-muted hover:text-text transition-colors disabled:opacity-60"
-            >
-              {node.active ? 'Retire' : 'Re-activate'}
-            </button>
+            <div className="ml-auto flex items-center gap-3">
+              <button
+                onClick={toggleActive}
+                disabled={pending}
+                className="text-xs font-semibold text-muted hover:text-text transition-colors disabled:opacity-60"
+              >
+                {node.active ? 'Retire' : 'Re-activate'}
+              </button>
+              <button
+                onClick={remove}
+                disabled={pending}
+                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-danger disabled:opacity-60"
+              >
+                <Trash2 className="h-3 w-3" /> Delete
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -158,3 +158,27 @@ export async function setNodeActive(id: string, active: boolean): Promise<Action
   revalidatePath('/admin/qr')
   return ok()
 }
+
+/** Permanently delete a code and its capture history. Destructive — the UI guards
+ *  it behind a confirm(); prefer Retire (setNodeActive) when you just want a printed
+ *  code to go dark.
+ *
+ *  FK fan-out: `captures.node_id → nodes(id) ON DELETE CASCADE` and
+ *  `qr_codes.node_id → nodes(id) ON DELETE SET NULL` (migrations 20240216 / 20260605),
+ *  and the zap ledger hangs off captures (no direct nodes FK), so a node delete
+ *  cascades cleanly at the DB level. We still delete the dependent `captures` rows
+ *  first so the intent is explicit and the node delete can't fail on a stray ref. */
+export async function deleteNode(id: string): Promise<ActionResult> {
+  await requireAdmin('host', { staff: 'qr' })
+  const db = createAdminClient()
+
+  // Dependent captures (and the ledger rows that cascade off them) go first.
+  const { error: capErr } = await db.from('captures').delete().eq('node_id', id)
+  if (capErr) return fail('Could not delete the code’s check-in history.')
+
+  const { error } = await db.from('nodes').delete().eq('id', id)
+  if (error) return fail('Could not delete the code.')
+
+  revalidatePath('/admin/qr')
+  return ok()
+}

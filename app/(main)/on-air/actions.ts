@@ -46,6 +46,9 @@ export interface CompleteSessionInput {
   customOut?: number
   bell?: boolean
   bellTone?: string
+  bellVolume?: 'quiet' | 'medium' | 'loud'
+  endBell?: boolean
+  bellEveryMin?: number
   haptics?: boolean
 }
 
@@ -93,6 +96,15 @@ export async function completeSession(
       customOut: phaseSec(input.customOut, 3) ?? prior.customOut,
       bell: typeof input.bell === 'boolean' ? input.bell : prior.bell,
       bellTone: typeof input.bellTone === 'string' ? input.bellTone : prior.bellTone,
+      bellVolume:
+        input.bellVolume === 'quiet' || input.bellVolume === 'medium' || input.bellVolume === 'loud'
+          ? input.bellVolume
+          : prior.bellVolume,
+      endBell: typeof input.endBell === 'boolean' ? input.endBell : prior.endBell,
+      bellEveryMin:
+        typeof input.bellEveryMin === 'number' && Number.isFinite(input.bellEveryMin)
+          ? Math.max(0, Math.round(input.bellEveryMin))
+          : prior.bellEveryMin,
       haptics: typeof input.haptics === 'boolean' ? input.haptics : prior.haptics,
     }
     await admin
