@@ -37,7 +37,7 @@ These are harmless but should be deleted once the IA settles.
 **Open decision for the owner:** which surface is the canonical "My Journey," and how aggressive to be collapsing the tab bar. Do NOT build the consolidation until that's chosen — it's an IA/product call, not a wiring fix.
 
 ## What's already done (so it's not re-litigated)
-The full redesign is live: completion-model ranks, hub + Season Map, Journey detail, cooperative leaderboard, forgiving streaks, Trophy Case, Expression as the 4th Pillar, member-built Journeys + the Vera AI quality gate, the Season Composer (edit, lifecycle, clone, preview, operator home, bulk, per-Pillar balance, auto-go-live scheduler), Leader Training, and Season 1 "Shine" content. All migrations applied to prod.
+The full redesign is live: completion-model ranks, hub + Season Map, Journey detail, cooperative leaderboard, forgiving streaks, Trophy Case, Expression as the 4th Pillar, member-built Journeys + the Vera AI quality gate, the Season Composer (edit, lifecycle, clone, preview, operator home, bulk, per-Pillar balance, auto-go-live scheduler), Leader Training, and Season 1 "Stretch" content. All migrations applied to prod.
 
 The **git** docs are fully synced: `DECISIONS.md` ADR-283..293, `QUEST-UI-REDESIGN.md`, this file, and the member **help center** (`content/help/the-quest/*` corrected to the live model — completion ranks, cooperative leaderboard, no broken tables).
 

@@ -114,7 +114,7 @@ export function SeasonMap({
   pillars,
   achievementsHref = '/crew/store',
 }: {
-  /** The active Quest's name (e.g. "Shine"). */
+  /** The active Quest's name (e.g. "Stretch"). */
   seasonName: string | null
   /** Whole weeks remaining in the 13-week Quest, or null when no live season. */
   weeksLeft: number | null

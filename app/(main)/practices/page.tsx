@@ -154,17 +154,18 @@ export default async function PracticesPage({
           </div>
         </div>
       }
+      banner={
+        // Operator-set header image (PX.1) — renders above the title, only when set.
+        heroImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={heroImage}
+            alt=""
+            className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
+          />
+        )
+      }
     >
-      {/* Operator-set hero banner (PX.1) — renders only when set. */}
-      {heroImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={heroImage}
-          alt=""
-          className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
-        />
-      )}
-
       {/* Jump between your stuff and the library. The personal entries point at module-driven
           blocks that render only for a signed-in member with data; a dangling anchor is harmless
           when a block returns null. */}

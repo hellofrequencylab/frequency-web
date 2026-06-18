@@ -19,6 +19,7 @@ export function IndexTemplate({
   action,
   back,
   toolbar,
+  banner,
   adminBar = true,
   children,
 }: {
@@ -32,6 +33,8 @@ export function IndexTemplate({
   back?: { href: string; label: string }
   /** Optional filter/search row under the header. */
   toolbar?: React.ReactNode
+  /** Full-width header media rendered ABOVE the title (e.g. the operator header image). */
+  banner?: React.ReactNode
   /** Render the operator on-page "Settings" admin bar (default on). Set false on a page that has
    *  its own customizer so the old operator page-layout control doesn't double up. */
   adminBar?: boolean
@@ -39,6 +42,7 @@ export function IndexTemplate({
 }) {
   return (
     <div>
+      {banner}
       <PageHeading eyebrow={eyebrow} title={title} description={description} actions={action} back={back} adminBar={adminBar} />
       {toolbar && <div className="mb-4">{toolbar}</div>}
       {children}

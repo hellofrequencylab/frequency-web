@@ -25,6 +25,16 @@ export default async function CrewPage() {
     <>
       {!ctx.isCrew && <CrewPreviewBanner />}
       <DashboardTemplate
+        banner={
+          headerImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={headerImage}
+              alt=""
+              className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
+            />
+          )
+        }
         title={
           <span className="inline-flex flex-wrap items-center gap-2">
             My Quest
@@ -48,14 +58,6 @@ export default async function CrewPage() {
           </>
         }
       >
-        {headerImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={headerImage}
-            alt=""
-            className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
-          />
-        )}
         <PageModules route="/crew" />
       </DashboardTemplate>
     </>

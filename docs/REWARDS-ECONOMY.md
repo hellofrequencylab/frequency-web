@@ -286,7 +286,7 @@ doing it for the payout, and stop when the payout does. So:
 
 ## 13. Season 1 clean start
 
-Beta reward data is **wiped** and Season 1 ("Shine") is **reseeded** from this model:
+Beta reward data is **wiped** and Season 1 ("Stretch") is **reseeded** from this model:
 
 - one active season + Quest;
 - three Journeys (Mind / Body / Spirit), each capped by one Expression Challenge;
