@@ -668,38 +668,6 @@ export type Database = {
           },
         ]
       }
-      circle_awards: {
-        Row: {
-          award_slug: string
-          circle_id: string
-          created_at: string
-          id: string
-          season: number | null
-        }
-        Insert: {
-          award_slug: string
-          circle_id: string
-          created_at?: string
-          id?: string
-          season?: number | null
-        }
-        Update: {
-          award_slug?: string
-          circle_id?: string
-          created_at?: string
-          id?: string
-          season?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "circle_awards_circle_id_fkey"
-            columns: ["circle_id"]
-            isOneToOne: false
-            referencedRelation: "circles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       circle_challenge_adoptions: {
         Row: {
           adopted_by: string | null
@@ -742,55 +710,6 @@ export type Database = {
             columns: ["circle_id"]
             isOneToOne: false
             referencedRelation: "circles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      circle_current_transactions: {
-        Row: {
-          amount: number
-          circle_id: string
-          created_at: string
-          event_id: string | null
-          id: string
-          profile_id: string
-        }
-        Insert: {
-          amount: number
-          circle_id: string
-          created_at?: string
-          event_id?: string | null
-          id?: string
-          profile_id: string
-        }
-        Update: {
-          amount?: number
-          circle_id?: string
-          created_at?: string
-          event_id?: string | null
-          id?: string
-          profile_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "circle_field_transactions_circle_id_fkey"
-            columns: ["circle_id"]
-            isOneToOne: false
-            referencedRelation: "circles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "circle_field_transactions_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "circle_field_transactions_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5525,58 +5444,6 @@ export type Database = {
           },
         ]
       }
-      practice_streaks: {
-        Row: {
-          best_on_track_weeks: number
-          consecutive_on_track_weeks: number
-          full_cycle_paid: boolean
-          lifetime_logs: number
-          practice_id: string
-          profile_id: string
-          updated_at: string
-        }
-        Insert: {
-          best_on_track_weeks?: number
-          consecutive_on_track_weeks?: number
-          full_cycle_paid?: boolean
-          lifetime_logs?: number
-          practice_id: string
-          profile_id: string
-          updated_at?: string
-        }
-        Update: {
-          best_on_track_weeks?: number
-          consecutive_on_track_weeks?: number
-          full_cycle_paid?: boolean
-          lifetime_logs?: number
-          practice_id?: string
-          profile_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "practice_streaks_practice_id_fkey"
-            columns: ["practice_id"]
-            isOneToOne: false
-            referencedRelation: "practices"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "practice_streaks_practice_id_fkey"
-            columns: ["practice_id"]
-            isOneToOne: false
-            referencedRelation: "practices_ranked"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "practice_streaks_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       practice_subcategories: {
         Row: {
           created_at: string
@@ -7996,48 +7863,6 @@ export type Database = {
           {
             foreignKeyName: "welcomes_welcomer_id_fkey"
             columns: ["welcomer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      witnessed_grants: {
-        Row: {
-          award_slug: string
-          created_at: string
-          granted_by: string
-          granted_to: string
-          id: string
-          season: number
-        }
-        Insert: {
-          award_slug: string
-          created_at?: string
-          granted_by: string
-          granted_to: string
-          id?: string
-          season: number
-        }
-        Update: {
-          award_slug?: string
-          created_at?: string
-          granted_by?: string
-          granted_to?: string
-          id?: string
-          season?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "witnessed_grants_granted_by_fkey"
-            columns: ["granted_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "witnessed_grants_granted_to_fkey"
-            columns: ["granted_to"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
