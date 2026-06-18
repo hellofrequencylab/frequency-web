@@ -3,7 +3,7 @@
 // Journeys v2 — create from a template or blank (ADR-252, J4). Starting from a proven
 // structure (not a blank page) is the highest-leverage authoring feature (JOURNEYS.md §10):
 // instantiate the template's Phase → Module → Lesson skeleton into a new private journey, then
-// drop the author into the player to refine. Author = the caller.
+// drop the author into the editor to refine. Author = the caller.
 
 import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
@@ -233,7 +233,7 @@ export async function createJourneyFromTemplateAction(templateId: string | null)
     }
   }
 
-  redirect(`/journeys/${plan.slug}/learn`)
+  redirect(`/journeys/${plan.slug}/edit`)
 }
 
 /** Stamp a new Journey to the recommended "Master Framework" shape — deterministic, no AI (ADR-302):
