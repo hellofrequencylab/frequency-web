@@ -9,7 +9,7 @@ import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizonta
 import { ImageUpload } from '@/components/ui/image-upload'
 import { IconAccentFace, IconGrid } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
-import { saveJourneyMeta, setJourneyVisibility } from '@/app/(main)/journeys/actions'
+import { saveJourneyMeta, setJourneyVisibility, adoptJourney } from '@/app/(main)/journeys/actions'
 import { createJourneyDraftAction } from '@/app/(main)/journeys/create-actions'
 import { isError } from '@/lib/action-result'
 import type { PlanVisibility } from '@/lib/journey-plans'
@@ -63,6 +63,7 @@ function JourneyActions({
   const router = useRouter()
   const [pending, start] = useTransition()
   const [justPublished, setJustPublished] = useState(false)
+  const [adopt, setAdopt] = useState(true)
   const [note, setNote] = useState<string | null>(null)
   const live = visibility === 'public' || justPublished
   const viewHref = slug ? `/journeys/${slug}/learn` : '/journeys'
@@ -81,6 +82,8 @@ function JourneyActions({
     start(async () => {
       const res = await setJourneyVisibility(planId, 'public')
       if (isError(res)) { setNote(res.error); return }
+      // Optionally adopt it for yourself too, so you can run it from On Air.
+      if (adopt) await adoptJourney(planId)
       setJustPublished(true)
       router.push(viewHref)
     })
@@ -103,9 +106,23 @@ function JourneyActions({
             <Check className="h-4 w-4" /> Published
           </Link>
         ) : (
-          <button type="button" onClick={publish} disabled={pending} className={`${btn} bg-primary text-on-primary hover:bg-primary-hover`}>
-            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {pending ? 'Publishing…' : 'Publish'}
-          </button>
+          <>
+            <button type="button" onClick={publish} disabled={pending} className={`${btn} bg-primary text-on-primary hover:bg-primary-hover`}>
+              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {pending ? 'Publishing…' : 'Publish'}
+            </button>
+            <label
+              title="Assign yourself every practice so you can run it from On Air."
+              className="inline-flex items-center gap-1.5 text-sm text-muted"
+            >
+              <input
+                type="checkbox"
+                checked={adopt}
+                onChange={(e) => setAdopt(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-primary"
+              />
+              Adopt it for myself
+            </label>
+          </>
         )}
       </div>
       {note && <p className="text-2xs text-danger">{note}</p>}
