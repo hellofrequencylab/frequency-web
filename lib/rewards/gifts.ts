@@ -22,7 +22,6 @@
 // Server-only (admin client = service_role, bypasses prevent_economy_self_edit). The
 // gem_gifts table shape is authored in a separate migration; coded against it here.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardGems } from '@/lib/gems'
 import { getSpendableBalance } from '@/lib/store/balance'
@@ -54,10 +53,7 @@ export async function giftGems(
     return fail('Enter a whole number of Gems greater than zero.')
   }
 
-  // The gem_gifts table is authored in a separate migration and isn't in the generated
-  // Database types yet, so its writes go through an untyped handle (repo convention; see
-  // lib/zaps.ts / lib/marketplace.ts). The same client serves the typed reads below.
-  const admin = createAdminClient() as unknown as SupabaseClient
+  const admin = createAdminClient()
 
   // Recipient must exist.
   const { data: recipient } = await admin
