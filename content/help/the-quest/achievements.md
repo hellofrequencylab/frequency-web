@@ -1,9 +1,9 @@
 ---
 title: Achievements & badges
-description: The permanent badges you collect for showing up: tiers, categories, and the secret ones.
+description: The permanent badges you collect for showing up: the firsts, the streak and Amplitude milestones, your Trophies, and the Certificate.
 category: the-quest
 order: 7
-updated: 2026-06-16
+updated: 2026-06-18
 audience: member
 featureKeys: [achievements, gamification]
 status: published
@@ -11,7 +11,8 @@ status: published
 
 Achievements are the **permanent badges** you collect on Frequency. Unlike season
 Zaps, they never reset; once a badge is yours, it's yours for good. They're the
-long record of who you've been in the community.
+long record of who you've been in the community. The set is small on purpose, so
+each one means something.
 
 ## Where to find them
 
@@ -29,27 +30,20 @@ A few examples of the kind of thing that earns one:
 
 - **First Circle.** Join your first circle.
 - **First Gathering.** Attend your first event.
-- **The Welcomer.** Be the first to welcome 5 new members.
-- **Storyteller.** Share 10 posts.
-- **Warming Up.** Keep a 3-week attendance rhythm going.
 - **First Journey.** Finish your first Journey of the season.
+- **Streak milestones.** Keep a daily practice streak going to 3, 7, 14, 30, 60, 100,
+  and 365 days.
+- **Amplitude milestones.** Cross big lifetime Zap totals (1,000, then 5,000, and beyond).
 
-## Categories and tiers
+## The core set
 
-Badges are grouped by what they celebrate: **Social** (joining and connecting),
-**Events** (attending and hosting), **Content** (posting), **Leadership** (earning
-roles), **Streaks** (consistency), **Seasonal** (rank and Zap milestones), and
-**Special** (rare, one-off recognitions like Founding Member).
+The collection is lean and deliberate. It is built from:
 
-Within each, badges climb four tiers (**Bronze, Silver, Gold, Platinum**) so
-there's usually a next step: attend one event, then ten, then twenty-five, then a
-hundred.
-
-## The secret ones
-
-Some achievements show up as **???** with a lock. Their conditions are hidden on
-purpose. Keep exploring and doing what you do, and you'll stumble into them. The
-surprise is the point.
+- **Firsts**: your first circle, first gathering, first Journey.
+- **Streak milestones**: the checkpoints on your daily practice streak.
+- **Amplitude milestones**: crossing big lifetime Zap totals.
+- **Pillar Trophies**: one for each Journey you finish (Mind, Body, Spirit).
+- **The Certificate**: the season capstone for finishing all three Journeys.
 
 ## Where your badges show
 

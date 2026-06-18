@@ -174,8 +174,9 @@ function LegacyTheQuest() {
               Zaps
             </h3>
             <p className="mt-3 text-base text-muted leading-relaxed">
-              In-person gratitude. Earned when you show up, host, or bring someone
-              new into the room. The currency of presence.
+              The real-world currency. Earned when you show up, host, bring someone
+              new into the room, or make something others use. Your season standing,
+              the part no screen can fake.
             </p>
           </Card>
           <Card tone="feature" className="hover:border-border-strong transition-colors">
@@ -186,8 +187,9 @@ function LegacyTheQuest() {
               Gems
             </h3>
             <p className="mt-3 text-base text-muted leading-relaxed">
-              On-platform care. Earned by welcoming newcomers, filling the
-              calendar, and keeping the thread warm between gatherings.
+              The online currency. Earned by welcoming newcomers, filling the
+              calendar, and keeping the thread warm between gatherings. The Gems
+              you spend in the Vault.
             </p>
           </Card>
         </div>
@@ -258,9 +260,9 @@ function LegacyTheQuest() {
           community.
         </p>
         <p>
-          Finish all three and you are Master for the season. Trophies and Gems
-          follow each completion. Then the season resets, the next one opens,
-          and you begin again.
+          Finish a Journey and you earn a Trophy. Finish all three and you reach
+          Master, and you earn the Certificate: the season&apos;s capstone. Then
+          the season resets, the next one opens, and you begin again.
         </p>
       </ZigZag>
 

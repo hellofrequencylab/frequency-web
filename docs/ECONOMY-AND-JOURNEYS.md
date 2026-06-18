@@ -3,6 +3,16 @@
 Status: ⏳ **draft, pre-build.** Extends ADR-084 (Beta = Crew) and the Quest economy
 (zaps/gems/seasons). Decisions in §6 are open.
 
+> ✅ **The economy is canonized in [REWARDS-ECONOMY.md](REWARDS-ECONOMY.md) (Rewards Economy v3,
+> [ADR-304](DECISIONS.md), 2026-06-18).** Read that first for the live model. This page is the
+> Journeys-and-membership context; its economy mechanics are updated to match v3 inline below.
+> **Cut in v3 (do not build):** Co-op Pulse / Co-op Synchrony / Carrier Wave / Circle Current,
+> the Practice Shelf (consistency/depth ladders), Side Quests, witnessed/secret awards, the
+> retroactive reward *rules engine*, the recruiter reward *leaderboard*, and the v2 escalating
+> per-Journey Gem bonus. **Added in v3:** validated creation rewards, the Certificate capstone,
+> Gem gifting + buyable streak freeze, and the single payout-profile classifier. Wherever this
+> doc still shows a cut mechanic, REWARDS-ECONOMY.md wins.
+
 > 🔴 **Superseded in part by [ADR-152](DECISIONS.md) (2026-06-06): Quests + Journeys are FREE.**
 > The premium-Journeys framing throughout this doc (§2 tiers row, §5 "premium marquee") no
 > longer holds — the paywall on adopting/forking/publishing/starting is gone. The canon
@@ -53,6 +63,9 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
 - **Gems = the web / on-platform currency.** Earned by keeping the community warm
   between gatherings (post, comment, react, welcome, RSVP). Daily-capped so they
   can't be farmed; spendable in the Vault — by Crew. For a Member they pile up, inert.
+  **Gems model (Rewards Economy v3, ADR-304):** `lifetime_gems` is **monotonic** (= total
+  earned, only ever up); **spendable balance = `lifetime_gems` minus the sum of redemptions**.
+  New Gem sinks: **gift Gems** to another member, and **buy a streak freeze**.
 - **Zaps = the showing-up currency** — *the weight of being there*. Earned by
   **in-person + outreach** acts (and **every practice log**, personal or circle — the
   real-world doing), the biggest rewards living off the screen. Also earned when
@@ -78,18 +91,15 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
   moves up and survives every reset. The member sees it in the Vault; public display
   follows ADR-141. (`season_rank_enum` migrated to 4 values in
   `20260628010000_quest_completion_model.sql`; ADR-286.)
-- **Journey completion rewards.** Finishing a Journey pays:
+- **Journey completion rewards (Rewards Economy v3, ADR-304).** Finishing a Journey pays:
   - **+75 Zaps** (in-person activity credit)
-  - **A Trophy** — minted in `season_trophies`, stamped with the rank reached
-  - **Escalating Gems** by the rank reached:
+  - **A Pillar Trophy** (Mind / Body / Spirit) — minted in `season_trophies`
+  - Finishing **all three** caps the set: **Master** rank + the **Certificate** (a unique
+    cosmetic + **100 Gems**, no extra Zaps).
 
-  | Rank reached | Gems |
-  | :-- | --: |
-  | Initiate (1st Journey) | 25 |
-  | Adept (2nd Journey) | 50 |
-  | Master (3rd Journey) | 100 |
-
-  These replace the old flat 30-Gem journey reward and the retired final-rank Gem bonus.
+  🔴 **The v2 escalating per-Journey Gem bonus (Initiate 25 / Adept 50 / Master 100) is
+  retired.** Recognition now rides Pillar Trophies + the Certificate. Per-act payouts stay
+  modest on purpose (intrinsic-motivation framing; see REWARDS-ECONOMY.md §11).
 - **Expression Challenge reward.** The Expression Challenge that caps each Journey pays
   **+50 Zaps** when completed in person at a Circle, or **+30 Gems** when posted solo
   online. Required to finish the Journey. Fires through `reward_grants` (claim-then-pay,
@@ -118,31 +128,43 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
 reaches **Master** by season end. Journey rewards (Zaps + Trophy + Gems) are the primary
 rank driver; the table below covers base activity:
 
-| ⚡ Zaps — in-person + outreach | | 💎 Gems — web / on-platform (capped) | |
+| ⚡ Zaps — real world + durable contribution (no caps) | | 💎 Gems — online (daily-capped) | |
 | :-- | --: | :-- | --: |
-| Found a real circle | 100 | Expression Challenge (solo online) | 30 |
-| Host an in-person event | 60 | Complete a season challenge | 15 |
-| Activate / claim a circle | 40 | Welcome a newcomer | 8 |
-| An invite you sent joins | 40 | RSVP to an event | 5 |
-| Show up (verified check-in) | 25 | Join a circle | 5 |
-| Outreach task (flyer/QR) | 20 | Post (≤3/day) | 3 |
-| Log a practice — by cadence (Daily / 3x-wk / Weekly) | 10 / 15 / 25 | Reply (≤5/day) | 2 |
-| Expression Challenge (in person at Circle) | 50 | Daily login (1/day) · React (≤5/day) | 2 · 1 |
-| Capture a ghost node | 10 | | |
-| Finish a Journey | 75 | | |
+| Found / start a circle | 100 | Welcome a newcomer (3/day) | 8 |
+| Validated creation — your Journey first used | 100 | RSVP to an event (per event) | 5 |
+| Finish a Journey (+ a Pillar Trophy) | 75 | Join a circle (per circle) | 5 |
+| Host an event | 60 | Post (5/day) | 3 |
+| Expression Challenge (in person at Circle) | 50 | Comment / reply (8/day) | 2 |
+| Validated creation — your event first used | 50 | Share (5/day) | 2 |
+| Validated creation — your practice first used | 40 | Daily presence (1/day) | 2 |
+| Verified event check-in | 25 | React (8/day) | 1 |
+| Outreach task (flyer/QR) | 20 | Creation token on first publish — Journey / event / practice | +5 / +5 / +3 |
+| Log a practice — by cadence (Daily / 3x-wk / Weekly) | 10 / 15 / 25 | Validated creation bonus — Journey / event / practice | +25 / +10 / +10 |
+| Log a practice — weight-class fallback (light / std / heavy) | 8 / 12 / 15 | Expression Challenge (solo online) | 30 |
 
-**Rewards Economy v2 additions** (all live-tunable in `zap_config`):
-A practice's per-log payout is its **per-log Zap value** — `reward_zaps` when set (the
-Quest library values by CADENCE: Daily 10 / 3x-week 15 / Weekly 25, ADR-303), else the
-`practices.weight_class` default (8/12/15) · **Co-op Pulse +3⚡** (3+ circle members log the same
-adopted Journey the same day; nightly job, once per member/journey/day) ·
-**Welcome Back +10⚡** (first log after a 7+ day gap, once per gap, warm re-entry
-UI — never streak shame) · **Full Cycle +50⚡** (13 consecutive on-track weeks on
-one practice, one-time per practice; all other per-practice tiers are badge-only).
-Streak freezes gain a second earn path: **every 5 Full Day bonuses = +1 freeze**
-(cap 2, banks while full; never purchasable). The **Practice Shelf** on the profile
-shows each practice's consistency tier (In Motion 2w / Groove 4w / Deep Groove 8w /
-Full Cycle 13w, permanent ring) + depth count (10/25/50/100 Deep, never resets).
+**Classifier (Rewards Economy v3, ADR-304).** One source of truth returns a payout profile
+`{ zaps, gems }` per act: real-world → Zaps, online → Gems, creation → both. **Logging a
+practice is Zaps only** (the log is the record, not the point). A practice's per-log Zap value
+is `reward_zaps` when set (cadence: Daily 10 / 3x-week 15 / Weekly 25, ADR-303), else the
+`practices.weight_class` default (8/12/15).
+
+**Validated creation (Rewards Economy v3).** Publishing a Journey / event / practice pays only
+the small **Gem creation token** above (first publish only, never on edits/duplicates, soft cap
+3/day). The **large payout** (the validated Zaps + the validated Gem bonus above) lands when the
+asset is **first used by a distinct, established member** (email-verified, not the creator, not
+invited by the creator; use = adopt a Journey / log a practice / RSVP to an event). Paid once
+per asset (`creation_validated:{type}:{id}`), **uncapped**, carrying an actor (the user) and a
+beneficiary (the creator). UX: publish says "you'll earn when a member uses this"; the payout
+arrives as a notification.
+
+**Streaks + variable layer (Rewards Economy v3).** **Welcome Back +10⚡** (first log after a 7+
+day gap, once per gap, warm re-entry UI — never streak shame). A **streak freeze** the member can
+earn *and also buy with Gems*. A light, low-frequency, capped **"Spark"** surprise bonus rides on
+top of the deterministic base; the base payouts stay fixed and predictable.
+
+🔴 **Cut in v3:** Co-op Pulse / Synchrony / Carrier Wave / Circle Current, the Practice Shelf
+(In Motion / Groove / Deep Groove / Full Cycle; N Deep), Side Quests, witnessed/secret awards,
+the retroactive reward *rules engine*, and the recruiter reward *leaderboard*.
 
 So a free member *feels* the game (counters climbing, streaks alive) without getting
 its status payoff. Paying flips the earned Zaps/Gems from dead to live.
@@ -178,8 +200,9 @@ dropped. See [JOURNEYS.md](JOURNEYS.md).)*
 - **Streaks stay free.** A member always keeps their own practice streaks and collects
   the rewards — the North-Star loop is never paywalled.
 
-Finishing all three Journeys = **Master** rank, the season's highest, plus 100 Gems
-and three Trophies in the Vault.
+Finishing all three Journeys = **Master** rank, the season's highest, plus three Pillar
+Trophies and the **Certificate** (the season capstone: a unique cosmetic + 100 Gems) in the
+Vault.
 
 ## 6. Decisions
 
