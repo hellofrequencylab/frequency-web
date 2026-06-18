@@ -827,12 +827,6 @@ export function OnAirSession({
             </div>
           </div>
         )}
-
-        <p className="text-center lg:text-left">
-          <a href="/on-air/dispatches" className="text-2xs font-medium text-subtle hover:text-text">
-            Past Dispatches from Vera
-          </a>
-        </p>
         </div>
       </div>
 

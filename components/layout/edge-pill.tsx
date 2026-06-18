@@ -101,7 +101,7 @@ export function EdgePill({
       className={`fixed bottom-20 z-40 flex h-11 items-center justify-center text-sm font-semibold shadow-md transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
         expanded
           ? `gap-1.5 px-4 ${onLeft ? 'flex-row-reverse pl-3' : 'pr-3'}`
-          : 'w-11'
+          : 'w-7 md:w-11'
       } ${skin} ${wiggling ? 'edge-pill-wiggle' : ''}`}
     >
       {/* Self-contained wiggle keyframes — a small rotate/translate nudge that runs once
