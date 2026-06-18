@@ -10,7 +10,7 @@
 // spirit: plum, expression: gold }). NO hardcoded hex anywhere.
 
 import { Compass } from 'lucide-react'
-import { accentColor, accentTint } from '@/lib/studio/accents'
+import { accentColor } from '@/lib/studio/accents'
 import type { FrequencySignature, PillarKey } from '@/lib/frequency-signature'
 import { PILLAR_KEYS } from '@/lib/frequency-signature'
 
@@ -107,13 +107,16 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
   const vertices = AXIS_ORDER.map((k) => point(cx, cy, radiusFor(k), PILLARS[k].angle))
   const polygon = vertices.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ')
 
-  // The dominant pillar tints the fill + sets the emphasised accent.
   const dominant = signature.dominant ?? AXIS_ORDER[0]
   const domAccent = PILLARS[dominant].accent
-  const fill = accentTint(domAccent, compact ? 18 : 16)
-  const stroke = accentColor(domAccent)
 
-  const gridLevels = compact ? [1] : [0.34, 0.67, 1]
+  // The four cardinal points at the rim → the subtle diamond overlay.
+  const diamond = AXIS_ORDER.map((k) => {
+    const [x, y] = point(cx, cy, maxR, PILLARS[k].angle)
+    return `${x.toFixed(2)},${y.toFixed(2)}`
+  }).join(' ')
+
+  const gridLevels = compact ? [0.55, 1] : [0.36, 0.68, 1]
 
   const svg = (
     <svg
@@ -126,53 +129,49 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
           ? 'Empty Frequency Signature'
           : `Frequency Signature: dominant ${PILLARS[dominant].label}, ${signature.spread} of 4 Pillars active`
       }
+      // currentColor = the dominant Pillar accent, set as a CSS PROPERTY so the var() always
+      // resolves — a color-mix()/var() in a bare SVG fill ATTRIBUTE can fall back to solid black.
+      // Soft, luminous, no backdrop — the Mindless breath-visualizer vibe.
+      style={{ color: accentColor(domAccent) }}
       className={compact ? '' : stacked ? 'h-full w-full' : 'mx-auto'}
     >
-      {/* On-brand backdrop — a soft disc the dial sits in, faintly tinted to the dominant
-          Pillar so the whole mark reads as one cohesive, rounded piece (not a bare diagram). */}
-      <circle cx={cx} cy={cy} r={maxR.toFixed(2)} fill={accentTint(domAccent, 7)} />
-      {/* Concentric grid rings — CIRCULAR (a dial, not a diamond). Neutral border token. */}
-      {gridLevels.map((lvl) => (
+      {/* Concentric rings — soft + luminous, no fill (breath-visualizer ripple). */}
+      {gridLevels.map((lvl, i) => (
         <circle
           key={lvl}
           cx={cx}
           cy={cy}
           r={(maxR * lvl).toFixed(2)}
           fill="none"
-          stroke="var(--color-border)"
+          stroke="currentColor"
           strokeWidth={1}
-          opacity={compact ? 0.6 : 0.7}
+          opacity={0.12 + i * 0.06}
         />
       ))}
 
-      {/* Spokes to each axis tip. */}
+      {/* The subtle diamond — the four Pillar points connected. */}
+      <polygon points={diamond} fill="none" stroke="currentColor" strokeWidth={1} opacity={compact ? 0.22 : 0.3} />
+
+      {/* Spokes to each axis tip (faint). */}
       {!compact &&
         AXIS_ORDER.map((k) => {
           const [x, y] = point(cx, cy, maxR, PILLARS[k].angle)
           return (
-            <line
-              key={k}
-              x1={cx}
-              y1={cy}
-              x2={x.toFixed(2)}
-              y2={y.toFixed(2)}
-              stroke="var(--color-border)"
-              strokeWidth={1}
-              opacity={0.5}
-            />
+            <line key={k} x1={cx} y1={cy} x2={x.toFixed(2)} y2={y.toFixed(2)} stroke="currentColor" strokeWidth={1} opacity={0.12} />
           )
         })}
 
-      {/* The signature shape. */}
+      {/* The signature shape — a soft fill in the dominant accent (currentColor). */}
       <polygon
         points={polygon}
-        fill={fill}
-        stroke={stroke}
+        fill="currentColor"
+        fillOpacity={compact ? 0.22 : 0.18}
+        stroke="currentColor"
         strokeWidth={compact ? 1.5 : 2}
         strokeLinejoin="round"
       />
 
-      {/* Per-axis nodes — each in its own Pillar accent, the dominant one larger. */}
+      {/* Per-axis nodes — each in its own Pillar accent (inline style → the var resolves). */}
       {AXIS_ORDER.map((k, i) => {
         if (signature.axes[k] <= 0) return null
         const [x, y] = vertices[i]
@@ -183,7 +182,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
             cx={x.toFixed(2)}
             cy={y.toFixed(2)}
             r={isDom ? (compact ? 2.4 : 4.5) : compact ? 1.6 : 3}
-            fill={accentColor(PILLARS[k].accent)}
+            style={{ fill: accentColor(PILLARS[k].accent) }}
           />
         )
       })}
