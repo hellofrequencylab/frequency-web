@@ -538,6 +538,71 @@ export async function updateBlockAction(
   return ok()
 }
 
+/** Toggle a practice block's ANCHOR flag (ADR-307): the Journey's daily through-line. ONE anchor
+ *  per Journey (turning one on clears the others). Stored on `settings.anchor`, MERGED so a coaching
+ *  prompt on the same block is preserved. A strong recommendation, never required — the builder warns
+ *  on save when none is set but never blocks. Keyed by planId (the editor's contract). */
+export async function setLeafAnchorAction(
+  planId: string,
+  itemId: string,
+  value: boolean,
+): Promise<ActionResult> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Only the author can edit this journey.')
+  const admin = db()
+  const { data: planRow } = await admin
+    .from('journey_plans')
+    .select('author_id, slug')
+    .eq('id', planId)
+    .maybeSingle()
+  const plan = planRow as { author_id: string | null; slug: string | null } | null
+  if (!plan) return fail('Journey not found.')
+  const owner = plan.author_id === caller.id || (await getGlobalCapabilities()).has('admin.access')
+  if (!owner) return fail('Only the author can edit this journey.')
+
+  const { data: row } = await admin
+    .from('journey_plan_items')
+    .select('settings, block_type')
+    .eq('id', itemId)
+    .eq('plan_id', planId)
+    .maybeSingle()
+  const r = row as { settings: Record<string, unknown> | null; block_type: string | null } | null
+  if (!r) return fail('That step is no longer here.')
+  if (r.block_type !== 'practice') return fail('Only a practice can be the anchor.')
+
+  // One anchor per Journey: clear the flag on every OTHER practice block first (merge-safe).
+  if (value) {
+    const { data: others } = await admin
+      .from('journey_plan_items')
+      .select('id, settings')
+      .eq('plan_id', planId)
+      .eq('block_type', 'practice')
+    for (const o of (others ?? []) as { id: string; settings: Record<string, unknown> | null }[]) {
+      if (o.id === itemId || !o.settings?.anchor) continue
+      const rest = { ...o.settings }
+      delete rest.anchor
+      await admin
+        .from('journey_plan_items')
+        .update({ settings: rest as unknown as BlockUpdate['settings'] })
+        .eq('id', o.id)
+        .eq('plan_id', planId)
+    }
+  }
+
+  const next = { ...(r.settings ?? {}) }
+  if (value) next.anchor = true
+  else delete next.anchor
+  const { error } = await admin
+    .from('journey_plan_items')
+    .update({ settings: next as unknown as BlockUpdate['settings'] })
+    .eq('id', itemId)
+    .eq('plan_id', planId)
+  if (error) return fail('Could not save the anchor.')
+
+  if (plan.slug) done(plan.slug)
+  return ok()
+}
+
 export async function removeBlockAction(slug: string, itemId: string): Promise<ActionResult> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')

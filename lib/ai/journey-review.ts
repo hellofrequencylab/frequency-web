@@ -2,8 +2,9 @@
 //
 // Publishing a Journey to the library stays open and easy; this gate decides only whether
 // FINISHING it can count toward season rank (journey_plans.ranked_eligible). Vera reviews
-// the Journey against the Journey Creation rubric (content/leader-training/how-to-create-a-journey.md),
-// returns a structured verdict, and coaches the author in the brand voice.
+// the Journey against the Journey Creation rubric
+// (content/leader-training/authoring/how-to-create-a-journey.md), returns a structured verdict,
+// and coaches the author in the brand voice.
 //
 // Server-only. Mirrors the house AI pattern (lib/ai/journey-outline.ts,
 // lib/ai/practice-wizard.ts): the voice primer is injected, the call is a forced-tool
@@ -78,7 +79,7 @@ const SYSTEM_TEMPLATE = `You are Vera, Frequency's guide, reviewing a member-bui
 
 Publishing is already open. You are NOT deciding whether it can be shared. You are only deciding whether it is good enough to count toward RANK, which must stay meaningful. Hold the bar, and be generous with help.
 
-Judge it against the Journey Creation standard below (the five rules and the anatomy: a problem-first premise, five weight-classed practices each with a five-minute floor anchored to a daily routine, a daily loop, and a capstone). A Journey that ignores the standard does not pass, however nice it sounds.
+Judge it against the Journey Creation standard below (the five rules and the anatomy). The Master Template the strong Journeys follow: a problem-first premise; a four-week arc, each week with an Anchor practice (a small daily through-line) plus one weekly practice each for Mind, Body, and Spirit that complement the Anchor, a weekly Expression Challenge, and a Reflection; two weekly touchpoints (a Circle Meetup mid-week and a Weekend Gathering on the weekend); and a heavy capstone Expression Challenge at the Close. A Journey need not match it exactly, but coach toward it. A Journey that ignores the standard does not pass, however nice it sounds.
 
 THE STANDARD
 {{RUBRIC}}
@@ -96,11 +97,21 @@ Always call ${TOOL_NAME}. Do not answer in prose.`
 let rubricCache: string | undefined
 async function getRubricText(): Promise<string> {
   if (rubricCache !== undefined) return rubricCache
+  const path = join(
+    process.cwd(),
+    'content',
+    'leader-training',
+    'authoring',
+    'how-to-create-a-journey.md',
+  )
   try {
-    const path = join(process.cwd(), 'content', 'leader-training', 'how-to-create-a-journey.md')
     const raw = await readFile(path, 'utf8')
     rubricCache = raw.replace(/^---[\s\S]*?---\n/, '').trim()
-  } catch {
+  } catch (err) {
+    // Log loudly: a read miss means the gate is judging against the compact fallback below,
+    // not the real authoring doc. The fallback keeps the gate working; the warning keeps the
+    // miss from being silent (e.g. the doc moved again).
+    console.warn(`[journey-review] could not read the Journey authoring rubric at ${path}; using the inline fallback standard.`, err)
     // A compact fallback so the gate still has a standard if the file can't be read.
     rubricCache = `A Journey people finish: a problem-first premise (one line, the shift it creates); five practices tagged Light, Standard, or Heavy, each with a five-minute floor and anchored to a daily routine; a daily loop (a nudge, a tiny action, an instant Zap, visible progress); a capstone that pushes the member to express something. Win the first week. Plain names, no hype.`
   }

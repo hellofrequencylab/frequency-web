@@ -11,6 +11,7 @@ import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
 import { withVoice } from './voice'
+import { withJourneyShape } from './journey-shape'
 
 export type OutlineLessonType = 'reading' | 'reflection' | 'exercise' | 'check'
 const LESSON_TYPES: OutlineLessonType[] = ['reading', 'reflection', 'exercise', 'check']
@@ -69,8 +70,10 @@ const TOOL: Anthropic.Tool = {
 
 const SYSTEM = `You are Vera, Frequency's warm, plain-spoken guide. An author wants to build a Journey: a short, group-coaching program a Circle moves through together, organized into weekly Phases of bite-sized lessons. From their description, draft a clear, doable outline.
 
+If the author's description spells out a different length, structure, or set of Phases, follow THEM. That outranks the default template below.
+
 Rules:
-- 3 to 4 Phases, each a weekly milestone with a short, concrete title (for example "Week 1 · Notice the noise").
+- 3 to 4 weekly Phases by default (four is the strong default), each a weekly milestone with a short, concrete title (for example "Week 1 · Notice the noise"). Build backward: the outcome first, then the Phases that get there.
 - 2 to 4 lessons per Phase. Lead each Phase with a reading.
 - Lesson types: reading (a short read), reflection (a journaling prompt), exercise (a small real task), check (a quick knowledge check). Mix them.
 - Titles are plain, specific, sentence case. No hype, no emoji, no em dashes.
@@ -91,7 +94,7 @@ export async function draftJourneyOutline(input: {
       model: MODELS.opus,
       max_tokens: 1500,
       thinking: { type: 'disabled' },
-      system: withVoice(SYSTEM),
+      system: withVoice(withJourneyShape(SYSTEM)),
       tools: [TOOL],
       tool_choice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: `Draft a Journey outline from this description and call ${TOOL_NAME}:\n\n${description}` }],

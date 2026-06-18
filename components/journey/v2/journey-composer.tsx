@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Wand2, LayoutTemplate, ChevronDown } from 'lucide-react'
+import { Sparkles, Wand2, LayoutTemplate, ChevronDown, Compass } from 'lucide-react'
 import { composeJourneyAction, scaffoldJourneyAction, applyVeraChangeAction } from '@/app/(main)/journeys/[slug]/edit/actions'
+import { createMasterFrameworkAction } from '@/app/(main)/journeys/create-actions'
 import { isError } from '@/lib/action-result'
 
 // The Vera composer in the editor (ADR-302). It has two modes, by whether the Journey has content:
@@ -55,6 +56,18 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
     })
   }
 
+  // Stamp a brand-new Journey to the recommended Master Framework (deterministic, no AI), then open
+  // its editor. The recommended default: a full, balanced shape ready to fill, not the empty one.
+  const framework = () => {
+    setError(null)
+    setNote(null)
+    start(async () => {
+      const res = await createMasterFrameworkAction({})
+      if (isError(res)) { setError(res.error); return }
+      router.push(`/journeys/${res.data.slug}/edit`)
+    })
+  }
+
   const apply = () => {
     setError(null)
     setNote(null)
@@ -102,6 +115,9 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button type="button" disabled={pending || !topic.trim()} onClick={build} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
               <Wand2 className="h-4 w-4" /> {pending ? 'Building…' : 'Build with Vera'}
+            </button>
+            <button type="button" disabled={pending} onClick={framework} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary-bg/40 px-3 py-2 text-sm font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60">
+              <Compass className="h-4 w-4" /> Start from the recommended framework
             </button>
             <button type="button" disabled={pending} onClick={shape} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60">
               <LayoutTemplate className="h-4 w-4" /> Start with the shape

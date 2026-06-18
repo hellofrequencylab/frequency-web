@@ -5,6 +5,13 @@
 // real ones). Pure + unit-tested.
 
 import type { LeafType } from './tree'
+import {
+  masterWeekRows,
+  masterOnboardingRows,
+  masterCloseRows,
+  type ComposedRow,
+} from './compose'
+import type { ComposePillar } from '@/lib/ai/journey-composition'
 
 export interface TemplateLesson {
   type: LeafType
@@ -82,6 +89,99 @@ export interface TemplateBlockRow {
   blockType: 'phase' | 'module' | LeafType
   title: string
   sortOrder: number
+}
+
+// ── The Master Framework (the recommended shape, deterministic, no AI) ───────────────────────
+//
+// The single "stamp it to the recommended shape" template. Unlike the simple skeleton templates
+// above (Phase → Module → Lesson with just a type + title), every block here carries its real
+// content: the anchor flag, a Pillar `domain_id`, and the Expression Challenge's extra-credit
+// settings. So its rows are full ComposedRow blocks (the same shape compose.ts stamps), built once
+// in compose.ts and reused here — the one definition the template AND any future Vera fill share.
+//
+// Shape: an Onboarding phase (welcome + the ANCHOR practice + an intro prompt) → N week-Phases (the
+// week's focus lesson + Mind/Body/Spirit practices + a LIGHT weekly Expression Challenge + a
+// reflection) → a Close phase (the HEAVY capstone Expression Challenge + a final reflection).
+
+export const MASTER_FRAMEWORK_ID = 'master-framework'
+
+/** Options for stamping the Master Framework. `fixed` toggles the weekly-practice rotation:
+ *  default (false) leaves DISTINCT placeholder slots per week for Vera/the author to fill with
+ *  different practices each week; `fixed: true` stamps the SAME Mind/Body/Spirit slots into every
+ *  week (held fixed for the whole Journey). This is a scaffold-time choice, never persisted. */
+export interface MasterFrameworkOptions {
+  weeks?: number
+  fixed?: boolean
+}
+
+/** Static identity for the Master Framework, used to name + accent a new Journey. */
+export const MASTER_FRAMEWORK = {
+  id: MASTER_FRAMEWORK_ID,
+  name: 'Master Framework',
+  description: 'The recommended shape, ready to fill: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone to finish.',
+  emoji: '🧭',
+} as const
+
+/** A phase + its ordered child blocks, the unit the Master Framework flattener walks. */
+interface MasterPhase {
+  title: string
+  body?: string | null
+  blocks: ComposedRow[]
+}
+
+/** A full Master-Framework block row: a phase OR one of its child blocks (a ComposedRow), with the
+ *  same tempId / parentTempId / sortOrder shape the create action inserts in order. */
+export interface MasterBlockRow {
+  tempId: string
+  parentTempId: string | null
+  /** A phase row, or a leaf/practice ComposedRow to insert under its phase. */
+  block: { kind: 'phase'; title: string; body: string | null } | { kind: 'block'; row: ComposedRow }
+  sortOrder: number
+}
+
+/** Build the Master Framework's phase list (Onboarding → N weeks → Close) for the given Pillar ids.
+ *  When `fixed` is true the same weekly practice slots repeat each week; otherwise each week gets a
+ *  distinct set of placeholder slots (identical shape, filled differently later). The shape is the
+ *  same either way — "fixed" only changes how the author/Vera treats the slots downstream. */
+export function masterFrameworkPhases(
+  pillarIds: Partial<Record<ComposePillar, string>>,
+  opts: MasterFrameworkOptions = {},
+): MasterPhase[] {
+  const weeks = Math.min(12, Math.max(1, Math.floor(opts.weeks ?? 4)))
+  const phases: MasterPhase[] = [
+    { title: 'Welcome', body: 'Start here. Meet the Journey and set your anchor.', blocks: masterOnboardingRows(pillarIds) },
+  ]
+  // The shared weekly skeleton. Default: rebuild it per week so each week is a fresh, distinct set
+  // of slots. Held fixed: build it once and stamp the SAME slots into every week.
+  const heldFixed = opts.fixed ? masterWeekRows(pillarIds) : null
+  for (let i = 0; i < weeks; i++) {
+    phases.push({
+      title: `Week ${i + 1}`,
+      body: null,
+      // Held fixed: clone the shared rows so each week's blocks are independent objects (defensive —
+      // they're inserted, not mutated, but a shared reference per week would be a footgun later).
+      blocks: heldFixed ? heldFixed.map((r) => ({ ...r })) : masterWeekRows(pillarIds),
+    })
+  }
+  phases.push({ title: 'Close', body: 'The finish line. Ship the capstone and look back.', blocks: masterCloseRows(pillarIds) })
+  return phases
+}
+
+/** Flatten the Master Framework into ordered block rows (parents before children), ready for the
+ *  create action to insert in order and resolve each tempId to a real inserted id. */
+export function masterFrameworkToBlocks(
+  pillarIds: Partial<Record<ComposePillar, string>>,
+  opts: MasterFrameworkOptions = {},
+): MasterBlockRow[] {
+  const rows: MasterBlockRow[] = []
+  masterFrameworkPhases(pillarIds, opts).forEach((p, pi) => {
+    const phaseTempId = `phase-${pi}`
+    rows.push({ tempId: phaseTempId, parentTempId: null, block: { kind: 'phase', title: p.title, body: p.body ?? null }, sortOrder: pi })
+    p.blocks.forEach((row, bi) => {
+      rows.push({ tempId: `block-${pi}-${bi}`, parentTempId: phaseTempId, block: { kind: 'block', row }, sortOrder: bi })
+    })
+  })
+  return rows
 }
 
 /** Flatten a template into ordered block rows (parents before children). The create action

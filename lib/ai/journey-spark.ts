@@ -12,6 +12,7 @@ import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
 import { withVoice } from './voice'
+import { withJourneyShape } from './journey-shape'
 
 export type JourneyPace = 'light' | 'medium'
 
@@ -126,9 +127,11 @@ const SYSTEM = `You are Vera, Frequency's guide: warm, grounded, and practical, 
 
 Draft the Journey's frame: a title, a one-line promise that leads with the outcome, a short overview, and the WEEKLY ARC.
 
-The arc is one focus per week, in order, that builds across the Journey like a good course: each week leans on the last, the early weeks are gentle, and the FINAL week is a calm reflection that ties it together. Give EXACTLY one entry per week for the length requested. The four daily practices stay constant underneath; the weekly focus is the lens, not a new set of tasks.
+The arc is one focus per week, in order, that builds across the Journey like a good course: each week leans on the last, the early weeks are gentle, and the FINAL week is a calm reflection that ties it together. Give EXACTLY one entry per week for the length requested. The four Pillars (Mind, Body, Spirit, Expression) are the modules underneath; the weekly focus is the lens, not a new set of tasks. Work backward: outcome first, then the evidence it landed, then the weekly focuses that get there.
 
-If the author pasted their own course outline, also fill SETTINGS (difficulty, category, tags, daily minutes) and MEETING (format, schedule, timezone, location, join link) from what the outline actually states. Only include a field when the outline makes it clear; never invent these from the short answers alone, and omit anything you are unsure about. An outline that says nothing about how the group gathers should leave MEETING empty.
+Default shape when the author has not specified one: a four-week arc, with a gentle onboarding before week 1 and a tangible close at the end. Honor the length the author actually asked for; only lean on four weeks when they leave it open.
+
+PRECEDENCE: if the author pasted their own course outline or clearly asked for a different length or shape, follow THEM. That instruction outranks the default template below. From the outline, also fill SETTINGS (difficulty, category, tags, daily minutes) and MEETING (format, schedule, timezone, location, join link) from what the outline actually states. Only include a field when the outline makes it clear; never invent these from the short answers alone, and omit anything you are unsure about. An outline that says nothing about how the group gathers should leave MEETING empty.
 
 How to write:
 - Plain language, short sentences. Lead with the problem or the feeling.
@@ -163,7 +166,7 @@ export async function draftJourneySpark(
       model: MODELS.opus,
       max_tokens: 600,
       thinking: { type: 'disabled' },
-      system: withVoice(SYSTEM),
+      system: withVoice(withJourneyShape(SYSTEM)),
       tools: [TOOL],
       tool_choice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
