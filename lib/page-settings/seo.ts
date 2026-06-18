@@ -5,13 +5,17 @@
 export interface SeoInput {
   title?: string | null
   description?: string | null
+  /** Compact social-share / OG image (link previews). */
   ogImage?: string | null
+  /** Wide page header / banner image. */
+  headerImage?: string | null
 }
 
 export interface SeoFields {
   seo_title: string | null
   seo_description: string | null
   og_image_url: string | null
+  header_image_url: string | null
 }
 
 const TITLE_MAX = 120
@@ -35,13 +39,15 @@ export function isSafeOgUrl(v: string | null | undefined): boolean {
   }
 }
 
-/** Normalize + bound the SEO input into storable fields, or null if the og URL is unsafe. */
+/** Normalize + bound the SEO input into storable fields, or null if either image URL is unsafe. */
 export function normalizeSeo(input: SeoInput): SeoFields | null {
-  if (!isSafeOgUrl(input.ogImage)) return null
+  if (!isSafeOgUrl(input.ogImage) || !isSafeOgUrl(input.headerImage)) return null
   const og = (input.ogImage ?? '').trim()
+  const header = (input.headerImage ?? '').trim()
   return {
     seo_title: clamp(input.title, TITLE_MAX),
     seo_description: clamp(input.description, DESC_MAX),
     og_image_url: og || null,
+    header_image_url: header || null,
   }
 }

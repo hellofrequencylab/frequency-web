@@ -8,6 +8,7 @@ import { IndexTemplate } from '@/components/templates/index-template'
 import { PageContents } from '@/components/templates/page-contents'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
+import { getPageHeaderImage } from '@/lib/page-settings/store'
 
 // Practices (ADR-270/294). The whole interior is module-driven: the personal blocks (stats ·
 // activity · Pillar balance · your practices) AND the faceted Practice Library are layout modules
@@ -92,8 +93,10 @@ export default async function PracticesPage({
   }
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, heroImage, ctaLabel, ctaHref } =
+  const { title, description, ctaLabel, ctaHref } =
     await resolvePageContent('/practices', CONTENT_FALLBACK)
+  // The wide header banner now comes from the SEO & meta panel's Header image (page_settings).
+  const heroImage = await getPageHeaderImage('/practices')
 
   return (
     <IndexTemplate

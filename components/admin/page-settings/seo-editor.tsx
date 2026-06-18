@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { ImageUpload } from '@/components/ui/image-upload'
 import { isError } from '@/lib/action-result'
 import { getPageSeoForEditor, savePageSeo } from '@/lib/page-settings/actions'
 
@@ -16,6 +17,7 @@ export function SeoEditor() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [ogImage, setOgImage] = useState('')
+  const [headerImage, setHeaderImage] = useState('')
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,6 +31,7 @@ export function SeoEditor() {
         setTitle(d.seo_title ?? '')
         setDescription(d.seo_description ?? '')
         setOgImage(d.og_image_url ?? '')
+        setHeaderImage(d.header_image_url ?? '')
         setLoading(false)
       })
       .catch(() => active && setLoading(false))
@@ -41,7 +44,7 @@ export function SeoEditor() {
     setError(null)
     setSaved(false)
     startTransition(async () => {
-      const r = await savePageSeo(pathname, { title, description, ogImage })
+      const r = await savePageSeo(pathname, { title, description, ogImage, headerImage })
       if (isError(r)) setError(r.error)
       else {
         setSaved(true)
@@ -78,16 +81,24 @@ export function SeoEditor() {
             placeholder="Search and link-preview description"
           />
         </label>
-        <label className="block space-y-1">
-          <span className={labelClasses}>Share image URL</span>
-          <input
-            value={ogImage}
-            onChange={(e) => setOgImage(e.target.value)}
-            disabled={pending}
-            className={fieldClasses}
-            placeholder="https://… or /path.png"
-          />
-        </label>
+        {/* Two images per page: the WIDE banner shown on the page, and the COMPACT social-share
+            image used for link previews. Either can be left empty. */}
+        <ImageUpload
+          label="Header image"
+          hint="Wide banner shown on the page. Around 1600×500."
+          value={headerImage || null}
+          onChange={(v) => setHeaderImage(v ?? '')}
+          folder="page-headers"
+          disabled={pending}
+        />
+        <ImageUpload
+          label="Share image"
+          hint="Compact image for link previews (social / messaging). Around 1200×630."
+          value={ogImage || null}
+          onChange={(v) => setOgImage(v ?? '')}
+          folder="page-shares"
+          disabled={pending}
+        />
         {error && <p className="text-xs text-danger">{error}</p>}
         <div className="flex items-center justify-end gap-2 pt-1">
           {saved && (

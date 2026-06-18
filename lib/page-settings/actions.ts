@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { Json } from '@/lib/database.types'
+import type { Database, Json } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
 import { isSafeRoute } from '@/lib/layout/page-chrome'
@@ -30,16 +30,18 @@ function db() {
 /** Save the per-route SEO (title / description / share image). Upserts the row. */
 export async function savePageSeo(
   route: string,
-  input: { title?: string; description?: string; ogImage?: string },
+  input: { title?: string; description?: string; ogImage?: string; headerImage?: string },
 ): Promise<ActionResult> {
   const me = await gate()
   if (!isSafeRoute(route)) return fail('That is not a valid app route.')
   const fields = normalizeSeo(input)
-  if (!fields) return fail('The share image must be an https URL or a path that starts with /.')
+  if (!fields) return fail('An image must be an https URL or a path that starts with /.')
 
+  // header_image_url isn't in the generated types yet — cast the payload (ADR-246), not the client.
+  const payload = { route, ...fields, updated_by: me, updated_at: new Date().toISOString() }
   const { error } = await db()
     .from('page_settings')
-    .upsert({ route, ...fields, updated_by: me, updated_at: new Date().toISOString() }, { onConflict: 'route' })
+    .upsert(payload as unknown as Database['public']['Tables']['page_settings']['Insert'], { onConflict: 'route' })
   if (error) return fail('Could not save SEO for that route.')
 
   revalidatePath(route)
@@ -49,12 +51,17 @@ export async function savePageSeo(
 /** The current SEO for the editor (staff-gated read). Defaults to empty fields. */
 export async function getPageSeoForEditor(route: string): Promise<SeoFields> {
   await gate()
-  const empty: SeoFields = { seo_title: null, seo_description: null, og_image_url: null }
+  const empty: SeoFields = { seo_title: null, seo_description: null, og_image_url: null, header_image_url: null }
   if (!isSafeRoute(route)) return empty
   const { loadPageSettings } = await import('./store')
   const row = await loadPageSettings(route)
   return row
-    ? { seo_title: row.seo_title, seo_description: row.seo_description, og_image_url: row.og_image_url }
+    ? {
+        seo_title: row.seo_title,
+        seo_description: row.seo_description,
+        og_image_url: row.og_image_url,
+        header_image_url: row.header_image_url,
+      }
     : empty
 }
 
@@ -204,7 +211,7 @@ export async function clearPageSeo(route: string): Promise<ActionResult> {
   if (!isSafeRoute(route)) return fail('That is not a valid app route.')
   const { error } = await db()
     .from('page_settings')
-    .update({ seo_title: null, seo_description: null, og_image_url: null, updated_at: new Date().toISOString() })
+    .update({ seo_title: null, seo_description: null, og_image_url: null, header_image_url: null, updated_at: new Date().toISOString() } as unknown as Database['public']['Tables']['page_settings']['Update'])
     .eq('route', route)
   if (error) return fail('Could not clear SEO for that route.')
 

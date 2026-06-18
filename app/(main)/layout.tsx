@@ -63,9 +63,11 @@ export async function generateMetadata(): Promise<Metadata> {
     const md: Metadata = {}
     if (s.seo_title) md.title = s.seo_title
     if (s.seo_description) md.description = s.seo_description
-    if (s.og_image_url) {
+    // Link previews use the compact social-share image, falling back to the wide header.
+    const ogImage = s.og_image_url ?? s.header_image_url
+    if (ogImage) {
       md.openGraph = {
-        images: [{ url: s.og_image_url }],
+        images: [{ url: ogImage }],
         ...(s.seo_title ? { title: s.seo_title } : {}),
       }
     }
