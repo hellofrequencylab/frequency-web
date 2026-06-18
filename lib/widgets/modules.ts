@@ -48,6 +48,14 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'practices-balance', label: 'Pillar balance', description: 'How the member’s adopted practices spread across the four Pillars.' },
   { id: 'practices-mine', label: 'Your practices', description: 'The member’s adopted and built practices, each with its log and edit controls.' },
   { id: 'practices-library', label: 'Practice library', description: 'The full, faceted community library — filterable by Pillar, tag, and search, paginated.' },
+
+  // ── The Vault blocks (/crew/store) — the member's earnings + the Gem Store ──
+  { id: 'vault-standing', label: 'Standing hero', description: 'The four counts — Zaps · Rank · Streak · Gems — the one way a member’s standing renders.' },
+  { id: 'vault-leaderboard', label: 'Standing link', description: 'A card linking to the cooperative leaderboard and streaks.' },
+  { id: 'vault-summary', label: 'Your Vault', description: 'Amplitude (the lifetime layer), the Zaps & Gems ledger, and equipped winnings.' },
+  { id: 'vault-trophies', label: 'Your Trophies', description: 'The lifetime Trophy Case — every finished Journey, kept across seasons.' },
+  { id: 'vault-awards', label: 'Your Awards', description: 'The badge collection, grouped by category, earned vs. secret.' },
+  { id: 'vault-store', label: 'Gem Store', description: 'The redeemable categories — cosmetics, titles, badges, membership credits (paid-gated).' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
@@ -80,6 +88,16 @@ const JOURNEYS_MODULE_IDS = ['journeys-start', 'journeys-mine', 'journeys-librar
 // `x-search` request header (proxy.ts) rather than searchParams, which a nested module never gets.
 const PRACTICES_MODULE_IDS = ['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine', 'practices-library'] as const
 
+// The Vault (/crew/store), in default render order (the original hand-built order).
+const VAULT_MODULE_IDS = [
+  'vault-standing',
+  'vault-leaderboard',
+  'vault-summary',
+  'vault-trophies',
+  'vault-awards',
+  'vault-store',
+] as const
+
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section
  *  ('/seg/*'), or an exact route. Add a route's set here when you convert its page to
  *  `<PageModules>` (and list it in lib/widgets/module-routes.ts). */
@@ -89,6 +107,7 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
   '/practices': PRACTICES_MODULE_IDS,
+  '/crew/store': VAULT_MODULE_IDS,
 }
 
 /** Back-compat: the default (global) module id set. */

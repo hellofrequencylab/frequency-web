@@ -8,6 +8,7 @@
 export const MODULE_ROUTES: readonly string[] = [
   '/lead',
   '/crew',
+  '/crew/store',
   '/admin/content/journeys',
   '/journeys',
   '/practices',
