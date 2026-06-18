@@ -21,19 +21,22 @@ practice in a Journey, from the Zap button (the **Mindless** row), from your hom
 (the little lotus next to any practice), or from a practice page. Pick three
 things, and it remembers them for next time:
 
-- **A practice** from your list.
+- **A practice.** Always there is a **Free sit**, so you can tune out any time
+  even before you adopt anything. Once you join a Journey, the practices for the
+  part you're on show up here too. Pick the one you're doing, or Free sit.
 - **A mode.** *Meditate* is a plain countdown for a silent sit. *Breathe* gives
   you a guided breathing pattern with a visual to follow. *Just Log* skips
   straight to the rewards; the timer is never required.
-- **Minutes.** Two is enough. Five is plenty. Use the stepper for anything up to
-  a hundred and twenty.
+- **Minutes.** The timer starts at the practice's own length when it has one, and
+  you can change it. Two is enough. Five is plenty. Use the stepper for anything
+  up to a hundred and twenty.
 
-Then hit **Tune out**. The world goes quiet, and nothing moves until you tap
-**Start** — settle in first. While you're tuned out the screen stays awake and
-everything else gets out of the way. **Pause** if life interrupts (paused time
-doesn't count), and when the timer runs out, hit **Finish** to collect. Need to
-stop early? **Close Session** still counts; the practice is the point, not the
-clock.
+Then hit **Tune out**. The world goes quiet and a short **five-second countdown**
+starts you off (tap **Start** to begin right away). While you're tuned out the
+screen stays awake and everything else gets out of the way. **Pause** if life
+interrupts (paused time doesn't count), and when the timer runs out, hit
+**Finish** to collect. Need to stop early? **Close Session** still counts; the
+practice is the point, not the clock.
 
 ## Breathing patterns
 

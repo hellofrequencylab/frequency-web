@@ -158,5 +158,20 @@ on revisit**, by design.
   P10 lifecycle takes over (Pause ⇄ Start → Finish at zero). Implemented as a
   pause from the first millisecond, so airtime math and cues needed nothing new.
 
+- ~~P14 — always-on + Journey-aware (ADR-306)~~ ✅ shipped: the timer is never
+  blocked. A **Free sit** chip is always offered (it logs the default sit
+  practice, `morning-stillness`, through the same `logPractice` path, so the
+  empty "adopt a practice first" wall is gone). When enrolled, the list shows
+  **only the current Journey leg** (the unlocked drip phase, via
+  `lib/journeys/current-leg.ts`), not the whole library; a practice opened from
+  a Journey **Practice** button is pinned + pre-selected even when unadopted (a
+  previewing author). The timer now **defaults to the selected practice's
+  `duration_min`** (no duration = an open-length sit on that practice). The
+  armed wait (P13) becomes a **5-second "Starting in N" auto-start countdown**;
+  the **Start** button overrides it to begin now. Publishing a Journey gains an
+  **"Adopt it for myself"** option so an author's own Journey fills On Air. Plus
+  a mobile Zap-popup pass: Check In / Ghost Node / Partners go to the inert
+  ghost state, and the Capture box is one line shorter.
+
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.

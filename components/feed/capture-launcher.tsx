@@ -179,9 +179,9 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               <ZapTile href="/events/scan" onClick={tapTile('event')} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
               <ZapTile href="/connections/new" onClick={tapTile('contact')} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
               <ZapTile href="/codes" onClick={tapTile('connect')} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />
-              <ZapTile href="/scan?hint=checkin" onClick={tapTile('checkin')} label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub={liveCheckIn ? 'Happening now' : 'Scan at the door'} alert={liveCheckIn} />
-              <ZapTile href="/scan?hint=node" onClick={tapTile('node')} label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" />
-              <ZapTile href="/partners" onClick={tapTile('partners')} label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" />
+              <ZapTile href="/scan?hint=checkin" onClick={tapTile('checkin')} label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub={liveCheckIn ? 'Happening now' : 'Scan at the door'} soon />
+              <ZapTile href="/scan?hint=node" onClick={tapTile('node')} label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" soon />
+              <ZapTile href="/partners" onClick={tapTile('partners')} label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" soon />
             </div>
 
             <Link

@@ -38,6 +38,12 @@ export interface OnAirPractice {
   id: string
   title: string
   loggedToday: boolean
+  /** Typical length in minutes (the practice's duration_min). The timer defaults to it on select;
+   *  null/undefined = open length (a free-length sit). */
+  durationMin?: number | null
+  /** When set, completing a session with this chip selected logs THIS practice id instead of the
+   *  chip's own id — the "Free sit" chip maps to the default sit practice (lib/on-air/session-data). */
+  logsAs?: string
 }
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
@@ -134,11 +140,17 @@ export function OnAirSession({
   onExit?: () => void
 }) {
   const [stage, setStage] = useState<Stage>('setup')
-  const [practiceId, setPracticeId] = useState(
-    defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? '',
-  )
+  const initialId =
+    defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
+  // A practice's own length seeds the timer; no duration (or Free sit) falls back to the remembered
+  // minutes (an open-length sit the member can still adjust).
+  const durationFor = (id: string): number => {
+    const d = practices.find((p) => p.id === id)?.durationMin
+    return d && d > 0 ? clampMinutes(d) : prefs.minutes
+  }
+  const [practiceId, setPracticeId] = useState(initialId)
   const [mode, setMode] = useState<SessionMode>(prefs.mode)
-  const [minutes, setMinutes] = useState(prefs.minutes)
+  const [minutes, setMinutes] = useState(() => durationFor(initialId))
   const [patternSlug, setPatternSlug] = useState(prefs.pattern)
   const [customIn, setCustomIn] = useState(prefs.customIn ?? 4)
   const [customHold, setCustomHold] = useState(prefs.customHold ?? 4)
@@ -153,6 +165,9 @@ export function OnAirSession({
   // startedAt forward by the pause length, so every elapsed-based read (clock,
   // cues, visualizer) continues seamlessly and pauses never count as airtime.
   const [pausedAt, setPausedAt] = useState<number | null>(null)
+  // The 5s auto-start countdown shown before a sit begins (P14). null = not counting; the Start
+  // button overrides it (begin() now).
+  const [preroll, setPreroll] = useState<number | null>(null)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
@@ -169,6 +184,12 @@ export function OnAirSession({
     [patternSlug, customIn, customHold, customOut],
   )
   const practice = practices.find((p) => p.id === practiceId)
+
+  // Pick a practice + seed the timer to its length (no duration → the remembered open length).
+  function selectPractice(id: string) {
+    setPracticeId(id)
+    setMinutes(durationFor(id))
+  }
 
   // --- takeover plumbing ----------------------------------------------------
 
@@ -265,6 +286,20 @@ export function OnAirSession({
     }
   }, [])
 
+  // The 5s auto-start pre-roll: tick down once a second, then begin() automatically. Re-runs each
+  // tick with a fresh closure, so begin() reads the current armed pausedAt. The Start button calls
+  // begin() directly to skip ahead.
+  useEffect(() => {
+    if (stage !== 'live' || preroll === null) return
+    if (preroll <= 0) {
+      begin()
+      return
+    }
+    const id = setTimeout(() => setPreroll((n) => (n === null ? null : n - 1)), 1000)
+    return () => clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, preroll])
+
   // --- transitions -------------------------------------------------------------
 
   async function start() {
@@ -285,16 +320,25 @@ export function OnAirSession({
     lastPhase.current = null
     lastMinute.current = 0
     endCued.current = false
-    // The live screen opens ARMED, not running (owner ask): the clock sits
-    // paused at zero until the member taps Start — settle in first. Arming
-    // counts as a pause from the very first millisecond, so the existing
-    // Start ⇄ Pause machinery (and the airtime math) needs nothing new.
+    // The live screen opens ARMED with a 5s auto-start countdown (P14): the clock sits paused at
+    // zero, a "Starting in N" pre-roll ticks down, then begin() unpauses automatically. The Start
+    // button overrides the countdown to begin now. Arming is a pause from the first millisecond, so
+    // the existing Start <-> Pause machinery (and the airtime math) needs nothing new.
     const now = Date.now()
     setStartedAt(now)
     setPausedAt(now)
     setRemaining(minutes * 60)
+    setPreroll(5)
     setStage('live')
     void acquireQuiet()
+  }
+
+  // Begin the sit now: end the pre-roll and unpause from the armed state (shift startedAt by the
+  // armed span so elapsed starts at zero). Called by the 5s countdown reaching 0 or the Start button.
+  function begin() {
+    setPreroll(null)
+    if (pausedAt !== null) setStartedAt((s) => s + (Date.now() - pausedAt))
+    setPausedAt(null)
   }
 
   function togglePause() {
@@ -321,7 +365,8 @@ export function OnAirSession({
     setStage('saving')
     await releaseQuiet()
     const result = await completeSession({
-      practiceId,
+      // A Free sit logs the default sit practice (chip.logsAs); every real practice logs itself.
+      practiceId: practice?.logsAs ?? practiceId,
       mode,
       pattern: patternSlug,
       seconds,
@@ -429,6 +474,11 @@ export function OnAirSession({
                 {ended ? 'Done' : `${mm}:${String(ss).padStart(2, '0')} left`}
               </p>
             )}
+            {preroll !== null && (
+              <p className="animate-pulse text-sm font-bold uppercase tracking-[0.3em] text-primary-strong">
+                Starting in {preroll}
+              </p>
+            )}
           </div>
 
           {/* The dynamic control (P10): Pause ⇄ Start while running, Finish once
@@ -437,7 +487,11 @@ export function OnAirSession({
           <div className="flex flex-col items-center gap-3">
             <button
               type="button"
-              onClick={() => (ended ? void finish(false) : togglePause())}
+              onClick={() => {
+                if (preroll !== null) { begin(); return } // override the countdown, begin now
+                if (ended) { void finish(false); return }
+                togglePause()
+              }}
               className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
             >
               {ended ? 'Finish' : paused ? 'Start' : 'Pause'}
@@ -489,7 +543,7 @@ export function OnAirSession({
               <button
                 key={p.id}
                 type="button"
-                onClick={() => setPracticeId(p.id)}
+                onClick={() => selectPractice(p.id)}
                 className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
                   p.id === practiceId
                     ? 'border-primary bg-primary-bg/40 font-semibold text-text'

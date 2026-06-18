@@ -1,8 +1,14 @@
 // On Air — the session data loader (ADR-229, docs/ON-AIR.md). Shared by the
 // route page (app/(main)/on-air/page.tsx) and the global Mindless overlay's
 // server action (app/(main)/on-air/actions.ts), so both assemble the SAME
-// member-state in one place: adopted practices + today's logs, remembered
-// setup prefs, and today's presence count.
+// member-state in one place.
+//
+// The list a member sees (ADR-304 follow-up): a **Free sit** is always offered
+// (the open timer, never blocked) plus the practices due RIGHT NOW — the current
+// leg of every Journey they are enrolled in; with no Journey, their adopted
+// practices. A practice opened from a Journey step (or a /on-air?practice link)
+// is pinned + pre-selected even when it isn't adopted yet (a previewing author).
+// Each practice carries its own duration so the timer can default to it.
 //
 // Pure data assembly — no economy here (a session ends through the existing
 // completeSession action). Lives in lib/ (not the page) so the overlay can
@@ -10,8 +16,17 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMemberPractices } from '@/lib/practices'
+import { getCurrentLegPracticeIds } from '@/lib/journeys/current-leg'
 import { DEFAULT_PREFS, type OnAirPrefs } from '@/lib/on-air'
 import type { OnAirPractice } from '@/components/on-air/session'
+
+/** The synthetic "Free sit" chip id. Selecting it runs the open timer; on completion it logs the
+ *  default sit practice (so the one economy path, logPractice, is unchanged). Never a real id. */
+export const FREE_SIT_ID = '__free_sit__'
+
+/** The practice a Free sit logs (the canonical short Mind sit). Resolved by slug so swapping it is
+ *  data, not code. */
+const DEFAULT_SIT_SLUG = 'morning-stillness'
 
 /** Everything OnAirSession needs to render the setup screen for a member. */
 export interface OnAirSessionData {
@@ -22,39 +37,79 @@ export interface OnAirSessionData {
   practicedToday: number
 }
 
-/** Load a member's On Air setup state. `requestedPracticeId` pre-selects a
- *  practice when it's one the member has adopted; otherwise the first practice
- *  not yet logged today leads. Returns the practices empty when the member has
- *  adopted none — the caller renders the "adopt a practice first" empty state. */
+type PracticeRow = { id: string; title: string; duration_min: number | null }
+
+/** Load a member's On Air setup state. `requestedPracticeId` pins + pre-selects a practice (the
+ *  Journey "Practice" button, or a /on-air?practice link). The list is never empty — Free sit is
+ *  always offered — so the timer is reachable for everyone. */
 export async function loadOnAirSessionData(
   profileId: string,
   requestedPracticeId?: string | null,
 ): Promise<OnAirSessionData> {
   const admin = createAdminClient()
   const today = new Date().toISOString().slice(0, 10)
-  const [mine, { data: prof }, { data: todayLogs }, { data: presenceRows }] = await Promise.all([
-    getMemberPractices(profileId),
-    admin.from('profiles').select('meta').eq('id', profileId).maybeSingle(),
-    admin
-      .from('practice_logs')
-      .select('practice_id')
-      .eq('profile_id', profileId)
-      .eq('logged_for', today),
-    // Presence: distinct members with a log today. Row-count + Set in JS —
-    // PostgREST aggregates are disabled on hosted projects.
-    admin.from('practice_logs').select('profile_id').eq('logged_for', today).limit(10000),
-  ])
+  const [legIds, mine, { data: prof }, { data: todayLogs }, { data: presenceRows }, { data: sitRow }] =
+    await Promise.all([
+      getCurrentLegPracticeIds(profileId),
+      getMemberPractices(profileId),
+      admin.from('profiles').select('meta').eq('id', profileId).maybeSingle(),
+      admin
+        .from('practice_logs')
+        .select('practice_id')
+        .eq('profile_id', profileId)
+        .eq('logged_for', today),
+      // Presence: distinct members with a log today. Row-count + Set in JS —
+      // PostgREST aggregates are disabled on hosted projects.
+      admin.from('practice_logs').select('profile_id').eq('logged_for', today).limit(10000),
+      // The Free sit's target practice (the canonical short sit).
+      admin.from('practices').select('id, title').eq('slug', DEFAULT_SIT_SLUG).maybeSingle(),
+    ])
 
   const loggedToday = new Set(
     ((todayLogs ?? []) as { practice_id: string | null }[])
       .map((l) => l.practice_id)
       .filter(Boolean) as string[],
   )
-  const practices: OnAirPractice[] = mine.map((p) => ({
+
+  // The base list: when enrolled, ONLY the current leg's practices (the things due now); otherwise
+  // the member's adopted practices. Free sit rides on top of either.
+  let base: PracticeRow[]
+  if (legIds.length) {
+    const { data: legRows } = await admin.from('practices').select('id, title, duration_min').in('id', legIds)
+    base = (legRows ?? []) as PracticeRow[]
+  } else {
+    base = mine.map((p) => ({ id: p.id, title: p.title, duration_min: p.duration_min }))
+  }
+
+  // A practice opened from a Journey step (or a /on-air?practice link) is pinned + selected even if
+  // it isn't in the leg/adopted set yet (e.g. a previewing author who hasn't enrolled).
+  if (
+    requestedPracticeId &&
+    requestedPracticeId !== FREE_SIT_ID &&
+    !base.some((p) => p.id === requestedPracticeId)
+  ) {
+    const { data: reqRow } = await admin
+      .from('practices')
+      .select('id, title, duration_min')
+      .eq('id', requestedPracticeId)
+      .maybeSingle()
+    const r = reqRow as PracticeRow | null
+    if (r) base = [r, ...base]
+  }
+
+  const practices: OnAirPractice[] = base.map((p) => ({
     id: p.id,
     title: p.title,
     loggedToday: loggedToday.has(p.id),
+    durationMin: p.duration_min ?? null,
   }))
+
+  // Free sit — always available so the timer is never blocked; it logs the default sit practice.
+  // Open length (no durationMin). Appended last so a real Journey practice leads the default.
+  const sit = sitRow as { id: string; title: string } | null
+  if (sit) {
+    practices.push({ id: FREE_SIT_ID, title: 'Free sit', loggedToday: false, durationMin: null, logsAs: sit.id })
+  }
 
   const practicedToday = new Set(
     ((presenceRows ?? []) as { profile_id: string | null }[])
@@ -76,10 +131,14 @@ export async function loadOnAirSessionData(
     haptics: stored.haptics,
   }
 
+  // Pre-select the requested practice; else the first leg/adopted practice not yet logged; else any
+  // real practice; else Free sit. Free sit never auto-wins when a real practice is available.
   const defaultPracticeId =
     requestedPracticeId && practices.some((p) => p.id === requestedPracticeId)
       ? requestedPracticeId
-      : practices.find((p) => !p.loggedToday)?.id ?? null
+      : practices.find((p) => p.id !== FREE_SIT_ID && !p.loggedToday)?.id ??
+        practices.find((p) => p.id !== FREE_SIT_ID)?.id ??
+        (sit ? FREE_SIT_ID : null)
 
   return { practices, defaultPracticeId, prefs, practicedToday }
 }

@@ -84,18 +84,24 @@ export function CaptureBox({
   }
 
   return (
-    <Composer
-      key={mode}
-      scopeId={scopeId}
-      compactTools={compactTools}
-      visibility={visibility}
-      kind={mode === 'note' ? 'note' : 'post'}
-      autoImage={mode === 'photo'}
-      forceAnnouncement={mode === 'dispatch'}
-      bottomSlot={featureRow}
-      placeholder={mode === 'note' ? 'Jot a note: what happened, what you noticed…' : placeholder}
-      submitLabel="Capture"
-    />
+    // One line shorter here than the inline feed composer: drop the textarea's
+    // resting min-height by a single line (6rem to 4.5rem, about one line of
+    // leading-relaxed 15px text). Auto-grow still sets an explicit height as you
+    // type, so this only lowers the floor and never caps the box.
+    <div className="[&_textarea]:min-h-[4.5rem]">
+      <Composer
+        key={mode}
+        scopeId={scopeId}
+        compactTools={compactTools}
+        visibility={visibility}
+        kind={mode === 'note' ? 'note' : 'post'}
+        autoImage={mode === 'photo'}
+        forceAnnouncement={mode === 'dispatch'}
+        bottomSlot={featureRow}
+        placeholder={mode === 'note' ? 'Jot a note: what happened, what you noticed…' : placeholder}
+        submitLabel="Capture"
+      />
+    </div>
   )
 }
 

@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil, Send, Check, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import { setJourneyVisibility } from '@/app/(main)/journeys/actions'
+import { setJourneyVisibility, adoptJourney } from '@/app/(main)/journeys/actions'
 import type { PlanVisibility } from '@/lib/journey-plans'
 
 // The creator's controls on the View (learn) page — the counterpart to the editor's action set.
@@ -24,12 +24,15 @@ export function JourneyAuthorActions({
   const router = useRouter()
   const [pending, start] = useTransition()
   const [justPublished, setJustPublished] = useState(false)
+  const [adopt, setAdopt] = useState(true)
   const live = visibility === 'public' || justPublished
 
   const publish = () =>
     start(async () => {
       const res = await setJourneyVisibility(planId, 'public')
       if (!isError(res)) {
+        // Optionally adopt it for yourself too, so you can run it from On Air.
+        if (adopt) await adoptJourney(planId)
         setJustPublished(true)
         router.refresh()
       }
@@ -46,15 +49,29 @@ export function JourneyAuthorActions({
           <Check className="h-3.5 w-3.5" /> Published
         </span>
       ) : (
-        <button
-          type="button"
-          onClick={publish}
-          disabled={pending}
-          className={`${btn} bg-primary font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60`}
-        >
-          {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-          {pending ? 'Publishing…' : 'Publish'}
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={publish}
+            disabled={pending}
+            className={`${btn} bg-primary font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60`}
+          >
+            {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+            {pending ? 'Publishing…' : 'Publish'}
+          </button>
+          <label
+            title="Assign yourself every practice so you can run it from On Air."
+            className="inline-flex items-center gap-1.5 text-sm text-muted"
+          >
+            <input
+              type="checkbox"
+              checked={adopt}
+              onChange={(e) => setAdopt(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-border accent-primary"
+            />
+            Adopt it for myself
+          </label>
+        </>
       )}
     </div>
   )

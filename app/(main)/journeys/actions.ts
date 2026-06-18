@@ -168,6 +168,20 @@ export async function adoptPlanAction(formData: FormData) {
   revalidateSlug(formData)
 }
 
+/** JSON counterpart to adoptPlanAction: adopt a Journey by id (e.g. the author adopting their
+ *  own on publish), which assigns the adopter all its practices. Same access rule — your own, or
+ *  any non-private Journey. */
+export async function adoptJourney(planId: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not allowed.')
+  const meta = await planMeta(planId)
+  if (!meta) return fail('Journey not found.')
+  if (meta.author_id !== profileId && meta.visibility === 'private') return fail('Not allowed.')
+  await adoptPlan(profileId, planId)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
 export async function forkPlanAction(formData: FormData) {
   const profileId = await getMyProfileId()
   if (!profileId) return
