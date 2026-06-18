@@ -43,8 +43,9 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'journeys-library', label: 'Community library', description: 'The open library of public journeys to browse and adopt.' },
 
   // ── Practices blocks (/practices) — the personal sections above the fixed library ──
-  { id: 'practices-stats', label: 'Practice stats', description: 'The three-up strip: your practices, days logged in the last 14, and the library size.' },
-  { id: 'practices-activity', label: 'Your activity', description: 'A 14-day heatmap of the days the member logged a practice.' },
+  { id: 'practices-stats', label: 'Practice stats', description: 'The headline band: your practices, days practiced, current and longest streak, and the library size.' },
+  { id: 'practices-activity', label: 'Your activity', description: 'An 8-week heatmap of the days the member logged a practice.' },
+  { id: 'practices-balance', label: 'Pillar balance', description: 'How the member’s adopted practices spread across the four Pillars.' },
   { id: 'practices-mine', label: 'Your practices', description: 'The member’s adopted and built practices, each with its log and edit controls.' },
 ] as const
 
@@ -76,7 +77,7 @@ const JOURNEYS_MODULE_IDS = ['journeys-start', 'journeys-mine', 'journeys-librar
 // The Practices page (/practices) upper, personal blocks, in default render order. The faceted
 // Practice Library below them stays a FIXED section the page renders (it reads searchParams, which
 // blocks never receive), so only these three are module-driven.
-const PRACTICES_MODULE_IDS = ['practices-stats', 'practices-activity', 'practices-mine'] as const
+const PRACTICES_MODULE_IDS = ['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine'] as const
 
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section
  *  ('/seg/*'), or an exact route. Add a route's set here when you convert its page to

@@ -22,6 +22,11 @@ import { PageContents } from '@/components/templates/page-contents'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageModules } from '@/components/widgets/page-modules'
+import { Suspense } from 'react'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { componentFor } from '@/lib/widgets/registry'
+import { readPracticesLayout } from '@/lib/practices-page-config'
+import { PracticesLayoutEditor } from '@/components/practice/practices-layout-editor'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
@@ -81,16 +86,24 @@ export default async function PracticesPage({
   const isAdmin = caps.has('admin.access')
   const showHidden = isAdmin && sp.hidden === '1'
 
-  const [pillars, subcategories, tags, mine] = await Promise.all([
+  const [pillars, subcategories, tags, mine, profileMeta] = await Promise.all([
     getPillars(),
     listSubcategories(),
     listCanonicalTags(),
     // The library cards need the viewer's adopted set to render the Adopt/Remove state. The
-    // personal upper sections (stats/activity/mine) are now self-fetching <PageModules> blocks.
+    // personal upper sections (stats/activity/balance/mine) are self-fetching widget blocks.
     profileId ? getMemberPractices(profileId) : Promise.resolve([]),
+    // The member's saved per-user block layout (profiles.meta.practicesLayout) — drives the order +
+    // visibility of the personal blocks, and seeds the "Customize this page" editor.
+    profileId
+      ? createAdminClient().from('profiles').select('meta').eq('id', profileId).maybeSingle().then((r) => r.data?.meta ?? null)
+      : Promise.resolve(null),
   ])
   const byId = pillarsById(pillars)
   const mineIds = new Set(mine.map((p) => p.id))
+  // The member's personal-block layout: ordered, enabled-only ids + the full config for the editor.
+  const practicesLayout = readPracticesLayout(profileMeta)
+  const orderedBlockIds = practicesLayout.filter((w) => w.enabled).map((w) => w.id)
 
   // Pillar → sub-category facets (URL-driven, shareable).
   const activePillar = pillars.find((p) => p.slug === sp.pillar) ?? null
@@ -220,14 +233,31 @@ export default async function PracticesPage({
         ]}
       />
 
-      {/* The personal, upper sections — the StatStrip, "Your activity", and "Your practices" — are
-          now operator-arrangeable <PageModules> blocks (ADR-270/294). Each is a self-fetching RSC in
-          components/widgets/practices/* and preserves its section id so the anchors above still work.
-          The faceted Practice Library below stays a FIXED page section: it reads searchParams (Pillar
-          / tag / sort / page), which blocks never receive, so it must not move into a module. */}
-      <div className="max-w-2xl space-y-8">
-        <PageModules route="/practices" />
-      </div>
+      {/* The personal, upper sections — stats · activity · Pillar balance · your practices — are
+          self-fetching widget blocks the MEMBER can reorder/toggle ("Customize this page", saved to
+          profiles.meta.practicesLayout). A signed-in member gets their own order; everyone else gets
+          the operator-arranged <PageModules> default. The faceted Practice Library below stays a
+          FIXED page section: it reads searchParams (Pillar / tag / sort / page), which blocks never
+          receive, so it must not move into a block. */}
+      {profileId ? (
+        <div className="max-w-2xl space-y-6">
+          <PracticesLayoutEditor initial={practicesLayout} />
+          <div className="space-y-8">
+            {orderedBlockIds.map((id) => {
+              const Block = componentFor(id)
+              return Block ? (
+                <Suspense key={id} fallback={null}>
+                  <Block />
+                </Suspense>
+              ) : null
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-2xl space-y-8">
+          <PageModules route="/practices" />
+        </div>
+      )}
 
       {/* The library — full-width, paginated, filterable grid. */}
       <section id="practices-library" className="mt-8 scroll-mt-20">
@@ -325,14 +355,8 @@ export default async function PracticesPage({
                           <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3" /> {p.logs_total}</span>
                         </>
                       }
-                      action={
-                        (profileId || isAdmin) && (
-                          <div className="flex items-center gap-1">
-                            {profileId && <AdoptPracticeButton practiceId={p.id} adopted={mineIds.has(p.id)} />}
-                            {isAdmin && <PracticeAdminMenu practiceId={p.id} isTemplate={p.is_template} isPublic={p.is_public} />}
-                          </div>
-                        )
-                      }
+                      action={isAdmin ? <PracticeAdminMenu practiceId={p.id} isTemplate={p.is_template} isPublic={p.is_public} /> : undefined}
+                      footer={profileId ? <AdoptPracticeButton practiceId={p.id} adopted={mineIds.has(p.id)} fullWidth /> : undefined}
                     />
                   </li>
                 )
