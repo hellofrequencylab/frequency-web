@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseStyle, isSafeLogoSrc, isPrivateIp, DEFAULT_STYLE } from './style'
+import { parseStyle, isSafeLogoSrc, isPrivateIp, withMemberAvatar, DEFAULT_STYLE } from './style'
 import { renderStyledQrSvg } from './render-styled'
 
 describe('parseStyle', () => {
@@ -82,6 +82,34 @@ describe('parseStyle', () => {
     expect(parseStyle({ frameLabel: '  Scan me  ' }).frameLabel).toBe('Scan me')
     expect(parseStyle({ frameLabel: 'x'.repeat(50) }).frameLabel).toHaveLength(28)
     expect(parseStyle({ frameLabel: '   ' }).frameLabel).toBeNull()
+  })
+})
+
+describe('withMemberAvatar', () => {
+  const avatar = 'https://cdn.example.com/avatars/me.png'
+
+  it("centers the member's avatar over the default Frequency mark, rounded", () => {
+    const out = withMemberAvatar({ ...DEFAULT_STYLE, logo: DEFAULT_STYLE.logo }, avatar)
+    expect(out.logo).toBe(avatar)
+    expect(out.logoShape).toBe('circle')
+  })
+
+  it('fills an empty logo with the avatar too', () => {
+    expect(withMemberAvatar({ ...DEFAULT_STYLE, logo: null }, avatar).logo).toBe(avatar)
+  })
+
+  it('respects a deliberately customized logo (does not override)', () => {
+    const custom = { ...DEFAULT_STYLE, logo: 'https://x.com/custom.png' }
+    expect(withMemberAvatar(custom, avatar).logo).toBe('https://x.com/custom.png')
+  })
+
+  it('keeps the stored mark when the member has no avatar', () => {
+    expect(withMemberAvatar({ ...DEFAULT_STYLE }, null).logo).toBe(DEFAULT_STYLE.logo)
+    expect(withMemberAvatar({ ...DEFAULT_STYLE }, undefined).logo).toBe(DEFAULT_STYLE.logo)
+  })
+
+  it('ignores an unsafe avatar URL (SSRF guard)', () => {
+    expect(withMemberAvatar({ ...DEFAULT_STYLE }, 'https://169.254.169.254/x.png').logo).toBe(DEFAULT_STYLE.logo)
   })
 })
 
