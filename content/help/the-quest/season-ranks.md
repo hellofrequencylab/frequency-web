@@ -3,7 +3,7 @@ title: Season ranks
 description: How finishing Journeys moves you up the ranks each season.
 category: the-quest
 order: 2
-updated: 2026-06-28
+updated: 2026-06-18
 audience: member
 featureKeys: [ranks]
 status: published
@@ -25,10 +25,13 @@ Your rank advances automatically the moment you finish a Journey. There is no po
 When you complete a Journey you earn:
 
 - **+75 Zaps**
-- **A Trophy** stamped with the rank you reached
-- **Gems** that scale with your new rank: 25 Gems for Initiate, 50 for Adept, 100 for Master
+- **A Pillar Trophy** for that Journey (Mind, Body, or Spirit)
 
 Each Journey is capped by an **Expression Challenge**: sharing what you practiced with your community. Completing the Expression Challenge is required to finish the Journey. It pays an extra **+50 Zaps** if you do it in person at a Circle gathering, or **+30 Gems** if you post it solo online.
+
+## Finish all three: the Certificate
+
+Reach **Master** by finishing all three Journeys and you earn the **Certificate**, the season's capstone. It is a unique cosmetic plus **100 Gems**, on top of your three Trophies. It is the one thing that says you went the whole way this season.
 
 ## Seasons reset (your Gems and Trophies don't)
 

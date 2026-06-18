@@ -3,7 +3,7 @@ title: The leaderboard
 description: One shared goal first. Where people stand sits below it, scoped to your circle and yours to opt out of.
 category: the-quest
 order: 8
-updated: 2026-06-16
+updated: 2026-06-18
 audience: member
 featureKeys: [leaderboard, gamification]
 status: published
@@ -19,11 +19,10 @@ At the top is a **collective goal**: the combined season Zaps of everyone in you
 
 Below the shared goal is the individual board. Two controls shape it.
 
-**Scope** decides who you're compared with. It starts on Circle on purpose: the people you actually practice with, not the whole world.
+**Scope** decides who you're compared with. It stays local on purpose: the people you actually practice with, not the whole world. There is no global board.
 
 - **Circle** (the default): people in your circles.
 - **Hub**: everyone across your [hub](/help/groups/hubs), the cluster of nearby circles.
-- **Global**: everyone active across Frequency.
 
 **Track** decides what the board ranks by.
 
@@ -35,10 +34,6 @@ Each row shows the member's standing on the active track, their streak, and thei
 ## You can step off the board
 
 Ranking is opt-in by feel. One tap on **Hide me from the board** removes your row from the list. You still count toward the shared goal up top, you just don't appear as a row. Tap again to show yourself any time.
-
-## Entry points: a separate recognition board
-
-Crew who put up flyers and QR codes that bring new people in have their own board, reached from the leaderboard. It ranks by scans and signups, and recruiters climb their own tiers as signups add up: Scout, Connector, Recruiter, Ambassador, Catalyst. It's a recognition board, kept separate from the season standing.
 
 ## A fresh race every season
 

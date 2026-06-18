@@ -3,7 +3,7 @@ title: Streaks
 description: How your daily practice streak works, the reserve that forgives a slip, the rest you can plan, and the rewards for showing up.
 category: the-quest
 order: 5
-updated: 2026-06-16
+updated: 2026-06-18
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -37,9 +37,7 @@ disappears.
 You bank a reserve day two ways:
 
 - Reach the **Week, Month, Century and Year** badges.
-- Earn five **Full Day** bonuses on a Journey: every fifth one banks one.
-
-Reserve days can’t be bought, only earned.
+- Buy one with **Gems** in the Vault, for the weeks you know are going to be busy.
 
 ## Resting (when you’re planning time off)
 
@@ -64,25 +62,9 @@ you don’t miss it by accident. Log one practice and you’re set until tomorro
 You can see your current streak, your best-ever streak, your reserve and the next
 badge to chase on the **Leaderboard**, in the consistency section under the shared goal.
 
-## Per-practice streaks and the Practice Shelf
-
-Each practice you stick with also builds its own record, measured in weeks that hit
-the practice’s own rhythm (daily practices need most days; a weekly one needs one).
-Checkpoints land at **2, 4, 8 and 13 weeks**. A full 13-week cycle on one practice
-pays a one-time **50 Zaps** and a permanent ring on that practice. Every log also
-deepens the practice’s lifetime count, with marks at **10, 25, 50 and 100** logs.
-
-Everything you’ve earned this way lives on the **Practice Shelf** on your profile:
-the practices you actually keep showing up for, deepest first.
-
-## Weekly rhythms
-
-Alongside the daily streak, Frequency also tracks **weekly rhythms**: showing up to
-events, posting, and hosting at least once a week. These power their own achievements
-and live with your daily streak on the **Leaderboard**.
-
 ## Practicing together
 
-When three or more people from the same Circle are on the same Journey and all log
-on the same day, everyone gets a small **Co-op Pulse** bonus. It adds up quietly.
-Practicing together is the point.
+A streak is yours, but it is better with company. Walk a Journey alongside the people in
+your Circle, practice the same things over the same weeks, and do your Expression
+Challenges together at a gathering. Nobody is ranked against their circle. Showing up
+together is the point.

@@ -3,7 +3,7 @@ title: Season challenges
 description: The Expression Challenge that closes each Journey, and how it works.
 category: the-quest
 order: 6
-updated: 2026-06-28
+updated: 2026-06-18
 audience: member
 featureKeys: [challenges, gamification]
 status: published
@@ -46,17 +46,17 @@ whole point. Posting solo still counts and still pays, in the currency of online
 Finishing a Journey (including its Expression Challenge) earns:
 
 - **+75 Zaps**
-- **A Trophy** stamped with the rank you reached
-- **Gems** scaled to your new rank (Initiate 25 / Adept 50 / Master 100)
+- **A Pillar Trophy** for that Journey (Mind, Body, or Spirit)
 
-Finish all three Journeys and you reach **Master**, the highest rank for the season.
+Finish all three Journeys and you reach **Master**, the highest rank for the season, and
+earn the **Certificate**: a unique cosmetic plus 100 Gems. See
+[Season ranks](/help/the-quest/season-ranks) for the full picture.
 
 ## Doing it with your circle
 
 If your circle is running the Journey together, the Expression Challenge can become a
 circle moment: everyone shares their work at the same gathering. Your personal completion
-still records to your own progress, and the circle's shared
-[Current](/help/groups/circle-current) builds when members finish together.
+still records to your own progress.
 
 ## Scavenger hunts
 
