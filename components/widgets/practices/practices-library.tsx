@@ -159,8 +159,9 @@ export async function PracticesLibrary() {
       ) : (
         <>
           {/* Container-query sizing (the slot is an @container): the grid reflows to the COLUMN it
-              lands in, not the viewport — full-width gets three across, a narrow rail slot one. */}
-          <ul className="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
+              lands in, not the viewport — two-up by a medium column, three across full width, and
+              only a truly narrow rail slot drops to one. */}
+          <ul className="grid grid-cols-1 gap-4 @sm:grid-cols-2 @4xl:grid-cols-3">
             {result.rows.map((p) => {
               const pillarSlug = p.domain_id ? byId.get(p.domain_id)?.slug ?? null : null
               const pillarName = p.domain_id ? byId.get(p.domain_id)?.name ?? null : null

@@ -14,12 +14,21 @@ export const MODULE_ROUTES: readonly string[] = [
   '/practices',
 ]
 
-/** Whether `pathname` is a module-driven route — drives the Layout editor's visibility.
- *  EXACT match only: a route is module-driven solely if its own page renders <PageModules>.
- *  Bespoke CHILD pages (e.g. /crew/store — the Vault, /journeys/<slug>, /practices/<id>) are
- *  hand-built and do NOT render <PageModules>, so they must NOT offer a Layout editor — its
- *  blocks would be disconnected from the page (the "Settings don't make sense" trap). Add a
- *  child route here only when its page is actually converted to <PageModules>. */
+// Section roots whose DIRECT children each render <PageModules> against ONE shared '/seg/*'
+// layout — e.g. every /practices/<id> detail page. The section root itself (/practices) is its
+// own MODULE_ROUTES entry; grandchildren (e.g. /practices/<id>/edit) are bespoke and excluded.
+const MODULE_SECTIONS: readonly string[] = ['/practices']
+
+/** Whether `pathname` is a module-driven route — drives the Layout editor's visibility. A route is
+ *  module-driven when its own page renders <PageModules>: the EXACT routes below, plus the direct
+ *  children of a MODULE_SECTION (the detail pages). Bespoke pages that don't render <PageModules>
+ *  (e.g. /crew, /journeys/<slug>, /practices/<id>/edit) must NOT offer a Layout editor — its
+ *  blocks would be disconnected from the page (the "Settings don't make sense" trap). */
 export function isModuleRoute(pathname: string): boolean {
-  return MODULE_ROUTES.includes(pathname)
+  if (MODULE_ROUTES.includes(pathname)) return true
+  return MODULE_SECTIONS.some((s) => {
+    if (!pathname.startsWith(`${s}/`)) return false
+    const rest = pathname.slice(s.length + 1)
+    return rest.length > 0 && !rest.includes('/') // a direct child, not a grandchild
+  })
 }
