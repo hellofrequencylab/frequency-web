@@ -78,6 +78,18 @@ export async function rasterizeSvg(
   return Buffer.from(r.render().asPng())
 }
 
+/** Return `style` with its logo fetched + inlined as a data URL, so the rendered SVG is
+ *  self-contained (no remote `<image href>`). Used by the PNG rasterizer below AND by the
+ *  /api/qr SVG branch when the client rasterizes to PNG on a canvas — a remote avatar href
+ *  would otherwise taint the canvas and block the export. A failed/blocked fetch drops the
+ *  logo (null) so the code still renders, just without a center mark. */
+export async function styleWithInlinedLogo(style: QrStyle): Promise<QrStyle> {
+  if (style.logo && isSafeLogoSrc(style.logo)) {
+    return { ...style, logo: await inlineLogo(style.logo) }
+  }
+  return style
+}
+
 /** Render a QR for `text` with `style` as a PNG buffer (gradients, shapes, logo). With
  *  `transparent`, the outer background field is omitted so the PNG has an alpha background. */
 export async function renderStyledQrPng(
@@ -86,10 +98,7 @@ export async function renderStyledQrPng(
   size = 1024,
   opts?: { transparent?: boolean },
 ): Promise<Buffer> {
-  let effective = style
-  if (style.logo && isSafeLogoSrc(style.logo)) {
-    effective = { ...style, logo: await inlineLogo(style.logo) }
-  }
+  const effective = await styleWithInlinedLogo(style)
   const svg = renderStyledQrSvg(text, effective, size, opts)
   return rasterizeSvg(svg, { width: size })
 }

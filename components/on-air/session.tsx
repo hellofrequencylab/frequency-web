@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Minus, Plus, X } from 'lucide-react'
+import { Check, Minus, Plus, X, ChevronDown } from 'lucide-react'
 import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
@@ -165,6 +165,9 @@ export function OnAirSession({
   const [endBell, setEndBell] = useState(prefs.endBell ?? true)
   const [bellEveryMin, setBellEveryMin] = useState(prefs.bellEveryMin ?? 1)
   const [haptics, setHaptics] = useState(prefs.haptics ?? false)
+  // Mobile-only: the cue settings collapse so the primary controls (mode, minutes, Tune out) stay
+  // above the fold on a phone. Always expanded on desktop (the two-column layout has the room).
+  const [cuesOpen, setCuesOpen] = useState(false)
   const router = useRouter()
   const [startedAt, setStartedAt] = useState(0)
   const [remaining, setRemaining] = useState(0)
@@ -471,7 +474,7 @@ export function OnAirSession({
     const paused = pausedAt !== null
     return (
       <Overlay>
-        <div className="flex flex-1 flex-col items-center justify-between pb-10 pt-12">
+        <div className="flex flex-1 flex-col items-center justify-between pt-12 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
           <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
             <LotusIcon className="h-[18px] w-[18px]" /> Mindless
           </p>
@@ -681,7 +684,21 @@ export function OnAirSession({
         <div className="space-y-5 lg:space-y-6">
         {mode !== 'log' && (
           <div>
-            <Label>Cues</Label>
+            {/* Mobile: a tap-to-expand header keeps the cue settings from pushing Tune out below
+                the fold. Desktop: a plain label, always expanded. */}
+            <button
+              type="button"
+              onClick={() => setCuesOpen((v) => !v)}
+              aria-expanded={cuesOpen}
+              className="flex w-full items-center justify-between lg:hidden"
+            >
+              <Label>Sound &amp; cues</Label>
+              <ChevronDown className={`h-4 w-4 text-subtle transition-transform ${cuesOpen ? 'rotate-180' : ''}`} aria-hidden />
+            </button>
+            <div className="hidden lg:block">
+              <Label>Cues</Label>
+            </div>
+            <div className={`${cuesOpen ? 'block' : 'hidden'} lg:block`}>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <ToggleChip
                 active={bell}
@@ -807,6 +824,7 @@ export function OnAirSession({
                 </button>
               </div>
             )}
+            </div>
           </div>
         )}
 

@@ -1,7 +1,9 @@
 // QR image download endpoint. Two modes, both gated to a signed-in caller:
-//   • ?code=<id>  — a managed dynamic code: SVG is rendered with its saved style
-//     (beautiful); PNG is the plain fallback (no server-side rasterizer for styled
-//     SVG yet). Encodes the code's /q/<slug> short link.
+//   • ?code=<id>  — a managed dynamic code: rendered with its saved style. SVG keeps the
+//     full design; PNG rasterizes that design via resvg (falling back to a plain code only
+//     if rasterizing throws). `?inline=1&transparent=1` returns a self-contained, alpha SVG
+//     for the client to rasterize on a canvas (the durable styled-PNG path — see
+//     components/settings/profile-qr-card.tsx). Encodes the code's /q/<slug> short link.
 //   • ?text=<link> — any same-site link, plain render (used for check-in nodes +
 //     member connect codes). NOT an open generator (isSiteLink guard).
 //
@@ -13,7 +15,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isSiteLink, toAbsoluteSiteUrl, shortLinkUrl, nodeUrl } from '@/lib/qr/links'
 import { renderQrPng, renderQrSvg } from '@/lib/qr/render'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
-import { renderStyledQrPng } from '@/lib/qr/raster'
+import { renderStyledQrPng, styleWithInlinedLogo } from '@/lib/qr/raster'
 import { parseStyle, withMemberAvatar, type QrStyle } from '@/lib/qr/style'
 
 export const dynamic = 'force-dynamic'
@@ -99,6 +101,17 @@ export async function GET(request: Request) {
     return new Response(new Uint8Array(png), { headers: { ...headers, 'Content-Type': 'image/png' } })
   }
 
-  const svg = style ? renderStyledQrSvg(target, style, size) : await renderQrSvg(target, size)
+  // SVG. `inline=1` fetches + embeds the avatar/logo as a data URL so the SVG is self-contained
+  // (the client can rasterize it to a PNG on a canvas without cross-origin tainting — the durable
+  // path for the styled PNG download); `transparent=1` drops the outer background field to match.
+  const inline = url.searchParams.get('inline') === '1'
+  const transparent = url.searchParams.get('transparent') === '1'
+  let svg: string
+  if (style) {
+    const effective = inline ? await styleWithInlinedLogo(style) : style
+    svg = renderStyledQrSvg(target, effective, size, transparent ? { transparent: true } : undefined)
+  } else {
+    svg = await renderQrSvg(target, size)
+  }
   return new Response(svg, { headers: { ...headers, 'Content-Type': 'image/svg+xml; charset=utf-8' } })
 }

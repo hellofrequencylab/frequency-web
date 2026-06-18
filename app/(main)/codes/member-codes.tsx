@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Download, Copy, Check, Palette, Users, Zap, UserPlus, Wallet } from 'lucide-react'
+import { Download, Copy, Check, Palette, Users, Zap, UserPlus, Wallet, Loader2 } from 'lucide-react'
 import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
 import { trackClient } from '@/components/analytics/track-provider'
+import { downloadStyledQrPng } from '@/lib/qr/client-download'
 import { updateMyCodeStyle } from './actions'
 import type { QrStyle } from '@/lib/qr/style'
 import type { MemberCodePurpose } from '@/lib/qr/member-codes'
@@ -70,9 +71,20 @@ function CodeCard({
   const [copied, setCopied] = useState(false)
   const [pending, start] = useTransition()
   const [saved, setSaved] = useState(false)
+  const [pngBusy, setPngBusy] = useState(false)
   const router = useRouter()
   const { blurb, Icon } = META[card.purpose]
   const apiBase = `/api/qr?code=${encodeURIComponent(card.id)}`
+
+  async function downloadPng() {
+    if (pngBusy) return
+    setPngBusy(true)
+    try {
+      await downloadStyledQrPng(apiBase, card.slug)
+    } finally {
+      setPngBusy(false)
+    }
+  }
 
   function copy() {
     navigator.clipboard?.writeText(card.url).then(() => {
@@ -114,12 +126,14 @@ function CodeCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <a
-          href={`${apiBase}&format=png&download=${encodeURIComponent(card.slug)}`}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+        <button
+          type="button"
+          onClick={downloadPng}
+          disabled={pngBusy}
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors disabled:opacity-60"
         >
-          <Download className="w-3 h-3" /> PNG
-        </a>
+          {pngBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />} PNG
+        </button>
         <a
           href={`${apiBase}&format=svg&download=${encodeURIComponent(card.slug)}`}
           className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"

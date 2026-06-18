@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { X, BookOpen, Zap, ChevronRight } from 'lucide-react'
 import { observe } from '@/lib/analytics/observe'
+import { useMindless } from '@/components/on-air/mindless'
 import { CaptureBox } from './capture-box'
 import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, MindlessArt } from './zap-menu-art'
 
@@ -26,6 +27,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   // One-time education line on the very first open (per device).
   const [showIntro, setShowIntro] = useState(false)
 
+  const mindless = useMindless()
   const close = useCallback(() => setOpen(false), [])
   const tapTile = useCallback(
     (tile: string) => () => {
@@ -34,6 +36,14 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
     },
     [close],
   )
+  // Mindless opens the in-place overlay (its loading takeover paints instantly) instead of
+  // navigating to /on-air — so the Zap sheet hands straight off to the timer with no flash of
+  // the page behind while the route loads.
+  const openMindless = useCallback(() => {
+    observe('zap_menu.tile_tap', { tile: 'mindless' })
+    mindless.open()
+    close()
+  }, [mindless, close])
 
   useEffect(() => {
     if (!open || veraLine) return
@@ -154,10 +164,10 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               {/* The featured door: art · title+chip over ONE truncating line ·
                   a compact Start pill — sized so nothing wraps or collides at
                   360px (the chip bows out first on very narrow screens). */}
-              <Link
-                href="/on-air"
-                onClick={tapTile('mindless')}
-                className="group col-span-3 flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 shadow-sm transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
+              <button
+                type="button"
+                onClick={openMindless}
+                className="group col-span-3 flex w-full items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 text-left shadow-sm transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
               >
                 <MindlessArt className="block h-12 shrink-0" />
                 <span className="min-w-0 flex-1">
@@ -175,7 +185,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                   Start
                   <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                 </span>
-              </Link>
+              </button>
               <ZapTile href="/events/scan" onClick={tapTile('event')} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
               <ZapTile href="/connections/new" onClick={tapTile('contact')} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
               <ZapTile href="/codes" onClick={tapTile('connect')} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />

@@ -2,15 +2,21 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { QrCode, Link2, Check, Download, Palette } from 'lucide-react'
+import { QrCode, Link2, Check, Download, Palette, Loader2 } from 'lucide-react'
+import { downloadStyledQrPng } from '@/lib/qr/client-download'
 
 // The member's personal QR generator on the Edit Profile page (linked to their
 // account — their /q/<slug> connect code → their profile). The preview SVG is
-// rendered server-side from the SAVED style, and the PNG/SVG downloads go through
+// rendered server-side from the SAVED style, and the downloads go through
 // /api/qr?code=<id>, which renders with that SAME style — so a download always
 // matches exactly what's shown here. Styling/more codes live on /codes.
+//
+// The PNG is rasterized ON THE CLIENT from the self-contained styled SVG (avatar inlined,
+// transparent), so it always carries the full design — no dependency on the serverless
+// resvg path. If anything in that pipeline fails, it falls back to the server PNG render.
 export function ProfileQrCard({ svg, link, codeId }: { svg: string; link: string; codeId: string }) {
   const [copied, setCopied] = useState(false)
+  const [pngBusy, setPngBusy] = useState(false)
   const api = `/api/qr?code=${encodeURIComponent(codeId)}`
   function copy() {
     navigator.clipboard?.writeText(link).then(() => {
@@ -18,7 +24,18 @@ export function ProfileQrCard({ svg, link, codeId }: { svg: string; link: string
       setTimeout(() => setCopied(false), 1500)
     })
   }
-  const btn = 'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated'
+
+  async function downloadPng() {
+    if (pngBusy) return
+    setPngBusy(true)
+    try {
+      await downloadStyledQrPng(api, 'my-qr-code')
+    } finally {
+      setPngBusy(false)
+    }
+  }
+
+  const btn = 'inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-60'
 
   return (
     <section className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-sm">
@@ -43,7 +60,9 @@ export function ProfileQrCard({ svg, link, codeId }: { svg: string; link: string
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            <a href={`${api}&format=png&download=my-qr-code`} className={btn}><Download className="h-3.5 w-3.5" /> PNG</a>
+            <button type="button" onClick={downloadPng} disabled={pngBusy} className={btn}>
+              {pngBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />} PNG
+            </button>
             <a href={`${api}&format=svg&download=my-qr-code`} className={btn}><Download className="h-3.5 w-3.5" /> SVG</a>
             <Link href="/codes" className={btn}><Palette className="h-3.5 w-3.5" /> Customize</Link>
           </div>
