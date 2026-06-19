@@ -26,6 +26,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
 
   // ── My Quest blocks (/crew) — the member's season home ──
   { id: 'quest-finish-celebration', label: 'Finish celebration', description: 'The rank-up moment that greets a member after they finish a Journey.' },
+  { id: 'quest-intention', label: 'Season intention', description: "The season's theme in the operator's words — the orienting line for the page." },
   { id: 'quest-season-map', label: 'Season map', description: 'The four-Pillar gauges, the one next step, and the log-a-practice action.' },
   { id: 'quest-journeys', label: 'Your Journeys', description: "The member's adopted and built Journeys, each with its progress." },
   { id: 'quest-tasks', label: 'Tasks', description: 'Circle tasks plus the global task list members complete to earn Zaps.' },
@@ -76,6 +77,7 @@ const COMMUNITY_MODULE_IDS = ['community-pulse', 'newest-members', 'popular-chan
 // metadata + component stay defined for any future surface; it's just not offered here.
 const CREW_MODULE_IDS = [
   'quest-finish-celebration',
+  'quest-intention',
   'quest-season-map',
   'quest-journeys',
   'quest-explore',

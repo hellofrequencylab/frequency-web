@@ -61,17 +61,8 @@ export default async function CrewPage() {
           </>
         }
       >
-        {/* The season's intention — the operator-set theme, surfaced as the orienting line
-            for the member's season home (replaces the retired Tasks block). Their own words;
-            renders only when a theme is set. */}
-        {ctx.season?.theme && (
-          <div className="mb-6 rounded-2xl border border-primary-bg bg-primary-bg/30 px-5 py-4 dark:bg-primary-bg/10">
-            <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
-              {ctx.season.name ? `${ctx.season.name} · the intention` : 'This season'}
-            </p>
-            <p className="mt-1 text-lg font-semibold leading-snug text-text">{ctx.season.theme}</p>
-          </div>
-        )}
+        {/* The season intention is now an arrangeable layout module ('quest-intention'),
+            composed by PageModules and editable from Settings → Layout like the other blocks. */}
         <PageModules route="/crew" />
       </DashboardTemplate>
     </>

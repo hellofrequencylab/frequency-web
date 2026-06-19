@@ -4,6 +4,7 @@ import { NewestMembers } from '@/components/widgets/newest-members'
 import { PopularChannels } from '@/components/widgets/popular-channels'
 import { TopCircles } from '@/components/widgets/top-circles'
 import { QuestFinishCelebration } from '@/components/widgets/quest/quest-finish-celebration'
+import { QuestIntention } from '@/components/widgets/quest/quest-intention'
 import { QuestSeasonMap } from '@/components/widgets/quest/quest-season-map'
 import { QuestJourneys } from '@/components/widgets/quest/quest-journeys'
 import { QuestTasks } from '@/components/widgets/quest/quest-tasks'
@@ -45,6 +46,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'top-circles': TopCircles,
   // My Quest blocks (/crew).
   'quest-finish-celebration': QuestFinishCelebration,
+  'quest-intention': QuestIntention,
   'quest-season-map': QuestSeasonMap,
   'quest-journeys': QuestJourneys,
   'quest-tasks': QuestTasks,
