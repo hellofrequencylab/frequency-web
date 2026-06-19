@@ -158,7 +158,9 @@ export function OnAirSession({
     return d && d > 0 ? clampMinutes(d) : prefs.minutes
   }
   const [practiceId, setPracticeId] = useState(initialId)
-  const [mode, setMode] = useState<SessionMode>(prefs.mode)
+  // A timeless initial practice opens in Just Log — the timer modes don't apply to it.
+  const initialHasTime = (practices.find((p) => p.id === initialId)?.durationMin ?? 0) > 0
+  const [mode, setMode] = useState<SessionMode>(initialHasTime ? prefs.mode : 'log')
   const [minutes, setMinutes] = useState(() => durationFor(initialId))
   const [patternSlug, setPatternSlug] = useState(prefs.pattern)
   const [customIn, setCustomIn] = useState(prefs.customIn ?? 4)
@@ -199,11 +201,16 @@ export function OnAirSession({
     [patternSlug, customIn, customHold, customOut],
   )
   const practice = practices.find((p) => p.id === practiceId)
+  // A practice with no set length is log-only — the timer modes don't apply to it.
+  const practiceHasTime = (practice?.durationMin ?? 0) > 0
 
   // Pick a practice + seed the timer to its length (no duration → the remembered open length).
   function selectPractice(id: string) {
     setPracticeId(id)
     setMinutes(durationFor(id))
+    // Timeless practice → Just Log (owner ask): the timer/breathe modes aren't offered.
+    const picked = practices.find((p) => p.id === id)
+    if (!((picked?.durationMin ?? 0) > 0)) setMode('log')
   }
 
   // --- takeover plumbing ----------------------------------------------------
@@ -564,40 +571,17 @@ export function OnAirSession({
           the left; cues + the Dispatches link on the right. One column on mobile. */}
       <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-6 lg:space-y-0">
         <div className="space-y-5 lg:space-y-6">
-        {practices.length > 1 && (
-        <div>
-          <Label>Practice</Label>
-          {/* One scrollable chip row — stays compact however long the list grows.
-              With a single adopted practice it's auto-selected and the section
-              hides entirely (owner ask: no badge when there's nothing to pick). */}
-          <div className="-mx-8 mt-2 flex gap-1.5 overflow-x-auto px-8 pb-0.5 lg:-mx-0 lg:flex-wrap lg:px-0">
-            {practices.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => selectPractice(p.id)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                  p.id === practiceId
-                    ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                    : 'border-border text-muted hover:bg-surface-elevated'
-                }`}
-              >
-                <span className="max-w-[12rem] truncate">{p.title}</span>
-                {p.loggedToday && <Check className="h-3 w-3 shrink-0 text-success" />}
-              </button>
-            ))}
-          </div>
-        </div>
-        )}
-
         <div>
           <Label>Mode</Label>
           {/* Meditate = the plain silent countdown; Breathe = the guided rings. */}
           <div className="mt-2 grid grid-cols-3 gap-2">
-            <ModeButton active={mode === 'timer'} onClick={() => setMode('timer')} icon={LotusIcon} label="Meditate" />
-            <ModeButton active={mode === 'breath'} onClick={() => setMode('breath')} icon={BreatheIcon} label="Breathe" />
+            <ModeButton active={mode === 'timer'} disabled={!practiceHasTime} onClick={() => setMode('timer')} icon={LotusIcon} label="Meditate" />
+            <ModeButton active={mode === 'breath'} disabled={!practiceHasTime} onClick={() => setMode('breath')} icon={BreatheIcon} label="Breathe" />
             <ModeButton active={mode === 'log'} onClick={() => setMode('log')} icon={BoltIcon} label="Just Log" />
           </div>
+          {!practiceHasTime && (
+            <p className="mt-2 text-2xs text-subtle">This practice has no set length, so it’s log-only.</p>
+          )}
         </div>
 
         {mode === 'breath' && (
@@ -835,6 +819,31 @@ export function OnAirSession({
         </div>
       </div>
 
+      {/* Practice — moved below the modes + cues (owner ask). One scrollable chip row;
+          hidden entirely when there's only one adopted practice (auto-selected). */}
+      {practices.length > 1 && (
+        <div className="mt-5 lg:mt-6">
+          <Label>Practice</Label>
+          <div className="-mx-8 mt-2 flex gap-1.5 overflow-x-auto px-8 pb-0.5 lg:-mx-0 lg:flex-wrap lg:px-0">
+            {practices.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => selectPractice(p.id)}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                  p.id === practiceId
+                    ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                    : 'border-border text-muted hover:bg-surface-elevated'
+                }`}
+              >
+                <span className="max-w-[12rem] truncate">{p.title}</span>
+                {p.loggedToday && <Check className="h-3 w-3 shrink-0 text-success" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Pinned: Tune out never sinks below the fold, even with Custom open. */}
       <div className="sticky bottom-0 -mx-8 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-8 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6 lg:-mx-10 lg:px-10">
         {practice?.loggedToday && mode !== 'log' && (
@@ -877,20 +886,23 @@ function ModeButton({
   onClick,
   icon: Icon,
   label,
+  disabled = false,
 }: {
   active: boolean
   onClick: () => void
   icon: React.ElementType
   label: string
+  disabled?: boolean
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs transition-colors ${
+      disabled={disabled}
+      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
         active
           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-          : 'border-border text-muted hover:bg-surface-elevated'
+          : 'border-border text-muted hover:bg-surface-elevated disabled:hover:bg-transparent'
       }`}
     >
       <Icon className="h-4 w-4" />
