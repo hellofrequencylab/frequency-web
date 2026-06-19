@@ -87,8 +87,14 @@ on revisit**, by design.
   audio remains unscheduled.
 
 - ~~P5 — mobile polish (owner feedback)~~ ✅ shipped: the live session, saving
-  state and reveal now run in a TRUE full-viewport takeover (`fixed inset-0 z-50`,
-  above the app header and tab bar) until done or End; bigger rings + a flashing
+  state and reveal now run in a TRUE full-viewport takeover (`fixed inset-x-0 top-0
+  h-[100dvh] z-50`, above the app header and tab bar) until done or End. Sized in
+  `dvh` (dynamic viewport height), not `inset-0`/`vh`: on mobile the browser's
+  address/tool bars shrink the *visible* area, so `dvh` fills exactly what's on
+  screen and never hides the End controls under the toolbar. The browser's own
+  chrome can't be removed by a web page on iOS Safari — true chrome-free fullscreen
+  is the installed PWA (manifest `display: standalone`; the "Mindless" home-screen
+  shortcut opens it that way). Bigger rings + a flashing
   per-phase breath counter in the center; larger ON AIR indicator; chevron swipe
   indicators flanking the reveal dots; swiping (or arrowing) past the last card
   slides it off and closes the mode back to a refreshed setup; free-form minutes

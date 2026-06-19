@@ -171,8 +171,8 @@ function MindlessShell({
   onClose?: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-canvas">
-      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-6 py-5">
+    <div className="fixed inset-x-0 top-0 z-50 h-[100dvh] overflow-y-auto bg-canvas">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5">
         {onClose && (
           <div className="flex justify-end">
             <button

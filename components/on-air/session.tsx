@@ -108,11 +108,16 @@ function endChime(ctx: AudioContext | null, tone: BellTone, vol = 1) {
 
 /** The takeover shell: while a session is live (and through the reveal) On Air
  *  owns the WHOLE viewport — above the app header and the bottom tab bar —
- *  until the member finishes or ends (P5). */
+ *  until the member finishes or ends (P5). Sized in `dvh` (dynamic viewport
+ *  height), not `inset-0`/`vh`: on mobile the address/tool bars shrink the
+ *  *visible* area, so `dvh` fills exactly what the member can see and never
+ *  hides the End controls behind the browser toolbar. (The browser's own chrome
+ *  can't be removed by a web page on iOS Safari — that needs the installed PWA,
+ *  manifest `display: standalone`.) */
 function Overlay({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-canvas">
-      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-6 py-5">{children}</div>
+    <div className="fixed inset-x-0 top-0 z-50 h-[100dvh] overflow-y-auto bg-canvas">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5">{children}</div>
     </div>
   )
 }
@@ -474,7 +479,7 @@ export function OnAirSession({
     const paused = pausedAt !== null
     return (
       <Overlay>
-        <div className="flex flex-1 flex-col items-center justify-between pt-12 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+        <div className="flex flex-1 flex-col items-center justify-between pt-[max(3rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
           <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
             <LotusIcon className="h-[18px] w-[18px]" /> Mindless
           </p>
@@ -537,8 +542,8 @@ export function OnAirSession({
   // saving / reveal stages keep the narrow centered Overlay untouched. Below lg
   // the grid collapses to the original single column, so mobile is unchanged.
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-canvas">
-      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-6 py-5 lg:max-w-3xl lg:px-10 lg:py-8">
+    <div className="fixed inset-x-0 top-0 z-50 h-[100dvh] overflow-y-auto bg-canvas">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5 lg:max-w-3xl lg:px-10 lg:py-8">
       <div className="flex flex-1 flex-col px-2 pt-3 lg:px-0 lg:pt-2">
       <div className="relative flex items-center justify-center pb-2">
         <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-primary-strong lg:text-lg">
