@@ -1115,9 +1115,11 @@ function MindlessLaunch() {
         type="button"
         onClick={() => open()}
         aria-label="Mindless. Open the practice timer"
-        className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full text-muted hover:text-primary-strong hover:bg-surface-elevated transition-colors"
+        className="flex items-center gap-1.5 h-8 sm:h-9 px-2 sm:px-2.5 rounded-full text-muted hover:text-primary-strong hover:bg-surface-elevated transition-colors"
       >
-        <LotusIcon className="w-5 h-5" />
+        {/* Pure-outline lotus (no fill) so it carries the same weight as the lucide icons beside it. */}
+        <LotusIcon filled={false} className="w-5 h-5" />
+        <span className="hidden text-2xs font-bold uppercase tracking-widest sm:inline">Mindless</span>
       </button>
     </HoverTip>
   )
