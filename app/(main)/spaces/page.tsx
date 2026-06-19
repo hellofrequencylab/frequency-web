@@ -1,8 +1,11 @@
 import { Suspense } from 'react'
-import { Building2 } from 'lucide-react'
+import Link from 'next/link'
+import { Building2, Plus } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
+import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getMyProfileId } from '@/lib/auth'
 import { listNetworkedSpaces } from '@/lib/spaces/discovery'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { SpaceCard } from '@/components/spaces/space-card'
@@ -76,10 +79,21 @@ export default async function SpacesDirectoryPage({
 }) {
   const { type, q } = await searchParams
 
+  // The "Create a space" affordance is for signed-in members (the create action re-checks auth).
+  const viewerProfileId = await getMyProfileId()
+
   return (
     <IndexTemplate
       title="Spaces"
       description="The practitioners, businesses, and organizations in the Frequency network. Find one, see what they offer, and connect."
+      action={
+        viewerProfileId ? (
+          <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Create a space
+          </Link>
+        ) : undefined
+      }
       toolbar={<SpacesToolbar />}
     >
       {/* Keyed on the filters so a new search remounts the boundary and shows the skeleton while the

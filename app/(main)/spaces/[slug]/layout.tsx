@@ -5,6 +5,7 @@ import { Building2, QrCode, Pencil } from 'lucide-react'
 import { headers } from 'next/headers'
 import { DetailTemplate, type DetailTab } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -57,6 +58,10 @@ export default async function SpaceProfileLayout({
   // Capability gate for the operator-edit affordance (server-authoritative, §A.4 / Epic 1.7).
   const caps = await getSpaceCapabilities(space, viewerProfileId)
 
+  // The one-line tagline shows as the band subtitle. It isn't on the mapped Space (not in the
+  // generated DB types yet, ADR-246), so read it through the untyped client by id. Fail-safe to null.
+  const tagline = await readTagline(space.id)
+
   const base = `/spaces/${space.slug}`
   const tabs: DetailTab[] = (blueprint?.tabs ?? [{ id: 'about', label: 'About', modules: [] }]).map((t) => ({
     href: t.id === 'about' ? base : `${base}/${t.id}`,
@@ -82,6 +87,7 @@ export default async function SpaceProfileLayout({
       }
       subtitle={
         <ProfileSubtitle>
+          {tagline && <p className="max-w-2xl text-sm text-muted">{tagline}</p>}
           <Suspense fallback={<HeroStatsSkeleton />}>
             <ProfileHeroStats spaceId={space.id} type={space.type} />
           </Suspense>
@@ -117,6 +123,22 @@ export default async function SpaceProfileLayout({
       {children}
     </DetailTemplate>
   )
+}
+
+// Read the not-yet-typed `tagline` column for a Space id (ADR-246). Fail-safe to null so the band
+// renders without a subtitle line rather than throwing.
+async function readTagline(spaceId: string): Promise<string | null> {
+  try {
+    const { data } = (await createAdminClient()
+      .from('spaces')
+      .select('tagline')
+      .eq('id', spaceId)
+      .maybeSingle()) as { data: { tagline?: string | null } | null }
+    const tagline = data?.tagline?.trim()
+    return tagline ? tagline : null
+  } catch {
+    return null
+  }
 }
 
 // The brand anchor in the Detail hero: the operator's logo (a plain <img>, an arbitrary operator

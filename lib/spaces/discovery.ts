@@ -42,7 +42,7 @@ export interface DiscoveryFilters {
 
 // The columns the directory projects. `visibility` is selected too (it's the discovery filter) but
 // is reached through the untyped client below, so it never hits the typed-row overload.
-const COLS = 'id, slug, name, type, status, brand_name, brand_logo_url'
+const COLS = 'id, slug, name, type, status, brand_name, brand_logo_url, tagline'
 
 // `spaces.visibility` / `spaces.brand_*` aren't fully in the generated DB types, so reach the table
 // through an untyped `from` accessor (ADR-246) and type the builder loosely here — the same shape
@@ -55,6 +55,7 @@ type SpaceDiscoveryRow = {
   status: string
   brand_name: string | null
   brand_logo_url: string | null
+  tagline: string | null
 }
 
 type SpacesQuery = {
@@ -165,7 +166,7 @@ export const listNetworkedSpaces = cache(
         slug: r.slug,
         name: r.brand_name?.trim() || r.name,
         type: r.type as SpaceType,
-        tagline: null, // No tagline column on `spaces` yet; the card omits it gracefully (Phase 1).
+        tagline: r.tagline?.trim() || null, // Populated from the row (Wave B); the card omits it when null.
         logoUrl: r.brand_logo_url,
         memberCount: counts.get(r.id) ?? null,
       }))

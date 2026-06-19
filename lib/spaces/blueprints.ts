@@ -5,9 +5,10 @@
 //
 // This file is pure + dependency-light (no Supabase/React), so it is trivially unit-testable and
 // safe to import from the module-route resolver, the shell, the layout editor, and the seed. New
-// roles (Business · Organization · Coaching · Event Space) are ADDED here as descriptors — no core
-// edit (the §2.10 extensibility contract). Only Practitioner is fully wired in Phase 1; the others
-// are stubbed below as the typed extension point.
+// roles (Business, Organization, Coaching, Event Space) are ADDED here as descriptors, no core
+// edit (the §2.10 extensibility contract). Practitioner is the Wave A first role; Business,
+// Organization, and Coaching are wired in Wave B below (the typed extension point); Event Space
+// stays unregistered until its type + routes land.
 //
 // COPY NOTE (NAMING + CONTENT-VOICE §10): tab labels + StatCard labels are plain nouns; the CTA is
 // a plain verb ("Book"). No "points", no em/en dashes. Stat labels per §B.3.
@@ -37,7 +38,7 @@ export interface HeroStat {
 /** A typed profile composition for one `spaces.type` (§B.3). */
 export interface RoleBlueprint {
   type: string
-  /** Operator-facing type label — the type badge text in the hero (§A.4). */
+  /** Operator-facing type label (the type badge text in the hero, §A.4). */
   typeLabel: string
   /** The ordered tab set (first tab is the profile index, /spaces/<slug>). */
   tabs: readonly EntityTab[]
@@ -72,14 +73,99 @@ const PRACTITIONER: RoleBlueprint = {
   defaultSkin: 'dawn',
 }
 
-/** Every registered role blueprint, keyed by `spaces.type`. Only Practitioner is wired for
- *  Phase 1; add Business/Organization/Coaching/Event Space as descriptors here (no core edit). */
+// ── Business: studio / gym / brand (§2.5) ────────────────────────────────────────────────────
+// JTBD: a studio runs recurring classes, memberships, staff, and a branded space. Same seven
+// entity modules as Practitioner; only the tab labels, CTA, hero stats, and order differ.
+// Tabs: About · Classes (entity-offerings) · Practices · Community · Team · Join (entity-cta).
+// Hero CTA: "Become a member". Hero stats: members · classes (offerings) · circles.
+// NOTE: the wired profile route segments today are about/offerings/practices/community/book, so
+// the "Classes" tab rides the 'offerings' segment, "Team" rides 'community', and the join CTA
+// rides the 'book' segment (the CTA label is read from primaryCta.label, independent of segment).
+// A dedicated team/join route + role-specific deep modules (memberships) are a LATER step.
+const BUSINESS: RoleBlueprint = {
+  type: 'business',
+  typeLabel: 'Business',
+  tabs: [
+    { id: 'about', label: 'About', modules: ['entity-about', 'entity-stats', 'entity-offerings', 'entity-team'] },
+    { id: 'offerings', label: 'Classes', modules: ['entity-offerings'] },
+    { id: 'practices', label: 'Practices', modules: ['entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-community'] },
+    { id: 'book', label: 'Join', modules: ['entity-cta'] },
+  ],
+  primaryCta: { label: 'Become a member', tab: 'book' },
+  heroStats: [
+    { metric: 'members', label: 'Members' },
+    { metric: 'offerings', label: 'Classes' },
+    { metric: 'circles', label: 'Circles' },
+  ],
+  // SAME curated DAWN skin as Practitioner for Wave B. Bespoke per-role skins are a LATER step.
+  defaultSkin: 'dawn',
+}
+
+// ── Organization: non-profit (§2.6) ──────────────────────────────────────────────────────────
+// JTBD: a non-profit runs programs, raises money, and manages supporters. Same seven modules.
+// Tabs: About · Programs (entity-offerings) · Practices · Community · Team · Donate (entity-cta).
+// Hero CTA: "Donate". Hero stats: members (supporters) · programs (offerings) · circles.
+// Same wired-segment mapping as Business (Programs → 'offerings', Team → 'community', Donate →
+// 'book'). Hosted donation forms + tax-receipt deep modules are a LATER step.
+const ORGANIZATION: RoleBlueprint = {
+  type: 'organization',
+  typeLabel: 'Organization',
+  tabs: [
+    { id: 'about', label: 'About', modules: ['entity-about', 'entity-stats', 'entity-offerings', 'entity-team'] },
+    { id: 'offerings', label: 'Programs', modules: ['entity-offerings'] },
+    { id: 'practices', label: 'Practices', modules: ['entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-community'] },
+    { id: 'book', label: 'Donate', modules: ['entity-cta'] },
+  ],
+  primaryCta: { label: 'Donate', tab: 'book' },
+  heroStats: [
+    { metric: 'members', label: 'Supporters' },
+    { metric: 'offerings', label: 'Programs' },
+    { metric: 'circles', label: 'Circles' },
+  ],
+  // SAME curated DAWN skin as Practitioner for Wave B. Bespoke per-role skins are a LATER step.
+  defaultSkin: 'dawn',
+}
+
+// ── Coaching: academy (§2.7) ─────────────────────────────────────────────────────────────────
+// JTBD: a coaching brand runs cohort + 1:1 programs with a curriculum. Same seven modules.
+// Tabs: About · Programs (entity-offerings) · Curriculum (entity-practices) · Community · Team ·
+// Enroll (entity-cta). Hero CTA: "Enroll". Hero stats: members (cohort) · practices (curriculum)
+// · circles (cohorts). Same wired-segment mapping (Curriculum → 'practices'). Cohort/curriculum
+// deep modules are a LATER step.
+const COACHING: RoleBlueprint = {
+  type: 'coaching',
+  typeLabel: 'Coaching',
+  tabs: [
+    { id: 'about', label: 'About', modules: ['entity-about', 'entity-stats', 'entity-offerings', 'entity-team'] },
+    { id: 'offerings', label: 'Programs', modules: ['entity-offerings'] },
+    { id: 'practices', label: 'Curriculum', modules: ['entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-community'] },
+    { id: 'book', label: 'Enroll', modules: ['entity-cta'] },
+  ],
+  primaryCta: { label: 'Enroll', tab: 'book' },
+  heroStats: [
+    { metric: 'members', label: 'Cohort' },
+    { metric: 'practices', label: 'Curriculum' },
+    { metric: 'circles', label: 'Cohorts' },
+  ],
+  // SAME curated DAWN skin as Practitioner for Wave B. Bespoke per-role skins are a LATER step.
+  defaultSkin: 'dawn',
+}
+
+/** Every registered role blueprint, keyed by `spaces.type`. Practitioner is the Wave A first
+ *  role; Business/Organization/Coaching ship in Wave B (this is the §2.10 extension point: a
+ *  descriptor, no core edit). Event Space stays unregistered until its type + route land. */
 const BLUEPRINTS: Record<string, RoleBlueprint> = {
   practitioner: PRACTITIONER,
+  business: BUSINESS,
+  organization: ORGANIZATION,
+  coaching: COACHING,
 }
 
 /** The blueprint for a `spaces.type`, or null when no blueprint is registered for that type yet
- *  (the shell fails CLOSED to an About-only profile for an unknown type — §1.3, Epic 1.3). */
+ *  (the shell fails CLOSED to an About-only profile for an unknown type, §1.3, Epic 1.3). */
 export function blueprintForType(type: string | null | undefined): RoleBlueprint | null {
   if (!type) return null
   return BLUEPRINTS[type] ?? null
@@ -92,7 +178,7 @@ export function tabForSegment(blueprint: RoleBlueprint, tabId: string | undefine
   return blueprint.tabs.find((t) => t.id === tabId) ?? blueprint.tabs[0]!
 }
 
-/** Every entity module id any blueprint references (the union) — the palette the layout editor
+/** Every entity module id any blueprint references (the union): the palette the layout editor
  *  offers on /spaces/* and the registry must bind. De-duped, stable order. */
 export function allEntityModuleIds(): string[] {
   const seen = new Set<string>()
