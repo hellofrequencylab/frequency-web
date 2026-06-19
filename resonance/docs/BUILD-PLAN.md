@@ -122,9 +122,15 @@ deliberately touches Frequency's app (held for your conventions). 🚪
 - [x] `/dev/lobby` (browse/enter/create) + `/dev/room/[venueId]`; shared `RoomShell`
 - [ ] 🚪 GO (manual): create a few rooms, see them listed with live signals, enter one
 
-### Section 7 — Watch party / theater  ⬜
-A single host seat controls one shared video; live chat + reactions. Reuses the
-sync engine with `media_type='watch'` (one controller instead of rotating DJs).
+### Section 7 — Watch party / theater  🔨
+- [x] `media_type='watch'` venues open the Watch layout (one host controls one shared video)
+- [x] Host = the seated occupant (watch venues default to 1 seat); take/leave host
+- [x] Host playback controls (load/play/pause/seek) reuse the §1 sync engine
+- [x] Server gates `/api/sync` to the host for watch venues; others follow
+- [x] Live chat + quick emoji reactions (shared `ChatBox`); presence
+- [ ] 🚪 GO (manual): create a watch room, host loads a video, a second window follows
+
+The room UI now branches by media type off one `useVenue` (DJ vs Watch).
 
 ### Section 8 — Ambient auto-DJ lounge  ⬜
 An always-on playlist so a room is never dead (the cold-start backstop, §3.1);

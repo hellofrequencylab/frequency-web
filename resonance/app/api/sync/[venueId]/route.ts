@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getAuthedUserId } from "@/lib/auth/server";
+import { getVenue, listSeats } from "@/lib/dj/repo";
 import { getRoomState, applyPlayback } from "@/lib/sync/room-state-repo";
 import {
   IDLE,
@@ -38,6 +40,20 @@ type Action =
  */
 export async function POST(req: Request, ctx: Ctx) {
   const { venueId } = await ctx.params;
+
+  // Watch-party venues: only the host (the seated occupant) may drive playback.
+  // Other venue kinds (and the standalone sync demo, whose venue isn't a real
+  // row) keep open control here — the DJ loop drives playback via `advance`.
+  const venue = await getVenue(venueId);
+  if (venue?.mediaType === "watch") {
+    const userId = await getAuthedUserId(req);
+    if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const host = [...(await listSeats(venueId))].sort((a, b) => a.seatIndex - b.seatIndex)[0];
+    if (!host || host.occupantUserId !== userId) {
+      return NextResponse.json({ error: "only the host controls playback" }, { status: 403 });
+    }
+  }
+
   const body = (await req.json()) as Action;
   const now = Date.now();
 

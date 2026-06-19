@@ -26,11 +26,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "name required" }, { status: 400 });
   }
   const mediaType = body.mediaType && MEDIA_TYPES.includes(body.mediaType) ? body.mediaType : "dj";
+  // A watch party has one host seat by default; DJ rooms default to 5 decks.
+  const seatCount = body.seatCount ?? (mediaType === "watch" ? 1 : 5);
   const venue = await createVenue(body.worldId ?? DEMO_WORLD_ID, {
     name: body.name,
     theme: body.theme,
     mediaType,
-    seatCount: body.seatCount,
+    seatCount,
   });
   return NextResponse.json({ venue });
 }

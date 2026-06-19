@@ -183,6 +183,22 @@ export function useVenue(
     () => post("/advance", { playId: roomStateRef.current?.currentPlayId ?? null }),
     [post],
   );
+
+  // Direct playback control (watch-party host). Server gates these to the host
+  // for watch venues; room:update broadcasts the result to everyone.
+  const sync = useCallback(
+    (body: unknown) =>
+      authedFetch(`/api/sync/${venueId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    [venueId],
+  );
+  const loadVideo = useCallback((mediaId: string) => sync({ action: "track", mediaId }), [sync]);
+  const play = useCallback(() => sync({ action: "resume" }), [sync]);
+  const pause = useCallback(() => sync({ action: "pause" }), [sync]);
+  const seek = useCallback((position: number) => sync({ action: "seek", position }), [sync]);
   const sendChat = useCallback(
     (text: string) => {
       const line: ChatLine = { userId, name: displayName, text, at: Date.now() };
@@ -201,6 +217,18 @@ export function useVenue(
     standing,
     chat,
     present,
-    actions: { takeSeat, leaveSeat, enqueue, removeQueue, vote, advance, sendChat },
+    actions: {
+      takeSeat,
+      leaveSeat,
+      enqueue,
+      removeQueue,
+      vote,
+      advance,
+      sendChat,
+      loadVideo,
+      play,
+      pause,
+      seek,
+    },
   };
 }
