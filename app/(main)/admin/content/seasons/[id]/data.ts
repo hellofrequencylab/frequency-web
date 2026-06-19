@@ -174,3 +174,39 @@ export async function loadSeasonDetail(id: string): Promise<SeasonDetail | null>
 
   return { season, questId, journeys: detailJourneys }
 }
+
+export interface AssignableJourney {
+  id: string
+  title: string
+  status: string
+  /** True when it's currently official under ANOTHER Quest (assigning it MOVES it). */
+  inOtherQuest: boolean
+}
+
+/** Existing Journeys that can be assigned to this season's Quest — the approved/draft library,
+ *  minus the ones already official under THIS Quest (those already show in the list). Each carries
+ *  whether it's currently official elsewhere, so the operator knows an assign would move it. */
+export async function loadAssignableJourneys(questId: string): Promise<AssignableJourney[]> {
+  const db = createAdminClient()
+  const { data } = await db
+    .from('journey_plans')
+    .select('id, title, status, official, quest_id')
+    .in('status', ['approved', 'draft'])
+    .order('title', { ascending: true })
+    .limit(300)
+  const rows = (data ?? []) as {
+    id: string
+    title: string
+    status: string
+    official: boolean
+    quest_id: string | null
+  }[]
+  return rows
+    .filter((r) => !(r.official && r.quest_id === questId)) // already in this season
+    .map((r) => ({
+      id: r.id,
+      title: r.title,
+      status: r.status,
+      inOtherQuest: r.official && !!r.quest_id && r.quest_id !== questId,
+    }))
+}
