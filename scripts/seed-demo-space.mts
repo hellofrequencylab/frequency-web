@@ -110,8 +110,11 @@ async function main() {
       body: JSON.stringify({
         ...o,
         host_id: ownerId,
+        // events.scope_type CHECK allows circle/region/cluster/group/standalone/public (NOT
+        // 'space'); space ownership is the separate space_id column, so the offering is a
+        // 'standalone' event owned by the Space.
         scope_id: space.id,
-        scope_type: 'space',
+        scope_type: 'standalone',
         is_cancelled: false,
         space_id: space.id,
       }),
