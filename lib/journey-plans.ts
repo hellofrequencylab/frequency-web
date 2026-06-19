@@ -413,13 +413,18 @@ export async function setPlanStatus(planId: string, status: PlanStatus): Promise
   await db().from('journey_plans').update({ status, ...touch() }).eq('id', planId)
 }
 
-/** Flag a plan official + link it to a Quest. Guide/Mentor only — caller enforces. */
+/** Flag a plan official + link it to a Quest. Promoting a plan to official also approves
+ *  it — an official Journey is, by definition, blessed, and the member-facing Quest/season
+ *  surfaces gate only on `official`, so a still-`pending` (or `draft`) plan would otherwise
+ *  go live yet linger in the curation review queue. Un-officializing leaves status untouched.
+ *  Guide/Mentor / curator only — caller enforces. */
 export async function setPlanOfficial(
   planId: string,
   opts: { official: boolean; questId?: string | null },
 ): Promise<void> {
   const update: Record<string, unknown> = { official: opts.official }
   if (opts.questId !== undefined) update.quest_id = opts.questId || null
+  if (opts.official) update.status = 'approved'
   await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
 }
 
