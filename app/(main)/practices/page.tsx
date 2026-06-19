@@ -157,11 +157,13 @@ export default async function PracticesPage({
       banner={
         // Operator-set header image (PX.1) — renders above the title, only when set.
         heroImage && (
+          // Intrinsic sizing (w-full h-auto): the whole banner scales to the screen and is
+          // never cropped, so wide headers read fully on mobile too. Upload ~1600×500 (16:5).
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={heroImage}
             alt=""
-            className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
+            className="mb-6 h-auto w-full rounded-2xl border border-border"
           />
         )
       }

@@ -27,11 +27,14 @@ export default async function CrewPage() {
       <DashboardTemplate
         banner={
           headerImage && (
+            // Intrinsic sizing (w-full h-auto, no fixed height / object-cover): the WHOLE
+            // banner scales to the screen width and is never cropped, so a wide header reads
+            // fully on a phone as well as desktop. Recommended upload ~1600×500 (16:5).
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={headerImage}
               alt=""
-              className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
+              className="mb-6 h-auto w-full rounded-2xl border border-border"
             />
           )
         }

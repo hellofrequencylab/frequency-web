@@ -4,6 +4,7 @@ import { IndexTemplate } from '@/components/templates/index-template'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
+import { getPageHeaderImage } from '@/lib/page-settings/store'
 
 // The Journeys browse + build page. Module-driven (ADR-270/294): the page resolves its
 // operator-editable header (ADR-180) and composes the IndexTemplate chrome, then renders
@@ -31,6 +32,11 @@ export default async function JourneysPage() {
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
   const { title, description, heroImage, ctaLabel, ctaHref } =
     await resolvePageContent('/journeys', CONTENT_FALLBACK)
+  // The wide banner can be set from EITHER system: the new Settings → SEO & meta →
+  // Header image (page_settings, ADR-268/309) OR the older page-content hero (ADR-180).
+  // Prefer the new uploader so a header set there actually shows here (it was being
+  // dropped — the page only read the old field). Same source crew/practices use.
+  const bannerImage = (await getPageHeaderImage('/journeys')) ?? heroImage
 
   return (
     <IndexTemplate
@@ -58,13 +64,15 @@ export default async function JourneysPage() {
         </div>
       }
     >
-      {/* Operator-set hero banner (PX.1) — renders only when set. */}
-      {heroImage && (
+      {/* Operator-set hero banner (PX.1) — renders only when set. Intrinsic sizing
+          (w-full h-auto): scales to the screen, never cropped, so wide headers read
+          fully on mobile too. Recommended upload ~1600×500 (16:5). */}
+      {bannerImage && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={heroImage}
+          src={bannerImage}
           alt=""
-          className="mb-6 h-44 w-full max-w-4xl rounded-2xl border border-border object-cover sm:h-56"
+          className="mb-6 h-auto w-full max-w-4xl rounded-2xl border border-border"
         />
       )}
 

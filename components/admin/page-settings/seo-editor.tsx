@@ -85,7 +85,7 @@ export function SeoEditor() {
             image used for link previews. Either can be left empty. */}
         <ImageUpload
           label="Header image"
-          hint="Wide banner shown on the page. Around 1600×500."
+          hint="Wide banner shown on the page. Use 1600×500 (16:5). The whole image scales to the screen and is never cropped, so keep important text/faces inside a wide frame."
           value={headerImage || null}
           onChange={(v) => setHeaderImage(v ?? '')}
           folder="page-headers"
@@ -93,7 +93,7 @@ export function SeoEditor() {
         />
         <ImageUpload
           label="Share image"
-          hint="Compact image for link previews (social / messaging). Around 1200×630."
+          hint="Link-preview image for social / messaging. Use 1200×630 (1.91:1) — the standard Open Graph size."
           value={ogImage || null}
           onChange={(v) => setOgImage(v ?? '')}
           folder="page-shares"
