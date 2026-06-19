@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Search, EyeOff } from 'lucide-react'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
+import { atLeastRole } from '@/lib/core/roles'
 import { type PracticeSort } from '@/lib/practices'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
@@ -66,9 +67,13 @@ export default async function PracticesPage({
   const qParam = sp.q?.trim() || ''
 
   const profileId = await getMyProfileId()
+  const caller = await getCallerProfile()
   const caps = await getGlobalCapabilities()
   const isAdmin = caps.has('admin.access')
   const showHidden = isAdmin && sp.hidden === '1'
+  // Authoring a library practice is a Crew+ act (ADR-109): a plain Member may adopt/claim/log
+  // but never create. Hide the entry point for Members; the server action is the real gate.
+  const canCreatePractice = !!caller && atLeastRole(caller.community_role, 'crew')
 
   // The toolbar writes the facets the library module reads back from the URL.
   const base = {
@@ -103,9 +108,9 @@ export default async function PracticesPage({
       title={title}
       description={description}
       action={
-        (profileId || (ctaLabel && ctaHref)) ? (
+        (canCreatePractice || (ctaLabel && ctaHref)) ? (
           <div className="flex items-center gap-2">
-            {profileId && <NewPracticeButton />}
+            {canCreatePractice && <NewPracticeButton />}
             {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
             {ctaLabel && ctaHref && (
               <a

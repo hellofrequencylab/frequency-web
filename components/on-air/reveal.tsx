@@ -119,7 +119,19 @@ function CelebrationBurst() {
   )
 }
 
-export function Reveal({ payload, onClose }: { payload: RevealPayload; onClose?: () => void }) {
+export function Reveal({
+  payload,
+  onClose,
+  onAction,
+}: {
+  payload: RevealPayload
+  /** The feed exit: swiping off the last card, "Back to feed", or pulling down. */
+  onClose?: () => void
+  /** Overlay-only: drop the takeover AFTER the Dispatch card's contextual link
+   *  has navigated (so it doesn't sit over the deep-linked page). Undefined on
+   *  the /on-air route, where the link navigation unmounts the surface itself. */
+  onAction?: () => void
+}) {
   const scroller = useRef<HTMLDivElement>(null)
   const [panel, setPanel] = useState(0)
   const closed = useRef(false)
@@ -206,7 +218,7 @@ export function Reveal({ payload, onClose }: { payload: RevealPayload; onClose?:
           <StatsPanel payload={payload} />
         </Panel>
         <Panel>
-          <DispatchPanel payload={payload} />
+          <DispatchPanel payload={payload} onClose={onClose} onAction={onAction} />
         </Panel>
         {/* The ghost panel: swiping the last card off the edge closes the mode. */}
         {onClose && (
@@ -415,9 +427,19 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
   )
 }
 
-// ④ Dispatch from Vera — the next assignment, typed on. Cached server-side;
-// revisits replay this copy, never a live generation.
-function DispatchPanel({ payload }: { payload: RevealPayload }) {
+// ④ Dispatch from Vera — built from the member's real state at the moment the
+// sit ended (practices still to log today, or an RSVP'd gathering, or all done).
+// The action button is the contextual deep-link Vera mentioned; "Back to feed"
+// (and swiping the card off) always lands the member on the feed (tasks #9/#10).
+function DispatchPanel({
+  payload,
+  onClose,
+  onAction,
+}: {
+  payload: RevealPayload
+  onClose?: () => void
+  onAction?: () => void
+}) {
   const { dispatch } = payload
   const [chars, setChars] = useState(0)
   useEffect(() => {
@@ -425,6 +447,12 @@ function DispatchPanel({ payload }: { payload: RevealPayload }) {
     const t = setTimeout(() => setChars((c) => Math.min(dispatch.copy.length, c + 2)), 18)
     return () => clearTimeout(t)
   }, [chars, dispatch.copy.length])
+
+  // The contextual action already IS "back to the feed" in the done/nothing-pending
+  // case; route it through the close handler (drops the takeover over the feed in
+  // overlay mode, pushes the feed on the route) instead of a hard navigation that
+  // leaves the overlay mounted.
+  const actionIsFeed = dispatch.actionHref === '/feed'
 
   return (
     <div className="w-full max-w-sm">
@@ -437,22 +465,54 @@ function DispatchPanel({ payload }: { payload: RevealPayload }) {
           {dispatch.copy.slice(0, chars)}
           {chars < dispatch.copy.length && <span className="animate-pulse">▍</span>}
         </p>
-        {dispatch.actionHref && (
-          <Link
-            href={dispatch.actionHref}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-          >
-            {dispatch.actionLabel} <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
-        )}
+        {dispatch.actionHref &&
+          (actionIsFeed && onClose ? (
+            // "Back to feed" through the close path: in overlay mode this drops the
+            // takeover over the feed; on the /on-air route it pushes the feed.
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              {dispatch.actionLabel} <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            // A contextual deep-link (Practices, an event). Navigate there AND, in
+            // overlay mode, drop the takeover so it doesn't sit over the new page.
+            // On the route, onAction is undefined and the link navigation unmounts
+            // the surface on its own (no extra push to the feed).
+            <Link
+              href={dispatch.actionHref}
+              onClick={() => onAction?.()}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              {dispatch.actionLabel} <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          ))}
       </div>
       <div className="mt-5 flex items-center justify-center gap-4">
         <Link href="/on-air/dispatches" className="text-xs font-semibold text-subtle hover:text-text">
           Past Dispatches
         </Link>
-        <Link href="/feed" className="text-xs font-semibold text-subtle hover:text-text">
-          Tune back in
-        </Link>
+        {/* A feed exit alongside the contextual CTA. Skipped when the CTA itself
+            is already "Back to feed" (the done/nothing-pending case), so the card
+            never shows two identical buttons. Through the close path so the
+            overlay tears down (overlay mode) or the route pushes the feed, never
+            a hard nav that leaves the takeover stacked over the page. */}
+        {!actionIsFeed &&
+          (onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-xs font-semibold text-subtle hover:text-text"
+            >
+              Back to feed
+            </button>
+          ) : (
+            <Link href="/feed" className="text-xs font-semibold text-subtle hover:text-text">
+              Back to feed
+            </Link>
+          ))}
       </div>
     </div>
   )

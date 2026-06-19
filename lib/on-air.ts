@@ -295,3 +295,58 @@ export interface RevealPayload {
     actionLabel: string
   }
 }
+
+// ---------------------------------------------------------------------------
+// The session Dispatch from Vera — built from the member's real state at the
+// moment a sit ends (ADR-229, Mindless #9/#10). Pure so it stays unit-testable
+// and the client can import the type; the server action does the reads
+// (getPracticesToLogToday + getNextGathering) and hands the facts in.
+//
+// VOICE (docs/CONTENT-VOICE.md): one short, warm, specific line. Proper nouns
+// (Practices, the feed) carry it; the sentence stays plain. Never narrate the
+// member's feelings. No em dashes. The close button (label + href) always
+// matches what the line mentions:
+//   * practices still to log today  → a gentle reminder    → "See your practices" /practices
+//   * done + an RSVP'd gathering     → congratulate + name  → "View event"        /events/{slug}
+//   * done, nothing pending          → congratulate          → "Back to feed"      /feed
+// ---------------------------------------------------------------------------
+
+export interface SessionDispatchState {
+  /** Titles of the member's adopted practices NOT yet logged today (any order). */
+  practicesLeft: string[]
+  /** The next gathering the member RSVP'd to (going/maybe), if any. */
+  gathering: { title: string; slug: string } | null
+}
+
+export function buildSessionDispatch(state: SessionDispatchState): {
+  copy: string
+  actionHref: string
+  actionLabel: string
+} {
+  const left = state.practicesLeft.filter((t) => t && t.trim().length > 0)
+
+  // Still practices to log today — a gentle reminder, naming how many / which.
+  if (left.length > 0) {
+    const copy =
+      left.length === 1
+        ? `Good sit. ${left[0]} is still on today's list. One more and you're caught up.`
+        : `Good sit. ${left.length} Practices still on today's list, starting with ${left[0]}. Pick them off when you can.`
+    return { copy, actionHref: '/practices', actionLabel: 'See your practices' }
+  }
+
+  // Done for the day, with a gathering they're going to — congratulate + name it.
+  if (state.gathering) {
+    return {
+      copy: `That's everything logged today. Next up is ${state.gathering.title}. See you in the room.`,
+      actionHref: `/events/${state.gathering.slug}`,
+      actionLabel: 'View event',
+    }
+  }
+
+  // Done for the day, nothing pending — congratulate, send them back.
+  return {
+    copy: "That's everything logged for today. Nice work. Same time tomorrow.",
+    actionHref: '/feed',
+    actionLabel: 'Back to feed',
+  }
+}
