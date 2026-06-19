@@ -152,9 +152,13 @@ export function SeasonMap({
           <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
             {seasonName ? `The Quest · ${seasonName}` : 'The Quest'}
           </p>
-          <h2 id="season-map-heading" className="text-xl font-bold leading-tight text-text">
-            Your season map
-          </h2>
+          {/* Title + (when the season hasn't started) a quiet inline countdown, same row. */}
+          <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+            <h2 id="season-map-heading" className="text-xl font-bold leading-tight text-text">
+              Your season map
+            </h2>
+            {notStarted && startMs != null && <SeasonCountdown startMs={startMs} label={startLabel} />}
+          </div>
         </div>
 
         <Link
@@ -175,10 +179,6 @@ export function SeasonMap({
           </span>
         </Link>
       </div>
-
-      {/* Live but not yet started: a live countdown to the start, so the empty gauges read as
-          "starts soon", not broken. */}
-      {notStarted && startMs != null && <SeasonCountdown startMs={startMs} label={startLabel} />}
 
       {/* The four Pillar gauges — the signature read: Mind · Body · Spirit · Expression,
           each filling with the days you've practiced it this season. A row from the
