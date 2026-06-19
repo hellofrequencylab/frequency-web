@@ -78,7 +78,7 @@ export function PollSection({
               disabled={!isLoggedIn || isPending}
               className={`relative w-full text-left rounded-lg border px-4 py-2.5 transition-colors overflow-hidden ${
                 isMyVote
-                  ? 'border-blue-400 bg-broadcast-bg/80'
+                  ? 'border-broadcast bg-broadcast-bg/80'
                   : hasVoted
                   ? 'border-border bg-surface cursor-default'
                   : 'border-border bg-surface hover:border-broadcast hover:bg-broadcast-bg'

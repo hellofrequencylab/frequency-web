@@ -58,11 +58,11 @@ function Layout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-6 py-12">
-      <div className="max-w-md w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-8">
+    <div className="min-h-screen flex items-center justify-center bg-canvas px-6 py-12">
+      <div className="max-w-md w-full bg-surface border border-border rounded-2xl shadow-sm p-8">
         <Link
           href="/"
-          className="inline-block text-xl font-black tracking-tight text-gray-900 dark:text-gray-50 mb-6"
+          className="inline-block text-xl font-black tracking-tight text-text mb-6"
         >
           frequency
         </Link>
@@ -75,7 +75,7 @@ function Layout({
 }
 
 function Body({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{children}</p>
+  return <p className="text-sm text-muted leading-relaxed">{children}</p>
 }
 
 function ManageLink() {
