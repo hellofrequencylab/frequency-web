@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { CalendarClock, ChevronRight } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
@@ -74,6 +76,26 @@ export default async function SpaceSettingsPage({
       back={{ href: `/spaces/${space.slug}`, label: brandName }}
     >
       <SpaceSettingsForm spaceId={space.id} slug={space.slug} initial={initial} />
+
+      {space.type === 'practitioner' && (
+        // The Practitioner's 1:1 booking lives on its own Focus surface (weekly availability + the
+        // owner's upcoming bookings). Link to it from settings rather than nesting another editor.
+        <Link
+          href={`/spaces/${space.slug}/settings/availability`}
+          className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-border-strong hover:bg-surface-elevated"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+            <CalendarClock className="h-5 w-5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-text">Availability and bookings</span>
+            <span className="block text-xs text-muted">
+              Set the weekly times members can book, and see who is on your calendar.
+            </span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+        </Link>
+      )}
     </FocusTemplate>
   )
 }

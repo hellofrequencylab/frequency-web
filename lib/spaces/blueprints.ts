@@ -7,8 +7,7 @@
 // safe to import from the module-route resolver, the shell, the layout editor, and the seed. New
 // roles (Business, Organization, Coaching, Event Space) are ADDED here as descriptors, no core
 // edit (the §2.10 extensibility contract). Practitioner is the Wave A first role; Business,
-// Organization, and Coaching are wired in Wave B below (the typed extension point); Event Space
-// stays unregistered until its type + routes land.
+// Organization, Coaching, and Event Space are wired in Wave B below (the typed extension point).
 //
 // COPY NOTE (NAMING + CONTENT-VOICE §10): tab labels + StatCard labels are plain nouns; the CTA is
 // a plain verb ("Book"). No "points", no em/en dashes. Stat labels per §B.3.
@@ -154,14 +153,42 @@ const COACHING: RoleBlueprint = {
   defaultSkin: 'dawn',
 }
 
+// ── Event Space: venue / retreat (§2.8) ──────────────────────────────────────────────────────
+// JTBD: a venue or retreat sells tickets, manages capacity, and checks attendees in. Same seven
+// entity modules. Tabs: About · Events (entity-offerings) · Practices · Community · Tickets
+// (entity-cta). Hero CTA: "Get tickets". Hero stats: members (attendees) · offerings (events) ·
+// circles. Same wired-segment mapping as the other Wave B roles (Events rides 'offerings',
+// Tickets rides 'book'); the CTA label is read from primaryCta.label, independent of segment.
+// Deep ticketing, capacity, lodging, and waiver modules are a LATER step.
+const EVENT_SPACE: RoleBlueprint = {
+  type: 'event_space',
+  typeLabel: 'Event Space',
+  tabs: [
+    { id: 'about', label: 'About', modules: ['entity-about', 'entity-stats', 'entity-offerings'] },
+    { id: 'offerings', label: 'Events', modules: ['entity-offerings'] },
+    { id: 'practices', label: 'Practices', modules: ['entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-community'] },
+    { id: 'book', label: 'Tickets', modules: ['entity-cta'] },
+  ],
+  primaryCta: { label: 'Get tickets', tab: 'book' },
+  heroStats: [
+    { metric: 'members', label: 'Attendees' },
+    { metric: 'offerings', label: 'Events' },
+    { metric: 'circles', label: 'Circles' },
+  ],
+  // SAME curated DAWN skin as Practitioner for Wave B. Bespoke per-role skins are a LATER step.
+  defaultSkin: 'dawn',
+}
+
 /** Every registered role blueprint, keyed by `spaces.type`. Practitioner is the Wave A first
- *  role; Business/Organization/Coaching ship in Wave B (this is the §2.10 extension point: a
- *  descriptor, no core edit). Event Space stays unregistered until its type + route land. */
+ *  role; Business/Organization/Coaching/Event Space ship in Wave B (this is the §2.10 extension
+ *  point: a descriptor, no core edit). */
 const BLUEPRINTS: Record<string, RoleBlueprint> = {
   practitioner: PRACTITIONER,
   business: BUSINESS,
   organization: ORGANIZATION,
   coaching: COACHING,
+  event_space: EVENT_SPACE,
 }
 
 /** The blueprint for a `spaces.type`, or null when no blueprint is registered for that type yet
