@@ -132,9 +132,12 @@ deliberately touches Frequency's app (held for your conventions). 🚪
 
 The room UI now branches by media type off one `useVenue` (DJ vs Watch).
 
-### Section 8 — Ambient auto-DJ lounge  ⬜
-An always-on playlist so a room is never dead (the cold-start backstop, §3.1);
-`media_type='lounge'`.
+### Section 8 — Ambient auto-DJ lounge  🔨
+- [x] `playlist` jsonb on venues (migration `0007`); new lounges seeded so they’re never empty
+- [x] `advanceLounge` service: loops the playlist with no human DJ (server-authoritative)
+- [x] `/advance` branches lounge -> `advanceLounge`; Lounge layout wakes the room on entry
+- [x] Community jukebox: `POST /api/venues/[venueId]/playlist` (add a track), refetch on broadcast
+- [ ] 🚪 GO (manual): enter a lounge cold -> it starts playing; track end loops; add a track
 
 ### Section 9 — Avatars, emotes, richer presence  ⬜
 Avatar config v1, emote reactions over the channel, a named presence list.

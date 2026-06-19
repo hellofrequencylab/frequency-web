@@ -199,6 +199,12 @@ export function useVenue(
   const play = useCallback(() => sync({ action: "resume" }), [sync]);
   const pause = useCallback(() => sync({ action: "pause" }), [sync]);
   const seek = useCallback((position: number) => sync({ action: "seek", position }), [sync]);
+
+  // Lounge: add a track to the ambient playlist (refetch picks up venue.playlist).
+  const addToPlaylist = useCallback(
+    (mediaId: string) => post("/playlist", { mediaId }).then(refetch),
+    [post, refetch],
+  );
   const sendChat = useCallback(
     (text: string) => {
       const line: ChatLine = { userId, name: displayName, text, at: Date.now() };
@@ -229,6 +235,7 @@ export function useVenue(
       play,
       pause,
       seek,
+      addToPlaylist,
     },
   };
 }

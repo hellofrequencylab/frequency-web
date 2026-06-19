@@ -8,6 +8,51 @@ import { tally, shouldBump } from "./rotation";
 import { awardForPlay } from "@/lib/gamification/service";
 
 /**
+ * Ambient auto-DJ for a lounge (spec §3.1 — the empty-room killer). Loops the
+ * venue's playlist with no human DJ, so the room is live the moment anyone walks
+ * in. Server-authoritative, like `advance`.
+ *
+ * - Called on entry with no `expectedPlayId`: if already playing, no-op (someone
+ *   beat us to starting it); otherwise start at the top.
+ * - Called on track-end with the finishing `expectedPlayId`: step to the next
+ *   track, wrapping around. Stale play ids are ignored (idempotent).
+ */
+export async function advanceLounge(
+  venueId: string,
+  expectedPlayId?: string | null,
+): Promise<RoomState> {
+  const venue = await getVenue(venueId);
+  const playlist = venue?.playlist ?? [];
+  const current = await getRoomState(venueId);
+
+  // Already live and this is just another arrival -> leave it alone.
+  if (!expectedPlayId && current?.isPlaying && current.currentMediaId) return current;
+  // A track-end from a play that already moved on -> someone else advanced.
+  if (expectedPlayId && current?.currentPlayId && expectedPlayId !== current.currentPlayId) {
+    return current;
+  }
+
+  if (playlist.length === 0) {
+    const state = await applyPlayback(venueId, { ...IDLE }, null);
+    await broadcastToVenue(venueId, ROOM_UPDATE_EVENT, state);
+    return state;
+  }
+
+  const curIdx = current?.currentMediaId ? playlist.indexOf(current.currentMediaId) : -1;
+  const nextIdx = expectedPlayId ? (curIdx + 1) % playlist.length : Math.max(curIdx, 0);
+  const mediaId = playlist[nextIdx];
+
+  const state = await applyPlayback(
+    venueId,
+    startTrack(mediaId, Date.now(), null),
+    crypto.randomUUID(),
+  );
+  await broadcastToVenue(venueId, ROOM_UPDATE_EVENT, state);
+  await broadcastToVenue(venueId, VENUE_CHANGED_EVENT, { reason: "lounge" });
+  return state;
+}
+
+/**
  * Advance the floor to the next DJ (spec §5.1). Server-authoritative: this is the
  * ONLY place rotation happens.
  *

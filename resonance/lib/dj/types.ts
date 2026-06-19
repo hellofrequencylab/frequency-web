@@ -7,6 +7,8 @@ export interface Venue {
   theme: string | null;
   mediaType: MediaType;
   seatCount: number;
+  /** Ordered media ids for the ambient auto-DJ (lounge venues only). */
+  playlist: string[];
 }
 
 /** Venue plus lightweight activity signals for the lobby. */

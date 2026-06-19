@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useVenue } from "@/components/dj/useVenue";
 import { SyncedPlayer } from "@/components/sync/SyncedPlayer";
 import { computePosition } from "@/lib/sync/clock";
@@ -24,6 +24,7 @@ type Venue = ReturnType<typeof useVenue>;
 export function Room(props: RoomProps) {
   const v = useVenue(props.venueId, props.userId, props.name, props.onGameEvent);
   if (v.venue?.mediaType === "watch") return <WatchLayout v={v} {...props} />;
+  if (v.venue?.mediaType === "lounge") return <LoungeLayout v={v} {...props} />;
   return <DjLayout v={v} {...props} />;
 }
 
@@ -124,6 +125,65 @@ function WatchLayout({ v, userId, canDj, onLeaveVenue }: { v: Venue } & RoomProp
         ) : (
           <small style={{ color: "#888" }}>Set a name to host.</small>
         )}
+      </section>
+
+      <ChatBox v={v} />
+    </>
+  );
+}
+
+function LoungeLayout({ v, canDj, onLeaveVenue }: { v: Venue } & RoomProps) {
+  const [mediaId, setMediaId] = useState("");
+  const playlist = v.venue?.playlist ?? [];
+  const nowPlaying = v.roomState?.currentMediaId ?? null;
+  const kicked = useRef(false);
+
+  // Wake the room: if a loaded lounge isn't playing, start the ambient playlist.
+  // The first arrival kicks it off; the server no-ops if it's already live.
+  useEffect(() => {
+    if (kicked.current) return;
+    if (v.venue && !nowPlaying && playlist.length > 0) {
+      kicked.current = true;
+      void v.actions.advance();
+    }
+  }, [v.venue, nowPlaying, playlist.length, v.actions]);
+
+  return (
+    <>
+      <Header v={v} onLeaveVenue={onLeaveVenue} />
+      <p style={{ fontSize: 13, color: "#888" }}>🎚️ Auto-DJ · always on</p>
+      <SyncedPlayer state={v.roomState} onEnded={v.actions.advance} />
+
+      <section style={card}>
+        <h3>On rotation</h3>
+        <ol style={{ fontSize: 13 }}>
+          {playlist.map((m, i) => (
+            <li key={`${m}-${i}`} style={{ fontWeight: m === nowPlaying ? 700 : 400 }}>
+              {m} {m === nowPlaying ? "▶" : ""}
+            </li>
+          ))}
+          {playlist.length === 0 && <li style={{ color: "#888" }}>empty — add a track</li>}
+        </ol>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (mediaId.trim()) {
+              v.actions.addToPlaylist(mediaId.trim());
+              setMediaId("");
+            }
+          }}
+          style={{ display: "flex", gap: "0.5rem" }}
+        >
+          <input
+            value={mediaId}
+            onChange={(e) => setMediaId(e.target.value)}
+            placeholder="YouTube video id"
+            style={{ flex: 1, padding: "0.4rem" }}
+          />
+          <button type="submit" disabled={!canDj}>
+            Add to queue
+          </button>
+        </form>
       </section>
 
       <ChatBox v={v} />

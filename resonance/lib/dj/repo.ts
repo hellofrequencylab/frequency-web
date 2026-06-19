@@ -11,7 +11,13 @@ import type { Venue, VenueSummary, SeatRow, QueueItem, MediaType } from "./types
 
 export async function createVenue(
   worldId: string,
-  fields: { name: string; seatCount?: number; theme?: string; mediaType?: MediaType },
+  fields: {
+    name: string;
+    seatCount?: number;
+    theme?: string;
+    mediaType?: MediaType;
+    playlist?: string[];
+  },
 ): Promise<Venue> {
   const supabase = createServerClient();
   const { data, error } = await supabase
@@ -22,11 +28,22 @@ export async function createVenue(
       seat_count: fields.seatCount ?? 5,
       theme: fields.theme ?? null,
       media_type: fields.mediaType ?? "dj",
+      playlist: fields.playlist ?? [],
     })
     .select("*")
     .single();
   if (error) throw error;
   return toVenue(data);
+}
+
+/** Append a track to a lounge's ambient playlist (community jukebox). */
+export async function addToPlaylist(venueId: string, mediaId: string): Promise<string[]> {
+  const supabase = createServerClient();
+  const venue = await getVenue(venueId);
+  const next = [...(venue?.playlist ?? []), mediaId];
+  const { error } = await supabase.from("venues").update({ playlist: next }).eq("id", venueId);
+  if (error) throw error;
+  return next;
 }
 
 /** All venues in a world with lightweight activity signals, for the lobby. */
@@ -236,6 +253,7 @@ function toVenue(r: Record<string, unknown>): Venue {
     theme: (r.theme as string | null) ?? null,
     mediaType: r.media_type as Venue["mediaType"],
     seatCount: r.seat_count as number,
+    playlist: (r.playlist as string[] | null) ?? [],
   };
 }
 

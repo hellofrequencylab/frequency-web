@@ -13,6 +13,10 @@ export async function GET() {
 
 const MEDIA_TYPES: MediaType[] = ["dj", "watch", "lounge", "event"];
 
+// Seeds a fresh lounge so it's playing the moment someone walks in. Members
+// extend it from there (the playlist is a community jukebox).
+const DEFAULT_LOUNGE_PLAYLIST = ["jfKfPfyJRdk", "5qap5aO4i9A", "DWcJFNfaw9c"];
+
 /** Create a venue. Body: { name, theme?, mediaType?, seatCount?, worldId? }. */
 export async function POST(req: Request) {
   const body = (await req.json()) as {
@@ -33,6 +37,7 @@ export async function POST(req: Request) {
     theme: body.theme,
     mediaType,
     seatCount,
+    playlist: mediaType === "lounge" ? DEFAULT_LOUNGE_PLAYLIST : undefined,
   });
   return NextResponse.json({ venue });
 }
