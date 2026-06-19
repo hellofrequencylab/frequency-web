@@ -12,6 +12,8 @@ import {
   VENUE_CHANGED_EVENT,
   VOTE_TALLY_EVENT,
   CHAT_EVENT,
+  ZAPS_AWARDED_EVENT,
+  RANK_CHANGED_EVENT,
 } from "@/lib/sync/channels";
 
 export interface ChatLine {
@@ -57,7 +59,12 @@ async function getSnapshot(venueId: string): Promise<Snapshot | null> {
  * and presence. Actions POST through authedFetch so the server resolves identity
  * from the verified token. The client only ever mirrors the server.
  */
-export function useVenue(venueId: string, userId: string, displayName: string) {
+export function useVenue(
+  venueId: string,
+  userId: string,
+  displayName: string,
+  onGameEvent?: (e: { type: string; payload: unknown }) => void,
+) {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [seats, setSeats] = useState<SeatRow[]>([]);
   const [roomState, setRoomState] = useState<RoomState | null>(null);
@@ -110,6 +117,10 @@ export function useVenue(venueId: string, userId: string, displayName: string) {
           else if (e.type === VOTE_TALLY_EVENT) setTally(e.payload as Tally);
           else if (e.type === CHAT_EVENT)
             setChat((c) => [...c.slice(-49), e.payload as ChatLine]);
+          else if (e.type === ZAPS_AWARDED_EVENT || e.type === RANK_CHANGED_EVENT)
+            // standing refreshes via the venue:changed that advance also fires;
+            // forward upward so an embedding host can mirror to its own UI.
+            onGameEvent?.(e);
         },
         onPresenceSync: (st) => {
           const names = Object.values(st)
@@ -134,7 +145,7 @@ export function useVenue(venueId: string, userId: string, displayName: string) {
       void channelRef.current?.leave();
       channelRef.current = null;
     };
-  }, [venueId, userId, displayName, refetch]);
+  }, [venueId, userId, displayName, refetch, onGameEvent]);
 
   const post = useCallback(
     (path: string, body: unknown) =>

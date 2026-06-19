@@ -49,6 +49,41 @@ Resonance is the processor (reuse Frequency-for-Organizations standards: region
 pinning, versioned consent, retention/deletion). Per-tenant config covers enabled
 experiences, moderation policy, monetization split, and cosmetic catalog.
 
+## 5b. Mounting in a host (recipe)
+
+Two small pieces on the host side; the embed surface (`/embed/[venueId]`) is done.
+
+**1. Issue a token** (host server, RS256; we hold the public key):
+
+```ts
+// host: sign a short-lived JWT for the logged-in member
+import { SignJWT, importPKCS8 } from "jose";
+const key = await importPKCS8(process.env.HOST_JWT_PRIVATE_KEY, "RS256");
+const token = await new SignJWT({ worldId, displayName, avatarUrl, entitlements })
+  .setProtectedHeader({ alg: "RS256" })
+  .setSubject(member.id)
+  .setIssuedAt()
+  .setExpirationTime("10m")
+  .sign(key);
+```
+
+**2. Mount the iframe** and pass the token (URL for first paint, or postMessage):
+
+```tsx
+<iframe
+  src={`https://resonance.example/embed/${venueId}?token=${token}`}
+  allow="autoplay; encrypted-media"
+  style={{ width: "100%", height: 720, border: 0 }}
+/>
+```
+
+Receive mirrored events on the host: listen for `postMessage`
+(`zaps:awarded` / `rank:changed`) for live UI, and verify the HMAC-signed
+webhook (`X-Resonance-Signature`) server-side for the durable economy update.
+
+Set on our side: `RESONANCE_HOST_JWT_PUBLIC_KEY` (their public key),
+`RESONANCE_HOST_WEBHOOK_URL`, `RESONANCE_WEBHOOK_SIGNING_SECRET`.
+
 ## 6. Breaking out
 
 Integration via the seam (not the DB) is exactly what makes breakout clean: the

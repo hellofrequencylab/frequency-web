@@ -14,6 +14,17 @@ const nextConfig: NextConfig = {
     // the project root. Pin the root here so the two builds stay fully separate.
     root: import.meta.dirname,
   },
+  async headers() {
+    return [
+      {
+        // The embed surface is meant to be iframed by a host. Allow framing here
+        // (the rest of the app keeps the default deny). Restrict frame-ancestors
+        // to specific host origins in production.
+        source: "/embed/:path*",
+        headers: [{ key: "Content-Security-Policy", value: "frame-ancestors *" }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

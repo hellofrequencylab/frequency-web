@@ -93,14 +93,18 @@ attendance awards.
 **DoD:** votes-received convert to Zaps + rank, with anti-gaming holding. Code +
 tests green; live check is the remaining gate. 🚪
 
-### Section 5 — Embed into Frequency  ⬜
-- [ ] Federated JWT verify; map `sub` → profile
-- [ ] postMessage bridge wired (theme + identity + events)
-- [ ] Signed webhook mirrors `zaps:awarded` / `rank:changed` to Frequency
-- [ ] Single DJ Lounge mounted inside Frequency
+### Section 5 — Embed into Frequency  🔨
+- [x] Federated JWT verify (jose RS256); `getAuthedUserId` accepts host OR Supabase tokens, maps `sub` → profile
+- [x] Embeddable surface `/embed/[venueId]` (host-JWT identity, auto-provisions a profile, shared `Room`)
+- [x] postMessage bridge: `world:ready` + `user:identity`/`theme` in, `zaps:awarded`/`rank:changed` out
+- [x] HMAC-signed server-to-server webhook mirrors awards to the host economy (`lib/webhooks/host-mirror.ts`)
+- [x] `frame-ancestors` header so the surface can be iframed
+- [ ] Frequency-side mount: a Lounge page + token issuer IN the Frequency app (its auth + page framework) — held for your conventions
+- [ ] 🚪 **GO (manual):** with host env set, load `/embed/[venueId]?token=<JWT>`, DJ, confirm the webhook fires
 
-**DoD:** a Frequency member opens the Lounge, DJs, and their Zaps mirror back.
-🚪 *This is the Phase 0 finish line.*
+**DoD:** a Frequency member opens the Lounge, DJs, and their Zaps mirror back. Our
+side is complete + build-verified; the Frequency-side mount is the last step and
+deliberately touches Frequency's app (held for your conventions). 🚪
 
 > **Success metric (Phase 0):** friends DJ, vote, and *return*. Repeat sessions
 > beat one-and-done.

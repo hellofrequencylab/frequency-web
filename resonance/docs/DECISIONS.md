@@ -104,6 +104,16 @@ is anti-accumulation by construction. Awards broadcast `zaps:awarded` /
 `rank:changed`, which are also the server-to-server mirror payloads for the host
 economy (Section 5).
 
+### ADR-017 — The embed seam: dual-token auth + signed webhook mirror ✅
+One `/embed/[venueId]` surface serves any host. `getAuthedUserId` accepts EITHER
+a standalone Supabase session token OR a host-issued federated JWT (verified with
+`RESONANCE_HOST_JWT_PUBLIC_KEY` via `jose`, RS256). A single client switch
+(`lib/auth/token.ts`) picks the active token, so `authedFetch` is identical in
+both modes. Gamification events reach the host two ways: `postMessage` to the
+parent frame (live UI) and an HMAC-signed server-to-server webhook (durable,
+survives a closed iframe). The embed route sets `frame-ancestors *` (restrict to
+host origins in production). We never write into the host's tables (ADR-010).
+
 ### ADR-010 — Gamification mirrors, not merges, the host economy ✅
 Zaps/reputation are computed in-app on an append-only ledger with verified
 play-through awards, then **mirrored** to the host (Frequency's Zaps + The Field)

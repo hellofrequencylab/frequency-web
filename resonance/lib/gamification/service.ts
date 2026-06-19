@@ -1,5 +1,6 @@
 import { listVoteDetails } from "@/lib/dj/repo";
 import { broadcastToVenue } from "@/lib/realtime/server-broadcast";
+import { mirrorToHost } from "@/lib/webhooks/host-mirror";
 import { ZAPS_AWARDED_EVENT, RANK_CHANGED_EVENT } from "@/lib/sync/channels";
 import {
   getOrCreateCurrentSeason,
@@ -37,16 +38,24 @@ export async function awardForPlay(
   const season = await getOrCreateCurrentSeason(worldId);
   const { rank } = await addDjPoints(worldId, djUserId, season.id, awesome);
 
-  await broadcastToVenue(venueId, ZAPS_AWARDED_EVENT, {
+  const zapsEvent = {
+    type: ZAPS_AWARDED_EVENT,
     userId: djUserId,
     delta: awesome,
     reason: "vote_received",
     refId: playId,
-  });
-  await broadcastToVenue(venueId, RANK_CHANGED_EVENT, {
+  };
+  const rankEvent = {
+    type: RANK_CHANGED_EVENT,
     userId: djUserId,
     rank,
     seasonId: season.id,
-  });
+  };
+
+  // In-venue broadcast (live UI) + server-to-server mirror to the host economy.
+  await broadcastToVenue(venueId, ZAPS_AWARDED_EVENT, zapsEvent);
+  await broadcastToVenue(venueId, RANK_CHANGED_EVENT, rankEvent);
+  await mirrorToHost(zapsEvent);
+  await mirrorToHost(rankEvent);
   return awesome;
 }
