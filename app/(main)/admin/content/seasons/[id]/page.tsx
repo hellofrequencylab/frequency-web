@@ -9,8 +9,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip } from '@/components/admin/status'
 import { PillarBalance } from '@/components/admin/pillar-balance'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { loadSeasonDetail, type SeasonJourney } from './data'
+import { loadSeasonDetail, loadAssignableJourneys, type SeasonJourney } from './data'
 import { SeasonEditor } from './season-editor'
+import { AssignJourneyToSeason } from './assign-journey'
 import { StateBadge } from '../state-badge'
 
 // The Season Composer — the no-SQL surface where an operator composes a whole season.
@@ -123,34 +124,34 @@ async function SeasonJourneys({ id }: { id: string }) {
     )
   }
 
+  // Existing Journeys the operator can assign straight to this season's Quest.
+  const assignable = await loadAssignableJourneys(detail.questId)
+  const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null)
+
   if (detail.journeys.length === 0) {
     return (
-      <EmptyState
-        variant="first-use"
-        icon={Compass}
-        title="No Journeys yet"
-        description="Add the season's three official Journeys. Build one in the Journey editor, then make it official under this Quest from the Journeys curation page."
-        action={
-          <Link
-            href="/admin/content/journeys"
-            className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
-          >
-            Open Journeys curation <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-          </Link>
-        }
-      />
+      <div className="space-y-4">
+        <EmptyState
+          variant="first-use"
+          icon={Compass}
+          title="No Journeys yet"
+          description="Assign an existing Journey to this season below, or build one in the Journey editor and assign it here."
+        />
+        <AssignJourneyToSeason questId={detail.questId} journeys={assignable} />
+      </div>
     )
   }
-
-  const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null)
 
   return (
     <div className="space-y-3">
       {detail.journeys.map((j) => (
         <JourneyRow key={j.id} journey={j} fmt={fmt} />
       ))}
+
+      <AssignJourneyToSeason questId={detail.questId} journeys={assignable} />
+
       <p className="text-xs text-muted">
-        Add or link a Journey from{' '}
+        Manage the full library in{' '}
         <Link
           href="/admin/content/journeys"
           className="inline-flex items-center gap-0.5 font-semibold text-primary hover:underline"
