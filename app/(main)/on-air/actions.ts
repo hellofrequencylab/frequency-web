@@ -9,10 +9,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { logPractice } from '@/lib/practices'
+import { logPractice, getPracticesToLogToday } from '@/lib/practices'
 import { getPracticeStreak } from '@/lib/practice-streak'
 import { amplitudeLevel } from '@/lib/amplitude'
 import { getOrCreateDispatch } from '@/lib/vera-dispatch'
+import { getNextGathering } from '@/lib/quest/next-gathering'
+import { buildSessionDispatch } from '@/lib/on-air'
 import { loadOnAirSessionData, type OnAirSessionData } from '@/lib/on-air/session-data'
 import type { OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
 
@@ -150,17 +152,40 @@ export async function completeSession(
   )
   const amplitude = Number((profRow.data as { amplitude: number | null } | null)?.amplitude ?? 0)
 
-  // 4. Today's Dispatch from Vera — generated once, cached, replayed forever.
-  let dispatch: RevealPayload['dispatch'] = {
-    copy: 'Same time tomorrow. Bring one practice. The streak does the rest.',
-    actionHref: '/on-air',
-    actionLabel: 'See you then',
-  }
+  // 4. Today's Dispatch from Vera — tied to the member's real state right now:
+  //    what's still on their list to log today, whether they're done, and the
+  //    next gathering they've RSVP'd to. One warm, specific line, with the close
+  //    button (label + href) matching exactly what she mentioned. No new writes —
+  //    both reads already exist and are best-effort; either failing just drops
+  //    that branch. Only when BOTH reads throw do we fall back to the cached
+  //    Vera Dispatch so the card never blanks.
+  let dispatch: RevealPayload['dispatch']
   try {
-    const d = await getOrCreateDispatch(profileId)
-    dispatch = { copy: d.copy, actionHref: d.actionHref, actionLabel: d.actionLabel }
+    const [toLog, gathering] = await Promise.all([
+      getPracticesToLogToday(profileId).catch(() => null),
+      getNextGathering(profileId).catch(() => null),
+    ])
+    if (toLog === null && gathering === null) throw new Error('state reads failed')
+    dispatch = buildSessionDispatch({
+      practicesLeft: (toLog ?? []).map((p) => p.title),
+      gathering:
+        gathering && gathering.rsvped
+          ? { title: gathering.title, slug: gathering.slug }
+          : null,
+    })
   } catch {
-    // the template default above stands
+    // Last resort only: the cached, AI-voiced Dispatch from Vera.
+    dispatch = {
+      copy: 'Same time tomorrow. Bring one practice. The streak does the rest.',
+      actionHref: '/feed',
+      actionLabel: 'Back to feed',
+    }
+    try {
+      const d = await getOrCreateDispatch(profileId)
+      dispatch = { copy: d.copy, actionHref: d.actionHref, actionLabel: d.actionLabel }
+    } catch {
+      // the template default above stands
+    }
   }
 
   return ok({

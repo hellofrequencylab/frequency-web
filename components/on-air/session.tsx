@@ -232,6 +232,12 @@ export function OnAirSession({
   const [preroll, setPreroll] = useState<number | null>(null)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
+  // True only when the SETUP-screen effect (task #1) requested fullscreen, so its
+  // cleanup releases only what it took — never a fullscreen the live sit owns.
+  const setupFullscreen = useRef(false)
+  // Set the instant a sit goes live so the setup-fullscreen cleanup HANDS the
+  // fullscreen to the live sit instead of exiting it (no flicker on start).
+  const handingToLive = useRef(false)
   const finishing = useRef(false)
   const audio = useRef<AudioContext | null>(null)
   const lastPhase = useRef<BreathPhase | null>(null)
@@ -300,6 +306,49 @@ export function OnAirSession({
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [stage])
+
+  // The setup screen is already a full-viewport (100dvh) takeover, but on
+  // Android / an installed PWA we can also ask for true fullscreen so the
+  // browser chrome steps back the moment Mindless opens — not only once a sit
+  // goes live (task #1). Best-effort and mobile-only: iOS Safari has no
+  // Element.requestFullscreen, so the optional call simply no-ops, and the whole
+  // thing is guarded so it can never throw. We release on unmount only if this
+  // effect was the one that entered fullscreen (the live sit owns its own).
+  useEffect(() => {
+    if (stage !== 'setup') return
+    try {
+      if (
+        typeof document.fullscreenElement !== 'undefined' &&
+        !document.fullscreenElement &&
+        window.matchMedia('(max-width: 768px)').matches
+      ) {
+        const req = document.documentElement.requestFullscreen?.()
+        // requestFullscreen returns a Promise on success; swallow a rejection
+        // (denied without a gesture) and only mark ownership when it resolves.
+        if (req && typeof req.then === 'function') {
+          req.then(() => {
+            setupFullscreen.current = true
+          }).catch(() => {
+            // denied (no user gesture) — fine, the dvh takeover still covers it
+          })
+        }
+      }
+    } catch {
+      // fullscreen is progressive enhancement
+    }
+    return () => {
+      const owned = setupFullscreen.current
+      setupFullscreen.current = false
+      // Going live? Leave fullscreen in place — the live sit (acquireQuiet) wants
+      // it and will release it at the end. Only tear it down when truly leaving.
+      if (!owned || handingToLive.current) return
+      try {
+        if (document.fullscreenElement) void document.exitFullscreen()
+      } catch {
+        // already out
+      }
+    }
   }, [stage])
 
   // Remember the member's setup choices for next time (localStorage). Best-effort:
@@ -413,6 +462,7 @@ export function OnAirSession({
     setPausedAt(now)
     setRemaining(minutes * 60)
     setPreroll(5)
+    handingToLive.current = true // setup-fullscreen cleanup hands off, never exits
     setStage('live')
     void acquireQuiet()
   }
@@ -476,12 +526,11 @@ export function OnAirSession({
 
   // --- screens -------------------------------------------------------------------
 
-  // Done or swiped off the last card: drop the takeover. In overlay mode (the
-  // global Mindless launcher) that means closing the overlay in place — no
-  // navigation. On the /on-air route (no onExit) it returns to the screen the
-  // member came FROM (where they hit the Zap button or the board's radio);
-  // direct entries (PWA shortcut, typed URL) have no app history, so they land
-  // on home instead of exiting the app.
+  // Drop the takeover. In overlay mode (the global Mindless launcher) that means
+  // closing the overlay in place — no navigation. On the /on-air route (no
+  // onExit) it returns to the screen the member came FROM (where they hit the
+  // Zap button or the board's radio); direct entries (PWA shortcut, typed URL)
+  // have no app history, so they land on the feed instead of exiting the app.
   function leave() {
     if (onExit) {
       onExit()
@@ -494,16 +543,32 @@ export function OnAirSession({
     }
   }
 
+  // Leaving FROM the reveal's Dispatch card (the explicit "Back to feed" button
+  // or swiping the last card off): land the member on the feed (task #4). In
+  // overlay mode, closing the overlay over the page they opened Mindless from
+  // (typically the feed) is the agreed behavior — no extra navigation. On the
+  // /on-air route, push the feed so the sit ends where the member expects.
+  function leaveToFeed() {
+    if (onExit) {
+      onExit()
+      return
+    }
+    router.replace('/feed')
+  }
+
+  // The reveal closes ONLY from the Dispatch card (its last card), so closing the
+  // reveal and "back to feed" are the same exit.
   function closeReveal() {
     setPayload(null)
+    handingToLive.current = false
     setStage('setup')
-    leave()
+    leaveToFeed()
   }
 
   if (stage === 'reveal' && payload) {
     return (
       <Overlay>
-        <Reveal payload={payload} onClose={closeReveal} />
+        <Reveal payload={payload} onClose={closeReveal} onAction={onExit} />
       </Overlay>
     )
   }
