@@ -12,7 +12,10 @@ We do **not** build a new substrate. `posts` is the unified activity table:
 
 **Lenses over the one substrate:**
 - **Wall** (`profile-feed`) = items where you're author / target (`scope_id = you`) / mentioned / attached (events, dispatches). Date-sorted.
-- **Feed** (`feed_for_viewer`) = `public` + your `group`/`cluster` posts, ranked.
+- **Feed** (`feed_for_viewer`) = `public` + your `group`/`cluster` posts, ranked — UNLESS the
+  `platform_flags.feed_open` switch is on, which lifts the reach gate so every member sees every
+  member's posts (Admin → Community → **Feed reach**). Open for a young community, off once it's
+  big enough to feel local (ADR-312). The switch never exposes private content (there is none).
 - **Channel** = the topical forum lens — items tagged with the channel's topics (via `circle_topics` etc.).
 - **Circle** = scoped to one circle.
 

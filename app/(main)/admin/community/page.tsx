@@ -2,11 +2,13 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import {
   Users, ArrowUpRight, CircleDot, Building2, Network, Radio, Shield,
-  BadgeCheck, CalendarDays, Megaphone, ShieldAlert, LifeBuoy,
+  BadgeCheck, CalendarDays, Megaphone, ShieldAlert, LifeBuoy, Globe2,
   type LucideIcon,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
+import { feedOpenFlag } from '@/lib/platform-flags'
+import { FeedReachToggle } from './feed-reach-toggle'
 import { DashArea, TileGrid, Tile, GraphTile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { TrendArea, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
 import { AttentionList, type AttentionItem } from '@/components/admin/attention-list'
@@ -46,6 +48,10 @@ export default async function CommunityDashboard() {
 
       <Suspense fallback={<DashSkeleton title="Trust & safety" />}>
         <TrustSafetyArea />
+      </Suspense>
+
+      <Suspense fallback={<DashSkeleton title="Feed reach" />}>
+        <FeedReachArea />
       </Suspense>
 
       <Suspense fallback={<DashSkeleton title="Manage" />}>
@@ -216,6 +222,40 @@ async function TrustSafetyArea() {
         </Tile>
       </TileGrid>
     </DashArea>
+  )
+}
+
+// ── Feed reach — the open-feed switch (platform_flags.feed_open). ────────────────
+// Early in a community's life the reach gate (a member sees public posts + their own
+// circles'/hubs' group & cluster posts — their people and nearby) makes the feed look
+// empty. This switch opens it: everyone sees everyone's posts. Flip it back once there
+// are enough members and the reach model should apply. The change is audited.
+async function FeedReachArea() {
+  const open = await feedOpenFlag()
+  return (
+    <AdminSection
+      title="Feed reach"
+      description="Who sees whose posts in the main feed. Open it for a young community so the feed feels alive; turn the reach gate back on once there are enough members for it to feel local."
+    >
+      <div className="rounded-2xl border border-border bg-surface p-4">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+            <Globe2 className="h-4 w-4" aria-hidden />
+          </span>
+          <div className="min-w-0 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-text">Open feed</p>
+              <p className="mt-0.5 text-xs leading-snug text-muted">
+                On: every member sees every member’s posts. Off: a member sees public posts plus their
+                own circles’ and nearby posts (the reach gate). Private posts don’t exist, so this never
+                exposes anything members didn’t share with the community.
+              </p>
+            </div>
+            <FeedReachToggle open={open} />
+          </div>
+        </div>
+      </div>
+    </AdminSection>
   )
 }
 

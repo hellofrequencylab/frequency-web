@@ -98,6 +98,26 @@ export const referralsEnabled = cache(async (): Promise<boolean> => {
   }
 })
 
+// Open-feed switch (platform_flags.feed_open) — when ON, the main feed (feed_for_viewer)
+// lifts its reach gate so every member sees every member's posts; when OFF, the normal
+// "your circles + nearby" reach model applies. The LIVE gate is enforced DB-side inside
+// feed_for_viewer (default false / closed on a missing row); this reader only renders the
+// operator toggle's current state. Defaults to FALSE on a read error so the admin UI fails
+// to the closed (private) reading rather than implying the feed is open.
+export const feedOpenFlag = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'feed_open')
+      .maybeSingle()
+    return data?.value ?? false
+  } catch {
+    return false
+  }
+})
+
 export interface FlagEvent {
   id: string
   flagKey: string
