@@ -71,6 +71,18 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'practice-detail-guide', label: 'The guide', description: 'The full write-up: why it works, how to do it, and logging it in The Quest.' },
   { id: 'practice-detail-tags', label: 'Tags', description: 'The practice’s tags.' },
   { id: 'practice-detail-usedin', label: 'Used in', description: 'The Journeys and Circles running this practice.' },
+
+  // ── Entity profile blocks (/spaces/<slug>/*) — the networked profile module set ──
+  // (ENTITY-SPACES-BUILD §B.2). Each is a self-fetching RSC scoped to the ACTIVE Space
+  // (lib/spaces/active-space.ts); it reads only that Space's own rows and renders kit primitives,
+  // returning null when the Space has nothing.
+  { id: 'entity-about', label: 'About', description: 'The entity’s story, in plain prose.' },
+  { id: 'entity-stats', label: 'Highlights', description: 'Live counts — sessions, offerings, practices, circles.' },
+  { id: 'entity-offerings', label: 'Offerings', description: 'Upcoming sessions and events the entity hosts.' },
+  { id: 'entity-practices', label: 'Practices & Journeys', description: 'The Practices and Journeys the entity shares.' },
+  { id: 'entity-community', label: 'Community', description: 'The Circles the entity runs.' },
+  { id: 'entity-team', label: 'Team', description: 'The people behind the entity.' },
+  { id: 'entity-cta', label: 'Book', description: 'The primary action — book a session at an open time.' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
@@ -137,6 +149,22 @@ const VAULT_MODULE_IDS = [
   'vault-store',
 ] as const
 
+// Every entity-profile block, in the Practitioner default order (ENTITY-SPACES-BUILD §B.3). This
+// is the FAMILY palette for the '/spaces/*' section scope — the full set the layout editor offers
+// on any profile tab. The route shell passes the per-TAB subset (the blueprint's tab.modules) to
+// PageModules as `moduleIds`, so a tab renders only its own blocks; this set governs what an
+// operator may arrange. New role blueprints reuse the same registry bindings (one change updates
+// every profile of every type — the C3 guarantee).
+const SPACE_MODULE_IDS = [
+  'entity-about',
+  'entity-stats',
+  'entity-offerings',
+  'entity-practices',
+  'entity-community',
+  'entity-team',
+  'entity-cta',
+] as const
+
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section
  *  ('/seg/*'), or an exact route. Add a route's set here when you convert its page to
  *  `<PageModules>` (and list it in lib/widgets/module-routes.ts). */
@@ -150,6 +178,9 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   // Section scope: applies to every /practices/<id> detail page (shared layout).
   '/practices/*': PRACTICE_DETAIL_MODULE_IDS,
   '/crew/store': VAULT_MODULE_IDS,
+  // Section scope: every entity profile tab (/spaces/<slug>/<tab>) shares one family module set;
+  // the shell narrows it to the active tab's blocks via the `moduleIds` override (ADR-294).
+  '/spaces/*': SPACE_MODULE_IDS,
 }
 
 // The scope keys that can carry a module set for `key`, MOST-SPECIFIC FIRST: an exact route

@@ -74,6 +74,33 @@ describe('moduleIdsForScope', () => {
     // the now-converted exact '/crew/store' — so the wildcard still gets the generic set.
     expect(moduleIdsForScope('/crew/*')).toEqual(GLOBAL)
   })
+
+  it('an entity profile tab resolves the family module set via the /spaces/* section scope', () => {
+    // Every /spaces/<slug>/<tab> shares one family set keyed at '/spaces/*' (ENTITY-SPACES §B.2):
+    // the index profile, a tab, and a different slug all resolve the same set, never the global one.
+    const family = ROUTE_MODULE_IDS['/spaces/*']
+    expect(moduleIdsForScope('/spaces/demo-practitioner')).toBe(family)
+    expect(moduleIdsForScope('/spaces/demo-practitioner/offerings')).toBe(family)
+    expect(moduleIdsForScope('/spaces/another-space/book')).toBe(family)
+    expect(family).toContain('entity-about')
+    expect(family).toContain('entity-cta')
+    // No leakage: a profile never offers the global community blocks.
+    expect(family).not.toContain('community-pulse')
+  })
+})
+
+// Every module id any blueprint references must be in the '/spaces/*' family set (so the layout
+// editor offers it and the resolver can place it) AND carry metadata (locked above). This keeps the
+// blueprints (lib/spaces/blueprints.ts) and the registered module set from drifting apart.
+describe('entity blueprint ↔ module set alignment', () => {
+  it('every blueprint entity module is in the /spaces/* set and has metadata', async () => {
+    const { allEntityModuleIds } = await import('@/lib/spaces/blueprints')
+    const family = new Set(ROUTE_MODULE_IDS['/spaces/*'])
+    for (const id of allEntityModuleIds()) {
+      expect(family.has(id), `blueprint module ${id} missing from /spaces/* set`).toBe(true)
+      expect(moduleMeta(id), `missing meta for ${id}`).toBeDefined()
+    }
+  })
 })
 
 describe('moduleMeta', () => {

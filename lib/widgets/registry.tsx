@@ -36,6 +36,13 @@ import { PracticeDetailAbout } from '@/components/widgets/practice-detail/practi
 import { PracticeDetailGuide } from '@/components/widgets/practice-detail/practice-detail-guide'
 import { PracticeDetailTags } from '@/components/widgets/practice-detail/practice-detail-tags'
 import { PracticeDetailUsedIn } from '@/components/widgets/practice-detail/practice-detail-usedin'
+import { EntityAbout } from '@/components/widgets/entity/entity-about'
+import { EntityStats } from '@/components/widgets/entity/entity-stats'
+import { EntityOfferings } from '@/components/widgets/entity/entity-offerings'
+import { EntityPractices } from '@/components/widgets/entity/entity-practices'
+import { EntityCommunity } from '@/components/widgets/entity/entity-community'
+import { EntityTeam } from '@/components/widgets/entity/entity-team'
+import { EntityCta } from '@/components/widgets/entity/entity-cta'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -87,6 +94,14 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'practice-detail-guide': PracticeDetailGuide,
   'practice-detail-tags': PracticeDetailTags,
   'practice-detail-usedin': PracticeDetailUsedIn,
+  // Entity profile (/spaces/<slug>/*) — the networked profile module set (ENTITY-SPACES-BUILD §B.2).
+  'entity-about': EntityAbout,
+  'entity-stats': EntityStats,
+  'entity-offerings': EntityOfferings,
+  'entity-practices': EntityPractices,
+  'entity-community': EntityCommunity,
+  'entity-team': EntityTeam,
+  'entity-cta': EntityCta,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {
