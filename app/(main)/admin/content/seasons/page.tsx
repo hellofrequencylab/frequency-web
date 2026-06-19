@@ -86,7 +86,7 @@ export default async function AdminSeasonsPage() {
     <AdminTemplate
       title="Seasons"
       eyebrow="Content"
-      description="The 13-week cycles the Quest runs on. Each season carries a theme, a Quest of official Journeys, and its challenges. Open a season to compose it."
+      description="The 13-week cycles the Quest runs on. Each season carries a theme, a Quest of official Journeys, and its challenges. Open a season to edit its name, theme, and window, move it through its lifecycle, and compose its Journeys."
       width="default"
       actions={
         janitor ? (
@@ -127,7 +127,7 @@ export default async function AdminSeasonsPage() {
               href={`/admin/content/seasons/${activeSeason.id}`}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
-              Compose <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              Edit &amp; compose <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           ) : undefined
         }
