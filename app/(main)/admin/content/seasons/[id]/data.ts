@@ -6,6 +6,7 @@
 // module never gates on its own. No writes.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rankedJourneys } from '@/lib/admin/content-signals'
 import { getPillars, pillarsById, type PillarSlug } from '@/lib/pillars'
 import type { BalancePractice } from '@/lib/quest/pillar-balance'
 
@@ -183,30 +184,22 @@ export interface AssignableJourney {
   inOtherQuest: boolean
 }
 
-/** Existing Journeys that can be assigned to this season's Quest — the approved/draft library,
- *  minus the ones already official under THIS Quest (those already show in the list). Each carries
- *  whether it's currently official elsewhere, so the operator knows an assign would move it. */
+/** Existing Journeys that can be assigned to this season's Quest. Reuses rankedJourneys() — the
+ *  SAME "what Journeys exist" definition the admin Journeys-curation surface shows (public OR
+ *  pending, never a bare draft, never an unlisted seed scaffold) — so the dropdown stays in
+ *  lockstep with the library: a Journey the operator can see in curation is one they can assign,
+ *  and the hidden seed scaffolds (quest-1-*, official-1-*) never leak in. Drops the ones already
+ *  official under THIS Quest (they already list above). Each carries whether it's currently
+ *  official under ANOTHER Quest, so the operator knows an assign would MOVE it. */
 export async function loadAssignableJourneys(questId: string): Promise<AssignableJourney[]> {
-  const db = createAdminClient()
-  const { data } = await db
-    .from('journey_plans')
-    .select('id, title, status, official, quest_id')
-    .in('status', ['approved', 'draft'])
-    .order('title', { ascending: true })
-    .limit(300)
-  const rows = (data ?? []) as {
-    id: string
-    title: string
-    status: string
-    official: boolean
-    quest_id: string | null
-  }[]
-  return rows
-    .filter((r) => !(r.official && r.quest_id === questId)) // already in this season
-    .map((r) => ({
-      id: r.id,
-      title: r.title,
-      status: r.status,
-      inOtherQuest: r.official && !!r.quest_id && r.quest_id !== questId,
+  const journeys = await rankedJourneys()
+  return journeys
+    .filter((j) => !(j.official && j.quest_id === questId)) // already in this season
+    .map((j) => ({
+      id: j.id,
+      title: j.title,
+      status: j.status,
+      inOtherQuest: j.official && !!j.quest_id && j.quest_id !== questId,
     }))
+    .sort((a, b) => a.title.localeCompare(b.title))
 }
