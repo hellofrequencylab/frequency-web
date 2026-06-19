@@ -1,9 +1,18 @@
+export type MediaType = "dj" | "watch" | "lounge" | "event";
+
 export interface Venue {
   id: string;
   worldId: string;
   name: string;
-  mediaType: "dj" | "watch" | "lounge" | "event";
+  theme: string | null;
+  mediaType: MediaType;
   seatCount: number;
+}
+
+/** Venue plus lightweight activity signals for the lobby. */
+export interface VenueSummary extends Venue {
+  djs: number;
+  isPlaying: boolean;
 }
 
 export interface SeatRow {

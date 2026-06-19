@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
-import type { Venue, SeatRow, QueueItem } from "./types";
+import type { Venue, VenueSummary, SeatRow, QueueItem, MediaType } from "./types";
 
 /**
  * Server-side data access for the DJ loop. Service-role only; never import into
@@ -11,17 +11,53 @@ import type { Venue, SeatRow, QueueItem } from "./types";
 
 export async function createVenue(
   worldId: string,
-  name: string,
-  seatCount = 5,
+  fields: { name: string; seatCount?: number; theme?: string; mediaType?: MediaType },
 ): Promise<Venue> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("venues")
-    .insert({ world_id: worldId, name, seat_count: seatCount })
+    .insert({
+      world_id: worldId,
+      name: fields.name,
+      seat_count: fields.seatCount ?? 5,
+      theme: fields.theme ?? null,
+      media_type: fields.mediaType ?? "dj",
+    })
     .select("*")
     .single();
   if (error) throw error;
   return toVenue(data);
+}
+
+/** All venues in a world with lightweight activity signals, for the lobby. */
+export async function listVenues(worldId: string): Promise<VenueSummary[]> {
+  const supabase = createServerClient();
+  const { data: venues, error } = await supabase
+    .from("venues")
+    .select("*")
+    .eq("world_id", worldId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  const ids = (venues ?? []).map((v) => v.id as string);
+  if (ids.length === 0) return [];
+
+  const [{ data: seats }, { data: rooms }] = await Promise.all([
+    supabase.from("venue_seats").select("venue_id").in("venue_id", ids),
+    supabase.from("room_state").select("venue_id, is_playing").in("venue_id", ids),
+  ]);
+
+  const djs = new Map<string, number>();
+  (seats ?? []).forEach((s) =>
+    djs.set(s.venue_id as string, (djs.get(s.venue_id as string) ?? 0) + 1),
+  );
+  const playing = new Map<string, boolean>();
+  (rooms ?? []).forEach((r) => playing.set(r.venue_id as string, r.is_playing as boolean));
+
+  return (venues ?? []).map((v) => ({
+    ...toVenue(v),
+    djs: djs.get(v.id as string) ?? 0,
+    isPlaying: playing.get(v.id as string) ?? false,
+  }));
 }
 
 export async function getVenue(venueId: string): Promise<Venue | null> {
@@ -197,6 +233,7 @@ function toVenue(r: Record<string, unknown>): Venue {
     id: r.id as string,
     worldId: r.world_id as string,
     name: r.name as string,
+    theme: (r.theme as string | null) ?? null,
     mediaType: r.media_type as Venue["mediaType"],
     seatCount: r.seat_count as number,
   };

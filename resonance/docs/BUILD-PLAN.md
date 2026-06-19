@@ -114,11 +114,31 @@ deliberately touches Frequency's app (held for your conventions). 🚪
 ---
 
 ## Phase 1 — The Hangout (multiple venues + watch parties)
-Venue lobby with themed rooms · watch-party/theater (same player, host seat) ·
-ambient auto-DJ lounge (kills the empty-room problem) · avatar customization v1 +
-emotes · Zaps/Field fully wired with seasonal reset live · scheduled events +
-simple ticketing · presence surfacing ("3 friends are in Synthwave Lounge").
-**Metric:** prime-time density; rooms that feel alive.
+**Metric:** prime-time density; rooms that feel alive; friend-presence drives returns.
+
+### Section 6 — Venue lobby + multiple themed venues  ✅
+- [x] `theme` column (migration `0006`); venue list with activity signals (`listVenues`)
+- [x] `GET /api/venues` (lobby) + create accepts `theme`/`mediaType`
+- [x] `/dev/lobby` (browse/enter/create) + `/dev/room/[venueId]`; shared `RoomShell`
+- [ ] 🚪 GO (manual): create a few rooms, see them listed with live signals, enter one
+
+### Section 7 — Watch party / theater  ⬜
+A single host seat controls one shared video; live chat + reactions. Reuses the
+sync engine with `media_type='watch'` (one controller instead of rotating DJs).
+
+### Section 8 — Ambient auto-DJ lounge  ⬜
+An always-on playlist so a room is never dead (the cold-start backstop, §3.1);
+`media_type='lounge'`.
+
+### Section 9 — Avatars, emotes, richer presence  ⬜
+Avatar config v1, emote reactions over the channel, a named presence list.
+
+### Section 10 — Scheduled events + simple ticketing  ⬜
+`events` table, schedule/host, free/paid/PWYC ticket types (reuse Frequency's model).
+
+### Section 11 — Presence surfacing  ⬜
+"N here now" / "friends in X right now" across the lobby — the gravity that drives
+returns (§3.1, §3.7).
 
 ## Phase 2 — The Little World (spatial + UGC decor)
 Rung-1 spatial layer (walk the map, proximity audio/chat via Phaser/tilemap) ·
