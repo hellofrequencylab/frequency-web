@@ -20,6 +20,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { applyViewAs } from '@/lib/view-as'
 import type { EntitlementTier } from '@/lib/core/entitlement'
+import { BETA_OPEN_ACCESS, BETA_GRANTED_TIER } from '@/lib/core/beta'
 import { asWebRole, isStaff, type WebRole } from '@/lib/core/roles'
 import { communityRoleToLevel, levelRank, type CommunityLevel } from '@/lib/core/stewardship'
 
@@ -95,7 +96,12 @@ const resolveCaller = cache(
       webRole: previewing ? 'none' : realWebRole,
       realWebRole,
       // Billing entitlement (orthogonal to role). The check constraint guarantees the union.
-      membershipTier: (data.membership_tier ?? 'free') as EntitlementTier,
+      // BETA: while open access is on, every signed-in member is granted the paid Crew tier so
+      // all premium features unlock (lib/core/beta.ts). The DB value is untouched — flip the flag
+      // off to restore real tiers. Staff (web_role) is unaffected; admin surfaces stay locked.
+      membershipTier: BETA_OPEN_ACCESS
+        ? BETA_GRANTED_TIER
+        : ((data.membership_tier ?? 'free') as EntitlementTier),
     }
   },
 )

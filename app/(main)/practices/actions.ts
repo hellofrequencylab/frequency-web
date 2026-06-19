@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
+import { BETA_OPEN_ACCESS } from '@/lib/core/beta'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { redirect } from 'next/navigation'
@@ -65,19 +66,22 @@ export async function dropPracticeAction(practiceId: string): Promise<ActionResu
  * truth — the hidden UI button is only convenience.
  *
  * Returns the caller's id + whether host+ standing (the curation tier) lets the practice
- * auto-approve. A Crew author (below host) creates PENDING: the practice stays out of the public
- * pool until a Host+ approves it. Returns an error string when the caller is a Member or signed out.
+ * auto-approve. A non-host author creates PENDING: the practice stays out of the public pool
+ * until a Host+ approves it. Returns an error string when the caller is signed out (or, outside
+ * beta, a plain Member — see BETA_OPEN_ACCESS).
  */
 async function authorizeCreatePractice(): Promise<
   { profileId: string; autoApprove: boolean } | { error: string }
 > {
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Not signed in' }
-  // CREW+ may author. A plain Member is rejected with a clear reason (server is the source of truth).
-  if (!atLeastRole(caller.community_role, 'crew')) {
+  // BETA open access: any signed-in member may author (kept pending for Host+ review below, so
+  // nothing unvetted goes public). Outside beta the gate is CREW+ on the trust ladder — a plain
+  // Member is rejected (server is the source of truth; the hidden UI button is only convenience).
+  if (!BETA_OPEN_ACCESS && !atLeastRole(caller.community_role, 'crew')) {
     return { error: 'Only Crew and above can create a practice.' }
   }
-  // Host+ (or platform staff, who curate the library) author live; Crew authors pending review.
+  // Host+ (or platform staff, who curate the library) author live; everyone else pending review.
   const autoApprove = atLeastRole(caller.community_role, 'host') || caller.webRole !== 'none'
   return { profileId: caller.id, autoApprove }
 }
