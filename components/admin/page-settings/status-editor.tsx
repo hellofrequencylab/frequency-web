@@ -19,7 +19,7 @@ const ROLE_LABEL: Record<string, string> = {
   mentor: 'Mentors and up',
 }
 
-export function StatusEditor() {
+export function StatusEditor({ spaceId }: { spaceId?: string }) {
   const pathname = usePathname()
   const [status, setStatus] = useState<'draft' | 'published'>('published')
   const [visibility, setVisibility] = useState('') // '' = anyone signed in
@@ -30,7 +30,7 @@ export function StatusEditor() {
 
   useEffect(() => {
     let active = true
-    getPageStatusForEditor(pathname)
+    getPageStatusForEditor(pathname, spaceId)
       .then((d) => {
         if (!active) return
         setStatus(d.status === 'draft' ? 'draft' : 'published')
@@ -41,13 +41,13 @@ export function StatusEditor() {
     return () => {
       active = false
     }
-  }, [pathname])
+  }, [pathname, spaceId])
 
   function save() {
     setError(null)
     setSaved(false)
     startTransition(async () => {
-      const r = await savePageStatus(pathname, { status, visibilityRole: visibility || null })
+      const r = await savePageStatus(pathname, { status, visibilityRole: visibility || null }, spaceId)
       if (isError(r)) setError(r.error)
       else {
         setSaved(true)

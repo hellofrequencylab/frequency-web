@@ -4,6 +4,7 @@
 // settings) live behind app-code authz like the rest of the admin surface — added with the
 // Space management UI, not here.
 
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Space, SpaceStatus, SpaceType } from './types'
 
@@ -100,6 +101,21 @@ export async function getRootSpace(): Promise<Space | null> {
     .maybeSingle()
   return data ? mapSpace(data) : null
 }
+
+/**
+ * The root Space's id, request-cached. The DEFAULT tenant for any space-scoped read whose
+ * caller hasn't resolved its own space yet — so single-tenant callers keep reading the root
+ * space's rows (the canary: root behaves exactly as today). FAIL-SAFE: null if the root row
+ * is missing, in which case the page-settings readers degrade to their code defaults.
+ */
+export const loadRootSpaceId = cache(async (): Promise<string | null> => {
+  try {
+    const root = await getRootSpace()
+    return root?.id ?? null
+  } catch {
+    return null
+  }
+})
 
 /**
  * Resolve the active Space for a request host: a custom-domain match wins, otherwise the

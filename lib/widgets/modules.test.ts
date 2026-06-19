@@ -1,11 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS, LAYOUT_MODULE_IDS } from './modules'
+import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS } from './modules'
+
+// The global community set — the default everywhere ('*'). (The LAYOUT_MODULE_IDS alias was
+// removed in Phase 0.5a; '*' is the single source of the default.)
+const GLOBAL = ROUTE_MODULE_IDS['*']
 
 // Route-scoping (ADR-294): a page only offers — and the resolver only renders — its own block set.
 describe('moduleIdsForScope', () => {
   it('the global default (*) returns the community set', () => {
     expect(moduleIdsForScope('*')).toBe(ROUTE_MODULE_IDS['*'])
-    expect(moduleIdsForScope('*')).toEqual(LAYOUT_MODULE_IDS)
+    expect(moduleIdsForScope('*')).toEqual(GLOBAL)
   })
 
   it('an exact converted route returns its own set, not the global one', () => {
@@ -31,11 +35,18 @@ describe('moduleIdsForScope', () => {
     expect(p).toContain('practices-library')
   })
 
+  it('/lead has its own explicit set (the deliberate community-blocks footer)', () => {
+    // Phase 0.5a: /lead is no longer an accidental fallback — it declares its own set so the
+    // Layout editor's offering there is intentional. Its set is the community blocks.
+    expect(moduleIdsForScope('/lead')).toBe(ROUTE_MODULE_IDS['/lead'])
+    expect(moduleIdsForScope('/lead')).toEqual(GLOBAL)
+  })
+
   it('an unconverted route falls back through its section to the global set', () => {
-    // No '/lead' or '/lead/*' set declared → inherits the global community set.
-    expect(moduleIdsForScope('/lead')).toEqual(LAYOUT_MODULE_IDS)
-    // A section scope with no declared set also falls back to global.
-    expect(moduleIdsForScope('/settings/*')).toEqual(LAYOUT_MODULE_IDS)
+    // A section scope with no declared set falls back to global.
+    expect(moduleIdsForScope('/settings/*')).toEqual(GLOBAL)
+    // A truly unknown exact route with no section set also inherits global.
+    expect(moduleIdsForScope('/nope')).toEqual(GLOBAL)
   })
 
   it('the Vault (/crew/store) resolves its own blocks, not /crew’s', () => {
@@ -61,7 +72,7 @@ describe('moduleIdsForScope', () => {
   it("a section scope of a converted route does NOT inherit the exact route's blocks", () => {
     // '/crew/*' is a wildcard for crew SUB-pages (challenges, …) — distinct from '/crew' AND from
     // the now-converted exact '/crew/store' — so the wildcard still gets the generic set.
-    expect(moduleIdsForScope('/crew/*')).toEqual(LAYOUT_MODULE_IDS)
+    expect(moduleIdsForScope('/crew/*')).toEqual(GLOBAL)
   })
 })
 

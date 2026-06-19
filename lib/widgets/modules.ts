@@ -33,6 +33,9 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'quest-my-practices', label: 'My practices', description: "A compact glance at the member's adopted practices, linking to the Practices page." },
   { id: 'quest-journeys', label: 'Your Journeys', description: "The member's adopted and built Journeys, each with its progress." },
   { id: 'quest-next-gathering', label: 'Next gathering', description: 'The next event to show up to in person — the member’s RSVP, or the nearest community event.' },
+  // PARKED: retired from My Quest (owner ask — see CREW_MODULE_IDS) and not offered on any
+  // other surface today. Its meta + component stay defined so a future page can adopt it; it
+  // is intentionally absent from every ROUTE_MODULE_IDS set until then.
   { id: 'quest-tasks', label: 'Tasks', description: 'Circle tasks plus the global task list members complete to earn Zaps.' },
   { id: 'quest-explore', label: 'Explore links', description: 'Quick links to Journeys, Practices, Challenges, and The Vault.' },
   { id: 'quest-leaderboard', label: 'Circle leaderboard', description: "The member's circle ranked by season Zaps." },
@@ -73,6 +76,12 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
 // The generic blocks any page can carry — the default everywhere ('*').
 const COMMUNITY_MODULE_IDS = ['community-pulse', 'newest-members', 'popular-channels', 'top-circles'] as const
+
+// The Leadership dashboard (/lead) renders <PageModules route="/lead"> and intentionally shows
+// the generic community blocks as its footer. It gets its OWN explicit set (rather than falling
+// through to '*') so the Layout editor's offering on that page is deliberate, not an accidental
+// inherit — /lead is listed in lib/widgets/module-routes.ts, so the editor appears there.
+const LEAD_MODULE_IDS = COMMUNITY_MODULE_IDS
 
 // My Quest's own blocks, in default render order (the order they appear when no layout is
 // saved — unplaced modules append to the template's first slot in this order).
@@ -133,6 +142,7 @@ const VAULT_MODULE_IDS = [
  *  `<PageModules>` (and list it in lib/widgets/module-routes.ts). */
 export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '*': COMMUNITY_MODULE_IDS,
+  '/lead': LEAD_MODULE_IDS,
   '/crew': CREW_MODULE_IDS,
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
@@ -142,14 +152,17 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/crew/store': VAULT_MODULE_IDS,
 }
 
-/** Back-compat: the default (global) module id set. */
-export const LAYOUT_MODULE_IDS: readonly string[] = COMMUNITY_MODULE_IDS
-
 // The scope keys that can carry a module set for `key`, MOST-SPECIFIC FIRST: an exact route
 // inherits its section then the global default; a section inherits the global default; '*' is
 // itself. Mirrors the layout scope cascade (lib/page-settings/layout.ts) but stays self-
 // contained so this file keeps zero dependencies.
-function moduleScopeChain(key: string): string[] {
+//
+// SPACE LAYER (Phase 0.5a): a per-entity profile route (e.g. '/spaces/<slug>/about') is a
+// concrete route, so its chain already emits the route's own key, then the SPACE-SCOPED
+// SECTION key ('/spaces/*' — the family default for every entity profile), and only THEN the
+// global '*' fallback. So a space's profile tabs resolve their own module set before any
+// global default, with no special-casing here once those '/spaces/*' sets are registered.
+export function moduleScopeChain(key: string): string[] {
   if (key === '*') return ['*']
   if (key.endsWith('/*')) return [key, '*']
   const seg = key.split('/').filter(Boolean)[0]
@@ -165,7 +178,7 @@ export function moduleIdsForScope(key: string): readonly string[] {
     const ids = ROUTE_MODULE_IDS[k]
     if (ids) return ids
   }
-  return ROUTE_MODULE_IDS['*'] ?? LAYOUT_MODULE_IDS
+  return ROUTE_MODULE_IDS['*'] ?? COMMUNITY_MODULE_IDS
 }
 
 export function moduleMeta(id: string): LayoutModuleMeta | undefined {
