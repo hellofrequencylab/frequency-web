@@ -277,6 +277,28 @@ export async function searchLibraryPractices(opts: LibrarySearchOpts = {}): Prom
   return { rows, total, page, pageSize, pageCount }
 }
 
+/** A practice creator's display identity, for author attribution on cards + the
+ *  detail page. handle is the /people/{handle} key; null = no human author. */
+export type PracticeCreator = { id: string; handle: string | null; display_name: string | null; avatar_url: string | null }
+
+/** Batch-resolve the creators (profiles) for a set of `created_by` ids in ONE query.
+ *  Returns a Map keyed by profile id; ids that aren't real profiles are simply absent.
+ *  Used to attribute library cards without enriching the shared search function. */
+export async function getPracticeCreators(ids: (string | null | undefined)[]): Promise<Map<string, PracticeCreator>> {
+  const unique = [...new Set(ids.filter((x): x is string => !!x))]
+  const map = new Map<string, PracticeCreator>()
+  if (unique.length === 0) return map
+  const { data } = await db().from('profiles').select('id, handle, display_name, avatar_url').in('id', unique)
+  for (const p of (data as PracticeCreator[] | null) ?? []) map.set(p.id, p)
+  return map
+}
+
+/** Resolve a single practice creator (the detail page's author line). */
+export async function getPracticeCreator(id: string | null | undefined): Promise<PracticeCreator | null> {
+  if (!id) return null
+  return (await getPracticeCreators([id])).get(id) ?? null
+}
+
 /** Total public practices (for the stat band). Head-count only, no rows. */
 export async function countPublicPractices(opts: { hideDemo?: boolean } = {}): Promise<number> {
   let q = db().from('practices_ranked').select('id', { count: 'exact', head: true }).eq('is_public', true)

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { Zap, Pencil, Wand2 } from 'lucide-react'
 import { LotusIcon } from '@/components/on-air/icons'
 import { getMyProfileId } from '@/lib/auth'
-import { getRankedPractice, getPracticeMemberState } from '@/lib/practices'
+import { getRankedPractice, getPracticeMemberState, getPracticeCreator } from '@/lib/practices'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { DetailTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
@@ -14,6 +14,7 @@ import { PillarBadge } from '@/components/practice/pillar-badge'
 import { ClaimPractice } from '@/components/practice/claim-practice'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
+import { PracticeAuthor } from '@/components/practice/practice-author'
 import { forkPracticeAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
@@ -55,11 +56,12 @@ export default async function PracticeDetailPage({ params }: Params) {
   // Public practices are world-readable; a private one is only its owner's.
   if (!practice.is_public && !isOwner) notFound()
 
-  const [pillars, state] = await Promise.all([
+  const [pillars, state, creator] = await Promise.all([
     getPillars(),
     profileId
       ? getPracticeMemberState(profileId, practice.id)
       : Promise.resolve({ adopted: false, loggedToday: false }),
+    getPracticeCreator(practice.created_by),
   ])
   const pillarName = practice.domain_id ? pillarsById(pillars).get(practice.domain_id)?.name ?? null : null
 
@@ -70,10 +72,20 @@ export default async function PracticeDetailPage({ params }: Params) {
     steps: parseSteps(practice.body),
   }
 
+  const summary = practice.summary ?? practice.description ?? null
+  const authorLine = creator?.handle ? <PracticeAuthor creator={creator} prefix="Created by" /> : null
+
   return (
     <DetailTemplate
       title={practice.title}
-      subtitle={practice.summary ?? practice.description ?? undefined}
+      subtitle={
+        summary || authorLine ? (
+          <div className="space-y-1.5">
+            {summary && <div>{summary}</div>}
+            {authorLine}
+          </div>
+        ) : undefined
+      }
       badges={
         <>
           {pillarName && <PillarBadge name={pillarName} />}
