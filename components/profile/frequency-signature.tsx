@@ -34,10 +34,29 @@ function point(cx: number, cy: number, radius: number, angleDeg: number): [numbe
   return [cx + radius * Math.cos(rad), cy + radius * Math.sin(rad)]
 }
 
+/** A smooth CLOSED path through points (closed Catmull-Rom → cubic béziers). Turns the four
+ *  axis tips into one organic blob instead of a hard four-point kite, so the signature reads
+ *  as a living shape that bulges toward whatever Pillar is practiced most and rounds toward a
+ *  full bloom as the four even out. */
+function smoothClosedPath(pts: [number, number][]): string {
+  const n = pts.length
+  if (n < 3) return ''
+  const f = (v: number) => v.toFixed(2)
+  let d = `M ${f(pts[0][0])} ${f(pts[0][1])}`
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n]
+    const p1 = pts[i]
+    const p2 = pts[(i + 1) % n]
+    const p3 = pts[(i + 2) % n]
+    d += ` C ${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(p1[1] + (p2[1] - p0[1]) / 6)}, ${f(p2[0] - (p3[0] - p1[0]) / 6)} ${f(p2[1] - (p3[1] - p1[1]) / 6)}, ${f(p2[0])} ${f(p2[1])}`
+  }
+  return d + ' Z'
+}
+
 function balanceLabel(sig: FrequencySignature): string {
   if (sig.total === 0) return 'No signature yet'
   if (sig.spread === 1) return 'Focused'
-  if (sig.balance >= 0.85) return 'In balance'
+  if (sig.balance >= 0.85) return 'Grounded'
   if (sig.balance >= 0.6) return 'Finding balance'
   return 'Leaning in'
 }
@@ -95,26 +114,30 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
   const pad = compact ? 6 : stacked ? 40 : 46
   const maxR = cx - pad
 
-  // Each axis is scaled by signature.axes[pillar] (0..1 of the peak pillar). A small
-  // floor keeps a barely-touched pillar visible (so the shape never collapses to a
-  // line), and an untouched pillar sits at the centre.
+  // Each axis pushes OUT by how much that Pillar is practiced (signature.axes = 0..1 of the
+  // peak Pillar), so the shape bulges toward whatever a member leans on. A low floor keeps an
+  // untouched Pillar from collapsing to the centre while still reading as "behind" — wider
+  // range than the old kite. A balanced member fills toward a round bloom; a lopsided one
+  // bulges one way and dents where they're behind.
   const radiusFor = (k: PillarKey) => {
     const a = signature.axes[k]
-    if (a <= 0) return 0
-    return (0.12 + 0.88 * a) * maxR
+    if (a <= 0) return 0.08 * maxR
+    return (0.1 + 0.9 * a) * maxR
   }
 
   const vertices = AXIS_ORDER.map((k) => point(cx, cy, radiusFor(k), PILLARS[k].angle))
-  const polygon = vertices.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ')
+  // The blob — the four axis tips smoothed into one organic shape (not a hard kite).
+  const blob = smoothClosedPath(vertices)
 
   const dominant = signature.dominant ?? AXIS_ORDER[0]
   const domAccent = PILLARS[dominant].accent
 
-  // The four cardinal points at the rim → the subtle diamond overlay.
-  const diamond = AXIS_ORDER.map((k) => {
-    const [x, y] = point(cx, cy, maxR, PILLARS[k].angle)
-    return `${x.toFixed(2)},${y.toFixed(2)}`
-  }).join(' ')
+  // Balance carries through COLOUR: warm brand orange while a member leans on one Pillar,
+  // easing to a grounded green as the four even out. signature.balance is 0 (lopsided) .. 1
+  // (even). color-mix lives in the CSS `color` property (a bare SVG fill attribute can fall
+  // back to black), and the blob/rings paint with currentColor.
+  const balanced = Math.max(0, Math.min(1, signature.balance))
+  const balanceTint = `color-mix(in oklab, var(--color-success) ${Math.round(balanced * 100)}%, var(--color-primary))`
 
   const gridLevels = compact ? [0.55, 1] : [0.36, 0.68, 1]
 
@@ -129,10 +152,10 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
           ? 'Empty Frequency Signature'
           : `Frequency Signature: dominant ${PILLARS[dominant].label}, ${signature.spread} of 4 Pillars active`
       }
-      // currentColor = the dominant Pillar accent, set as a CSS PROPERTY so the var() always
-      // resolves — a color-mix()/var() in a bare SVG fill ATTRIBUTE can fall back to solid black.
-      // Soft, luminous, no backdrop — the Mindless breath-visualizer vibe.
-      style={{ color: accentColor(domAccent) }}
+      // currentColor = the balance tint (orange → green), set as a CSS PROPERTY so the
+      // color-mix()/var() always resolves — a bare SVG fill ATTRIBUTE can fall back to solid
+      // black. Soft, luminous, no backdrop — the Mindless breath-visualizer vibe.
+      style={{ color: balanceTint }}
       className={compact ? '' : stacked ? 'h-full w-full' : 'mx-auto'}
     >
       {/* Concentric rings — soft + luminous, no fill (breath-visualizer ripple). */}
@@ -149,17 +172,6 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
         />
       ))}
 
-      {/* The diamond overlay — the four Pillar points connected, washed in translucent brand
-          orange (var → inline style so it never falls back to black). Subtle stroke kept. */}
-      <polygon
-        points={diamond}
-        style={{ fill: 'var(--color-primary)' }}
-        fillOpacity={compact ? 0.12 : 0.16}
-        stroke="currentColor"
-        strokeOpacity={compact ? 0.22 : 0.3}
-        strokeWidth={1}
-      />
-
       {/* Spokes to each axis tip (faint). */}
       {!compact &&
         AXIS_ORDER.map((k) => {
@@ -169,11 +181,12 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
           )
         })}
 
-      {/* The signature shape — a soft fill in the dominant accent (currentColor). */}
-      <polygon
-        points={polygon}
+      {/* The blob — the signature itself. Fill + stroke in the balance tint (currentColor):
+          warm when leaning on one Pillar, green as the four come into balance. */}
+      <path
+        d={blob}
         fill="currentColor"
-        fillOpacity={compact ? 0.22 : 0.18}
+        fillOpacity={compact ? 0.26 : 0.22}
         stroke="currentColor"
         strokeWidth={compact ? 1.5 : 2}
         strokeLinejoin="round"
