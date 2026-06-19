@@ -31,17 +31,20 @@ export function useProfile(ready: boolean) {
     };
   }, [ready]);
 
-  const save = useCallback(async (displayName: string) => {
-    const res = await authedFetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName }),
-    });
-    if (res.ok) {
-      const j = (await res.json()) as { profile: Profile };
-      setProfile(j.profile);
-    }
-  }, []);
+  const save = useCallback(
+    async (displayName: string, avatarConfig?: Record<string, unknown>) => {
+      const res = await authedFetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName, avatarConfig }),
+      });
+      if (res.ok) {
+        const j = (await res.json()) as { profile: Profile };
+        setProfile(j.profile);
+      }
+    },
+    [],
+  );
 
   return { profile, loaded, save };
 }

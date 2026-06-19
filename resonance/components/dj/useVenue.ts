@@ -12,6 +12,7 @@ import {
   VENUE_CHANGED_EVENT,
   VOTE_TALLY_EVENT,
   CHAT_EVENT,
+  REACTION_EVENT,
   ZAPS_AWARDED_EVENT,
   RANK_CHANGED_EVENT,
 } from "@/lib/sync/channels";
@@ -21,6 +22,30 @@ export interface ChatLine {
   name: string;
   text: string;
   at: number;
+}
+/** Someone present in the room (presence payload). */
+export interface Presence {
+  userId: string;
+  name: string;
+  avatar: Record<string, unknown> | null;
+}
+/** A live floating emote on screen. */
+export interface Reaction {
+  id: string;
+  emoji: string;
+  name: string;
+}
+
+/** Show an emote for a beat, then clear it. Kept out of the channel effect so
+ * its deps don't churn the subscription. */
+function spawnReaction(
+  setReactions: React.Dispatch<React.SetStateAction<Reaction[]>>,
+  emoji: string,
+  name: string,
+) {
+  const id = crypto.randomUUID();
+  setReactions((rs) => [...rs.slice(-30), { id, emoji, name }]);
+  setTimeout(() => setReactions((rs) => rs.filter((r) => r.id !== id)), 2500);
 }
 export interface Tally {
   awesome: number;
@@ -63,6 +88,7 @@ export function useVenue(
   venueId: string,
   userId: string,
   displayName: string,
+  avatar?: Record<string, unknown> | null,
   onGameEvent?: (e: { type: string; payload: unknown }) => void,
 ) {
   const [venue, setVenue] = useState<Venue | null>(null);
@@ -72,7 +98,8 @@ export function useVenue(
   const [tally, setTally] = useState<Tally | null>(null);
   const [standing, setStanding] = useState<Standing | null>(null);
   const [chat, setChat] = useState<ChatLine[]>([]);
-  const [present, setPresent] = useState<string[]>([]);
+  const [roster, setRoster] = useState<Presence[]>([]);
+  const [reactions, setReactions] = useState<Reaction[]>([]);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const roomStateRef = useRef<RoomState | null>(null);
@@ -117,16 +144,22 @@ export function useVenue(
           else if (e.type === VOTE_TALLY_EVENT) setTally(e.payload as Tally);
           else if (e.type === CHAT_EVENT)
             setChat((c) => [...c.slice(-49), e.payload as ChatLine]);
-          else if (e.type === ZAPS_AWARDED_EVENT || e.type === RANK_CHANGED_EVENT)
+          else if (e.type === REACTION_EVENT) {
+            const r = e.payload as { emoji: string; name: string };
+            spawnReaction(setReactions, r.emoji, r.name);
+          } else if (e.type === ZAPS_AWARDED_EVENT || e.type === RANK_CHANGED_EVENT)
             // standing refreshes via the venue:changed that advance also fires;
             // forward upward so an embedding host can mirror to its own UI.
             onGameEvent?.(e);
         },
         onPresenceSync: (st) => {
-          const names = Object.values(st)
+          const people = Object.values(st)
             .flat()
-            .map((p) => (p as { name?: string }).name ?? "?");
-          setPresent(names);
+            .map((p) => {
+              const v = p as { userId?: string; name?: string; avatar?: Record<string, unknown> };
+              return { userId: v.userId ?? "?", name: v.name ?? "?", avatar: v.avatar ?? null };
+            });
+          setRoster(people);
         },
       })
       .then((ch) => {
@@ -135,7 +168,7 @@ export function useVenue(
           return;
         }
         channelRef.current = ch;
-        void ch.track({ userId, name: displayName });
+        void ch.track({ userId, name: displayName, avatar: avatar ?? null });
       })
       .catch(() => {
         /* fall back to snapshot refetch */
@@ -145,7 +178,7 @@ export function useVenue(
       void channelRef.current?.leave();
       channelRef.current = null;
     };
-  }, [venueId, userId, displayName, refetch, onGameEvent]);
+  }, [venueId, userId, displayName, avatar, refetch, onGameEvent]);
 
   const post = useCallback(
     (path: string, body: unknown) =>
@@ -213,6 +246,17 @@ export function useVenue(
     },
     [userId, displayName],
   );
+  // Floating emote: show it locally and broadcast it (not persisted, not chat).
+  const react = useCallback(
+    (emoji: string) => {
+      spawnReaction(setReactions, emoji, displayName);
+      void channelRef.current?.send({
+        type: REACTION_EVENT,
+        payload: { userId, name: displayName, emoji, at: Date.now() },
+      });
+    },
+    [userId, displayName],
+  );
 
   return {
     venue,
@@ -222,7 +266,9 @@ export function useVenue(
     tally,
     standing,
     chat,
-    present,
+    roster,
+    present: roster.map((r) => r.name),
+    reactions,
     actions: {
       takeSeat,
       leaveSeat,
@@ -231,6 +277,7 @@ export function useVenue(
       vote,
       advance,
       sendChat,
+      react,
       loadVideo,
       play,
       pause,

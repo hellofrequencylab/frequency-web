@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/useAuth";
 import { useProfile } from "@/components/profile/useProfile";
 import { Room } from "./Room";
+import { AvatarChip, AVATAR_EMOJIS as EMOJIS, AVATAR_COLORS as COLORS, avatarOf } from "./AvatarChip";
 
 /**
  * Wraps a Room with standalone identity: ensures a session, loads/edits the
@@ -41,6 +42,7 @@ export function RoomShell({
         venueId={venueId}
         userId={userId}
         name={displayName}
+        avatar={profile?.avatarConfig ?? null}
         canDj={!!profile}
         onLeaveVenue={onLeaveVenue}
       />
@@ -48,22 +50,27 @@ export function RoomShell({
   );
 }
 
+type ProfileShape = { displayName: string; avatarConfig: Record<string, unknown> };
+
 function ProfileBar({
   profile,
   displayName,
   onSave,
 }: {
-  profile: { displayName: string } | null;
+  profile: ProfileShape | null;
   displayName: string;
-  onSave: (name: string) => void | Promise<void>;
+  onSave: (name: string, avatarConfig?: Record<string, unknown>) => void | Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(displayName);
+  const initial = avatarOf(profile?.avatarConfig);
+  const [emoji, setEmoji] = useState(initial.emoji);
+  const [color, setColor] = useState(initial.color);
 
   if (editing || !profile) {
     return (
       <section style={card}>
-        <h3>{profile ? "Edit your name" : "Pick a name to take the decks"}</h3>
+        <h3>{profile ? "Edit your look" : "Pick a name to take the decks"}</h3>
         <p style={{ color: "#888", fontSize: 13 }}>
           You’re in as <b>{displayName}</b>. Lurkers can chat and vote; DJing needs a name.
         </p>
@@ -71,28 +78,63 @@ function ProfileBar({
           onSubmit={(e) => {
             e.preventDefault();
             if (name.trim()) {
-              void onSave(name.trim());
+              void onSave(name.trim(), { emoji, color });
               setEditing(false);
             }
           }}
-          style={{ display: "flex", gap: "0.5rem" }}
+          style={{ display: "grid", gap: "0.6rem" }}
         >
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="display name"
-            style={{ flex: 1, padding: "0.4rem" }}
+            style={{ padding: "0.4rem" }}
           />
-          <button type="submit">Save</button>
+          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", alignItems: "center" }}>
+            <AvatarChip emoji={emoji} color={color} name={name || displayName} />
+            <span style={{ color: "#888", fontSize: 12 }}>·</span>
+            {EMOJIS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => setEmoji(e)}
+                style={{ fontSize: 18, opacity: e === emoji ? 1 : 0.5 }}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                aria-label={`color ${c}`}
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: c,
+                  border: c === color ? "2px solid #111" : "1px solid #ccc",
+                }}
+              />
+            ))}
+          </div>
+          <button type="submit" style={{ justifySelf: "start" }}>
+            Save
+          </button>
         </form>
       </section>
     );
   }
 
+  const cfg = avatarOf(profile.avatarConfig);
   return (
-    <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-      <small style={{ color: "#555" }}>
-        You are <b>{profile.displayName}</b> · <button onClick={() => setEditing(true)}>edit</button>
+    <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <small style={{ color: "#555", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+        <AvatarChip emoji={cfg.emoji} color={cfg.color} name={profile.displayName} />
+        <button onClick={() => setEditing(true)}>edit</button>
       </small>
     </header>
   );

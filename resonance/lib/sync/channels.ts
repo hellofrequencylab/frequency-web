@@ -20,6 +20,9 @@ export const VOTE_TALLY_EVENT = "vote:tally";
 /** Client-to-client chat line: { userId, text, at }. Not persisted (ephemeral). */
 export const CHAT_EVENT = "chat:message";
 
+/** Ephemeral floating emote: { userId, name, emoji, at }. Not persisted. */
+export const REACTION_EVENT = "reaction:emote";
+
 /** A DJ earned Zaps on a finished play: { userId, delta, reason, refId }.
  * Also the server-to-server mirror payload for the host economy (Section 5). */
 export const ZAPS_AWARDED_EVENT = "zaps:awarded";

@@ -139,8 +139,12 @@ The room UI now branches by media type off one `useVenue` (DJ vs Watch).
 - [x] Community jukebox: `POST /api/venues/[venueId]/playlist` (add a track), refetch on broadcast
 - [ ] 🚪 GO (manual): enter a lounge cold -> it starts playing; track end loops; add a track
 
-### Section 9 — Avatars, emotes, richer presence  ⬜
-Avatar config v1, emote reactions over the channel, a named presence list.
+### Section 9 — Avatars, emotes, richer presence  🔨
+- [x] Avatar config v1 (emoji + color) on the existing `profiles.avatar_config`; picker in the profile bar
+- [x] Presence carries the avatar; named roster of avatar chips replaces the plain name list
+- [x] Floating emotes: `reaction:emote` channel event, transient overlay over the player
+- [x] Reaction buttons send emotes (not chat); shared `AvatarChip` across bar/roster
+- [ ] 🚪 GO (manual): set an avatar, see your chip in the roster from another window; emotes float
 
 ### Section 10 — Scheduled events + simple ticketing  ⬜
 `events` table, schedule/host, free/paid/PWYC ticket types (reuse Frequency's model).

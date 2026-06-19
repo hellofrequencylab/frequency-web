@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useVenue } from "@/components/dj/useVenue";
 import { SyncedPlayer } from "@/components/sync/SyncedPlayer";
 import { computePosition } from "@/lib/sync/clock";
+import { AvatarChip, avatarOf } from "./AvatarChip";
 
 type RoomProps = {
   venueId: string;
   userId: string;
   name: string;
+  avatar?: Record<string, unknown> | null;
   canDj: boolean;
   onLeaveVenue?: () => void;
   onGameEvent?: (e: { type: string; payload: unknown }) => void;
@@ -17,12 +19,12 @@ type RoomProps = {
 type Venue = ReturnType<typeof useVenue>;
 
 /**
- * Renders a venue by its media type: the DJ Room (rotating decks) or the Watch
- * Party (single host controls one shared video). Both share one channel, chat,
- * and presence (one `useVenue`).
+ * Renders a venue by its media type: DJ Room (rotating decks), Watch Party (one
+ * host drives a shared video), or Lounge (always-on auto-DJ). All share one
+ * channel, chat, presence, and floating emotes (one `useVenue`).
  */
 export function Room(props: RoomProps) {
-  const v = useVenue(props.venueId, props.userId, props.name, props.onGameEvent);
+  const v = useVenue(props.venueId, props.userId, props.name, props.avatar, props.onGameEvent);
   if (v.venue?.mediaType === "watch") return <WatchLayout v={v} {...props} />;
   if (v.venue?.mediaType === "lounge") return <LoungeLayout v={v} {...props} />;
   return <DjLayout v={v} {...props} />;
@@ -30,15 +32,53 @@ export function Room(props: RoomProps) {
 
 function Header({ v, onLeaveVenue }: { v: Venue; onLeaveVenue?: () => void }) {
   return (
-    <p style={{ color: "#888", fontSize: 12, wordBreak: "break-all" }}>
-      {v.venue?.name} · here: {v.present.join(", ") || "…"}
-      {onLeaveVenue ? (
-        <>
-          {" "}
-          · <button onClick={onLeaveVenue}>switch venue</button>
-        </>
-      ) : null}
-    </p>
+    <div style={{ marginBottom: "0.5rem" }}>
+      <p style={{ color: "#888", fontSize: 12, margin: "0 0 0.35rem", wordBreak: "break-all" }}>
+        {v.venue?.name} · {v.roster.length} here
+        {onLeaveVenue ? (
+          <>
+            {" "}
+            · <button onClick={onLeaveVenue}>switch venue</button>
+          </>
+        ) : null}
+      </p>
+      <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+        {v.roster.map((p) => {
+          const a = avatarOf(p.avatar);
+          return <AvatarChip key={p.userId} emoji={a.emoji} color={a.color} name={p.name} />;
+        })}
+        {v.roster.length === 0 && <small style={{ color: "#bbb" }}>…</small>}
+      </div>
+    </div>
+  );
+}
+
+/** Emotes that float up over the player for a beat, then vanish. */
+function FloatingEmotes({ v }: { v: Venue }) {
+  return (
+    <div style={{ position: "relative", height: 0 }}>
+      <style>{"@keyframes rs-float{from{transform:translateY(0);opacity:1}to{transform:translateY(-72px);opacity:0}}"}</style>
+      <div
+        style={{
+          position: "absolute",
+          right: 12,
+          bottom: 8,
+          display: "flex",
+          gap: 8,
+          pointerEvents: "none",
+        }}
+      >
+        {v.reactions.map((r) => (
+          <span
+            key={r.id}
+            title={r.name}
+            style={{ fontSize: 30, animation: "rs-float 2.5s ease-out forwards" }}
+          >
+            {r.emoji}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -49,7 +89,7 @@ function ChatBox({ v }: { v: Venue }) {
       <h3>Chat</h3>
       <div style={{ display: "flex", gap: "0.35rem", marginBottom: "0.5rem" }}>
         {["🔥", "😂", "❤️", "🙌", "👀"].map((e) => (
-          <button key={e} onClick={() => v.actions.sendChat(e)}>
+          <button key={e} onClick={() => v.actions.react(e)} title="send a reaction">
             {e}
           </button>
         ))}
@@ -93,6 +133,7 @@ function WatchLayout({ v, userId, canDj, onLeaveVenue }: { v: Venue } & RoomProp
     <>
       <Header v={v} onLeaveVenue={onLeaveVenue} />
       <SyncedPlayer state={v.roomState} />
+      <FloatingEmotes v={v} />
 
       <section style={card}>
         {isHost ? (
@@ -153,6 +194,7 @@ function LoungeLayout({ v, canDj, onLeaveVenue }: { v: Venue } & RoomProps) {
       <Header v={v} onLeaveVenue={onLeaveVenue} />
       <p style={{ fontSize: 13, color: "#888" }}>🎚️ Auto-DJ · always on</p>
       <SyncedPlayer state={v.roomState} onEnded={v.actions.advance} />
+      <FloatingEmotes v={v} />
 
       <section style={card}>
         <h3>On rotation</h3>
@@ -205,6 +247,7 @@ function DjLayout({ v, userId, canDj, onLeaveVenue }: { v: Venue } & RoomProps) 
       </p>
 
       <SyncedPlayer state={v.roomState} onEnded={v.actions.advance} />
+      <FloatingEmotes v={v} />
 
       <section style={{ display: "flex", gap: "1rem", margin: "1rem 0", flexWrap: "wrap" }}>
         <div style={card}>
