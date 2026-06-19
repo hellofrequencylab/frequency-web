@@ -10,13 +10,14 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Minus, Plus, X, ChevronDown } from 'lucide-react'
+import { Check, Minus, Plus, X, ChevronDown, Info } from 'lucide-react'
 import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import {
   BELL_INTERVALS,
   BELL_TONES,
+  BREATH_DURATION_PRESETS,
   BREATH_PATTERNS,
   CUSTOM_PHASE_MAX,
   CUSTOM_PHASE_MIN,
@@ -29,6 +30,7 @@ import {
   patternBySlug,
   type BellTone,
   type BellVolume,
+  type BreathPattern,
   type BreathPhase,
   type OnAirPrefs,
   type RevealPayload,
@@ -50,6 +52,36 @@ export interface OnAirPractice {
 }
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
+
+// --- saved setup (localStorage) ----------------------------------------------
+// Remembers the member's last Mindless choices so re-opening the launcher picks
+// up where they left off, even without finishing a sit. A best-effort nicety:
+// any read/parse failure falls back to the prefs prop, never throws.
+const SAVED_SETUP_KEY = 'fq_mindless_setup'
+
+interface SavedSetup {
+  mode: SessionMode
+  patternSlug: string
+  minutes: number
+  customIn: number
+  customHold: number
+  customOut: number
+}
+
+/** Read the member's last-saved setup once. Returns null when absent, on the
+ *  server, or when the stored value can't be parsed. */
+function readSavedSetup(): Partial<SavedSetup> | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(SAVED_SETUP_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object') return parsed as Partial<SavedSetup>
+    return null
+  } catch {
+    return null
+  }
+}
 
 // --- interval bell (Web Audio, no asset files) -------------------------------
 // A soft bell/bowl strike: a SOFT ATTACK (a short fade-in, so there's no click —
@@ -158,14 +190,25 @@ export function OnAirSession({
     return d && d > 0 ? clampMinutes(d) : prefs.minutes
   }
   const [practiceId, setPracticeId] = useState(initialId)
+  // Last-saved setup (localStorage) seeds the initial choices, falling back to the prefs prop.
+  // Read once on mount (lazy initializer); the WRITE happens in an effect below.
+  const [saved] = useState(readSavedSetup)
   // A timeless initial practice opens in Just Log — the timer modes don't apply to it.
   const initialHasTime = (practices.find((p) => p.id === initialId)?.durationMin ?? 0) > 0
-  const [mode, setMode] = useState<SessionMode>(initialHasTime ? prefs.mode : 'log')
-  const [minutes, setMinutes] = useState(() => durationFor(initialId))
-  const [patternSlug, setPatternSlug] = useState(prefs.pattern)
-  const [customIn, setCustomIn] = useState(prefs.customIn ?? 4)
-  const [customHold, setCustomHold] = useState(prefs.customHold ?? 4)
-  const [customOut, setCustomOut] = useState(prefs.customOut ?? 6)
+  // Saved mode still yields to the timeless rule: a no-length initial practice opens log-only.
+  const [mode, setMode] = useState<SessionMode>(
+    initialHasTime ? saved?.mode ?? prefs.mode : 'log',
+  )
+  // A practice's own length wins; otherwise the saved minutes, then the remembered open length.
+  const [minutes, setMinutes] = useState(() => {
+    const d = practices.find((p) => p.id === initialId)?.durationMin
+    if (d && d > 0) return clampMinutes(d)
+    return saved?.minutes != null ? clampMinutes(saved.minutes) : prefs.minutes
+  })
+  const [patternSlug, setPatternSlug] = useState(saved?.patternSlug ?? prefs.pattern)
+  const [customIn, setCustomIn] = useState(saved?.customIn ?? prefs.customIn ?? 4)
+  const [customHold, setCustomHold] = useState(saved?.customHold ?? prefs.customHold ?? 4)
+  const [customOut, setCustomOut] = useState(saved?.customOut ?? prefs.customOut ?? 6)
   const [bell, setBell] = useState(prefs.bell ?? false)
   const [bellToneSlug, setBellToneSlug] = useState(prefs.bellTone ?? 'soft')
   const [bellVolume, setBellVolume] = useState<BellVolume>(prefs.bellVolume ?? 'medium')
@@ -175,6 +218,8 @@ export function OnAirSession({
   // Mobile-only: the cue settings collapse so the primary controls (mode, minutes, Tune out) stay
   // above the fold on a phone. Always expanded on desktop (the two-column layout has the room).
   const [cuesOpen, setCuesOpen] = useState(false)
+  // The pattern how-to popup (setup + live): the full instructions for the current pattern.
+  const [showInstructions, setShowInstructions] = useState(false)
   const router = useRouter()
   const [startedAt, setStartedAt] = useState(0)
   const [remaining, setRemaining] = useState(0)
@@ -256,6 +301,18 @@ export function OnAirSession({
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [stage])
+
+  // Remember the member's setup choices for next time (localStorage). Best-effort:
+  // a write is the only side effect here, so it never trips set-state-in-effect.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const setup: SavedSetup = { mode, patternSlug, minutes, customIn, customHold, customOut }
+      window.localStorage.setItem(SAVED_SETUP_KEY, JSON.stringify(setup))
+    } catch {
+      // saving setup is a nicety, never a blocker
+    }
+  }, [mode, patternSlug, minutes, customIn, customHold, customOut])
 
   // --- the clock --------------------------------------------------------------
 
@@ -504,6 +561,19 @@ export function OnAirSession({
                 {ended ? 'Done' : `${mm}:${String(ss).padStart(2, '0')} left`}
               </p>
             )}
+            {mode === 'breath' && (
+              <div className="flex max-w-xs flex-col items-center gap-1.5 text-center">
+                <p className="text-xs text-subtle">{pattern.blurb}</p>
+                <button
+                  type="button"
+                  onClick={() => setShowInstructions(true)}
+                  aria-label={`How to do ${pattern.name}`}
+                  className="flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+                >
+                  <Info className="h-3.5 w-3.5" aria-hidden /> Details
+                </button>
+              </div>
+            )}
             {preroll !== null && (
               <p className="animate-pulse text-sm font-bold uppercase tracking-[0.3em] text-primary-strong">
                 Starting in {preroll}
@@ -535,6 +605,9 @@ export function OnAirSession({
             </button>
           </div>
         </div>
+        {showInstructions && (
+          <InstructionsPopup pattern={pattern} onClose={() => setShowInstructions(false)} />
+        )}
       </Overlay>
     )
   }
@@ -587,7 +660,7 @@ export function OnAirSession({
         {mode === 'breath' && (
           <div>
             <Label>Pattern</Label>
-            <div className="mt-2 grid grid-cols-4 gap-2">
+            <div className="mt-2 grid grid-cols-3 gap-2">
               {BREATH_PATTERNS.map((p) => (
                 <button
                   key={p.slug}
@@ -616,7 +689,17 @@ export function OnAirSession({
                 Custom
               </button>
             </div>
-            <p className="mt-2 text-xs text-subtle">{pattern.blurb}</p>
+            <div className="mt-2 flex items-start gap-2">
+              <p className="flex-1 text-xs text-subtle">{pattern.blurb}</p>
+              <button
+                type="button"
+                onClick={() => setShowInstructions(true)}
+                aria-label={`How to do ${pattern.name}`}
+                className="flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+              >
+                <Info className="h-3.5 w-3.5" aria-hidden /> Details
+              </button>
+            </div>
             {patternSlug === 'custom' && (
               <div className="mt-2.5 space-y-2.5 rounded-xl border border-border px-3.5 py-2.5">
                 <PhaseSlider label="Breathe in" min={CUSTOM_PHASE_MIN} value={customIn} onChange={setCustomIn} />
@@ -630,8 +713,13 @@ export function OnAirSession({
         {mode !== 'log' && (
           <div>
             <Label>Minutes</Label>
-            <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
-              {DURATION_PRESETS.map((m) => (
+            {/* Breathe gets the shorter, one-clean-row preset set; Meditate keeps the fuller grid. */}
+            <div
+              className={`mt-2 grid gap-2 ${
+                mode === 'breath' ? 'grid-cols-3' : 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-3'
+              }`}
+            >
+              {(mode === 'breath' ? BREATH_DURATION_PRESETS : DURATION_PRESETS).map((m) => (
                 <button
                   key={m}
                   type="button"
@@ -866,6 +954,62 @@ export function OnAirSession({
         </button>
       </div>
       </div>
+      </div>
+      {showInstructions && (
+        <InstructionsPopup pattern={pattern} onClose={() => setShowInstructions(false)} />
+      )}
+    </div>
+  )
+}
+
+/** The pattern how-to popup: a calm centered overlay above the session takeover
+ *  (z-[60] > Overlay's z-50). Dismissible by the Close button, the scrim, or Esc. */
+function InstructionsPopup({
+  pattern,
+  onClose,
+}: {
+  pattern: BreathPattern
+  onClose: () => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`How to do ${pattern.name}`}
+      className="fixed inset-0 z-[60] flex items-center justify-center px-6"
+    >
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
+      />
+      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface px-6 py-6 shadow-lg">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-3 top-3 rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <h2 className="pr-6 text-lg font-semibold text-text">{pattern.name}</h2>
+        <p className="mt-3 text-sm leading-relaxed text-muted">{pattern.instructions}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-5 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+        >
+          Close
+        </button>
       </div>
     </div>
   )

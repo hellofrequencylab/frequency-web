@@ -28,6 +28,8 @@ export interface BreathPattern {
   name: string
   /** One-line of what it's for (setup screen). */
   blurb: string
+  /** Full how-to for the in-session info popup. Plain, voice-compliant, no em dashes. */
+  instructions: string
   phases: BreathPhase[]
 }
 
@@ -40,7 +42,25 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     slug: 'box',
     name: 'Box',
     blurb: 'Four counts each way. Steady under pressure.',
+    instructions:
+      'Breathe in for 4, hold for 4, breathe out for 4, hold for 4. Keep every count even and unhurried. The square rhythm steadies you under pressure and brings focus back. A favorite of athletes and first responders before a big moment.',
     phases: [IN(4), HOLD(4), OUT(4), HOLD(4)],
+  },
+  {
+    slug: 'cohere',
+    name: 'Coherence',
+    blurb: 'Five in, five out. Steady the heart.',
+    instructions:
+      'Breathe in for 5 and out for 5, with no holds, in one smooth wave. That is about six breaths a minute, the pace where the heart and breath fall into sync. The everyday balancer: a few minutes settles the nervous system and clears the head.',
+    phases: [IN(5), OUT(5)],
+  },
+  {
+    slug: 'triangle',
+    name: 'Triangle',
+    blurb: 'In, hold, out. A simple steadier.',
+    instructions:
+      'Breathe in for 4, hold for 4, then breathe out for 4. One pause at the top, then let it all go. Three even sides, no second hold. A clean, simple loop for a steady head when you do not want to think about counts.',
+    phases: [IN(4), HOLD(4), OUT(4)],
   },
   {
     // The physiological sigh, cyclic: a big inhale, a short top-up, one long
@@ -48,6 +68,8 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     slug: '3x',
     name: '3X',
     blurb: 'Big breath in, sip a little more, one long letting go. The body\u2019s fastest reset.',
+    instructions:
+      'Take a full breath in through the nose, then sip a little more air on top to fill all the way, then one long slow exhale through the mouth. Repeat two or three times. This is the physiological sigh, the body\u2019s quickest reset when stress spikes.',
     phases: [
       { kind: 'in', label: 'Breathe in', seconds: 4, toScale: 0.82 },
       { kind: 'in', label: 'Sip in', seconds: 1, fromScale: 0.82 },
@@ -58,6 +80,8 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     slug: '478',
     name: '4-7-8',
     blurb: 'Long exhale. For winding down.',
+    instructions:
+      'Breathe in quietly through the nose for 4, hold for 7, then breathe out slowly through the mouth for 8. The long exhale does the work. Use it to wind down at night or to come off the edge of anxiety. Start with four rounds.',
     phases: [IN(4), HOLD(7), OUT(8)],
   },
 ]
@@ -84,6 +108,8 @@ export function buildCustomPattern(inSec: number, holdSec: number, outSec: numbe
     slug: 'custom',
     name: 'Custom',
     blurb: 'Your counts. Set each phase to what fits.',
+    instructions:
+      'Your own counts. Set the inhale, the hold, and the exhale to whatever feels right today. Even and balanced steadies you; a longer exhale settles you down.',
     phases,
   }
 }
@@ -143,6 +169,10 @@ export function ringScaleAt(pattern: BreathPattern, elapsed: number): number {
 /** Session duration presets (minutes). The 2-minute floor is deliberate: a
  *  sustainable daily sit beats an ambitious abandoned one. */
 export const DURATION_PRESETS = [2, 5, 10, 15, 20, 30] as const
+
+/** Breath-mode length presets — a shorter, calmer set than Meditate's (owner ask). The
+ *  free-form stepper still lets a member pick any length under them. */
+export const BREATH_DURATION_PRESETS = [5, 10, 20] as const
 
 export type SessionMode = 'timer' | 'breath' | 'log'
 
