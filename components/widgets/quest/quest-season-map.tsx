@@ -27,7 +27,7 @@ export async function QuestSeasonMap() {
   // A live season can be dated to start later; until then the Pillar gauges count nothing
   // (days are counted inside the season window), so the map names the start instead of
   // reading as broken. Resolved in a plain helper so the view stays pure.
-  const { notStarted: seasonNotStarted, startLabel: seasonStartLabel } = seasonStartState(season)
+  const { notStarted: seasonNotStarted, startMs: seasonStartMs, startLabel: seasonStartLabel } = seasonStartState(season)
 
   // The one time-aware next step. Default: keep going on the current Journey (N of 14 distinct
   // days). If the only thing left to finish it is the Expression Challenge, point there.
@@ -71,6 +71,7 @@ export async function QuestSeasonMap() {
           journeysFinished={finishedCount}
           pillars={pillars}
           notStarted={seasonNotStarted}
+          startMs={seasonStartMs}
           startLabel={seasonStartLabel}
         />
       ) : (

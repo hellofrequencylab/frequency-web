@@ -8,6 +8,7 @@ import {
   type SeasonRank,
 } from '@/lib/season-ranks'
 import type { PillarSlug } from '@/lib/pillars'
+import { SeasonCountdown } from './season-countdown'
 
 // SeasonMap — the My Quest hub's signature surface. One glanceable read of the season:
 // a gauge for EACH of the four Pillars (Mind · Body · Spirit · Expression) filling with
@@ -113,6 +114,7 @@ export function SeasonMap({
   journeysFinished,
   pillars,
   notStarted = false,
+  startMs = null,
   startLabel = null,
   achievementsHref = '/crew/store',
 }: {
@@ -128,9 +130,11 @@ export function SeasonMap({
    *  the member's distinct-days progress this season. */
   pillars: PillarProgress[]
   /** True when the live season is dated to start in the future. Then the Pillar gauges read
-   *  0 by design (days count inside the season window), so we name the start, not look broken. */
+   *  0 by design (days count inside the season window), so we count down to the start. */
   notStarted?: boolean
-  /** The season's start, formatted for the "starts {date}" note (e.g. "June 21"). */
+  /** The season-start timestamp (ms) — drives the live countdown. */
+  startMs?: number | null
+  /** The season's start, formatted for the countdown label (e.g. "June 21st"). */
   startLabel?: string | null
   achievementsHref?: string
 }) {
@@ -172,12 +176,9 @@ export function SeasonMap({
         </Link>
       </div>
 
-      {/* Live but not yet started: say so, so empty gauges read as "starts soon", not broken. */}
-      {notStarted && startLabel && (
-        <p className="mt-4 px-6 text-center text-xs font-medium text-primary-strong sm:px-7">
-          Season starts {startLabel} — your Pillar days start counting then.
-        </p>
-      )}
+      {/* Live but not yet started: a live countdown to the start, so the empty gauges read as
+          "starts soon", not broken. */}
+      {notStarted && startMs != null && <SeasonCountdown startMs={startMs} label={startLabel} />}
 
       {/* The four Pillar gauges — the signature read: Mind · Body · Spirit · Expression,
           each filling with the days you've practiced it this season. A row from the

@@ -149,8 +149,16 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
         />
       ))}
 
-      {/* The subtle diamond — the four Pillar points connected. */}
-      <polygon points={diamond} fill="none" stroke="currentColor" strokeWidth={1} opacity={compact ? 0.22 : 0.3} />
+      {/* The diamond overlay — the four Pillar points connected, washed in translucent brand
+          orange (var → inline style so it never falls back to black). Subtle stroke kept. */}
+      <polygon
+        points={diamond}
+        style={{ fill: 'var(--color-primary)' }}
+        fillOpacity={compact ? 0.12 : 0.16}
+        stroke="currentColor"
+        strokeOpacity={compact ? 0.22 : 0.3}
+        strokeWidth={1}
+      />
 
       {/* Spokes to each axis tip (faint). */}
       {!compact &&

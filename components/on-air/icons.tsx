@@ -24,13 +24,15 @@ function Mark({ children, className = '' }: Props & { children: React.ReactNode 
 }
 
 /** The meditation mark — a three-petal lotus. The live screen's title icon. */
-export function LotusIcon({ className = '' }: Props) {
+export function LotusIcon({ className = '', filled = true }: Props & { filled?: boolean }) {
   return (
     <Mark className={className}>
+      {/* Center petal. `filled={false}` drops the soft wash for a pure outline that matches
+          the weight of the lucide header icons (which carry no fill). */}
       <path
         d="M12 3.5c2.3 2.6 3.4 5 3.4 7.2 0 3-1.5 5.2-3.4 6.3-1.9-1.1-3.4-3.3-3.4-6.3 0-2.2 1.1-4.6 3.4-7.2Z"
-        fill="currentColor"
-        fillOpacity="0.22"
+        fill={filled ? 'currentColor' : 'none'}
+        fillOpacity={filled ? 0.22 : undefined}
       />
       <path d="M10.6 16.6C6.6 16 4.1 13.4 3.5 9.2c2.5.4 4.5 1.5 5.9 3.1" />
       <path d="M13.4 16.6c4-.6 6.5-3.2 7.1-7.4-2.5.4-4.5 1.5-5.9 3.1" />
