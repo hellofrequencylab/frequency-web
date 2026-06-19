@@ -263,6 +263,14 @@ as today**.
 > §4.4 to §4.9). Note: money stays **`entity_id`**-partitioned (ADR-246); `space_id` is the tenancy
 > axis, `entity_id` is the legal-money axis.
 
+> **Profile copy columns** (ADR-324, migration `20260711030000_spaces_about_tagline.sql`): `about text`
+> (the long profile bio rendered by the `entity-about` module) and `tagline text` (the one-line hero
+> subtitle + directory-card description). Both nullable; member/operator-facing copy (obey
+> CONTENT-VOICE) and the persistence target for the per-space Vera co-host drafts (`draftSpaceBio` /
+> `suggestTagline`, `lib/ai/space-copilot.ts`). The owner edits them on the `/spaces/<slug>/settings`
+> Focus surface (`updateSpaceProfile`); a Space is created via the `/spaces/new` wizard (`createSpace`,
+> which also seats the owner as a `space_members` admin). See ENTITY-SPACES-BUILD §B.6.
+
 ## The `profiles` table — universal entity record
 
 `profiles` is the single identity row for **every** entity, not just logged-in
@@ -298,8 +306,9 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
 | `community_role` | `member`, `crew`, `host`, `guide`, `mentor` (+ `admin`, `janitor` — **deprecated no-ops**, kept for enum-order stability; staff authority moved to `web_role`) |
 | `season_rank_enum` | `ghost`, `echo`, `signal`, `beacon`, `conduit`, `luminary` (renamed 2026 — see docs/NAMING.md; migration `20260613000030`; declaration order is load-bearing for `lifetime_rank`) |
 | `web_role` | `none`, `admin`, `janitor` (`text` + CHECK, not a PG enum — migration `20260613000050`) |
-| `space_members.role` | `viewer`, `editor`, `moderator`, `admin` (`text` + CHECK; per-space role ladder, ADR-320, planned Phase 0) |
-| `spaces.visibility` | `network`, `private` (`text` + CHECK, default `network`; public-vs-walled axis, ADR-322, planned Phase 0) |
+| `space_members.role` | `viewer`, `editor`, `moderator`, `admin` (`text` + CHECK; per-space role ladder, ADR-320; migration `20260711010000_space_members.sql`) |
+| `spaces.visibility` | `network`, `private` (`text` + CHECK, default `network`; public-vs-walled axis, ADR-322; migration `20260711000000_spaces_visibility_plan_entitlements.sql`) |
+| `spaces.type` | `root`, `practitioner`, `business`, `organization`, `coaching`, `lab`, `partner` (`text` + CHECK; the role axis that selects a profile blueprint, ADR-323; `event_space` deferred behind a CHECK expand, owner gate D-2) |
 | `practice_tiers.tier` | `initiate`, `adept`, `master` (`text` + CHECK; renamed 2026 — see docs/NAMING.md; migration `20260613000020`) |
 | `circle_type` | `in-person`, `online` |
 | `group_status` | `forming`, `active`, `inactive`, `archived` |

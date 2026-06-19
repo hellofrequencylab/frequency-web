@@ -478,9 +478,9 @@ real money, defer.
 - [x] ADR-321: `space_id` ownership FKs on circles/events/practices/journeys (tenancy axis; keep authorship FKs; expand -> dual-write -> backfill-to-root -> contract; root behaves as today).
 - [x] ADR-322: `spaces.visibility` ('network' vs 'private') + `spaces.plan` + `spaces.entitlements jsonb` as the mode + per-space feature-gating columns.
 - [x] Update `docs/DATABASE.md` with the new tables/columns; link from ENTITY-SPACES-SYSTEM.
-- [ ] ADR (next free number): per-entity layout scope (`space -> route -> section -> global`), with rationale. *(Phase 1 / Epic 1.4 infra; write when that lands.)*
-- [ ] ADR (next free number): `/spaces/<slug>` as the canonical in-app profile route (B.1 justification). *(Phase 1 / Epic 1.5; write when the shell lands.)*
-- [ ] Route the docs per `docs/DOCS-PROTOCOL.md` (technical -> git; operator how-to -> Notion).
+- [x] **ADR-323**: per-entity layout scope (`space -> route -> section -> global`) + `/spaces/<slug>` as the canonical in-app profile route (B.1). *(Both reserved placeholders folded into one ADR when the shell landed.)*
+- [x] **ADR-324**: the write side, covering `spaces.about`/`tagline`, the create wizard + owner Focus settings, brand accent as a validated DAWN token, and the per-space Vera draft seam (B.6).
+- [x] Route the docs per `docs/DOCS-PROTOCOL.md` (technical -> git: `DATABASE.md` columns/enums + `DECISIONS.md` ADR-323/324; operator how-to -> Notion "Spaces: create and edit").
 
 ## Phase 0.5: Streamline the existing system to best practice 🟢
 
@@ -521,6 +521,21 @@ real money, defer.
 
 > The networked in-app profile, end-to-end, on the cheap tier. Practitioner first, then
 > template outward. All on existing infra.
+
+> **✅ Shipped (Waves A + B, on the feature branch; see ADR-323 + ADR-324).** The profile renders
+> end-to-end at `/spaces/<slug>` as the Detail template + registered entity modules, typed by a role
+> blueprint; the `/spaces` directory, the `/spaces/new` create wizard, the `/spaces/<slug>/settings`
+> owner surface, and the per-space Vera draft seam are live; `space_members` + `spaces.visibility/plan/
+> entitlements/about/tagline` + `space_id` ownership FKs are migrated. **Deliberate deltas from the
+> backlog below** (recorded so the checklist matches reality): **7** entity modules shipped, not ~16
+> (`about/stats/offerings/practices/community/team/cta`), with the rest collapsing into these or
+> deferred to deep-features; **4** blueprints, not 5 (`event_space` is parked behind a `spaces.type` CHECK expand,
+> owner gate D-2); role tabs keep their **ids on the five wired route segments** and vary only labels +
+> CTA verb, so dedicated team/join/donate/enroll routes are a later step; the four roles share the
+> `dawn` skin (bespoke per-role skins later). **Deferred seams:** the `space_follows` ledger (Follow is
+> a UI toggle today), the profile module-order layout editor, and role-specific deep modules
+> (memberships · donations + tax receipts · curriculum journeys · 1:1 booking). The granular Epic 1.x /
+> 0.5 boxes below are left as the original plan of record; this block is the authoritative status.
 
 ### Epic 1.1: Design-system work (the kit, confirmed)
 - [ ] Confirm `DetailTemplate` slots cover the context band (they do: `hero/title/subtitle/badges/actions/back/tabs`); no template change needed.
