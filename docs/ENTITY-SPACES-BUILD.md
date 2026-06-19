@@ -477,6 +477,41 @@ real money, defer.
 - [ ] Update `docs/DATABASE.md` with the new tables/columns; link from ENTITY-SPACES-SYSTEM.
 - [ ] Route the docs per `docs/DOCS-PROTOCOL.md` (technical -> git; operator how-to -> Notion).
 
+## Phase 0.5: Streamline the existing system to best practice 🟢
+
+> From a current-state audit (the system is already ~85% best-practice). This is consolidation
+> plus ONE real re-keying (`page_settings` -> `space_id`) and ONE AI-gateway consolidation, not
+> a rebuild. Ordered test-first / expand-contract so live pages never break. Lock it in BEFORE
+> the profiles go on top. Sequencing keeps reworks on non-overlapping files so they parallelize.
+
+**Keep verbatim (already best-practice, do not rework):** the shell + `page-chrome.ts` map; `PageHeading` as the one header grammar; the module engine's pure core (`resolveSlots`/`layoutScopeChain`/`pickLayoutConfig`, fully unit-tested, back-compat); the theming engine (`themeToCss`/`validate`, the four-axis model, and `resolveTheme` which ALREADY reads `spaceSkin`/`spaceGeneration`); Puck for public micro-sites; `resolveSpaceForHost`; the AI governance + `MODELS` registry.
+
+### Epic 0.5a: Re-key the layout store to `space_id` (R1, the key enabler) 🔴 highest-risk
+- [ ] **0.5.1** Add contract/regression tests locking the current single-tenant `page_settings` layout + SEO resolution BEFORE touching it (the expand/contract safety net).
+- [ ] **0.5.2** Expand-migration: add nullable `space_id` to `page_settings`; backfill existing rows -> root space; leading-column index. No read changes yet.
+- [ ] **0.5.3** Thread `spaceId` through the ~5 store/action fns (`loadLayoutForRoute`, `loadPageSettings`, `savePageLayout`, `savePageSeo`/`Status`, `getPageLayoutForEditor`); `onConflict` -> `space_id,route`. **Fix the `React.cache` keys to `(spaceId, route)`** + add a cross-tenant cache-leak test (the §4.1 invisible-leak risk). Extend `layoutScopeChain`/`moduleScopeChain` to emit space keys. Plumb active `space_id` into the layout editor; add the "operator edits own space only" authz rule.
+- [ ] **0.5.4** Contract: `space_id NOT NULL`, final composite index, RLS `TO authenticated`; cross-tenant leak test per action.
+
+### Epic 0.5b: Consolidate the AI layer onto one gateway chokepoint (R2) 🟡
+- [ ] **0.5.5** Widen `completeText` (`lib/ai/complete.ts`) to carry tools/`tool_choice`, image blocks (vision), `thinking` passthrough + a tool-loop helper; redirect the **11 raw `messages.create` sites** through it; **fix the 2 bypass leaks first** (`lib/studio/winback.ts`, `scripts/help-autodoc.mts`).
+- [ ] **0.5.6** Behind a flag, route `lib/ai/client.ts` through a model-agnostic gateway (Vercel AI Gateway, zero markup; `baseURL`/transport swap), Anthropic default. Add a Vera/blurb eval gate in CI before per-space scoping.
+
+### Epic 0.5c: Finish template adoption (kill the hand-rollers) 🟢
+- [ ] **0.5.7** Migrate `app/(main)/people/[handle]/page.tsx` (603-line hand-roller) onto `DetailTemplate` as the **reference entity-profile Detail page** (sets the pattern the spaces work copies).
+- [ ] **0.5.8** Migrate the edit/compose + chat hand-rollers onto `FocusTemplate`/`WizardShell` (`events/new`, `events/[slug]/edit`, `journeys/[slug]/edit`, `circles/[slug]/settings`, `pages/sequences/[slug]/edit`, `messages/[id]`, `messages/r/[roomId]`); eliminate the 6 remaining raw-`<h1>` files.
+
+### Epic 0.5d: Kit consolidation (R5, broad - second wave) 🟡
+- [ ] **0.5.9** Consolidate the ~32 hand-rolled overlays onto `ui/Dialog` (a11y/scroll-lock/ESC); merge the two `SidebarCard`s + `AdminModuleCard` base; reconcile the duplicate `report-dialog`. (Run AFTER 0.5.7/0.5.8 to avoid touching the same pages.)
+
+### Epic 0.5e: Theming + Puck space-readiness + hygiene 🟢
+- [ ] **0.5.10** Token-leak cleanup on the ~6 raw-palette files (priority `settings/notifications/form`, `unsubscribe`) so branded spaces re-theme them.
+- [ ] **0.5.11** Doc/naming hygiene: add `WizardShell` to the PAGE-FRAMEWORK canon, fix the template count (there are 9 page shells), rename module-engine interior "templates" -> "layouts/grids"; clean `/lead` module set, document `quest-tasks` parked, drop the `LAYOUT_MODULE_IDS` alias.
+- [ ] **0.5.12** Decide the marketing parallel kit (`components/marketing/marketing-ui.tsx`): unify with `EntityCard`/`ui/button`, or document as an intentional marketing-only variant set.
+- [ ] **0.5.13** Add `space_id` to the Puck `pages` table + un-gate from the 4-slug allowlist to per-space; codify the Puck-vs-module-engine boundary in PAGE-FRAMEWORK (Puck = public micro-site block tree; module engine = authenticated in-app pages; never cross them).
+- [ ] **0.5.14** Add `spaces.generation` column to feed `resolveTheme`'s already-present `spaceGeneration` param; note `brand_accent` is decorative until wired.
+
+**De-risking (all epics):** expand -> dual-write -> backfill -> enforce, each step shippable + reversible; treat every cache key as part of the auth boundary; consolidate AI behind the existing fail-to-deterministic seam + an eval gate; migrate one page per PR (profile first), visual-diff; canary every space-scoping change on the root space (which behaves as today) before any sub-brand exists; never big-bang.
+
 ## Phase 1: Networked entity profiles (start here) 🟢
 
 > The networked in-app profile, end-to-end, on the cheap tier. Practitioner first, then
