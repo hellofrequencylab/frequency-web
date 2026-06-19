@@ -4,7 +4,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getMemberPractices, type Practice } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
-import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
+import { RemovePracticeButton } from '@/components/practice/remove-practice-button'
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { RowCard } from '@/components/cards/row-card'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -52,7 +52,7 @@ function MineRow({ p, byId, profileId }: { p: Practice; byId: Map<string, Pillar
               </Link>
             )}
             <LogPracticeButton practiceId={p.id} />
-            <AdoptPracticeButton practiceId={p.id} adopted />
+            <RemovePracticeButton practiceId={p.id} title={p.title} />
           </>
         }
       />

@@ -886,6 +886,25 @@ h1, h2, h3, h4, h5, h6 {
   .animate-cue-pop { animation: none; }
 }
 
+/* ── Frequency Signature glow (the full-bloom halo) ────────────────────────────
+   A slow, calm breath on the halo behind a full, grounded bloom — the Mindless
+   breath-visualizer cadence. Only the SCALE breathes; the halo's brightness is the
+   element's inline opacity (fill-scaled), so we never override it here. Reduced
+   motion simply holds the halo steady — still lit, just not pulsing. */
+@keyframes freq-glow {
+  0%, 100% { transform: scale(0.985); }
+  50%      { transform: scale(1.015); }
+}
+.freq-glow {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: freq-glow 6s ease-in-out infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .freq-glow { animation: none; }
+}
+
 /* ── Marketing contrast elements (DAWN, bold-warm) ──────────────────────────────
    Signature treatments for the public site's dark bands, drawn straight from
    Frequency's spaces: black wood-slat walls, warm LED light strips, cinematic

@@ -12,9 +12,11 @@ const box = patternBySlug('box')
 const sigh = patternBySlug('3x')
 
 describe('patterns', () => {
-  it('ships box, 3X and 4-7-8 with correct cycle lengths', () => {
-    expect(BREATH_PATTERNS.map((p) => p.slug)).toEqual(['box', '3x', '478'])
+  it('ships box, coherence, triangle, 3X and 4-7-8 with correct cycle lengths', () => {
+    expect(BREATH_PATTERNS.map((p) => p.slug)).toEqual(['box', 'cohere', 'triangle', '3x', '478'])
     expect(cycleSeconds(box)).toBe(16)
+    expect(cycleSeconds(patternBySlug('cohere'))).toBe(10)
+    expect(cycleSeconds(patternBySlug('triangle'))).toBe(12)
     expect(cycleSeconds(sigh)).toBe(12)
     expect(cycleSeconds(patternBySlug('478'))).toBe(19)
   })
