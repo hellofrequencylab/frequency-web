@@ -71,11 +71,13 @@ const COMMUNITY_MODULE_IDS = ['community-pulse', 'newest-members', 'popular-chan
 
 // My Quest's own blocks, in default render order (the order they appear when no layout is
 // saved — unplaced modules append to the template's first slot in this order).
+// Note: 'quest-tasks' was retired from My Quest (owner ask) — the page is the member's
+// season home (orient → progress → act), and the global task list muddied that. Its module
+// metadata + component stay defined for any future surface; it's just not offered here.
 const CREW_MODULE_IDS = [
   'quest-finish-celebration',
   'quest-season-map',
   'quest-journeys',
-  'quest-tasks',
   'quest-explore',
   'quest-leaderboard',
 ] as const
