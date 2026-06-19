@@ -27,11 +27,14 @@ export default async function CrewPage() {
       <DashboardTemplate
         banner={
           headerImage && (
+            // Intrinsic sizing (w-full h-auto, no fixed height / object-cover): the WHOLE
+            // banner scales to the screen width and is never cropped, so a wide header reads
+            // fully on a phone as well as desktop. Recommended upload ~1600×500 (16:5).
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={headerImage}
               alt=""
-              className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
+              className="mb-6 h-auto w-full rounded-2xl border border-border"
             />
           )
         }
@@ -58,6 +61,17 @@ export default async function CrewPage() {
           </>
         }
       >
+        {/* The season's intention — the operator-set theme, surfaced as the orienting line
+            for the member's season home (replaces the retired Tasks block). Their own words;
+            renders only when a theme is set. */}
+        {ctx.season?.theme && (
+          <div className="mb-6 rounded-2xl border border-primary-bg bg-primary-bg/30 px-5 py-4 dark:bg-primary-bg/10">
+            <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+              {ctx.season.name ? `${ctx.season.name} · the intention` : 'This season'}
+            </p>
+            <p className="mt-1 text-lg font-semibold leading-snug text-text">{ctx.season.theme}</p>
+          </div>
+        )}
         <PageModules route="/crew" />
       </DashboardTemplate>
     </>

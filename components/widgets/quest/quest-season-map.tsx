@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowRight, Compass, Sparkles } from 'lucide-react'
 import { getCrewContext } from '@/lib/quest/crew-context'
 import { getPracticesToLogToday } from '@/lib/practices'
-import { readSeasonMap, readPillarProgress, weeksLeft } from '@/lib/quest/season-map-data'
+import { readSeasonMap, readPillarProgress, weeksLeft, seasonStartState } from '@/lib/quest/season-map-data'
 import { SeasonMap } from '@/components/quest/season-map'
 import { EmptyState } from '@/components/ui/empty-state'
 import { HubPrimaryCta } from '@/app/(main)/crew/hub-primary-cta'
@@ -23,6 +23,11 @@ export async function QuestSeasonMap() {
   ])
   const hasPracticeToLog = practicesToLog.length > 0
   const current = map.current
+
+  // A live season can be dated to start later; until then the Pillar gauges count nothing
+  // (days are counted inside the season window), so the map names the start instead of
+  // reading as broken. Resolved in a plain helper so the view stays pure.
+  const { notStarted: seasonNotStarted, startLabel: seasonStartLabel } = seasonStartState(season)
 
   // The one time-aware next step. Default: keep going on the current Journey (N of 14 distinct
   // days). If the only thing left to finish it is the Expression Challenge, point there.
@@ -65,6 +70,8 @@ export async function QuestSeasonMap() {
           rank={rank}
           journeysFinished={finishedCount}
           pillars={pillars}
+          notStarted={seasonNotStarted}
+          startLabel={seasonStartLabel}
         />
       ) : (
         // No active Quest Journeys yet — keep the season frame, drop the arcs.

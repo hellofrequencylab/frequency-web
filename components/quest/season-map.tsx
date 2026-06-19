@@ -112,6 +112,8 @@ export function SeasonMap({
   rank,
   journeysFinished,
   pillars,
+  notStarted = false,
+  startLabel = null,
   achievementsHref = '/crew/store',
 }: {
   /** The active Quest's name (e.g. "Stretch"). */
@@ -125,6 +127,11 @@ export function SeasonMap({
   /** The four Pillars (Mind / Body / Spirit / Expression), in display order, each with
    *  the member's distinct-days progress this season. */
   pillars: PillarProgress[]
+  /** True when the live season is dated to start in the future. Then the Pillar gauges read
+   *  0 by design (days count inside the season window), so we name the start, not look broken. */
+  notStarted?: boolean
+  /** The season's start, formatted for the "starts {date}" note (e.g. "June 21"). */
+  startLabel?: string | null
   achievementsHref?: string
 }) {
   const masterReached = rank === 'master'
@@ -164,6 +171,13 @@ export function SeasonMap({
           </span>
         </Link>
       </div>
+
+      {/* Live but not yet started: say so, so empty gauges read as "starts soon", not broken. */}
+      {notStarted && startLabel && (
+        <p className="mt-4 px-6 text-center text-xs font-medium text-primary-strong sm:px-7">
+          Season starts {startLabel} — your Pillar days start counting then.
+        </p>
+      )}
 
       {/* The four Pillar gauges — the signature read: Mind · Body · Spirit · Expression,
           each filling with the days you've practiced it this season. A row from the

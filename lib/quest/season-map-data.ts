@@ -252,6 +252,18 @@ export async function readPillarProgress(profileId: string, season: Season | nul
   }
 }
 
+/** Pre-start display state for a live-but-future-dated season: whether it hasn't begun yet,
+ *  plus a formatted start label ("June 21"). Impure (reads the clock), so it lives here in a
+ *  plain helper rather than in the view's render. */
+export function seasonStartState(season: Season | null): { notStarted: boolean; startLabel: string | null } {
+  const ms = season?.starts_at ? new Date(season.starts_at).getTime() : null
+  if (ms == null) return { notStarted: false, startLabel: null }
+  return {
+    notStarted: ms > Date.now(),
+    startLabel: new Date(ms).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }),
+  }
+}
+
 /** Whole weeks left in the 13-week Quest (rounded up; never negative). */
 export function weeksLeft(season: Season | null): number | null {
   if (!season?.ends_at) return null
