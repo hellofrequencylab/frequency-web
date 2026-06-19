@@ -422,8 +422,11 @@ covers migrations, tests, copy, theming, empty states, analytics, permissions, a
 updates. **Cheap-now tag** on each epic: 🟢 free/existing infra · 🟡 small cost · 🔴 costs
 real money, defer.
 
-> **ADR numbering:** the highest existing ADR is **313**. New decisions in this work start at
-> **ADR-314**. Add each to `docs/DECISIONS.md`.
+> **ADR numbering:** ADR-314..319 were consumed by the Phase 0.5 streamline (the AI gateway seam
+> is ADR-318, the dialog/kit consolidation is ADR-319). The Phase 0 schema ADRs are **ADR-320**
+> (`space_members` + the per-space role ladder), **ADR-321** (`space_id` ownership FKs), and
+> **ADR-322** (`spaces.visibility`/`plan`/`entitlements`). Further new decisions in this work
+> continue from **ADR-323**. Add each to `docs/DECISIONS.md`.
 
 ## Phase 0: Foundation (the isolation spine) 🟢
 
@@ -471,10 +474,12 @@ real money, defer.
 - [ ] Wire these into the existing test run so they gate every space-scoped PR.
 
 ### Epic 0.6: Docs / ADRs for Phase 0
-- [ ] ADR-314: per-entity layout scope (`space -> route -> section -> global`), with rationale.
-- [ ] ADR-315: `/spaces/<slug>` as the canonical in-app profile route (B.1 justification).
-- [ ] ADR-316: `visibility` as a first-class column (Networked vs Private).
-- [ ] Update `docs/DATABASE.md` with the new tables/columns; link from ENTITY-SPACES-SYSTEM.
+- [x] ADR-320: `space_members` + the per-space role ladder (viewer/editor/moderator/admin) as the membership/authz primitive, distinct from the community trust ladder and the `web_role` staff axis.
+- [x] ADR-321: `space_id` ownership FKs on circles/events/practices/journeys (tenancy axis; keep authorship FKs; expand -> dual-write -> backfill-to-root -> contract; root behaves as today).
+- [x] ADR-322: `spaces.visibility` ('network' vs 'private') + `spaces.plan` + `spaces.entitlements jsonb` as the mode + per-space feature-gating columns.
+- [x] Update `docs/DATABASE.md` with the new tables/columns; link from ENTITY-SPACES-SYSTEM.
+- [ ] ADR (next free number): per-entity layout scope (`space -> route -> section -> global`), with rationale. *(Phase 1 / Epic 1.4 infra; write when that lands.)*
+- [ ] ADR (next free number): `/spaces/<slug>` as the canonical in-app profile route (B.1 justification). *(Phase 1 / Epic 1.5; write when the shell lands.)*
 - [ ] Route the docs per `docs/DOCS-PROTOCOL.md` (technical -> git; operator how-to -> Notion).
 
 ## Phase 0.5: Streamline the existing system to best practice 🟢

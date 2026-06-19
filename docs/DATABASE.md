@@ -217,6 +217,52 @@ ledger every dollar flow writes to (`revenue_type ∈ dues|donation|commerce|pay
 points (gems/zaps) stay separate and entity-blind. `profile_personas.entity_id` is now FK'd to
 `entities`. Full rationale: [PLATFORM-VISION](PLATFORM-VISION.md) §1, [BASELINE-ASSESSMENT](BASELINE-ASSESSMENT.md) Phase 2.
 
+**Entity Spaces (tenancy; ADR-320/321/322; planned Phase 0)**
+The `spaces` row is the **tenant**. Entity-spaces Phase 0 adds the tenancy spine: a per-space
+membership table, ownership FKs on the core objects, and mode/feature-gating columns on `spaces`.
+Full design: [ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §4 · build/backlog:
+[ENTITY-SPACES-BUILD.md](ENTITY-SPACES-BUILD.md) Phase 0. These are **planned** schema decisions
+(the migrations land in Phase 0); the rollout is **expand → dual-write → backfill → contract**
+(ENTITY-SPACES-SYSTEM §4.12) so the **root space owns all pre-existing data and behaves exactly
+as today**.
+
+| Table | Status | Key columns | Tenancy |
+|---|---|---|---|
+| `space_members` | planned (ADR-320) | `space_id, profile_id, role text CHECK (viewer\|editor\|moderator\|admin), status, invited_by, created_at`; unique `(space_id, profile_id)`; `space_id`-leading index | `space_id` |
+| `space_invites` | planned (ADR-320) | `space_id, email, role, token, expires_at, accepted_at` (grant a space role by email/link without making someone network staff) | `space_id` |
+
+> **`space_members`** (ADR-320) is the **per-space membership + authorization** primitive: a
+> **third, orthogonal authority axis**, distinct from the **community trust ladder**
+> (`profiles.community_role`, network-wide reputation) and the **staff axis**
+> (`profiles.web_role`, global platform power). `role ∈ (viewer, editor, moderator, admin)` is the
+> per-space ladder; a person's role in space A is independent of space B (unique `(space_id,
+> profile_id)`). The space owner (`spaces.owner_profile_id`) is the implicit super-admin. The
+> capability resolver (`lib/core/access-matrix.ts`) gains "admin/editor of the owning space,"
+> mirroring the existing `host → their circles` edge; it grants **no** `web_role` power. RLS is
+> `TO authenticated` with auth functions wrapped in `(select …)`.
+
+> **New `spaces` columns** (ADR-322): `visibility text CHECK (network|private)` default `'network'`,
+> the first-class public-vs-walled axis (`network` spaces appear in cross-network discovery /
+> feed / people-search; `private` = Private and White-Label modes are excluded), orthogonal to the
+> existing `network_connected` (gamification) flag; `plan text` default `'free'` (the plan label,
+> ridden on the JWT for cheap RLS reads); `entitlements jsonb NOT NULL DEFAULT '{}'`, the
+> per-space feature-gate bag (`crm`, `email`, `gamification`, `white_label`, …) so a new capability
+> is **one key, never a migration**. Defaults make every existing row a Networked, free,
+> no-add-ons space; a **mode** is a named bundle of these flags, and mode changes are flag edits,
+> not data migrations (ENTITY-SPACES-SYSTEM §1.3 to §1.5).
+
+> **`space_id` ownership FKs** (ADR-321): a nullable `space_id uuid REFERENCES spaces(id)` is added
+> to `circles`, `events`, `practices`, `journeys`/`journey_plans` (and `programs`) as the
+> **tenancy** axis. The existing `host_id` / `created_by` FKs are **kept** for authorship/audit:
+> `space_id` answers "which space owns this," they answer "who authored it." Rollout is
+> expand/contract: column nullable → app dual-writes (default = resolved space, root for legacy
+> flows) → backfill existing rows to the **root space** in batches (verify `GROUP BY space_id`) →
+> add `space_id` RLS (`TO authenticated`, `(select …)`-wrapped) + composite indexes with `space_id`
+> as the **leading column** → `NOT NULL`. Per-table contract tests assert space A cannot read/write
+> space B's rows. CRM / QR / commerce tables gain `space_id` in later phases (ENTITY-SPACES-SYSTEM
+> §4.4 to §4.9). Note: money stays **`entity_id`**-partitioned (ADR-246); `space_id` is the tenancy
+> axis, `entity_id` is the legal-money axis.
+
 ## The `profiles` table — universal entity record
 
 `profiles` is the single identity row for **every** entity, not just logged-in
@@ -252,6 +298,8 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
 | `community_role` | `member`, `crew`, `host`, `guide`, `mentor` (+ `admin`, `janitor` — **deprecated no-ops**, kept for enum-order stability; staff authority moved to `web_role`) |
 | `season_rank_enum` | `ghost`, `echo`, `signal`, `beacon`, `conduit`, `luminary` (renamed 2026 — see docs/NAMING.md; migration `20260613000030`; declaration order is load-bearing for `lifetime_rank`) |
 | `web_role` | `none`, `admin`, `janitor` (`text` + CHECK, not a PG enum — migration `20260613000050`) |
+| `space_members.role` | `viewer`, `editor`, `moderator`, `admin` (`text` + CHECK; per-space role ladder, ADR-320, planned Phase 0) |
+| `spaces.visibility` | `network`, `private` (`text` + CHECK, default `network`; public-vs-walled axis, ADR-322, planned Phase 0) |
 | `practice_tiers.tier` | `initiate`, `adept`, `master` (`text` + CHECK; renamed 2026 — see docs/NAMING.md; migration `20260613000020`) |
 | `circle_type` | `in-person`, `online` |
 | `group_status` | `forming`, `active`, `inactive`, `archived` |

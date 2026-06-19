@@ -7380,3 +7380,52 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 **Scope / non-goals.** Overlay/dialog components + their call sites + the three de-dupes only. No page/template/layout-system, AI-layer, or profile/edit-page edits (those shipped earlier). Token-leak cleanup on raw-palette files is the separate task 0.5.10.
 
 **Consequences.** Every migrated overlay is a net a11y improvement (uniform ESC + scroll-lock + focus + ARIA from one place). One `SidebarCard`, one base for admin module cards. Validation: `tsc` 0 · `lint` 0 · `test` 1074/1074.
+
+## ADR-320: `space_members` + the per-space role ladder (viewer/editor/moderator/admin) as the membership/authz primitive
+
+**Status:** Accepted · Phase 0 / Epic 0.2 of entity-spaces ([ENTITY-SPACES-BUILD.md](ENTITY-SPACES-BUILD.md) Epic 0.2, [ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §2.1, §3.2, §4.2). Schema-decision ADR (no code yet); the migration is the source of truth once it lands.
+
+**Context.** Entity-spaces makes each `spaces` row a tenant that a person can belong to and operate, with a role that is **independent per space** (admin of studio A says nothing about studio B). Frequency already has two unrelated authority axes and neither fits: the **community trust ladder** (`profiles.community_role`: `member < crew < host < guide < mentor`) is a network-wide reputation axis, not a per-tenant membership; the **staff axis** (`profiles.web_role`: `none`/`admin`/`janitor`, ADR + [NAMING.md](NAMING.md) §Roles) is global operational power over the whole platform. Granting a space owner's colleague admin of *their* space must never touch either axis. There is no table that expresses "this person, in this space, may do these things."
+
+**Decision.** Introduce `space_members` as the per-space membership + authorization primitive, a third, orthogonal axis:
+- `space_members(space_id, profile_id, role text, status, invited_by, created_at)`, with `role` a CHECK in **`('viewer','editor','moderator','admin')`** (the per-space role ladder) and a unique `(space_id, profile_id)` so a person has exactly one role per space. `space_id` is the leading column of the membership index.
+- The ladder is per-space and additive: `viewer` reads; `editor` edits the profile/content within blueprint guardrails; `moderator` handles community/safety; `admin` manages members, settings, and billing. The space owner (`spaces.owner_profile_id`) is the implicit super-admin.
+- The **capability resolver** (`lib/core/access-matrix.ts` pattern) gains "admin/editor of the owning space," mirroring the existing `host -> their circles` edge and the `stewardships` scoped-edge model. No new **global** staff power is created: `web_role` stays locked and separate (a space admin is powerful only inside their own space).
+- Invites ride a sibling `space_invites(space_id, email, role, token, expires_at, accepted_at)` so an owner can grant a colleague a space role by email/link without that person becoming network staff.
+- RLS on both tables is `TO authenticated` with every tenant/auth function wrapped in `(select ...)` ([ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §4.1); a contract test asserts an admin of space A can neither read nor write space B's members.
+
+**Scope / non-goals.** The membership + authz primitive only. It does not change `community_role` or `web_role`; it grants no network trust and no platform-staff power. Role-specific deep capabilities (bookings, ticketing, donations) layer on top per blueprint, gated by entitlements, not by adding ladder rungs. Identity stays one `profiles` row per human (M:N from day one, [ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §5.2).
+
+**Consequences.** Three clean axes coexist: trust (`community_role`), platform staff (`web_role`), and per-space membership (`space_members.role`). A new per-space capability is a resolver rule, not a schema change. The root space behaves as today: existing operators keep their current power, and nothing member-facing changes until a sub-space exists. Documented in [DATABASE.md](DATABASE.md) ("Entity Spaces (tenancy)").
+
+## ADR-321: `space_id` ownership FKs on circles/events/practices/journeys (objects belong to a space)
+
+**Status:** Accepted · Phase 0 / Epic 0.3 of entity-spaces ([ENTITY-SPACES-BUILD.md](ENTITY-SPACES-BUILD.md) Epic 0.3, [ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §4.3, §4.12). Schema-decision ADR (no code yet); the migration is the source of truth once it lands.
+
+**Context.** For a space to *own* anything, the core objects a space produces need a tenancy axis. Today `circles`, `events`, `practices`, and `journeys`/`journey_plans` carry only authorship FKs (`host_id` / `created_by` -> `profiles`), which answer "who made this," not "which tenant does this belong to." Without a tenancy column there is no way to scope reads, RLS, or cache keys per space, and a cross-tenant read is the worst-case bug ([ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §4.1, P5). The whole platform's pre-existing single-tenant data must keep resolving unchanged throughout.
+
+**Decision.** Add a nullable `space_id uuid REFERENCES spaces(id)` to each owning table (`circles`, `events`, `practices`, `journeys`/`journey_plans`, and `programs`) as the **tenancy** axis, distinct from authorship:
+- **Keep** `host_id` / `created_by` for authorship and audit; `space_id` answers "which space owns this," they answer "who authored it." Nothing is dropped.
+- Roll it out via **expand -> dual-write -> backfill -> contract** ([ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §4.12), with no downtime: (1) add the column nullable, no default scan; (2) the app dual-writes `space_id` on create/update, defaulting to the resolved space (root for legacy single-tenant flows); (3) backfill existing rows to the **root space** id in batches, verifying counts with `GROUP BY space_id`; (4) add `space_id` RLS (`TO authenticated`, `(select ...)`-wrapped) + composite indexes with `space_id` as the **leading column**, then set `NOT NULL` once dual-write + backfill are confirmed.
+- The **root space owns all pre-existing data**, so the root behaves exactly as today; sub-spaces only ever see their own rows. A per-table contract test asserts a caller in space A cannot read or write space B's objects.
+
+**Scope / non-goals.** The ownership/tenancy FK + its expand/contract rollout only. It does not move money (that stays `entity_id`-partitioned, ADR-246) and does not change authorship semantics or FK on-delete behavior. CRM, QR, commerce, and the other space-scoped tables get their own `space_id` in later phases ([ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §4.4-4.9).
+
+**Consequences.** Every space-owned object is tenant-scoped at the database, the RLS layer, and the cache key. Migrations are additive, idempotent, and reversible at each step; APIs stay backward-compatible throughout. The single-tenant present is preserved (root owns it); the multi-tenant future is unlocked without a big-bang cutover. Documented in [DATABASE.md](DATABASE.md) ("Entity Spaces (tenancy)").
+
+## ADR-322: `spaces.visibility` + `spaces.plan` + `spaces.entitlements jsonb` as the mode + per-space feature-gating columns
+
+**Status:** Accepted · Phase 0 / Epic 0.1 of entity-spaces ([ENTITY-SPACES-BUILD.md](ENTITY-SPACES-BUILD.md) Epic 0.1, [ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §1.3, §1.4, §3.1, §4.2). Schema-decision ADR (no code yet); the migration is the source of truth once it lands.
+
+**Context.** A space runs in one of three operating **modes** (Networked · Private · Full White-Label) and composes a different set of features per plan ([ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §1.3). The single switch that already exists, `spaces.network_connected`, defines gamified-vs-not, but it does **not** express public-vs-walled (whether a space appears in cross-network discovery, feed, and people-search) and there is no column that says which paid capabilities a space has. Encoding each capability as its own boolean column would make every new feature a schema migration, which violates "expand without breaking" (P4).
+
+**Decision.** Add three columns to `spaces`, so a mode is a *named bundle of flags*, never a new code path:
+- **`visibility text`** in `('network','private')`, default `'network'`, with a CHECK. This is the first-class public-vs-walled axis: `network` spaces appear in cross-network discovery / feed / people-search; `private` spaces are excluded (Private and White-Label both use `private`). It is orthogonal to `network_connected` (gamification); the two together define the mode.
+- **`plan text`** (default `'free'`): the plan label the space is on (free / starter / pro / business / white-label), surfaced cheaply and ridden on the JWT alongside `space_id` ([ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §5.2) so RLS and the resolver read it without a join.
+- **`entitlements jsonb NOT NULL DEFAULT '{}'`**: the per-space feature-gate bag (e.g. `crm`, `email`, `gamification`, `white_label`, `native_app`). A new capability is **one key**, never a migration ([ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §1.4). The resolver reads entitlements once per request.
+
+Defaults make every existing row a Networked, free, no-add-ons space, so the root keeps behaving exactly as today. Mode changes (Networked <-> Private <-> White-Label) become **flag edits**, never data migrations: the rows never move, only which shared seams the space's events flow into and which chrome renders ([ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §1.5).
+
+**Scope / non-goals.** These three columns only. Adding the new `event_space` value to the `spaces.type` CHECK is a separate decision (owner gate D-2). Custom-domain / TLS ops (`custom_domains`) and space-level billing (`space_subscriptions`) are later-phase tables ([ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §4.2). This ADR does not specify the entitlement key catalog; keys are added per feature as they ship.
+
+**Consequences.** The mode spectrum (isolation + branding) is expressible from the `spaces` row alone, read once into the JWT. Feature gating is a jsonb key, so the schema stays stable as the dream-suite grows. The security boundary is identical in every mode (mode changes only visibility and branding, never `space_id` + RLS). Documented in [DATABASE.md](DATABASE.md) ("Entity Spaces (tenancy)").
