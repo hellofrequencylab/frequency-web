@@ -534,8 +534,15 @@ real money, defer.
 > CTA verb, so dedicated team/join/donate/enroll routes are a later step; the four roles share the
 > `dawn` skin (bespoke per-role skins later). **Deferred seams:** the `space_follows` ledger (Follow is
 > a UI toggle today), the profile module-order layout editor, and role-specific deep modules
-> (memberships · donations + tax receipts · curriculum journeys · 1:1 booking). The granular Epic 1.x /
+> (memberships · donations + tax receipts · curriculum journeys). The granular Epic 1.x /
 > 0.5 boxes below are left as the original plan of record; this block is the authoritative status.
+>
+> **Next wave (PR #926, ADR-325).** The fifth role **Event Space** now ships (CTA "Get tickets",
+> `event_space` added to the type CHECK, Cedar Hall demo), so all five roles exist. And the first
+> **deep feature** is built: **Practitioner 1:1 booking v1** (`space_availability` + `space_bookings`
+> with a partial-unique double-book guard, pure DST-aware slot generation, the `/spaces/<slug>/book`
+> member surface + the `/spaces/<slug>/settings/availability` owner editor). Booking defers calendar
+> sync, buffers, no-show policy, payments, and per-member timezone.
 
 ### Epic 1.1: Design-system work (the kit, confirmed)
 - [ ] Confirm `DetailTemplate` slots cover the context band (they do: `hero/title/subtitle/badges/actions/back/tabs`); no template change needed.
