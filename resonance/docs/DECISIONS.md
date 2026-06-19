@@ -80,11 +80,19 @@ are presence-grade ("you had to be there"), so no table, no retention surface,
 less PII. Anything the loop depends on (seats, queues, votes, room state) is
 persisted in `resonance`. Revisit (⚠️) if/when moderation needs a chat audit log.
 
-### ADR-014 — Identity is a temporary client stub until auth (Section 3) ✅
-The dev surfaces use a per-browser uuid in localStorage as a stand-in user id,
-passed in requests. This is explicitly NOT trust-bearing. When Supabase Auth +
-federated JWT land (Section 3/5), user id derives from the verified session and
-the route handlers stop trusting client-supplied `userId`.
+### ADR-014 — Identity is a temporary client stub until auth (Section 3) 🔴
+Superseded by ADR-015. The dev surfaces used a per-browser uuid in localStorage
+as a stand-in user id, passed in requests. Removed once real auth landed.
+
+### ADR-015 — Standalone identity is anonymous-first Supabase Auth; the server verifies the JWT ✅
+Supersedes ADR-014. A visitor gets a real anonymous Supabase session (no signup
+wall, spec §3.2), upgradeable to email/OAuth later. Clients send the access token
+as an `Authorization: Bearer` header; route handlers resolve identity via
+`auth.getUser(token)` and never trust a client-supplied user id. Profiles are
+keyed by `(world_id, auth_user_id)` with NO FK to `auth.users` (ADR-002), so the
+schema stays liftable. The same server seam will verify a host-issued JWT when
+embedded (Section 5). Requires "Anonymous sign-ins" enabled in the project's Auth
+settings.
 
 ### ADR-010 — Gamification mirrors, not merges, the host economy ✅
 Zaps/reputation are computed in-app on an append-only ledger with verified

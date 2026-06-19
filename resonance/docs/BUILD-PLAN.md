@@ -63,12 +63,18 @@ ladder (seats are open take/leave for now); reordering another DJ's queue.
 **DoD:** a room of friends DJs, votes, and rotates seats correctly. Server logic +
 tests landed; live multi-client check is the remaining gate. 🚪
 
-### Section 3 — Identity & profiles (minimal)  ⬜
-- [ ] Standalone Supabase Auth
-- [ ] `profiles` (per world), minimal avatar/display name
-- [ ] Lurker → reactor → queuer → DJ on-ramp visible in UI
+### Section 3 — Identity & profiles (minimal)  🔨
+- [x] Standalone Supabase Auth, anonymous-first (real session, no signup wall; ADR-015)
+- [x] `profiles` (per world) table (migration `0004`, applied) + get/upsert (`/api/profile`)
+- [x] Server resolves identity from the verified Bearer JWT; routes stop trusting body `userId`
+- [x] Lurker (present/chat/vote) → set a name → DJ on-ramp gated in UI (`/dev/dj`)
+- [x] Temporary demo-identity stub removed (ADR-014 retired)
+- [ ] 🚪 **GO (manual):** enable "Anonymous sign-ins" in Supabase Auth settings, then
+      open `/dev/dj`: confirm a guest can vote/chat, naming unlocks the decks, and
+      identity persists across reloads
 
-**DoD:** users have a persistent identity and can lurk before DJing. 🚪
+**DoD:** users have a persistent identity and can lurk before DJing. Code + build
+green; live check is the remaining gate (one Auth setting to flip). 🚪
 
 ### Section 4 — Gamification core  ⬜
 - [ ] `zaps_ledger` (append-only), `reputation`, `seasons` tables

@@ -1,4 +1,4 @@
-import { createBrowserClient } from "@/lib/supabase/client";
+import { getBrowserSupabase } from "@/lib/supabase/client";
 import type {
   RealtimeTransport,
   RealtimeChannel,
@@ -14,7 +14,7 @@ import type {
  * interface; game code never changes.
  */
 export function createSupabaseTransport(): RealtimeTransport {
-  const supabase = createBrowserClient();
+  const supabase = getBrowserSupabase();
 
   return {
     async join(channelName, handlers) {

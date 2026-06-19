@@ -1,33 +1,41 @@
 import { NextResponse } from "next/server";
+import { getAuthedUserId } from "@/lib/auth/server";
+import { getProfile } from "@/lib/profiles/repo";
 import { getVenue, listSeats, takeSeat, leaveSeat } from "@/lib/dj/repo";
 import { firstFreeSeat } from "@/lib/dj/rotation";
 import { broadcastToVenue } from "@/lib/realtime/server-broadcast";
 import { VENUE_CHANGED_EVENT } from "@/lib/sync/channels";
+import { DEMO_WORLD_ID } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ venueId: string }> };
 
 /**
- * Take or leave a DJ seat. Body: { action: "take" | "leave", userId, seatIndex? }.
- *
- * NOTE: userId comes from the client for now (no auth yet — Section 3). Once auth
- * lands it MUST derive from the verified session, never the request body.
+ * Take or leave a DJ seat. Body: { action: "take" | "leave", seatIndex? }.
+ * Identity comes from the verified token. Taking the decks requires a profile
+ * (the lurker -> DJ on-ramp); leaving never does.
  */
 export async function POST(req: Request, ctx: Ctx) {
   const { venueId } = await ctx.params;
+  const userId = await getAuthedUserId(req);
+  if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
   const body = (await req.json()) as {
     action: "take" | "leave";
-    userId: string;
     seatIndex?: number;
   };
-  if (!body.userId) {
-    return NextResponse.json({ error: "userId required" }, { status: 400 });
-  }
 
   if (body.action === "leave") {
-    await leaveSeat(venueId, body.userId);
+    await leaveSeat(venueId, userId);
   } else if (body.action === "take") {
+    const profile = await getProfile(DEMO_WORLD_ID, userId);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "set a display name before taking the decks" },
+        { status: 403 },
+      );
+    }
     const venue = await getVenue(venueId);
     if (!venue) return NextResponse.json({ error: "not found" }, { status: 404 });
     const taken = (await listSeats(venueId)).map((s) => s.seatIndex);
@@ -35,7 +43,7 @@ export async function POST(req: Request, ctx: Ctx) {
     if (seatIndex === null) {
       return NextResponse.json({ error: "stage full" }, { status: 409 });
     }
-    await takeSeat(venueId, seatIndex, body.userId);
+    await takeSeat(venueId, seatIndex, userId);
   } else {
     return NextResponse.json({ error: "unknown action" }, { status: 400 });
   }

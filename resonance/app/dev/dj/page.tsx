@@ -1,30 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getDemoIdentity } from "@/lib/identity/demo-identity";
+import { useAuth } from "@/components/auth/useAuth";
+import { useProfile } from "@/components/profile/useProfile";
 import { useVenue } from "@/components/dj/useVenue";
 import { SyncedPlayer } from "@/components/sync/SyncedPlayer";
+import { authedFetch } from "@/lib/api/fetch";
 
 const VENUE_KEY = "resonance.demo.venueId";
 
 /**
- * DJ-loop proof (build plan §2). Create a venue, then open the same venue in 2-3
- * windows: take seats, queue YouTube ids, and the room rotates DJs and tallies
- * Awesome/Lame votes. No auth yet — each window is a temporary demo identity.
+ * DJ-loop + identity proof (build plan §2 + §3). Each window gets a real
+ * anonymous session. Lurk (present, chat, vote) as a guest; set a display name
+ * to take the decks. Open the same venue in 2-3 windows to see rotation + votes.
  */
 export default function DjDemoPage() {
-  const [identity, setIdentity] = useState<{ userId: string; name: string } | null>(null);
+  const { userId, ready } = useAuth();
+  const { profile, loaded, save } = useProfile(ready);
   const [venueId, setVenueId] = useState<string | null>(null);
 
-  // Browser-only reads, deferred past an await so setState isn't a synchronous
-  // cascade during the mount effect.
   useEffect(() => {
     let active = true;
     void (async () => {
       await Promise.resolve();
-      if (!active) return;
-      setIdentity(getDemoIdentity());
-      setVenueId(localStorage.getItem(VENUE_KEY));
+      if (active) setVenueId(localStorage.getItem(VENUE_KEY));
     })();
     return () => {
       active = false;
@@ -32,7 +31,7 @@ export default function DjDemoPage() {
   }, []);
 
   const createVenue = async () => {
-    const res = await fetch("/api/venues", {
+    const res = await authedFetch("/api/venues", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "Open Decks" }),
@@ -42,28 +41,92 @@ export default function DjDemoPage() {
     setVenueId(venue.id);
   };
 
-  if (!identity) return <main style={page}>Loading…</main>;
-
-  if (!venueId) {
+  if (!ready || !loaded) return <main style={page}>Starting a session…</main>;
+  if (!userId) {
     return (
       <main style={page}>
-        <h1>DJ room</h1>
-        <p style={{ color: "#555" }}>Create a venue, then open this page in a few windows.</p>
-        <button onClick={createVenue}>Create a venue</button>
+        <h1>Couldn’t start a session</h1>
+        <p style={{ color: "#555" }}>
+          Enable “Anonymous sign-ins” in the Supabase project’s Auth settings, then reload.
+        </p>
       </main>
     );
   }
 
+  const displayName = profile?.displayName ?? `Guest ${userId.slice(0, 4)}`;
+
   return (
-    <Room
-      venueId={venueId}
-      userId={identity.userId}
-      name={identity.name}
-      onLeaveVenue={() => {
-        localStorage.removeItem(VENUE_KEY);
-        setVenueId(null);
-      }}
-    />
+    <main style={page}>
+      <ProfileBar profile={profile} onSave={save} displayName={displayName} />
+      {!venueId ? (
+        <section style={card}>
+          <p style={{ color: "#555" }}>Create a venue, then open this page in a few windows.</p>
+          <button onClick={createVenue}>Create a venue</button>
+        </section>
+      ) : (
+        <Room
+          venueId={venueId}
+          userId={userId}
+          name={displayName}
+          canDj={!!profile}
+          onLeaveVenue={() => {
+            localStorage.removeItem(VENUE_KEY);
+            setVenueId(null);
+          }}
+        />
+      )}
+    </main>
+  );
+}
+
+function ProfileBar({
+  profile,
+  displayName,
+  onSave,
+}: {
+  profile: { displayName: string } | null;
+  displayName: string;
+  onSave: (name: string) => void | Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(displayName);
+
+  if (editing || !profile) {
+    return (
+      <section style={card}>
+        <h3>{profile ? "Edit your name" : "Pick a name to take the decks"}</h3>
+        <p style={{ color: "#888", fontSize: 13 }}>
+          You’re in as <b>{displayName}</b>. Lurkers can chat and vote; DJing needs a name.
+        </p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (name.trim()) {
+              void onSave(name.trim());
+              setEditing(false);
+            }
+          }}
+          style={{ display: "flex", gap: "0.5rem" }}
+        >
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="display name"
+            style={{ flex: 1, padding: "0.4rem" }}
+          />
+          <button type="submit">Save</button>
+        </form>
+      </section>
+    );
+  }
+
+  return (
+    <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+      <h1 style={{ margin: 0 }}>DJ room</h1>
+      <small style={{ color: "#555" }}>
+        You are <b>{profile.displayName}</b> · <button onClick={() => setEditing(true)}>edit</button>
+      </small>
+    </header>
   );
 }
 
@@ -71,11 +134,13 @@ function Room({
   venueId,
   userId,
   name,
+  canDj,
   onLeaveVenue,
 }: {
   venueId: string;
   userId: string;
   name: string;
+  canDj: boolean;
   onLeaveVenue: () => void;
 }) {
   const { venue, seats, roomState, myQueue, tally, chat, present, actions } = useVenue(
@@ -90,15 +155,10 @@ function Room({
   const currentDjIsMe = roomState?.currentDjUserId === userId;
 
   return (
-    <main style={page}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <h1 style={{ margin: 0 }}>{venue?.name ?? "Room"}</h1>
-        <small style={{ color: "#555" }}>
-          You are <b>{name}</b> · here: {present.join(", ") || "…"}
-        </small>
-      </header>
+    <>
       <p style={{ color: "#888", fontSize: 12, wordBreak: "break-all" }}>
-        Venue {venueId} · <button onClick={onLeaveVenue}>switch venue</button>
+        {venue?.name} · here: {present.join(", ") || "…"} ·{" "}
+        <button onClick={onLeaveVenue}>switch venue</button>
       </p>
 
       <SyncedPlayer state={roomState} onEnded={actions.advance} />
@@ -121,8 +181,10 @@ function Room({
           </ol>
           {onStage ? (
             <button onClick={actions.leaveSeat}>Leave stage</button>
-          ) : (
+          ) : canDj ? (
             <button onClick={actions.takeSeat}>Take a seat</button>
+          ) : (
+            <small style={{ color: "#888" }}>Set a name above to take the decks.</small>
           )}
         </div>
 
@@ -152,7 +214,9 @@ function Room({
             placeholder="YouTube video id"
             style={{ flex: 1, padding: "0.4rem" }}
           />
-          <button onClick={() => actions.enqueue(mediaId)}>Queue</button>
+          <button onClick={() => actions.enqueue(mediaId)} disabled={!canDj}>
+            Queue
+          </button>
         </div>
         <ul>
           {myQueue.map((q) => (
@@ -192,7 +256,7 @@ function Room({
           <button type="submit">Send</button>
         </form>
       </section>
-    </main>
+    </>
   );
 }
 
@@ -208,4 +272,5 @@ const card: React.CSSProperties = {
   border: "1px solid #e4e4e7",
   borderRadius: 8,
   padding: "1rem",
+  marginBottom: "1rem",
 };

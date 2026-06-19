@@ -5,6 +5,7 @@ import type { RoomState } from "@/lib/sync/types";
 import type { SeatRow, QueueItem, Venue } from "@/lib/dj/types";
 import type { RealtimeChannel } from "@/lib/realtime/transport";
 import { createSupabaseTransport } from "@/lib/realtime/supabase-transport";
+import { authedFetch } from "@/lib/api/fetch";
 import {
   venueTopic,
   ROOM_UPDATE_EVENT,
@@ -33,12 +34,9 @@ interface Snapshot {
   myQueue: QueueItem[];
 }
 
-async function getSnapshot(venueId: string, userId: string): Promise<Snapshot | null> {
+async function getSnapshot(venueId: string): Promise<Snapshot | null> {
   try {
-    const res = await fetch(
-      `/api/venues/${venueId}?userId=${encodeURIComponent(userId)}`,
-      { cache: "no-store" },
-    );
+    const res = await authedFetch(`/api/venues/${venueId}`, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as Snapshot;
   } catch {
@@ -47,10 +45,10 @@ async function getSnapshot(venueId: string, userId: string): Promise<Snapshot | 
 }
 
 /**
- * One realtime channel per venue, fanned out to every loop concern: playback
- * (room:update), seats/queue (venue:changed -> refetch snapshot), live vote
- * aggregate, ephemeral chat, and presence. Plus the action dispatchers that POST
- * to the server (which stays authoritative). The client only ever mirrors.
+ * One realtime channel per venue, fanned out to every loop concern: playback,
+ * seats/queue (refetch on venue:changed), live vote aggregate, ephemeral chat,
+ * and presence. Actions POST through authedFetch so the server resolves identity
+ * from the verified token. The client only ever mirrors the server.
  */
 export function useVenue(venueId: string, userId: string, displayName: string) {
   const [venue, setVenue] = useState<Venue | null>(null);
@@ -76,21 +74,21 @@ export function useVenue(venueId: string, userId: string, displayName: string) {
   }, []);
 
   const refetch = useCallback(async () => {
-    const j = await getSnapshot(venueId, userId);
+    const j = await getSnapshot(venueId);
     if (j) applySnapshot(j);
-  }, [venueId, userId, applySnapshot]);
+  }, [venueId, applySnapshot]);
 
   // Initial load. setState runs only after the await, so it can't cascade.
   useEffect(() => {
     let active = true;
     void (async () => {
-      const j = await getSnapshot(venueId, userId);
+      const j = await getSnapshot(venueId);
       if (active && j) applySnapshot(j);
     })();
     return () => {
       active = false;
     };
-  }, [venueId, userId, applySnapshot]);
+  }, [venueId, applySnapshot]);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,7 +129,7 @@ export function useVenue(venueId: string, userId: string, displayName: string) {
 
   const post = useCallback(
     (path: string, body: unknown) =>
-      fetch(`/api/venues/${venueId}${path}`, {
+      authedFetch(`/api/venues/${venueId}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -140,31 +138,27 @@ export function useVenue(venueId: string, userId: string, displayName: string) {
   );
 
   const takeSeat = useCallback(
-    () => post("/seats", { action: "take", userId }).then(refetch),
-    [post, userId, refetch],
+    () => post("/seats", { action: "take" }).then(refetch),
+    [post, refetch],
   );
   const leaveSeat = useCallback(
-    () => post("/seats", { action: "leave", userId }).then(refetch),
-    [post, userId, refetch],
+    () => post("/seats", { action: "leave" }).then(refetch),
+    [post, refetch],
   );
   const enqueue = useCallback(
-    (mediaId: string, title?: string) =>
-      post("/queue", { userId, mediaId, title }).then(refetch),
-    [post, userId, refetch],
+    (mediaId: string, title?: string) => post("/queue", { mediaId, title }).then(refetch),
+    [post, refetch],
   );
   const removeQueue = useCallback(
     (itemId: string) =>
-      fetch(`/api/venues/${venueId}/queue`, {
+      authedFetch(`/api/venues/${venueId}/queue`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId, userId }),
+        body: JSON.stringify({ itemId }),
       }).then(refetch),
-    [venueId, userId, refetch],
+    [venueId, refetch],
   );
-  const vote = useCallback(
-    (value: "awesome" | "lame") => post("/vote", { userId, value }),
-    [post, userId],
-  );
+  const vote = useCallback((value: "awesome" | "lame") => post("/vote", { value }), [post]);
   const advance = useCallback(
     () => post("/advance", { playId: roomStateRef.current?.currentPlayId ?? null }),
     [post],
