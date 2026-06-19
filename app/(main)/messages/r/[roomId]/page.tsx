@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ChevronLeft, Users, Hash, Lock, LogIn, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials } from '@/lib/utils'
+import { PageHeading } from '@/components/templates'
 import { joinRoom, leaveRoom } from '../../rooms/actions'
 import { RoomThread } from '@/components/rooms/room-thread'
 import { RoomSearch } from '@/components/rooms/room-search'
@@ -120,65 +121,87 @@ export default async function RoomPage({
     messages = rawMsgs.map(m => ({ ...m, author: memberProfileMap.get(m.author_id) ?? null }))
   }
 
+  // The room glyph (lock for private, hash otherwise) leads the compact takeover bar
+  // beside the shared PageHeading title.
+  const roomGlyph = (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg">
+      {r.visibility === 'private' ? (
+        <Lock className="h-4 w-4 text-primary-strong" />
+      ) : (
+        <Hash className="h-4 w-4 text-primary-strong" />
+      )}
+    </span>
+  )
+
+  const titleNode = (
+    <span className="inline-flex items-center gap-2">
+      {r.name}
+      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs capitalize text-muted">
+        {r.visibility}
+      </span>
+    </span>
+  )
+
+  const subtitle = (
+    <span className="inline-flex items-center">
+      <Users className="mr-1 -mt-px inline h-3 w-3" />
+      {r.member_count} {r.member_count === 1 ? 'member' : 'members'}
+      {r.description && <> &middot; {r.description}</>}
+    </span>
+  )
+
   return (
     <div className="-mx-6 -my-6 flex flex-col h-[calc(100vh-3.5rem)]">
-      {/* Header */}
-      <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border bg-surface shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link
-            href="/messages"
-            className="md:hidden p-1.5 rounded-lg text-subtle hover:text-muted hover:bg-surface-elevated"
-            aria-label="Back"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Link>
-          <div className="w-9 h-9 rounded-lg bg-primary-bg flex items-center justify-center shrink-0">
-            {r.visibility === 'private' ? (
-              <Lock className="w-4 h-4 text-primary-strong" />
-            ) : (
-              <Hash className="w-4 h-4 text-primary-strong" />
-            )}
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-text truncate">{r.name}</h1>
-              <span className="text-2xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted capitalize">
-                {r.visibility}
-              </span>
-            </div>
-            <p className="text-xs text-subtle">
-              <Users className="w-3 h-3 inline mr-1 -mt-px" />
-              {r.member_count} {r.member_count === 1 ? 'member' : 'members'}
-              {r.description && <> &middot; {r.description}</>}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {canRead && <RoomSearch roomId={roomId} />}
-          {isAdmin && (
-            <RoomSettings roomId={roomId} name={r.name} description={r.description} visibility={r.visibility} />
-          )}
-          {/* Channel rooms aren't "joined" — you tune into the Channel. */}
-          {!isChannel && (isMember ? (
-            <form action={leaveRoom.bind(null, roomId)}>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
-              >
-                <LogOut className="w-3 h-3" /> Leave
-              </button>
-            </form>
-          ) : (
-            <form action={joinRoom.bind(null, roomId)}>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-              >
-                <LogIn className="w-3 h-3" /> Join
-              </button>
-            </form>
-          ))}
+      {/* Takeover chat bar — bespoke, full-bleed chrome (the documented exception,
+          MEMBER-DESIGN-SYSTEM §207), with the room identity title routed through the
+          shared PageHeading grammar instead of a hand-rolled <h1>. */}
+      <header className="flex shrink-0 items-center gap-3 border-b border-border bg-surface px-5 py-3">
+        <Link
+          href="/messages"
+          className="md:hidden -ml-1 rounded-lg p-1.5 text-subtle hover:bg-surface-elevated hover:text-muted"
+          aria-label="Back"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+        {roomGlyph}
+        {/* Compact takeover register: PageHeading carries the title/meta semantics, but
+            the bar tones its page-band scale down (no bottom margin, base title, xs meta). */}
+        <div className="min-w-0 flex-1 [&>div]:mb-0 [&_h1]:mb-0 [&_h1]:truncate [&_h1]:text-base [&_h1]:sm:text-base [&_p]:text-xs">
+          <PageHeading
+            title={titleNode}
+            description={subtitle}
+            divider={false}
+            adminBar={false}
+            inlineActions
+            actions={
+              <div className="flex shrink-0 items-center gap-2">
+                {canRead && <RoomSearch roomId={roomId} />}
+                {isAdmin && (
+                  <RoomSettings roomId={roomId} name={r.name} description={r.description} visibility={r.visibility} />
+                )}
+                {/* Channel rooms aren't "joined" — you tune into the Channel. */}
+                {!isChannel && (isMember ? (
+                  <form action={leaveRoom.bind(null, roomId)}>
+                    <button
+                      type="submit"
+                      className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated"
+                    >
+                      <LogOut className="h-3 w-3" /> Leave
+                    </button>
+                  </form>
+                ) : (
+                  <form action={joinRoom.bind(null, roomId)}>
+                    <button
+                      type="submit"
+                      className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                    >
+                      <LogIn className="h-3 w-3" /> Join
+                    </button>
+                  </form>
+                ))}
+              </div>
+            }
+          />
         </div>
       </header>
 
