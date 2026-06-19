@@ -488,7 +488,7 @@ export function OnAirSession({
             {mode === 'breath' ? (
               <BreathVisualizer pattern={pattern} startedAt={startedAt} paused={paused || ended} />
             ) : (
-              <p className="text-8xl font-bold tabular-nums text-text">
+              <p className="text-8xl font-semibold tabular-nums text-text/60">
                 {mm}:{String(ss).padStart(2, '0')}
               </p>
             )}
@@ -517,14 +517,14 @@ export function OnAirSession({
               }}
               className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
             >
-              {ended ? 'Finish' : paused ? 'Start' : 'Pause'}
+              {ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
             </button>
             <button
               type="button"
               onClick={() => void finish(!ended)}
               className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
             >
-              Close Session
+              Close &amp; Log Session
             </button>
           </div>
         </div>
@@ -544,7 +544,7 @@ export function OnAirSession({
   return (
     <div className="fixed inset-x-0 top-0 z-50 h-[100dvh] overflow-y-auto bg-canvas">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5 lg:max-w-3xl lg:px-10 lg:py-8">
-      <div className="flex flex-1 flex-col px-2 pt-3 lg:px-0 lg:pt-2">
+      <div className="flex flex-1 flex-col px-2 pt-10 lg:px-0 lg:pt-9">
       <div className="relative flex items-center justify-center pb-2">
         <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-primary-strong lg:text-lg">
           <LotusIcon className="h-6 w-6 lg:h-7 lg:w-7" /> Mindless
