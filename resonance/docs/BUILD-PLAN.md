@@ -45,15 +45,23 @@ build/lint untouched.
 Code + clock tests landed; the live multi-client check is the remaining gate
 (needs Supabase env + a browser). No DJ UI yet. 🚪 *gate before Section 2.*
 
-### Section 2 — The DJ loop  ⬜
-- [ ] `venues`, `venue_seats`, `queue_items`, `votes` tables (+ migrations)
-- [ ] N configurable DJ seats (default 5); take/leave/rotate (server-authoritative)
-- [ ] Per-DJ queue; rotation playback
-- [ ] Awesome/Lame voting with live aggregate; one weighted vote per user per play
-- [ ] Lowest-rated DJ rotates off; audience queue advances
-- [ ] Live chat + basic presence
+### Section 2 — The DJ loop  🔨
+- [x] `venues`, `venue_seats`, `queue_items`, `votes` tables (migration `0003`, applied)
+- [x] N configurable DJ seats (default 5); take/leave (server-authoritative, first-free-seat)
+- [x] Per-DJ queue; round-robin rotation playback (`lib/dj/service.advance`)
+- [x] Awesome/Lame voting with live aggregate; one weighted vote per user per play (DB-enforced)
+- [x] DJ rotates off when the room nets negative on their track (`shouldBump`)
+- [x] Live chat (ephemeral over broadcast, ADR-013) + presence
+- [x] Auto-advance: player fires `onEnded` -> idempotent `advance` (by play id)
+- [x] Demo surface `/dev/dj`; rotation/tally logic unit-tested (9 tests)
+- [ ] 🚪 **GO (manual):** open `/dev/dj` in 2-3 windows; create a venue, take seats,
+      queue tracks, vote, and confirm rotation + bump behave
 
-**DoD:** a room of friends DJs, votes, and rotates seats correctly. 🚪
+Deferred to later sections (not MVP): an explicit audience "queue for a seat"
+ladder (seats are open take/leave for now); reordering another DJ's queue.
+
+**DoD:** a room of friends DJs, votes, and rotates seats correctly. Server logic +
+tests landed; live multi-client check is the remaining gate. 🚪
 
 ### Section 3 — Identity & profiles (minimal)  ⬜
 - [ ] Standalone Supabase Auth

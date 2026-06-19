@@ -74,6 +74,18 @@ build root (pulling in its `proxy.ts`). `next.config.ts` sets
 `turbopack.root = import.meta.dirname` so the two builds stay fully separate —
 part of the isolation contract at the tooling layer.
 
+### ADR-013 — Chat is ephemeral over Broadcast; votes/queue are persisted ✅
+Chat lines ride the venue's Realtime Broadcast channel and are NOT stored — they
+are presence-grade ("you had to be there"), so no table, no retention surface,
+less PII. Anything the loop depends on (seats, queues, votes, room state) is
+persisted in `resonance`. Revisit (⚠️) if/when moderation needs a chat audit log.
+
+### ADR-014 — Identity is a temporary client stub until auth (Section 3) ✅
+The dev surfaces use a per-browser uuid in localStorage as a stand-in user id,
+passed in requests. This is explicitly NOT trust-bearing. When Supabase Auth +
+federated JWT land (Section 3/5), user id derives from the verified session and
+the route handlers stop trusting client-supplied `userId`.
+
 ### ADR-010 — Gamification mirrors, not merges, the host economy ✅
 Zaps/reputation are computed in-app on an append-only ledger with verified
 play-through awards, then **mirrored** to the host (Frequency's Zaps + The Field)

@@ -41,9 +41,8 @@ export async function POST(req: Request, ctx: Ctx) {
   const body = (await req.json()) as Action;
   const now = Date.now();
 
-  const current: PlaybackFields = (await getRoomState(venueId)) ?? {
-    ...IDLE,
-  };
+  const currentState = await getRoomState(venueId);
+  const current: PlaybackFields = currentState ?? { ...IDLE };
 
   let next: PlaybackFields;
   switch (body.action) {
@@ -72,7 +71,16 @@ export async function POST(req: Request, ctx: Ctx) {
       return NextResponse.json({ error: "unknown action" }, { status: 400 });
   }
 
-  const state = await applyPlayback(venueId, next);
+  // A new track gets a fresh play id; idle clears it; everything else carries
+  // the current play forward so votes stay attached to the same play.
+  const playId =
+    body.action === "track"
+      ? crypto.randomUUID()
+      : body.action === "end"
+        ? null
+        : (currentState?.currentPlayId ?? null);
+
+  const state = await applyPlayback(venueId, next, playId);
   await broadcastToVenue(venueId, ROOM_UPDATE_EVENT, state);
   return NextResponse.json({ state });
 }

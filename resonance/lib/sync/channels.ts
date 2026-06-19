@@ -10,3 +10,12 @@ export function venueTopic(venueId: string): string {
 
 /** Broadcast event carrying a new authoritative RoomState. */
 export const ROOM_UPDATE_EVENT = "room:update";
+
+/** Seats/queue changed; subscribers refetch the venue snapshot. */
+export const VENUE_CHANGED_EVENT = "venue:changed";
+
+/** Live vote aggregate for the current play: { playId, awesome, lame }. */
+export const VOTE_TALLY_EVENT = "vote:tally";
+
+/** Client-to-client chat line: { userId, text, at }. Not persisted (ephemeral). */
+export const CHAT_EVENT = "chat:message";

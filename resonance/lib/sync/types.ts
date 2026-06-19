@@ -22,6 +22,8 @@ export interface RoomState {
   isPlaying: boolean;
   /** External user id of the DJ holding the floor, if any. No cross-schema FK. */
   currentDjUserId: string | null;
+  /** Stable id for the current track-play; votes attach to it. Null when idle. */
+  currentPlayId: string | null;
   updatedAt: string;
 }
 

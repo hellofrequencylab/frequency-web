@@ -16,6 +16,7 @@ type Row = {
   start_offset_seconds: number | string;
   is_playing: boolean;
   current_dj_user_id: string | null;
+  current_play_id: string | null;
   updated_at: string;
 };
 
@@ -29,6 +30,7 @@ function toRoomState(r: Row): RoomState {
     startOffsetSeconds: Number(r.start_offset_seconds),
     isPlaying: r.is_playing,
     currentDjUserId: r.current_dj_user_id,
+    currentPlayId: r.current_play_id,
     updatedAt: r.updated_at,
   };
 }
@@ -44,10 +46,15 @@ export async function getRoomState(venueId: string): Promise<RoomState | null> {
   return data ? toRoomState(data as Row) : null;
 }
 
-/** Persist new playback fields for a venue and return the saved RoomState. */
+/**
+ * Persist new playback fields for a venue and return the saved RoomState.
+ * `playId` identifies the current track-play: pass a fresh id when a new track
+ * starts, or carry the existing one forward for pause/seek/resume.
+ */
 export async function applyPlayback(
   venueId: string,
   fields: PlaybackFields,
+  playId: string | null,
 ): Promise<RoomState> {
   const supabase = createServerClient();
   const { data, error } = await supabase
@@ -61,6 +68,7 @@ export async function applyPlayback(
         start_offset_seconds: fields.startOffsetSeconds,
         is_playing: fields.isPlaying,
         current_dj_user_id: fields.currentDjUserId,
+        current_play_id: playId,
       },
       { onConflict: "venue_id" },
     )

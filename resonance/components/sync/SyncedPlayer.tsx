@@ -47,15 +47,26 @@ function applyState(player: YTPlayer, state: RoomState | null) {
   if (!state.isPlaying && playerState === PLAYING) player.pauseVideo();
 }
 
-export function SyncedPlayer({ state }: { state: RoomState | null }) {
+export function SyncedPlayer({
+  state,
+  onEnded,
+}: {
+  state: RoomState | null;
+  /** Fired once when the current track reaches its end (used to auto-advance). */
+  onEnded?: () => void;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const readyRef = useRef(false);
-  // Keep latest state available to async callbacks (onReady, heartbeat).
+  // Keep latest state/callback available to async callbacks (onReady, heartbeat).
   const stateRef = useRef<RoomState | null>(state);
+  const onEndedRef = useRef(onEnded);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+  useEffect(() => {
+    onEndedRef.current = onEnded;
+  }, [onEnded]);
 
   // Create the player once.
   useEffect(() => {
@@ -68,6 +79,10 @@ export function SyncedPlayer({ state }: { state: RoomState | null }) {
           onReady: () => {
             readyRef.current = true;
             if (playerRef.current) applyState(playerRef.current, stateRef.current);
+          },
+          onStateChange: (e) => {
+            const ENDED = window.YT?.PlayerState.ENDED ?? 0;
+            if (e.data === ENDED) onEndedRef.current?.();
           },
         },
       });
