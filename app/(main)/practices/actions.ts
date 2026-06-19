@@ -1,7 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
+import { atLeastRole } from '@/lib/core/roles'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { redirect } from 'next/navigation'
@@ -11,6 +12,7 @@ import {
   dropMemberPractice,
   setCirclePractice,
   createPractice,
+  notifyStaffOfPendingPractice,
   getPractice,
   updatePractice,
   forkPractice,
@@ -54,36 +56,81 @@ export async function dropPracticeAction(practiceId: string): Promise<ActionResu
   return ok()
 }
 
+/**
+ * Authorize a caller to CREATE a practice and decide its review status (SECURITY-sensitive,
+ * ADR-109). Authoring a library practice is a CREW+ act on the community trust ladder — a plain
+ * Member may adopt, claim, fork, and log practices, but never author one into the library. The
+ * gate is the canonical trust-ladder helper (`atLeastRole(role, 'crew')`), read from the caller's
+ * EFFECTIVE community_role (view-as aware via getCallerProfile), so it's the single source of
+ * truth — the hidden UI button is only convenience.
+ *
+ * Returns the caller's id + whether host+ standing (the curation tier) lets the practice
+ * auto-approve. A Crew author (below host) creates PENDING: the practice stays out of the public
+ * pool until a Host+ approves it. Returns an error string when the caller is a Member or signed out.
+ */
+async function authorizeCreatePractice(): Promise<
+  { profileId: string; autoApprove: boolean } | { error: string }
+> {
+  const caller = await getCallerProfile()
+  if (!caller) return { error: 'Not signed in' }
+  // CREW+ may author. A plain Member is rejected with a clear reason (server is the source of truth).
+  if (!atLeastRole(caller.community_role, 'crew')) {
+    return { error: 'Only Crew and above can create a practice.' }
+  }
+  // Host+ (or platform staff, who curate the library) author live; Crew authors pending review.
+  const autoApprove = atLeastRole(caller.community_role, 'host') || caller.webRole !== 'none'
+  return { profileId: caller.id, autoApprove }
+}
+
 export async function createPracticeAction(
   title: string,
   description?: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return fail('Not signed in')
+  const gate = await authorizeCreatePractice()
+  if ('error' in gate) return fail(gate.error)
   const t = title.trim()
   if (!t) return fail('Title is required')
   const p = await createPractice({
     title: t,
     description: description?.trim() || null,
-    createdBy: profileId,
+    createdBy: gate.profileId,
+    // A Crew proposal lands PENDING + hidden until a Host+ approves it (which publishes it);
+    // a host+/staff author goes live at birth (the column default 'approved').
+    isPublic: gate.autoApprove,
+    status: gate.autoApprove ? 'approved' : 'pending',
   })
   if (!p) return fail('Could not create practice')
+  if (!gate.autoApprove) {
+    // Best-effort — never blocks creation.
+    await notifyStaffOfPendingPractice({ practiceId: p.id, title: t, proposedBy: gate.profileId })
+  }
   revalidatePath('/practices')
   return ok({ id: p.id })
 }
 
 // Create a blank DRAFT practice (non-public) and return its id, so the caller can open the full
 // PracticeBuilder popup straight away — no separate "name it" step or full page. The draft stays
-// out of the public library until it's published (the admin table's Public switch).
+// out of the public library until it's published. Crew+ only (Members cannot author practices); a
+// Crew draft carries 'pending' so when it is published it goes through Host+ review, while a
+// host+/staff author's draft is auto-approved on publish.
 export async function createPracticeDraftAction(): Promise<ActionResult<{ id: string }>> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return fail('Not signed in')
+  const gate = await authorizeCreatePractice()
+  if ('error' in gate) return fail(gate.error)
   const p = await createPractice({
     title: 'Untitled practice',
-    createdBy: profileId,
+    createdBy: gate.profileId,
     isPublic: false,
+    status: gate.autoApprove ? 'approved' : 'pending',
   })
   if (!p) return fail('Could not create practice')
+  if (!gate.autoApprove) {
+    // Best-effort — never blocks creation. The pending draft is hidden until published + approved.
+    await notifyStaffOfPendingPractice({
+      practiceId: p.id,
+      title: 'Untitled practice',
+      proposedBy: gate.profileId,
+    })
+  }
   revalidatePath('/practices')
   return ok({ id: p.id })
 }

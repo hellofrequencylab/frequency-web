@@ -203,11 +203,34 @@ export async function setPracticeFeatured(id: string, featured: boolean): Promis
   if (error) throw new Error(error.message)
 }
 
-/** Set a Practice's library review status. Caller enforces authz. */
+/** Set a Practice's library review status. Caller enforces authz. When a `reviewerId`
+ *  is passed and the status is a terminal decision (approved/rejected), the reviewer +
+ *  time are stamped (reviewed_by / reviewed_at — the columns added alongside `status` in
+ *  migration 20260605120000) so the curation record carries who decided. The stamp is
+ *  defensive: if those columns aren't applied yet, the write retries with status only, so
+ *  approval never hard-depends on the migration being live. Approving also publishes the
+ *  practice into the library (is_public = true) so the member's proposal goes live; a
+ *  rejection leaves it hidden. */
 export async function setPracticeStatus(
   id: string,
   status: 'draft' | 'pending' | 'approved' | 'rejected',
+  reviewerId?: string | null,
 ): Promise<void> {
-  const { error } = await db().from('practices').update({ status }).eq('id', id)
-  if (error) throw new Error(error.message)
+  const isDecision = status === 'approved' || status === 'rejected'
+  const update: Record<string, unknown> = { status }
+  // Approval is what publishes a pending proposal into the public library.
+  if (status === 'approved') update.is_public = true
+  if (isDecision && reviewerId) {
+    update.reviewed_by = reviewerId
+    update.reviewed_at = new Date().toISOString()
+  }
+  const { error } = await db().from('practices').update(update).eq('id', id)
+  if (error) {
+    // Defensive: a stale schema may lack reviewed_by/reviewed_at. Retry with the
+    // status (+ publish) only so the decision still lands.
+    const fallback: Record<string, unknown> = { status }
+    if (status === 'approved') fallback.is_public = true
+    const { error: retryErr } = await db().from('practices').update(fallback).eq('id', id)
+    if (retryErr) throw new Error(retryErr.message)
+  }
 }

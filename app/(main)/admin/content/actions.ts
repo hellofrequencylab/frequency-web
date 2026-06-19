@@ -228,21 +228,30 @@ export async function bulkUpdatePracticesAction(
   return ok({ count: cleanIds.length })
 }
 
+/**
+ * Curator decision on a member-proposed practice (the review queue's Approve / Reject).
+ * Host+ on the trust ladder OR the 'community' staff domain — the curation gate, re-checked
+ * server-side (the client never carries authority). Approving publishes the practice into
+ * the public library and stamps the reviewer; rejecting leaves it hidden. The 'practice
+ * created pending → Host+ approves' half of the approval flow.
+ */
 export async function setPracticeStatusAction(
   id: string,
   status: 'approved' | 'rejected',
 ): Promise<ActionResult> {
+  let caller: { id: string }
   try {
-    await requireCurator()
+    caller = await requireCurator()
   } catch {
     return fail('You need curation access for this.')
   }
   try {
-    await setPracticeStatus(id, status)
+    await setPracticeStatus(id, status, caller.id)
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not update the practice.')
   }
   revalidateContent('practices')
+  revalidatePath('/practices', 'layout')
   return ok()
 }
 

@@ -15,6 +15,7 @@ import { track } from '@/lib/analytics/track'
 import { awardZaps, awardZapsForAction } from '@/lib/zaps'
 import { recordStreakActivity, processGamificationEvent } from '@/lib/achievements'
 import { recordPracticeStreak } from '@/lib/practice-streak'
+import { ROLE_HIERARCHY } from '@/lib/core/roles'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -535,19 +536,33 @@ export async function createPractice(input: {
   description?: string | null
   createdBy: string
   isPublic?: boolean
+  /** Library review status at birth (community_library lifecycle). Omit to let the
+   *  column default ('approved') stand — host+ authored content is live at birth; a
+   *  Crew proposal passes 'pending' so it stays out of the public pool until a Host+
+   *  approves it. The column predates this code (migration 20260605120000), but the
+   *  write is guarded so a stale schema (no `status` column) never blocks creation. */
+  status?: 'pending' | 'approved'
 }): Promise<Practice | null> {
   const isPublic = input.isPublic ?? true
-  const { data } = await db()
-    .from('practices')
-    .insert({
-      title: input.title,
-      description: input.description ?? null,
-      created_by: input.createdBy,
-      is_public: isPublic,
-      slug: await uniquePracticeSlug(input.title),
-    })
-    .select(PRACTICE_COLS)
-    .maybeSingle()
+  const insert: Record<string, unknown> = {
+    title: input.title,
+    description: input.description ?? null,
+    created_by: input.createdBy,
+    is_public: isPublic,
+    slug: await uniquePracticeSlug(input.title),
+  }
+  // Only set status when the caller asks for a non-default ('pending'): a defensive
+  // insert that tolerates a not-yet-applied column would otherwise be harder to reason
+  // about. 'approved' is the column default, so omitting it is equivalent + safe.
+  if (input.status === 'pending') insert.status = 'pending'
+  let { data } = await db().from('practices').insert(insert).select(PRACTICE_COLS).maybeSingle()
+  // Defensive fallback: if the `status` column isn't applied yet, the insert above
+  // errors and returns no row. Retry once without it so creation never hard-depends on
+  // the migration being live (the practice simply lands at the column-less default).
+  if (!data && insert.status !== undefined) {
+    delete insert.status
+    ;({ data } = await db().from('practices').insert(insert).select(PRACTICE_COLS).maybeSingle())
+  }
   const practice = (data as Practice | null) ?? null
 
   // Creation token (Rewards Economy v3, ADR-305): the small Gem token on FIRST publish.
@@ -564,6 +579,58 @@ export async function createPractice(input: {
   }
 
   return practice
+}
+
+/**
+ * Best-effort: tell the curators a member-proposed practice is waiting for review.
+ * Mirrors the curation gate (a Host on the trust ladder OR any Guide+ approves —
+ * docs/community-library / ADR-109) by notifying every active host+ steward AND every
+ * platform staff account (web_role admin/janitor), so whoever curates the review queue
+ * sees it in their bell tray. Reuses the shared `notifications` table the same way the
+ * creator-tip + friend flows do (recipient_id + type + reference). NEVER throws — a
+ * notification failure must never block creating the practice (the caller ignores the
+ * result). De-duped per recipient; the actor is the proposing member.
+ */
+export async function notifyStaffOfPendingPractice(input: {
+  practiceId: string
+  title: string
+  proposedBy: string
+}): Promise<void> {
+  try {
+    const client = db()
+    // host+ on the trust ladder = host, guide, mentor (and the deprecated admin/janitor
+    // community rungs, kept for enum-order parity — harmless to include). Staff = web_role
+    // admin/janitor, independent of the ladder. Either standing curates the review queue.
+    const hostPlus = ROLE_HIERARCHY.slice(ROLE_HIERARCHY.indexOf('host')) as readonly string[]
+    const { data } = await client
+      .from('profiles')
+      .select('id')
+      .eq('is_active', true)
+      .eq('is_system', false)
+      .or(`community_role.in.(${hostPlus.join(',')}),web_role.in.(admin,janitor)`)
+      .limit(200)
+    const recipients = [
+      ...new Set(
+        ((data as { id: string }[] | null) ?? [])
+          .map((r) => r.id)
+          .filter((id) => id && id !== input.proposedBy),
+      ),
+    ]
+    if (recipients.length === 0) return
+    const body = `New practice "${input.title.slice(0, 80)}" is waiting for review.`
+    await client.from('notifications').insert(
+      recipients.map((recipient_id) => ({
+        recipient_id,
+        actor_id: input.proposedBy,
+        type: 'practice_review',
+        reference_type: 'practice',
+        reference_id: input.practiceId,
+        body,
+      })),
+    )
+  } catch {
+    // a notification failure must never block proposing a practice
+  }
 }
 
 /** A single practice by id (for the editor + ownership checks). */
