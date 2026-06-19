@@ -217,19 +217,21 @@ ledger every dollar flow writes to (`revenue_type ∈ dues|donation|commerce|pay
 points (gems/zaps) stay separate and entity-blind. `profile_personas.entity_id` is now FK'd to
 `entities`. Full rationale: [PLATFORM-VISION](PLATFORM-VISION.md) §1, [BASELINE-ASSESSMENT](BASELINE-ASSESSMENT.md) Phase 2.
 
-**Entity Spaces (tenancy; ADR-320/321/322; planned Phase 0)**
+**Entity Spaces (tenancy + booking; ADR-320/321/322/325; applied Phase 0-1)**
 The `spaces` row is the **tenant**. Entity-spaces Phase 0 adds the tenancy spine: a per-space
 membership table, ownership FKs on the core objects, and mode/feature-gating columns on `spaces`.
 Full design: [ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §4 · build/backlog:
-[ENTITY-SPACES-BUILD.md](ENTITY-SPACES-BUILD.md) Phase 0. These are **planned** schema decisions
-(the migrations land in Phase 0); the rollout is **expand → dual-write → backfill → contract**
+[ENTITY-SPACES-BUILD.md](ENTITY-SPACES-BUILD.md) Phase 0. These migrations are **applied**
+(Phase 0-1); the rollout was **expand → dual-write → backfill → contract**
 (ENTITY-SPACES-SYSTEM §4.12) so the **root space owns all pre-existing data and behaves exactly
 as today**.
 
 | Table | Status | Key columns | Tenancy |
 |---|---|---|---|
-| `space_members` | planned (ADR-320) | `space_id, profile_id, role text CHECK (viewer\|editor\|moderator\|admin), status, invited_by, created_at`; unique `(space_id, profile_id)`; `space_id`-leading index | `space_id` |
+| `space_members` | applied (ADR-320; `20260711010000`) | `space_id, profile_id, role text CHECK (viewer\|editor\|moderator\|admin), status, invited_by, created_at`; unique `(space_id, profile_id)`; `space_id`-leading index | `space_id` |
 | `space_invites` | planned (ADR-320) | `space_id, email, role, token, expires_at, accepted_at` (grant a space role by email/link without making someone network staff) | `space_id` |
+| `space_availability` | applied (ADR-325; `20260711050000`) | `space_id, weekday 0-6, start_minute/end_minute (local-midnight minutes), slot_minutes, timezone (one IANA tz per Space), created_at` (Practitioner 1:1 booking v1 weekly windows) | `space_id` |
+| `space_bookings` | applied (ADR-325; `20260711050000`) | `space_id, member_profile_id, starts_at/ends_at (UTC), status CHECK (confirmed\|cancelled), note`; partial unique `(space_id, starts_at) WHERE status=confirmed` (double-book guard); service-role RLS | `space_id` |
 
 > **`space_members`** (ADR-320) is the **per-space membership + authorization** primitive: a
 > **third, orthogonal authority axis**, distinct from the **community trust ladder**
@@ -308,7 +310,7 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
 | `web_role` | `none`, `admin`, `janitor` (`text` + CHECK, not a PG enum — migration `20260613000050`) |
 | `space_members.role` | `viewer`, `editor`, `moderator`, `admin` (`text` + CHECK; per-space role ladder, ADR-320; migration `20260711010000_space_members.sql`) |
 | `spaces.visibility` | `network`, `private` (`text` + CHECK, default `network`; public-vs-walled axis, ADR-322; migration `20260711000000_spaces_visibility_plan_entitlements.sql`) |
-| `spaces.type` | `root`, `practitioner`, `business`, `organization`, `coaching`, `lab`, `partner` (`text` + CHECK; the role axis that selects a profile blueprint, ADR-323; `event_space` deferred behind a CHECK expand, owner gate D-2) |
+| `spaces.type` | `root`, `practitioner`, `business`, `organization`, `coaching`, `event_space`, `lab`, `partner` (`text` + CHECK; the role axis that selects a profile blueprint, ADR-323; `event_space` added in migration `20260711040000_spaces_type_event_space.sql`, ADR-325) |
 | `practice_tiers.tier` | `initiate`, `adept`, `master` (`text` + CHECK; renamed 2026 — see docs/NAMING.md; migration `20260613000020`) |
 | `circle_type` | `in-person`, `online` |
 | `group_status` | `forming`, `active`, `inactive`, `archived` |

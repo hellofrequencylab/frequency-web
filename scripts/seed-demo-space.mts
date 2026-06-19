@@ -1,8 +1,8 @@
 // Seed ONE demo Space PER ROLE so every networked entity profile renders end-to-end
 // (ENTITY-SPACES-BUILD Phase 1, Wave A + Wave B). Idempotent + service-role only. Run it once and
-// /spaces/demo-practitioner, /spaces/demo-business, /spaces/demo-organization, and
-// /spaces/demo-coaching are all live with a brand, a type, an about + tagline, and a couple of
-// sample offerings each. Re-running upserts in place (on slug / event slug), never duplicates.
+// /spaces/demo-practitioner, /spaces/demo-business, /spaces/demo-organization, /spaces/demo-coaching,
+// and /spaces/demo-event-space are all live with a brand, a type, an about + tagline, and a couple
+// of sample offerings each. Re-running upserts in place (on slug / event slug), never duplicates.
 //
 //   SUPABASE_SERVICE_ROLE_KEY=... NEXT_PUBLIC_SUPABASE_URL=... \
 //     node --experimental-strip-types scripts/seed-demo-space.mts
@@ -10,7 +10,7 @@
 // Optional: DEMO_OWNER_PROFILE_ID=<a profiles.id> to own every demo Space (else the first active,
 // non-system profile is used; falls back to ownerless if none exists).
 //
-// What it creates, for each of the four roles:
+// What it creates, for each of the five roles:
 //   • a spaces row: a demo-<role> slug, the role `type`, visibility 'network', status 'active',
 //     skin 'dawn', a brand name, an about + tagline, owned by the chosen profile, on the root
 //     money entity (every Space's commerce posts to an entity; the demo reuses root's).
@@ -44,14 +44,14 @@ async function rest(path: string, init: RequestInit & { prefer?: string } = {}):
 interface DemoSpace {
   slug: string
   name: string
-  type: 'practitioner' | 'business' | 'organization' | 'coaching'
+  type: 'practitioner' | 'business' | 'organization' | 'coaching' | 'event_space'
   brandName: string
   tagline: string
   about: string
   offerings: { suffix: string; title: string; description: string; inDays: number }[]
 }
 
-// The four demos. One per registered role blueprint (lib/spaces/blueprints.ts). All share skin
+// The five demos. One per registered role blueprint (lib/spaces/blueprints.ts). All share skin
 // 'dawn' (the Wave B blueprints reuse the Practitioner skin) and the root money entity.
 const DEMOS: DemoSpace[] = [
   {
@@ -143,6 +143,29 @@ const DEMOS: DemoSpace[] = [
         title: 'Open office hours',
         description: 'A drop-in call to ask anything between lessons. Bring the spot you are stuck on.',
         inDays: 8,
+      },
+    ],
+  },
+  {
+    slug: 'demo-event-space',
+    name: 'Cedar Hall',
+    type: 'event_space',
+    brandName: 'Cedar Hall',
+    tagline: 'A barn and a few cabins by the lake for weekend retreats.',
+    about:
+      'Cedar Hall is a small retreat venue on twelve acres outside town. We host weekend retreats and day workshops in a restored barn, with cabins for groups that stay over. Meals are simple and the trails start at the back door.',
+    offerings: [
+      {
+        suffix: 'autumn-weekend-retreat',
+        title: 'Autumn weekend retreat',
+        description: 'Two nights at the lake with morning movement, shared meals, and time on the trails. Cabins sleep up to twenty.',
+        inDays: 14,
+      },
+      {
+        suffix: 'day-workshop-in-the-barn',
+        title: 'Day workshop in the barn',
+        description: 'A single-day workshop in the big barn, lunch included. Drive in for the morning and head home by five.',
+        inDays: 21,
       },
     ],
   },

@@ -25,20 +25,20 @@ describe('blueprintForType', () => {
   })
 
   it('fails closed to null for an unknown / unregistered type', () => {
-    // event_space has no blueprint yet (its type + routes land later); unknown types fall through.
-    expect(blueprintForType('event_space')).toBeNull()
+    // 'school' is a clearly fake type with no blueprint; unknown / absent types fall through.
+    expect(blueprintForType('school')).toBeNull()
     expect(blueprintForType('unknown')).toBeNull()
     expect(blueprintForType(null)).toBeNull()
     expect(blueprintForType(undefined)).toBeNull()
   })
 })
 
-// ── Wave B role blueprints (Business · Organization · Coaching, §2.5 / §2.6 / §2.7) ─────────────
+// ── Wave B role blueprints (Business · Organization · Coaching · Event Space, §2.5 - §2.8) ──────
 // Each reuses the SAME seven entity modules + the same wired route segments as Practitioner; only
 // the tab labels, the primary CTA label, the hero stat keys, and the order vary. Every CTA routes
 // to a wired segment (book/offerings/practices/community), so no tab link 404s.
 
-describe('Wave B blueprints (business / organization / coaching)', () => {
+describe('Wave B blueprints (business / organization / coaching / event_space)', () => {
   // Every tab id MUST be a wired profile route segment (a page.tsx exists for it) so the tab row
   // never links to a 404. These are the segments live today.
   const WIRED_SEGMENTS = new Set(['about', 'offerings', 'practices', 'community', 'book'])
@@ -57,6 +57,7 @@ describe('Wave B blueprints (business / organization / coaching)', () => {
     { type: 'business', typeLabel: 'Business', cta: 'Become a member', labels: ['About', 'Classes', 'Practices', 'Community', 'Join'], stats: ['members', 'offerings', 'circles'] },
     { type: 'organization', typeLabel: 'Organization', cta: 'Donate', labels: ['About', 'Programs', 'Practices', 'Community', 'Donate'], stats: ['members', 'offerings', 'circles'] },
     { type: 'coaching', typeLabel: 'Coaching', cta: 'Enroll', labels: ['About', 'Programs', 'Curriculum', 'Community', 'Enroll'], stats: ['members', 'practices', 'circles'] },
+    { type: 'event_space', typeLabel: 'Event Space', cta: 'Get tickets', labels: ['About', 'Events', 'Practices', 'Community', 'Tickets'], stats: ['members', 'offerings', 'circles'] },
   ] as const
 
   for (const c of cases) {
