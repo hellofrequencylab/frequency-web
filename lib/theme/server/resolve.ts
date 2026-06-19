@@ -31,7 +31,11 @@ export interface ResolvedTheme {
  * Resolve the theme for the current request. Reads the `fxtheme` cookie, then layers the
  * optional Space defaults and the system/time defaults per the precedence above.
  *
- * @param input.spaceSkin       the Space's `spaces.skin` value, if any (precedence 2).
+ * @param input.spaceSkin       the Space's `spaces.skin` value, if any (precedence 2). This is the
+ *                              one Space field wired into the live theme. NOTE: `spaces.brand_accent`
+ *                              is currently DECORATIVE (a reference swatch only); it is NOT resolved
+ *                              into a token here until it is separately wired through the validated
+ *                              accent-override path (lib/theme/validate.ts TOKEN_ALLOWLIST).
  * @param input.spaceGeneration the Space's `spaces.generation` value, if any (precedence 2).
  * @param input.now             clock override for the occasion window (defaults to new Date()).
  */

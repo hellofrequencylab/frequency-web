@@ -298,11 +298,16 @@ export default async function MainLayout({
   // (the current look). The root space enables every vertical, so this filtering is a no-op there
   // — it only narrows nav for a non-root sub-brand Space. (chromeOverrides also came from the wave.)
   let activeSkin = 'default'
+  let activeGeneration: string | null = null
   let activeBrandName: string | null = null
   let activeBrandLogoUrl: string | null = null
   try {
     if (space) {
       activeSkin = space.skin
+      // `spaces.generation` is the operator's GENERATION (feel) default (20260707000000_spaces_generation.sql).
+      // Read via an untyped cast until lib/spaces maps the column onto Space (the codebase pattern for a
+      // freshly-added column); null = no Space default, so resolveTheme falls back to DEFAULT_GENERATION.
+      activeGeneration = (space as { generation?: string | null }).generation ?? null
       activeBrandName = space.brandName
       activeBrandLogoUrl = space.brandLogoUrl
       const enabled = new Set(activeVerticalsForSpace(space).map((v) => v.id))
@@ -319,7 +324,7 @@ export default async function MainLayout({
   // generation / occasion) over the Space default over the system default. The per-request
   // cookie + DB-theme reads live HERE, not in the root layout, so the public marketing/discover
   // pages stay static/prerendered (app/layout.tsx). Fail-safe throughout.
-  const theme = await resolveTheme({ spaceSkin: activeSkin })
+  const theme = await resolveTheme({ spaceSkin: activeSkin, spaceGeneration: activeGeneration })
   const occasion =
     theme.occasion !== 'none' ? theme.occasion : await resolveActiveOccasionSlug(new Date())
   // The active DB skin/occasion theme as a scoped <style> (fail-safe '' until theme rows exist).
