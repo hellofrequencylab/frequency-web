@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
-import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, HEARD_ABOUT as DEFAULT_HEARD, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
+import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
 import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
 import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
@@ -52,17 +52,20 @@ type Props = {
    *  Welcome-beat picker; defaults to Visitor. Carried in a cookie so completion can
    *  stamp meta.persona + the persona tag, and branches the tour reel. */
   persona?: PersonaId
-  /** Open the flow at a specific beat (0–5). Used by the /pages/splash editor to
+  /** Open the flow at a specific beat (0–4). Used by the /pages/splash editor to
    *  preview the REAL component one beat at a time; the flow logic is untouched. */
   initialBeat?: number
+  /** Set when the visitor scanned a member's QR code (the fq_ref referrer). Shows an
+   *  "Invited by {name}" chip atop the flow so the welcome reads personal. */
+  inviter?: { displayName: string; handle: string; avatarUrl: string | null } | null
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender }
-const BEAT_COUNT = 6 // 0 oath · 1 intro · 2 reel · 3 identity · 4 place · 5 enter
+const BEAT_COUNT = 5 // 0 oath · 1 intro · 2 reel · 3 identity+place · 4 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
 // live announcement so assistive tech tracks "where am I" through the sequence.
-const BEAT_LABELS = ['Beta Promise', 'Who you are', 'A quick tour', 'Your identity', 'Your place', 'Step in']
+const BEAT_LABELS = ['Beta Promise', 'Who you are', 'A quick tour', 'Your profile', 'Step in']
 
 // No separator — "Daniel Tyack" → "danieltyack".
 function suggestHandle(name: string): string {
@@ -93,17 +96,23 @@ function accent(text: string): React.ReactNode {
   )
 }
 
-export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0 }: Props) {
+export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, inviter = null }: Props) {
   // Operator-tunable copy (defaults to the beta-script copy) — shadows the imports so
-  // every existing VERA./BETA_OATHS/HEARD_ABOUT reference picks up the overrides.
+  // every existing VERA./BETA_OATHS reference picks up the overrides.
   const VERA = copy?.vera ?? DEFAULT_VERA
   const BETA_OATHS = copy?.oaths ?? DEFAULT_OATHS
-  const HEARD_ABOUT = copy?.heardAbout ?? DEFAULT_HEARD
 
-  // Persona (who they said they are, from the lead flow). Pre-selected from the URL;
-  // changeable in the Welcome beat. Drives the tour reel + is stamped at completion.
-  const [persona, setPersona] = useState<PersonaId>(isPersonaId(initialPersona) ? initialPersona : DEFAULT_PERSONA)
-  const reel = getPersona(persona).reel
+  // Personas (who they said they are). MULTI-select — a Founder can be more than one
+  // thing (a practitioner who also wants to build). Pre-seeded from the lead-flow URL.
+  // The FIRST selected is the "primary": it drives the tour reel + the meta.persona the
+  // site and Vera read; every selected persona is tagged at completion.
+  const [personas, setPersonas] = useState<PersonaId[]>(() => (isPersonaId(initialPersona) ? [initialPersona] : []))
+  const primaryPersona: PersonaId = personas[0] ?? DEFAULT_PERSONA
+  const reel = getPersona(primaryPersona).reel
+  function togglePersona(id: PersonaId) {
+    setPersonas((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]))
+    setReelIndex(0)
+  }
 
   // Remember which audience sequence this is, so completion can tag the cohort —
   // survives the deferred sign-in round-trip (a 30-day cookie). Preview never tags.
@@ -112,12 +121,13 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     document.cookie = `fq_beta_seq=${encodeURIComponent(sequence)}; path=/; max-age=2592000; samesite=lax`
   }, [preview, sequence])
 
-  // Persist the chosen persona across the deferred sign-in round-trip (30-day cookie),
-  // so completion can stamp meta.persona + the persona tag. Preview never writes.
+  // Persist the chosen personas across the deferred sign-in round-trip (30-day cookies),
+  // so completion can stamp meta.persona (primary) + every persona tag. Preview never writes.
   useEffect(() => {
     if (preview) return
-    document.cookie = `fq_persona=${encodeURIComponent(persona)}; path=/; max-age=2592000; samesite=lax`
-  }, [preview, persona])
+    document.cookie = `fq_persona=${encodeURIComponent(primaryPersona)}; path=/; max-age=2592000; samesite=lax`
+    document.cookie = `fq_personas=${encodeURIComponent(personas.join(','))}; path=/; max-age=2592000; samesite=lax`
+  }, [preview, personas, primaryPersona])
 
   const [beat, setBeat] = useState(() => Math.min(Math.max(initialBeat, 0), BEAT_COUNT - 1))
   const [previewDone, setPreviewDone] = useState(false)
@@ -144,8 +154,6 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const [handle, setHandle] = useState('')
   const [handleTouched, setHandleTouched] = useState(false)
   const [check, setCheck] = useState<{ handle: string; result: 'available' | 'taken' | 'idle' } | null>(null)
-  const [bio, setBio] = useState('')
-  const [interests, setInterests] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState('')
@@ -159,8 +167,6 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [locResults, setLocResults] = useState<PlaceSuggestion[]>([])
   const [locOpen, setLocOpen] = useState(false)
-  const [intent, setIntent] = useState('')
-  const [heardAbout, setHeardAbout] = useState('')
 
   // Reel
   const [reelIndex, setReelIndex] = useState(0)
@@ -180,13 +186,13 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     await stashPendingInduction({
       displayName: displayName.trim(),
       handle,
-      bio,
+      bio: '',
       location,
       lat: coords?.lat ?? null,
       lng: coords?.lng ?? null,
-      intent,
-      interests,
-      heardAbout,
+      intent: '',
+      interests: '',
+      heardAbout: '',
       oaths: BETA_OATHS.filter((o) => oaths[o.id]).map((o) => o.id),
     })
     if (avatarFile) {
@@ -347,14 +353,14 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       await completeBetaInduction({
         displayName: displayName.trim(),
         handle,
-        bio,
+        bio: '',
         avatarUrl: finalAvatarUrl,
         location,
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
-        intent,
-        interests,
-        heardAbout,
+        intent: '',
+        interests: '',
+        heardAbout: '',
         oaths: accepted,
       })
       // Redirects to /feed?intro=1 on success; execution stops here.
@@ -436,6 +442,24 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
           <span className="brandmark-link mt-5 block">
             <span className="brandmark h-12 aspect-[963/170] sm:h-[52px]" aria-hidden />
           </span>
+
+          {/* Scanned in via a member's QR code → a warm "Invited by {name}" chip with
+              their photo, so the welcome reads personal from the first beat. */}
+          {inviter && (
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pl-1.5 pr-3.5 shadow-sm">
+              {inviter.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={inviter.avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" />
+              ) : (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-bg text-2xs font-bold text-primary-strong" aria-hidden>
+                  {getInitials(inviter.displayName) || '?'}
+                </span>
+              )}
+              <span className="text-sm text-muted">
+                Invited by <span className="font-semibold text-text">{inviter.displayName}</span>
+              </span>
+            </div>
+          )}
         </div>
 
         <div
@@ -492,16 +516,17 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     through a lead flow; changeable here. Branches the tour reel and
                     is stamped on the member so the site + Vera can tailor later. */}
                 <p className="mt-9 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First, who are you?</p>
+                <p className="mt-1.5 text-sm text-muted">Pick all that fit.</p>
                 <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
                   {listPersonas().map((p) => {
-                    const active = persona === p.id
+                    const active = personas.includes(p.id)
                     return (
                       <button
                         key={p.id}
                         type="button"
-                        onClick={() => { setPersona(p.id); setReelIndex(0) }}
+                        onClick={() => togglePersona(p.id)}
                         aria-pressed={active}
-                        className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
+                        className={`relative flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
                       >
                         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? 'bg-primary text-on-primary' : 'bg-primary-bg text-primary-strong'}`} aria-hidden>
                           <p.Icon className="h-5 w-5" />
@@ -510,6 +535,12 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                           <span className="block text-base font-bold text-text">{p.label}</span>
                           <span className="mt-0.5 block text-sm text-muted">{p.pitch}</span>
                         </span>
+                        {/* Multi-select checkmark — reads clearly as "more than one is fine". */}
+                        {active && (
+                          <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary" aria-hidden>
+                            <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 10l4 4 8-9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          </span>
+                        )}
                       </button>
                     )
                   })}
@@ -627,26 +658,50 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                       </p>
                     </div>
                     <div>
-                      <label htmlFor="induction-bio" className={fieldLabel}>One-line bio <span className="font-normal normal-case text-subtle">· optional</span></label>
-                      <input
-                        id="induction-bio"
-                        type="text"
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value.slice(0, 140))}
-                        placeholder="Coffee, trail runs, and good books."
-                        className={inputInset}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="induction-interests" className={fieldLabel}>What are you into? <span className="font-normal normal-case text-subtle">· optional</span></label>
-                      <input
-                        id="induction-interests"
-                        type="text"
-                        value={interests}
-                        onChange={(e) => setInterests(e.target.value.slice(0, 120))}
-                        placeholder="hiking, vinyl, cold plunges…"
-                        className={inputInset}
-                      />
+                      <label htmlFor="induction-city" className={fieldLabel}>Your city</label>
+                      <div className="relative">
+                        <input
+                          id="induction-city"
+                          type="text"
+                          role="combobox"
+                          aria-expanded={locOpen && locResults.length > 0}
+                          aria-controls="induction-city-list"
+                          aria-autocomplete="list"
+                          value={locQuery}
+                          onChange={(e) => {
+                            setLocQuery(e.target.value)
+                            setLocation('')
+                            setCoords(null)
+                            setLocOpen(true)
+                          }}
+                          onFocus={() => locResults.length > 0 && setLocOpen(true)}
+                          onBlur={() => setTimeout(() => setLocOpen(false), 150)}
+                          placeholder="Start typing your city…"
+                          className={inputInset}
+                          autoComplete="off"
+                        />
+                        {location && <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-success" aria-hidden>✓</span>}
+                        {locOpen && locResults.length > 0 && (
+                          <ul id="induction-city-list" role="listbox" aria-label="City suggestions" className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg">
+                            {locResults.map((r) => (
+                              <li key={`${r.label}-${r.lat}`} role="option" aria-selected={location === r.label}>
+                                <button
+                                  type="button"
+                                  onMouseDown={() => {
+                                    setLocation(r.label)
+                                    setLocQuery(r.label)
+                                    setCoords({ lat: r.lat, lng: r.lng })
+                                    setLocOpen(false)
+                                  }}
+                                  className="block w-full px-4 py-2.5 text-left text-base text-text transition-colors hover:bg-primary-bg"
+                                >
+                                  {r.label}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -672,97 +727,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
               </div>
             )}
 
-            {/* ── Beat 4: Place + intent ── */}
-            {beat === 4 && (
-              <div className="mx-auto max-w-4xl">
-                <h1 className={`text-balance text-5xl sm:text-6xl ${heading}`}>{accent(VERA.place.heading)}</h1>
-
-                <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
-                  <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
-                  <div>
-                    <label htmlFor="induction-city" className={fieldLabel}>Your city</label>
-                    <div className="relative">
-                      <input
-                        id="induction-city"
-                        type="text"
-                        role="combobox"
-                        aria-expanded={locOpen && locResults.length > 0}
-                        aria-controls="induction-city-list"
-                        aria-autocomplete="list"
-                        value={locQuery}
-                        onChange={(e) => {
-                          setLocQuery(e.target.value)
-                          setLocation('')
-                          setCoords(null)
-                          setLocOpen(true)
-                        }}
-                        onFocus={() => locResults.length > 0 && setLocOpen(true)}
-                        onBlur={() => setTimeout(() => setLocOpen(false), 150)}
-                        placeholder="Start typing your city…"
-                        className={inputInset}
-                        autoComplete="off"
-                      />
-                      {location && <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-success" aria-hidden>✓</span>}
-                      {locOpen && locResults.length > 0 && (
-                        <ul id="induction-city-list" role="listbox" aria-label="City suggestions" className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg">
-                          {locResults.map((r) => (
-                            <li key={`${r.label}-${r.lat}`} role="option" aria-selected={location === r.label}>
-                              <button
-                                type="button"
-                                onMouseDown={() => {
-                                  setLocation(r.label)
-                                  setLocQuery(r.label)
-                                  setCoords({ lat: r.lat, lng: r.lng })
-                                  setLocOpen(false)
-                                }}
-                                className="block w-full px-4 py-2.5 text-left text-base text-text transition-colors hover:bg-primary-bg"
-                              >
-                                {r.label}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="induction-intent" className={fieldLabel}>{VERA.place.intentLabel}</label>
-                    <textarea
-                      id="induction-intent"
-                      value={intent}
-                      onChange={(e) => setIntent(e.target.value.slice(0, 500))}
-                      placeholder={VERA.place.intentPlaceholder}
-                      rows={3}
-                      className={`${inputInset} resize-none`}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="induction-heard" className={fieldLabel}>How did you hear about us?</label>
-                    <select id="induction-heard" value={heardAbout} onChange={(e) => setHeardAbout(e.target.value)} className={inputInset}>
-                      <option value="">Choose one…</option>
-                      {HEARD_ABOUT.map((h) => (
-                        <option key={h} value={h}>{h}</option>
-                      ))}
-                    </select>
-                  </div>
-                  </div>
-
-                  {/* right: copy + actions under it */}
-                  <div className="w-full max-w-xs text-center md:text-left">
-                    <p className="text-lg leading-relaxed text-muted">{VERA.place.body}</p>
-                    <div className="mt-6 flex flex-col items-center gap-3 md:items-start">
-                      <button onClick={() => setBeat(5)} className={btnPrimary}>Continue<ArrowRight /></button>
-                      <button onClick={() => setBeat(3)} className={backLink}>Back</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── Beat 5: Enter (profile card left, copy right) ── */}
-            {beat === 5 && !deferred && (
+            {/* ── Beat 4: Enter (profile card left, copy right) ── */}
+            {beat === 4 && !deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
                 <h1 className={`mt-3 text-balance text-5xl sm:text-6xl ${heading}`}>{accent(VERA.enter.heading)}</h1>
@@ -775,8 +741,6 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     <p className="text-sm text-muted">@{handle || 'handle'}</p>
                     <div className="mt-4 space-y-2 border-t border-border pt-4 text-left text-sm">
                       <p className="text-text">{location || <span className="italic text-subtle">Add your city</span>}</p>
-                      <p className="text-muted">{bio || <span className="italic text-subtle">Add a one-line bio</span>}</p>
-                      <p className="text-muted">{interests || <span className="italic text-subtle">What you’re into</span>}</p>
                     </div>
                   </div>
 
@@ -788,15 +752,15 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                       <button onClick={submit} disabled={submitting} className={btnPrimary}>
                         {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
                       </button>
-                      <button onClick={() => setBeat(4)} className={backLink}>Back</button>
+                      <button onClick={() => setBeat(3)} className={backLink}>Back</button>
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ── Beat 5 (deferred): the final step IS creating the account ── */}
-            {beat === 5 && deferred && (
+            {/* ── Beat 4 (deferred): the final step IS creating the account ── */}
+            {beat === 4 && deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
                 <h1 className={`mt-3 text-balance text-5xl sm:text-6xl ${heading}`}>{accent(VERA.enter.heading)}</h1>
@@ -809,8 +773,6 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     <p className="text-sm text-muted">@{handle || 'handle'}</p>
                     <div className="mt-4 space-y-2 border-t border-border pt-4 text-left text-sm">
                       <p className="text-text">{location || <span className="italic text-subtle">Add your city</span>}</p>
-                      <p className="text-muted">{bio || <span className="italic text-subtle">Add a one-line bio</span>}</p>
-                      <p className="text-muted">{interests || <span className="italic text-subtle">What you’re into</span>}</p>
                     </div>
                   </div>
 
@@ -857,7 +819,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                       Continue with Google
                     </button>
 
-                    <button onClick={() => setBeat(4)} className={`${backLink} mt-4 block`}>Back</button>
+                    <button onClick={() => setBeat(3)} className={`${backLink} mt-4 block`}>Back</button>
                     <p className="mt-4 text-xs text-subtle">Free during the beta. No card. Leave anytime.</p>
                   </div>
                 </div>

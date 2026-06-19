@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
+import { getReferrer } from '@/lib/qr/referral'
 import BetaInduction from './induction'
 
 export default async function BetaInductionPage({
@@ -26,12 +27,16 @@ export default async function BetaInductionPage({
   const persona: PersonaId | undefined = isPersonaId(personaSlug) ? personaSlug : undefined
   const copy = { vera: seq.vera, oaths: seq.oaths, heardAbout: seq.heardAbout }
 
+  // If they scanned a member's QR code, the /q resolver dropped an fq_ref cookie.
+  // Surface "Invited by {name}" through the induction so the welcome feels personal.
+  const inviter = await getReferrer()
+
   // Signed-out visitors run the WHOLE cinematic induction with no login wall
   // (ADR-082): "Join the Beta" opens the sequence immediately. Sign-in is
   // collected at the final "step in" beat; the answers are stashed and written at
   // /onboarding/beta/complete after auth.
   if (!user) {
-    return <BetaInduction deferred copy={copy} sequence={seq.slug} persona={persona} />
+    return <BetaInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} />
   }
 
   const { data: profile } = await supabase
@@ -58,6 +63,7 @@ export default async function BetaInductionPage({
       copy={copy}
       sequence={seq.slug}
       persona={persona}
+      inviter={inviter}
     />
   )
 }

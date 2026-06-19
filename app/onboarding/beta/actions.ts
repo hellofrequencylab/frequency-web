@@ -45,13 +45,26 @@ async function tagBetaCohort(profileId: string, seqSlug: string | null): Promise
   }
 }
 
-/** The persona the member chose at intake (cookie set by the induction / lead flow). */
+/** The PRIMARY persona the member chose at intake (cookie set by the induction / lead
+ *  flow). Drives meta.persona — the single value the site + Vera read to tailor. */
 async function readPersonaSlug(): Promise<string | null> {
   try {
     const v = (await cookies()).get('fq_persona')?.value ?? null
     return isPersonaId(v) ? v : null
   } catch {
     return null
+  }
+}
+
+/** EVERY persona the member selected at intake (the picker is multi-select). Each is
+ *  tagged at completion; the first is the primary (readPersonaSlug). Falls back to the
+ *  primary alone when the multi cookie is absent (older links / lead flows). */
+async function readPersonaSlugs(): Promise<string[]> {
+  try {
+    const v = (await cookies()).get('fq_personas')?.value ?? ''
+    return v.split(',').map((s) => s.trim()).filter((s) => isPersonaId(s))
+  } catch {
+    return []
   }
 }
 
@@ -152,6 +165,9 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
   const location = data.location.trim().slice(0, 160)
   const seqSlug = await readBetaSequenceSlug()
   const personaSlug = await readPersonaSlug()
+  const personaSlugs = await readPersonaSlugs()
+  // Primary first, then any other personas they also picked (multi-select), de-duped.
+  const allPersonas = Array.from(new Set([...(personaSlug ? [personaSlug] : []), ...personaSlugs]))
   // How they first reached us (ADR-095) — resolved from the attribution cookies.
   const acquisition = await resolveAcquisition()
 
@@ -177,6 +193,8 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
         // WHO they said they are at intake (ADR-125) — the spine the site + Vera read
         // to tailor the experience. Cookie wins; falls back to any prior value.
         persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
+        // Every persona they picked (the picker is multi-select); primary is `persona`.
+        personas: (allPersonas.length ? allPersonas : ((meta.personas as Json) ?? null)) as Json,
         beta: {
           ...beta,
           version: BETA_INDUCTION_VERSION,
@@ -235,7 +253,8 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     await track('onboarding.induction_completed', { hasAvatar: !!avatarUrl, hasIntent: !!intent }, prof.id)
     await track('profile.completed', { hasAvatar: !!avatarUrl }, prof.id)
     await tagBetaCohort(prof.id, seqSlug)
-    await tagPersona(prof.id, personaSlug)
+    // Tag every persona they selected (multi-select); each tag is registered + idempotent.
+    for (const p of allPersonas) await tagPersona(prof.id as string, p)
     await stampAcquisitionTag(prof.id, acquisition)
     // Referral attribution (ADR-095) — apply the `fq_ref` cookie the /q resolver
     // drops when someone scans a member's personal code: set referred_by_profile_id,
@@ -371,6 +390,8 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
   const meta = (profile.meta as Meta) ?? {}
   const beta = (meta.beta as Meta) ?? {}
   const personaSlug = await readPersonaSlug()
+  const personaSlugs = await readPersonaSlugs()
+  const allPersonas = Array.from(new Set([...(personaSlug ? [personaSlug] : []), ...personaSlugs]))
 
   const clean = sanitizeProfileInput(data)
   const newDisplayName = clean.displayName?.trim()
@@ -387,6 +408,7 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
     onboarding_completed: true,
     // New persona choice wins; never blanks an existing one (ADR-125).
     persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
+    personas: (allPersonas.length ? allPersonas : ((meta.personas as Json) ?? null)) as Json,
     beta: {
       ...beta,
       version: BETA_INDUCTION_VERSION,
@@ -421,7 +443,7 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
     neighborhood: newLocation || null,
   }).catch(() => {})
 
-  await tagPersona(profile.id as string, personaSlug)
+  for (const p of allPersonas) await tagPersona(profile.id as string, p)
 
   // Beta: a returning member who was still on the Member tier comes up to Crew.
   await grantBetaCrew(user.id)
