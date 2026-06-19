@@ -55,6 +55,8 @@ function smoothClosedPath(pts: [number, number][]): string {
 
 function balanceLabel(sig: FrequencySignature): string {
   if (sig.total === 0) return 'No signature yet'
+  // A full, even bloom earns the strongest read — the shape has grown round and grounded.
+  if (sig.fill >= 0.8 && sig.balance >= 0.85) return 'In full bloom'
   if (sig.spread === 1) return 'Focused'
   if (sig.balance >= 0.85) return 'Grounded'
   if (sig.balance >= 0.6) return 'Finding balance'
@@ -114,30 +116,50 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
   const pad = compact ? 6 : stacked ? 40 : 46
   const maxR = cx - pad
 
-  // Each axis pushes OUT by how much that Pillar is practiced (signature.axes = 0..1 of the
-  // peak Pillar), so the shape bulges toward whatever a member leans on. A low floor keeps an
-  // untouched Pillar from collapsing to the centre while still reading as "behind" — wider
-  // range than the old kite. A balanced member fills toward a round bloom; a lopsided one
-  // bulges one way and dents where they're behind.
+  // 0..1 reads the shape grows from. `fill` is ABSOLUTE windowed progress (a brand-new
+  // member ≈ 0 ⇒ a tiny diamond near the centre; a week-plus of broad practice ⇒ ≈ 1, a
+  // full round bloom). `balanced` evens the colour + glow.
+  const fill = Math.max(0, Math.min(1, signature.fill))
+  const balanced = Math.max(0, Math.min(1, signature.balance))
+
+  // Each Pillar's point reaches OUT by its own BLOOM (windowed distinct-days vs target),
+  // so the shape GROWS with practice rather than only re-balancing. A small floor keeps
+  // the earliest shape a visible diamond (not collapsed to a dot); bloom = 1 means that
+  // Pillar has "peaked out" and its point touches the rim. Balanced + all peaked ⇒ every
+  // point at the rim ⇒ the smoothed blob rounds into a full bloom filling the circle.
+  const FLOOR = 0.06
   const radiusFor = (k: PillarKey) => {
-    const a = signature.axes[k]
-    if (a <= 0) return 0.08 * maxR
-    return (0.1 + 0.9 * a) * maxR
+    const b = Math.max(0, Math.min(1, signature.bloom[k]))
+    return (FLOOR + (1 - FLOOR) * b) * maxR
   }
 
   const vertices = AXIS_ORDER.map((k) => point(cx, cy, radiusFor(k), PILLARS[k].angle))
-  // The blob — the four axis tips smoothed into one organic shape (not a hard kite).
+  // The blob — the four axis tips smoothed into one organic shape (not a hard kite). As
+  // each tip peaks toward the rim its smoothed edges bloom outward toward neighbours.
   const blob = smoothClosedPath(vertices)
 
   const dominant = signature.dominant ?? AXIS_ORDER[0]
   const domAccent = PILLARS[dominant].accent
 
-  // Balance carries through COLOUR: warm brand orange while a member leans on one Pillar,
-  // easing to a grounded green as the four even out. signature.balance is 0 (lopsided) .. 1
-  // (even). color-mix lives in the CSS `color` property (a bare SVG fill attribute can fall
-  // back to black), and the blob/rings paint with currentColor.
-  const balanced = Math.max(0, Math.min(1, signature.balance))
-  const balanceTint = `color-mix(in oklab, var(--color-success) ${Math.round(balanced * 100)}%, var(--color-primary))`
+  // Balance AND fill carry through COLOUR: warm brand orange while a member is lopsided or
+  // just starting, easing to a grounded green only as the four EVEN OUT *and* the bloom
+  // fills. Greenness = balance gated by fill (a balanced-but-tiny shape stays warm; it
+  // earns green by also growing). color-mix lives in the CSS `color` property (a bare SVG
+  // fill attribute can fall back to black); the blob/rings paint with currentColor.
+  const greenness = balanced * (0.35 + 0.65 * fill)
+  const balanceTint = `color-mix(in oklab, var(--color-success) ${Math.round(greenness * 100)}%, var(--color-primary))`
+
+  // GLOW: a soft halo lights up BEHIND the bloom as it nears full AND balanced, brightest
+  // at a grounded, full shape and fading as fill/balance drop. Omitted on the compact
+  // badge (no room). Kept tasteful — the Mindless breath-visualizer calm.
+  const glowStrength = fill * (0.4 + 0.6 * balanced)
+  const showGlow = !compact && glowStrength > 0.04
+  const glowOpacity = Math.min(0.5, 0.12 + 0.42 * glowStrength)
+  const glowR = maxR * (0.7 + 0.45 * fill)
+  // Filter id is keyed only on the blur radius (a pure function of the size), so the
+  // <defs> is identical for any two same-size signatures — referencing it is safe even
+  // if two render on one page (the duplicate definition is inert; the blur is the same).
+  const filterId = `freq-glow-${Math.round(maxR)}`
 
   const gridLevels = compact ? [0.55, 1] : [0.36, 0.68, 1]
 
@@ -150,7 +172,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
       aria-label={
         signature.total === 0
           ? 'Empty Frequency Signature'
-          : `Frequency Signature: dominant ${PILLARS[dominant].label}, ${signature.spread} of 4 Pillars active`
+          : `Frequency Signature: ${balanceLabel(signature)}, dominant ${PILLARS[dominant].label}, ${signature.spread} of 4 Pillars active, ${Math.round(fill * 100)} percent toward a full bloom`
       }
       // currentColor = the balance tint (orange → green), set as a CSS PROPERTY so the
       // color-mix()/var() always resolves — a bare SVG fill ATTRIBUTE can fall back to solid
@@ -158,6 +180,27 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
       style={{ color: balanceTint }}
       className={compact ? '' : stacked ? 'h-full w-full' : 'mx-auto'}
     >
+      {/* Glow halo behind the bloom — a blurred disc in the balance tint that brightens
+          as the shape fills and grounds. Rendered first so it sits BEHIND everything. */}
+      {showGlow && (
+        <>
+          <defs>
+            <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation={maxR * 0.22} />
+            </filter>
+          </defs>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={glowR.toFixed(2)}
+            fill="currentColor"
+            opacity={glowOpacity}
+            filter={`url(#${filterId})`}
+            className="freq-glow"
+          />
+        </>
+      )}
+
       {/* Concentric rings — soft + luminous, no fill (breath-visualizer ripple). */}
       {gridLevels.map((lvl, i) => (
         <circle
@@ -186,7 +229,8 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
       <path
         d={blob}
         fill="currentColor"
-        fillOpacity={compact ? 0.26 : 0.22}
+        // Fuller blooms read a touch more solid/luminous, so growth is felt, not just seen.
+        fillOpacity={(compact ? 0.24 : 0.18) + 0.16 * fill}
         stroke="currentColor"
         strokeWidth={compact ? 1.5 : 2}
         strokeLinejoin="round"
@@ -250,6 +294,24 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
             </span>
             -led signature, drawn from {signature.total} {signature.total === 1 ? 'practice' : 'practices'} logged.
           </p>
+
+          {/* Bloom meter — the ABSOLUTE growth read: how full the shape is right now.
+              Recent practice across all four Pillars grows it toward a full bloom; a
+              quiet stretch lets it ease back. Painted in the balance tint (currentColor). */}
+          <div className="mt-3" style={{ color: balanceTint }}>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs font-semibold text-text">Bloom</span>
+              <span className="text-2xs font-medium tabular-nums text-subtle">
+                {Math.round(fill * 100)}% to full
+              </span>
+            </div>
+            <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-surface-elevated">
+              <span
+                className="block h-full rounded-full bg-current"
+                style={{ width: `${Math.max(2, Math.round(fill * 100))}%` }}
+              />
+            </span>
+          </div>
 
           <ul className="mt-3 space-y-1.5">
             {PILLAR_KEYS.map((k) => {
