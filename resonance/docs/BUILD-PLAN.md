@@ -99,7 +99,9 @@ tests green; live check is the remaining gate. 🚪
 - [x] postMessage bridge: `world:ready` + `user:identity`/`theme` in, `zaps:awarded`/`rank:changed` out
 - [x] HMAC-signed server-to-server webhook mirrors awards to the host economy (`lib/webhooks/host-mirror.ts`)
 - [x] `frame-ancestors` header so the surface can be iframed
-- [ ] Frequency-side mount: a Lounge page + token issuer IN the Frequency app (its auth + page framework) — held for your conventions
+- [~] Frequency-side mount: **documented, deferred by decision** — the Lounge page +
+      token issuer live in Frequency's app; recipe in INTEGRATION.md §5b, to be
+      wired later with Frequency's auth + page-framework conventions
 - [ ] 🚪 **GO (manual):** with host env set, load `/embed/[venueId]?token=<JWT>`, DJ, confirm the webhook fires
 
 **DoD:** a Frequency member opens the Lounge, DJs, and their Zaps mirror back. Our

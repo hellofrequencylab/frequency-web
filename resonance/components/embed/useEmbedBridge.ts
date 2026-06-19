@@ -7,6 +7,13 @@ import type {
   HostInboundEvent,
 } from "@/lib/integration/embed-contract";
 
+/** Origins allowed to drive the embed via postMessage (comma-separated env).
+ * Same-origin is always allowed; everything else must be listed. */
+const ALLOWED_ORIGINS = (process.env.NEXT_PUBLIC_RESONANCE_ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 /** Decode (NOT verify) a JWT payload for rendering. The server re-verifies. */
 function decodeClaims(token: string): HostIdentityClaims | null {
   try {
@@ -24,11 +31,17 @@ function decodeClaims(token: string): HostIdentityClaims | null {
  * initial URL or a postMessage `user:identity`); we set it as the active token
  * and decode it for display. We announce `world:ready` to the host and accept
  * `theme` tokens. Outbound game events go back up via `sendUp`.
+ *
+ * Inbound messages are rejected unless they come from the same origin or a
+ * configured host origin (the signed JWT is still the real trust gate server-side).
  */
 export function useEmbedBridge() {
   const [claims, setClaims] = useState<HostIdentityClaims | null>(null);
 
   useEffect(() => {
+    const originAllowed = (origin: string) =>
+      origin === window.location.origin || ALLOWED_ORIGINS.includes(origin);
+
     const apply = (token: string) => {
       const c = decodeClaims(token);
       if (!c) return;
@@ -36,9 +49,8 @@ export function useEmbedBridge() {
       setClaims(c);
     };
 
-    // NOTE: accepts messages from any origin for the MVP. In production, validate
-    // e.origin against the configured host origin(s).
     const onMessage = (e: MessageEvent) => {
+      if (!originAllowed(e.origin)) return;
       const data = e.data as HostInboundEvent;
       if (data?.type === "user:identity" && typeof data.token === "string") {
         apply(data.token);
