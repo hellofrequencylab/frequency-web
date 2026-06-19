@@ -13,7 +13,8 @@
     "check:authz": "node scripts/check-authz-guards.mjs",
     "help:coverage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-coverage.mts",
     "help:index": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-index.mts",
-    "help:drift": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-drift.mts"
+    "help:drift": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-drift.mts",
+    "seed:demo-space": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/seed-demo-space.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",

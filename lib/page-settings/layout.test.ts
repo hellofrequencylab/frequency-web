@@ -7,6 +7,7 @@ import {
   layoutScopeChain,
   hasLayoutConfig,
   pickLayoutConfig,
+  spaceCacheKey,
   type LayoutConfig,
   type SlotConfig,
 } from './layout'
@@ -127,5 +128,35 @@ describe('scope cascade', () => {
 
   it('falls back to the empty Single default when nothing in the chain is set', () => {
     expect(pickLayoutConfig(['/x', '*'], {})).toEqual({ template: 'single', slots: {} })
+  })
+})
+
+describe('space layer (Phase 0.5a)', () => {
+  // The cascade gains a top layer: space -> route -> section -> global. The space dimension is
+  // the query filter; within a space the existing chain decides most-specific-wins.
+  it('spaceCacheKey is unique per (space, route) — the cross-tenant cache-leak guard', () => {
+    const a = 'aaaaaaaa-0000-4000-a000-000000000001'
+    const b = 'bbbbbbbb-0000-4000-a000-000000000002'
+    // Same route, different space → different cache keys (A's layout never serves from B's slot).
+    expect(spaceCacheKey(a, '/feed')).not.toBe(spaceCacheKey(b, '/feed'))
+    // Same space, different route → different keys.
+    expect(spaceCacheKey(a, '/feed')).not.toBe(spaceCacheKey(a, '/crew'))
+    // Stable + deterministic for the same inputs (so React.cache memoizes correctly).
+    expect(spaceCacheKey(a, '/feed')).toBe(spaceCacheKey(a, '/feed'))
+    // The space id leads the key, then the route.
+    expect(spaceCacheKey(a, '/feed')).toBe(`${a}::/feed`)
+  })
+
+  it('within one space, the route/section/global chain is unchanged (root behaves as today)', () => {
+    // Canary: the single-tenant cascade math is exactly the pre-space behavior — the space
+    // layer is the row filter, not a change to how route beats section beats global.
+    const byKey = {
+      '*': { template: 'two-col', slots: {} } as LayoutConfig,
+      '/lead/*': { template: 'main-side', slots: {} } as LayoutConfig,
+      '/lead': { template: 'three-col', slots: {} } as LayoutConfig,
+    }
+    expect(pickLayoutConfig(layoutScopeChain('/lead'), byKey).template).toBe('three-col')
+    expect(pickLayoutConfig(layoutScopeChain('/lead/x'), byKey).template).toBe('main-side')
+    expect(pickLayoutConfig(layoutScopeChain('/other'), byKey).template).toBe('two-col')
   })
 })

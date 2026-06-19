@@ -1,11 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS, LAYOUT_MODULE_IDS } from './modules'
+import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS } from './modules'
+
+// The global community set — the default everywhere ('*'). (The LAYOUT_MODULE_IDS alias was
+// removed in Phase 0.5a; '*' is the single source of the default.)
+const GLOBAL = ROUTE_MODULE_IDS['*']
 
 // Route-scoping (ADR-294): a page only offers — and the resolver only renders — its own block set.
 describe('moduleIdsForScope', () => {
   it('the global default (*) returns the community set', () => {
     expect(moduleIdsForScope('*')).toBe(ROUTE_MODULE_IDS['*'])
-    expect(moduleIdsForScope('*')).toEqual(LAYOUT_MODULE_IDS)
+    expect(moduleIdsForScope('*')).toEqual(GLOBAL)
   })
 
   it('an exact converted route returns its own set, not the global one', () => {
@@ -31,11 +35,18 @@ describe('moduleIdsForScope', () => {
     expect(p).toContain('practices-library')
   })
 
+  it('/lead has its own explicit set (the deliberate community-blocks footer)', () => {
+    // Phase 0.5a: /lead is no longer an accidental fallback — it declares its own set so the
+    // Layout editor's offering there is intentional. Its set is the community blocks.
+    expect(moduleIdsForScope('/lead')).toBe(ROUTE_MODULE_IDS['/lead'])
+    expect(moduleIdsForScope('/lead')).toEqual(GLOBAL)
+  })
+
   it('an unconverted route falls back through its section to the global set', () => {
-    // No '/lead' or '/lead/*' set declared → inherits the global community set.
-    expect(moduleIdsForScope('/lead')).toEqual(LAYOUT_MODULE_IDS)
-    // A section scope with no declared set also falls back to global.
-    expect(moduleIdsForScope('/settings/*')).toEqual(LAYOUT_MODULE_IDS)
+    // A section scope with no declared set falls back to global.
+    expect(moduleIdsForScope('/settings/*')).toEqual(GLOBAL)
+    // A truly unknown exact route with no section set also inherits global.
+    expect(moduleIdsForScope('/nope')).toEqual(GLOBAL)
   })
 
   it('the Vault (/crew/store) resolves its own blocks, not /crew’s', () => {
@@ -61,7 +72,34 @@ describe('moduleIdsForScope', () => {
   it("a section scope of a converted route does NOT inherit the exact route's blocks", () => {
     // '/crew/*' is a wildcard for crew SUB-pages (challenges, …) — distinct from '/crew' AND from
     // the now-converted exact '/crew/store' — so the wildcard still gets the generic set.
-    expect(moduleIdsForScope('/crew/*')).toEqual(LAYOUT_MODULE_IDS)
+    expect(moduleIdsForScope('/crew/*')).toEqual(GLOBAL)
+  })
+
+  it('an entity profile tab resolves the family module set via the /spaces/* section scope', () => {
+    // Every /spaces/<slug>/<tab> shares one family set keyed at '/spaces/*' (ENTITY-SPACES §B.2):
+    // the index profile, a tab, and a different slug all resolve the same set, never the global one.
+    const family = ROUTE_MODULE_IDS['/spaces/*']
+    expect(moduleIdsForScope('/spaces/demo-practitioner')).toBe(family)
+    expect(moduleIdsForScope('/spaces/demo-practitioner/offerings')).toBe(family)
+    expect(moduleIdsForScope('/spaces/another-space/book')).toBe(family)
+    expect(family).toContain('entity-about')
+    expect(family).toContain('entity-cta')
+    // No leakage: a profile never offers the global community blocks.
+    expect(family).not.toContain('community-pulse')
+  })
+})
+
+// Every module id any blueprint references must be in the '/spaces/*' family set (so the layout
+// editor offers it and the resolver can place it) AND carry metadata (locked above). This keeps the
+// blueprints (lib/spaces/blueprints.ts) and the registered module set from drifting apart.
+describe('entity blueprint ↔ module set alignment', () => {
+  it('every blueprint entity module is in the /spaces/* set and has metadata', async () => {
+    const { allEntityModuleIds } = await import('@/lib/spaces/blueprints')
+    const family = new Set(ROUTE_MODULE_IDS['/spaces/*'])
+    for (const id of allEntityModuleIds()) {
+      expect(family.has(id), `blueprint module ${id} missing from /spaces/* set`).toBe(true)
+      expect(moduleMeta(id), `missing meta for ${id}`).toBeDefined()
+    }
   })
 })
 

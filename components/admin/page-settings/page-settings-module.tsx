@@ -21,7 +21,7 @@ const SECTION_ICON: Record<PageSettingSection['id'], LucideIcon> = {
   status: Eye,
 }
 
-export function PageSettingsModule() {
+export function PageSettingsModule({ spaceId }: { spaceId?: string } = {}) {
   const pathname = usePathname()
   // Layout is only meaningful where the page renders <PageModules>; everywhere else,
   // drop it so Settings shows just the SEO + Status controls that actually apply.
@@ -45,9 +45,9 @@ export function PageSettingsModule() {
                   <span className="text-sm font-semibold text-text">{section.label}</span>
                 </div>
                 <p className="mb-2 text-xs text-muted">{section.hint}</p>
-                {section.id === 'layout' && <LayoutEditor />}
-                {section.id === 'seo' && <SeoEditor />}
-                {section.id === 'status' && <StatusEditor />}
+                {section.id === 'layout' && <LayoutEditor spaceId={spaceId} />}
+                {section.id === 'seo' && <SeoEditor spaceId={spaceId} />}
+                {section.id === 'status' && <StatusEditor spaceId={spaceId} />}
               </div>
             )
           }

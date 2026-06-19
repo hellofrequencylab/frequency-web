@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { X, Check, Loader2 } from 'lucide-react'
 import { fieldClasses } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,20 @@ export function CreateModal({
   error,
   children,
 }: CreateModalProps) {
+  // ESC to close + body scroll-lock while open (mirrors ui/Dialog; CreateModal keeps
+  // its own bottom-sheet-on-mobile layout, which the centered Dialog can't express).
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !isPending) onClose() }
+    document.addEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [open, onClose, isPending])
+
   if (!open) return null
 
   const colors = ICON_COLORS[titleIconColor] ?? ICON_COLORS.indigo
@@ -63,6 +78,9 @@ export function CreateModal({
       <form
         onSubmit={onSubmit}
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className="w-full sm:max-w-2xl sm:my-8 rounded-t-2xl sm:rounded-2xl border border-border bg-surface shadow-xl flex flex-col max-h-[90vh] sm:max-h-[calc(100vh-4rem)]"
       >
         {/* Mobile drag indicator */}

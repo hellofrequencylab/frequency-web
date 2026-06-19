@@ -9,8 +9,9 @@
 // the raw shape, and every library id is re-validated against the candidates we sent. Degrades to
 // null when AI is off, so the builder falls back to an empty shape.
 
-import Anthropic from '@anthropic-ai/sdk'
-import { getAnthropic } from './client'
+import type Anthropic from '@anthropic-ai/sdk'
+import { completeRaw } from './complete'
+import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
@@ -117,8 +118,7 @@ export async function draftJourneyComposition(input: {
    *  the Mind/Body/Spirit slots to COMPLEMENT it rather than duplicate it. */
   anchorTitle?: string
 }): Promise<JourneyComposition | null> {
-  const client = getAnthropic()
-  if (!client) return null
+  if (!aiEnabled()) return null
   // Roomy cap: the description can carry the author's uploaded course outline (ADR-302), which we
   // want Vera to read in full rather than truncate to a couple of sentences.
   const description = input.description.trim().slice(0, 8000)
@@ -170,21 +170,20 @@ export async function draftJourneyComposition(input: {
     .join('\n\n')
 
   try {
-    const res = await client.messages.create({
-      model: MODELS.opus,
-      max_tokens: 1500,
+    const res = await completeRaw({
+      tier: 'opus',
+      maxTokens: 1500,
       thinking: { type: 'disabled' },
       system: withVoice(withJourneyShape(SYSTEM)),
       tools: [TOOL],
-      tool_choice: { type: 'tool', name: TOOL_NAME },
+      toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
     })
-    const usage = { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
     void recordAiUsage({
       feature: 'journey-composition',
       model: MODELS.opus,
-      usage,
-      costUsd: estimateCostUsd('opus', usage),
+      usage: res.usage,
+      costUsd: estimateCostUsd('opus', res.usage),
       profileId: input.profileId ?? null,
     })
     const block = res.content.find(

@@ -14,6 +14,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { adoptPractice } from '@/lib/practices'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -344,7 +345,14 @@ export async function createPlan(input: {
   summary?: string | null
   emoji?: string | null
   accent?: string | null
+  /** The owning Space (tenancy axis, Phase 0). Defaults to the root space when omitted, so
+   *  existing single-tenant callers keep stamping journeys to root and behave as today. */
+  spaceId?: string | null
 }): Promise<JourneyPlan | null> {
+  // Stamp the owning Space (defaults to root via loadRootSpaceId). space_id is newer than the
+  // generated DB types — set it on the insert payload via an untyped cast (ADR-246); omit when
+  // the root row is missing (the backfill sweeps the NULL to root).
+  const spaceId = input.spaceId ?? (await loadRootSpaceId())
   const { data } = await db()
     .from('journey_plans')
     .insert({
@@ -355,10 +363,43 @@ export async function createPlan(input: {
       accent: input.accent?.trim() || null,
       author_id: input.authorId,
       visibility: 'private',
-    })
+      ...(spaceId ? { space_id: spaceId } : {}),
+    } as never)
     .select(PLAN_COLS)
     .maybeSingle()
   return (data as JourneyPlan | null) ?? null
+}
+
+/**
+ * Journeys (journey_plans) that BELONG TO a space (tenancy axis, Phase 0 / ENTITY-SPACES §4.3),
+ * newest first. Defaults to the root space (so a caller that passes no spaceId reads the root's
+ * journeys, the canary). Filtered by space_id so a journey in space A can never resolve for
+ * space B — the by-space read the Phase 1 profile's `entity-journeys` module uses. FAIL-SAFE:
+ * [] on any error / missing tenant. space_id is reached with an untyped handle (ADR-246).
+ */
+export async function listJourneyPlansForSpace(spaceId?: string | null, limit = 50): Promise<JourneyPlan[]> {
+  const sid = spaceId ?? (await loadRootSpaceId())
+  if (!sid) return []
+  try {
+    const q = db().from('journey_plans') as unknown as {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => {
+          order: (col: string, opts: { ascending: boolean }) => {
+            limit: (n: number) => Promise<{ data: unknown; error: unknown }>
+          }
+        }
+      }
+    }
+    const { data, error } = await q
+      .select(PLAN_COLS)
+      .eq('space_id', sid)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) return []
+    return (data as JourneyPlan[] | null) ?? []
+  } catch {
+    return []
+  }
 }
 
 /** Add a practice to a plan (snapshotting its Pillar). Appends at the end. */

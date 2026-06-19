@@ -9,6 +9,7 @@ import {
   toggleStoreItemActive,
 } from './actions'
 import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
 import type { Database } from '@/lib/database.types'
 
 type StoreCategory = Database['public']['Enums']['store_category']
@@ -243,9 +244,8 @@ export function NewItemButton() {
         New item
       </Button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-surface shadow-2xl">
+      <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="New store item" className="max-w-lg">
+          <div className="w-full rounded-2xl border border-border bg-surface shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="text-sm font-semibold text-text">New store item</h2>
               <button
@@ -270,8 +270,7 @@ export function NewItemButton() {
               )}
             </div>
           </div>
-        </div>
-      )}
+      </Dialog>
     </>
   )
 }
@@ -303,9 +302,8 @@ export function EditItemButton({ item }: { item: StoreItem }) {
         <Pencil className="w-3.5 h-3.5" />
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-surface shadow-2xl">
+      <Dialog open={open} onClose={() => setOpen(false)} ariaLabel={`Edit ${item.name}`} className="max-w-lg">
+          <div className="w-full rounded-2xl border border-border bg-surface shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="text-sm font-semibold text-text">Edit {item.name}</h2>
               <button
@@ -324,8 +322,7 @@ export function EditItemButton({ item }: { item: StoreItem }) {
               />
             </div>
           </div>
-        </div>
-      )}
+      </Dialog>
     </>
   )
 }

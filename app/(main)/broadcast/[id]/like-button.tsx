@@ -42,8 +42,8 @@ export function LikeButton({
       title={isLoggedIn ? (liked ? 'Unlike' : 'Like') : 'Sign in to like'}
       className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-colors disabled:opacity-50 ${
         liked
-          ? 'border-rose-300 bg-danger-bg text-danger'
-          : 'border-border bg-surface text-muted hover:border-danger hover:text-danger dark:hover:text-danger'
+          ? 'border-danger bg-danger-bg text-danger'
+          : 'border-border bg-surface text-muted hover:border-danger hover:text-danger'
       }`}
     >
       <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />

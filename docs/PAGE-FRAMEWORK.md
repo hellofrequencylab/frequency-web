@@ -104,10 +104,11 @@ community", a form beside a live preview, two related lists).
 > **Update (§8, ADR-090):** Focus and Dashboard are now **real templates** too —
 > `FocusTemplate` (the no-rail compose/edit/settings surface, formerly just "the
 > shell hiding the rail") and `DashboardTemplate` (the metric-led operator
-> workspace). With **`HeaderSidebarTemplate`** (Header/Page/Sidebar) and
-> **`TwoColumnTemplate`** (Header/2 Column), the kit is now eight shells — all
-> share one `PageHeading`. See §8 for the full kit + the declarative rail map
-> (`lib/layout/page-chrome.ts`).
+> workspace). With **`HeaderSidebarTemplate`** (Header/Page/Sidebar),
+> **`TwoColumnTemplate`** (Header/2 Column), **`WizardShell`** (the multi-step
+> flow shell), and **`AdminTemplate`** (the `/admin/*` workspace), the kit is now
+> **nine shells**, all sharing one `PageHeading`. See §8 for the full kit + the
+> declarative rail map (`lib/layout/page-chrome.ts`).
 
 ### How templates map to Next.js
 - A **Detail** page = a route-segment **`layout.tsx`** (e.g.
@@ -127,17 +128,27 @@ widgets that show up when assigned… without rebuilding every page."*
 > ✅ **Shipped — the per-route module-assignment engine (ADR-270 + ADR-271 + ADR-272, 2026-06-15).**
 > A page's **interior** modules are assigned per route and tuned from the on-page Layout editor,
 > with a **scope cascade** (route → section → global), a **per-module role gate**, and now an
-> interior **template + slot** model — pick one of six templates and drop each module into an
-> **area (slot)** of it (the concrete landing of the `<WidgetSlot>` sketch below). What exists today:
+> interior **layout/grid + slot** model: pick one of six **interior layouts** (a grid shape) and
+> drop each module into an **area (slot)** of it (the concrete landing of the `<WidgetSlot>` sketch
+> below). What exists today:
+>
+> ⚠️ **Naming (Phase 0.5.11), two different things both once called "templates":** the **page
+> shells** in [`@/components/templates`](../components/templates/index.ts) (Stream / Detail / Focus /
+> WizardShell / …; see §8) are the OUTER page archetype. The module engine's
+> [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) `TEMPLATES` are a DIFFERENT, smaller
+> thing: the **interior layouts/grids** (Single · Main + side · 2 columns · 3 columns · Header +
+> sidebar · Header + 2 columns) that arrange modules WITHIN a page's body. This doc calls the latter
+> **"interior layouts/grids"** in prose to avoid the collision; the code identifiers
+> (`templates.ts` / `TemplateId` / `TEMPLATES`) are unchanged.
 >
 > | Concern | Where | Note |
 > |---|---|---|
 > | **Module catalog** (metadata only) | [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) | `LAYOUT_MODULES` / `moduleMeta` (union of every block) + **route scoping** (ADR-294): `ROUTE_MODULE_IDS` / `moduleIdsForScope` map a scope key → the ids that page offers, so a page only shows/renders ITS OWN blocks — no React, so the editor / actions / resolver never import RSCs |
-> | **Templates** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId` — 6 interior templates (Single · Main + side · 2 columns · 3 columns · Header + sidebar · Header + 2 columns) naming their slots; no React, like the module catalog. Add a template = one entry here + a grid case in `page-modules.tsx` |
+> | **Interior layouts/grids** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId`: 6 interior layouts/grids (Single · Main + side · 2 columns · 3 columns · Header + sidebar · Header + 2 columns) naming their slots; no React, like the module catalog. Distinct from the OUTER page shells in `@/components/templates` (§8). Add an interior layout = one entry here + a grid case in `page-modules.tsx` |
 > | **Component binding** | [`lib/widgets/registry.tsx`](../lib/widgets/registry.tsx) | `componentFor(id)` binds each id to its self-fetching RSC ([`components/widgets/`](../components/widgets)) |
-> | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | `resolveSlots` / `moduleAssignments` — maps each module to one slot of the chosen template (unplaced → default slot), back-compat reader (`parseLayout`) reads a legacy flat config as the Single template's `main` slot |
-> | **Renderer** | [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) | `<PageModules route>` — lays out the template's grid, each slot's modules each in its own `<Suspense>` (§5), `null` when empty |
-> | **Storage** | `page_settings.layout` jsonb `{template, slots}` (each slot `{order,hidden,roles}`) | reused from the page-settings store; shape evolved behind the back-compat reader (no new migration) |
+> | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | `resolveSlots` / `moduleAssignments`: maps each module to one slot of the chosen interior layout (unplaced → default slot), back-compat reader (`parseLayout`) reads a legacy flat config as the Single layout's `main` slot |
+> | **Renderer** | [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) | `<PageModules route>`: lays out the interior layout's grid, each slot's modules each in its own `<Suspense>` (§5), `null` when empty |
+> | **Storage** | `page_settings.layout` jsonb `{template, slots}` (each slot `{order,hidden,roles}`; the `template` key holds the interior-layout id) | reused from the page-settings store; shape evolved behind the back-compat reader (no new migration) |
 > | **Scope cascade** (ADR-271) | [`lib/page-settings/{layout.ts,store.ts}`](../lib/page-settings) | a layout saves at the exact route, its section (`/seg/*`), or global (`*`); `loadLayoutForRoute` resolves most-specific-wins |
 > | **Per-module role gate** (ADR-271) | `resolveSlots` + [`viewer-role.ts`](../lib/page-settings/viewer-role.ts) | per-slot `roles[id]` = lowest community rung to see a module; view-as-aware, fail-closed |
 > | **Editor** | [`components/admin/page-settings/layout-editor.tsx`](../components/admin/page-settings/layout-editor.tsx) | the on-page Layout settings row (template picker + modules grouped by slot, each with an Area selector + toggle + reorder + per-module "Who sees it"), under the scope switch, staff-gated; section is `live` in [`lib/page-settings/sections.ts`](../lib/page-settings/sections.ts) |
@@ -150,11 +161,13 @@ widgets that show up when assigned… without rebuilding every page."*
 > Tailwind v4 `@container`, so a block sizes to the slot it lands in via `@`-variants
 > (`@lg:`/`@2xl:`), not the viewport — prefer those over `sm:`/`md:` for a block's internal grid
 > so it stays portable across main/side/column slots. **Assign per route:** open the page's on-page
-> **Layout** settings (pick a template, drop each module into a slot, set order + visibility,
-> stored per route); or render `<PageModules route="…" />` on a page (live on `/lead`, `/crew`
-> My Quest, `/journeys`, and `/admin/content/journeys`). This is the page's interior column,
+> **Layout** settings (pick an interior layout/grid, drop each module into a slot, set order +
+> visibility, stored per route); or render `<PageModules route="…" />` on a page (live on `/lead`,
+> `/crew` My Quest, `/journeys`, and `/admin/content/journeys`). This is the page's interior column,
 > **not** the app shell rail (that stays operator-managed in `/admin/page-layout` /
-> `page_chrome_overrides`, ADR-259/260).
+> `page_chrome_overrides`, ADR-259/260). **`quest-tasks` is a PARKED module** (Phase 0.5.11): its
+> metadata + component stay defined in `lib/widgets/{modules,registry}`, but it was retired from My
+> Quest (`/crew`) by owner ask and is offered on no page today; kept for a future surface, not drift.
 
 ### 4.1 Anatomy of a widget
 A widget is a **self-contained module** colocated with its data:
@@ -320,28 +333,41 @@ forces a big-bang rewrite.
 
 ---
 
-## 8. The kit today — five shells + one chrome map (build a page)
+## 8. The kit today: nine shells + one chrome map (build a page)
 
 > **Update 2026-06-05 (ADR-090):** the template kit is now complete and the
 > shell's rail treatment is **declarative**. "Focus" and "Dashboard" are no longer
 > informal — they're real templates next to Stream / Index / Detail. A page is now
 > *two lines of decision*: pick a template, register a rail.
+>
+> **Reconciliation (Phase 0.5.11):** earlier prose in this doc said "three", then
+> "eight". The canonical count today is **nine page shells**, all exported from
+> [`@/components/templates`](../components/templates/index.ts) and all on the one
+> `PageHeading` grammar: **Stream · Index · Detail · Dashboard · Focus · WizardShell ·
+> HeaderSidebar · TwoColumn · Admin**. (`WizardShell` is the multi-step provisioning/
+> onboarding flow shell, e.g. `app/onboarding/form.tsx`, and was the one missing from
+> the canon; it is now listed below.) `PageHeading` itself is the shared header grammar,
+> not a shell, so it is not counted.
 
-### 8.1 The five templates — `@/components/templates`
+### 8.1 The nine shells: `@/components/templates`
 
-| Template | Import | Use it for | Header / slots |
+| Shell | Import | Use it for | Header / slots |
 |---|---|---|---|
 | **Stream** | `StreamTemplate` | a flow of items: Feed, Broadcast, a circle discussion | `eyebrow·title·description·action·composer` |
 | **Index** | `IndexTemplate` | a collection to browse: Circles, Channels, Events, People, Search | `title·description·action·toolbar` |
 | **Detail** | `DetailTemplate` | one entity: a Circle, Event, Profile, Hub, Program | context band (`badges·actions`) + `tabs` |
 | **Dashboard** | `DashboardTemplate` | a metric-led operator/steward workspace: Marketing, CRM, Crew home | `eyebrow·title·description·actions·stats` + sections |
 | **Focus** | `FocusTemplate` | a centered, no-rail surface: compose/edit forms, Settings, single-conversion + scan-confirm | `eyebrow·title·description·actions·back·width` |
+| **WizardShell** | `WizardShell` | a centered, no-rail **multi-step flow**: onboarding, Space provisioning (`app/onboarding/form.tsx`) | step progress (`WizardProgress`) + body + footer actions |
+| **HeaderSidebar** | `HeaderSidebarTemplate` | one primary flow beside a persistent in-body secondary panel (§3 Template D) | `sidebar` (+ `sidebarSide`) + `children` |
+| **TwoColumn** | `TwoColumnTemplate` | two peer columns of comparable weight (§3 Template E) | `left` · `right` |
+| **Admin** | `AdminTemplate` | the rail-less `/admin/*` workspace under its own two-layer nav | `AdminSection`s |
 
-All five share **one header grammar** (`PageHeading`) — same type scale, eyebrow,
-description, action slot — so titles read identically everywhere. Detail keeps a
-richer context band (identity + badges + tab row) but on the same scale. The
-admin equivalent of Dashboard is `<AdminPage>` (a rail-less sibling under
-`/admin/*`'s own two-layer nav).
+All nine share **one header grammar** (`PageHeading`): the same type scale, eyebrow,
+description, and action slot, so titles read identically everywhere. Detail keeps a
+richer context band (identity + badges + tab row) but on the same scale. `AdminTemplate`
+is the admin equivalent of Dashboard (a rail-less sibling under `/admin/*`'s own
+two-layer nav).
 
 **Body primitives (compose, never re-declare):** `EntityCard`/`PersonCard` (browse
 cards), `StatCard` (KPI tile with delta/drill-down), `SectionHeader`, `EmptyState`,
@@ -407,13 +433,42 @@ the way the five templates make reading feel identical.
   don't author a new editor. Accents come from `lib/studio/accents.ts` (token-based,
   never hex).
 
+## 10. Two page builders: the boundary (never cross them)
+
+There are exactly **two** page-building systems, for two different surfaces. They look
+alike (both "edit a page") but they are not interchangeable; choosing the wrong one is
+how a published draft shadows a coded experience, or an in-app page loses its chrome.
+
+| | **Puck page editor** | **Module engine** |
+|---|---|---|
+| What it builds | The **public, brandable micro-site** block tree (per-Space landing / marketing pages) | **Authenticated in-app pages** (a template shell + assignable widgets) |
+| Surface | Public marketing routes (`app/(marketing)/*`), and later a Space's own custom-domain micro-site | App routes behind auth (`app/(main)/*`) |
+| Store / render | `public.pages` (`data` draft / `published_data` live) → `getPublishedData(slug)`; editor at `app/edit/[slug]` + `components/page-editor/*` | `public.page_settings` (layout / SEO / status) → a template + `<PageModules route>` (`lib/page-settings/*`) |
+| Composes | The Puck block library (`components/page-editor/blocks/*`) | The five templates + `components/ui/*` / `cards/*` + widgets (this doc, §3–§4) |
+
+**The rule:**
+
+- **Never offer the Puck editor on an authenticated app route.** In-app pages are a
+  template plus `<PageModules>`; their layout/SEO/visibility is the module engine's job.
+- **Never offer the module editor on a public micro-site.** Public marketing/landing
+  pages are a Puck block tree.
+- **Both are space-aware via `space_id`.** `public.pages` and `public.page_settings` each
+  carry a nullable `space_id` (backfilled to the root space; the canary holds, root
+  resolves exactly as today). Reads/writes default to the root space via `loadRootSpaceId`,
+  so single-tenant behavior is unchanged.
+- **Today the Puck editor is still gated** to the 4-slug `isEditableSlug` allowlist
+  (`lib/page-editor/data.ts`); the `space_id` seam only makes the *storage* per-Space-ready.
+  Un-gating to full per-Space authoring (offering Puck on a Space's own slugs) is **Phase 5
+  white-label**, not now.
+
 ---
 
 ## Decisions captured
 
-- **One shell, FIVE templates (Stream / Index / Detail / Dashboard / Focus)** — all
-  on one `PageHeading` grammar; the rail is a declarative `page-chrome.ts` map, not
-  shell-baked conditionals (ADR-090).
+- **One shell, NINE page shells (Stream / Index / Detail / Dashboard / Focus /
+  WizardShell / HeaderSidebar / TwoColumn / Admin)**, all on one `PageHeading`
+  grammar; the rail is a declarative `page-chrome.ts` map, not shell-baked
+  conditionals (ADR-090). See §8.1 for the full canon + the count reconciliation.
 - **Features are widgets**: self-fetching Server Components, scope-aware,
   gate-aware, returning null when empty, wrapped in a uniform `WidgetCard`.
 - **Assignment is one declarative config**; pages only render `<WidgetSlot>`.

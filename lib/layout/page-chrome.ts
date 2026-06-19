@@ -61,6 +61,11 @@ const FOCUS_PATTERNS: RegExp[] = [
   /^\/events\/[^/]+\/manage$/,
   /^\/practices\/[^/]+\/edit$/, // edit a practice
   /^\/connections\/.+/, // a contact editor / new contact (the index keeps the rail)
+  // Entity-space Focus surfaces (ENTITY-SPACES-BUILD §B.5): the provisioning wizard and the owner
+  // profile-settings surface are centered, no-rail FOCUS pages (FocusTemplate). The PROFILE itself
+  // (/spaces/<slug> + tabs) is SCOPED below; the directory (/spaces) keeps the global rail.
+  /^\/spaces\/new$/, // the provisioning wizard (Epic 1.6)
+  /^\/spaces\/[^/]+\/settings$/, // the owner profile-settings surface (Epic 1.7)
 ]
 
 // SCOPED — entity-detail sections that render their OWN in-body scope rail
@@ -70,7 +75,12 @@ const FOCUS_PATTERNS: RegExp[] = [
 // Frequency Signature live in its interior content column, not a rail. Re-add a
 // prefix here only if a section grows a genuine in-body rail.
 const SCOPED_PREFIXES: string[] = [
-  // (Empty.) Journeys used to be SCOPED: the old course-player detail page rendered its
+  // The entity-space PROFILE (ENTITY-SPACES-BUILD §B.5): /spaces/<slug> and its tabs are Detail
+  // pages whose context band IS the in-body scope, so the global rail is suppressed (the double-
+  // rail trap). The trailing slash keeps the DIRECTORY (/spaces) on the global rail; the wizard /
+  // settings sub-surfaces are Focus (matched above), so they're 'none', not 'scoped'.
+  '/spaces/',
+  // (Empty otherwise.) Journeys used to be SCOPED: the old course-player detail page rendered its
   // own left syllabus as a scope rail, so the global rail was suppressed. After the v2
   // rebuild (ADR-252) that player is retired — /journeys/<slug> redirects to the learner
   // player (/learn) or the editor (/edit), and the player's syllabus is an in-content
@@ -186,6 +196,7 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/channels', label: 'Channels', area: 'Member' },
   { route: '/events', label: 'Events', area: 'Member' },
   { route: '/people', label: 'People', area: 'Member' },
+  { route: '/spaces', label: 'Spaces (directory)', area: 'Member' },
   { route: '/practices', label: 'Practices', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },
   { route: '/programs', label: 'Programs', area: 'Member' },

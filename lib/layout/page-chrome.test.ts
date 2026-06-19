@@ -71,6 +71,21 @@ describe('railFor — the single source of truth for page chrome', () => {
     }
   })
 
+  it('frames entity-space profiles SCOPED, the directory GLOBAL, and the wizard/settings FOCUS', () => {
+    // The directory (/spaces) is an Index page — it keeps the global community rail.
+    expect(railFor('/spaces')).toBe('global')
+    // A profile (/spaces/<slug>) and its tabs render their own in-body context band, so the
+    // global rail is suppressed ('scoped', §B.5 — avoids the double-rail trap).
+    expect(railFor('/spaces/demo-practitioner')).toBe('scoped')
+    expect(railFor('/spaces/demo-practitioner/offerings')).toBe('scoped')
+    expect(railFor('/spaces/demo-practitioner/practices')).toBe('scoped')
+    expect(railFor('/spaces/demo-practitioner/community')).toBe('scoped')
+    expect(railFor('/spaces/demo-practitioner/book')).toBe('scoped')
+    // The provisioning wizard + the owner settings surface are centered Focus pages (no rail).
+    expect(railFor('/spaces/new')).toBe('none')
+    expect(railFor('/spaces/demo-practitioner/settings')).toBe('none')
+  })
+
   it('keeps the global rail on the events index and the slug ICS sub-route (only the bare Invite slug is no-rail)', () => {
     // The Invite slug is no-rail, but the index keeps the global rail and the
     // single-segment regex never swallows /events or a deeper /events/[slug]/* path.

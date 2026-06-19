@@ -17,7 +17,7 @@ import {
   Megaphone,
   Flag,
 } from 'lucide-react'
-import { ReportDialog } from '@/components/report-dialog'
+import { ContentReportDialog } from '@/components/report-dialog'
 import { deletePost, pinPost, unpinPost } from '@/app/(main)/feed/actions'
 import { toggleCancelEvent } from '@/app/(main)/admin/actions'
 import {
@@ -167,7 +167,7 @@ export function ContextActions({ role, context }: ContextActionsProps) {
 
       {/* Report dialog */}
       {reportTarget && (
-        <ReportDialog
+        <ContentReportDialog
           targetType={reportTarget.targetType}
           targetId={reportTarget.targetId}
           open={reportOpen}

@@ -5,7 +5,19 @@
 
 export { getAnthropic, aiEnabled } from './client'
 export { MODELS, MODEL_PRICES, DEFAULT_TIER, type ModelTier, type ModelPrice } from './models'
-export { completeText, AiUnavailableError, type CompleteParams, type CompleteResult } from './complete'
+export {
+  completeText,
+  completeRaw,
+  runToolLoop,
+  AiUnavailableError,
+  type CompleteParams,
+  type CompleteResult,
+  type CompleteRawParams,
+  type CompleteRawResult,
+  type CompleteMessage,
+  type RunToolLoopParams,
+  type ToolLoopResult,
+} from './complete'
 export {
   estimateCostUsd,
   withinBudget,

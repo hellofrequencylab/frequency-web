@@ -5,6 +5,7 @@ import { ChevronLeft, LogOut, UsersRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { MessageThread, type Message } from '@/components/messages/thread'
 import { getInitials } from '@/lib/utils'
+import { PageHeading } from '@/components/templates'
 import { leaveConversation } from '../actions'
 import { ConversationRenameButton } from '@/components/messages/conversation-rename-button'
 
@@ -89,62 +90,79 @@ export default async function ConversationPage({
     .eq('conversation_id', conversationId)
     .eq('profile_id', myProfileId)
 
+  // Identity glyph for the compact takeover bar: the group icon, the peer's avatar,
+  // or initials. Kept as a leading element beside the shared PageHeading title.
+  const avatar = isGroup ? (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg">
+      <UsersRound className="h-4 w-4 text-primary-strong" />
+    </span>
+  ) : others[0] ? (
+    others[0].avatar_url ? (
+      <Image src={others[0].avatar_url} alt={others[0].display_name} width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" />
+    ) : (
+      <span className="flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-primary-bg text-xs font-semibold text-primary-strong">
+        {getInitials(others[0].display_name)}
+      </span>
+    )
+  ) : null
+
+  // The title is the conversation identity; a 1:1 thread links to the peer's profile.
+  const titleNode = isGroup ? (
+    <span className="inline-flex items-center gap-2">
+      {displayName}
+      <ConversationRenameButton conversationId={conversationId} currentName={conv.name as string | null} />
+    </span>
+  ) : others[0] ? (
+    <Link href={`/people/${others[0].handle}`} className="transition-opacity hover:opacity-80">
+      {others[0].display_name}
+    </Link>
+  ) : (
+    'Conversation'
+  )
+
+  const subtitle = isGroup
+    ? `${participants.length} people`
+    : others[0]
+      ? `@${others[0].handle}`
+      : undefined
+
   return (
     <div className="-mx-6 -my-6 flex flex-col h-[calc(100vh-3.5rem)]">
-      {/* Header */}
-      <header className="shrink-0 flex items-center gap-3 px-5 py-3 border-b border-border bg-surface">
+      {/* Takeover chat bar — bespoke, full-bleed chrome (the documented exception,
+          MEMBER-DESIGN-SYSTEM §207), but the identity title now flows through the
+          shared PageHeading grammar instead of a hand-rolled <h1>. */}
+      <header className="shrink-0 flex items-center gap-3 border-b border-border bg-surface px-5 py-3">
         <Link
           href="/messages"
-          className="md:hidden p-1.5 rounded-lg text-subtle hover:text-muted hover:bg-surface-elevated transition-colors"
+          className="md:hidden -ml-1 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
           aria-label="Back"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="h-5 w-5" />
         </Link>
-
-        {isGroup ? (
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-primary-bg flex items-center justify-center shrink-0">
-              <UsersRound className="w-4 h-4 text-primary-strong" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-text truncate">{displayName}</h1>
-                <ConversationRenameButton conversationId={conversationId} currentName={conv.name as string | null} />
-              </div>
-              <p className="text-xs text-subtle">{participants.length} people</p>
-            </div>
-          </div>
-        ) : others[0] ? (
-          <Link
-            href={`/people/${others[0].handle}`}
-            className="flex items-center gap-2.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
-          >
-            {others[0].avatar_url ? (
-              <Image src={others[0].avatar_url} alt={others[0].display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-                {getInitials(others[0].display_name)}
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-text truncate leading-tight">{others[0].display_name}</p>
-              <p className="text-2xs text-subtle">@{others[0].handle}</p>
-            </div>
-          </Link>
-        ) : (
-          <span className="text-sm font-semibold text-text flex-1">Conversation</span>
-        )}
-
-        {isGroup && (
-          <form action={leaveConversation.bind(null, conversationId)}>
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
-            >
-              <LogOut className="w-3 h-3" /> Leave
-            </button>
-          </form>
-        )}
+        {avatar}
+        {/* Compact takeover register: PageHeading carries the title/meta semantics, but
+            the bar tones its page-band scale down (no bottom margin, base title, xs meta). */}
+        <div className="min-w-0 flex-1 [&>div]:mb-0 [&_h1]:mb-0 [&_h1]:truncate [&_h1]:text-base [&_h1]:sm:text-base [&_p]:text-xs">
+          <PageHeading
+            title={titleNode}
+            description={subtitle}
+            divider={false}
+            adminBar={false}
+            actions={
+              isGroup ? (
+                <form action={leaveConversation.bind(null, conversationId)}>
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated"
+                  >
+                    <LogOut className="h-3 w-3" /> Leave
+                  </button>
+                </form>
+              ) : undefined
+            }
+            inlineActions
+          />
+        </div>
       </header>
 
       {/* Body */}

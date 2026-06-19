@@ -12,7 +12,7 @@ import { getPageSeoForEditor, savePageSeo } from '@/lib/page-settings/actions'
 // route's saved SEO on open (staff-gated server action) and saves title / description /
 // share-image back to the per-route store. The save re-checks staff + validates server-side;
 // applied by the (main) layout's generateMetadata on the next request.
-export function SeoEditor() {
+export function SeoEditor({ spaceId }: { spaceId?: string }) {
   const pathname = usePathname()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -25,7 +25,7 @@ export function SeoEditor() {
 
   useEffect(() => {
     let active = true
-    getPageSeoForEditor(pathname)
+    getPageSeoForEditor(pathname, spaceId)
       .then((d) => {
         if (!active) return
         setTitle(d.seo_title ?? '')
@@ -38,13 +38,13 @@ export function SeoEditor() {
     return () => {
       active = false
     }
-  }, [pathname])
+  }, [pathname, spaceId])
 
   function save() {
     setError(null)
     setSaved(false)
     startTransition(async () => {
-      const r = await savePageSeo(pathname, { title, description, ogImage, headerImage })
+      const r = await savePageSeo(pathname, { title, description, ogImage, headerImage }, spaceId)
       if (isError(r)) setError(r.error)
       else {
         setSaved(true)

@@ -35,7 +35,7 @@ type ReportItem = {
 const REASON_BADGE: Record<string, { label: string; cls: string }> = {
   spam:           { label: 'Spam',           cls: 'bg-warning-bg text-warning dark:text-primary' },
   harassment:     { label: 'Harassment',     cls: 'bg-danger-bg text-danger dark:bg-danger-bg dark:text-danger' },
-  inappropriate:  { label: 'Inappropriate',  cls: 'bg-pink-100 text-signal-strong' },
+  inappropriate:  { label: 'Inappropriate',  cls: 'bg-signal-bg text-signal-strong' },
   misinformation: { label: 'Misinformation', cls: 'bg-warning-bg text-warning' },
   other:          { label: 'Other',          cls: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle' },
 }

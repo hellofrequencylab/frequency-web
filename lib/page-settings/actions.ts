@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import type { Database, Json } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireAdmin } from '@/lib/admin/guard'
+import { getCallerProfile } from '@/lib/auth'
+import { isStaff } from '@/lib/core/roles'
+import { loadRootSpaceId, getSpaceById } from '@/lib/spaces/store'
 import { isSafeRoute } from '@/lib/layout/page-chrome'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { normalizeSeo, type SeoFields } from './seo'
@@ -12,49 +14,80 @@ import { parseLayout, moduleAssignments, isLayoutScopeKey, isModuleRole, type La
 import { moduleIdsForScope, moduleMeta } from '@/lib/widgets/modules'
 import { isTemplateId, templateMeta, slotIds, defaultSlotId, DEFAULT_TEMPLATE, type TemplateId } from '@/lib/widgets/templates'
 
-// Server actions for the on-page Page settings panel (ADR-268). STAFF (admin+, ADR-208 —
-// "admin and above"): the gate redirects an unauthorized viewer and captures the id for
-// `updated_by`. Writes go through the service-role admin client into public.page_settings
-// (typed now that the table is in the generated types). The route is isSafeRoute-validated
-// and the SEO fields are normalized/bounded (lib/page-settings/seo.ts) before any write.
+// Server actions for the on-page Page settings panel (ADR-268). Writes go through the
+// service-role admin client into public.page_settings, scoped to a SPACE (Phase 0.5a):
+// page_settings is re-keyed to (space_id, route), so every upsert carries the resolved
+// space_id and uses onConflict 'space_id,route'.
+//
+// AUTHZ (Phase 0.5a): one server-enforced gate, two admitted paths.
+//   - STAFF (web_role admin+, ADR-208) may edit ANY space — including the ROOT space, so the
+//     existing single-tenant staff path is unchanged (the canary: with no spaceId, the target
+//     is root and only staff pass, exactly as before).
+//   - A SPACE OPERATOR (the target space's owner_profile_id) may edit ONLY their own space's
+//     rows. `gateForSpace(spaceId)` resolves the target space (default = root), admits a staff
+//     caller OR the space's owner, and FAILS CLOSED otherwise — returning null so the action
+//     yields a clean fail result (not a redirect, so an operator is never bounced).
+// The route is isSafeRoute-validated and the SEO fields are normalized/bounded before any write.
 
-async function gate(): Promise<string> {
-  const { profileId } = await requireAdmin('admin')
-  return profileId
+// The resolved write context: the effective tenant + the editor's profile id (for updated_by).
+interface SpaceGate {
+  spaceId: string
+  profileId: string
+}
+
+/** Authorize an edit against a space and resolve the write context. Defaults to the ROOT
+ *  space (the single-tenant canary). Admits STAFF (any space) or the target space's OWNER
+ *  (their space only). Returns null when the caller may not edit this space — the action
+ *  returns a fail result rather than a redirect, so an operator never gets bounced. */
+async function gateForSpace(spaceId?: string | null): Promise<SpaceGate | null> {
+  const profile = await getCallerProfile()
+  if (!profile) return null
+  const sid = spaceId ?? (await loadRootSpaceId())
+  if (!sid) return null
+  // Staff may edit any space (and the root single-tenant path stays staff-only as today).
+  if (isStaff(profile.webRole)) return { spaceId: sid, profileId: profile.id }
+  // Otherwise the caller must own the target space.
+  const space = await getSpaceById(sid)
+  if (space && space.ownerProfileId === profile.id) return { spaceId: sid, profileId: profile.id }
+  return null
 }
 
 function db() {
   return createAdminClient()
 }
 
-/** Save the per-route SEO (title / description / share image). Upserts the row. */
+/** Save the per-route SEO (title / description / share image) for a space (default root).
+ *  Upserts the (space_id, route) row. */
 export async function savePageSeo(
   route: string,
   input: { title?: string; description?: string; ogImage?: string; headerImage?: string },
+  spaceId?: string | null,
 ): Promise<ActionResult> {
-  const me = await gate()
+  const ctx = await gateForSpace(spaceId)
+  if (!ctx) return fail('You can only edit your own space.')
   if (!isSafeRoute(route)) return fail('That is not a valid app route.')
   const fields = normalizeSeo(input)
   if (!fields) return fail('An image must be an https URL or a path that starts with /.')
 
-  // header_image_url isn't in the generated types yet — cast the payload (ADR-246), not the client.
-  const payload = { route, ...fields, updated_by: me, updated_at: new Date().toISOString() }
+  // space_id + header_image_url aren't in the generated types yet — cast the payload (ADR-246),
+  // not the client. onConflict is the (space_id, route) composite key.
+  const payload = { route, space_id: ctx.spaceId, ...fields, updated_by: ctx.profileId, updated_at: new Date().toISOString() }
   const { error } = await db()
     .from('page_settings')
-    .upsert(payload as unknown as Database['public']['Tables']['page_settings']['Insert'], { onConflict: 'route' })
+    .upsert(payload as unknown as Database['public']['Tables']['page_settings']['Insert'], { onConflict: 'space_id,route' })
   if (error) return fail('Could not save SEO for that route.')
 
   revalidatePath(route)
   return ok()
 }
 
-/** The current SEO for the editor (staff-gated read). Defaults to empty fields. */
-export async function getPageSeoForEditor(route: string): Promise<SeoFields> {
-  await gate()
+/** The current SEO for the editor (space-gated read; default root). Defaults to empty fields. */
+export async function getPageSeoForEditor(route: string, spaceId?: string | null): Promise<SeoFields> {
+  const ctx = await gateForSpace(spaceId)
   const empty: SeoFields = { seo_title: null, seo_description: null, og_image_url: null, header_image_url: null }
-  if (!isSafeRoute(route)) return empty
+  if (!ctx || !isSafeRoute(route)) return empty
   const { loadPageSettings } = await import('./store')
-  const row = await loadPageSettings(route)
+  const row = await loadPageSettings(route, ctx.spaceId)
   return row
     ? {
         seo_title: row.seo_title,
@@ -70,29 +103,30 @@ export async function getPageSeoForEditor(route: string): Promise<SeoFields> {
 export async function savePageStatus(
   route: string,
   input: { status?: string; visibilityRole?: string | null },
+  spaceId?: string | null,
 ): Promise<ActionResult> {
-  const me = await gate()
+  const ctx = await gateForSpace(spaceId)
+  if (!ctx) return fail('You can only edit your own space.')
   if (!isSafeRoute(route)) return fail('That is not a valid app route.')
   const fields = normalizeStatus(input)
+  // space_id isn't in the generated types yet — cast the payload (ADR-246), not the client.
+  const payload = { route, space_id: ctx.spaceId, status: fields.status, visibility_role: fields.visibility_role, updated_by: ctx.profileId, updated_at: new Date().toISOString() }
   const { error } = await db()
     .from('page_settings')
-    .upsert(
-      { route, status: fields.status, visibility_role: fields.visibility_role, updated_by: me, updated_at: new Date().toISOString() },
-      { onConflict: 'route' },
-    )
+    .upsert(payload as unknown as Database['public']['Tables']['page_settings']['Insert'], { onConflict: 'space_id,route' })
   if (error) return fail('Could not save status for that route.')
 
   revalidatePath(route)
   return ok()
 }
 
-/** The current status + visibility for the editor (staff-gated read). Defaults to live/anyone. */
-export async function getPageStatusForEditor(route: string): Promise<StatusFields> {
-  await gate()
+/** The current status + visibility for the editor (space-gated read; default root). Defaults to live/anyone. */
+export async function getPageStatusForEditor(route: string, spaceId?: string | null): Promise<StatusFields> {
+  const ctx = await gateForSpace(spaceId)
   const dflt: StatusFields = { status: 'published', visibility_role: null }
-  if (!isSafeRoute(route)) return dflt
+  if (!ctx || !isSafeRoute(route)) return dflt
   const { loadPageSettings } = await import('./store')
-  const row = await loadPageSettings(route)
+  const row = await loadPageSettings(route, ctx.spaceId)
   if (!row) return dflt
   return {
     status: row.status === 'draft' ? 'draft' : 'published',
@@ -128,8 +162,8 @@ export interface LayoutEditorState {
  *  and carrying its role gate. The key is the exact route, a section ('/seg/*'), or the global
  *  default ('*'); this reads THAT level's OWN config (not the cascade), so staff see what is set
  *  at the level they edit. Staff-gated; defaults to the Single template, all on, no gates. */
-export async function getPageLayoutForEditor(key: string): Promise<LayoutEditorState> {
-  await gate()
+export async function getPageLayoutForEditor(key: string, spaceId?: string | null): Promise<LayoutEditorState> {
+  const ctx = await gateForSpace(spaceId)
   // The module SET is scoped to the key being edited (ADR-294), so each route's Layout panel
   // offers exactly the blocks that route renders — not the global catalog.
   const moduleIds = moduleIdsForScope(key)
@@ -142,10 +176,19 @@ export async function getPageLayoutForEditor(key: string): Promise<LayoutEditorS
         : []
     }),
   })
-  if (!isLayoutKey(key)) return build({ template: DEFAULT_TEMPLATE, slots: {} })
-  // Read the level's OWN row (a scope key never passes isSafeRoute, so we read directly here
-  // inside the staff-gated action rather than via the route-only loadPageSettings reader).
-  const { data } = await db().from('page_settings').select('layout').eq('route', key).maybeSingle()
+  if (!ctx || !isLayoutKey(key)) return build({ template: DEFAULT_TEMPLATE, slots: {} })
+  // Read THIS space's row at the level's OWN key (a scope key never passes isSafeRoute, so we
+  // read directly here inside the gated action rather than via the route-only reader). The read
+  // is scoped to (space_id, route) — space_id isn't in the generated types yet, so reach it with
+  // an untyped client (ADR-246).
+  const q = db().from('page_settings') as unknown as {
+    select: (cols: string) => {
+      eq: (col: string, val: string) => {
+        eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: { layout: unknown } | null }> }
+      }
+    }
+  }
+  const { data } = await q.select('layout').eq('space_id', ctx.spaceId).eq('route', key).maybeSingle()
   return build(parseLayout(data?.layout ?? null))
 }
 
@@ -156,8 +199,10 @@ export async function getPageLayoutForEditor(key: string): Promise<LayoutEditorS
 export async function savePageLayout(
   key: string,
   input: { template?: string; items: { id: string; enabled: boolean; role?: string | null; slot?: string }[] },
+  spaceId?: string | null,
 ): Promise<ActionResult> {
-  const me = await gate()
+  const ctx = await gateForSpace(spaceId)
+  if (!ctx) return fail('You can only edit your own space.')
   if (!isLayoutKey(key)) return fail('That is not a valid page or scope.')
   const template: TemplateId = isTemplateId(input.template) ? input.template : DEFAULT_TEMPLATE
   const slots = slotIds(template)
@@ -191,11 +236,12 @@ export async function savePageLayout(
     slotConfigs[s.id] = { order, hidden, roles }
   }
 
+  // The payload carries space_id (not in the generated types yet — cast it, ADR-246) and the
+  // known-good { template, slots } jsonb tree; onConflict is the (space_id, route) composite key.
+  const payload = { route: key, space_id: ctx.spaceId, layout: { template, slots: slotConfigs } as unknown as Json, updated_by: ctx.profileId, updated_at: new Date().toISOString() }
   const { error } = await db()
     .from('page_settings')
-    // The layout is a known-good { template, slots } tree; cast to the column's jsonb type
-    // (TS can't infer a known-key object satisfies the recursive Json type).
-    .upsert({ route: key, layout: { template, slots: slotConfigs } as unknown as Json, updated_by: me, updated_at: new Date().toISOString() }, { onConflict: 'route' })
+    .upsert(payload as unknown as Database['public']['Tables']['page_settings']['Insert'], { onConflict: 'space_id,route' })
   if (error) return fail('Could not save the layout for that scope.')
 
   // A concrete route refreshes just that page; a scope edit is broad, so purge all cached
@@ -205,14 +251,19 @@ export async function savePageLayout(
   return ok()
 }
 
-/** Clear a route's SEO back to the code default (null the fields). */
-export async function clearPageSeo(route: string): Promise<ActionResult> {
-  await gate()
+/** Clear a route's SEO back to the code default (null the fields) for a space (default root). */
+export async function clearPageSeo(route: string, spaceId?: string | null): Promise<ActionResult> {
+  const ctx = await gateForSpace(spaceId)
+  if (!ctx) return fail('You can only edit your own space.')
   if (!isSafeRoute(route)) return fail('That is not a valid app route.')
-  const { error } = await db()
-    .from('page_settings')
-    .update({ seo_title: null, seo_description: null, og_image_url: null, header_image_url: null, updated_at: new Date().toISOString() } as unknown as Database['public']['Tables']['page_settings']['Update'])
-    .eq('route', route)
+  // The clear is scoped to (space_id, route) — space_id isn't in the generated types yet, so
+  // reach it with an untyped client (ADR-246) for the second filter.
+  const q = db().from('page_settings').update(
+    { seo_title: null, seo_description: null, og_image_url: null, header_image_url: null, updated_at: new Date().toISOString() } as unknown as Database['public']['Tables']['page_settings']['Update'],
+  ) as unknown as {
+    eq: (col: string, val: string) => { eq: (col: string, val: string) => Promise<{ error: unknown }> }
+  }
+  const { error } = await q.eq('space_id', ctx.spaceId).eq('route', route)
   if (error) return fail('Could not clear SEO for that route.')
 
   revalidatePath(route)

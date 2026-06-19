@@ -11,8 +11,9 @@
 // orchestrates. We write back through the existing memory store (writeDigest in
 // memory.ts), never bypassing it.
 
-import Anthropic from '@anthropic-ai/sdk'
-import { getAnthropic } from './client'
+import type Anthropic from '@anthropic-ai/sdk'
+import { completeRaw } from './complete'
+import { aiEnabled } from './client'
 import { MODELS, type ModelTier } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage, aiAvailable, featureOverBudget } from './usage'
@@ -262,26 +263,24 @@ export async function compressMemberMemory(
 ): Promise<{ digest: MemoryDigest; usedAi: boolean }> {
   if (!opts.useAi) return { digest: fallbackDigest(ctx), usedAi: false }
 
-  const client = getAnthropic()
-  if (!client) return { digest: fallbackDigest(ctx), usedAi: false }
+  if (!aiEnabled()) return { digest: fallbackDigest(ctx), usedAi: false }
 
   try {
-    const res = await client.messages.create({
-      model: MODELS[SUMMARY_TIER],
-      max_tokens: 800,
+    const res = await completeRaw({
+      tier: SUMMARY_TIER,
+      maxTokens: 800,
       thinking: { type: 'disabled' },
       system: SYSTEM,
       tools: [TOOL],
-      tool_choice: { type: 'tool', name: TOOL_NAME },
+      toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: `Compress this member's memory and call ${TOOL_NAME}:\n\n${factsToPrompt(ctx)}` }],
     })
 
-    const usage = { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
     void recordAiUsage({
       feature: SUMMARY_FEATURE,
       model: MODELS[SUMMARY_TIER],
-      usage,
-      costUsd: estimateCostUsd(SUMMARY_TIER, usage),
+      usage: res.usage,
+      costUsd: estimateCostUsd(SUMMARY_TIER, res.usage),
       profileId: ctx.profileId ?? null,
     })
 

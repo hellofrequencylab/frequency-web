@@ -22,3 +22,16 @@ A janitor-facing operator surface to turn AI on/off platform-wide, see today's s
 ## Access
 
 Reached from **Admin → Platform → AI controls**, janitor-only (`requireAdmin('janitor')` in the page; the Platform group in `app/(main)/admin/sections.ts` is janitor-floored). The toggle action re-asserts `requireAdmin('janitor')`.
+
+## The model-agnostic gateway seam (env)
+
+Every AI call in the app funnels through **one chokepoint**: `getAnthropic()` (`lib/ai/client.ts`) → `completeText` / `completeRaw` / `runToolLoop` (`lib/ai/complete.ts`). Nothing constructs the SDK or calls `messages.create` directly anymore (the lone exception is `scripts/help-autodoc.mts`, a CI script that can't import the `@/`-aliased wrapper under Node type-stripping, so it uses the shared `getAnthropic()` client + the `MODELS` tier registry instead). That single chokepoint is what makes the **provider a one-line swap** (ENTITY-SPACES-BUILD §B.7 / Epic 0.5b, ADR-318).
+
+| Env var | Default | Effect |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | unset | The direct-Anthropic key. Present ⇒ AI is configured. |
+| `AI_DISABLED` | unset | `=1` hard-disables AI at the env level (below the DB kill switch). |
+| **`AI_GATEWAY_URL`** | **unset** | **The gateway flag.** Unset ⇒ the **direct Anthropic path** (current behaviour, byte-for-byte). Set to a model-agnostic gateway base URL (Vercel AI Gateway, which exposes an **Anthropic-compatible `/v1/messages`** exit at zero markup) ⇒ the *same SDK* is pointed at that `baseURL`, so every existing call routes through the gateway unchanged. Only the transport (host + auth header) swaps; the models registry, request shapes, tiering, and parsing are identical. |
+| `AI_GATEWAY_API_KEY` | falls back to `ANTHROPIC_API_KEY` | Authenticates to the gateway when `AI_GATEWAY_URL` is set. Omit it to reuse the existing Anthropic key through the gateway. |
+
+`aiEnabled()` is true when **either** the direct key **or** the gateway is configured (and `AI_DISABLED !== '1'`). The DB-backed `platform_flags.ai_enabled` switch still layers on top via `aiAvailable()`, unchanged. The default (flag unset) is exactly today's behaviour — no behaviour change for any call until an operator opts in by setting `AI_GATEWAY_URL`.

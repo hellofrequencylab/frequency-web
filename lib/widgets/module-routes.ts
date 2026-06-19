@@ -19,13 +19,34 @@ export const MODULE_ROUTES: readonly string[] = [
 // own MODULE_ROUTES entry; grandchildren (e.g. /practices/<id>/edit) are bespoke and excluded.
 const MODULE_SECTIONS: readonly string[] = ['/practices']
 
+// The entity-profile family (ENTITY-SPACES-BUILD §B.1): every tab at /spaces/<slug>/<tab> renders
+// <PageModules> against the shared '/spaces/*' module set. It is TWO segments deep (slug + tab) and
+// the index tab is /spaces/<slug>, so it doesn't fit the one-deep MODULE_SECTIONS matcher above —
+// it gets its own predicate. (The owner Layout editor on profiles is Epic 1.7; recognizing the
+// family here keeps the editor's route check honest when it lands.)
+const ENTITY_PROFILE_ROOT = '/spaces'
+
+/** Whether a path is an entity-profile tab (the index /spaces/<slug> or a tab /spaces/<slug>/<tab>),
+ *  excluding the directory (/spaces) and the wizard/settings sub-surfaces (/spaces/new, …/settings). */
+export function isEntityProfileRoute(pathname: string): boolean {
+  if (!pathname.startsWith(`${ENTITY_PROFILE_ROOT}/`)) return false
+  const segs = pathname.slice(1).split('/') // ['spaces', '<slug>', '<tab>'?]
+  if (segs.length < 2 || segs.length > 3) return false
+  const slug = segs[1]
+  if (!slug || slug === 'new') return false // the provisioning wizard is bespoke (Focus)
+  if (segs.length === 3 && segs[2] === 'settings') return false // the settings surface is bespoke (Focus)
+  return true
+}
+
 /** Whether `pathname` is a module-driven route — drives the Layout editor's visibility. A route is
- *  module-driven when its own page renders <PageModules>: the EXACT routes below, plus the direct
- *  children of a MODULE_SECTION (the detail pages). Bespoke pages that don't render <PageModules>
- *  (e.g. /crew, /journeys/<slug>, /practices/<id>/edit) must NOT offer a Layout editor — its
- *  blocks would be disconnected from the page (the "Settings don't make sense" trap). */
+ *  module-driven when its own page renders <PageModules>: the EXACT routes below, the direct
+ *  children of a MODULE_SECTION (the detail pages), or an entity-profile tab. Bespoke pages that
+ *  don't render <PageModules> (e.g. /crew, /journeys/<slug>, /practices/<id>/edit) must NOT offer a
+ *  Layout editor — its blocks would be disconnected from the page (the "Settings don't make sense"
+ *  trap). */
 export function isModuleRoute(pathname: string): boolean {
   if (MODULE_ROUTES.includes(pathname)) return true
+  if (isEntityProfileRoute(pathname)) return true
   return MODULE_SECTIONS.some((s) => {
     if (!pathname.startsWith(`${s}/`)) return false
     const rest = pathname.slice(s.length + 1)
