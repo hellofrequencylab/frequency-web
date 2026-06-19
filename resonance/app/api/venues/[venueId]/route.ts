@@ -3,6 +3,7 @@ import { getAuthedUserId } from "@/lib/auth/server";
 import { getRoomState } from "@/lib/sync/room-state-repo";
 import { getVenue, listSeats, listQueue, listVotes } from "@/lib/dj/repo";
 import { tally } from "@/lib/dj/rotation";
+import { getStanding } from "@/lib/gamification/repo";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export async function GET(req: Request, ctx: Ctx) {
     : null;
 
   const myQueue = userId ? await listQueue(venueId, userId) : [];
+  const standing = userId ? await getStanding(venue.worldId, userId) : null;
 
-  return NextResponse.json({ venue, seats, roomState, tally: voteTally, myQueue });
+  return NextResponse.json({ venue, seats, roomState, tally: voteTally, myQueue, standing });
 }

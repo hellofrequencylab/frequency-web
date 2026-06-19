@@ -94,6 +94,16 @@ schema stays liftable. The same server seam will verify a host-issued JWT when
 embedded (Section 5). Requires "Anonymous sign-ins" enabled in the project's Auth
 settings.
 
+### ADR-016 — Zaps are earned on verified play-through; awards are idempotent and self-deal-proof ✅
+A DJ earns Zaps only when a play finishes (fired from `advance`), equal to the
+Awesome votes from OTHER people — the DJ's own vote is excluded, so self-dealing
+pays nothing. The ledger is append-only with a unique `(world,user,reason,ref=play)`
+key, so a replayed/concurrent `advance` cannot double-pay and reputation moves
+only on a genuinely new award. Reputation is keyed by season, so the 13-week reset
+is anti-accumulation by construction. Awards broadcast `zaps:awarded` /
+`rank:changed`, which are also the server-to-server mirror payloads for the host
+economy (Section 5).
+
 ### ADR-010 — Gamification mirrors, not merges, the host economy ✅
 Zaps/reputation are computed in-app on an append-only ledger with verified
 play-through awards, then **mirrored** to the host (Frequency's Zaps + The Field)

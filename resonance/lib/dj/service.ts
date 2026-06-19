@@ -3,8 +3,9 @@ import { getRoomState, applyPlayback } from "@/lib/sync/room-state-repo";
 import { startTrack, IDLE } from "@/lib/sync/clock";
 import { broadcastToVenue } from "@/lib/realtime/server-broadcast";
 import { ROOM_UPDATE_EVENT, VENUE_CHANGED_EVENT } from "@/lib/sync/channels";
-import { listSeats, leaveSeat, listVotes, nextQueuedItem, markPlayed } from "./repo";
+import { getVenue, listSeats, leaveSeat, listVotes, nextQueuedItem, markPlayed } from "./repo";
 import { tally, shouldBump } from "./rotation";
+import { awardForPlay } from "@/lib/gamification/service";
 
 /**
  * Advance the floor to the next DJ (spec §5.1). Server-authoritative: this is the
@@ -33,9 +34,14 @@ export async function advance(
     return current;
   }
 
-  // 1. Did the finishing DJ earn their seat?
+  // 1. Settle the finishing play: award Zaps for verified play-through (Awesome
+  //    votes from others), then decide whether the DJ keeps their seat.
   let bumped: string | null = null;
   if (current?.currentPlayId && current.currentDjUserId) {
+    const venue = await getVenue(venueId);
+    if (venue) {
+      await awardForPlay(venue.worldId, venueId, current.currentPlayId, current.currentDjUserId);
+    }
     const t = tally(await listVotes(current.currentPlayId));
     if (shouldBump(t)) bumped = current.currentDjUserId;
   }

@@ -143,7 +143,7 @@ function Room({
   canDj: boolean;
   onLeaveVenue: () => void;
 }) {
-  const { venue, seats, roomState, myQueue, tally, chat, present, actions } = useVenue(
+  const { venue, seats, roomState, myQueue, tally, standing, chat, present, actions } = useVenue(
     venueId,
     userId,
     name,
@@ -159,6 +159,10 @@ function Room({
       <p style={{ color: "#888", fontSize: 12, wordBreak: "break-all" }}>
         {venue?.name} · here: {present.join(", ") || "…"} ·{" "}
         <button onClick={onLeaveVenue}>switch venue</button>
+      </p>
+      <p style={{ fontSize: 13 }}>
+        ⚡ <b>{standing?.balance ?? 0}</b> Zaps · rank <b>{standing?.rank ?? "Crew"}</b>{" "}
+        <small style={{ color: "#888" }}>({standing?.djPoints ?? 0} DJ pts this season)</small>
       </p>
 
       <SyncedPlayer state={roomState} onEnded={actions.advance} />

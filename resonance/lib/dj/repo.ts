@@ -174,6 +174,22 @@ export async function listVotes(
   return (data ?? []).map((r) => ({ value: r.value as "awesome" | "lame" }));
 }
 
+/** Votes with voter id, for award logic that must exclude the DJ's own vote. */
+export async function listVoteDetails(
+  playId: string,
+): Promise<Array<{ userId: string; value: "awesome" | "lame" }>> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("votes")
+    .select("user_id, value")
+    .eq("play_id", playId);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    userId: r.user_id as string,
+    value: r.value as "awesome" | "lame",
+  }));
+}
+
 // ---- mappers ---------------------------------------------------------------
 
 function toVenue(r: Record<string, unknown>): Venue {

@@ -25,6 +25,12 @@ export interface Tally {
   lame: number;
   net: number;
 }
+export interface Standing {
+  balance: number;
+  djPoints: number;
+  rank: string;
+  seasonId: string;
+}
 
 interface Snapshot {
   venue: Venue;
@@ -32,6 +38,7 @@ interface Snapshot {
   roomState: RoomState | null;
   tally: Tally | null;
   myQueue: QueueItem[];
+  standing: Standing | null;
 }
 
 async function getSnapshot(venueId: string): Promise<Snapshot | null> {
@@ -56,6 +63,7 @@ export function useVenue(venueId: string, userId: string, displayName: string) {
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [myQueue, setMyQueue] = useState<QueueItem[]>([]);
   const [tally, setTally] = useState<Tally | null>(null);
+  const [standing, setStanding] = useState<Standing | null>(null);
   const [chat, setChat] = useState<ChatLine[]>([]);
   const [present, setPresent] = useState<string[]>([]);
 
@@ -71,6 +79,7 @@ export function useVenue(venueId: string, userId: string, displayName: string) {
     setRoomState(j.roomState);
     setTally(j.tally);
     setMyQueue(j.myQueue);
+    setStanding(j.standing);
   }, []);
 
   const refetch = useCallback(async () => {
@@ -178,6 +187,7 @@ export function useVenue(venueId: string, userId: string, displayName: string) {
     roomState,
     myQueue,
     tally,
+    standing,
     chat,
     present,
     actions: { takeSeat, leaveSeat, enqueue, removeQueue, vote, advance, sendChat },

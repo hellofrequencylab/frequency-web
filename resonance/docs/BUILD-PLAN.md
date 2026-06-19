@@ -76,13 +76,22 @@ tests landed; live multi-client check is the remaining gate. 🚪
 **DoD:** users have a persistent identity and can lurk before DJing. Code + build
 green; live check is the remaining gate (one Auth setting to flip). 🚪
 
-### Section 4 — Gamification core  ⬜
-- [ ] `zaps_ledger` (append-only), `reputation`, `seasons` tables
-- [ ] Awards ONLY on verified play-through (never on queue/RSVP); anti-gaming + rate limits
-- [ ] The Field ranks; 13-week seasonal reset + decay
-- [ ] Public, witnessed DJ reputation feeding rank
+### Section 4 — Gamification core  🔨
+- [x] `zaps_ledger` (append-only, balance = sum), `reputation`, `seasons` tables (migration `0005`, applied)
+- [x] Awards ONLY on verified play-through (fired from `advance`, never on queue/RSVP)
+- [x] Anti-gaming: one vote per (play,user) (DB), self-votes excluded from awards, idempotent ledger (ADR-016)
+- [x] The Field ranks (Crew→Bodhisattva), unit-tested; per-season reputation = 13-week seasonal reset
+- [x] Public DJ reputation feeds rank; `zaps:awarded` / `rank:changed` broadcast (Section-5 mirror hooks)
+- [x] Standing (Zaps balance + rank) surfaced in `/dev/dj`
+- [ ] 🚪 **GO (manual):** in `/dev/dj`, play a track, get Awesome votes from other
+      windows, advance, and confirm the DJ's Zaps + rank rise (self-votes don't pay)
 
-**DoD:** votes-received convert to Zaps + rank, with anti-gaming holding. 🚪
+Deferred refinements (not core): active in-season decay (seasonal reset is in);
+explicit per-action rate limiting beyond the one-vote-per-play constraint;
+attendance awards.
+
+**DoD:** votes-received convert to Zaps + rank, with anti-gaming holding. Code +
+tests green; live check is the remaining gate. 🚪
 
 ### Section 5 — Embed into Frequency  ⬜
 - [ ] Federated JWT verify; map `sub` → profile
