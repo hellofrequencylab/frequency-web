@@ -7,6 +7,7 @@ import {
   listSubcategories,
   listCanonicalTags,
   getMemberPractices,
+  getPracticeCreators,
   type PracticeSort,
 } from '@/lib/practices'
 import { getPillars, pillarsById } from '@/lib/pillars'
@@ -15,6 +16,7 @@ import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { PracticeAdminMenu } from '@/components/practice/practice-admin-menu'
 import { EntityCard } from '@/components/cards/entity-card'
+import { PracticeAuthor } from '@/components/practice/practice-author'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { demoModeEnabled } from '@/lib/platform-flags'
@@ -83,6 +85,12 @@ export async function PracticesLibrary() {
     hideDemo,
     includeHidden: showHidden,
   })
+
+  // Author attribution (ADR): the library rows carry `created_by` (a profile id) but not the
+  // creator's handle/name. Resolve the distinct creators in ONE batch query rather than enriching
+  // the shared search fn (searchLibraryPractices is also used by /discover). Rendered in the card
+  // footer, which sits outside the card's main link, so a nested profile link is valid.
+  const creators = await getPracticeCreators(result.rows.map((p) => p.created_by))
 
   const base = {
     q: qParam || undefined,
@@ -167,6 +175,16 @@ export async function PracticesLibrary() {
               const pillarName = p.domain_id ? byId.get(p.domain_id)?.name ?? null : null
               const context = [pillarName, p.subcategory?.name, p.category?.replace(/-/g, ' ')].filter(Boolean).join(' · ')
               const PillarIcon = pillarIcon(pillarSlug)
+              const creator = p.created_by ? creators.get(p.created_by) ?? null : null
+              const author = creator?.handle ? <PracticeAuthor creator={creator} /> : null
+              const adopt = profileId ? <AdoptPracticeButton practiceId={p.id} adopted={mineIds.has(p.id)} fullWidth /> : null
+              const footer =
+                author || adopt ? (
+                  <div className="space-y-2">
+                    {author}
+                    {adopt}
+                  </div>
+                ) : undefined
               return (
                 <li key={p.id}>
                   <EntityCard
@@ -211,7 +229,7 @@ export async function PracticesLibrary() {
                       </>
                     }
                     action={isAdmin ? <PracticeAdminMenu practiceId={p.id} isTemplate={p.is_template} isPublic={p.is_public} /> : undefined}
-                    footer={profileId ? <AdoptPracticeButton practiceId={p.id} adopted={mineIds.has(p.id)} fullWidth /> : undefined}
+                    footer={footer}
                   />
                 </li>
               )
