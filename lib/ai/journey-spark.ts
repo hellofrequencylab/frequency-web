@@ -6,8 +6,9 @@
 // ledger, never trusting the raw shape. Degrades to null when AI is off (the wizard then lets the
 // author type the identity by hand).
 
-import Anthropic from '@anthropic-ai/sdk'
-import { getAnthropic } from './client'
+import type Anthropic from '@anthropic-ai/sdk'
+import { completeRaw } from './complete'
+import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
@@ -142,8 +143,7 @@ How to write:
 export async function draftJourneySpark(
   input: SparkAnswers & { profileId?: string | null; sourceText?: string },
 ): Promise<JourneySpark | null> {
-  const client = getAnthropic()
-  if (!client) return null
+  if (!aiEnabled()) return null
 
   const src = input.sourceText?.trim().slice(0, 8000)
   const userText = [
@@ -162,21 +162,20 @@ export async function draftJourneySpark(
     .join('\n')
 
   try {
-    const res = await client.messages.create({
-      model: MODELS.opus,
-      max_tokens: 600,
+    const res = await completeRaw({
+      tier: 'opus',
+      maxTokens: 600,
       thinking: { type: 'disabled' },
       system: withVoice(withJourneyShape(SYSTEM)),
       tools: [TOOL],
-      tool_choice: { type: 'tool', name: TOOL_NAME },
+      toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
     })
-    const usage = { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
     void recordAiUsage({
       feature: 'journey-spark',
       model: MODELS.opus,
-      usage,
-      costUsd: estimateCostUsd('opus', usage),
+      usage: res.usage,
+      costUsd: estimateCostUsd('opus', res.usage),
       profileId: input.profileId ?? null,
     })
     const block = res.content.find(

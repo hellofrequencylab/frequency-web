@@ -10,9 +10,9 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages'
-import { getAnthropic, aiEnabled } from '@/lib/ai'
-import { MODELS } from '@/lib/ai/models'
-import { estimateCostUsd, type TokenUsage } from '@/lib/ai/budget'
+import { aiEnabled } from '@/lib/ai'
+import { runToolLoop, type CompleteMessage } from '@/lib/ai/complete'
+import { estimateCostUsd } from '@/lib/ai/budget'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import type { MemberContext } from '@/lib/ai/memory'
 import { VERA_TOOLS, requiresConfirmation, validateToolCall, type VeraToolDef } from './tools'
@@ -167,70 +167,69 @@ export async function runVeraClaudeTurn(input: {
   /** Who's asking (ADR-208) — operators get operator-to-operator candor. */
   viewer?: VeraViewer | null
 }): Promise<VeraClaudeResult | null> {
-  const client = getAnthropic()
-  if (!client || !aiEnabled()) return null
+  if (!aiEnabled()) return null
 
   try {
     // Operator kill switch + per-feature daily cap — degrade to deterministic.
     if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
 
     const cfg = await getVeraConfig()
-    const model = MODELS[cfg.tier]
     const system = buildSystemPrompt(input.memberContext, cfg, input.supportSummary, input.viewer)
     const tools = toAnthropicTools(VERA_TOOLS)
-    const messages: Anthropic.MessageParam[] = [
+    const messages: CompleteMessage[] = [
       ...input.history.map((m) => ({ role: m.role, content: m.text })),
-      { role: 'user', content: input.memberText },
+      { role: 'user' as const, content: input.memberText },
     ]
 
     const proposals: ProposedToolCall[] = []
-    const usage: TokenUsage = { inputTokens: 0, outputTokens: 0 }
-    let reply = ''
 
-    for (let round = 0; round < MAX_ROUNDS; round++) {
-      const resp = await client.messages.create({ model, max_tokens: MAX_TOKENS, system, tools, messages })
-      usage.inputTokens += resp.usage.input_tokens
-      usage.outputTokens += resp.usage.output_tokens
-      const { text, toolCalls } = parseAssistantContent(resp.content)
-      if (text) reply = text
-      if (toolCalls.length === 0) break
-
-      // Capture valid write proposals — never executed here.
-      for (const c of toolCalls) {
-        if (requiresConfirmation(c.tool) && validateToolCall(c.tool, c.args).ok) {
-          if (!proposals.some((p) => p.tool === c.tool && JSON.stringify(p.args) === JSON.stringify(c.args))) {
-            proposals.push({ tool: c.tool, args: c.args })
+    // Bounded tool-use loop through the shared chokepoint (lib/ai/complete). READ
+    // tools run server-side and feed back; WRITE tools are captured as proposals and
+    // stubbed (never executed here, ADR-028). Identical contract to the prior loop.
+    const result = await runToolLoop({
+      tier: cfg.tier,
+      maxTokens: MAX_TOKENS,
+      maxRounds: MAX_ROUNDS,
+      system,
+      tools,
+      messages,
+      onToolCalls: async (toolCalls) => {
+        // Capture valid write proposals — never executed here.
+        for (const c of toolCalls) {
+          if (requiresConfirmation(c.name) && validateToolCall(c.name, c.input).ok) {
+            if (!proposals.some((p) => p.tool === c.name && JSON.stringify(p.args) === JSON.stringify(c.input))) {
+              proposals.push({ tool: c.name, args: c.input })
+            }
           }
         }
-      }
 
-      // Run reads + feed results back so Claude can use them; writes get a stub result
-      // so the API stays consistent, but they don't execute.
-      const reads = toolCalls.filter((c) => !requiresConfirmation(c.tool) && validateToolCall(c.tool, c.args).ok)
-      if (reads.length === 0) break
+        // Only continue the loop when there's a read to run; a turn of writes-only
+        // stops here (after capturing the proposals), as before.
+        const reads = toolCalls.filter((c) => !requiresConfirmation(c.name) && validateToolCall(c.name, c.input).ok)
+        if (reads.length === 0) return null
 
-      messages.push({ role: 'assistant', content: resp.content })
-      const results: Anthropic.ToolResultBlockParam[] = []
-      for (const c of toolCalls) {
-        const content = requiresConfirmation(c.tool)
-          ? 'Proposed to the member for confirmation.'
-          : await executeReadTool(c.tool, c.args)
-        results.push({ type: 'tool_result', tool_use_id: c.id, content })
-      }
-      messages.push({ role: 'user', content: results })
-    }
+        const results: Anthropic.ToolResultBlockParam[] = []
+        for (const c of toolCalls) {
+          const content = requiresConfirmation(c.name)
+            ? 'Proposed to the member for confirmation.'
+            : await executeReadTool(c.name, c.input)
+          results.push({ type: 'tool_result', tool_use_id: c.id, content })
+        }
+        return results
+      },
+    })
 
     // Ledger entry (best-effort, never blocks the reply).
     void recordAiUsage({
       feature: FEATURE,
-      model,
-      usage,
-      costUsd: estimateCostUsd(cfg.tier, usage),
+      model: result.model,
+      usage: result.usage,
+      costUsd: estimateCostUsd(cfg.tier, result.usage),
       profileId: input.profileId ?? null,
     })
 
     // Peel the quick-reply chips off the prose (ONBOARDING-BUILD-LIST §1.5).
-    const { reply: prose, suggestions } = extractSuggestions(reply)
+    const { reply: prose, suggestions } = extractSuggestions(result.text)
     return { reply: prose || "I'm here. What are you hoping to find?", proposals, suggestions }
   } catch {
     return null // any kernel failure ⇒ deterministic fallback

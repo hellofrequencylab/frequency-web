@@ -11,8 +11,8 @@
 // product never depends on the model being up. Every word the model writes is
 // voice-canon via withVoice(); every field is re-validated by coerceEventExtraction.
 
-import Anthropic from '@anthropic-ai/sdk'
-import { getAnthropic } from './client'
+import type Anthropic from '@anthropic-ai/sdk'
+import { completeRaw } from './complete'
 import { MODELS, type ModelTier } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
@@ -238,25 +238,22 @@ async function runExtraction(opts: {
   content: Anthropic.MessageParam['content']
   profileId?: string | null
 }): Promise<ExtractedEvent | null> {
-  const client = getAnthropic()
-  if (!client) return null
   try {
-    const res = await client.messages.create({
-      model: MODELS[opts.tier],
-      max_tokens: 1024,
+    const res = await completeRaw({
+      tier: opts.tier,
+      maxTokens: 1024,
       thinking: { type: 'disabled' },
       system: withVoice(opts.system),
       tools: [EXTRACTION_TOOL],
-      tool_choice: { type: 'tool', name: TOOL_NAME },
+      toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: opts.content }],
     })
 
-    const usage = { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
     void recordAiUsage({
       feature: opts.feature,
       model: MODELS[opts.tier],
-      usage,
-      costUsd: estimateCostUsd(opts.tier, usage),
+      usage: res.usage,
+      costUsd: estimateCostUsd(opts.tier, res.usage),
       profileId: opts.profileId ?? null,
     })
 

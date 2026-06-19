@@ -4,8 +4,9 @@
 // Forced-tool structured output + the voice primer; every op references an existing id we sent, and
 // the action re-validates each id against the plan before applying. Degrades to null when AI is off.
 
-import Anthropic from '@anthropic-ai/sdk'
-import { getAnthropic } from './client'
+import type Anthropic from '@anthropic-ai/sdk'
+import { completeRaw } from './complete'
+import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
@@ -77,8 +78,7 @@ export async function planJourneyEdits(input: {
   journey: JourneyForEdit
   profileId?: string | null
 }): Promise<JourneyEditOp[] | null> {
-  const client = getAnthropic()
-  if (!client) return null
+  if (!aiEnabled()) return null
   const request = input.request.trim().slice(0, 1000)
   if (!request) return null
 
@@ -98,17 +98,16 @@ export async function planJourneyEdits(input: {
   const userText = `The Journey:\n${lines.join('\n')}\n\nThe change to make:\n${request}\n\nReturn the edits and call ${TOOL_NAME}.`
 
   try {
-    const res = await client.messages.create({
-      model: MODELS.opus,
-      max_tokens: 1500,
+    const res = await completeRaw({
+      tier: 'opus',
+      maxTokens: 1500,
       thinking: { type: 'disabled' },
       system: withVoice(SYSTEM),
       tools: [TOOL],
-      tool_choice: { type: 'tool', name: TOOL_NAME },
+      toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
     })
-    const usage = { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
-    void recordAiUsage({ feature: 'journey-edit', model: MODELS.opus, usage, costUsd: estimateCostUsd('opus', usage), profileId: input.profileId ?? null })
+    void recordAiUsage({ feature: 'journey-edit', model: MODELS.opus, usage: res.usage, costUsd: estimateCostUsd('opus', res.usage), profileId: input.profileId ?? null })
     const block = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME)
     return block ? coerce(block.input) : null
   } catch {

@@ -6,8 +6,9 @@
 // (forced-tool structured output + usage ledger; re-coerce every field, never trust
 // the raw shape).
 
-import Anthropic from '@anthropic-ai/sdk'
-import { getAnthropic } from './client'
+import type Anthropic from '@anthropic-ai/sdk'
+import { completeRaw } from './complete'
+import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
@@ -52,8 +53,7 @@ export async function suggestCircleDraft(input: {
   type: 'in-person' | 'online'
   profileId?: string | null
 }): Promise<CircleSuggestion | null> {
-  const client = getAnthropic()
-  if (!client) return null
+  if (!aiEnabled()) return null
   const interest = input.interest.trim().slice(0, 120)
   if (!interest) return null
 
@@ -65,21 +65,20 @@ export async function suggestCircleDraft(input: {
   ].join('\n')
 
   try {
-    const res = await client.messages.create({
-      model: MODELS.haiku,
-      max_tokens: 300,
+    const res = await completeRaw({
+      tier: 'haiku',
+      maxTokens: 300,
       thinking: { type: 'disabled' },
       system: withVoice(SYSTEM),
       tools: [TOOL],
-      tool_choice: { type: 'tool', name: TOOL_NAME },
+      toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
     })
-    const usage = { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
     void recordAiUsage({
       feature: 'circle-create',
       model: MODELS.haiku,
-      usage,
-      costUsd: estimateCostUsd('haiku', usage),
+      usage: res.usage,
+      costUsd: estimateCostUsd('haiku', res.usage),
       profileId: input.profileId ?? null,
     })
     const block = res.content.find(

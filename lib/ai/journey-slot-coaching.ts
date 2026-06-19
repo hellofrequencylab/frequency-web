@@ -6,8 +6,8 @@
 // Runs on Haiku (cheap, on-demand) and degrades to null when AI is off or the call fails, so the
 // builder always falls back to the author writing the line by hand.
 
-import Anthropic from '@anthropic-ai/sdk'
-import { getAnthropic } from './client'
+import type Anthropic from '@anthropic-ai/sdk'
+import { completeRaw } from './complete'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage } from './usage'
@@ -48,8 +48,6 @@ export async function draftSlotCoaching(input: {
   season?: { name: string; theme?: string | null } | null
   profileId?: string | null
 }): Promise<string | null> {
-  const client = getAnthropic()
-  if (!client) return null
   const practiceTitle = input.practiceTitle.trim().slice(0, 200)
   if (!practiceTitle) return null
 
@@ -66,21 +64,20 @@ export async function draftSlotCoaching(input: {
     .join('\n')
 
   try {
-    const res = await client.messages.create({
-      model: MODELS.haiku,
-      max_tokens: 300,
+    const res = await completeRaw({
+      tier: 'haiku',
+      maxTokens: 300,
       thinking: { type: 'disabled' },
       system: withVoice(SYSTEM),
       tools: [TOOL],
-      tool_choice: { type: 'tool', name: TOOL_NAME },
+      toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
     })
-    const usage = { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
     void recordAiUsage({
       feature: 'journey-slot-coaching',
       model: MODELS.haiku,
-      usage,
-      costUsd: estimateCostUsd('haiku', usage),
+      usage: res.usage,
+      costUsd: estimateCostUsd('haiku', res.usage),
       profileId: input.profileId ?? null,
     })
     const block = res.content.find(
