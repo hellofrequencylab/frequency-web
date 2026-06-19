@@ -21,8 +21,10 @@ const FIELD =
   'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-broadcast'
 const LABEL = 'mb-1 block text-xs font-semibold text-subtle'
 
-// The six beats in the order members walk them. `beatIndex` is the induction's
-// internal step (0 oath · 1 intro · 2 tour · 3 identity · 4 place · 5 enter).
+// The five beats in the order members walk them. `beatIndex` is the induction's
+// internal step (0 oath · 1 intro · 2 tour · 3 identity+place · 4 enter). The old
+// standalone "place" beat is merged into identity; its copy keys stay in VERA for
+// any saved override but are no longer surfaced here.
 const BEATS: {
   id: BeatKey
   beatIndex: number
@@ -69,28 +71,16 @@ const BEATS: {
   {
     id: 'identity',
     beatIndex: 3,
-    title: 'Identity',
-    sub: 'Name, handle, and face.',
+    title: 'Profile',
+    sub: 'Name, handle, city, and face.',
     fields: [
       { key: 'heading', label: 'Heading' },
       { key: 'body', label: 'Body', area: true },
-    ],
-  },
-  {
-    id: 'place',
-    beatIndex: 4,
-    title: 'Place',
-    sub: 'Their city and what they came for.',
-    fields: [
-      { key: 'heading', label: 'Heading' },
-      { key: 'body', label: 'Body', area: true },
-      { key: 'intentLabel', label: 'Intent question label' },
-      { key: 'intentPlaceholder', label: 'Intent placeholder' },
     ],
   },
   {
     id: 'enter',
-    beatIndex: 5,
+    beatIndex: 4,
     title: 'Step in',
     sub: 'The last beat before the feed.',
     fields: [
