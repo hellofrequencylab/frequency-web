@@ -433,6 +433,34 @@ the way the five templates make reading feel identical.
   don't author a new editor. Accents come from `lib/studio/accents.ts` (token-based,
   never hex).
 
+## 10. Two page builders: the boundary (never cross them)
+
+There are exactly **two** page-building systems, for two different surfaces. They look
+alike (both "edit a page") but they are not interchangeable; choosing the wrong one is
+how a published draft shadows a coded experience, or an in-app page loses its chrome.
+
+| | **Puck page editor** | **Module engine** |
+|---|---|---|
+| What it builds | The **public, brandable micro-site** block tree (per-Space landing / marketing pages) | **Authenticated in-app pages** (a template shell + assignable widgets) |
+| Surface | Public marketing routes (`app/(marketing)/*`), and later a Space's own custom-domain micro-site | App routes behind auth (`app/(main)/*`) |
+| Store / render | `public.pages` (`data` draft / `published_data` live) → `getPublishedData(slug)`; editor at `app/edit/[slug]` + `components/page-editor/*` | `public.page_settings` (layout / SEO / status) → a template + `<PageModules route>` (`lib/page-settings/*`) |
+| Composes | The Puck block library (`components/page-editor/blocks/*`) | The five templates + `components/ui/*` / `cards/*` + widgets (this doc, §3–§4) |
+
+**The rule:**
+
+- **Never offer the Puck editor on an authenticated app route.** In-app pages are a
+  template plus `<PageModules>`; their layout/SEO/visibility is the module engine's job.
+- **Never offer the module editor on a public micro-site.** Public marketing/landing
+  pages are a Puck block tree.
+- **Both are space-aware via `space_id`.** `public.pages` and `public.page_settings` each
+  carry a nullable `space_id` (backfilled to the root space; the canary holds, root
+  resolves exactly as today). Reads/writes default to the root space via `loadRootSpaceId`,
+  so single-tenant behavior is unchanged.
+- **Today the Puck editor is still gated** to the 4-slug `isEditableSlug` allowlist
+  (`lib/page-editor/data.ts`); the `space_id` seam only makes the *storage* per-Space-ready.
+  Un-gating to full per-Space authoring (offering Puck on a Space's own slugs) is **Phase 5
+  white-label**, not now.
+
 ---
 
 ## Decisions captured
