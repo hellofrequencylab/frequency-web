@@ -29,6 +29,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'quest-intention', label: 'Season intention', description: "The season's theme in the operator's words — the orienting line for the page." },
   { id: 'quest-season-map', label: 'Season map', description: 'The four-Pillar gauges, the one next step, and the log-a-practice action.' },
   { id: 'quest-journeys', label: 'Your Journeys', description: "The member's adopted and built Journeys, each with its progress." },
+  { id: 'quest-next-gathering', label: 'Next gathering', description: 'The next event to show up to in person — the member’s RSVP, or the nearest community event.' },
   { id: 'quest-tasks', label: 'Tasks', description: 'Circle tasks plus the global task list members complete to earn Zaps.' },
   { id: 'quest-explore', label: 'Explore links', description: 'Quick links to Journeys, Practices, Challenges, and The Vault.' },
   { id: 'quest-leaderboard', label: 'Circle leaderboard', description: "The member's circle ranked by season Zaps." },
@@ -80,6 +81,7 @@ const CREW_MODULE_IDS = [
   'quest-intention',
   'quest-season-map',
   'quest-journeys',
+  'quest-next-gathering',
   'quest-explore',
   'quest-leaderboard',
 ] as const
