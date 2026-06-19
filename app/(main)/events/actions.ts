@@ -13,6 +13,7 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
+import { stampEventSpaceId } from '@/lib/events/store'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
@@ -115,7 +116,10 @@ export async function createEvent(formData: FormData) {
   }
 
   const supabase = await createClient()
-  // Cast: capacity/visibility/category/energy_tag are newer than the generated
+  // Stamp the owning Space (defaults to the root space, so this single-tenant flow keeps
+  // behaving exactly as today).
+  const spaceId = await stampEventSpaceId()
+  // Cast: capacity/visibility/category/energy_tag/space_id are newer than the generated
   // DB types (lib/database.types.ts) — repo convention for not-yet-regenerated
   // columns (see lib/billing/*).
   const { data: inserted, error } = await (supabase)
@@ -136,7 +140,10 @@ export async function createEvent(formData: FormData) {
       category,
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
-    }).select('id').single()
+      // space_id is newer than the generated DB types — cast the payload to reach the column
+      // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
+      ...(spaceId ? { space_id: spaceId } : {}),
+    } as never).select('id').single()
 
   if (error) {
     console.error('createEvent error', error)

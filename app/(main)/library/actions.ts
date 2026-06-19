@@ -7,7 +7,7 @@ import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { awardZapsForAction } from '@/lib/zaps'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import type { ContentType } from '@/lib/library'
+import { type ContentType, stampProgramSpaceId } from '@/lib/library'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -29,6 +29,10 @@ export async function submitProgram(input: {
   const title = input.title?.trim()
   if (!title) return fail('A program needs a title.')
 
+  // Stamp the owning Space (defaults to the root space, so this single-tenant flow keeps
+  // behaving exactly as today). space_id is newer than the generated DB types — cast the payload
+  // to reach the column (ADR-246); omit the field when the root row is missing.
+  const spaceId = await stampProgramSpaceId()
   const { data, error } = await db()
     .from('programs')
     .insert({
@@ -39,7 +43,8 @@ export async function submitProgram(input: {
       pillar: input.pillar?.trim() || null,
       author_id: me,
       status: 'pending',
-    })
+      ...(spaceId ? { space_id: spaceId } : {}),
+    } as never)
     .select('id')
     .maybeSingle()
   if (error) return fail(error.message)

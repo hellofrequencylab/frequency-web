@@ -6,12 +6,68 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 function db(): SupabaseClient {
   return createAdminClient()
 }
 
 export type ContentType = 'practice' | 'program' | 'journey'
+
+/** A program (community_library `programs` table) as the by-space read returns it. */
+export interface SpaceProgram {
+  id: string
+  slug: string
+  title: string
+  summary: string | null
+  author_id: string | null
+  pillar: string | null
+  status: string
+  space_id: string | null
+  created_at: string
+}
+
+/**
+ * The space_id to stamp on a NEW program: the explicit owning space, else the root space (so the
+ * existing single-tenant create flow defaults to root and behaves exactly as today). Returns null
+ * only if the root row is missing (pre-migration) — the caller then omits the field, leaving the
+ * column NULL, which the backfill later sweeps to root.
+ */
+export async function stampProgramSpaceId(spaceId?: string | null): Promise<string | null> {
+  return spaceId ?? (await loadRootSpaceId())
+}
+
+/**
+ * Programs that BELONG TO a space (tenancy axis, Phase 0 / ENTITY-SPACES §4.3), newest first.
+ * Defaults to the root space (so a caller that passes no spaceId reads the root's programs, the
+ * canary). Filtered by space_id so a program in space A can never resolve for space B — the
+ * by-space read the Phase 1 profile uses. FAIL-SAFE: [] on any error / missing tenant. space_id
+ * is reached with an untyped handle (ADR-246).
+ */
+export async function listProgramsForSpace(spaceId?: string | null, limit = 50): Promise<SpaceProgram[]> {
+  const sid = spaceId ?? (await loadRootSpaceId())
+  if (!sid) return []
+  try {
+    const q = db().from('programs') as unknown as {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => {
+          order: (col: string, opts: { ascending: boolean }) => {
+            limit: (n: number) => Promise<{ data: unknown; error: unknown }>
+          }
+        }
+      }
+    }
+    const { data, error } = await q
+      .select('id, slug, title, summary, author_id, pillar, status, space_id, created_at')
+      .eq('space_id', sid)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) return []
+    return (data as SpaceProgram[] | null) ?? []
+  } catch {
+    return []
+  }
+}
 
 export type PersonLite = { id: string; display_name: string; handle: string | null; avatar_url: string | null }
 
