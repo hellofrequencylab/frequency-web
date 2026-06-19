@@ -60,6 +60,20 @@ A **world** is the tenant; every owned row carries `world_id` and is RLS-isolate
 Frequency is one world; each embedding site is its own. Adopt Frequency's
 controller/processor data-governance posture for tenant data.
 
+### ADR-011 — The server broadcasts state over Realtime's HTTP endpoint ✅
+Playback actions hit a route handler that persists the new RoomState, then
+broadcasts it via Supabase Realtime's HTTP broadcast endpoint (`/realtime/v1/api/broadcast`).
+This keeps the SERVER (not whichever client acted) as the broadcaster, so the
+source of truth and the notification share one origin. Clients also reconcile on
+an interval, so a missed broadcast self-heals. No server-side websocket needed.
+
+### ADR-012 — Pin Turbopack's root to the project dir ✅
+`resonance/` is nested inside the Frequency repo, which carries its own lockfile
+and a root `proxy.ts`. Next 16 otherwise walks up and treats Frequency as the
+build root (pulling in its `proxy.ts`). `next.config.ts` sets
+`turbopack.root = import.meta.dirname` so the two builds stay fully separate —
+part of the isolation contract at the tooling layer.
+
 ### ADR-010 — Gamification mirrors, not merges, the host economy ✅
 Zaps/reputation are computed in-app on an append-only ledger with verified
 play-through awards, then **mirrored** to the host (Frequency's Zaps + The Field)

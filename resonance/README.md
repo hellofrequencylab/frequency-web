@@ -59,3 +59,11 @@ pnpm dev
 
 This is Next 16, which differs from older Next. Read `node_modules/next/dist/docs/`
 before writing Next code.
+
+### Try the sync engine (build plan §1)
+
+Fill `.env.local` with the Supabase URL + keys, then open
+[`/dev/sync`](app/dev/sync/page.tsx) in two or three windows. Load a YouTube
+video in one and play/pause/seek; the others follow within a heartbeat, and a
+late joiner syncs from current state. This is the server-authoritative clock
+proven in isolation, with no DJ UI yet. Clock math is unit-tested (`pnpm test`).

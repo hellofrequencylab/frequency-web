@@ -11,34 +11,39 @@ Status legend: ✅ done · 🔨 in progress · ⏳ next up · ⬜ not started ·
 
 ---
 
-## Section 0 — Foundation (you are here)  ⏳
+## Section 0 — Foundation  ✅
 
-The framework/scaffold. Mostly complete; one action left that needs your go.
+The framework/scaffold.
 
 - [x] Standalone project scaffold (`package.json`, tsconfig, Next config, env example)
 - [x] Root Frequency tooling excludes `resonance/` (tsconfig + eslint)
 - [x] Isolated-schema migration `0001_resonance_init.sql` (container + conventions)
 - [x] The three seams as typed contracts (realtime, sync, embed)
 - [x] Docs: architecture, decisions, integration, isolation, this plan
-- [ ] 🚪 **GO:** apply `0001` to the shared Supabase `resonance` schema (proves separation end-to-end)
-- [ ] 🚪 **GO:** `cd resonance && pnpm install`, confirm `pnpm dev` boots the placeholder
+- [x] `0001` applied to the shared Supabase `resonance` schema (empty, isolated)
+- [x] Deps installed; `pnpm build` + `pnpm test` green; Turbopack root pinned (ADR-012)
 
-**DoD:** empty `resonance` schema exists in the DB; app boots locally; Frequency
-build/lint still green.
+**DoD:** ✅ empty `resonance` schema exists in the DB; app builds; Frequency
+build/lint untouched.
 
 ---
 
 ## Phase 0 — MVP: the DJ Room
 
-### Section 1 — Sync engine (build FIRST, prove before UI)  ⬜
-- [ ] `room_state` table (+ migration) in `resonance`
-- [ ] Server-authoritative clock: write/broadcast `track:start/pause/seek/end`
-- [ ] YouTube IFrame binding: client computes position, seeks, obeys state
-- [ ] Heartbeat reconciliation; late-join sync from current state
-- [ ] Implement `RealtimeTransport` (Supabase Broadcast/Presence adapter)
+### Section 1 — Sync engine (build FIRST, prove before UI)  🔨
+- [x] `room_state` table (migration `0002`, applied) in `resonance`
+- [x] Server-authoritative clock: pure transitions + position math, unit-tested (`lib/sync/clock.ts`)
+- [x] Action endpoint persists + broadcasts authoritatively (`app/api/sync/[venueId]`, `lib/realtime/server-broadcast.ts`)
+- [x] YouTube IFrame binding: client computes position, seeks, obeys state (`components/sync/SyncedPlayer.tsx`)
+- [x] Heartbeat reconciliation + periodic re-fetch; late-join syncs from current state (`useRoomSync`)
+- [x] `RealtimeTransport` Supabase Broadcast/Presence adapter (`lib/realtime/supabase-transport.ts`)
+- [x] Demo surface to exercise it (`/dev/sync`)
+- [ ] 🚪 **GO (manual):** fill `.env.local`, open `/dev/sync` in 2-3 windows, confirm
+      play/pause/seek/late-join stay in sync within a heartbeat
 
 **DoD:** 2–3 browsers stay in sync on one video through play/pause/seek/late-join.
-No DJ UI yet. 🚪 *demo gate before Section 2.*
+Code + clock tests landed; the live multi-client check is the remaining gate
+(needs Supabase env + a browser). No DJ UI yet. 🚪 *gate before Section 2.*
 
 ### Section 2 — The DJ loop  ⬜
 - [ ] `venues`, `venue_seats`, `queue_items`, `votes` tables (+ migrations)

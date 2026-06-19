@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { APP } from "@/lib/config";
 
 /**
@@ -12,7 +12,7 @@ import { APP } from "@/lib/config";
  *
  * Typed generics get added once we generate types from the schema.
  */
-export function createServerClient(): SupabaseClient {
+export function createServerClient() {
   const url = process.env.RESONANCE_SUPABASE_URL;
   const serviceKey = process.env.RESONANCE_SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {

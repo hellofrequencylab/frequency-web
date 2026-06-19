@@ -7,6 +7,13 @@ import type { NextConfig } from "next";
 // route handlers, etc.), read node_modules/next/dist/docs/ for the version's
 // actual APIs rather than relying on memory. Real config lands with the build
 // section that needs it.
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  turbopack: {
+    // resonance is nested inside the Frequency repo, which has its own lockfile
+    // and a root proxy.ts. Without pinning, Next walks up and treats Frequency as
+    // the project root. Pin the root here so the two builds stay fully separate.
+    root: import.meta.dirname,
+  },
+};
 
 export default nextConfig;
