@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { Zap, X, Lock } from 'lucide-react'
+import { Dialog } from '@/components/ui/dialog'
 
 // The upsell lightbox shown when a non-paying member tries to engage with a Quest
 // surface they can browse but not act on. Plus `CrewGate`, a wrapper that mutes
@@ -11,13 +12,9 @@ import { Zap, X, Lock } from 'lucide-react'
 // the UX layer.)
 
 export function UpgradeLightbox({ open, onClose }: { open: boolean; onClose: () => void }) {
-  if (!open) return null
   return (
-    <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div className="relative w-full max-w-sm rounded-3xl border border-border bg-surface p-6 text-center shadow-2xl">
+    <Dialog open={open} onClose={onClose} ariaLabel="Play the full Quest" className="max-w-sm">
+      <div className="relative w-full rounded-3xl border border-border bg-surface p-6 text-center shadow-2xl">
         <button
           type="button"
           onClick={onClose}
@@ -48,7 +45,7 @@ export function UpgradeLightbox({ open, onClose }: { open: boolean; onClose: () 
           Keep looking around
         </button>
       </div>
-    </div>
+    </Dialog>
   )
 }
 

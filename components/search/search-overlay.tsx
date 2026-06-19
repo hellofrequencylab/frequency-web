@@ -39,13 +39,19 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
     return () => clearTimeout(t)
   }, [])
 
-  // Esc closes.
+  // Esc closes + body scroll-lock while open. (Full-screen search palette keeps its
+  // own mobile-fills-the-screen layout, which the centered ui/Dialog can't express.)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
   }, [onClose])
 
   const runSearch = useCallback((query: string) => {

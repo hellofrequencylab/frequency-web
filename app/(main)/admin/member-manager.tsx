@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { UserX } from 'lucide-react'
+import { Dialog } from '@/components/ui/dialog'
 import { assignRole, deactivateMember } from './actions'
 import type { SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
@@ -78,14 +79,13 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
 
       {/* Confirm deactivation dialog */}
       {confirmId && confirmTarget && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setConfirmId(null)}
+        <Dialog
+          open
+          onClose={() => setConfirmId(null)}
+          ariaLabel={`Deactivate ${confirmTarget.displayName}?`}
+          className="max-w-sm"
         >
-          <div
-            className="bg-surface rounded-2xl shadow-xl border border-border p-6 max-w-sm mx-4 w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="bg-surface rounded-2xl shadow-xl border border-border p-6 w-full">
             <h3 className="text-sm font-semibold text-text mb-2">
               Deactivate {confirmTarget.displayName}?
             </h3>
@@ -109,7 +109,7 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
               </button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Member list */}

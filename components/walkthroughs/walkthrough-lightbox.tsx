@@ -1,10 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useCallback, useState, useTransition } from 'react'
 import { X, ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react'
 import type { Walkthrough } from '@/lib/walkthroughs'
 import { WalkthroughSlide } from '@/components/walkthroughs/slide'
 import { completeWalkthroughAction } from '@/app/(main)/walkthrough-actions'
+import { Dialog } from '@/components/ui/dialog'
 
 // Walkthroughs Phase B — the slide deck. A focused overlay that opens ONLY when the
 // member taps "Start" on the gentle in-feed card (never an auto-popup). It walks the
@@ -33,20 +34,6 @@ export function WalkthroughLightbox({
 
   const close = useCallback(() => onClose(), [onClose])
 
-  // Lock body scroll + ESC-to-close while open.
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') close()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = prev
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [close])
-
   function back() {
     setIndex((i) => Math.max(0, i - 1))
   }
@@ -69,16 +56,8 @@ export function WalkthroughLightbox({
   if (!step) return null
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 motion-safe:animate-in motion-safe:fade-in"
-      role="dialog"
-      aria-modal="true"
-      aria-label={walkthrough.name}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) close()
-      }}
-    >
-      <div className="relative w-full max-w-lg">
+    <Dialog open onClose={close} ariaLabel={walkthrough.name} className="max-w-lg">
+      <div className="relative w-full">
         <button
           type="button"
           onClick={close}
@@ -140,6 +119,6 @@ export function WalkthroughLightbox({
           )}
         </div>
       </div>
-    </div>
+    </Dialog>
   )
 }

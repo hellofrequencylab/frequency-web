@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, Sparkles, Loader2, X } from 'lucide-react'
 import { claimCircle } from '@/app/(main)/circles/[slug]/claim-actions'
+import { Dialog } from '@/components/ui/dialog'
 
 type Practice = { id: string; title: string }
 
@@ -67,14 +68,8 @@ export function ClaimCircle({
       </div>
 
       {/* Modal wizard */}
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          onClick={(e) => e.target === e.currentTarget && setOpen(false)}
-        >
-          <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-xl">
+      <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Make it yours" className="max-w-md">
+          <div className="w-full rounded-2xl border border-border bg-surface p-5 shadow-xl">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-base font-bold text-text">Make it yours</h2>
               <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="text-subtle hover:text-text">
@@ -132,8 +127,7 @@ export function ClaimCircle({
               </button>
             </div>
           </div>
-        </div>
-      )}
+      </Dialog>
     </>
   )
 }

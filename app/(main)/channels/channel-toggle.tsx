@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import Link from 'next/link'
 import { X, Compass, Loader2 } from 'lucide-react'
+import { Dialog } from '@/components/ui/dialog'
 import { tuneInChannel, tuneOutChannel } from './actions'
 
 // useFormStatus only fires inside a child of a <form>, so we factor the
@@ -117,37 +118,10 @@ function LeaveChannelDialog({
   channelName?: string
   onClose: () => void
 }) {
-  // Escape to dismiss, body scroll lock while open.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prev
-    }
-  }, [onClose])
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="leave-channel-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
-      {/* Backdrop */}
-      <button
-        type="button"
-        aria-label="Close"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-      />
-
+    <Dialog open onClose={onClose} ariaLabel="Are you sure you want to leave this channel?" className="max-w-sm">
       {/* Dialog */}
-      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface shadow-2xl">
+      <div className="relative w-full rounded-2xl border border-border bg-surface shadow-2xl">
         {/* Close */}
         <button
           type="button"
@@ -196,6 +170,6 @@ function LeaveChannelDialog({
           </form>
         </div>
       </div>
-    </div>
+    </Dialog>
   )
 }

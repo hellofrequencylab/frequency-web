@@ -501,7 +501,7 @@ real money, defer.
 - [ ] **0.5.8** Migrate the edit/compose + chat hand-rollers onto `FocusTemplate`/`WizardShell` (`events/new`, `events/[slug]/edit`, `journeys/[slug]/edit`, `circles/[slug]/settings`, `pages/sequences/[slug]/edit`, `messages/[id]`, `messages/r/[roomId]`); eliminate the 6 remaining raw-`<h1>` files.
 
 ### Epic 0.5d: Kit consolidation (R5, broad - second wave) 🟡
-- [ ] **0.5.9** Consolidate the ~32 hand-rolled overlays onto `ui/Dialog` (a11y/scroll-lock/ESC); merge the two `SidebarCard`s + `AdminModuleCard` base; reconcile the duplicate `report-dialog`. (Run AFTER 0.5.7/0.5.8 to avoid touching the same pages.)
+- [x] **0.5.9** Consolidate the hand-rolled overlays onto `ui/Dialog` (a11y/scroll-lock/ESC); merge the two `SidebarCard`s + `AdminModuleCard` base; reconcile the duplicate `report-dialog`. (Run AFTER 0.5.7/0.5.8 to avoid touching the same pages.) ✅ See ADR-319: 10 centered modals migrated onto `ui/Dialog`; `SidebarCard` unified (gained `count`/`Icon`/`action`) with `AdminModuleCard` composing it; the two `ReportDialog`s are distinct features (moderation vs support) so the moderation one was renamed `ContentReportDialog` rather than merged. Deliberate full-bleed/bottom-sheet/AI/palette overlays left (a few gained inline ESC + scroll-lock to avoid an a11y gap).
 
 ### Epic 0.5e: Theming + Puck space-readiness + hygiene 🟢
 - [ ] **0.5.10** Token-leak cleanup on the ~6 raw-palette files (priority `settings/notifications/form`, `unsubscribe`) so branded spaces re-theme them.
