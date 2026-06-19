@@ -7,6 +7,7 @@ import { QuestFinishCelebration } from '@/components/widgets/quest/quest-finish-
 import { QuestIntention } from '@/components/widgets/quest/quest-intention'
 import { QuestSeasonMap } from '@/components/widgets/quest/quest-season-map'
 import { QuestJourneys } from '@/components/widgets/quest/quest-journeys'
+import { QuestNextGathering } from '@/components/widgets/quest/quest-next-gathering'
 import { QuestTasks } from '@/components/widgets/quest/quest-tasks'
 import { QuestExplore } from '@/components/widgets/quest/quest-explore'
 import { QuestLeaderboard } from '@/components/widgets/quest/quest-leaderboard'
@@ -49,6 +50,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'quest-intention': QuestIntention,
   'quest-season-map': QuestSeasonMap,
   'quest-journeys': QuestJourneys,
+  'quest-next-gathering': QuestNextGathering,
   'quest-tasks': QuestTasks,
   'quest-explore': QuestExplore,
   'quest-leaderboard': QuestLeaderboard,
