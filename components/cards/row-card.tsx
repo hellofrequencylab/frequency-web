@@ -83,10 +83,13 @@ export function RowCard({
   }`
 
   if (actions) {
+    // Mobile-first: the text content takes the full width and the controls drop to
+    // their own row below, so a long title never gets squeezed beside the buttons.
+    // From `sm` up we return to the side-by-side row.
     return (
-      <div className={`flex items-center justify-between gap-4 ${surface}`}>
+      <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${surface}`}>
         <div className="flex min-w-0 flex-1 items-start gap-3">{body}</div>
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
       </div>
     )
   }
