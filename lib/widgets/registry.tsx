@@ -6,6 +6,9 @@ import { TopCircles } from '@/components/widgets/top-circles'
 import { QuestFinishCelebration } from '@/components/widgets/quest/quest-finish-celebration'
 import { QuestIntention } from '@/components/widgets/quest/quest-intention'
 import { QuestSeasonMap } from '@/components/widgets/quest/quest-season-map'
+import { QuestToday } from '@/components/widgets/quest/quest-today'
+import { QuestCta } from '@/components/widgets/quest/quest-cta'
+import { QuestMyPractices } from '@/components/widgets/quest/quest-my-practices'
 import { QuestJourneys } from '@/components/widgets/quest/quest-journeys'
 import { QuestNextGathering } from '@/components/widgets/quest/quest-next-gathering'
 import { QuestTasks } from '@/components/widgets/quest/quest-tasks'
@@ -49,6 +52,9 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'quest-finish-celebration': QuestFinishCelebration,
   'quest-intention': QuestIntention,
   'quest-season-map': QuestSeasonMap,
+  'quest-today': QuestToday,
+  'quest-cta': QuestCta,
+  'quest-my-practices': QuestMyPractices,
   'quest-journeys': QuestJourneys,
   'quest-next-gathering': QuestNextGathering,
   'quest-tasks': QuestTasks,
