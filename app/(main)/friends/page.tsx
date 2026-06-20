@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
@@ -23,7 +22,7 @@ import { ContactsList } from './contacts-list'
 import { AcceptDeclineButtons, CancelOutgoingButton } from './friend-row-actions'
 import { IntroduceForm } from './introduce-form'
 import { IntroductionsInbox } from './introductions-inbox'
-import { YourImpact } from '@/components/connections/your-impact'
+import { PageModules } from '@/components/widgets/page-modules'
 
 const GRID = 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'
 
@@ -193,11 +192,13 @@ async function PeopleMode({
         rewardGems={settings.rewardIntroduction}
       />
 
-      {/* Your roots — the member's own private lead-funnel impact (ADR-186, P6).
-          Suspense fallback={null} so it never blocks the page. */}
-      <Suspense fallback={null}>
-        <YourImpact />
-      </Suspense>
+      {/* The assignable interior section — driven by the per-route module engine (ADR-270/294).
+          Today it carries one block, "Your impact" (the member's private lead-funnel view), each
+          self-fetching and Suspense-isolated by <PageModules>. An operator arranges it from
+          Settings ▾ → Page → Layout, and new assignable sections drop in here without a page edit.
+          The bucket lists above stay hand-composed because they read the `mode` search param a
+          nested module never receives. */}
+      <PageModules route="/friends" />
     </div>
   )
 }

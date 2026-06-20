@@ -411,6 +411,66 @@ reframe a route, edit `page-chrome.ts`, never the shell.** Locked by
 That's the whole contract. A new feature is a template choice + a chrome line, not
 a new layout.
 
+> ✅ **The standard (locked, Workstream F / D1=Broad):** *every page composes a kit
+> template AND renders its assignable interior sections through `<PageModules>`.* A new
+> page is never a hand-rolled `<h1>` + a hand-stacked body. Pick a shell (§8.1), then move
+> each interior section to a registered module so an operator can arrange it. The recipe is
+> §8.4. Hand-built interior sections are the migration target, not the pattern.
+
+### 8.4 The page → template + `<PageModules>` migration recipe
+
+The repeatable way to move a hand-rolled page onto the framework. Two parts: adopt a
+**shell** (the header + chrome), then move each interior **section** to an assignable
+**module**. Exemplars to copy from: `/practices` (a full interior of modules) and
+`/friends` (one section converted, the rest hand-composed because it reads a search param).
+
+**Part A — adopt a shell (always do this).**
+
+1. **Pick the template** by what the content is (§8.1/§8.3). Browse list → `IndexTemplate`;
+   one entity → `DetailTemplate`; a centered form/editor → `FocusTemplate`; etc.
+2. **Replace the hand-rolled header** with the template's `PageHeading` slots
+   (`title` · `description` · `eyebrow` · `actions` · `back`). Delete every bespoke
+   `<h1>`, back-link, and metadata band — there is exactly one page `<h1>`, from the kit.
+3. **Register the rail** in `lib/layout/page-chrome.ts` (`'global'`/`'scoped'`/`'none'`).
+   Never toggle the rail from the page or the shell.
+
+   *Two pages migrated this way in Batch 1:* `connections/[id]` (inline back-link + card
+   header → `DetailTemplate` `back` slot) and `admin/events/[id]` (inline `<h1>` + metadata
+   band → `PageHeading` inside its `EventEditorWindow`; `adminBar={false}` because the Studio
+   window owns its chrome).
+
+**Part B — move each interior section to a module (the `<PageModules>` part).** Do this for
+every section that is a self-contained, self-fetching block. For each one:
+
+1. **Write the module component** under `components/widgets/<group>/<id>.tsx` — an async
+   Server Component that **fetches its own data** and **returns `null` when it has nothing**
+   (the module contract; §4.1). Reuse an existing component by wrapping it (e.g.
+   `components/widgets/friends/friends-impact.tsx` wraps `connections/your-impact.tsx`).
+2. **Add its metadata** to `lib/widgets/modules.ts` `LAYOUT_MODULES` — `{ id, label,
+   description }`, the operator-facing name. (Metadata only; no React here.)
+3. **Bind the component** in `lib/widgets/registry.tsx` — one line in `COMPONENTS`
+   mapping the id to its RSC.
+4. **Add the route's module SET** to `ROUTE_MODULE_IDS` in `modules.ts` — `'/route':
+   [...ids]` in default render order (an unsaved layout renders them in this order in the
+   `main` slot). Section-shared layouts key at `'/seg/*'`.
+5. **List the route** in `lib/widgets/module-routes.ts` `MODULE_ROUTES` so the on-page
+   **Layout** editor (Settings ▾ → Page → Layout) appears there and offers exactly this set.
+6. **Render it on the page:** replace the hand-stacked section(s) with
+   `<PageModules route="/route" />`. Keep a section hand-composed ONLY when it depends on a
+   page prop a nested module can't get (a `searchParams` facet) — surface that via the
+   request header seam (`x-search`, as `/practices` does) or leave it in the page (as
+   `/friends` keeps its `mode`-dependent buckets).
+
+   *Exemplar in Batch 1:* `/friends` — the "Your impact" section became the `friends-impact`
+   module (`components/widgets/friends/friends-impact.tsx`, meta in `modules.ts`, bound in
+   `registry.tsx`, set `FRIENDS_MODULE_IDS` in `ROUTE_MODULE_IDS`, route in
+   `module-routes.ts`), and the page renders it via `<PageModules route="/friends" />`. The
+   `mode`-dependent request/orbit/intro lists stay hand-composed.
+
+**Gate:** `pnpm tsc --noEmit && pnpm lint && pnpm test`. `lib/widgets/modules.test.ts` locks
+that every id in every route set has metadata and that sets don't leak across routes, so a
+half-wired module fails there.
+
 ---
 
 ## 9. The Studio: the shared *creation* surface (ADR-142)

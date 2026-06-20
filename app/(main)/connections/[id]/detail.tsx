@@ -24,7 +24,16 @@ function fmtDate(s: string | null): string {
   return new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function Detail({ initial, timeline }: { initial: ContactDetail; timeline?: React.ReactNode }) {
+export function Detail({
+  initial,
+  timeline,
+  back,
+}: {
+  initial: ContactDetail
+  timeline?: React.ReactNode
+  /** Back-link rendered by the Detail shell above the identity band (the single back affordance). */
+  back?: { href: string; label: string }
+}) {
   const router = useRouter()
   const { contact, notes, tags, avatarUrl, cardFrontUrl, cardBackUrl, logoUrl } = initial
   const [pending, start] = useTransition()
@@ -58,6 +67,7 @@ export function Detail({ initial, timeline }: { initial: ContactDetail; timeline
 
   return (
     <DetailTemplate
+      back={back}
       title={
         <span className="inline-flex items-center gap-3 align-middle">
           {avatarUrl ? (

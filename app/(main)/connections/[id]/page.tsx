@@ -1,6 +1,4 @@
 import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { contactsOwnerId } from '@/lib/connections/access'
 import { getContact } from '@/lib/connections/store'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
@@ -49,14 +47,10 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
   const linked = linkedId ? (await getProfileSummaries([linkedId])).get(linkedId) ?? null : null
 
   return (
+    // Focus surface (page-chrome.ts → 'none'): centered, no rail. The Detail shell owns the
+    // header band + the single back-link; the page never hand-rolls chrome (PAGE-FRAMEWORK §8).
     <div className="mx-auto max-w-2xl">
-      <Link
-        href="/connections"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text"
-      >
-        <ArrowLeft className="h-4 w-4" /> Profiles
-      </Link>
-      <Detail initial={data} timeline={timeline} />
+      <Detail initial={data} timeline={timeline} back={{ href: '/connections', label: 'Profiles' }} />
       {/* Manual contact ↔ member link — the path for when the auto detector can't
           fire (card email differs from signup email, no phone on the profile). */}
       <LinkMemberCard contactId={id} contactName={data.contact.displayName} linked={linked} />
