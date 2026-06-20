@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { authedFetch } from "@/lib/api/fetch";
 import type { MarketItem, MarketView } from "@/lib/market/types";
+import { AppShell } from "@/components/shell/AppShell";
+import { Card, Button, Badge, EmptyState } from "@/components/ui";
 
 async function fetchMarket(): Promise<MarketView> {
   const res = await authedFetch("/api/market", { cache: "no-store" });
@@ -11,9 +12,13 @@ async function fetchMarket(): Promise<MarketView> {
   return (await res.json()) as MarketView;
 }
 
+function isPremium(item: MarketItem): boolean {
+  return item.priceCents != null && item.priceZaps === 0;
+}
+
 function priceLabel(item: MarketItem): string {
-  if (item.priceCents != null && item.priceZaps === 0) {
-    return `$${(item.priceCents / 100).toFixed(2)} premium`;
+  if (isPremium(item)) {
+    return `$${(item.priceCents! / 100).toFixed(2)} premium`;
   }
   return `${item.priceZaps} Zaps`;
 }
@@ -69,51 +74,59 @@ export default function MarketPage() {
   };
 
   return (
-    <main style={{ maxWidth: "48rem", margin: "0 auto", padding: "2rem", fontFamily: "system-ui" }}>
-      <h1>Market</h1>
-      <p style={{ fontSize: 13 }}>
-        <Link href="/">Home</Link> · <Link href="/dev/lobby">Lobby</Link>
-      </p>
-      <p style={{ fontSize: 14, color: "#555" }}>
-        Balance: <b>{balance} Zaps</b>
-      </p>
+    <AppShell>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl text-text">Market</h1>
+          <p className="mt-1 text-sm text-mute">
+            Spend Zaps on frames, colors, badges, and decor.
+          </p>
+        </div>
+        <Badge tone="spark" aria-label={`Balance: ${balance} Zaps`}>
+          {balance} Zaps
+        </Badge>
+      </div>
 
-      <div style={{ display: "grid", gap: "0.75rem", margin: "1rem 0" }}>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {items.map((item) => {
           const isOwned = owned.includes(item.id);
           const err = errors[item.id];
           return (
-            <div
-              key={item.id}
-              style={{
-                border: "1px solid #e4e4e7",
-                borderRadius: 8,
-                padding: "0.75rem 1rem",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span>
-                  <b>{item.name}</b>{" "}
-                  <span style={{ color: "#888", fontSize: 12 }}>
-                    · {item.kind} · {priceLabel(item)}
-                  </span>
-                </span>
-                {isOwned ? (
-                  <span style={{ fontSize: 13, color: "#16a34a" }}>Owned</span>
-                ) : (
-                  <button onClick={() => void buy(item)}>Buy</button>
-                )}
+            <Card key={item.id} className="flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="font-display text-lg text-text">{item.name}</h2>
+                  <p className="text-xs text-mute">{item.kind}</p>
+                </div>
+                {isOwned && <Badge tone="signal">Owned</Badge>}
               </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <Badge tone={isPremium(item) ? "neutral" : "spark"}>
+                  {priceLabel(item)}
+                </Badge>
+                <Button size="sm" onClick={() => void buy(item)} disabled={isOwned}>
+                  {isOwned ? "Owned" : "Buy"}
+                </Button>
+              </div>
+
               {err && (
-                <div style={{ color: "#dc2626", fontSize: 12, marginTop: "0.35rem" }}>{err}</div>
+                <p className="text-xs text-alert" role="alert">
+                  {err}
+                </p>
               )}
-            </div>
+            </Card>
           );
         })}
         {items.length === 0 && (
-          <p style={{ color: "#888" }}>The shelves are empty right now.</p>
+          <div className="sm:col-span-2">
+            <EmptyState
+              title="The shelves are empty"
+              description="Nothing for sale right now. Check back soon."
+            />
+          </div>
         )}
       </div>
-    </main>
+    </AppShell>
   );
 }

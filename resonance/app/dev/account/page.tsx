@@ -1,19 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { authedFetch } from "@/lib/api/fetch";
+import { AppShell } from "@/components/shell/AppShell";
+import {
+  Button,
+  Card,
+  Field,
+  Input,
+  Modal,
+  ToastProvider,
+  useToast,
+} from "@/components/ui";
 
 /**
  * Account data controls (build plan: Data governance). Download a JSON export of
  * your own data, or delete it. Deletion is gated behind typing DELETE so it
  * cannot fire by accident, and the result shows what was removed per table.
  */
-export default function AccountPage() {
+function AccountSurface() {
+  const { toast } = useToast();
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState<"export" | "delete" | null>(null);
   const [error, setError] = useState("");
   const [deleted, setDeleted] = useState<Record<string, number> | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const download = async () => {
     setError("");
@@ -57,6 +68,8 @@ export default function AccountPage() {
       }
       setDeleted(body.deleted ?? {});
       setConfirm("");
+      setConfirmOpen(false);
+      toast({ title: "Your data is deleted.", tone: "success" });
     } finally {
       setBusy(null);
     }
@@ -65,84 +78,121 @@ export default function AccountPage() {
   const armed = confirm === "DELETE";
 
   return (
-    <main style={{ maxWidth: "48rem", margin: "0 auto", padding: "2rem", fontFamily: "system-ui" }}>
-      <h1>Your data</h1>
-      <p style={{ fontSize: 13 }}>
-        <Link href="/">Home</Link>
-      </p>
-      <p style={{ fontSize: 14, color: "#555" }}>
-        Download everything Resonance stores about you, or delete it. Both actions
-        only ever touch your own account.
-      </p>
-
-      <section style={{ margin: "1.5rem 0" }}>
-        <h2 style={{ fontSize: 16 }}>Download my data</h2>
-        <p style={{ fontSize: 13, color: "#666" }}>
-          Exports your rows across every table as a single JSON file.
+    <div className="mx-auto max-w-xl space-y-6">
+      <header className="space-y-1">
+        <h1 className="font-display text-2xl text-text">Your data</h1>
+        <p className="text-sm text-mute">
+          Download everything Resonance stores about you, or delete it. Both
+          actions only ever touch your own account.
         </p>
-        <button onClick={() => void download()} disabled={busy !== null}>
-          {busy === "export" ? "Preparing..." : "Download my data"}
-        </button>
-      </section>
+      </header>
 
-      <section
-        style={{
-          margin: "1.5rem 0",
-          border: "1px solid #fecaca",
-          borderRadius: 8,
-          padding: "1rem",
-          background: "#fef2f2",
-        }}
-      >
-        <h2 style={{ fontSize: 16, color: "#b91c1c" }}>Delete my data</h2>
-        <p style={{ fontSize: 13, color: "#666" }}>
-          This removes your profile, tickets, votes, queue items, inventory,
-          scores, ledger entries, and the events you host. It cannot be undone.
-          Type DELETE to confirm.
-        </p>
-        <input
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          placeholder="DELETE"
-          style={{
-            padding: "0.4rem 0.6rem",
-            border: "1px solid #d4d4d8",
-            borderRadius: 6,
-            marginRight: "0.5rem",
-          }}
-        />
-        <button
-          onClick={() => void purge()}
-          disabled={!armed || busy !== null}
-          style={{ color: armed ? "#b91c1c" : undefined }}
+      <Card as="section" padding="lg" className="space-y-3">
+        <div className="space-y-1">
+          <h2 className="font-display text-lg text-text">Download my data</h2>
+          <p className="text-sm text-mute">
+            Exports your rows across every table as a single JSON file.
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          loading={busy === "export"}
+          disabled={busy !== null}
+          onClick={() => void download()}
         >
-          {busy === "delete" ? "Deleting..." : "Delete my data"}
-        </button>
-      </section>
+          {busy === "export" ? "Preparing" : "Download my data"}
+        </Button>
+      </Card>
+
+      <Card as="section" padding="lg" className="space-y-3 border-alert/40">
+        <div className="space-y-1">
+          <h2 className="font-display text-lg text-alert">Delete my data</h2>
+          <p className="text-sm text-mute">
+            This removes your profile, tickets, votes, queue items, inventory,
+            scores, ledger entries, and the events you host. It cannot be undone.
+            Type DELETE to confirm.
+          </p>
+        </div>
+        <Field label="Type DELETE to confirm">
+          <Input
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="DELETE"
+            autoComplete="off"
+          />
+        </Field>
+        <Button
+          variant="danger"
+          disabled={!armed || busy !== null}
+          onClick={() => setConfirmOpen(true)}
+        >
+          Delete my data
+        </Button>
+      </Card>
 
       {error && (
-        <p style={{ color: "#dc2626", fontSize: 13 }}>{error}</p>
+        <Card as="section" padding="md" className="border-alert/40">
+          <p className="text-sm text-alert">{error}</p>
+        </Card>
       )}
 
       {deleted && (
-        <section style={{ margin: "1rem 0" }}>
-          <h2 style={{ fontSize: 16 }}>Deleted</h2>
-          <table style={{ fontSize: 13, borderCollapse: "collapse" }}>
-            <tbody>
-              {Object.entries(deleted).map(([table, count]) => (
-                <tr key={table}>
-                  <td style={{ padding: "0.15rem 1rem 0.15rem 0", color: "#555" }}>
-                    {table}
-                  </td>
-                  <td style={{ padding: "0.15rem 0" }}>
-                    {count < 0 ? "skipped" : `${count} rows`}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        <Card as="section" padding="lg" className="space-y-3">
+          <h2 className="font-display text-lg text-text">Deleted</h2>
+          <dl className="divide-y divide-[var(--color-line)] text-sm">
+            {Object.entries(deleted).map(([table, count]) => (
+              <div key={table} className="flex items-center justify-between py-1.5">
+                <dt className="text-soft">{table}</dt>
+                <dd className="text-mute">
+                  {count < 0 ? "skipped" : `${count} rows`}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
       )}
-    </main>
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => {
+          if (busy !== "delete") setConfirmOpen(false);
+        }}
+        title="Delete your data"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              disabled={busy === "delete"}
+              onClick={() => setConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              loading={busy === "delete"}
+              disabled={!armed || busy !== null}
+              onClick={() => void purge()}
+            >
+              Delete my data
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-soft">
+          This permanently removes your data across every table. It cannot be
+          undone.
+        </p>
+      </Modal>
+    </div>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <AppShell>
+      <ToastProvider>
+        <AccountSurface />
+      </ToastProvider>
+    </AppShell>
   );
 }
