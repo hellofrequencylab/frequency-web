@@ -15,7 +15,8 @@ import { ImageUpload } from '@/components/ui/image-upload'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
 import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction, deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
-import type { PracticeEdit, WeightClass, FocusDetail } from '@/lib/practices'
+import type { PracticeEdit, WeightClass, FocusDetail, TimerKind } from '@/lib/practices'
+import { MOVEMENT_MODES, type MovementConfig, type MovementMode } from '@/lib/movement'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
 // fields, footer) against the existing practice actions; mirrors the old
@@ -54,9 +55,12 @@ export interface PracticeBuilderProps {
   /** Typical session length in minutes (null = unset). */
   durationMin: number | null
   category: string | null
-  /** Does this practice run On Air's timer (Practice button) or just get logged (Log It)? Drives the
-   *  single action a follower sees on a Journey step. Sits/breathing → timer; actions/reflections → log. */
-  usesTimer: boolean
+  /** Which timer the practice routes to: 'none' (Log it), 'mindless' (the On Air sit), or
+   *  'movement' (the Movement timer). Drives the single action a follower sees on a Journey
+   *  step. Sits/breathing -> mindless; a walk/flow/workout -> movement; an action/reflection -> none. */
+  timerKind: TimerKind
+  /** Movement config when timerKind = 'movement' (mode + tuning). */
+  movementConfig: MovementConfig | null
   icon: string | null
   domainId: string | null
   /** Per-Focus instructions + timing, keyed by pillar id. The keys are the selected
@@ -94,7 +98,9 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [cadence, setCadence] = useState(props.cadence ?? '')
   const [durationMin, setDurationMin] = useState(props.durationMin != null ? String(props.durationMin) : '')
   const [category, setCategory] = useState(props.category ?? '')
-  const [usesTimer, setUsesTimer] = useState(props.usesTimer ?? true)
+  const [timerKind, setTimerKind] = useState<TimerKind>(props.timerKind ?? 'mindless')
+  // The Movement mode picked when timerKind = 'movement'. Seeds from the saved config.
+  const [movementMode, setMovementMode] = useState<MovementMode>(props.movementConfig?.mode ?? 'walk')
   const [icon, setIcon] = useState(props.icon ?? '')
   // Multi-Focus: focus_details is keyed by pillar id; the KEYS are the selected Focuses.
   // A legacy row may have a domain_id but no focus_details yet — seed that primary Pillar
@@ -379,37 +385,79 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         <p className="mt-1 text-xs text-subtle">The fallback per-log payout when no Zap override is set. Light 8 · Standard 12 · Heavy 15 Zaps.</p>
       </fieldset>
 
-      {/* How it's done — drives the single action a follower sees on a Journey step: a timer practice
-          (a sit, breathwork) opens On Air; a Log It practice (an action, a reflection) just records it. */}
+      {/* How it's done — drives the single action a follower sees: Mindless opens the On Air
+          sit/breathe, Movement opens the Movement timer (walk, flow, play, or workout), and Log it
+          records in one tap. A Movement kind also picks the mode it opens on. */}
       <fieldset className="mt-4">
         <legend className="text-2xs font-semibold uppercase tracking-wide text-subtle">How it&rsquo;s done</legend>
-        <div role="radiogroup" aria-label="How it's done" className="mt-1 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={usesTimer}
-            onClick={() => { setUsesTimer(true); queueSave({ uses_timer: true }) }}
-            className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-              usesTimer ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
-            }`}
-          >
-            <span>Timer</span>
-            <span className={`text-2xs font-normal ${usesTimer ? 'text-primary-strong' : 'text-subtle'}`}>Opens On Air to sit or breathe</span>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={!usesTimer}
-            onClick={() => { setUsesTimer(false); queueSave({ uses_timer: false }) }}
-            className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-              !usesTimer ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
-            }`}
-          >
-            <span>Log it</span>
-            <span className={`text-2xs font-normal ${!usesTimer ? 'text-primary-strong' : 'text-subtle'}`}>Records it in one tap</span>
-          </button>
+        <div role="radiogroup" aria-label="How it's done" className="mt-1 grid grid-cols-3 gap-2">
+          {([
+            { value: 'mindless', label: 'Mindless', hint: 'Opens On Air to sit or breathe' },
+            { value: 'movement', label: 'Movement', hint: 'Opens the Movement timer' },
+            { value: 'none', label: 'Log it', hint: 'Records it in one tap' },
+          ] as { value: TimerKind; label: string; hint: string }[]).map((k) => {
+            const active = timerKind === k.value
+            return (
+              <button
+                key={k.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => {
+                  setTimerKind(k.value)
+                  // Switching to Movement seeds its config from the current mode; anything else
+                  // clears it (the server also nulls movement_config off a non-movement kind).
+                  if (k.value === 'movement') {
+                    const cfg: MovementConfig = { mode: movementMode }
+                    queueSave({ timer_kind: 'movement', movement_config: cfg })
+                  } else {
+                    queueSave({ timer_kind: k.value, movement_config: null })
+                  }
+                }}
+                className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
+                }`}
+              >
+                <span>{k.label}</span>
+                <span className={`text-2xs font-normal ${active ? 'text-primary-strong' : 'text-subtle'}`}>{k.hint}</span>
+              </button>
+            )
+          })}
         </div>
-        <p className="mt-1 text-xs text-subtle">On a Journey, a Timer practice shows a Practice button; a Log it practice shows Log it.</p>
+
+        {/* The Movement mode the timer opens on (only when this is a Movement practice). */}
+        {timerKind === 'movement' && (
+          <div className="mt-3">
+            <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Movement mode</p>
+            <div role="radiogroup" aria-label="Movement mode" className="mt-1 grid grid-cols-4 gap-2">
+              {MOVEMENT_MODES.map((m) => {
+                const active = movementMode === m.mode
+                return (
+                  <button
+                    key={m.mode}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    title={m.blurb}
+                    onClick={() => {
+                      setMovementMode(m.mode)
+                      const cfg: MovementConfig = { mode: m.mode }
+                      queueSave({ timer_kind: 'movement', movement_config: cfg })
+                    }}
+                    className={`flex min-h-11 items-center justify-center rounded-lg border px-2 py-2 text-sm font-medium transition-colors ${
+                      active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-1 text-xs text-subtle">The member can still pick a different mode and preset when they start.</p>
+          </div>
+        )}
+
+        <p className="mt-1 text-xs text-subtle">On a Journey, a Mindless or Movement practice shows a Practice button; a Log it practice shows Log it.</p>
       </fieldset>
 
       {/* Reward override — admin only. Overrides the weight-class payout + sets the card note. */}

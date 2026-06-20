@@ -42,6 +42,11 @@ export interface CompleteSessionInput {
   pattern: string | null
   seconds: number
   startedAt: string | null
+  /** Movement timer (WEBSITE-CHANGES-PLAN §4 C.6): the chosen mode (walk/yoga/play/workout).
+   *  Tags the practice_sessions row so a Movement sit is distinguishable from a Mindless one
+   *  in history; the economy + timer-proof path is unchanged (Movement still claims a timed sit
+   *  via mode 'timer'). Omitted for a plain Mindless sit. */
+  movementMode?: string | null
   /** Custom-pattern seconds + cue toggles, remembered with the rest of the setup (P3). */
   customIn?: number
   customHold?: number
@@ -63,11 +68,15 @@ export async function completeSession(
   const admin = db()
   const seconds = Math.max(0, Math.min(4 * 60 * 60, Math.round(input.seconds)))
 
-  // 1. The sit itself (history + minutes stats). Errors never block the log.
+  // 1. The sit itself (history + minutes stats). Errors never block the log. A
+  // Movement sit tags its mode (movement:<walk|yoga|play|workout>) into the free-text
+  // `mode` column so it reads back distinct from a Mindless sit; everything else
+  // (economy, timer-proof) treats it as the timed sit it is.
+  const sessionMode = input.movementMode ? `movement:${input.movementMode}` : input.mode
   await admin.from('practice_sessions').insert({
     profile_id: profileId,
     practice_id: input.practiceId,
-    mode: input.mode,
+    mode: sessionMode,
     pattern: input.mode === 'breath' ? input.pattern : null,
     seconds,
     started_at: input.startedAt,

@@ -15,16 +15,20 @@ import { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Play, Zap, Loader2, Timer } from 'lucide-react'
 import { useMindless } from '@/components/on-air/mindless'
+import { useMovement } from '@/components/on-air/movement'
 import { logPracticeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
+import type { MovementMode } from '@/lib/movement'
 
 /** How long the "Logged" confirmation lingers before the button resets to rest. */
 const CONFIRM_MS = 4000
 
 export function PracticeActions({
   practiceId,
-  /** Timer practice → "Practice" (opens On Air); Log it practice → "Log it" (records it). */
+  /** Timer practice → "Practice" (opens a timer); Log it practice → "Log it" (records it). */
   usesTimer,
+  /** When set, "Practice" opens the Movement timer on this mode instead of the Mindless sit. */
+  movementMode,
   /** The step's Pillar name, when known — used only to colour the confirmation copy naturally. */
   pillar,
   /** Already logged today (server truth) — a Log it practice rests in its "Logged" state. */
@@ -36,13 +40,20 @@ export function PracticeActions({
 }: {
   practiceId: string
   usesTimer: boolean
+  movementMode?: MovementMode | null
   pillar?: string
   logged?: boolean
   onLogged?: (practiceId: string) => void
   compact?: boolean
 }) {
   const router = useRouter()
-  const { open } = useMindless()
+  const mindless = useMindless()
+  const movement = useMovement()
+  // "Practice" opens the Movement timer when a movement mode is set, else the Mindless sit.
+  const openTimer = () =>
+    movementMode
+      ? movement.open({ practiceId, mode: movementMode })
+      : mindless.open({ practiceId })
   const [pending, start] = useTransition()
   const [done, setDone] = useState<{ logged: boolean; zaps: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -79,10 +90,10 @@ export function PracticeActions({
     <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
       <div className="flex flex-wrap items-center gap-2">
         {usesTimer ? (
-          // Practice — opens the Mindless timer overlay pre-set to this practice. No navigation.
+          // Practice — opens the timer overlay pre-set to this practice. No navigation.
           <button
             type="button"
-            onClick={() => open({ practiceId })}
+            onClick={openTimer}
             className={`${base} bg-primary text-on-primary hover:bg-primary-hover`}
           >
             <Play className="h-4 w-4 shrink-0" aria-hidden /> Practice

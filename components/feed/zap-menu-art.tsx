@@ -140,6 +140,34 @@ export function MindlessArt({ className = '' }: Props) {
   )
 }
 
+// Movement — a figure mid-stride over a track, the Movement timer's door. Flat,
+// token-colored, the welcome-art grammar (no glyph): a runner caught between two
+// strides on a curving lane, with a small pulse mark for the interval beat.
+export function MovementArt({ className = '' }: Props) {
+  return (
+    <span className={className}>
+      <Frame wash="fill-success-bg/50">
+        {/* the lane */}
+        <path d="M22 60c8-6 18-9 38-9s30 3 38 9" className="stroke-success" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+        <path d="M26 52c7-5 16-7.5 34-7.5S87 47 94 52" className="stroke-success/40" strokeWidth="2" strokeLinecap="round" fill="none" />
+        {/* the figure mid-stride */}
+        <circle cx="58" cy="20" r="6" className="fill-primary-strong" />
+        <path
+          d="M58 27l-3 12 7 8M55 39l-10 6M62 47l8 7M58 30l9 5"
+          className="stroke-primary-strong"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+        {/* the interval pulse */}
+        <circle cx="86" cy="28" r="8" className="fill-primary/25 stroke-primary" strokeWidth="2" />
+        <path d="M82 28h8M86 24v8" className="stroke-primary" strokeWidth="2" strokeLinecap="round" />
+      </Frame>
+    </span>
+  )
+}
+
 // Connect — your personal code held up between two people meeting.
 export function ConnectArt({ className = '' }: Props) {
   return (

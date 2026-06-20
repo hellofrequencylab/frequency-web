@@ -15,6 +15,7 @@ import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
+import { chime, endChime } from '@/lib/timer-audio'
 import {
   BELL_INTERVALS,
   BELL_TONES,
@@ -29,7 +30,6 @@ import {
   buildCustomPattern,
   clampMinutes,
   patternBySlug,
-  type BellTone,
   type BellVolume,
   type BreathPattern,
   type BreathPhase,
@@ -84,60 +84,9 @@ function readSavedSetup(): Partial<SavedSetup> | null {
   }
 }
 
-// --- interval bell (Web Audio, no asset files) -------------------------------
-// A soft bell/bowl strike: a SOFT ATTACK (a short fade-in, so there's no click —
-// the click is what makes a synth ding feel harsh), a low peak well under
-// earbud-hostile levels, and a long exponential ring-out. A strike layers the
-// voice's partials with each higher overtone faded down, so the fundamental
-// carries and the overtones just add bell body. Every call is wrapped so a flaky
-// context never throws.
-
-// One sine partial: fade in over ~25ms, ring out exponentially.
-function ding(ctx: AudioContext, at: number, freq: number, durationSec: number, peak: number) {
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.type = 'sine'
-  osc.frequency.value = freq
-  gain.gain.setValueAtTime(0.0001, at)
-  gain.gain.linearRampToValueAtTime(peak, at + 0.025) // soft attack — no onset click
-  gain.gain.exponentialRampToValueAtTime(0.0001, at + durationSec)
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.start(at)
-  osc.stop(at + durationSec + 0.05)
-}
-
-// One strike of a voice at `at`: fundamental loudest, overtones progressively
-// quieter + a touch shorter, for a warm bell/bowl body. `vol` scales the peak
-// (the member's bell-volume choice; 1 = the tuned default).
-function strike(ctx: AudioContext, tone: BellTone, at: number, vol = 1) {
-  tone.freqs.forEach((f, i) => {
-    const peak = 0.08 * Math.pow(0.55, i) * vol
-    const dur = tone.decay * (i === 0 ? 1 : 0.8)
-    ding(ctx, at, f, dur, peak)
-  })
-}
-
-/** One strike of the chosen voice, at the given loudness. */
-function chime(ctx: AudioContext | null, tone: BellTone, vol = 1) {
-  if (!ctx) return
-  try {
-    strike(ctx, tone, ctx.currentTime, vol)
-  } catch {
-    // the bell is a nicety, never a blocker
-  }
-}
-
-/** A gentle double strike to close the session, the second a touch softer. */
-function endChime(ctx: AudioContext | null, tone: BellTone, vol = 1) {
-  if (!ctx) return
-  try {
-    strike(ctx, tone, ctx.currentTime, vol)
-    strike(ctx, tone, ctx.currentTime + 0.55, vol)
-  } catch {
-    // the bell is a nicety, never a blocker
-  }
-}
+// The interval bell + closing double-strike (chime / endChime) are the shared
+// Web Audio cue engine in lib/timer-audio.ts — a soft bell/bowl voice with a
+// gentle attack and a long ring-out, reused by the Movement timer. Imported above.
 
 /** The takeover shell: while a session is live (and through the reveal) On Air
  *  owns the WHOLE viewport — above the app header and the bottom tab bar —

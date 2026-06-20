@@ -127,7 +127,13 @@ export default async function PracticeDetailPage({ params }: Params) {
             <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
             {/* A timed practice opens the On Air timer pre-set to this practice + its length
                 in place (C.4); a log-only practice has no timer. */}
-            {practice.uses_timer && <PracticeTimerButton practiceId={practice.id} />}
+            {practice.uses_timer && (
+                  <PracticeTimerButton
+                    practiceId={practice.id}
+                    timerKind={practice.timer_kind}
+                    movementMode={practice.movement_config?.mode ?? null}
+                  />
+                )}
             <Link
               href={`/practices/${practice.id}/edit`}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
@@ -147,7 +153,13 @@ export default async function PracticeDetailPage({ params }: Params) {
             {state.adopted && (
               <>
                 <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
-                {practice.uses_timer && <PracticeTimerButton practiceId={practice.id} />}
+                {practice.uses_timer && (
+                  <PracticeTimerButton
+                    practiceId={practice.id}
+                    timerKind={practice.timer_kind}
+                    movementMode={practice.movement_config?.mode ?? null}
+                  />
+                )}
               </>
             )}
           </>
@@ -157,7 +169,13 @@ export default async function PracticeDetailPage({ params }: Params) {
             {state.adopted && (
               <>
                 <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
-                {practice.uses_timer && <PracticeTimerButton practiceId={practice.id} />}
+                {practice.uses_timer && (
+                  <PracticeTimerButton
+                    practiceId={practice.id}
+                    timerKind={practice.timer_kind}
+                    movementMode={practice.movement_config?.mode ?? null}
+                  />
+                )}
               </>
             )}
             <form action={forkPracticeAction.bind(null, practice.id)}>

@@ -17,6 +17,13 @@ import { recordStreakActivity, processGamificationEvent } from '@/lib/achievemen
 import { recordPracticeStreak, recomputePracticeStreakAfterUnlog } from '@/lib/practice-streak'
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import type { MovementConfig } from '@/lib/movement'
+
+/** Which timer a practice routes to (WEBSITE-CHANGES-PLAN §4 C.8): 'none' = a one-tap
+ *  Log it; 'mindless' = the On Air sit/breathe (useMindless); 'movement' = the Movement
+ *  timer (useMovement). Supersedes the binary uses_timer, which is now derived from it. */
+export const TIMER_KINDS = ['none', 'mindless', 'movement'] as const
+export type TimerKind = (typeof TIMER_KINDS)[number]
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -51,9 +58,15 @@ export interface Practice {
   cadence: string | null
   /** Typical session length in minutes (the Notion "Duration (min)"). Length, not frequency. */
   duration_min: number | null
-  /** true = the practice runs through the On Air timer (its "Practice" button); false = a simple
-   *  self-report (its "Log It" button). Drives the single action button on a Journey practice. */
+  /** true = the practice runs through a timer (its "Practice" button); false = a simple
+   *  self-report (its "Log It" button). DERIVED from timer_kind (true when not 'none'); kept
+   *  for back-compat (the Journey-step action, the On Air timer-proof). */
   uses_timer: boolean
+  /** Which timer the practice routes to: 'none' | 'mindless' (the On Air sit) | 'movement'
+   *  (the Movement timer). The authoritative discriminator; uses_timer mirrors it. */
+  timer_kind: TimerKind
+  /** Movement timer config when timer_kind = 'movement' (mode + tuning); null otherwise. */
+  movement_config: MovementConfig | null
   /** The explicit per-log Zap VALUE. When set, it OVERRIDES weight_class (the Quest library
    *  values practices by cadence: Daily 10 / 3x-week 15 / Weekly 25). Null → weight-class default. */
   reward_zaps: number | null
@@ -102,13 +115,17 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
+  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, timer_kind, movement_config, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
 
-// The same columns MINUS `slug`, for reads against the `practices_ranked` VIEW — the view
-// predates the slug column and does not expose it, so selecting `slug` from the view errors and
-// returns zero rows (which silently emptied the library + 404'd the detail page). The library +
-// detail navigate by id, so dropping slug here is safe; getPractice() keeps slug from the table.
-const RANKED_COLS = PRACTICE_COLS.replace(/,\s*slug$/, '')
+// The same columns MINUS the table-only ones, for reads against the `practices_ranked`
+// VIEW. The view predates `slug` and does not expose it (selecting it errors and returns
+// zero rows, which silently emptied the library + 404'd the detail page); it also does NOT
+// expose `timer_kind` / `movement_config` (the Movement timer columns the library never
+// needs — the editor + timer routing read those from the table via getPractice). The
+// library + detail navigate by id, so dropping all three here is safe.
+const RANKED_COLS = PRACTICE_COLS
+  .replace(/,\s*slug$/, '')
+  .replace(/,\s*timer_kind,\s*movement_config/, '')
 
 // --- Library + reads ------------------------------------------------------
 
@@ -714,8 +731,11 @@ export interface PracticeEdit {
   cadence?: string | null
   /** Typical session length in minutes (null clears it). */
   duration_min?: number | null
-  /** true = runs through the On Air timer (Practice); false = a simple self-report (Log It). */
-  uses_timer?: boolean
+  /** Which timer the practice routes to: 'none' (Log it) | 'mindless' (On Air sit) |
+   *  'movement' (Movement timer). The authoritative discriminator (uses_timer is derived). */
+  timer_kind?: TimerKind
+  /** Movement timer config when timer_kind = 'movement' (mode + tuning); null otherwise. */
+  movement_config?: MovementConfig | null
   category?: string | null
   icon?: string | null
   header_image?: string | null
@@ -772,7 +792,16 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (patch.duration_min !== undefined)
     update.duration_min =
       patch.duration_min == null ? null : Math.max(0, Math.min(1440, Math.floor(patch.duration_min)))
-  if (patch.uses_timer !== undefined) update.uses_timer = !!patch.uses_timer
+  // timer_kind is the authoritative discriminator (uses_timer is a generated mirror and
+  // cannot be written). A 'movement' kind carries its config; switching away clears it so a
+  // stale Movement config never lingers on a Mindless/none practice.
+  if (patch.timer_kind !== undefined) {
+    const kind: TimerKind = TIMER_KINDS.includes(patch.timer_kind) ? patch.timer_kind : 'mindless'
+    update.timer_kind = kind
+    if (kind !== 'movement') update.movement_config = null
+  }
+  if (patch.movement_config !== undefined)
+    update.movement_config = patch.movement_config ?? null
   if (patch.category !== undefined) update.category = STR(patch.category, 40)
   if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
@@ -879,7 +908,10 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
       body: src.body,
       cadence: src.cadence,
       duration_min: src.duration_min,
-      uses_timer: src.uses_timer,
+      // timer_kind is authoritative (uses_timer is generated, never inserted); carry the
+      // Movement config so a forked Movement practice keeps its mode + tuning.
+      timer_kind: src.timer_kind,
+      movement_config: src.movement_config ?? null,
       category: src.category,
       icon: src.icon,
       header_image: src.header_image,
