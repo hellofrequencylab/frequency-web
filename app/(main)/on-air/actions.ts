@@ -9,7 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { logPractice, getPracticesToLogToday } from '@/lib/practices'
+import { logPractice, getPracticesToLogToday, type LogPracticeResult } from '@/lib/practices'
 import { getPracticeStreak } from '@/lib/practice-streak'
 import { amplitudeLevel } from '@/lib/amplitude'
 import { getOrCreateDispatch } from '@/lib/vera-dispatch'
@@ -118,11 +118,46 @@ export async function completeSession(
   }
 
   // 2. The log — the one and only economy entry point.
-  const log = await logPractice({
-    profileId,
-    practiceId: input.practiceId,
-    circleId: input.circleId ?? null,
-  })
+  //
+  // Timer-completion proof (anti-cheat D5): a `uses_timer` practice that CLAIMS a
+  // timed sit (any mode but Just Log, with real seconds) must have a server-checkable
+  // sit behind it. We trust our own clock, not the client's number: the wall-clock
+  // gap from started_at to now has to plausibly cover the claimed seconds. A forged
+  // request claiming a long sit with a started_at moments ago (or none at all) earns
+  // nothing — we still keep the session row above for history, but skip the economy
+  // so a timer practice can't be logged with no real sit. Just Log (mode 'log') is the
+  // sanctioned no-sit path and is never gated here.
+  const timedClaim = input.mode !== 'log' && seconds > 0
+  let timerProofFailed = false
+  if (timedClaim) {
+    const { data: pRow } = await admin
+      .from('practices')
+      .select('uses_timer')
+      .eq('id', input.practiceId)
+      .maybeSingle()
+    const usesTimer = (pRow as { uses_timer: boolean | null } | null)?.uses_timer ?? false
+    if (usesTimer) {
+      const startedMs = input.startedAt ? Date.parse(input.startedAt) : NaN
+      // Real wall-clock elapsed since the sit was armed. A generous half-of-claimed
+      // floor (plus a small absolute floor) absorbs the 5s pre-roll, pauses, and
+      // clock skew, while still catching a fabricated long sit on a started_at that
+      // can't support it.
+      const serverElapsed = Number.isFinite(startedMs) ? (Date.now() - startedMs) / 1000 : NaN
+      const plausible =
+        Number.isFinite(serverElapsed) &&
+        serverElapsed >= 5 &&
+        serverElapsed >= seconds * 0.5
+      if (!plausible) timerProofFailed = true
+    }
+  }
+
+  const log: LogPracticeResult = timerProofFailed
+    ? { logged: false, zapsAwarded: 0 }
+    : await logPractice({
+        profileId,
+        practiceId: input.practiceId,
+        circleId: input.circleId ?? null,
+      })
 
   // 3. Post-log state for the reveal. Today's airtime is a handful of rows;
   //    summed in JS (PostgREST aggregates are disabled on hosted projects).

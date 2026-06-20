@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Check, MoreHorizontal, Pencil } from 'lucide-react'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
+import { UnlogPracticeButton } from '@/components/practice/unlog-practice-button'
 import { RemovePracticeButton } from '@/components/practice/remove-practice-button'
 
 // The "your practices" tight action row (WEBSITE-CHANGES-PLAN B.3 + B.4). One
@@ -34,13 +35,16 @@ export function PracticeRowActions({
 }) {
   const [logged, setLogged] = useState(loggedToday)
 
-  // Once logged today, the action row collapses to a calm "Logged today" line.
+  // Once logged today, the action row collapses to a calm "Logged today" line, with a
+  // quiet "Undo" for a mistaken log (today-only, B.1). Undoing flips the row back so the
+  // "Log practice" button returns.
   if (logged) {
     return (
       <div className="flex items-center gap-2">
         <span className="inline-flex items-center gap-1.5 text-sm font-medium text-success">
           <Check className="h-4 w-4" aria-hidden /> Logged today
         </span>
+        <UnlogPracticeButton practiceId={practiceId} onUnlogged={() => setLogged(false)} />
         {isOwner && <OwnerMenu practiceId={practiceId} title={title} />}
       </div>
     )

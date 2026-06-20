@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { loadOnAirSession } from '@/app/(main)/on-air/actions'
 import type { OnAirSessionData } from '@/lib/on-air/session-data'
 import { OnAirSession } from '@/components/on-air/session'
@@ -50,11 +51,18 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   // logged, the streak) lands without a navigation — e.g. a Journey step's "logged today" gating
   // (docs/JOURNEYS.md) clears the moment the timer overlay closes. A no-op when nothing changed.
   const close = useCallback(() => {
+    // Drop true fullscreen if the open gesture entered it (C.1-3); the dvh takeover
+    // is unmounted with the overlay.
+    void exitAppFullscreen()
     setState({ phase: 'closed' })
     router.refresh()
   }, [router])
 
   const open = useCallback((opts?: { practiceId?: string }) => {
+    // Go fullscreen straight from the click that opened the overlay — fullscreen is
+    // gesture-gated, so it has to ride the same tap, not a later effect (C.1-3).
+    // Best-effort: iOS Safari no-ops and the dvh takeover is the fallback.
+    void requestAppFullscreen()
     setState({ phase: 'loading', practiceId: opts?.practiceId })
   }, [])
 

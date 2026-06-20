@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { X, BookOpen, Zap, ChevronRight } from 'lucide-react'
 import { observe } from '@/lib/analytics/observe'
+import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { useMindless } from '@/components/on-air/mindless'
 import { CaptureBox } from './capture-box'
 import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, MindlessArt } from './zap-menu-art'
@@ -28,7 +29,12 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   const [showIntro, setShowIntro] = useState(false)
 
   const mindless = useMindless()
-  const close = useCallback(() => setOpen(false), [])
+  const close = useCallback(() => {
+    // Drop true fullscreen the open gesture entered (C.1-3); the modal's own dvh
+    // takeover unmounts with it.
+    void exitAppFullscreen()
+    setOpen(false)
+  }, [])
   const tapTile = useCallback(
     (tile: string) => () => {
       observe('zap_menu.tile_tap', { tile })
@@ -41,9 +47,12 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   // the page behind while the route loads.
   const openMindless = useCallback(() => {
     observe('zap_menu.tile_tap', { tile: 'mindless' })
+    // Hand the fullscreen straight to the Mindless overlay — open it first (it
+    // keeps/re-requests fullscreen), then just drop the Capture modal WITHOUT
+    // exiting fullscreen, so there's no flicker between the two takeovers.
     mindless.open()
-    close()
-  }, [mindless, close])
+    setOpen(false)
+  }, [mindless])
 
   useEffect(() => {
     if (!open || veraLine) return
@@ -67,6 +76,10 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
     const onOpen = (e: Event) => {
       const m = (e as CustomEvent).detail?.mode as Mode | undefined
       setMode(m ?? 'post')
+      // Go fullscreen on the same gesture that dispatched 'open-capture' (the
+      // centre-nav button / FAB) — window listeners run synchronously inside that
+      // click, so the gesture-gated request still lands (C.1-3). Best-effort.
+      void requestAppFullscreen()
       setOpen(true)
       observe('zap_menu.open')
       try {

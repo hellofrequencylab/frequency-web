@@ -2,13 +2,13 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Zap, Pencil, Wand2 } from 'lucide-react'
-import { LotusIcon } from '@/components/on-air/icons'
 import { getMyProfileId } from '@/lib/auth'
 import { getRankedPractice, getPracticeMemberState, getPracticeCreator } from '@/lib/practices'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { DetailTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
+import { PracticeTimerButton } from '@/components/practice/practice-timer-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { ClaimPractice } from '@/components/practice/claim-practice'
@@ -124,14 +124,10 @@ export default async function PracticeDetailPage({ params }: Params) {
           </Link>
         ) : isOwner ? (
           <>
-            <LogPracticeButton practiceId={practice.id} />
-            {/* Mindless (the On Air timer, ADR-229): time the sit with the breathing visualizer. */}
-            <Link
-              href={`/on-air?practice=${practice.id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-            >
-              <LotusIcon className="h-3.5 w-3.5" /> Mindless
-            </Link>
+            <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
+            {/* A timed practice opens the On Air timer pre-set to this practice + its length
+                in place (C.4); a log-only practice has no timer. */}
+            {practice.uses_timer && <PracticeTimerButton practiceId={practice.id} />}
             <Link
               href={`/practices/${practice.id}/edit`}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
@@ -150,20 +146,20 @@ export default async function PracticeDetailPage({ params }: Params) {
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
             {state.adopted && (
               <>
-                <LogPracticeButton practiceId={practice.id} />
-                <Link
-                  href={`/on-air?practice=${practice.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-                >
-                  <LotusIcon className="h-3.5 w-3.5" /> Mindless
-                </Link>
+                <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
+                {practice.uses_timer && <PracticeTimerButton practiceId={practice.id} />}
               </>
             )}
           </>
         ) : (
           <>
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
-            {state.adopted && <LogPracticeButton practiceId={practice.id} />}
+            {state.adopted && (
+              <>
+                <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
+                {practice.uses_timer && <PracticeTimerButton practiceId={practice.id} />}
+              </>
+            )}
             <form action={forkPracticeAction.bind(null, practice.id)}>
               <button
                 type="submit"

@@ -9,6 +9,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { redirect } from 'next/navigation'
 import {
   logPractice,
+  unlogPractice,
   adoptPractice,
   dropMemberPractice,
   setCirclePractice,
@@ -24,7 +25,9 @@ import {
   deletePractice,
   type PracticeEdit,
   type LogPracticeResult,
+  type UnlogPracticeResult,
 } from '@/lib/practices'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { personalizePractice, type PracticeSuggestion } from '@/lib/ai/practice-wizard'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
@@ -37,10 +40,33 @@ export async function logPracticeAction(
 ): Promise<ActionResult<LogPracticeResult>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
+  // Anti-cheat (B.2 / D5): rate-limit the log action per member (the per-day total
+  // cap + the per-practice-per-day idempotency live in logPractice). Fails open when
+  // Upstash isn't configured, so local dev + a preview are never blocked.
+  if (!(await rateLimitOk('practice_log', profileId, 10, '1 m'))) {
+    return fail('Slow down a moment, then log again.')
+  }
   const res = await logPractice({ profileId, practiceId, circleId: circleId ?? null })
   // Re-seed the "your practices" tight rows so an already-logged practice paints in
   // its collapsed state on the next server render (B.4). The client wrapper collapses
   // optimistically too, so this is the durable, refresh-safe path, not the live one.
+  revalidatePath('/practices')
+  return ok(res)
+}
+
+// Un-log today's practice (D4 = today-only undo). Reverses the log, the idempotency
+// row, the exact Zap grant, and re-derives the streak. Server-authz: the caller's OWN
+// log only — profileId comes from the session, never the client.
+export async function unlogPracticeAction(
+  practiceId: string,
+): Promise<ActionResult<UnlogPracticeResult>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  // Same per-member rate window as logging, so toggling log/un-log can't be spun.
+  if (!(await rateLimitOk('practice_log', profileId, 10, '1 m'))) {
+    return fail('Slow down a moment, then try again.')
+  }
+  const res = await unlogPractice({ profileId, practiceId })
   revalidatePath('/practices')
   return ok(res)
 }
