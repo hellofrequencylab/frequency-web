@@ -31,6 +31,13 @@ const anton = Anton({
   display: "swap",
 });
 
+// The first-paint theme-color values, kept in one place so the viewport metadata and the pre-paint
+// themeScript below cannot drift. They mirror --color-canvas (light) and --color-ink (dark) in
+// app/globals.css; the pre-paint script must inline a literal (it runs before CSS loads), so these
+// are the single source for that one literal pair (app-shell reads the live CSS vars at runtime).
+const THEME_COLOR_LIGHT = '#FBFAF6'
+const THEME_COLOR_DARK = '#16130E'
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -41,8 +48,8 @@ export const viewport: Viewport = {
   // below also writes this meta dynamically so it stays correct when the
   // user toggles modes.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FBFAF6" },
-    { media: "(prefers-color-scheme: dark)",  color: "#16130E" },
+    { media: "(prefers-color-scheme: light)", color: THEME_COLOR_LIGHT },
+    { media: "(prefers-color-scheme: dark)",  color: THEME_COLOR_DARK },
   ],
 };
 
@@ -99,7 +106,7 @@ export const metadata: Metadata = {
 // without a real Space. Real Spaces still render `data-skin` server-side on the
 // shell root (no flash); the skin CSS selectors match both <html> and the shell
 // div. The value is trusted blind — an unknown skin is a harmless CSS no-op.
-const themeScript = `(function(){try{var s=localStorage.getItem('freq-theme');if(!s){var legacy=localStorage.getItem('theme');if(legacy==='dark'||legacy==='light'||legacy==='system'){s=legacy;localStorage.setItem('freq-theme',legacy);}}var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;var dark=s==='dark'||((s==='system'||!s)&&sys);document.documentElement.classList.toggle('dark',dark);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',dark?'#16130E':'#FBFAF6');var skin=localStorage.getItem('freq-skin');if(skin){document.documentElement.setAttribute('data-skin',skin);}}catch(e){}})();`;
+const themeScript = `(function(){try{var s=localStorage.getItem('freq-theme');if(!s){var legacy=localStorage.getItem('theme');if(legacy==='dark'||legacy==='light'||legacy==='system'){s=legacy;localStorage.setItem('freq-theme',legacy);}}var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;var dark=s==='dark'||((s==='system'||!s)&&sys);document.documentElement.classList.toggle('dark',dark);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',dark?'${THEME_COLOR_DARK}':'${THEME_COLOR_LIGHT}');var skin=localStorage.getItem('freq-skin');if(skin){document.documentElement.setAttribute('data-skin',skin);}}catch(e){}})();`;
 
 // The ROOT layout stays STATIC (no per-request cookie/DB reads) so the public marketing +
 // discover pages keep prerendering (static/ISR). All data-driven theming — the personal
