@@ -241,7 +241,11 @@ as today**.
 > profile_id)`). The space owner (`spaces.owner_profile_id`) is the implicit super-admin. The
 > capability resolver (`lib/core/access-matrix.ts`) gains "admin/editor of the owning space,"
 > mirroring the existing `host → their circles` edge; it grants **no** `web_role` power. RLS is
-> `TO authenticated` with auth functions wrapped in `(select …)`.
+> `TO authenticated` with auth functions wrapped in `(select …)`. The admin-read policy resolves
+> through the `is_space_admin(space_id)` **SECURITY DEFINER** helper (migration `20260711060000`,
+> ADR-056) so it never re-enters `space_members` RLS, eliminating the policy-recursion footgun (a
+> self-referencing subquery would otherwise raise "infinite recursion"); the helper also folds in the
+> owner, and writes stay service-role only.
 
 > **New `spaces` columns** (ADR-322): `visibility text CHECK (network|private)` default `'network'`,
 > the first-class public-vs-walled axis (`network` spaces appear in cross-network discovery /
