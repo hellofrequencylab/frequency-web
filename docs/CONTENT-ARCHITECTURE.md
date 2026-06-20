@@ -1,4 +1,4 @@
-# Content architecture — substrate, Channels, ranking
+# Content architecture: substrate, Channels, ranking
 
 The blueprint for "Facebook-level content with clean finding." See ADR-080.
 
@@ -12,17 +12,17 @@ We do **not** build a new substrate. `posts` is the unified activity table:
 
 **Lenses over the one substrate:**
 - **Wall** (`profile-feed`) = items where you're author / target (`scope_id = you`) / mentioned / attached (events, dispatches). Date-sorted.
-- **Feed** (`feed_for_viewer`) = `public` + your `group`/`cluster` posts, ranked — UNLESS the
+- **Feed** (`feed_for_viewer`) = `public` + your `group`/`cluster` posts, ranked, UNLESS the
   `platform_flags.feed_open` switch is on, which lifts the reach gate so every member sees every
   member's posts (Admin → Community → **Feed reach**). Open for a young community, off once it's
   big enough to feel local (ADR-312). The switch never exposes private content (there is none).
-- **Channel** = the topical forum lens — items tagged with the channel's topics (via `circle_topics` etc.).
+- **Channel** = the topical forum lens: items tagged with the channel's topics (via `circle_topics` etc.).
 - **Circle** = scoped to one circle.
 
-## 2. Pillars (the taxonomy) vs Channels (the forum) — keep them separate
+## 2. Pillars (the taxonomy) vs Channels (the forum): keep them separate
 
 > **Canon ([`NAMING.md`](NAMING.md), ADR-208): Pillars are NEVER Channels.** The earlier
-> "Channels = the 4 Domains" framing is **retired** — it conflated the game taxonomy with the
+> "Channels = the 4 Domains" framing is **retired**. It conflated the game taxonomy with the
 > topical-forum feature. Two distinct things:
 
 - **`pillars`** (Mind / Body / Spirit / Expression) = the four-way **game taxonomy** ("Domains"
@@ -36,9 +36,9 @@ We do **not** build a new substrate. `posts` is the unified activity table:
 
 **Naming:** **Pillar** = a `pillars` row (the Mind/Body/Spirit/Expression top level) · **Channel /
 Interest / Topic** = a `topical_channel` (the topical forum) · **legacy `channels` table** =
-hub/nexus/outpost focus groups (near-dead for content — do not conflate).
+hub/nexus/outpost focus groups (near-dead for content; do not conflate).
 
-## 3. Ranking — "an algorithm you get to choose"
+## 3. Ranking: "an algorithm you get to choose"
 
 - Today: `posts.engagement_score` (denormalized) + a JS re-rank (`lib/feed-rank.ts`). No decay, affinity, or locality.
 - **v1 target:** a *transparent, tunable* score = recency-decay × affinity (your circles / follows / tuned Channels + Pillars) × locality × **in-person bias**. Your chosen Channels are the primary (explicit) signal; the score only ranks within what you've chosen.
@@ -46,7 +46,7 @@ hub/nexus/outpost focus groups (near-dead for content — do not conflate).
 
 ## 4. Staged build
 
-1. ✅ **Taxonomy foundation** — `pillars` + `topical_channels.pillar_id` + `circle_topics` + backfill (renamed 2026, see docs/NAMING.md; migrations `20260604010000`, `20260613000010`).
-2. **Pillar reach + browse** — `get_my_tuned_domain_ids` (helper name pending Wave-3 rename); Pillar pages aggregating Topics → Circles/Events/Posts; IA re-label (Pillar = the top level, Channels/Interests underneath).
-3. **Tagging across types** — `event_topics` / `post_topics`; tag UI on create/edit.
-4. **Ranker v1** — upgrade `feed_for_viewer` + `feed-rank.ts` to the transparent score, behind the guardrail.
+1. ✅ **Taxonomy foundation**: `pillars` + `topical_channels.pillar_id` + `circle_topics` + backfill (renamed 2026, see docs/NAMING.md; migrations `20260604010000`, `20260613000010`).
+2. **Pillar reach + browse**: `get_my_tuned_domain_ids` (helper name pending Wave-3 rename); Pillar pages aggregating Topics → Circles/Events/Posts; IA re-label (Pillar = the top level, Channels/Interests underneath).
+3. **Tagging across types**: `event_topics` / `post_topics`; tag UI on create/edit.
+4. **Ranker v1**: upgrade `feed_for_viewer` + `feed-rank.ts` to the transparent score, behind the guardrail.

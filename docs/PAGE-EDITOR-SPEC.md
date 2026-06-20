@@ -1,7 +1,7 @@
-# Visual page editor (Puck) — implementation spec
+# Visual page editor (Puck): implementation spec
 
 Make the **marketing pages** (`/`, `/the-lab`, `/how-it-works`, `/about`)
-editable visually — content, images, and section order — without touching the
+editable visually (content, images, and section order) without touching the
 member app and without sacrificing speed.
 
 > Status: **shipped**, then **reworked into a standardized block library**
@@ -46,7 +46,7 @@ EDIT (admin, /studio/pages/[slug]/edit)        PUBLIC (/, /the-lab, …)
 
 ---
 
-## 2. Data model — `pages` table (new migration)
+## 2. Data model: `pages` table (new migration)
 
 ```sql
 create table public.pages (
@@ -75,7 +75,7 @@ alter table public.pages enable row level security;
 
 ---
 
-## 3. Images — Supabase Storage
+## 3. Images: Supabase Storage
 
 - New **public bucket** `site-media`.
 - Custom Puck **image field**: uploads to `site-media`, returns the public URL,
@@ -88,7 +88,7 @@ alter table public.pages enable row level security;
 
 ---
 
-## 4. Puck config — the standardized block library (`lib/page-editor/config.tsx`)
+## 4. Puck config: the standardized block library (`lib/page-editor/config.tsx`)
 
 See **§12** for the full standardized catalog (ADR-055). In short: `config.tsx`
 assembles per-group block fragments from `components/page-editor/blocks/*` into
@@ -101,8 +101,8 @@ and declares left-bar **categories**. Accent words use a `title` + optional
 
 ## 5. Editor (Studio, admin-only)
 
-- `/studio/pages` — list the 4 editable pages + status + "last published".
-- `/studio/pages/[slug]/edit` — the Puck editor:
+- `/studio/pages`: list the 4 editable pages + status + "last published".
+- `/studio/pages/[slug]/edit`: the Puck editor:
   - `requireStaff('marketer')`. **Puck is dynamically imported here only.**
   - Loads `data` (draft). `<Puck config data onPublish={save+publish} />`.
   - Actions (server, staff-gated): `savePageDraft(slug, data)`,
@@ -128,7 +128,7 @@ export default async function Page() {
 export async function generateMetadata() { /* from page.seo_* */ }
 ```
 
-- **`Render`** is Puck's server renderer — outputs the same component tree, **no
+- **`Render`** is Puck's server renderer. It outputs the same component tree, **no
   editor JS**. Public bundle unchanged.
 - **ISR + revalidate-on-publish** → static-fast, updates the moment you publish.
 - **Fallback to the current hardcoded page** if no DB row yet → zero downtime
@@ -142,7 +142,7 @@ export async function generateMetadata() { /* from page.seo_* */ }
 
 Convert each current hardcoded page into Puck `data` (blocks) and insert the
 `pages` rows, so day one the editor shows the **current live site**, fully
-editable — not a blank canvas. Done via a seed script or by building each page
+editable, not a blank canvas. Done via a seed script or by building each page
 once in the editor.
 
 ---
@@ -177,7 +177,7 @@ falls back to `lib/site.ts` defaults. JSON-LD/sitemap unaffected.
 
 ---
 
-## 11. Build phases & effort (~3–5 days)
+## 11. Build phases & effort (~3 to 5 days)
 
 > **Status (all phases shipped).** The directory is at `/pages` (main nav
 > **Manage → Pages**, **janitor-only**, not in the Studio); the editor is at
@@ -203,7 +203,7 @@ falls back to `lib/site.ts` defaults. JSON-LD/sitemap unaffected.
 > processing); helper fallbacks preserve the look of already-seeded blocks.
 >
 > **Optimized images (Phase 3).** `<SiteImage>` (`components/marketing/site-image.tsx`)
-> wraps next/image — responsive srcsets + AVIF/WebP for every marketing image
+> wraps next/image: responsive srcsets + AVIF/WebP for every marketing image
 > (splash Hero bg is `priority`/LCP, plus ImageBand, ZigZag, gallery tiles,
 > Pillars). `next.config.ts` adds `remotePatterns` for public Supabase Storage so
 > uploads are optimized too.
@@ -211,19 +211,19 @@ falls back to `lib/site.ts` defaults. JSON-LD/sitemap unaffected.
 > **Advanced (Phase 4).** Inline **rich text** (`lib/page-editor/richtext.tsx`):
 > `**bold**` / `*italic*` / `[link](/path)` parsed to React elements (safe-href,
 > no dangerouslySetInnerHTML) in body copy. New blocks: **Text** (standalone rich
-> paragraph) and **Columns** (2–3 columns via Puck **slot** fields — RSC-safe,
+> paragraph) and **Columns** (2 to 3 columns via Puck **slot** fields, RSC-safe,
 > verified). Feature-gallery gains Columns / Tile-crop / Corners controls. Only
 > deferred polish: a visual drag focal-point/crop picker (the focal-point select
 > already covers cropping).
 
-1. **Foundation** — `pages` migration, `site-media` bucket, install
+1. **Foundation:** `pages` migration, `site-media` bucket, install
    `@measured/puck`, `lib/page-editor/config.tsx` for the core blocks + the
    custom image field. *(~1.5d)*
-2. **Editor** — `/studio/pages` + `/[slug]/edit`, save/publish/revalidate
+2. **Editor:** `/studio/pages` + `/[slug]/edit`, save/publish/revalidate
    actions, Studio nav entry. *(~1d)*
-3. **Public render** — switch the 4 pages to `getPublishedPage` + `Render` with
+3. **Public render:** switch the 4 pages to `getPublishedPage` + `Render` with
    legacy fallback; seed current content; SEO fields. *(~1d)*
-4. **Dynamic blocks + polish** — `LiveStats/Events/Posts`, preview, image picker
+4. **Dynamic blocks + polish:** `LiveStats/Events/Posts`, preview, image picker
    UX, responsive `sizes`. *(~1d)*
 
 **Packages:** `@measured/puck`. **Infra:** Supabase Storage (have it). **Touches:**
@@ -232,18 +232,18 @@ files (thin), `next.config` (image host), one migration. **Member app: untouched
 
 ---
 
-## 12. Standardized block library (ADR-055) — current
+## 12. Standardized block library (ADR-055): current
 
 The palette is a **standardized, design-system block library** (not content-named
 one-offs), grouped into left-bar **categories**, every block carrying the same
 universal "adjust" controls plus, where relevant, variants.
 
 ### Foundation (the frozen contract every block composes from)
-- **`lib/page-editor/fields.tsx`** — shared field atoms + resolvers: `toneField`
+- **`lib/page-editor/fields.tsx`**: shared field atoms + resolvers: `toneField`
   (White / Cream / Dark / Transparent), `widthField` (Narrow / Default / Wide /
   Full), `alignField` (Left / Center), `imgField` (upload/pick/URL), `accentize`,
   and the `toneBg` / `isInk` / `widthClass` / `alignClass` resolvers.
-- **`components/page-editor/blocks/kit.tsx`** — the `<Band>` universal section
+- **`components/page-editor/blocks/kit.tsx`**: the `<Band>` universal section
   wrapper (paints background, spacing, visibility, content width + alignment);
   typographic atoms `Eyebrow` / `DisplayHeading` / `Kicker` / `CtaButton` (one
   CTA, variants primary/secondary/ghost, `onInk`); `blockFields()` /
@@ -253,11 +253,11 @@ universal "adjust" controls plus, where relevant, variants.
 
 ### The "adjust" controls on every block (the "feature block")
 Background tone · content width · alignment · space above · space below ·
-responsive visibility — plus image crop/focal/radius/shadow on image blocks.
+responsive visibility, plus image crop/focal/radius/shadow on image blocks.
 All token-driven selects → fixed Tailwind classes (no raw px, no off-brand CSS).
 
 **Control parity (standardized 2026-06-02):** every **content/media** block exposes
-the same Background/Width/Align set via `blockFields()` — including `Image` and
+the same Background/Width/Align set via `blockFields()`, including `Image` and
 `Gallery`, which are now tone-aware (Gallery renders its own band + ink-aware
 tiles rather than a hardcoded `bg-surface`). The deliberate exceptions keep a
 *purpose-specific* control set: `Marquee` (full-bleed dark strip), the `Dynamic`
@@ -269,14 +269,14 @@ their own tone/width because they're structural wrappers.
 |---|---|
 | **Layout** | `Container` (tone band + nested slot), `Columns` (2/3 slots), `Spacer`, `Divider` |
 | **Content** | `Heading` (eyebrow+title+kicker, sizes), `Text` (markdown), `Statement`, `Quote` (pull / testimonial), `Buttons` (group) |
-| **Sections** | `Hero` (image / split / minimal), `FeatureGrid` (icon / image / numbered, 2–4 col), `Showcase` (alternating media+text; replaces `Pillars`), `StatRow`, `Tiers` (pricing/membership cards — featured ribbon, Founder badge, struck price), `Checklist`, `Accordion` (FAQ), `CallToAction` (replaces `BetaCTA`) |
+| **Sections** | `Hero` (image / split / minimal), `FeatureGrid` (icon / image / numbered, 2 to 4 col), `Showcase` (alternating media+text; replaces `Pillars`), `StatRow`, `Tiers` (pricing/membership cards: featured ribbon, Founder badge, struck price), `Checklist`, `Accordion` (FAQ), `CallToAction` (replaces `BetaCTA`) |
 | **Media** | `Image`, `Gallery`, `MediaText` (replaces `ZigZag`), `Marquee` |
 | **Dynamic** | `LiveStats`, `LiveEvents`, `LivePosts` (live data via Puck `metadata`) |
 
-Files: one per group — `kit.tsx` (`Heading`), `primitives.tsx` (`Text`,
+Files: one per group. `kit.tsx` (`Heading`), `primitives.tsx` (`Text`,
 `Statement`, `Buttons`, `Container`, `Columns`, `Spacer`, `Divider`),
 `sections.tsx`, `collections.tsx`, `media.tsx`, `dynamic.tsx`. `config.tsx` is
-**pure assembly** — it merges the fragment records and declares the categories;
+**pure assembly**. It merges the fragment records and declares the categories;
 no block is defined there (`Statement` was relocated out of it). Retired keys
 (`PageHero`, `ZigZag`, `ImageBand`, `FeatureGallery`, `Pillars`, the old splash
 `Hero`, and the now-unused `GalleryBlock`) are removed.
@@ -284,6 +284,6 @@ no block is defined there (`Statement` was relocated out of it). Retired keys
 ### Content templates (`lib/page-editor/templates/*`)
 `the-lab`, `how-it-works`, `about` are re-built as Puck `Data` from the standard
 blocks. `app/edit/[slug]/page.tsx` seeds the editor from the matching template
-when the stored draft is empty **or uses retired block types** (`isRenderable`)
-— a load-time default only; nothing is written to the DB until Publish. So a
+when the stored draft is empty **or uses retired block types** (`isRenderable`).
+This is a load-time default only; nothing is written to the DB until Publish. So a
 legacy draft can never crash the editor.

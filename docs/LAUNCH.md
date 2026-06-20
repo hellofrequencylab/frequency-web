@@ -45,35 +45,35 @@ registered at GoDaddy; point it at Vercel.
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | DB + admin client | already set (prod works) |
 | `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL` | canonical URLs; email + ICS links | set to `https://frequencylocal.com` |
-| `RESEND_API_KEY` / `EMAIL_FROM` | transactional + digest email | `EMAIL_FROM` on `send.frequencylocal.com` (verified in Resend — §4) |
+| `RESEND_API_KEY` / `EMAIL_FROM` | transactional + digest email | `EMAIL_FROM` on `send.frequencylocal.com` (verified in Resend, §4) |
 | `CRON_SECRET` | cron auth (fail-closed: crons reject without it) | required or reminders/digests/scheduled publish silently stop |
 | `UNSUBSCRIBE_SECRET` | signed one-click unsubscribe tokens | email compliance |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | web push | push notifications |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | membership billing **+ Connect payouts** (ADR-175/176) | `sk_…` + `whsec_…`. One webhook endpoint, `https://frequencylocal.com/api/webhooks/stripe`, covers checkout events, `account.updated` (Connect onboarding sync), and `checkout.session.completed` (tips + future channels). `STRIPE_PRICE_CREW` optional (inline-price fallback). Develop in **test mode**; live needs platform identity verification |
-| `STRIPE_PLATFORM_FEE_PCT` | platform fee % on Connect payout channels (tips, etc.) | **optional** — defaults to `10`. Centralized in `lib/billing/fees.ts`; explicit `0` = no fee |
-| `ANTHROPIC_API_KEY` | Studio AI operator (win-back drafting) | **optional** — without it the proposer uses a deterministic template; the agent stays copilot-gated either way |
-| `COMPANY_POSTAL_ADDRESS` | physical mailing address in the scan-intro email footer (CAN-SPAM) | **🔴 not set yet** — required before turning on scan-intro friend invites (see urgent note below). One line, e.g. `Frequency™, PO Box 123, Encinitas, CA 92024` |
+| `STRIPE_PLATFORM_FEE_PCT` | platform fee % on Connect payout channels (tips, etc.) | **optional**: defaults to `10`. Centralized in `lib/billing/fees.ts`; explicit `0` = no fee |
+| `ANTHROPIC_API_KEY` | Studio AI operator (win-back drafting) | **optional**: without it the proposer uses a deterministic template; the agent stays copilot-gated either way |
+| `COMPANY_POSTAL_ADDRESS` | physical mailing address in the scan-intro email footer (CAN-SPAM) | **🔴 not set yet**: required before turning on scan-intro friend invites (see urgent note below). One line, e.g. `Frequency™, PO Box 123, Encinitas, CA 92024` |
 
-> 🔴 **URGENT — before enabling scan-intro friend invites** *(deferred ~a few months; owner-only)*
+> 🔴 **URGENT: before enabling scan-intro friend invites** *(deferred ~a few months; owner-only)*
 >
-> The "invite a scanned contact to **The Quest**" email is **gated OFF by default** — scanning files people into the CRM but emails no one yet. Before flipping it on:
-> 1. **Set `COMPANY_POSTAL_ADDRESS`** (row above) — the invite footer needs a real postal address for CAN-SPAM. Until set, the footer falls back to org identity only.
+> The "invite a scanned contact to **The Quest**" email is **gated OFF by default**. Scanning files people into the CRM but emails no one yet. Before flipping it on:
+> 1. **Set `COMPANY_POSTAL_ADDRESS`** (row above): the invite footer needs a real postal address for CAN-SPAM. Until set, the footer falls back to org identity only.
 > 2. **Turn on** Marketing → Contacts → **"Scan-intro emails"** (`platform_flags.scan_invite_email_enabled`; audited in `platform_flag_events`). Needs `RESEND_API_KEY` (already set).
 > 3. **Send a test to your own inbox first**, then go live.
 >
 > Model + rationale: [NETWORK-CRM.md](NETWORK-CRM.md), ADR-099. (One-time, member-initiated, one-click unsubscribe, no marketing list, points only on real signup.)
 
-## 4. Email deliverability — verify the domain in Resend (before sending volume)
+## 4. Email deliverability: verify the domain in Resend (before sending volume)
 
 Transactional mail (welcome, event reminders, weekly digest, unsubscribe) sends through
 **Resend**, a **separate path** from Google Workspace. The Workspace SPF/DKIM/DMARC authenticate
-only human mail sent via Gmail — they do **not** cover Resend. Because DMARC is now at
+only human mail sent via Gmail. They do **not** cover Resend. Because DMARC is now at
 `p=quarantine`, Resend mail from `@frequencylocal.com` is quarantined until the domain is
 verified **in Resend**. Use a dedicated **`send.frequencylocal.com`** subdomain so bulk-sender
 reputation stays isolated from the human-mail apex.
 
 1. **Resend → Domains → Add Domain:** `send.frequencylocal.com`. Resend shows three records:
-   - **MX** on `send` → `feedback-smtp.<region>.amazonses.com` (priority 10) — bounce/complaint feedback.
+   - **MX** on `send` → `feedback-smtp.<region>.amazonses.com` (priority 10): bounce/complaint feedback.
    - **TXT (SPF)** on `send` → `v=spf1 include:amazonses.com ~all`.
    - **TXT (DKIM)** on `resend._domainkey.send` → the long `p=…` value Resend generates (unique per domain).
 2. **GoDaddy DNS:** add those three records exactly as Resend shows them. Host names are relative
@@ -84,8 +84,8 @@ reputation stays isolated from the human-mail apex.
 5. **Test:** trigger a welcome/test email; confirm it lands in the inbox (not spam) and, via Gmail's
    "Show original", that **DKIM=pass** and **DMARC=pass**.
 
-App-side bulk hygiene — RFC 8058 one-click `List-Unsubscribe`, hard-bounce/complaint suppression,
-and a durable retrying outbox — is already in place (ADR-026 / ADR-043 / ADR-046).
+App-side bulk hygiene is already in place (ADR-026 / ADR-043 / ADR-046): RFC 8058 one-click
+`List-Unsubscribe`, hard-bounce/complaint suppression, and a durable retrying outbox.
 
 ## 5. Crons
 

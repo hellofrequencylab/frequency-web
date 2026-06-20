@@ -1,7 +1,7 @@
-# Marketing Redesign — Status & Handoff
+# Marketing Redesign: Status & Handoff
 
 > ⚠️ **This doc covers the MARKETING / public-site redesign.** For the **in-app** design overhaul
-> (interior `(main)` pages, the design kit, Phases 0–3), see [REDESIGN-INAPP.md](REDESIGN-INAPP.md).
+> (interior `(main)` pages, the design kit, Phases 0 to 3), see [REDESIGN-INAPP.md](REDESIGN-INAPP.md).
 
 Snapshot of the agency redesign program so the next thread starts with a clear map.
 Source of truth for direction: [`CREATIVE-PLATFORM.md`](CREATIVE-PLATFORM.md) (audience,
@@ -12,16 +12,16 @@ system + page-flow blueprint + backlog). Decisions: [`DECISIONS.md`](DECISIONS.m
 grid) · warm DAWN + ink/slat contrast · real golden-hour photography. Build ON what exists.
 
 ## ✅ Live on production (`main`)
-- **Design system:** bold-warm contrast layer — ink/slat dark bands, amber LED `.light-strip`,
+- **Design system:** bold-warm contrast layer: ink/slat dark bands, amber LED `.light-strip`,
   `amber-glow`, `shadow-pop`; warm-wood dark mode; deeper marketing-canvas. (`globals.css`)
-- **Unified header** — `PrimaryNav`: **Discover** dropdown + flat **About** tabs (mission-focused
+- **Unified header** (`PrimaryNav`): **Discover** dropdown + flat **About** tabs (mission-focused
   for members), used by every header. (`components/layout/primary-nav.tsx`)
 - **Discover layer** redesigned (hub / circles / events / topics) with photo heroes + real photos.
 - **The Lab / How it works / About** redesigned (uniform editorial; live after unpublish).
 - **Pricing / Demo** built + on the shared `PhotoHero`.
-- **Experimental flagship splash** — story-led, scroll-motion (`components/marketing/motion.tsx`),
+- **Experimental flagship splash**: story-led, scroll-motion (`components/marketing/motion.tsx`),
   reduced-motion + no-JS safe.
-- **Page-editor Unpublish** — `unpublishPage` + button (`app/edit/actions.ts`, `editor.tsx`).
+- **Page-editor Unpublish**: `unpublishPage` + button (`app/edit/actions.ts`, `editor.tsx`).
 
 ## 🟡 In the open PR (awaiting preview/merge)
 - **`/beta` redesign** (photo hero + reassurance + founder trust + honest scarcity).
@@ -33,9 +33,9 @@ grid) · warm DAWN + ink/slat contrast · real golden-hour photography. Build ON
    editorial* but not yet motion-forward; bring the validated flagship motion/layout to them.
 2. **Phase-A primitives (Design-Language P1):** shared `Button` + `Card`; bake spacing rhythm +
    container widths into `Section` defaults; retire the remaining inline button/card drift.
-3. ~~**Pre-existing lint error:** `event-form.tsx` `<a>` → `next/link`.~~ ✅ Done (audit) — also
+3. ~~**Pre-existing lint error:** `event-form.tsx` `<a>` → `next/link`.~~ ✅ Done (audit). Also
    cleared the stale `opengraph-image` eslint-disable; ESLint is clean.
-4. ~~**Guard the splash.**~~ ✅ Done — **ADR-054**: `home` is code-locked (removed from
+4. ~~**Guard the splash.**~~ ✅ Done. **ADR-054**: `home` is code-locked (removed from
    `EDITABLE_PAGES`; `/` renders the coded splash unconditionally). Structural, not convention.
 
 ## ✅ Editor reworked into a standardized block library (ADR-055)

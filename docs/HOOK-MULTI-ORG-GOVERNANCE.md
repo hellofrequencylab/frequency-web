@@ -1,6 +1,6 @@
-# Frequency Multi-Org Hosting — Governance & Compliance (Global)
+# Frequency Multi-Org Hosting: Governance & Compliance (Global)
 
-> **Status:** 🟡 Living structural plan. The **governance/compliance layer** of the Hook federation —
+> **Status:** 🟡 Living structural plan. The **governance/compliance layer** of the Hook federation
 > extends **[ADR-059](DECISIONS.md)** (3-entity split) + **[ADR-158](DECISIONS.md)** (federation) and
 > sits beside **[HOOK-FEDERATION-ARCHITECTURE.md](HOOK-FEDERATION-ARCHITECTURE.md)** (the technical
 > spine). Written to align the structural plan against the codebase.
@@ -20,28 +20,28 @@ privacy law (GDPR + analogues) is built around:
   layer (network score, social graph, discovery, gamification).
 - This *is* "Hook owns private/billable; Frequency owns public/social." **The product boundary is the
   legal boundary.** `[reuse — formalize]`
-- **Required:** a standard **Data Processing Agreement (DPA)** per tenant — processor obligations,
+- **Required:** a standard **Data Processing Agreement (DPA)** per tenant: processor obligations,
   named sub-processors, breach-notification SLA, deletion-on-exit. `[net-new — contract]`
 
 ## 2. Data residency / regionalization (the "worldwide" core)
 
 - **Pin each tenant to a region at provisioning** (US/EU/UK/CA/AU). Private data stays in-region
   (Supabase regional projects; region-pinned Hook instance). `[net-new — region field + pinned instances]`
-- **Only minimized aggregates + identity links cross borders** — the architecture already keeps this
+- **Only minimized aggregates + identity links cross borders.** The architecture already keeps this
   surface tiny, which is the hard part of global compliance, already minimized. `[reuse]`
-- For the small cross-border flow: document a transfer basis — **SCCs** or adequacy. `[net-new — legal]`
+- For the small cross-border flow: document a transfer basis, **SCCs** or adequacy. `[net-new: legal]`
 - **Per-region feature flags:** disable a federation surface in a jurisdiction without a code change.
   `[net-new]`
 
-## 3. Consent & data-rights system (the biggest build — productize it)
+## 3. Consent & data-rights system (the biggest build: productize it)
 
-- **Versioned consent ledger** — what/when/which-terms-version/which-surface, withdrawable. Extends the
+- **Versioned consent ledger:** what/when/which-terms-version/which-surface, withdrawable. Extends the
   built `unknown → subscribed` ladder into a per-purpose, per-surface, versioned record. `[extend]`
-- **Special-category data (GDPR Art. 9)** — disability/health-adjacent membership needs *explicit*
+- **Special-category data (GDPR Art. 9):** disability/health-adjacent membership needs *explicit*
   consent; tag a tenant's sensitivity so the platform raises the bar automatically. `[net-new]`
-- **Minors & guardians** — age-gating + verifiable parental consent (COPPA <13 US; GDPR 13–16 by member
+- **Minors & guardians:** age-gating + verifiable parental consent (COPPA <13 US; GDPR 13 to 16 by member
   state); guardian-linked accounts. `[net-new]`
-- **Data-subject rights (DSAR)** — access, rectification, **erasure**, portability. Erasure must
+- **Data-subject rights (DSAR):** access, rectification, **erasure**, portability. Erasure must
   **propagate across the Hook↔Frequency boundary** (delete an individual → revoke their federated
   aggregates + identity link). Per-tenant revocation is the foundation; extend to per-individual.
   `[extend]`
@@ -62,7 +62,7 @@ privacy law (GDPR + analogues) is built around:
 ## 5. Trust, safety, safeguarding, accessibility
 
 - **Accessibility baseline:** WCAG 2.2 AA in the white-label template, **plus** neurodivergent defaults
-  — sensory-load control, predictability, reduced-motion, plain language — as template defaults.
+  (sensory-load control, predictability, reduced-motion, plain language) as template defaults.
   `[net-new — template]`
 - **Safeguarding:** policy + tooling for orgs serving minors / vulnerable adults (reporting,
   moderation). `[net-new]`
@@ -72,11 +72,11 @@ privacy law (GDPR + analogues) is built around:
 
 - Versioned contracts (in place) + a **change-control policy**: who approves a version bump,
   deprecation/migration windows. `[extend]`
-- Anti-farm / anti-abuse at the boundary — daily caps + idempotent ledger so a tenant can't mint
+- Anti-farm / anti-abuse at the boundary: daily caps + idempotent ledger so a tenant can't mint
   network rank. `[reuse]`
 - A short **tenant code of conduct** governing what may federate into the global graph. `[net-new]`
 
-## Summary — reuse vs. build
+## Summary: reuse vs. build
 
 | Layer | Status |
 |---|---|

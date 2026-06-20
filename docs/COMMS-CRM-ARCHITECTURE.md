@@ -1,8 +1,8 @@
 # Communications, CRM & AI-Agent Architecture
 
 > Governs **Phase 6** in [BUILD-PHASES.md](BUILD-PHASES.md). Sits on top of the
-> engagement backbone in [ENGAGEMENT-ARCHITECTURE.md](ENGAGEMENT-ARCHITECTURE.md) —
-> it does **not** replace it. Decisions here are recorded as ADR-024…028 in
+> engagement backbone in [ENGAGEMENT-ARCHITECTURE.md](ENGAGEMENT-ARCHITECTURE.md).
+> It does **not** replace it. Decisions here are recorded as ADR-024…028 in
 > [DECISIONS.md](DECISIONS.md).
 
 ## 0. North Star — Weekly Active Members (WAM)

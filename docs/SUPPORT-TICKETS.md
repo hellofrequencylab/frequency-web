@@ -1,13 +1,13 @@
 # Support tickets & bug reporting (ADR-159)
 
-> The **ticketing** layer — the concrete, cataloged "talk to a human" tier of the
+> The **ticketing** layer: the concrete, cataloged "talk to a human" tier of the
 > support menu ([SUPPORT-SYSTEM.md](SUPPORT-SYSTEM.md) tier 3). Members report bugs /
 > ask for help from anywhere (a global button or the Vera chat box) with page +
 > activity context and a screenshot auto-captured; they track their ticket history;
 > staff triage and reply from a console wired to the member's profile/CRM; and Vera
 > reads a member's ticket history in conversation.
 
-## Data model — `supabase/migrations/20260608030000_support_tickets.sql`
+## Data model: `supabase/migrations/20260608030000_support_tickets.sql`
 
 | Table | Purpose |
 |---|---|
@@ -33,10 +33,10 @@ via short-lived **signed URLs** minted server-side (reports can carry on-screen 
 Nav: `admin-support` → Studio section (host+; janitor-retunable in the permission grid).
 
 ## Shipped since v1
-- ✅ **Reply notifications** — a staff public reply notifies the reporter (`support_reply`
+- ✅ **Reply notifications**: a staff public reply notifies the reporter (`support_reply`
   → `/support/[id]` in the notification bell), closing the loop; the reply also moves an
   open ticket to `waiting`.
-- ✅ **Member-record integration** — a staff-only **Support history** panel on
+- ✅ **Member-record integration**: a staff-only **Support history** panel on
   `/people/[handle]` (host+) lists the member's tickets, linked into the console
   (`components/support/member-support-panel.tsx`, `listTicketsForProfile`).
 

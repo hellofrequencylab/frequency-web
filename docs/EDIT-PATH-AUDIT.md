@@ -1,4 +1,4 @@
-# Edit-path audit — can every nav surface be edited?
+# Edit-path audit: can every nav surface be edited?
 
 > Snapshot 2026-06-06. "Can an operator create/edit/delete the content this page
 > shows, in-app?" Source surfaces: `lib/nav-areas.ts` (NAV_AREAS) + the Growth Studio
@@ -49,12 +49,12 @@
 
 | Gap | Why | Suggested fix |
 |---|---|---|
-| **Nurture** `/marketing/nurture` | Stub — no create/edit | Build a drip-sequence composer (real gap) |
-| **Automations** `/marketing/automations` | Stub — no create/edit | Build a trigger/rule editor (real gap) |
+| **Nurture** `/marketing/nurture` | Stub, no create/edit | Build a drip-sequence composer (real gap) |
+| **Automations** `/marketing/automations` | Stub, no create/edit | Build a trigger/rule editor (real gap) |
 | **Beta waitlist** `/marketing/beta` | View-only | Add invite/approve/remove actions |
 | **Contacts** `/marketing/contacts` | Append-only by design | Add manual "Add contact" + edit; otherwise OK |
 | **Library** `/library` | Browse-first by design | Add a "Submit to Library" creator entry (review flow exists) |
-| **People** `/people` | Directory by design | Acceptable — profiles edit via `/settings`; could add an inline admin edit for operators |
+| **People** `/people` | Directory by design | Acceptable: profiles edit via `/settings`; could add an inline admin edit for operators |
 
 **Reading:** the genuine *build* gaps are **Nurture** and **Automations** (stubbed pages
 with no UI). The rest are by-design browse/append surfaces that may only want a small

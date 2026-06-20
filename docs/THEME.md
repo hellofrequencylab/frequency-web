@@ -1,7 +1,7 @@
 # Adaptive theming: the four-axis model
 
-> **The model, in one line.** A surface's look is composed from **four orthogonal axes** —
-> mode, skin, occasion, and generation — each one attribute on the shell root, resolved
+> **The model, in one line.** A surface's look is composed from **four orthogonal axes**:
+> mode, skin, occasion, and generation, each one attribute on the shell root, resolved
 > through the CSS custom-property cascade. One canonical DOM, CSS-only variation, no
 > per-look duplication.
 
@@ -79,7 +79,7 @@ re-themes everything below it without re-rendering a single component.
 **Type and density are decoupled levers.** `--type-scale` is a unitless multiplier on type
 only; `--density-root` drives the root font-size (and the rem-based spacing scale) only. A
 preset can grow type without tightening space (spacious, kids) or tighten space without
-shrinking type — they are independent on purpose.
+shrinking type. They are independent on purpose.
 
 ---
 
@@ -95,7 +95,7 @@ act on a user's age. This is a deliberate, evidence-grounded decision:
   fluent with software. (Kirschner & van Merriënboer, 2013.)
 - **The "8-second attention span" is fabricated** and misattributed; there is no credible
   source. (BBC; McKinsey.)
-- **Dark mode is situational, not generational** — lighting, task, and preference drive it, not
+- **Dark mode is situational, not generational**: lighting, task, and preference drive it, not
   birth year. (Nielsen Norman Group.)
 
 What **is** well-evidenced are the individual design *levers* and one hard floor:
@@ -104,7 +104,7 @@ What **is** well-evidenced are the individual design *levers* and one hard floor
   saturation, ornament. Those are what the presets actually tune.
 - **Aging is an accessibility floor, not a style.** Contrast-sensitivity loss reaches roughly
   83% by age 80 (W3C WAI-AGE); users 65+ are about 43% slower and abandon tasks at roughly
-  twice the rate (NN/g). That is a **WCAG obligation**, not a preference — so accessibility is a
+  twice the rate (NN/g). That is a **WCAG obligation**, not a preference, so accessibility is a
   floor at **every** preset, never a knob you can turn off.
 
 **What this means for the system:**
@@ -139,7 +139,7 @@ Every generation preset is the same seven knobs at different settings. Each pres
 | Density | `--density-root` | root font-size → drives the rem spacing scale |
 | Radius | `--radius-control` / `--radius-card` / `--radius-pill` | corner softness by role |
 | Motion | `--motion-fast` / `--motion-base` / `--motion-slow` | interaction beat durations |
-| Ornament | `--ornament` | 0–1 decorative intensity for the glow/strip/sheen layers |
+| Ornament | `--ornament` | 0 to 1 decorative intensity for the glow/strip/sheen layers |
 | Contrast (floor) | base text/border tokens; `minContrast` in the registry flags AAA-target presets | AA everywhere; AAA at the calm + kids ends |
 | Target size | `--tap-min` | interactive target floor; **non-monotonic** |
 
@@ -152,16 +152,16 @@ Every generation preset is the same seven knobs at different settings. Each pres
 | `balanced` *(= DAWN default)* | adult | 1.0 | base | base | base (0.6) | 32px | AA |
 | `bold` | adult | 0.96 (dense) | tight | livelier | high (0.8) | 26px (AA floor) | AA |
 | `playful` | adult | 1.08 | comfortable | most | highest (1.0) | 46px | AA |
-| `kids-early` (3–5) | kids | largest (1.3) | very low | purposeful | friendly (0.7) | 56px (~2cm) | AAA |
-| `kids-mid` (6–8) | kids | 1.2 | low | purposeful | 0.65 | 50px | AAA |
-| `kids-tween` (9–12) | kids | 1.1 | comfortable | gentle | 0.6 | 46px | AAA |
+| `kids-early` (3 to 5) | kids | largest (1.3) | very low | purposeful | friendly (0.7) | 56px (~2cm) | AAA |
+| `kids-mid` (6 to 8) | kids | 1.2 | low | purposeful | 0.65 | 50px | AAA |
+| `kids-tween` (9 to 12) | kids | 1.1 | comfortable | gentle | 0.6 | 46px | AAA |
 
 `balanced` is an explicit no-op anchor: it inherits the base feel unchanged, kept visible so the
 contract is obvious and the registry/test have a selector to match.
 
 **Skins and occasions, briefly.** Skins ([`lib/theme/skins.ts`](../lib/theme/skins.ts)) ship two
-ids today — `default` (DAWN, the warm cream + amber baseline; it authors no override blocks) and
-`midnight` (cool slate with the amber accent kept, sharper radii — proving palette *and* feel
+ids today: `default` (DAWN, the warm cream + amber baseline; it authors no override blocks) and
+`midnight` (cool slate with the amber accent kept, sharper radii, proving palette *and* feel
 both vary by skin). Occasions ([`lib/theme/occasions.ts`](../lib/theme/occasions.ts)) ship `none`
 (baseline) and `solstice` (a gentle accent/ornament warm-up on a calendar window). Both stay
 subtle so they read on any palette.
@@ -178,14 +178,14 @@ if you forget either half.** The core (shell, nav, rail) is never edited.
 1. **CSS** in `app/globals.css`: a light block `[data-skin="<id>"] { … }` **and** a dark block
    `.dark [data-skin="<id>"] { … }`. Override only the tokens that differ from base.
 2. **Registry** in [`lib/theme/skins.ts`](../lib/theme/skins.ts): add the id to the `SkinId`
-   union and a `SkinDef` (`{ id, label, description }`, in voice — plain, no em dashes).
+   union and a `SkinDef` (`{ id, label, description }`, in voice: plain, no em dashes).
 3. **Test:** `skins.test.ts` already asserts every non-`default` id has both blocks. It fails the
    build if you author one half.
 
 ### Add an occasion
 
 1. **CSS** as an unlayered block (authored after the `[data-skin]` blocks): `[data-occasion="<id>"] { … }`
-   and its `.dark [data-occasion="<id>"] { … }` variant. Keep it to accent + ornament — it is an overlay.
+   and its `.dark [data-occasion="<id>"] { … }` variant. Keep it to accent + ornament; it is an overlay.
 2. **Registry** in [`lib/theme/occasions.ts`](../lib/theme/occasions.ts): extend `OccasionId`, add
    an `OccasionDef` with its `window: { start: 'MM-DD', end: 'MM-DD' }` (windows may wrap the
    year-end).
@@ -194,7 +194,7 @@ if you forget either half.** The core (shell, nav, rail) is never edited.
 ### Add a generation
 
 1. **CSS** as an unlayered block (authored last, after occasion): `[data-generation="<id>"] { … }`
-   tuning the feel knobs only (no palette). Hold the invariants — keep the 24px target floor; let
+   tuning the feel knobs only (no palette). Hold the invariants: keep the 24px target floor; let
    the reduced-motion guard at the end of the generation blocks neutralize your motion tokens.
 2. **Registry** in [`lib/theme/generations.ts`](../lib/theme/generations.ts): extend
    `GenerationId`, add a `GenerationDef` (`label`, plain `vibe`, `group`, `order`, `minContrast`).
@@ -218,9 +218,9 @@ generation, occasion }`) that the shell sets as the three data-attributes.
 
 **Precedence** (highest wins):
 
-1. **Member `fxtheme` cookie** — the explicit personal override.
-2. **Space default** — `spaces.skin` / `spaces.generation` (the operator's choice).
-3. **System / time default** — `DEFAULT_*` for skin and generation; for occasion, the **calendar
+1. **Member `fxtheme` cookie**: the explicit personal override.
+2. **Space default**: `spaces.skin` / `spaces.generation` (the operator's choice).
+3. **System / time default**: `DEFAULT_*` for skin and generation; for occasion, the **calendar
    window**, since occasion has no Space default unless the member pins one.
 
 **Occasion is now scheduled end-to-end.** The in-app shell layout ([`app/(main)/layout.tsx`](<../app/(main)/layout.tsx>))
@@ -235,7 +235,7 @@ the `data-occasion` attribute is simply omitted, so the baseline renders untouch
 The cookie helper [`lib/theme/cookie.ts`](../lib/theme/cookie.ts) is deliberately client-safe (no
 `server-only`, no `next/headers` import) so the client writer and the server reader share one
 parse/serialize pair. `parseThemeCookie` validates every field through a registry guard and
-**drops anything unknown** — a stale or hand-edited cookie can never push an invalid axis into the
+**drops anything unknown**: a stale or hand-edited cookie can never push an invalid axis into the
 shell.
 
 Because the axes are resolved on the server from a cookie and written straight into the RSC
@@ -278,11 +278,11 @@ of the child experience must be gated behind a compliance and safeguarding track
 ### The design finding
 
 Design to the **developmental age band**, never a generation label. Per Nielsen Norman Group's
-age-band research (3–5 / 6–8 / 9–12), younger children need:
+age-band research (3 to 5 / 6 to 8 / 9 to 12), younger children need:
 
 - **Larger targets** (~2cm; the `kids-early` floor is 56px) and **icon + label** navigation, not
   icon-only.
-- **Purposeful, not constant, motion** — animation that signals something, never ambient.
+- **Purposeful, not constant, motion**: animation that signals something, never ambient.
 - **Very low density** and **AAA contrast** (comprehension and motor skills are still developing).
 - **Age-appropriate reading level.** "The same content" at the child end may require a
   **reading-level transform of the copy**, which is a *content* concern, separate from
@@ -477,7 +477,7 @@ links home, no operator string reaches a style or script.
 |---|---|
 | `brand_*` columns + store reads | ✅ shipped (migration apply pending, see below) |
 | Janitor-gated branding editor + validated action | ✅ shipped |
-| **Header brand visual** (logo / name shown in the chrome) | ✅ shipped — `BrandMark` renders the Space logo (guarded `<img>`) / name in place of the default wordmark; `(main)/layout.tsx` passes `brandName` / `brandLogoUrl`, fail-safe to the default mark (unblocked by the events redesign merge) |
+| **Header brand visual** (logo / name shown in the chrome) | ✅ shipped: `BrandMark` renders the Space logo (guarded `<img>`) / name in place of the default wordmark; `(main)/layout.tsx` passes `brandName` / `brandLogoUrl`, fail-safe to the default mark (unblocked by the events redesign merge) |
 
 ---
 
@@ -515,7 +515,7 @@ and the operator layer is a fail-safe **merge over** them, never a replacement. 
 |---|---|
 | Override table + janitor-gated manager | ✅ shipped (migration apply pending, see below) |
 | `loadChromeOverrides` + `mergeChrome` + `resolvePageChrome` (fail-safe) | ✅ shipped |
-| **Live shell adoption** (the shell merges the override into its rail) | ✅ shipped — `app-shell.tsx` computes `mergeChrome(railFor(pathname), chromeOverrides, pathname)`; `(main)/layout.tsx` loads `loadChromeOverrides` server-side (fail-safe `{}`) and passes `chromeOverrides` (unblocked by the events redesign merge) |
+| **Live shell adoption** (the shell merges the override into its rail) | ✅ shipped: `app-shell.tsx` computes `mergeChrome(railFor(pathname), chromeOverrides, pathname)`; `(main)/layout.tsx` loads `loadChromeOverrides` server-side (fail-safe `{}`) and passes `chromeOverrides` (unblocked by the events redesign merge) |
 
 ---
 
@@ -524,8 +524,8 @@ and the operator layer is a fail-safe **merge over** them, never a replacement. 
 | Item | Status |
 |---|---|
 | The three migrations (`20260625000000_themes`, `20260626000000_space_brand`, `20260626100000_page_chrome_overrides`) | ✅ applied to Frequency Community (2026-06-14). Fail-safe before apply in any fresh environment (code skins, branding columns absent, chrome overrides `{}`) |
-| Per-Space **header brand visual** (logo / name in the chrome) | ✅ shipped — `BrandMark` renders the Space logo / name in the header, fail-safe to the default mark (§12) |
-| Page-layout **live shell adoption** (shell merges the override into its rail) | ✅ shipped — `app-shell.tsx` uses `mergeChrome(railFor, chromeOverrides, pathname)` (§13) |
+| Per-Space **header brand visual** (logo / name in the chrome) | ✅ shipped: `BrandMark` renders the Space logo / name in the header, fail-safe to the default mark (§12) |
+| Page-layout **live shell adoption** (shell merges the override into its rail) | ✅ shipped: `app-shell.tsx` uses `mergeChrome(railFor, chromeOverrides, pathname)` (§13) |
 | The **generation / demographic** axis as editable data | 🅿️ deferred (the code axis stands; Theme Studio does not yet manage it) |
 | Per-Space theme assignment | ✅ shipped (it is the existing `spaces.skin`, now set from `/admin/spaces`, §12) |
 | Occasion auto-resolution from the DB `MM-DD` windows | ✅ shipped (`resolveActiveOccasionSlug`, wired in the in-app shell, §§1, 6) |
@@ -536,12 +536,12 @@ and the operator layer is a fail-safe **merge over** them, never a replacement. 
 
 ## See also
 
-- [`app/globals.css`](../app/globals.css) — the CSS axes, source-order precedence, `@theme inline` bridge.
-- [`lib/theme/`](../lib/theme/) — the registries (`skins.ts`, `generations.ts`, `occasions.ts`), the
+- [`app/globals.css`](../app/globals.css): the CSS axes, source-order precedence, `@theme inline` bridge.
+- [`lib/theme/`](../lib/theme/): the registries (`skins.ts`, `generations.ts`, `occasions.ts`), the
   cookie (`cookie.ts`), the server resolver (`server/resolve.ts`).
-- [`docs/SPACES.md`](SPACES.md) — Spaces own the skin (and the per-Space generation default).
-- [`docs/DESIGN.md`](DESIGN.md) — the DAWN design language the `balanced` / `default` baseline encodes.
-- [`docs/DECISIONS.md`](DECISIONS.md) — [ADR-257](DECISIONS.md) (the four-axis model),
+- [`docs/SPACES.md`](SPACES.md): Spaces own the skin (and the per-Space generation default).
+- [`docs/DESIGN.md`](DESIGN.md): the DAWN design language the `balanced` / `default` baseline encodes.
+- [`docs/DECISIONS.md`](DECISIONS.md): [ADR-257](DECISIONS.md) (the four-axis model),
   [ADR-258](DECISIONS.md) (Theme Studio: themes as operator-editable data),
   [ADR-259](DECISIONS.md) (occasion scheduling fix + per-Space branding + page-chrome overrides),
   and [ADR-260](DECISIONS.md) (the shell now consumes the per-Space brand + page-chrome overrides).

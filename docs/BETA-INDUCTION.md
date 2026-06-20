@@ -1,14 +1,14 @@
-# Beta induction — the founding-cohort onboarding
+# Beta induction: the founding-cohort onboarding
 
 Status: **building.** Decision: [DECISIONS.md ADR-068](DECISIONS.md). Voice: [AI-VERA.md](AI-VERA.md)
-(hot register, §2). Temporary by design — deleted at public launch, when the non-blocking
+(hot register, §2). Temporary by design, deleted at public launch, when the non-blocking
 progressive tour ([ONBOARDING.md](ONBOARDING.md)/ADR-047) becomes the permanent model.
 
 ## What it is, in one line
 
 A short, **stoked, one-time gate** that turns a beta signup into a *founder*: they take an oath,
 tell us who/where/why they are, get a fast cinematic tour of the core, and land in the app already
-activated — guided start-to-finish by **scripted Vera**.
+activated, guided start-to-finish by **scripted Vera**.
 
 ## Why it breaks the non-blocking rule (on purpose)
 
@@ -16,9 +16,9 @@ activated — guided start-to-finish by **scripted Vera**.
 |---|---|---|
 | Who | Founding cohort who raised their hand to **build** | Every public newcomer |
 | Shape | Short guided sequence + **one gate** (the Oath) | Progressive, non-blocking coachmarks |
-| Why a gate is OK | The friction *is* the filter — they opted in to build, not browse | Public users must explore freely |
+| Why a gate is OK | The friction *is* the filter (they opted in to build, not browse) | Public users must explore freely |
 | Vera | **Hot** register, scripted | Cool register, eventually live |
-| Lifespan | ⏳ Throwaway — deleted at launch | ✅ Permanent |
+| Lifespan | ⏳ Throwaway, deleted at launch | ✅ Permanent |
 
 The induction is the live path **only during beta**, behind one flag: `BETA_INDUCTION_ACTIVE` in
 `lib/onboarding/beta-script.ts`. `/onboarding` redirects into `/onboarding/beta` while it's `true`.
@@ -27,7 +27,7 @@ It is the **mandatory opening sequence**: `app/(main)/layout.tsx` routes any sig
 to the non-blocking model at launch; no loop since `/onboarding` is outside the `(main)` layout).
 At launch: flip the flag, delete `app/onboarding/beta/` + `components/onboarding/renders/`.
 
-## Sequences — one template, audience-targeted copy ([ADR-094](DECISIONS.md) → splash overhaul ADR)
+## Sequences: one template, audience-targeted copy ([ADR-094](DECISIONS.md) → splash overhaul ADR)
 
 The induction is **audience-parameterized**: same cinematic engine, swappable voice.
 A *sequence* bundles a **splash**, the induction's **voiced copy** (`VeraCopy`), and
@@ -36,7 +36,7 @@ a durable **marketing tag**. The three code-shipped launch templates
 
 | Slug | What it is | Authored where | Entry |
 |---|---|---|---|
-| `beta-default` *(reserved)* | The base VERA flow — what `/onboarding/beta` runs with no `?seq` (tag `beta_early_adopter`, cohort continuity) | `/pages/splash` live-preview editor → `sequence_overrides` | `/onboarding/beta` |
+| `beta-default` *(reserved)* | The base VERA flow: what `/onboarding/beta` runs with no `?seq` (tag `beta_early_adopter`, cohort continuity) | `/pages/splash` live-preview editor → `sequence_overrides` | `/onboarding/beta` |
 | any other slug | A DB-built **version** for a specific audience | `/pages/sequences` wizard → `sequence_overrides` | `/onboarding/beta?seq=<slug>` |
 
 `resolveSequence(null \| '' \| 'beta-default')` returns the coded VERA script merged
@@ -48,7 +48,7 @@ with the legacy `/admin/vera` induction tweaks and then the `beta-default` overr
 a 30-day `fq_beta_seq` cookie keeps it across the deferred sign-in round-trip. On
 completion `writeBetaInduction` records `meta.beta.sequence` and stamps the cohort's
 marketing tag (resolved through the DB layer, best-effort; never blocks). Tags are
-governed — declared in `lib/traits/registry.ts` (snake_case), and `assignTag` refuses
+governed, declared in `lib/traits/registry.ts` (snake_case), and `assignTag` refuses
 unregistered keys so the founding cohort stays segmentable by entry path **forever**,
 even after this flow is deleted at launch.
 
@@ -59,30 +59,30 @@ built beat-by-beat at `/pages/sequences` (the "Splash pages" manager). Beat head
 support a light accent markup: a word wrapped in `*asterisks*` renders in the brand
 accent.
 
-## Look & feel — a cinematic sequence, not a form
+## Look & feel: a cinematic sequence, not a form
 
 The whole thing is **centered, one focus per screen** (Hook-style), large display type, a single
-pill action per beat (no marketing-style button rows), and minimal centered inputs — deliberately
+pill action per beat (no marketing-style button rows), and minimal centered inputs, deliberately
 *not* a labeled form. It **starts dark and lightens beat by beat**: a `bg-ink` scrim over the light
 `canvas` base lifts its opacity each step (`SCENES` in `induction.tsx`) until the final beat lands on
 the **feed's light theme**; text flips light-on-dark → dark-on-light in step, masked by the per-beat
 fade-in. A blurred `primary`/`signal` radial glow rides behind it.
 
 The spine is **the reel** (beat 2): a crossfading slideshow of the **vector feature renders**
-(Feed → Circles → Events) only — no photography. It's data-driven (`REEL` in
+(Feed → Circles → Events) only, no photography. It's data-driven (`REEL` in
 `lib/onboarding/beta-script.ts`); the `ReelSlide` type still supports `kind:'image'`, so a real
-product **screenshot** can be slotted in later by adding an entry — no component changes.
+product **screenshot** can be slotted in later by adding an entry, no component changes.
 
-## The flow — 6 beats, < 90 seconds
+## The flow: 6 beats, < 90 seconds
 
 | # | Beat | Vera register | Captures | Blocking? |
 |---|---|---|---|---|
-| 0 | **The Oath** — 3 commitment checkboxes | Hot | `meta.beta.oath` | ✅ the one gate |
-| 1 | **Intro** — "you're a founder, not a user" | Hot | — | skippable |
-| 2 | **The reel** — crossfading vector renders (auto-advancing) | Hot | — | skippable |
-| 3 | **Who you are** — name · handle · photo | Cool | `display_name`, `handle`, `avatar_url` | name+handle req'd |
-| 4 | **Where + why** — region · intent · how'd you hear | Cool→warm | `nexus_region_id`, `meta.beta.intent`, `meta.beta.heard_about` | skippable* |
-| 5 | **Enter** — review + "Enter Frequency" | Hot | writes all + `meta.onboarding_completed` | — |
+| 0 | **The Oath**: 3 commitment checkboxes | Hot | `meta.beta.oath` | ✅ the one gate |
+| 1 | **Intro**: "you're a founder, not a user" | Hot | (none) | skippable |
+| 2 | **The reel**: crossfading vector renders (auto-advancing) | Hot | (none) | skippable |
+| 3 | **Who you are**: name · handle · photo | Cool | `display_name`, `handle`, `avatar_url` | name+handle req'd |
+| 4 | **Where + why**: region · intent · how'd you hear | Cool→warm | `nexus_region_id`, `meta.beta.intent`, `meta.beta.heard_about` | skippable* |
+| 5 | **Enter**: review + "Enter Frequency" | Hot | writes all + `meta.onboarding_completed` | (none) |
 
 \* Name + handle are required to enter (a profile can't function without them); photo, region, and
 intent are optional but asked for plainly. The reel auto-advances (paused under
@@ -99,12 +99,12 @@ Three checkboxes, all required to unlock the button. Copy lives in `BETA_OATHS`
 | Report, don't bail | **"I agree to submit bug reports and screenshots"** |
 | Here to build | **"I agree to be a Frequency Web Founder"** |
 
-Framing (Vera, hot): *"This isn't a product yet. It's a promise"* — that the people near you are
+Framing (Vera, hot): *"This isn't a product yet. It's a promise"*, that the people near you are
 worth finding. Button: **"I'm in."**
 
 Accepting stamps `profiles.meta.beta.oath = { accepted_at, version, oaths: [...ids] }`.
 
-## Data — no migration
+## Data: no migration
 
 Everything rides the existing `profiles.meta` JSONB (same call as ADR-047's `meta.tour`):
 
@@ -121,15 +121,15 @@ meta = {
 }
 ```
 
-- The Enter action **merges** into existing `meta` (never blind-overwrites — unlike the legacy
+- The Enter action **merges** into existing `meta` (never blind-overwrites, unlike the legacy
   `completeOnboarding`, which is fine because it runs on a fresh `{}`).
 - **CRM mirror is a follow-up:** `meta.beta.intent` is the seed for both the CRM `contacts.meta`
   timeline and (when it ships) `ai_member_context.facts.goals` / Vera's `suggest_circle`. Not wired
-  in this build — documented so it isn't lost.
+  in this build, documented so it isn't lost.
 
 ## Vera: scripted now, live later
 
-- **Now:** every beat's copy is deterministic, in Vera's **hot register** (AI-VERA.md §2) — conviction
+- **Now:** every beat's copy is deterministic, in Vera's **hot register** (AI-VERA.md §2): conviction
   pointed at something real, never confetti. Zero AI calls ⇒ no kernel/kill-switch dependency.
 - **Later:** when live Vera lands (ADR-066 Phase D), she delivers these beats conversationally and
   this script becomes her deterministic fallback. The beat structure does not change.
@@ -139,21 +139,21 @@ meta = {
 The "vector renders" of each section are **inline SVG components**, not commissioned art:
 `components/onboarding/renders/{feed,circles,events}-render.tsx`.
 
-- DAWN tokens only (`fill="var(--brand)"`, `text-primary`, …) — theme + brand-color for free, no hex.
+- DAWN tokens only (`fill="var(--brand)"`, `text-primary`, …): theme + brand-color for free, no hex.
 - Animated with the existing `slideUp` keyframe + CSS transitions; **respect `prefers-reduced-motion`**.
-- **Only the core triad** (Feed/Circles/Events) — showing all 18 nav areas would violate "quick."
+- **Only the core triad** (Feed/Circles/Events): showing all 18 nav areas would violate "quick."
 - Cheap to throw away: deleted in the same PR as the route when the design changes.
 
-The reel is **renders only** (no photography) — they crossfade on a timer. To add a real product
+The reel is **renders only** (no photography); they crossfade on a timer. To add a real product
 **screenshot** later, drop the file in `public/` and add a `kind:'image'` entry to `REEL` (the type
-still supports it) — no component changes.
+still supports it), no component changes.
 
 ## Accessibility & UX rules (the "do everything" checklist)
 
 ✅ One gate, everything else skippable · ✅ < 90s, visible progress · ✅ once-per-user + resumable
 (idempotent `meta` flag; returning users redirect to `/feed`) · ✅ keyboard + focus management on
 each beat · ✅ `prefers-reduced-motion` honored by every render · ✅ mobile-first (the desktop brand
-rail collapses) · ✅ ends on a real next step — **hands off to the Vera concierge** (`/onboarding/vera`,
+rail collapses) · ✅ ends on a real next step: **hands off to the Vera concierge** (`/onboarding/vera`,
 ADR-074) who bridges them to a first circle, with a one-tap escape to `/circles` and a feed first-run
 banner catching anyone who skips · ✅ Vera's voice, hot but earned.
 
@@ -167,16 +167,16 @@ ADR-047 funnel when the analytics surface lands.
 
 | Path | Role |
 |---|---|
-| `app/onboarding/beta/page.tsx` | Server page — auth guard, fetch profile + regions |
-| `app/onboarding/beta/preview/page.tsx` | **Public, no-auth visual preview** (`/onboarding/beta/preview`) — sample data, no writes; exempted in `proxy.ts`, noindexed; torn down at launch |
-| `app/onboarding/beta/induction.tsx` | Client flow — Oath gate + 6 beats (`preview` prop mocks the auth-dependent calls) |
+| `app/onboarding/beta/page.tsx` | Server page: auth guard, fetch profile + regions |
+| `app/onboarding/beta/preview/page.tsx` | **Public, no-auth visual preview** (`/onboarding/beta/preview`): sample data, no writes; exempted in `proxy.ts`, noindexed; torn down at launch |
+| `app/onboarding/beta/induction.tsx` | Client flow: Oath gate + 6 beats (`preview` prop mocks the auth-dependent calls) |
 | `app/onboarding/beta/actions.ts` | `acceptBetaOath`, `completeBetaInduction`; reads `?seq` cookie → records `meta.beta.sequence` + stamps the cohort tag |
 | `lib/onboarding/beta-script.ts` | Vera's scripted copy, `BETA_OATHS`, `BETA_INDUCTION_ACTIVE` flag, the `VeraCopy` type |
 | `lib/onboarding/beta-sequences.ts` | The `BetaSequence` shape + the reserved `beta-default` base (code sequences record now empty) |
 | `lib/onboarding/resolve-sequence.ts` | Merges code base + vera_config + `sequence_overrides` (server-only) |
 | `app/(marketing)/beta/[slug]/page.tsx` | Public per-audience splash for CODE sequences (404s while none ship) |
-| `app/(main)/pages/splash/` | **Beta splash** — live-preview editor for the default flow (`beta-default` override) |
-| `app/(main)/pages/sequences/` | **Splash pages** manager — DB versions: create, build, share link + QR |
+| `app/(main)/pages/splash/` | **Beta splash**: live-preview editor for the default flow (`beta-default` override) |
+| `app/(main)/pages/sequences/` | **Splash pages** manager (DB versions): create, build, share link + QR |
 | `app/(main)/pages/home/` | Home SEO editor (title + meta description via ADR-180 page_content) |
 | `components/onboarding/renders/{feed,circles,events}-render.tsx` | Disposable section renders |
 | `app/onboarding/page.tsx` | Redirects to `/onboarding/beta` while the flag is on |
@@ -187,5 +187,5 @@ ADR-047 funnel when the analytics surface lands.
 2. Delete `app/onboarding/beta/`, `components/onboarding/renders/`, `lib/onboarding/beta-sequences.ts`,
    `lib/onboarding/resolve-sequence.ts`, `lib/onboarding/sequence-overrides.ts`,
    `app/(marketing)/beta/[slug]/`, `app/(main)/pages/splash/`, and `app/(main)/pages/sequences/`.
-3. Keep `meta.beta.*` data and the `beta_*` cohort **tags** (harmless, durable history — the whole
+3. Keep `meta.beta.*` data and the `beta_*` cohort **tags** (harmless, durable history, the whole
    point of tagging at the door); the launch onboarding ignores the rest.

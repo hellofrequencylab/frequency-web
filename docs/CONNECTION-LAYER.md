@@ -1,6 +1,6 @@
-# Connection Layer — the people graph (plan + contract)
+# Connection Layer: the people graph (plan + contract)
 
-> **Status:** ✅ P1–P5 shipped (2026-06-09). The Capture lead funnel (P4b) was already
+> **Status:** ✅ P1 to P5 shipped (2026-06-09). The Capture lead funnel (P4b) was already
 > built per ADR-099 (one-time, consent-tracked scan-intro email + magic-link + AI scan),
 > so P4 reduced to the venue maps.
 > **Governing principle:** *Proximity is a feeling you grant, not a coordinate you expose.*
@@ -15,20 +15,20 @@ controls** over visibility, location, and discoverability.
 
 | Layer | Surface | Is |
 |---|---|---|
-| **Community** | `/network` | The directory — nearby + most-engaged first, privacy-banded |
+| **Community** | `/network` | The directory: nearby + most-engaged first, privacy-banded |
 | **Friends** | `/friends` (absorbs `/connections`) | Your people: reciprocal members **+** captured contacts, with a CRM mode |
 | **Groups** | Circle / Hub / Nexus | Everyone in scope + activity + (P4) venue-snapped map |
-| **Business CRM** | `/marketing/contacts` | Unchanged — business/org accounts only |
+| **Business CRM** | `/marketing/contacts` | Unchanged: business/org accounts only |
 
-The flagship (P2+): **Orbits & Resonance** — every tie has a *resonance* that strengthens
+The flagship (P2+): **Orbits & Resonance**. Every tie has a *resonance* that strengthens
 with real co-presence and gently decays; the app surfaces **near-misses** (people repeatedly
 in your physical orbit you've never met) and rewards **introductions** that become real.
 
-## The privacy model (the bedrock — P1)
+## The privacy model (the bedrock, P1)
 
 - **Coordinates never leave the DB.** Clients receive a **band label** (`here` / `nearby` /
   `your area` / `your city`), never meters, never lat/lng. This kills the trilateration class
-  of bug (see ADR-186 sources) *before it exists* — today no member-to-member proximity ships.
+  of bug (see ADR-186 sources) *before it exists*: today no member-to-member proximity ships.
 - **Two location fidelities per profile:** the precise `home_lat/lng` stays private (self +
   circle leaders); all member-visible proximity is computed against a **fuzzed geocell**
   (`home_geocell_*`, rounded to ~1.1 km).
@@ -43,10 +43,10 @@ in your physical orbit you've never met) and rewards **introductions** that beco
 
 ## Anti-dystopia guardrails (hard constraints)
 
-- Resonance is **private** (yours, pair-visible at most) — **never a public ranking of humans**.
-- Reward **actions** (show up, introduce, welcome) — never reduce a person to points.
+- Resonance is **private** (yours, pair-visible at most): **never a public ranking of humans**.
+- Reward **actions** (show up, introduce, welcome): never reduce a person to points.
 - Decay is a gentle gardener, fully muteable; never a punishment.
-- Every proximity/near-miss reveal respects both parties' discoverability tiers — serendipity
+- Every proximity/near-miss reveal respects both parties' discoverability tiers; serendipity
   never overrides consent.
 
 ## Phases
@@ -64,7 +64,7 @@ member live-location pins on the venue map (gated on live-location opt-in) · re
 balance (needs message-direction plumbing). Each is genuinely complex/lower-ROI; documented
 here rather than half-built.
 
-## Metrics suite — the clever layer (status + where it lives)
+## Metrics suite: the clever layer (status + where it lives)
 
 | Metric | Status | Backed by |
 |---|---|---|

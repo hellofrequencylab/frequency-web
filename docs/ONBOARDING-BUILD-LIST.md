@@ -1,18 +1,18 @@
-# Onboarding & Vera — prioritized build list
+# Onboarding & Vera: prioritized build list
 
 > **Purpose.** The single, ranked, execute-from list for the onboarding push: get a real
-> beta cohort *in the door, excited, and creating a profile + content* — coached by Vera,
+> beta cohort *in the door, excited, and creating a profile + content*, coached by Vera,
 > deeply integrated. Written after a full docs+code audit (2026-06-06). Companion specs:
 > [`ONBOARDING.md`](ONBOARDING.md), [`AI-VERA.md`](AI-VERA.md), [`BETA-ACTIVATION.md`](BETA-ACTIVATION.md),
 > [`BETA-INDUCTION.md`](BETA-INDUCTION.md). Sequencing in [`BACKLOG.md`](BACKLOG.md) §F/§P.
 
 ## The headline
 
-**You are not building onboarding from scratch — you're finishing the last mile.** The
+**You are not building onboarding from scratch. You're finishing the last mile.** The
 induction, the Vera concierge (deterministic **and** live Claude loop), the AI kernel,
 help-RAG, member memory, the coachmark tour, and the spotlight tour are **all shipped and
 wired**. `tsc` and `eslint` are clean. The gaps are *connective* (Vera isn't present
-outside onboarding) and *proactive* (no day-2 nudges) — plus a handful of config flips to
+outside onboarding) and *proactive* (no day-2 nudges), plus a handful of config flips to
 actually turn a test cohort loose.
 
 Two levers, in order: **(0) flip the switches that let real testers in today**, then
@@ -24,36 +24,36 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 |---|---|---|---|---|
 | **0** | Pre-test enablement (config, not code) | Get testers in *today* | S | ⏳ |
 | **1.1** | Persistent Vera launcher, app-wide | Deep Vera integration | M | ✅ shipped |
-| **1.2** | Vera's "chores" — profile + first-post, matriarch full-stop | Create a profile + seed content | M | ✅ shipped |
-| **1.3** | Vera coach "next best action" — folded into the chores surface | Excitement + direction | S | ✅ shipped |
+| **1.2** | Vera's "chores": profile + first-post, matriarch full-stop | Create a profile + seed content | M | ✅ shipped |
+| **1.3** | Vera coach "next best action": folded into the chores surface | Excitement + direction | S | ✅ shipped |
 | **1.4** | "Founder's First Week" tasks + badge | Create content | M | ✅ shipped |
-| **1.5** | Live-loop suggestion chips | Guided depth | S | ✅ 2026-06 (ADR-203 — CHIPS line + extractSuggestions; all three chat surfaces) |
-| **2.1** | Welcome community post | Arrive *greeted* | S–M | 📋 |
-| **2.2** | Finish `draft_intro` (no-op today) | Warm intros land | S–M | ✅ 2026-06 (ADR-203 — tool carries the full message; confirm posts a sanitized @mention intro via the composer path) |
+| **1.5** | Live-loop suggestion chips | Guided depth | S | ✅ 2026-06 (ADR-203: CHIPS line + extractSuggestions; all three chat surfaces) |
+| **2.1** | Welcome community post | Arrive *greeted* | S to M | 📋 |
+| **2.2** | Finish `draft_intro` (no-op today) | Warm intros land | S to M | ✅ 2026-06 (ADR-203: tool carries the full message; confirm posts a sanitized @mention intro via the composer path) |
 | **2.3** | Memory batch summarization cron | Vera stays fresh | M | 📋 |
 | **2.4** | Warm up seeded demo content (§S9) + demo box → action links (§S4) | First scroll feels alive | M | 📋 |
-| **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M–L | 🔴 gated |
+| **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M to L | 🔴 gated |
 | **5.2** | Member-tier personal contacts + quick-add capture (ungate) | Real-life contacts, kept | S | ✅ shipped |
-| **5.1** | Rename Directory → **Network** + merge `/people` + `/connections` into one member tab | Findable as a product | S–M | ✅ **done (ADR-172)** — `/network` hub w/ CommunityTabs; `/people`→`/network`, `/connections`→`/network/contacts` redirect in; nav item is "Community"→`/network` |
-| **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
-| **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1–3 shipped |
-| **7** | **Role-advancement training** — a training Journey per role transition | Onboarding never ends; every role is taught | L | ⏳ spine shipped (7.1–7.2) |
-| **8** | **Hook Networks** — federated white-label sub-communities (+ Organization role) | Pros/orgs run their own bubble that feeds the network | XL | 📋 designed (ADR-158) |
-| **9** | **Growth Studio** — unified "Leadpages-style" onboarding/growth suite | One place to manage pages, entry points, QR, links, pipeline | M | ⏳ launchpad shipped (9.0) |
-| **10** | **Navigation restructure** — left-menu-only, categorical, minimal drill-down | Clean IA; condense sprawl into dashboards | L | ⏳ rail recategorized; dashboards next |
+| **5.1** | Rename Directory → **Network** + merge `/people` + `/connections` into one member tab | Findable as a product | S to M | ✅ **done (ADR-172)**: `/network` hub w/ CommunityTabs; `/people`→`/network`, `/connections`→`/network/contacts` redirect in; nav item is "Community"→`/network` |
+| **5.3 to 5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M to L | 📋 |
+| **6** | **Capture**: primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1 to 3 shipped |
+| **7** | **Role-advancement training**: a training Journey per role transition | Onboarding never ends; every role is taught | L | ⏳ spine shipped (7.1 to 7.2) |
+| **8** | **Hook Networks**: federated white-label sub-communities (+ Organization role) | Pros/orgs run their own bubble that feeds the network | XL | 📋 designed (ADR-158) |
+| **9** | **Growth Studio**: unified "Leadpages-style" onboarding/growth suite | One place to manage pages, entry points, QR, links, pipeline | M | ⏳ launchpad shipped (9.0) |
+| **10** | **Navigation restructure**: left-menu-only, categorical, minimal drill-down | Clean IA; condense sprawl into dashboards | L | ⏳ rail recategorized; dashboards next |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
 
 ---
 
-## Section 0 — Pre-test enablement (do this first; mostly config)
+## Section 0: Pre-test enablement (do this first; mostly config)
 
 The fastest path to "people in there and testing." None of this is a feature build.
 
 | # | Action | Where | Why it gates testing |
 |---|---|---|---|
-| 0.1 | Set `ANTHROPIC_API_KEY` in prod | env | Live Vera loop is dark without it (falls back to deterministic — still works, but not the real test). |
+| 0.1 | Set `ANTHROPIC_API_KEY` in prod | env | Live Vera loop is dark without it (falls back to deterministic, still works, but not the real test). |
 | 0.2 | Flip `platform_flags.ai_enabled` **on** | `/admin/ai` toggle | Defaults **false** (fail-closed). Live Vera + help-RAG stay off until flipped. |
 | 0.3 | Click **Build index** once in prod | `/admin/ai` | `help_chunks` corpus is empty until ingested; "Ask Vera" help deflects to human otherwise. |
 | 0.4 | Run the 2 pending migrations | `supabase db push` | `lock_economy_columns` (critical) + `perf_indexes`. |
@@ -65,21 +65,21 @@ lightbox opens with live (not scripted) replies → the funnel shows the events.
 
 ---
 
-## Section 1 — The activation + deep-Vera push (P0 build)
+## Section 1: The activation + deep-Vera push (P0 build)
 
 Ship as **one arc** (they share `getOnboardingStatus()` and an extracted `<VeraChat>`),
 in small reviewable PRs. Best-practice guardrails in the last section.
 
-### 1.1 — Persistent Vera launcher, app-wide ✅ **shipped** (ADR-086 / AI-VERA §4.0)
+### 1.1: Persistent Vera launcher, app-wide ✅ **shipped** (ADR-086 / AI-VERA §4.0)
 - **What shipped.** One floating Vera bubble on every `(main)` page (`components/vera/vera-launcher.tsx`,
-  mounted in `app/(main)/layout.tsx`), opening a two-tab panel: **Chat** — the multi-turn
+  mounted in `app/(main)/layout.tsx`), opening a two-tab panel: **Chat** (the multi-turn
   companion (`components/vera/vera-chat.tsx`, runs the live Claude loop + propose-and-confirm,
-  deterministic concierge fallback) — and **Help** — the folded-in tiers (instant article search →
-  browse the help center → talk to a human). The old `SupportLauncher` was retired, so there's
+  deterministic concierge fallback)) and **Help** (the folded-in tiers (instant article search →
+  browse the help center → talk to a human)). The old `SupportLauncher` was retired, so there's
   **one bubble, not two**. tsc + eslint + Vera tests green.
 - **Second pass (tweaks, not blockers):**
   - **Dedup:** migrate `vera-lightbox.tsx` + `vera-concierge.tsx` onto the shared `<VeraChat>`
-    (remove the duplicated turn/proposal/`proposalLabel` logic — 3 copies today).
+    (remove the duplicated turn/proposal/`proposalLabel` logic, 3 copies today).
   - **Warm opening:** seed the companion greeting with the member's name + memory (the lightbox
     already builds a personalized opening; the launcher uses a generic one).
   - **Sleep-mode recede** on the launcher panel (the lightbox has it; the launcher omits it).
@@ -90,19 +90,19 @@ in small reviewable PRs. Best-practice guardrails in the last section.
     (today Help search is article-only and routes deeper questions to Chat).
   - **Proactive badge** on the bubble once Phase E (encouragement) lands.
 
-### 1.2 — Vera's "chores" — the matriarch bait-and-switch ✅ **shipped** (BETA-ACTIVATION §2)
+### 1.2: Vera's "chores", the matriarch bait-and-switch ✅ **shipped** (BETA-ACTIVATION §2)
 - **The concept (owner direction).** Vera is warm on the way in; then she hardens into a
-  *playful stern matriarch* — "everything in its place." A **full-stop overlay** periodically
+  *playful stern matriarch*: "everything in its place." A **full-stop overlay** periodically
   blocks the screen with the Founder's unfinished **chores**: tidy your profile (photo · bio ·
   city) **and** seed content (first post). They signed the oath to *build*, so she holds them to
-  it — in a fun way ("I've 'locked' your screen. Dramatic, I know — the ✕ still works").
+  it, in a fun way ("I've 'locked' your screen. Dramatic, I know. The ✕ still works").
 - **What shipped.**
-  - `lib/onboarding/profile-chores.ts` — `getProfileChores()` scores photo/bio/city/first-post
+  - `lib/onboarding/profile-chores.ts`: `getProfileChores()` scores photo/bio/city/first-post
     (distinct from the activation funnel in `status.ts`).
-  - `components/onboarding/chores-overlay.tsx` — the dismissible full-stop overlay + a persistent
+  - `components/onboarding/chores-overlay.tsx`: the dismissible full-stop overlay + a persistent
     bottom-left **chores pill**; paced (≥1h, once/session) so it nudges, never nags; accessible
     (ESC/✕/backdrop, focus, reduced-motion).
-  - `app/(main)/feed/chores-actions.ts` — `claimChoresReward()`, one-time gem drop at 100% via the
+  - `app/(main)/feed/chores-actions.ts`: `claimChoresReward()`, one-time gem drop at 100% via the
     long-dangling **`welcome_member`** gem action (also closes BACKLOG §C's "unobtainable" item);
     idempotent on `meta.chores.rewarded`.
   - Mounted in `app/(main)/layout.tsx`, **beta-gated** (`BETA_INDUCTION_ACTIVE`) so it retires to
@@ -110,20 +110,20 @@ in small reviewable PRs. Best-practice guardrails in the last section.
 - **Second pass (tweaks):**
   - **Per-task micro-rewards** (today: one bonus at 100%).
   - **Add the "interests" chore** (separate join; needs a clean editor deep-link).
-  - **Live matriarch register** — dial the stern voice through `vera_config` / the live loop
+  - **Live matriarch register**: dial the stern voice through `vera_config` / the live loop
     (today the copy is scripted); let her deliver chores *in the Vera launcher chat* too.
   - **Escalating pace** (gentle → sterner) + configurable cooldown; emit a `chores.completed`
     event for the funnel.
   - **Coordinate with the activation guide** so the two onboarding surfaces never pop at once.
   - **Fold in Capture chores** once §6 lands (e.g. "capture your first moment").
 
-### 1.3 — Vera coach "next best action" ✅ **shipped** — folded into Vera (BETA-ACTIVATION §5)
-- **Decision (owner).** *Not* a separate feed card — that would compete with the inline
+### 1.3: Vera coach "next best action" ✅ **shipped**, folded into Vera (BETA-ACTIVATION §5)
+- **Decision (owner).** *Not* a separate feed card. That would compete with the inline
   `FeedOnboardingGuide`. Folded into the **same Vera surface** as the chores overlay (1.2):
-  one Vera, three beats — chores → reward → **coach**.
+  one Vera, three beats: chores → reward → **coach**.
 - **What shipped.** Once chores are done + rewarded, `ChoresOverlay` flips to a **coach** beat:
   it surfaces the *single* next activation step from `getOnboardingStatus().current`
-  (`lib/onboarding/status.ts` — already the source of truth, so it can't disagree with the
+  (`lib/onboarding/status.ts`, already the source of truth, so it can't disagree with the
   feed guide). Warm voice (she's softened back up), one deep-linked CTA, paced like the chores
   nudge, and the bottom-left pill reads **"Next move."** Wired in `app/(main)/layout.tsx`.
 - **Acceptance.** ✅ one action at a time · ✅ ready-gated (reads the funnel's first incomplete
@@ -131,84 +131,84 @@ in small reviewable PRs. Best-practice guardrails in the last section.
 - **Second pass:** AI-improvised copy on top of the deterministic picker (today the lines are
   the funnel's `headline`/`blurb`); let Vera deliver the same coach beat *in the launcher chat*.
 
-### 1.4 — "Founder's First Week" tasks + badge ✅ **shipped** (BETA-ACTIVATION §3–4)
-- **Decision (owner).** **Event-derived** engine — no new machinery.
+### 1.4: "Founder's First Week" tasks + badge ✅ **shipped** (BETA-ACTIVATION §3 to 4)
+- **Decision (owner).** **Event-derived** engine: no new machinery.
 - **What shipped.**
-  - `lib/onboarding/founder-tasks.ts` — `getFounderTasks()` derives 6 tasks from the domain
+  - `lib/onboarding/founder-tasks.ts`: `getFounderTasks()` derives 6 tasks from the domain
     tables the engagement events write to (posts · post_reactions · friendships · 2nd
-    membership · event_rsvps · 3-day practice streak) — same source-of-truth as `getUserStats`,
+    membership · event_rsvps · 3-day practice streak), same source-of-truth as `getUserStats`,
     so it can't disagree with the gamification engine.
-  - `app/(main)/founder/founder-actions.ts` — `claimFounderRewards()`: **reward-on-first**
+  - `app/(main)/founder/founder-actions.ts`: `claimFounderRewards()`: **reward-on-first**
     reconciliation (5💎 per task the first time it's seen done, tracked in
     `meta.founder.rewarded`) + the **badge** on set-complete (25💎 bonus). Idempotent,
-    flag-first — safe to call on every view.
-  - `supabase/migrations/20260606170000_founders_first_week_badge.sql` — the
+    flag-first, safe to call on every view.
+  - `supabase/migrations/20260606170000_founders_first_week_badge.sql`: the
     **`founders-first-week`** manual achievement (gold/special), granted by the app (mirrors
-    the existing `founding-member` manual pattern). ⚠️ **Apply on deploy** — until then the
+    the existing `founding-member` manual pattern). ⚠️ **Apply on deploy.** Until then the
     per-task gems still pay; only the badge waits.
-  - `app/(main)/founder/page.tsx` — a `FocusTemplate` "Founder's First Week" view (progress +
+  - `app/(main)/founder/page.tsx`: a `FocusTemplate` "Founder's First Week" view (progress +
     6 task rows + badge state); registered Focus in `lib/layout/page-chrome.ts`.
   - **Vera hands off**: once activation is complete, the coach beat points to `/founder`
     (the founder query runs only for that small activated cohort).
 - **Acceptance.** ✅ tasks reflect real state · ✅ reward once each · ✅ badge on set-complete ·
   ✅ skippable (it's a page, nothing blocks).
-- **Second pass:** emit the 1–2 missing ledger events (`reaction.added`, invite-accepted) so
+- **Second pass:** emit the 1 to 2 missing ledger events (`reaction.added`, invite-accepted) so
   the tasks can read the event ledger directly · an `/admin/engagement` operator view ·
   a unit test once the supabase mock harness is in place · richer badge reward (zaps vs gems).
 
-### 1.5 — Live-loop suggestion chips ⏳ (BACKLOG §P)
+### 1.5: Live-loop suggestion chips ⏳ (BACKLOG §P)
 - **Goal.** Keep guided depth flowing instead of dead-ending a turn.
 - **Gap.** The live Claude loop returns empty `suggestions[]`.
-- **Build.** Have Vera surface 1–3 quick-reply chips per turn (the deterministic concierge
+- **Build.** Have Vera surface 1 to 3 quick-reply chips per turn (the deterministic concierge
   already returns them; mirror in the live path).
 - **Touch.** `lib/ai/vera/agent-claude.ts`, `lib/ai/vera/loop.ts`.
 
 ---
 
-## Section 2 — Finish the started loops (P1)
+## Section 2: Finish the started loops (P1)
 
 | # | Item | Reuse / gap | Touch | Notes |
 |---|---|---|---|---|
-| 2.1 | **Welcome community post** ✅ shipped | `lib/onboarding/welcome.ts` `postWelcomeForMember` — the `is_system` account posts "Everyone, welcome @handle 👋" to the public feed on first induction completion (`app/onboarding/beta/actions.ts`, best-effort, once-only via pre-update meta). Turns sign-ups into *greeted* members + seeds the feed. *Tweaks:* scope (community vs nexus), member opt-out, notify the welcomed member. |
+| 2.1 | **Welcome community post** ✅ shipped | `lib/onboarding/welcome.ts` `postWelcomeForMember`: the `is_system` account posts "Everyone, welcome @handle 👋" to the public feed on first induction completion (`app/onboarding/beta/actions.ts`, best-effort, once-only via pre-update meta). Turns sign-ups into *greeted* members + seeds the feed. *Tweaks:* scope (community vs nexus), member opt-out, notify the welcomed member. |
 | 2.2 | **Finish `draft_intro`** ⏳ | Tool is declared but `lib/ai/vera/execute.ts` returns ok with no effect | `lib/ai/vera/execute.ts`, intro-post path | Removes the awkward part of the cold-start; "scary part done." |
 | 2.3 | **Memory batch summarization cron** 📋 | `ai_member_context` captures facts; summary never regenerated (Vera Phase C tail) | new cron on Batch API, `lib/ai/memory.ts` | Keeps memory fresh + makes the footprint-decay metric real. |
 | 2.4 | **Warm demo content** 📋 | §S9 (sterile seed copy) + §S4 (demo box → action links with point values) | `lib/demo/*`, Seed Studio, the demo notice box | First scroll should feel like a real warm community, not a demo. Directly affects "excited." |
-| 2.5 | **Confirm activation funnel** ⏳ | Events emit; verify end-to-end on `/admin/engagement` | — | Makes the *test* measurable (drop-off per step). |
+| 2.5 | **Confirm activation funnel** ⏳ | Events emit; verify end-to-end on `/admin/engagement` | (none) | Makes the *test* measurable (drop-off per step). |
 
 ---
 
-## Section 3 — Proactive Vera (P2) — 🔴 gated
+## Section 3: Proactive Vera (P2). 🔴 gated
 
 **Hard gate (ADR-028):** no autonomous Vera writes until the vitest **consent/`shouldSend`
 harness** exists (BACKLOG §D). Build the harness first; then:
 
-- **3.1 — Encouragement + goal-anchored accountability** (Phase E) — streak-risk /
+- **3.1: Encouragement + goal-anchored accountability** (Phase E): streak-risk /
   milestone / "you said you wanted X, the Tuesday circle meets at 6" nudges via the existing
-  `notification_queue` + cron + Batch, frequency-capped through `shouldSend`. (M–L)
-- **3.2 — Host/Guide copilot** (Phase F) — circle summaries, at-risk flags, draft
+  `notification_queue` + cron + Batch, frequency-capped through `shouldSend`. (M to L)
+- **3.2: Host/Guide copilot** (Phase F): circle summaries, at-risk flags, draft
   announcements. The human-amplifier; the biggest anti-lean-in lever. (L)
-- **3.3 — Nurture email sequence copy** — infra built (`lib/nurture/*`), persona-specific
-  copy unwritten (ADR-125 follow-up). (S–M, ungated — copy only)
+- **3.3: Nurture email sequence copy**: infra built (`lib/nurture/*`), persona-specific
+  copy unwritten (ADR-125 follow-up). (S to M, ungated, copy only)
 
 ---
 
-## Section 4 — Cleanup & doc hygiene (cheap; some ✅ done this pass)
+## Section 4: Cleanup & doc hygiene (cheap; some ✅ done this pass)
 
-- ✅ **Deleted 3 orphan modules** — `components/ui/can.tsx`, `components/compose-button.tsx`,
+- ✅ **Deleted 3 orphan modules**: `components/ui/can.tsx`, `components/compose-button.tsx`,
   `lib/contract/views.ts` (verified zero importers). *(`lib/help/feature-keys.ts` was initially
-  removed too but **restored** — it's imported by the `scripts/help-*` CI tooling, which the
+  removed too but **restored**: it's imported by the `scripts/help-*` CI tooling, which the
   first grep didn't cover. Lesson: orphan-checks must include `scripts/`.)*
-- ✅ **Fixed `AI-VERA.md` stale header** ("design / not yet built" → Phases A–D shipped).
-- ⏳ **Drop ~5 orphan quest tables** — `quest_steps`, `quest_progress`, `season_trophies`,
+- ✅ **Fixed `AI-VERA.md` stale header** ("design / not yet built" → Phases A to D shipped).
+- ⏳ **Drop ~5 orphan quest tables**: `quest_steps`, `quest_progress`, `season_trophies`,
   `group_memberships`, `circle_topics` (residue of the Jun-4→8 quest/arc/journey rename
   churn). **Do only after** retiring `quest_outcomes()` + its `/admin` surface and
-  regenerating `database.types.ts` (BACKLOG §S1b). Needs a migration — not a free delete.
-- ⏳ **Split / index `DECISIONS.md`** — 4,858 lines / 161 ADRs, 31% of all doc lines.
-- ⏳ **Consolidate overlapping doc clusters** — onboarding/beta (4 docs), AI (5), engagement (4).
+  regenerating `database.types.ts` (BACKLOG §S1b). Needs a migration, not a free delete.
+- ⏳ **Split / index `DECISIONS.md`**: 4,858 lines / 161 ADRs, 31% of all doc lines.
+- ⏳ **Consolidate overlapping doc clusters**: onboarding/beta (4 docs), AI (5), engagement (4).
 
 ---
 
-## Section 5 — Network (consolidate Contacts / Directory) — ✅ done (ADR-172, built on ADR-154)
+## Section 5: Network (consolidate Contacts / Directory). ✅ done (ADR-172, built on ADR-154)
 
 The "make real-life contacts and keep them" product. Full design:
 [`NETWORK-CRM.md`](NETWORK-CRM.md) § *The Network rework*. The 3-entity data model + AI
@@ -217,104 +217,104 @@ harvest + consent boundary are **already built**; this is IA, an access-tier cha
 
 | # | Item | Why | Reuse | Size |
 |---|---|---|---|---|
-| 5.1 | **Rename `Directory → Network`; merge `/people` + `/connections` into one member-tier tab** (Directory + Contacts faces) | Makes personal contacts a *member* product, not a host tool | `lib/nav-areas.ts`, `lib/connections/access.ts` (gate move only — RLS already owner-scoped) | S–M |
-| 5.2 | ✅ **shipped — Member quick-add capture.** The personal-CRM pages + create action now resolve owner via the new member-tier `contactsOwnerId()` (`lib/connections/access.ts`), so **every member** can scan/add their own owner-scoped contacts — this is what Capture's "In person" mode hits. Steward gate (`connectionsOwnerId`) retained for the directory-embedded view (`/people`) + search until 5.1 merges them. RLS already owner-scoped, so opening the tool is safe (ADR-154). | The headline promise; was host-gated | `lib/connections/access.ts`, `app/(main)/connections/{new,[id],}`, `actions.ts` | S |
-| 5.3 | **Event-invite capture loop** — public RSVP contact form via an attributed QR → triple-write (event guest list · owner's personal CRM · marketing DB, consent observed) | The growth loop the product is built around; **doesn't exist yet** (RSVP is members-only) | `/q/<slug>` referral (ADR-091/099), `crm-sync.ts`, `event_guest` channel hint | M–L |
-| 5.4 | **`event_guests`** table — let a non-member RSVP to one event without an account | Backs 5.3 | new migration (additive) | S |
-| 5.5 | **Gamification** — zaps for capture/RSVP/attend/join + a "Connector" achievement, reward real outcomes not rows | Closes the loop into the season ladder | `lib/zaps.ts`, `lib/engagement/currency.ts`, achievements | S–M |
+| 5.1 | **Rename `Directory → Network`; merge `/people` + `/connections` into one member-tier tab** (Directory + Contacts faces) | Makes personal contacts a *member* product, not a host tool | `lib/nav-areas.ts`, `lib/connections/access.ts` (gate move only; RLS already owner-scoped) | S to M |
+| 5.2 | ✅ **shipped: Member quick-add capture.** The personal-CRM pages + create action now resolve owner via the new member-tier `contactsOwnerId()` (`lib/connections/access.ts`), so **every member** can scan/add their own owner-scoped contacts. This is what Capture's "In person" mode hits. Steward gate (`connectionsOwnerId`) retained for the directory-embedded view (`/people`) + search until 5.1 merges them. RLS already owner-scoped, so opening the tool is safe (ADR-154). | The headline promise; was host-gated | `lib/connections/access.ts`, `app/(main)/connections/{new,[id],}`, `actions.ts` | S |
+| 5.3 | **Event-invite capture loop**: public RSVP contact form via an attributed QR → triple-write (event guest list · owner's personal CRM · marketing DB, consent observed) | The growth loop the product is built around; **doesn't exist yet** (RSVP is members-only) | `/q/<slug>` referral (ADR-091/099), `crm-sync.ts`, `event_guest` channel hint | M to L |
+| 5.4 | **`event_guests`** table: let a non-member RSVP to one event without an account | Backs 5.3 | new migration (additive) | S |
+| 5.5 | **Gamification**: zaps for capture/RSVP/attend/join + a "Connector" achievement, reward real outcomes not rows | Closes the loop into the season ladder | `lib/zaps.ts`, `lib/engagement/currency.ts`, achievements | S to M |
 
 **Privacy invariant (non-negotiable):** captured people stay **personal**; they enter
 marketing as `consent_state='unknown'` (added, never mailed) and become mailable only when
 **they** confirm an email or sign up. Promotion is the deliberate, consent-gated act (ADR-099).
 
 **Sequencing note:** 5.1 + 5.2 are a small, self-contained PR (IA + ungate) that ships the
-member product immediately. 5.3–5.5 are the bigger growth-loop build — do after the §1
+member product immediately. 5.3 to 5.5 are the bigger growth-loop build; do after the §1
 activation push, since they share the QR/referral + consent plumbing.
 
-## Section 6 — Capture (the primary "log life as it happens" surface) — 📋 (owner vision, needs ADR)
+## Section 6: Capture (the primary "log life as it happens" surface). 📋 (owner vision, needs ADR)
 
-> **The frame (owner).** The Quest is about *activation* — going outside and engaging with
+> **The frame (owner).** The Quest is about *activation*: going outside and engaging with
 > society, gamified. **Capture** is how members *log and track that lived experience* and share it.
-> The community feed becomes **the story of the community's experience** — not content curated to
+> The community feed becomes **the story of the community's experience**, not content curated to
 > be enjoyed online. Every user becomes an **access point** that brings people into the network.
 >
 > **Capture is the check-in step of the Portal Loop (ADR-155):** *see what's good → get your
 > assignment → go out & act → **Capture** → content disperses through the locality × in-person feed
-> rank (ADR-080).* It inherits that ADR's law — built to serve activation, never dwell-time.
+> rank (ADR-080).* It inherits that ADR's law: built to serve activation, never dwell-time.
 
-**The shape.** A **primary Capture button** (a camera-style affordance) that opens a *mode picker*
-— the same vibe as tapping a camera icon and getting Photo / Video / Cinema / Live. Capture is for
-grabbing life as it goes by: a moment, a **Note** *(new)*, a Post — building a shared daily journal.
+**The shape.** A **primary Capture button** (a camera-style affordance) that opens a *mode picker*,
+the same vibe as tapping a camera icon and getting Photo / Video / Cinema / Live. Capture is for
+grabbing life as it goes by: a moment, a **Note** *(new)*, a Post, building a shared daily journal.
 
 | Capture mode | What | State |
 |---|---|---|
 | **Photo / moment** | snap + share to the feed/journal | ⏳ composer has media; needs the Capture entry + journal framing |
 | **Note** *(new)* | a lightweight text journal entry (a "showed up / saw this" log) | 📋 new post subtype |
 | **Post** | the existing composer | ✅ exists |
-| **In-Person → Business Card / Poster** | "we stop and trade info with a new friend" — the **Profile Creator** folded in as a Capture category | ✅ built (`/connections/new`), needs to live under Capture |
+| **In-Person → Business Card / Poster** | "we stop and trade info with a new friend": the **Profile Creator** folded in as a Capture category | ✅ built (`/connections/new`), needs to live under Capture |
 | *(later)* Video · Cinema · Live | richer capture kinds | 📋 future |
 
 **Why this is one feature, not many.** "Stop and take a picture" and "stop and trade information"
-are the *same gesture* — capturing a real-world moment. So **In-Person capture** (the card/poster
+are the *same gesture*: capturing a real-world moment. So **In-Person capture** (the card/poster
 scanner, §5/ADR-098/154) becomes a **category inside Capture**, alongside Photo/Note/Post. One
 button: capture life's moments to share **and** manage your contacts **and** bring people into
-Frequency — a community-management tool where every member is a node.
+Frequency, a community-management tool where every member is a node.
 
 **Build approach (reuse, don't rebuild).**
 - Wrap the existing **composer / `CreateModal`** and the planned **Create Wizard registry** (BACKLOG
-  §Q2) so Capture is a *mode picker* over typed create-kinds — Capture is the consumer surface for
+  §Q2) so Capture is a *mode picker* over typed create-kinds. Capture is the consumer surface for
   that registry, not a parallel system.
 - **In-Person** = the existing Profile Creator (`app/(main)/connections/new/`, `lib/ai/connections-ai.ts`)
   surfaced as a Capture category; ties straight into the **Network** rework (§5) and the
   event-invite capture loop.
 - **Note** = a new lightweight post subtype (ties into BACKLOG §S6 tiered composer options).
 - **Gamification** = zaps for in-person/IRL capture + outreach (the Quest ladder), gems for content
-  (the existing engines) — reward the *real moment*, not the row (§5.5 anti-farm doctrine).
+  (the existing engines): reward the *real moment*, not the row (§5.5 anti-farm doctrine).
 
 **Phasing (ADR-156 on build).**
-1. ✅ **shipped — Capture button + mode picker** replaces the inline composer (Photo · Note · Post ·
+1. ✅ **shipped: Capture button + mode picker** replaces the inline composer (Photo · Note · Post ·
    In-Person). `components/feed/capture-bar.tsx`; composer gained `kind`/`autoImage`;
    `post_type='note'` migration; `post-card` Note badge; In-Person → `/connections/new`.
    ⚠️ apply `20260606180000_post_type_note.sql` on deploy for Note.
-2. ✅ **shipped — promoted to an app-wide FAB.** `components/feed/capture-launcher.tsx`: a raised
+2. ✅ **shipped: promoted to an app-wide FAB.** `components/feed/capture-launcher.tsx`: a raised
    Capture button docked bottom-centre (above the mobile tab bar; floating on desktop), clear of the
    Vera launcher + chores pill, mounted in `app/(main)/layout.tsx` so it's reachable from every page.
    Opens the same mode picker in a modal; posts default to the member's wall. Hidden on `/feed` (the
    inline bar already serves there); the four modes are shared via `CAPTURE_MODES` so the two entries
    can't drift. *Tweak:* suppress on focus/compose surfaces (settings, `/connections/new`).
-3. ✅ **shipped — "Daily journal / community story" framing.**
-   - **Personal:** `/journal` (`app/(main)/journal/page.tsx`) — your captured moments grouped by day
+3. ✅ **shipped: "Daily journal / community story" framing.**
+   - **Personal:** `/journal` (`app/(main)/journal/page.tsx`): your captured moments grouped by day
      in the feed-as-record voice; linked from the Capture launcher.
-   - **Community:** a **Story** lens on `/feed` (`?sort=story`) — the whole community's posts as the
+   - **Community:** a **Story** lens on `/feed` (`?sort=story`): the whole community's posts as the
      running record, **chronological + day-grouped**, no feed furniture (dispatch/event cards), with
-     the record voice ("what the community lived — not a scroll to consume"). `FeedList` gained a
+     the record voice ("what the community lived, not a scroll to consume"). `FeedList` gained a
      `'story'` sort that reuses the visibility-correct `feed_for_viewer` RPC (fetched as `recent`).
-   - Both read the posts substrate — no new store.
+   - Both read the posts substrate: no new store.
 4. 📋 Richer kinds (video · cinema · live) into the same picker as demand warrants.
 
-**Rework (ADR-156a) — ✅ shipped + 📋 next.**
+**Rework (ADR-156a): ✅ shipped + 📋 next.**
 - ✅ **One multi-mode box** (`capture-box.tsx`), Substack-style: body swaps by mode, **one bottom row
-  of selectable capture features** (segmented, beside the send button) — **Post · Dispatch · Note ·
+  of selectable capture features** (segmented, beside the send button): **Post · Dispatch · Note ·
   Photo · Contact** (Dispatch host-only; the old Post|Dispatch toggle folded in). Send button always
   says **"Capture"**. `Composer` (shared with circle/channel/profile) gained `bottomSlot` +
   `forceAnnouncement` so the feature row + Dispatch live in `CaptureBox`, not the shared editor.
-- ✅ **Contact mode is inline** (`contact-capture-form.tsx`) — manual entry → personal CRM via
+- ✅ **Contact mode is inline** (`contact-capture-form.tsx`): manual entry → personal CRM via
   `createProfile` (§5.2); card *scan* one tap away at `/connections/new`.
-- ✅ **Mobile centre-nav Capture button** — a raised centre button in `MobileTabBar` (`app-shell.tsx`)
+- ✅ **Mobile centre-nav Capture button**: a raised centre button in `MobileTabBar` (`app-shell.tsx`)
   dispatches `open-capture`; `CaptureLauncher` catches it and opens the box **contact-forward** on
-  mobile. Desktop keeps the floating FAB; one modal, two triggers. (Richer contact intake — QR
-  check-in · photo of them — rides the Contact mode + the card scanner as it grows.)
-- 📋 **Quest pipeline + sponsor-backed rewards** — contacts billed as a personal CRM **and** the
+  mobile. Desktop keeps the floating FAB; one modal, two triggers. (Richer contact intake (QR
+  check-in · photo of them) rides the Contact mode + the card scanner as it grows.)
+- 📋 **Quest pipeline + sponsor-backed rewards**: contacts billed as a personal CRM **and** the
   member's Quest sales pipeline; invites/conversions earn escalating, ultimately sponsor-backed
   real-life rewards (ADR-155 loop, ADR-156a). Spec → BACKLOG §F.
 
 **Open questions (owner):** does "Note" share the post table or get its own journal store · how
 loud is the Capture button vs. the feed composer · which captures are public-by-default (moments)
-vs. private-by-default (contacts — stays private per ADR-154).
+vs. private-by-default (contacts, stays private per ADR-154).
 
-## Section 7 — Role-advancement training (a training Journey per role) — 📋 (ADR-157)
+## Section 7: Role-advancement training (a training Journey per role). 📋 (ADR-157)
 
-> **The frame (owner).** Onboarding never ends — it's keyed to **role**. Every promotion assigns a
+> **The frame (owner).** Onboarding never ends: it's keyed to **role**. Every promotion assigns a
 > new training Journey that walks the member through the functions that role just unlocked. Member
 > onboarding (built) is rung one; Crew, Host, and every admin role get their own advancement
 > training, with permissions, help articles, and a completion transcript all tied in.
@@ -326,18 +326,18 @@ roles/permissions model (`lib/permissions`, `lib/nav-areas`). **No new flow engi
 
 | # | Item | What | Reuse | Size |
 |---|---|---|---|---|
-| 7.1 | ✅ **shipped — Assignment-on-promotion.** `assignRole` (`admin/actions.ts`) now calls `assignTraining(profileId, role)`; the **Vera coach** hands off to `/training` when active (gated to crew+ so members never pay for the query). | `lib/onboarding/training.ts`, `app/(main)/layout.tsx` | S–M |
-| 7.2 | ✅ **shipped — Training-path records.** `training_paths` table (assigned/started/completed per member+role) — the transcript + gate + analytics. The `/training` page (`app/(main)/training/`) shows the active Journey as a curated path through the help center + a one-time gem reward on completion. ⚠️ **apply `20260608010000_training_paths.sql` on deploy.** | new migration, `lib/onboarding/training.ts` | M |
-| 7.3 | **Role→Journey content** | one training Journey per role; each step = a help article + optional coachmark tour; completion rewards (online → gems, ADR-139) | help center, Journeys, coachmark registry | M–L |
+| 7.1 | ✅ **shipped: Assignment-on-promotion.** `assignRole` (`admin/actions.ts`) now calls `assignTraining(profileId, role)`; the **Vera coach** hands off to `/training` when active (gated to crew+ so members never pay for the query). | `lib/onboarding/training.ts`, `app/(main)/layout.tsx` | S to M |
+| 7.2 | ✅ **shipped: Training-path records.** `training_paths` table (assigned/started/completed per member+role): the transcript + gate + analytics. The `/training` page (`app/(main)/training/`) shows the active Journey as a curated path through the help center + a one-time gem reward on completion. ⚠️ **apply `20260608010000_training_paths.sql` on deploy.** | new migration, `lib/onboarding/training.ts` | M |
+| 7.3 | **Role→Journey content** | one training Journey per role; each step = a help article + optional coachmark tour; completion rewards (online → gems, ADR-139) | help center, Journeys, coachmark registry | M to L |
 | 7.4 | **Help-article role tagging** | tag `content/help/*` by `role` + `featureKeys` so a Journey assembles from the role's newly-unlocked surfaces | help front-matter (already has `featureKeys`/`audience`) | S |
 | 7.5 | **Flow management (admin)** | owner-tunable authoring of training Journeys per role | Journey/Quest authoring + help editor | M |
 
-**Sequencing:** 7.1 + 7.2 are the spine (assign + record) — ship first. 7.3–7.5 are the curriculum
+**Sequencing:** 7.1 + 7.2 are the spine (assign + record); ship first. 7.3 to 7.5 are the curriculum
 + management layer. The **member** rung already exists (induction + activation + chores + Founder's
 First Week); 7.x generalizes it up the ladder. Member-facing curriculum → help/Notion; engine →
 git. **Open (owner):** does Crew→Host training *gate* admin access until complete, or just nudge?
 
-## Section 8 — Hook Networks: federated white-label sub-communities — 📋 (ADR-158, extends ADR-059)
+## Section 8: Hook Networks: federated white-label sub-communities. 📋 (ADR-158, extends ADR-059)
 
 > **The frame (owner).** Pros and organizations run their own **white-label bubble** (a *Hook tenant*:
 > private lessons · journeys · gamification · branded site · Substack-style subscription privacy) that
@@ -362,37 +362,37 @@ owns the white-label site, private content/gamification, and subscription billin
 **Cross-product contract → the Hook repo** (`hook/docs/FREQUENCY-INTEGRATION.md`); operator/strategy →
 Notion.
 
-## Section 9 — Growth Studio: the "Leadpages-style" onboarding/growth suite — ⏳ (owner)
+## Section 9: Growth Studio: the "Leadpages-style" onboarding/growth suite. ⏳ (owner)
 
 > **The frame (owner).** One place to manage onboarding pages + a full settings suite + entry points +
-> pipeline + QR editor + link generator — Leadpages-style.
+> pipeline + QR editor + link generator, Leadpages-style.
 
-**Key finding (codebase map):** every data model already exists — the gaps are **UI + unification, no
+**Key finding (codebase map):** every data model already exists; the gaps are **UI + unification, no
 new tables.** The page editor (Puck) is shipped (`/pages`, `/edit/[slug]`); entry points
 (`/entry-points`), QR Studio (`/admin/qr`), codes/links (`/codes`), CRM pipeline (`/crm`), contacts
 (`/connections`, `/marketing/contacts`), onboarding sequences (`/pages/sequences`) and the marketing
-hub (`/marketing`) all exist — **scattered**.
+hub (`/marketing`) all exist, **scattered**.
 
-- ✅ **9.0 — Growth Studio launchpad** (`app/(main)/growth/page.tsx`, `/growth`, janitor-gated; nav +
-  icon added). One home that gathers all of the above into grouped quick-links — the "one place" win
+- ✅ **9.0: Growth Studio launchpad** (`app/(main)/growth/page.tsx`, `/growth`, janitor-gated; nav +
+  icon added). One home that gathers all of the above into grouped quick-links: the "one place" win
   by unifying, not rebuilding.
 
 **Gap roadmap (UI builders the launchpad will host):**
 | # | Gap | Where it'd live |
 |---|---|---|
-| 9.1 | ✅ **shipped — Onboarding-sequence editor (splash).** `/pages/sequences/[slug]/edit` edits the splash copy; a `sequence_overrides` table (⚠️ apply `20260608020000`) merges over the code default at `/beta/[slug]` render — publish without a deploy. Voiced copy/oaths stay code-first (follow-up). | `lib/onboarding/sequence-overrides.ts`, `/beta/[slug]` |
+| 9.1 | ✅ **shipped: Onboarding-sequence editor (splash).** `/pages/sequences/[slug]/edit` edits the splash copy; a `sequence_overrides` table (⚠️ apply `20260608020000`) merges over the code default at `/beta/[slug]` render: publish without a deploy. Voiced copy/oaths stay code-first (follow-up). | `lib/onboarding/sequence-overrides.ts`, `/beta/[slug]` |
 | 9.2 | **Visual entry-point / flyer designer** (live preview; templates immutable today) | `/entry-points/[id]/edit`, over `lib/entry-points/flyer.ts` |
 | 9.3 | **Live QR style preview** (JSON editor exists, no live render) | `/admin/qr/[id]` style editor |
 | 9.4 | **Unified link generator** (referral/campaign/invite links are 3 places) | a `/growth/links` dashboard over `qr_codes` + `invite_links` |
-| 9.5 | ✅ **shipped — CRM deal create/edit.** `/crm/deals/new` + `/crm/deals/[id]/edit` (`DealForm`) wire the UI to the existing actions (`createDeal`/`updateDeal`/`moveDeal`); "New deal" button + per-card edit link. Stage-move was already on the cards. | `components/crm/deal-form.tsx`, `/crm` |
+| 9.5 | ✅ **shipped: CRM deal create/edit.** `/crm/deals/new` + `/crm/deals/[id]/edit` (`DealForm`) wire the UI to the existing actions (`createDeal`/`updateDeal`/`moveDeal`); "New deal" button + per-card edit link. Stage-move was already on the cards. | `components/crm/deal-form.tsx`, `/crm` |
 | 9.6 | **Lead-flow customization UI** (personas/routing code-first) | over `lib/onboarding/lead-flows.ts` |
 | 9.7 | **A/B builder + scheduled publish** (infra exists: `entry_point_variants`, `fq_var`) | entry-point + page editor |
 
 **Sequencing:** 9.0 ships the hub now (done). 9.1 (sequence editor) + 9.5 (CRM deal editing) are the
-highest-value next builds — they turn the two biggest "view-only" surfaces into real management. All
+highest-value next builds: they turn the two biggest "view-only" surfaces into real management. All
 reuse existing tables; the work is editors + actions.
 
-## Section 10 — Navigation restructure — ✅ map approved, building (full plan: [IA-RESTRUCTURE.md](IA-RESTRUCTURE.md))
+## Section 10: Navigation restructure. ✅ map approved, building (full plan: [IA-RESTRUCTURE.md](IA-RESTRUCTURE.md))
 
 > **Goal (owner):** everything from the **left menu**, categorical, **minimal drill-down**; sprawl
 > condensed into **Growth-Studio-style dashboards**; **right-column nav removed**. Map approved
@@ -414,41 +414,41 @@ reuse existing tables; the work is editors + actions.
 
 **Approved decisions:** Library→Practices · Marketing→Growth Studio · Quest→one dashboard (sections) ·
 keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 → 10.3 → 10.4/10.5 → 10.6 →
-10.7. Each is a contextual page/dashboard over existing data — UI + nav, minimal new schema.
+10.7. Each is a contextual page/dashboard over existing data: UI + nav, minimal new schema.
 
 - ✅ **Rail recategorized (first cut of 10.7).** `NAV_AREAS` rewritten to the categorical IA: **Home ·
   Community · Practice · Quest · Messages** (member) + the four operator sections collapsed to
   **Studio** (host+) + **Platform** (janitor). Quest relabeled; **Messages added to the rail**; no items
-  orphaned (deep dashboard merges keep everything reachable). Routes unchanged — pages still gate
+  orphaned (deep dashboard merges keep everything reachable). Routes unchanged; pages still gate
   themselves.
-- ✅ **10.1 — Quest tabbed dashboard.** `components/crew/quest-tabs.tsx` + `app/(main)/crew/layout.tsx`:
+- ✅ **10.1: Quest tabbed dashboard.** `components/crew/quest-tabs.tsx` + `app/(main)/crew/layout.tsx`:
   a shared sub-nav (Dashboard · Quests · Achievements · Challenges · Leaderboard · Streaks · Store)
   above every `/crew` page.
-- ✅ **10.6 — Uniform widget-free right rail.** `components/sidebar/right-sidebar.tsx` stripped of the
+- ✅ **10.6: Uniform widget-free right rail.** `components/sidebar/right-sidebar.tsx` stripped of the
   four list widgets (Dispatches/Events/Members/Leaderboard) + DateChip; the global rail is now a single
-  uniform slim strip everywhere it renders — `DemoNotice` over the player progress cockpit
+  uniform slim strip everywhere it renders: `DemoNotice` over the player progress cockpit
   (`GameStatsDock`). `loadGameStats`/`MobileGameStats` preserved (still consumed by the shell + mobile
   stats menu). Scoped circle/channel detail rails untouched.
-- ✅ **Rail now uniform across operator workspaces.** `lib/layout/page-chrome.ts` FOCUS list trimmed —
+- ✅ **Rail now uniform across operator workspaces.** `lib/layout/page-chrome.ts` FOCUS list trimmed:
   Marketing · CRM · Outreach · Entry points dropped from FOCUS, so they carry the same slim stats rail
   as the rest of the app (members flagged the "missing right column" on these). FOCUS keeps only genuine
   single-task surfaces (settings forms, /codes card, founder/training/journal, /upgrade, /g//n claims)
   plus the compose/edit patterns.
-- ✅ **10.2 — Marketing suite disbanded into Growth Studio.** `app/(main)/growth/page.tsx` lists the
+- ✅ **10.2: Marketing suite disbanded into Growth Studio.** `app/(main)/growth/page.tsx` lists the
   channels directly (Campaigns · Funnels · Nurture · Automations · Analytics · Market read · Beta ·
   Agent). The standalone **Marketing** nav item retired; `growth` moved into the **Studio** section with
   `defaultAccess:'admin'` + `staffDomain:'marketing'`. New shared gate `canAccessGrowthStudio()`
-  (`lib/page-editor/guard.ts`) — community admin/janitor OR marketing-staff — so no one loses access
+  (`lib/page-editor/guard.ts`), community admin/janitor OR marketing-staff, so no one loses access
   (decision: *open Growth Studio to marketing staff*). `/marketing/*` routes still resolve (reached via
   Growth Studio); their pages keep their own staff gate.
 - ✅ **Feed/comment + capture polish.** Post action line consolidated: reactions · comment · zaps now sit
   on ONE right-aligned line under the content (`PostReplies` owns the row via `reactions`/`reward`
   slots); the reply thread's vertical rule removed (`post-card.tsx`, `post-replies.tsx`). Mobile Capture
   box selectors are icon-only and reveal their label only when active, reordered **Post · Dispatch ·
-  Note · Connect** (inline Photo dropped — it lives in the full-screen camera); the bottom-nav Capture
+  Note · Connect** (inline Photo dropped; it lives in the full-screen camera); the bottom-nav Capture
   button opens the full-screen surface on **Post** (`capture-box.tsx`, `app-shell.tsx`). Left profile
   quick-actions dock is now **click-only** (no scroll/hover reveal).
-- ✅ **Onboarding sequences — QR section collapses; editing confirmed.**
+- ✅ **Onboarding sequences: QR section collapses; editing confirmed.**
   `app/(main)/pages/sequences/entry-point-share.tsx` now opens **collapsed** to a one-line share menu
   (link + copy) with a "QR & options" prompt; expanding reveals the admin options (incoming-point toggle,
   live QR, PNG/SVG downloads). Per-sequence editing already ships (the "Edit splash" link →
@@ -459,15 +459,15 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
   flow), so the templated-owner-only query showed nothing. Fix: `listMyEntryPoints` now matches
   `owner_profile_id = me OR created_by = me` and drops the template requirement (templateless rows render
   with the default template); `ownEntryPoint` accepts owner-or-creator, and the first edit **claims** the
-  code (`updateEntryPoint` sets `owner_profile_id` + template/style). Non-destructive — no backfill
+  code (`updateEntryPoint` sets `owner_profile_id` + template/style). Non-destructive: no backfill
   migration.
-- ✅ **Edit-path audit shipped** — `docs/EDIT-PATH-AUDIT.md`. 28/33 nav surfaces have an in-app edit path;
+- ✅ **Edit-path audit shipped**: `docs/EDIT-PATH-AUDIT.md`. 28/33 nav surfaces have an in-app edit path;
   the real build gaps are **Nurture** + **Automations** (stubbed marketing channels). People · Library ·
   Beta · Contacts are browse/append by design.
   *Next:* 10.2 operator dashboards → 10.3 Network hub → 10.4/10.5 Practices+Library / Settings; marketing
   **Nurture/Automations** editors are the remaining edit-path gaps.
 
-## Reuse map — what already exists (so you never rebuild it)
+## Reuse map: what already exists (so you never rebuild it)
 
 | Need | Already built | Path |
 |---|---|---|
@@ -490,7 +490,7 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
   Kill switch on ⇒ the product is still whole.
 - **Propose-and-confirm.** No autonomous writes; every Vera write shows an Allow/Skip. No
   autonomy graduation until the consent harness (ADR-028).
-- **Non-blocking & paced.** One cue at a time, skippable, never re-shown — never a wizard
+- **Non-blocking & paced.** One cue at a time, skippable, never re-shown, never a wizard
   (ADR-047). Honor `prefers-reduced-motion`, focus management, mobile-first.
 - **Vera always links.** Every feature/page/action she names renders as a tappable link.
 - **Compose from the kit.** Use the templates + `EntityCard`/`StatCard`/`SectionHeader`;
@@ -500,20 +500,20 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
 
 ---
 
-## §11 — Role system rework (Community · Partners · Admin + Entitlement)
+## §11: Role system rework (Community · Partners · Admin + Entitlement)
 
 > Canonical spec: [ROLES.md](ROLES.md) (now incl. the **access matrix** + the **unified-site
 > principle**) · decision: [DECISIONS.md](DECISIONS.md) ADR-163 · master sequencing:
 > [BUILD-LIST.md](BUILD-LIST.md) P1. Staged so **every step is non-breaking** (the old global
 > `community_role` stays valid as a derived cache until the final cleanup). Do the stages in order.
 >
-> **Owner directive (2026-06-08):** the site is **identical for everyone** — same shell, pages and
-> nav — with role-specific **functions/options revealed inside shared surfaces**. So gating moves
+> **Owner directive (2026-06-08):** the site is **identical for everyone** (same shell, pages and
+> nav) with role-specific **functions/options revealed inside shared surfaces**. So gating moves
 > from **per-route → per-capability**: encode the owner's Roles & Permissions matrix as one typed
 > source of truth (`lib/core`, extends `NAV_AREAS`) and have pages reveal function by level
 > (🚫 none / ✋ limited / ✅ full). **This is step 11.0 and the recommended first PR.**
 
-### 11.1 — Foundation: scoped stewardship
+### 11.1: Foundation: scoped stewardship
 - Migration: **`stewardships`** `(profile_id, role[crew|host|guide|mentor|outpost_lead],
   scope_type[circle|hub|nexus|outpost], scope_id, state, created_at)`, unique `(profile_id,
   role, scope_type, scope_id)`; RLS + service-role writes.
@@ -523,51 +523,51 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
 - Extend the capability resolver (ADR-017) to read **edges scoped to the entity in context**
   (`@everyone`/`@hosts`/`@hub`/`@nexus` resolve by scope). *No behavior change yet.*
 
-### 11.2 — Entitlement split (Free / Member / Supporter)
+### 11.2: Entitlement split (Free / Member / Supporter)
 - Add membership/subscription **tier flag** (`free|member|supporter`) + game-claim state.
 - Re-point `isCrew`, gamification cash-in eligibility, and `/upgrade` to the **tier**, not the
   `crew` role. **Crew becomes a pure stewardship role.**
 - Supporter = paid + extra contribution → a **special badge** (reuse the flair/badge system).
 - Gate "special role/partner features" behind the paid Member tier (pin the exact list first).
 
-### 11.3 — Admin axis (move janitor/admin out of Community)
+### 11.3: Admin axis (move janitor/admin out of Community)
 - Promote `janitor`/`admin` into the **staff matrix** (`team_members`): **Janitor** = full
   (financials, destructive DB, owner-sensitive, role-granting, grid); **Admin** = all minus
   those; Operations/Marketing/Accounting/Support/Analyst domain-scoped.
 - `/admin/roles` permission grid + `requireStaff()`/`meetsStaff()` read the matrix; **migrate**
   existing janitors/admins to staff rows; remove `admin`/`janitor` from the community ladder.
 
-### 11.4 — Partners (personas)
+### 11.4: Partners (personas)
 - Migration: **`profile_personas`** `(profile_id, persona, state[claimed→verified→active→
   suspended], stripe_account_id?, entity_id?)`; per-persona verification; Stripe Connect where money moves.
 - Self-serve **sign-up + dashboard** per persona:
-  - **Collaborator** — featured **program directory** for their Practices/Journeys + **influencer
+  - **Collaborator**: featured **program directory** for their Practices/Journeys + **influencer
     program** (kickbacks tied to their activity + gamification).
-  - **Practitioner** — paywalled **Programs** + **client gamification** + a private Channel &
+  - **Practitioner**: paywalled **Programs** + **client gamification** + a private Channel &
     private Circles (Frequency-branded).
-  - **Business** — listing + network integration + **loyalty rewards** + CRM + web builder.
-  - **Organization** — **Hook tenant** sub-community + its own **scoped** admin matrix (isolated,
+  - **Business**: listing + network integration + **loyalty rewards** + CRM + web builder.
+  - **Organization**: **Hook tenant** sub-community + its own **scoped** admin matrix (isolated,
     no bleed to Frequency) + CRM + gamification + promotion.
 - Nav/capabilities light up per active persona (union resolver).
 
-### 11.5 — Overlays: Outpost + Lab
+### 11.5: Overlays: Outpost + Lab
 - Migration: **`outposts`** `(nexus_id, lab_id?, name, place, …)` + **`labs`** (for-profit venues).
 - **Outpost** = in-person overlay inside a Nexus (in-person twin of a Channel); **Outpost Lead**
   stewardship role + `scope_type='outpost'`; events can scope to an outpost.
 - **Reframe the place tree:** drop the old `Outpost → Nexus` containment (Nexus is the top
   community unit); update GLOSSARY + any `nexuses.outpost_id` usage.
 
-### 11.6 — Resolver + nav unification
+### 11.6: Resolver + nav unification
 - One **capability resolver** = union of (Community edges ⊕ Entitlement ⊕ Partner personas ⊕
   Admin matrix); **org tenant roles isolated**. `NAV_AREAS` + `page-chrome` read it; the inline
   "Admin ▾" + left rail surface the right things per the union.
 
-### 11.7 — Cleanup & migration
+### 11.7: Cleanup & migration
 - `community_role` enum → **fully derived** from `stewardships` (drop direct writes; keep cache).
 - Data migration + backfill verification; update GLOSSARY/DOCS to ROLES.md; tests for the resolver
   union + scope targeting + org isolation.
 
-**Dependencies/risks:** touches auth, nav, gamification, billing, and the place tree — do the
+**Dependencies/risks:** touches auth, nav, gamification, billing, and the place tree; do the
 stages in order behind the derived cache; never break the live permission gates. **Open decisions
 (resolve first):** Organization as persona vs tenant tier · the exact paid-gated feature list ·
 Crew cross-circle visibility · Collaborator↔Practitioner boundary.

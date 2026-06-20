@@ -17,10 +17,10 @@ these tables mean.
 `invite_links`
 
 **Pillars (game taxonomy)**
-`pillars` (Mind / Body / Spirit / Expression — renamed 2026, see docs/NAMING.md; migration
+`pillars` (Mind / Body / Spirit / Expression, renamed 2026, see docs/NAMING.md; migration
 `20260613000010`; **never** called Channels). FKs that point at it keep the column name
 `domain_id` for now (`practices.domain_id`, `journey_plan_items.domain_id`,
-`journey_plans.domain_id`, …) — those column renames are deferred to Wave 3.
+`journey_plans.domain_id`, …). Those column renames are deferred to Wave 3.
 
 **Channels (topical forum)**
 `topical_channels` (FK `pillar_id`, renamed from `domain_id` in the same migration),
@@ -41,7 +41,7 @@ these tables mean.
 **Events**
 `events`, `event_rsvps`, `event_tickets`, `event_ticket_types`, `event_embeddings`,
 `event_blurb_cache` (ticketing per EVENTS-SYSTEM; embeddings/blurbs power the "For
-You" lane — ADR entries 2026-06)
+You" lane; ADR entries 2026-06)
 
 **Moderation & safety**
 `reports`, `blocked_users`
@@ -54,29 +54,29 @@ You" lane — ADR entries 2026-06)
 
 **Gamification**
 `achievements`, `user_achievements`, `streaks`, `challenge_progress`,
-`season_challenges` (+ `is_active` archive flag — ADR-219), `challenge_qr_codes`,
+`season_challenges` (+ `is_active` archive flag, ADR-219), `challenge_qr_codes`,
 `season_trophies`, `seasons`, `quests`,
-`crew_tasks` (+ `circle_id`/`assigned_to`/`claimed_at` — ADR-205), `crew_completions`,
+`crew_tasks` (+ `circle_id`/`assigned_to`/`claimed_at`, ADR-205), `crew_completions`,
 `gem_config`, `gem_transactions`, `zap_config`, `zap_transactions`, `store_items`
-(+ `season_id`/`expires_at` — ADR-219), `store_redemptions`,
-`reward_grants` (idempotent claim-then-pay — ADR-168/200),
-`practice_streaks` (per-practice consistency + depth cache — ADR-219),
-`witnessed_grants` (peer-granted awards, UNIQUE (season, award, granter) — ADR-219),
-`circle_awards` (circle-level awards: Circle Current banner, Co-op Synchrony — ADR-219).
+(+ `season_id`/`expires_at`, ADR-219), `store_redemptions`,
+`reward_grants` (idempotent claim-then-pay, ADR-168/200),
+`practice_streaks` (per-practice consistency + depth cache, ADR-219),
+`witnessed_grants` (peer-granted awards, UNIQUE (season, award, granter), ADR-219),
+`circle_awards` (circle-level awards: Circle Current banner, Co-op Synchrony, ADR-219).
 Profiles gained `amplitude` (lifetime XP, accrued only by `after_zap_transaction()`);
 practices gained `weight_class` (the per-log payout FALLBACK; `reward_zaps` is the explicit
-per-log value when set — cadence-based in the Quest library, ADR-303) and `duration_min`
+per-log value when set, cadence-based in the Quest library, ADR-303) and `duration_min`
 (typical session length in minutes); nodes gained `city` (admin-entered, for the long-range award).
 
 **Circle Current & circle challenges (collaborative)**
-`circle_current_transactions` (append-only ledger; trigger owns `circles.season_current`
-— renamed from `circle_field_transactions` / `circles.current_season_field`, migration
-`20260613000040`), `circle_challenge_adoptions` (a circle adopts a global challenge together
-— ADR-201)
+`circle_current_transactions` (append-only ledger; trigger owns `circles.season_current`,
+renamed from `circle_field_transactions` / `circles.current_season_field`, migration
+`20260613000040`), `circle_challenge_adoptions` (a circle adopts a global challenge together,
+ADR-201)
 
-> **`quests`** (ADR-152, Phase B1) is the **Quest** (season-instance) container — canon
+> **`quests`** (ADR-152, Phase B1) is the **Quest** (season-instance) container: canon
 > hierarchy **Quest → Journey → Practice** ([NAMING.md](NAMING.md); "Seasonal Quest" is retired
-> phrasing — a `quests` row simply **is** the season). A `quests` row is a season's official,
+> phrasing, a `quests` row simply **is** the season). A `quests` row is a season's official,
 > free collection of Journeys (`season` = `season_number`, null = evergreen). Official Journeys
 > nest under it via **`journey_plans.quest_id`** (+ `official` flag); a NULL `quest_id` is a
 > member-built Journey in the open library. Public read; service-role writes. The B1 migration
@@ -88,16 +88,16 @@ per-log value when set — cadence-based in the Quest library, ADR-303) and `dur
 > 2026-06): the tables and the `quest_outcomes()` RPC no longer exist; `/admin/quests` is the
 > Journey-Library manager. The mechanic lives on in `season_challenges`/achievements.
 
-> **Journey intensity + completion (ADR-197–200).** `practice_tiers` holds the three depths
-> (`tier ∈ initiate|adept|master`, renamed 2026 — see docs/NAMING.md; migration `20260613000020`)
+> **Journey intensity + completion (ADR-197 to 200).** `practice_tiers` holds the three depths
+> (`tier ∈ initiate|adept|master`, renamed 2026, see docs/NAMING.md; migration `20260613000020`)
 > per practice (RLS: as visible as the practice); tier *selection* lives on
 > `journey_plan_items.default_tier`, `circles.default_intensity_tier` (Host-set), and
-> `journey_plan_adoptions.tier_override` (member) — resolved member→circle→item→`adept`
+> `journey_plan_adoptions.tier_override` (member), resolved member→circle→item→`adept`
 > (the middle-tier default; was `current`).
 > `journey_plans` gains `status` (review), `page_config` (JSONB widget layout),
 > `min_practices_per_day`, `target_weeks`, `season_locked`, `completion_gems`. Completion is
 > **derived** from `practice_logs` against the season's fixed 91-day / 13-week buckets
-> (`lib/journey-arc.ts`) — no progress table; bonuses (Full Day / Weekly Rhythm / completion) fire
+> (`lib/journey-arc.ts`); no progress table; bonuses (Full Day / Weekly Rhythm / completion) fire
 > once via `reward_grants` (`lib/journey-grants.ts`). Full spec: [JOURNEYS.md](JOURNEYS.md).
 
 > **`seasons`** gives seasons a first-class identity (`season_number`, `name`,
@@ -111,36 +111,36 @@ per-log value when set — cadence-based in the Quest library, ADR-303) and `dur
 > via `gem_transactions`; zap caps are enforced upstream at `engagement_events`
 > idempotency). Code holds fallback defaults so a missing row never breaks a grant.
 
-> **`gem_transactions` / `zap_transactions`** are the twin ledgers — one row per
-> grant — and the single source of the "how you earned" Vault log
+> **`gem_transactions` / `zap_transactions`** are the twin ledgers, one row per
+> grant, and the single source of the "how you earned" Vault log
 > (`/crew/store/ledger`, `lib/economy/ledger.ts`). Each has an `AFTER INSERT`
 > trigger that is the **only** place profile totals move: `after_gem_transaction`
 > bumps `current_season_gems`/`lifetime_gems`; `after_zap_transaction` bumps
 > `current_season_zaps`/`lifetime_zaps` **and** advances `current_season_rank`
 > (auto up to Conduit; Luminary stays a manual promotion). `awardZaps` /
-> `awardGems` only ever insert a ledger row — never write the profile directly
+> `awardGems` only ever insert a ledger row, never write the profile directly
 > (ADR-139). Crew-task completions route through the zap ledger too (the
 > `after_crew_completion` trigger appends a row instead of touching the profile).
 
 **Local Marketplace (vertical 5)**
 `market_listings`
 
-> **`market_listings`** (ADR-148) — Foundation, **no-fee, no-payment** local exchange:
+> **`market_listings`** (ADR-148): Foundation, **no-fee, no-payment** local exchange:
 > `kind` (offer/free/lend/request), free-text `price_note` (no processing), geo
 > (neighborhood/city/lat/lng) + optional `circle_id` locality anchor, `status`
 > (active/claimed/closed), `is_demo`. RLS: public read active, author manages own.
 > `lib/marketplace.ts` (admin handle + app-code authz); `/market`. Contact hands off to
-> the seller's profile/DMs — no in-app payment.
+> the seller's profile/DMs, no in-app payment.
 
-> **`density_by_city()` RPC** (ADR-151) — the Density / demand read-model. A
+> **`density_by_city()` RPC** (ADR-151): the Density / demand read-model. A
 > deterministic, `service_role`-only aggregate (security definer) joining circles +
 > capacity, members-in-circles, residents (+ 30-day arrivals), and active listings per
-> normalized city. `lib/analytics/density.ts` scores each city into a 0–100 Lab-readiness
+> normalized city. `lib/analytics/density.ts` scores each city into a 0 to 100 Lab-readiness
 > (🌱 Seed → ⏳ Growing → ✅ Ready, + ⚠️ capacity-crunch); surfaced at `/admin/expansion`.
 
 **Journeys**
 `journey_plans`, `journey_plan_items`, `journey_plan_adoptions`, `practice_tiers`
-(Initiate/Adept/Master — ADR-197/198, rename migration `20260613000020`; spec in JOURNEYS.md)
+(Initiate/Adept/Master, ADR-197/198, rename migration `20260613000020`; spec in JOURNEYS.md)
 
 **Practices (North Star)**
 `practices`, `circle_practices`, `member_practices`, `practice_logs`,
@@ -153,7 +153,7 @@ per-log value when set — cadence-based in the Quest library, ADR-303) and `dur
 > streak tick + the **daily practice streak** via `lib/practices.ts` (`logPractice`).
 > The daily streak is derived from `practice_logs` and owns
 > `profiles.current_streak` / `longest_streak`; its freeze tokens + milestone-payout
-> bookkeeping live in `profiles.meta.practiceStreak` (no new table — ADR-145,
+> bookkeeping live in `profiles.meta.practiceStreak` (no new table, ADR-145,
 > `lib/practice-streak.ts`).
 
 **RPCs / views (public read layer)**
@@ -183,34 +183,34 @@ per-log value when set — cadence-based in the Quest library, ADR-303) and `dur
 **Partners & captures (in-person earning)**
 `partners`, `partner_offers`, `partner_redemptions`, `nodes`, `captures`
 
-**Engagement & intelligence (PI.1–PI.5)**
+**Engagement & intelligence (PI.1 to PI.5)**
 `engagement_events` (semantic), `interaction_events` (wide firehose, 90-day purge),
 `member_traits`, `member_tags`, `segments`, `ai_usage`, `ai_help_queries`,
 `ai_member_context`, `vera_config`, `consent_records`, `agent_actions`,
-`studio_site_changes` (audited one-click site actions — ADR-167)
+`studio_site_changes` (audited one-click site actions, ADR-167)
 
 **Support & onboarding**
 `support_tickets`, `support_ticket_messages`, `help_chunks` (help-RAG index),
-`welcomes`, `introductions`, `training_paths` (role training — ADR-157), `tips`
+`welcomes`, `introductions`, `training_paths` (role training, ADR-157), `tips`
 
 **Money & platform plumbing**
 `stripe_webhook_events` (replay/idempotency claim), `connection_settings` (ADR-186),
 `admin_audit_log` (crown-jewel action log), `platform_flags`, `platform_flag_events`,
-`area_permissions`, `page_content` (operator-editable headers/SEO/hero/CTA —
+`area_permissions`, `page_content` (operator-editable headers/SEO/hero/CTA,
 ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_members`,
 `email_events`, `email_suppressions`, `notification_queue` (durable outbox),
-`profile_personas` (partner hats — P3.1), `conversation_room_migration`
+`profile_personas` (partner hats, P3.1), `conversation_room_migration`
 
 > **CRM & marketing** tables (`contacts`, `campaigns`, `automation_rules`, `segments`,
 > `member_tags`, `member_traits`, `network_contacts`, `network_contact_notes`,
 > `network_contact_tags`, `crm_stages`, `crm_deals`, `crm_activities`) are specified in
-> `docs/COMMS-CRM-ARCHITECTURE.md` and `docs/NETWORK-CRM.md` — the source of truth for
+> `docs/COMMS-CRM-ARCHITECTURE.md` and `docs/NETWORK-CRM.md`, the source of truth for
 > that domain.
 
-> *(`spatial_ref_sys` is PostGIS's reference table — not ours, no RLS by design.)*
+> *(`spatial_ref_sys` is PostGIS's reference table, not ours, no RLS by design.)*
 
-**Entity partition (Foundation ⊕ Labs — ADR-246, migration `20260618000000`)**
-`entities` is the two-row legal-entity registry (`foundation` nonprofit / `labs` for-profit) —
+**Entity partition (Foundation ⊕ Labs, ADR-246, migration `20260618000000`)**
+`entities` is the two-row legal-entity registry (`foundation` nonprofit / `labs` for-profit),
 the partition key for **all money**. `event_tickets.entity_id` tags each ticket's revenue
 (defaults to Foundation). `financial_transactions` is the append-only, entity-partitioned
 ledger every dollar flow writes to (`revenue_type ∈ dues|donation|commerce|payout|transfer|refund`);
@@ -315,7 +315,7 @@ as today**.
 > Focus surface (`updateSpaceProfile`); a Space is created via the `/spaces/new` wizard (`createSpace`,
 > which also seats the owner as a `space_members` admin). See ENTITY-SPACES-BUILD §B.6.
 
-## The `profiles` table — universal entity record
+## The `profiles` table: universal entity record
 
 `profiles` is the single identity row for **every** entity, not just logged-in
 members: members, vendors, performers, service providers, collaborators, officials.
@@ -323,37 +323,37 @@ Key design columns beyond the obvious (`display_name`, `handle`, `avatar_url`, `
 
 | Column | Type | Purpose |
 |---|---|---|
-| `auth_user_id` | `uuid` **nullable** | Supabase auth link. **Null is valid** — a café or official can exist in the directory with no login. |
-| `entity_types` | `text[]` | What kind(s) of entity this is (`member`, `vendor`, `performer`, `service`, …). A somatic healer who is also crew is **one** row with two tags — no duplicate records. |
-| `community_role` | `community_role` enum | The **community trust ladder** axis (`member < crew < host < guide < mentor`), separate from `entity_types`. A performer may have no role; a mentor may also be a vendor. The enum's `admin`/`janitor` rungs are **deprecated no-ops** — staff authority now lives on `web_role` (below). |
-| `web_role` | `text` (`none`/`admin`/`janitor`) | The **operational staff axis** (Site Admin / Executive Admin) — added in migration `20260613000050`, backfilled from the old `community_role` admin/janitor rungs. The coarse gate for admin surfaces + janitor-only crown jewels; read by `get_my_web_role()`. Orthogonal to `community_role` and to `membership_tier` (billing). The fine-grained per-domain staff layer is `team_members` (ADR-127). See [NAMING.md](NAMING.md) §Roles. |
+| `auth_user_id` | `uuid` **nullable** | Supabase auth link. **Null is valid**: a café or official can exist in the directory with no login. |
+| `entity_types` | `text[]` | What kind(s) of entity this is (`member`, `vendor`, `performer`, `service`, …). A somatic healer who is also crew is **one** row with two tags, no duplicate records. |
+| `community_role` | `community_role` enum | The **community trust ladder** axis (`member < crew < host < guide < mentor`), separate from `entity_types`. A performer may have no role; a mentor may also be a vendor. The enum's `admin`/`janitor` rungs are **deprecated no-ops**; staff authority now lives on `web_role` (below). |
+| `web_role` | `text` (`none`/`admin`/`janitor`) | The **operational staff axis** (Site Admin / Executive Admin), added in migration `20260613000050`, backfilled from the old `community_role` admin/janitor rungs. The coarse gate for admin surfaces + janitor-only crown jewels; read by `get_my_web_role()`. Orthogonal to `community_role` and to `membership_tier` (billing). The fine-grained per-domain staff layer is `team_members` (ADR-127). See [NAMING.md](NAMING.md) §Roles. |
 | `meta` | `jsonb` | Type-specific data (vendor hours, performer genres, booking contact) until a type is complex enough to warrant its own table. No premature normalization. |
 | `nexus_region_id` | `uuid` FK → `nexus_regions` | **Legacy** geography link (see below). Still read by the `get_my_region_id()` RLS helper. |
 | `embedding` | `vector(384)` | Reserved for semantic search (all-MiniLM-L6-v2). Column exists; embedding-based search is **not yet built** (ROADMAP P6.25). |
 | `is_crew_lead` | `boolean` | Elevated within a small group. |
-| `is_active` | `boolean` | Soft-deactivation — records are deactivated, not hard-deleted, to preserve history. |
+| `is_active` | `boolean` | Soft-deactivation: records are deactivated, not hard-deleted, to preserve history. |
 
 Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderation
 (`suspended_*`) columns are added by later migrations (gem store, presence, moderation).
 
-> **Legacy tables — present but being phased out:** `nexus_regions` (self-referencing
+> **Legacy tables, present but being phased out:** `nexus_regions` (self-referencing
 > geography tree) still exists and backs `get_my_region_id()`. The *current* place
 > model is `outposts → nexuses → hubs → circles` (see GLOSSARY). The original
 > `groups` / `group_memberships` tables were **dropped** in
-> `20240102000000_hierarchy_v2.sql` and replaced by `circles` / `memberships` — do
+> `20240102000000_hierarchy_v2.sql` and replaced by `circles` / `memberships`. Do
 > not reference them.
 
 ## Key enums
 
 | Enum | Values |
 |---|---|
-| `community_role` | `member`, `crew`, `host`, `guide`, `mentor` (+ `admin`, `janitor` — **deprecated no-ops**, kept for enum-order stability; staff authority moved to `web_role`) |
-| `season_rank_enum` | `ghost`, `echo`, `signal`, `beacon`, `conduit`, `luminary` (renamed 2026 — see docs/NAMING.md; migration `20260613000030`; declaration order is load-bearing for `lifetime_rank`) |
-| `web_role` | `none`, `admin`, `janitor` (`text` + CHECK, not a PG enum — migration `20260613000050`) |
+| `community_role` | `member`, `crew`, `host`, `guide`, `mentor` (+ `admin`, `janitor`: **deprecated no-ops**, kept for enum-order stability; staff authority moved to `web_role`) |
+| `season_rank_enum` | `ghost`, `echo`, `signal`, `beacon`, `conduit`, `luminary` (renamed 2026, see docs/NAMING.md; migration `20260613000030`; declaration order is load-bearing for `lifetime_rank`) |
+| `web_role` | `none`, `admin`, `janitor` (`text` + CHECK, not a PG enum; migration `20260613000050`) |
 | `space_members.role` | `viewer`, `editor`, `moderator`, `admin` (`text` + CHECK; per-space role ladder, ADR-320; migration `20260711010000_space_members.sql`) |
 | `spaces.visibility` | `network`, `private` (`text` + CHECK, default `network`; public-vs-walled axis, ADR-322; migration `20260711000000_spaces_visibility_plan_entitlements.sql`) |
 | `spaces.type` | `root`, `practitioner`, `business`, `organization`, `coaching`, `event_space`, `lab`, `partner` (`text` + CHECK; the role axis that selects a profile blueprint, ADR-323; `event_space` added in migration `20260711040000_spaces_type_event_space.sql`, ADR-325) |
-| `practice_tiers.tier` | `initiate`, `adept`, `master` (`text` + CHECK; renamed 2026 — see docs/NAMING.md; migration `20260613000020`) |
+| `practice_tiers.tier` | `initiate`, `adept`, `master` (`text` + CHECK; renamed 2026, see docs/NAMING.md; migration `20260613000020`) |
 | `circle_type` | `in-person`, `online` |
 | `group_status` | `forming`, `active`, `inactive`, `archived` |
 | `channel_content_type` | `group`, `event`, `thread` |
@@ -379,7 +379,7 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
   A member's *own content* may CASCADE. **New tables should follow this.**
 - **Hierarchy nullability:** `circles.hub_id` and `hubs.nexus_id` are nullable so
   Circles can exist before a Hub/Nexus emerges. `nexuses.outpost_id` is **NOT
-  NULL** — creating a Nexus requires an Outpost.
+  NULL**: creating a Nexus requires an Outpost.
 - **Notification preferences:** a missing `notification_preferences` row means
   canonical defaults (email + inapp on, push off). No backfill needed.
 

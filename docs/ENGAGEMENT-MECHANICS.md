@@ -8,7 +8,7 @@
 > don't have to re-derive them from the files.
 
 The reward economy itself (point values, which action earns what) is still a product
-decision — see [START-HERE.md](START-HERE.md) Part B and CHECKLIST. What's built is the
+decision; see [START-HERE.md](START-HERE.md) Part B and CHECKLIST. What's built is the
 *plumbing* that makes earning exactly-once, server-verified, and source-agnostic.
 
 ---
@@ -23,11 +23,11 @@ decision — see [START-HERE.md](START-HERE.md) Part B and CHECKLIST. What's bui
 | `currency.ts` | **REWARD routing.** Maps an engagement `source` → the currency it earns (`gems` vs `zaps`). | Pure, framework-independent |
 
 Everything is **server-only** (it uses `createAdminClient()`). None of it is wired to UI
-yet — it's infrastructure ready for the wiring in START-HERE Part B.
+yet; it's infrastructure ready for the wiring in START-HERE Part B.
 
 ---
 
-## The ledger (`events.ts`) — exactly-once is the whole point
+## The ledger (`events.ts`): exactly-once is the whole point
 
 `recordEngagementEvent(input)` upserts one row into `engagement_events` with
 `onConflict: 'idempotency_key', ignoreDuplicates: true`. A conflicting key returns **zero
@@ -51,14 +51,14 @@ Key properties:
 - **`gamificationEvent` is optional.** Supply it for sources that map to a typed
   `GamificationEvent` (most web actions); omit it for sources whose reward is granted
   directly by the caller (node captures award zaps in `capture.ts`).
-- **Automations are guarded** — `runAutomationsForEvent` is wrapped in try/catch so a
+- **Automations are guarded:** `runAutomationsForEvent` is wrapped in try/catch so a
   misbehaving automation can never break event recording or the reward path.
 
 `EngagementSource` = `'web' | 'task' | 'qr' | 'nfc' | 'geo' | 'p2p' | 'system'`.
 
 ---
 
-## Verification (`verify.ts`) — never trust the device
+## Verification (`verify.ts`): never trust the device
 
 GPS coordinates and QR/NFC payloads are trivially spoofable, so a capture is only trusted
 after the **server** clears it. `verifyCapture(attempt)` runs, in order:

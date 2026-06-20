@@ -1,4 +1,4 @@
-# Events Re-Architecture — Plan of Record
+# Events Re-Architecture: Plan of Record
 
 > **Status:** Ratified plan (2026-06-14). Decisions locked as ADR-254/255/256.
 > **Authority:** running code + `supabase/migrations/` > this doc > Notion.
@@ -13,7 +13,7 @@
 
 ## The answer up front
 
-The Events system is **not greenfield** — roughly 70% of a capable system is already live (at
+The Events system is **not greenfield**: roughly 70% of a capable system is already live (at
 seed scale: 3 events, 1 RSVP in prod). The work is a **re-architecture around two clearly
 separated product surfaces**, plus closing **three foundational gaps**, plus an honest
 reconciliation of what is actually built. We **extend and wire**; we do not rebuild.
@@ -21,7 +21,7 @@ reconciliation of what is actually built. We **extend and wire**; we do not rebu
 | Surface | Reference | What it is | State today |
 |---|---|---|---|
 | **The Invite** | Partiful / Luma | One event, host↔guest: intimate, expressive, interactive, RSVP-centric, host updates | Functional but plain; missing the expressive + interactive + messaging layer |
-| **The Catalog** | Eventbrite / Meetup | Many events, geolocated discovery: search / sort / filter / map / "near me" | Exists but **circle-anchored, not venue-geolocated** — cannot truly do "near me" |
+| **The Catalog** | Eventbrite / Meetup | Many events, geolocated discovery: search / sort / filter / map / "near me" | Exists but **circle-anchored, not venue-geolocated**: cannot truly do "near me" |
 
 ## Locked decisions
 
@@ -74,14 +74,14 @@ cover/theme/effects as the real moat; **compose-once, target-by-RSVP-status, fan
 for updates; host send caps (Partiful: 10/event; block cold sends > 100 un-RSVP'd); reminder
 cadence keyed to RSVP state (Going → 2h, Maybe → 1-week nudge).
 
-**The Catalog.** Two orthogonal axes — **Topic × Format** — with ~15-20 browsable top-level
+**The Catalog.** Two orthogonal axes (**Topic × Format**) with ~15-20 browsable top-level
 topics and free-form tags beneath for matching (Meetup Topics), kept out of indexable URLs;
 `geography(Point,4326)` + GiST + `ST_DWithin` (index-using) + `<->` KNN for "near me," exposed as
 a hardened, RLS-respecting Supabase RPC; **keyset/cursor pagination** (offset collapses at depth);
 server-side marker clustering / viewport-bounded queries / vector tiles at scale; Postgres FTS +
 `pg_trgm` + existing embeddings is enough at launch (graduate to Typesense only when typo-tolerant
 instant search drives growth); PPR/Suspense to stream personalized "near you" holes over a cached
-shell *(verify Next APIs against `node_modules/next/dist/docs/` — this is not stock Next)*.
+shell *(verify Next APIs against `node_modules/next/dist/docs/`: this is not stock Next)*.
 
 **SEO.** schema.org `Event` with `eventAttendanceMode`, `eventStatus`, `offers.priceCurrency`,
 multi-aspect `image`; indexable `/discover/events/[city]/[category]` hubs whose value is unique
@@ -101,7 +101,7 @@ maximum member control, privacy by default, blameless re-engagement copy.
 
 ## The phased plan
 
-### Phase 0 — Reconcile & set the runway *(short)*
+### Phase 0: Reconcile & set the runway *(short)*
 
 | Deliverable | Why |
 |---|---|
@@ -110,21 +110,21 @@ maximum member control, privacy by default, blameless re-engagement copy.
 | Run Supabase security + perf advisors; fix lints | Never run against the applied migrations |
 | Confirmation-on-RSVP reminder touch | Smallest high-value delta on existing infra |
 
-### Track A — The Invite *(parallel after Phase 0)*
+### Track A: The Invite *(parallel after Phase 0)*
 
 | Phase | Deliverable |
 |---|---|
-| **A1 — RSVP depth + expressive invite** | Surface `maybe` / `plus_ones` (+ require names) / waitlist UI; **approval-required RSVPs** (invited guests auto-approve); host-only decline reasons; **guest questionnaire** (dietary, song requests) as `event_questions` / `event_question_answers`; **cover image + theme/effect** for all events (compose on Detail template); reminder cadence keyed to RSVP state |
-| **A2 — Event Dispatches + interactive layer + day-of** | **Event Dispatch** (ADR-255): post update to event page → optional "send as Dispatch" (rides `dispatches`, feed event badge, fan-out in-app/push/email via queue + send-gate, per-event mute, host caps, 60-day post-event window) + optional "text the group" (SMS, built behind the gate); reactions ("Boops") / GIF comments / contributable album / lightweight polls; **QR check-in** (signed token + redeem flag, host + self modes, name-search fallback, scoped staff role); **Host Manage Dashboard** (roster, waitlist, questionnaire CSV, check-in, dispatches, basic analytics) on the Dashboard template |
+| **A1: RSVP depth + expressive invite** | Surface `maybe` / `plus_ones` (+ require names) / waitlist UI; **approval-required RSVPs** (invited guests auto-approve); host-only decline reasons; **guest questionnaire** (dietary, song requests) as `event_questions` / `event_question_answers`; **cover image + theme/effect** for all events (compose on Detail template); reminder cadence keyed to RSVP state |
+| **A2: Event Dispatches + interactive layer + day-of** | **Event Dispatch** (ADR-255): post update to event page → optional "send as Dispatch" (rides `dispatches`, feed event badge, fan-out in-app/push/email via queue + send-gate, per-event mute, host caps, 60-day post-event window) + optional "text the group" (SMS, built behind the gate); reactions ("Boops") / GIF comments / contributable album / lightweight polls; **QR check-in** (signed token + redeem flag, host + self modes, name-search fallback, scoped staff role); **Host Manage Dashboard** (roster, waitlist, questionnaire CSV, check-in, dispatches, basic analytics) on the Dashboard template |
 
-### Track B — The Catalog *(B2 depends on B1)*
+### Track B: The Catalog *(B2 depends on B1)*
 
 | Phase | Deliverable |
 |---|---|
-| **B1 — Event geolocation foundation** *(the spine)* | `events.geog` + structured address + `attendance_mode` (in_person/online/hybrid) + online URL; geocode-on-save; GiST index; hardened `nearby_events` RPC (`ST_DWithin` + `<->` KNN, RLS-respecting, city-level public / exact for entitled); member home + radius default; migrate map/distance from Circle-anchored to event-anchored |
-| **B2 — Discovery surface** | Topic × Format taxonomy + tags; hybrid search (FTS + `pg_trgm` + embeddings); sort (date/distance/popularity/relevance); filters (category/date/price/format/has-spots/distance); keyset pagination; PPR/Suspense; map-first browse + server-side clustering; full schema.org `Event`; indexable city×category hubs; expired-event + faceted-nav crawl hygiene; per-event OG images; seeded recommendations |
+| **B1: Event geolocation foundation** *(the spine)* | `events.geog` + structured address + `attendance_mode` (in_person/online/hybrid) + online URL; geocode-on-save; GiST index; hardened `nearby_events` RPC (`ST_DWithin` + `<->` KNN, RLS-respecting, city-level public / exact for entitled); member home + radius default; migrate map/distance from Circle-anchored to event-anchored |
+| **B2: Discovery surface** | Topic × Format taxonomy + tags; hybrid search (FTS + `pg_trgm` + embeddings); sort (date/distance/popularity/relevance); filters (category/date/price/format/has-spots/distance); keyset pagination; PPR/Suspense; map-first browse + server-side clustering; full schema.org `Event`; indexable city×category hubs; expired-event + faceted-nav crawl hygiene; per-event OG images; seeded recommendations |
 
-### Phase C — Scale, depth, SMS, partners *(later; SMS legal track can start early)*
+### Phase C: Scale, depth, SMS, partners *(later; SMS legal track can start early)*
 
 SMS behind a `sendSms()` guard once EIN + A2P 10DLC complete (24h / day-of touches only); paid
 waitlist holds (Luma authorize-then-capture); Apple/Google Wallet passes + rotating QR for
@@ -148,11 +148,11 @@ Eventbrite/Meetup import.
 
 - **Naming canon:** "Event" stays. Host updates are **Event Dispatches** (ADR-255, NAMING.md).
   All copy runs the CONTENT-VOICE §10 checklist; no em dashes in member copy; never narrate feelings.
-- **Page framework:** compose the kit — Index (`/events`), Detail (`/events/[slug]`), Focus
+- **Page framework:** compose the kit: Index (`/events`), Detail (`/events/[slug]`), Focus
   (create/scan), **Dashboard** (host Manage). No hand-rolled layouts; semantic DAWN tokens only.
-- **DB-level invariants** for money/capacity (atomic inventory, capacity triggers) — already convention.
+- **DB-level invariants** for money/capacity (atomic inventory, capacity triggers): already convention.
 - **Trauma-informed overlay:** privacy by default, member-set notification/visibility/pacing,
-  blameless copy. Standalone public events (ADR-254) raise the moderation bar — surface it in B1.
+  blameless copy. Standalone public events (ADR-254) raise the moderation bar: surface it in B1.
 
 ## Founder / ops items
 
@@ -173,21 +173,21 @@ in the research record for this plan.
 
 ## Implementation log
 
-### 2026-06-14 — Waves 1-3 (built by parallel agents, synthesized centrally)
+### 2026-06-14: Waves 1-3 (built by parallel agents, synthesized centrally)
 
 > All new columns/tables are read via the cast convention; **migrations are written but NOT
 > applied to prod**, and `lib/database.types.ts` is not yet regenerated. The typed cutover
 > (preview branch → regen types → drop casts) is gated on the Supabase **Pro** plan.
 
-- **Wave 1 — design + foundation** (merged, #753/#754): `docs/EVENTS-DESIGN.md` (listing + detail
-  interior); 6 additive migrations — `event_geolocation` (+ `nearby_events` RPC, SECURITY INVOKER),
+- **Wave 1, design + foundation** (merged, #753/#754): `docs/EVENTS-DESIGN.md` (listing + detail
+  interior); 6 additive migrations: `event_geolocation` (+ `nearby_events` RPC, SECURITY INVOKER),
   `standalone_public_events` (ADR-254 RLS), `event_rsvp_depth`, `event_questions`, `event_dispatches`
-  (ADR-255), `event_cover_theme` — plus the `lib/events/` data layer.
-- **Wave 2 — build** (merged, #754): event detail two-column interior (rail `'none'` on `[slug]`),
-  catalog facets/sort/near-me/hybrid scope, and the **Event Dispatch feed bleed** — push to guests +
+  (ADR-255), `event_cover_theme`, plus the `lib/events/` data layer.
+- **Wave 2, build** (merged, #754): event detail two-column interior (rail `'none'` on `[slug]`),
+  catalog facets/sort/near-me/hybrid scope, and the **Event Dispatch feed bleed**: push to guests +
   Circle, with the surrounding-area reach as a passive, **resonance-gated** feed surface
   (`viewerInEventDispatchArea` + `getMyOrbit`; "the feed of people close by who have resonance").
-- **Wave 3 — depth**: host **Manage Dashboard** + questionnaire; `/discover/events` schema.org `Event`
+- **Wave 3, depth**: host **Manage Dashboard** + questionnaire; `/discover/events` schema.org `Event`
   enrichment (attendance mode / status / offers / location) + city×category hubs + per-event OG image;
   a keyless **geocoder** (Nominatim, graceful fallback) wired into create/edit so events get a real
   `geog`; persisted **Boops** (`event_post_reactions`); and **SMS groundwork** (`sms_groundwork`

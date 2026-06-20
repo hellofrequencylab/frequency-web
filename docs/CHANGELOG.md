@@ -21,7 +21,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   card in the Community directory and her own profile.
 
 - **Quests and Journeys are free for everyone**: a **Journey** is a set of practices you move
-  through; a **Quest** is a season's official collection of Journeys. Both are free now — start
+  through; a **Quest** is a season's official collection of Journeys. Both are free now. Start
   a season's Quest, and build, adopt, remix and share your own Journeys at no cost. (The Quest
   is still the game; only the Store and your public rank badge remain Crew perks.)
 - **The economy got simpler and fairer**: season Zaps now convert to Gems at a flat
@@ -35,12 +35,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
-- **A calmer writing box**: the composer leads with writing — three roomy lines,
+- **A calmer writing box**: the composer leads with writing, with three roomy lines,
   and the bold/italic/list tools folded under a small **Format** arrow beneath
   the divider. The side-menu buttons became little edge handles that show where
   each panel slides from, and the arch behind the Zap button is now a true
   half-circle that hugs it.
-- **Clearer mobile menus**: the bottom bar's little arrows are gone — a panel
+- **Clearer mobile menus**: the bottom bar's little arrows are gone. A panel
   icon on the left opens the menu, a **gem** on the right opens your Quest panel
   (streaks, stats, and now the **Dashboard** link, moved out of the account
   menu). Both panels open the same way; the small/full size toggle is retired.
@@ -51,7 +51,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **Scan from inside the app**: the Zap menu's **Check In** and **Ghost Node**
   tiles are live. One in-app scanner opens your camera and reads any Frequency
-  code — the event code at the door checks you in (+25 Zaps), a Ghost Node in
+  code: the event code at the door checks you in (+25 Zaps), a Ghost Node in
   the wild pays its bounty, a member's code takes you to their profile. Foreign
   QR codes are politely refused.
 
@@ -112,11 +112,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   happen, join a **waitlist** when an event is full and get **moved up automatically** when a
   spot opens, and **filter** the events library by kind of gathering, energy, or open spots.
 - **Pay your way for events**: hosts can offer **pay-what-you-can, sliding-scale, and donation**
-  tickets alongside fixed prices — and **refunds** are one tap. Money goes straight to the host.
+  tickets alongside fixed prices, and **refunds** are one tap. Money goes straight to the host.
 - **A "For You" lane for events**: when we have a sense of what resonates with you, the events
-  library suggests gatherings you'd vibe with — and tells you, warmly, *why*.
+  library suggests gatherings you'd vibe with, and tells you, warmly, *why*.
 - **Circle Current**: every time someone from your circle shows up to a gathering, your circle builds
-  **Circle Current** together — a shared, collaborative measure of showing up (private to your circle
+  **Circle Current** together, a shared, collaborative measure of showing up (private to your circle
   unless you choose to share it). It's never a competition between circles.
 - **Event chat and photos**: every event has an **activity feed** to talk before the day, and a
   shared **recap album** for photos after. Add a **cohost** to help you run it.
@@ -127,19 +127,19 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   Calendar, follow an **organizer's page**, switch the library to a **map**, and get a gentle nudge
   toward **people going who share a Channel** with you.
 - **Journeys, reimagined**: pick a season-long practice track and the app shows your **next
-  step** — one tap to log it. Every practice now comes in three depths — **Initiate** (5 min),
-  **Adept**, and **Master** — and your circle Host can set the right depth for your group, or
+  step** (one tap to log it). Every practice now comes in three depths: **Initiate** (5 min),
+  **Adept**, and **Master**, and your circle Host can set the right depth for your group, or
   you can choose your own. Keep your rhythm and you earn a **Full Day** bonus, a **Weekly
-  Rhythm** bonus, and — at 8 of the season's 13 weeks — you complete the Journey for Gems and a
+  Rhythm** bonus, and, at 8 of the season's 13 weeks, you complete the Journey for Gems and a
   permanent badge. When three or more of your circle are on the same Journey, you form a
-  **Co-op** and travel it together. Your profile now carries a **Frequency Signature** — a
+  **Co-op** and travel it together. Your profile now carries a **Frequency Signature**: a
   living shape of how your practice spreads across Mind, Body, Spirit, and Expression.
 - **Local Marketplace**: a no-fee place to swap, give away, lend, or find things with
   neighbors. Browse by type, sort by **Near me** to see what's closest to you, post a
-  listing with photos, and edit it anytime. No payment ever happens in the app — you
+  listing with photos, and edit it anytime. No payment ever happens in the app: you
   arrange the handoff offline. Find it at `/market`.
-- **A home screen that grows with you**: your home now shows your **stage** — from finding
-  your feet to becoming an anchor of the community — with the next thing that moves you up.
+- **A home screen that grows with you**: your home now shows your **stage** (from finding
+  your feet to becoming an anchor of the community) with the next thing that moves you up.
   New members get a calm, focused screen; more tools and panels reveal themselves as you
   build a streak, follow Journeys and climb the ranks, and you get a little moment when you
   reach a new stage.
@@ -149,20 +149,20 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   milestones that automatically save you if you miss a day, and get an **at-risk** nudge
   on your home screen before a streak slips away. See the new Streaks page in your dashboard.
 - **Your Journey on the Dashboard**: adopt a seasonal Journey and follow it on your
-  dashboard — each practice checks off as you keep its weekly rhythm, your next step
+  dashboard: each practice checks off as you keep its weekly rhythm, your next step
   stays front-and-centre, and you can see who in your circle is walking it too. The
   current step also shows on your home feed.
 - **User Stats for contacts**: open anyone in Marketing → Contacts to see one grouped
-  record — their member profile, CRM details and every card-scan capture together — plus
+  record (their member profile, CRM details and every card-scan capture together), plus
   the **path they took through the system**: how they arrived, the intro you sent, the QR
   codes they scanned, when they became a member, and your notes and deals. The contacts list
   is now searchable, and you can invite a scanned lead to join from their page.
 - **Find people you've met**: search (the header search and the Directory) now surfaces the
-  people *you* scanned in, even before they have an account — so a contact you saved is no
+  people *you* scanned in, even before they have an account, so a contact you saved is no
   longer lost until they sign up.
 - **Discover people stewards near you have met**: when a steward shares a contact to the
   network, other stewards **in the same city** can now find them in search and open a simple
-  card — name, role, and who saved them — so you can ask for an introduction. Private details
+  card (name, role, and who saved them), so you can ask for an introduction. Private details
   (email, phone, notes) stay with the steward who saved them.
 
 ### Changed
@@ -175,9 +175,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 - **A much bigger help center**: new guides covering circles, hubs, channels and events;
   finding people, friends, messages and search; posting and broadcasts; season ranks;
-  membership and the Vault; and reporting and safety — so "how do I…?" has an answer.
-- **Season banner**: your Crew dashboard now shows the current season — its name and a live
-  countdown to when it ends (or "Ongoing" while it's open) — so you always know how long is
+  membership and the Vault; and reporting and safety, so "how do I…?" has an answer.
+- **Season banner**: your Crew dashboard now shows the current season: its name and a live
+  countdown to when it ends (or "Ongoing" while it's open), so you always know how long is
   left to climb the ranks.
 - **Lifecycle rewards**: earn zaps for starting a circle, activating it with a practice,
   and inviting someone who joins (attending already rewarded). The circle journey now

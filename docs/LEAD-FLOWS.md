@@ -1,6 +1,6 @@
 # Lead flows & personas
 
-**The intake spine.** We ask every arriving visitor one question — *who are you?* — and
+**The intake spine.** We ask every arriving visitor one question (*who are you?*) and
 carry that answer (their **persona**) through everything: it routes their marketing track,
 branches the beta induction, and is stamped on the member so the site and Vera can tailor
 the experience forever. **Lead flows** are the assignable surfaces that ask it.
@@ -15,7 +15,7 @@ the experience forever. **Lead flows** are the assignable surfaces that ask it.
 | Layer | What it is | Lives in | Job |
 |---|---|---|---|
 | **Lead flow** | A named, shareable top-of-funnel you drop behind any entry point (QR, IG bio, partner button, city page) | `lib/onboarding/lead-flows.ts` · `/start/<flow>` | Frame the visit → ask the persona → record the lead → route into the induction |
-| **Persona** | WHO the visitor said they are — the self-identified fork | `lib/onboarding/personas.ts` | Routes the marketing track · branches the induction reel · stamped on the member |
+| **Persona** | WHO the visitor said they are: the self-identified fork | `lib/onboarding/personas.ts` | Routes the marketing track · branches the induction reel · stamped on the member |
 
 The persona is the **through-line**: captured in the lead flow (if used), re-confirmed in the
 induction's Welcome beat, and persisted on the profile.
@@ -36,7 +36,7 @@ Five types. **Visitor is the default fall-through**; the rest are the forks wort
 
 Each persona's full copy (pitch, the persona-true tour reel, the track's three bullets, and
 its learn-more link) is authored in `lib/onboarding/personas.ts`. The reels **reuse the three
-product renders** (feed · circles · events) with persona-true captions — no new components.
+product renders** (feed · circles · events) with persona-true captions. No new components.
 
 Every persona's `marketingTag` **must be registered** in `lib/traits/registry.ts`
 (`assignTag` throws on unknown keys). They're `category: 'marketing'`, `systemManaged: true`.
@@ -82,7 +82,7 @@ written by `app/onboarding/beta/actions.ts` (`writeBetaInduction` + the returnin
 
 ## How it relates to beta sequences
 
-Beta **sequences** still exist and still tag cohorts — they skin the induction copy by
+Beta **sequences** still exist and still tag cohorts. They skin the induction copy by
 *which link you clicked*. They are now DB-built versions managed at `/pages/sequences`
 plus the reserved `beta-default` base flow (the three code templates retired; see the
 onboarding-splash overhaul ADR). **Persona is an orthogonal axis**: it's what the
@@ -100,7 +100,7 @@ surface) but ask the question instead of guessing.
 - **A new lead flow** → add a `LeadFlow` to `lib/onboarding/lead-flows.ts`; `/start/<slug>` and
   its static params come for free.
 - **Dedicated track pages** (practitioner tools, the loyalty program, the Lab pitch) are the
-  natural next step — today each persona's `track.learnMoreHref` points at the closest existing
+  natural next step. Today each persona's `track.learnMoreHref` points at the closest existing
   pillar page. Swap them to bespoke pages when built.
-- **Operator-assignable flows** (a DB layer over `lead-flows.ts`, `vera_config`-style) — the
+- **Operator-assignable flows** (a DB layer over `lead-flows.ts`, `vera_config`-style): the
   deferred next phase; callers won't change.

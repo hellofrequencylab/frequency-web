@@ -53,10 +53,10 @@ Add new patterns here as they emerge, one example per element.
   images are width-capped (`max-w-sm`) so they don't tower over the text column.
 - One hero photo per page; ZigZag images alternate sides (`reverse`).
 
-## 6. Components — when to use
+## 6. Components: when to use
 
 `PhotoHero` (hero on imagery) · `Section` (a content band) · `SectionHeading` (eyebrow + H2 + kicker) ·
-`Lead`/`Body` (intro / paragraph) · `ZigZag` (image+text beat — the workhorse) · `Statement` (full-width
+`Lead`/`Body` (intro / paragraph) · `ZigZag` (image+text beat, the workhorse) · `Statement` (full-width
 display interstitial) · `PullQuote` (oversized quote + attribution) · `Steps` (numbered 3-up) ·
 `Card` (`soft|feature|elevated`, the one surface card) · `Stat` (big display number) · `Marquee`
 (rhythm ticker band) · `PillarNav` (the 1·2·3 cross-link on pillar pages) · `BetaCTA` (the one closing
