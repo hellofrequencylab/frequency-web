@@ -1336,7 +1336,7 @@ export default function AppShell({
       data-skin={skin}
       data-generation={generation}
       data-occasion={occasion === 'none' ? undefined : occasion}
-      className="flex min-h-screen flex-col bg-canvas"
+      className="flex min-h-screen flex-col overflow-x-clip bg-canvas"
     >
 
       {/* ── Top bar ───────────────────────────────────────── */}
@@ -1370,7 +1370,7 @@ export default function AppShell({
             tidy block of community actions and the account stays distinct.
             pr keeps the avatar off the screen edge below lg (the lg block is
             flush-right by design for the rail alignment). */}
-        <div className="flex flex-1 items-center justify-end gap-1 pl-2.5 pr-2 md:gap-2 md:pl-4 lg:pr-0">
+        <div className="flex flex-1 min-w-0 items-center justify-end gap-1 pl-2.5 pr-2 md:gap-2 md:pl-4 lg:pr-0">
 
           {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
               hide/show seeded demo content for themselves; sized to match Search. */}
@@ -1419,7 +1419,7 @@ export default function AppShell({
               sits flush to the viewport's right edge, so its LEADING divider (the "|"
               between Search and these actions) lines up with the right column's left
               border. Below lg (no right rail) it's a natural-width right-aligned cluster. */}
-          <div className="flex items-center justify-end gap-1 sm:ml-1 sm:border-l sm:border-border sm:pl-1.5 md:gap-2 lg:ml-0 lg:w-72 lg:justify-start lg:pl-3 lg:pr-4">
+          <div className="flex items-center justify-end gap-1 sm:ml-1 sm:border-l sm:border-border sm:pl-1.5 md:gap-2 lg:ml-0 lg:min-w-72 lg:justify-start lg:pl-3 lg:pr-4">
             {/* Community actions: mindless · friends · messages · notifications · daily streak. */}
             {/* Mindless — the global practice timer overlay, openable from anywhere. */}
             <MindlessLaunch />
