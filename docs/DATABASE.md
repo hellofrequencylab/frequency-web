@@ -232,6 +232,8 @@ as today**.
 | `space_invites` | planned (ADR-320) | `space_id, email, role, token, expires_at, accepted_at` (grant a space role by email/link without making someone network staff) | `space_id` |
 | `space_availability` | applied (ADR-325; `20260711050000`) | `space_id, weekday 0-6, start_minute/end_minute (local-midnight minutes), slot_minutes, timezone (one IANA tz per Space), created_at` (Practitioner 1:1 booking v1 weekly windows) | `space_id` |
 | `space_bookings` | applied (ADR-325; `20260711050000`) | `space_id, member_profile_id, starts_at/ends_at (UTC), status CHECK (confirmed\|cancelled), note`; partial unique `(space_id, starts_at) WHERE status=confirmed` (double-book guard); service-role RLS | `space_id` |
+| `space_membership_tiers` | applied (ADR-327; `20260711070000`) | `space_id, name, price_cents, interval CHECK (month\|year\|once), benefits jsonb, sort, is_active`; price/interval DISPLAY-ONLY in v1 (no billing); service-role RLS | `space_id` |
+| `space_memberships` | applied (ADR-327; `20260711070000`) | `space_id, member_profile_id, tier_id, status CHECK (active\|cancelled), started_at`; partial unique `(space_id, member_profile_id) WHERE status=active` (one-active guard); service-role RLS | `space_id` |
 
 > **`space_members`** (ADR-320) is the **per-space membership + authorization** primitive: a
 > **third, orthogonal authority axis**, distinct from the **community trust ladder**
@@ -246,6 +248,15 @@ as today**.
 > ADR-056) so it never re-enters `space_members` RLS, eliminating the policy-recursion footgun (a
 > self-referencing subquery would otherwise raise "infinite recursion"); the helper also folds in the
 > owner, and writes stay service-role only.
+
+> **`spaces` row visibility (ADR-326, security fix):** the `spaces_read_active` SELECT policy is
+> visibility-aware: `status = 'active' and (visibility is distinct from 'private' or
+> is_space_member(id))`. Network (and unset) Spaces stay publicly readable; **Private Spaces resolve
+> at the DB layer only for the owner or an active member**, via the `is_space_member(space_id)`
+> SECURITY DEFINER helper (migration `20260711080000`, ADR-056, the same recursion-safe pattern as
+> `is_space_admin`). App reads use the service-role admin client (bypasses RLS) plus the
+> `getVisibleSpaceBySlug` gate; this policy closes the direct anon/session-client read of a Private
+> Space's metadata (the prior policy was visibility-blind).
 
 > **New `spaces` columns** (ADR-322): `visibility text CHECK (network|private)` default `'network'`,
 > the first-class public-vs-walled axis (`network` spaces appear in cross-network discovery /

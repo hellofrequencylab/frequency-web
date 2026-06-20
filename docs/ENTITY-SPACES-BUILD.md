@@ -543,6 +543,15 @@ real money, defer.
 > with a partial-unique double-book guard, pure DST-aware slot generation, the `/spaces/<slug>/book`
 > member surface + the `/spaces/<slug>/settings/availability` owner editor). Booking defers calendar
 > sync, buffers, no-show policy, payments, and per-member timezone.
+>
+> **Hardening + second deep feature (ADR-326/327).** A post-merge audit (wiring + security + voice)
+> drove: a **security fix** to the `spaces` SELECT policy (it was visibility-blind, leaking Private
+> space metadata to the anon client; now visibility-aware via the `is_space_member` DEFINER, ADR-326),
+> the `members` hero stat now sourced for the Wave B roles, `getSpaceVisibility` failing closed, and
+> the `/admin/spaces` console wired to the live profiles. The second **deep feature** shipped:
+> **Business memberships v1** (`space_membership_tiers` + `space_memberships`, the "Become a member"
+> join surface + the `/spaces/<slug>/settings/memberships` owner editor; tiers + join with NO billing,
+> Stripe deferred to Phase 4, ADR-327).
 
 ### Epic 1.1: Design-system work (the kit, confirmed)
 - [ ] Confirm `DetailTemplate` slots cover the context band (they do: `hero/title/subtitle/badges/actions/back/tabs`); no template change needed.
