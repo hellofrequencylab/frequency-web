@@ -21,6 +21,8 @@ const SURFACES = [
   { href: "/dev/events", label: "Events", note: "What is coming up. RSVP or grab a ticket." },
   { href: "/dev/market", label: "Market", note: "Spend Zaps on frames, colors, and badges." },
   { href: "/dev/earnings", label: "Earnings", note: "What your cosmetics have earned you in Zaps." },
+  { href: "/dev/moderation", label: "Moderation", note: "Report a problem or block someone." },
+  { href: "/dev/account", label: "Your data", note: "Download or delete the data we hold for you." },
   { href: "/dev/dj", label: "Quick room", note: "Jump straight into one DJ room." },
   { href: "/dev/sync", label: "Sync demo", note: "The raw playback clock. Two windows, one follows." },
 ];
