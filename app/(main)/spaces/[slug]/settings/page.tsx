@@ -1,17 +1,28 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BadgeCheck, CalendarClock, ChevronRight } from 'lucide-react'
+import { BadgeCheck, CalendarClock, ChevronRight, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMyProfileId } from '@/lib/auth'
+import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpaceSettingsForm, type SpaceSettingsValues } from './settings-form'
 
-// OWNER SETTINGS — the Focus edit surface (ENTITY-SPACES-BUILD Wave B, Epic 1.7). A centered,
-// no-rail form (the rail is registered 'none' for /spaces/<slug>/settings in page-chrome.ts). It
-// resolves the Space, gates on canEditProfile (404s otherwise so a non-editor can't tell the
-// settings surface exists), and renders the edit form seeded with the Space's current copy.
+// MANAGE <Space> — the owner back-end HUB (ENTITY-SPACES-BUILD Wave B, Epic 1.7). A centered,
+// no-rail Focus surface (the rail is registered 'none' for /spaces/<slug>/settings in
+// page-chrome.ts). It resolves the Space, gates RENDER on resolveSpaceManageAccess (canManage ||
+// staffViewing), and 404s for everyone else so a non-editor / non-staff viewer can't tell the
+// settings surface exists. It seats the profile-settings FORM plus a card-linked set of every
+// management surface this Space's type offers (Availability for a practitioner, Memberships for a
+// business, Members for all).
+//
+// TWO VIEWERS:
+//   • canManage (owner / admin / editor) — the form is live and saves through updateSpaceProfile.
+//   • staffViewing (a janitor previewing a Space they don't manage) — a Staff preview banner shows
+//     and the form is rendered READ-ONLY (a fieldset-disabled, submit off). The write action stays
+//     gated on canEditProfile server-side, so staff viewing never confers a write (read-only is both
+//     a UI state and the unchanged server gate).
 //
 // `about` / `tagline` / `visibility` aren't on the mapped Space object (they aren't in the generated
 // DB types yet, ADR-246), so they're read here through the untyped admin client alongside the
@@ -34,7 +45,36 @@ async function readProfileExtras(spaceId: string): Promise<ExtraRow> {
 }
 
 export const metadata = {
-  title: 'Space settings',
+  title: 'Manage space',
+}
+
+/** One management surface, rendered as a tappable hub card (icon tile + title + one-line context). */
+function HubCard({
+  href,
+  icon: Icon,
+  title,
+  description,
+}: {
+  href: string
+  icon: typeof Users
+  title: string
+  description: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-border-strong hover:bg-surface-elevated"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-text">{title}</span>
+        <span className="block text-xs text-muted">{description}</span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+    </Link>
+  )
 }
 
 export default async function SpaceSettingsPage({
@@ -43,16 +83,22 @@ export default async function SpaceSettingsPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const viewerProfileId = await getMyProfileId()
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
 
   // Resolve the Space, failing closed on a missing / not-visible Space (no existence leak).
   const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
   if (!space) notFound()
 
-  // Gate: only an editor+ (owner / admin / editor) may open settings. 404 (not 403) so the surface
-  // never confirms it exists to someone who can't edit.
-  const caps = await getSpaceCapabilities(space, viewerProfileId)
-  if (!caps.canEditProfile) notFound()
+  // Gate RENDER on canManage (owner / admin / editor) OR staffViewing (a janitor previewing). 404
+  // (not 403) for everyone else so the surface never confirms it exists. The WRITE action
+  // (updateSpaceProfile) stays gated on canEditProfile, so staff viewing is read-only end to end.
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(
+    space,
+    viewerProfileId,
+    caller?.webRole,
+  )
+  if (!canManage && !staffViewing) notFound()
 
   const extras = await readProfileExtras(space.id)
   const initial: SpaceSettingsValues = {
@@ -71,51 +117,50 @@ export default async function SpaceSettingsPage({
   return (
     <FocusTemplate
       eyebrow={brandName}
-      title="Space settings"
-      description="Edit your profile, brand, and visibility. Changes show on your space right away."
+      title={`Manage ${brandName}`}
+      description="Your hub for everything you run here. Edit your profile and brand, then jump to the surfaces your space offers."
       back={{ href: `/spaces/${space.slug}`, label: brandName }}
     >
-      <SpaceSettingsForm spaceId={space.id} slug={space.slug} initial={initial} />
+      {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
-      {space.type === 'practitioner' && (
-        // The Practitioner's 1:1 booking lives on its own Focus surface (weekly availability + the
-        // owner's upcoming bookings). Link to it from settings rather than nesting another editor.
-        <Link
-          href={`/spaces/${space.slug}/settings/availability`}
-          className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-border-strong hover:bg-surface-elevated"
-        >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-            <CalendarClock className="h-5 w-5" aria-hidden />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-text">Availability and bookings</span>
-            <span className="block text-xs text-muted">
-              Set the weekly times members can book, and see who is on your calendar.
-            </span>
-          </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        </Link>
-      )}
+      <SpaceSettingsForm
+        spaceId={space.id}
+        slug={space.slug}
+        initial={initial}
+        readOnly={staffViewing}
+      />
 
-      {space.type === 'business' && (
-        // The Business's memberships live on their own Focus surface (the tier editor + the member
-        // list). Link to it from settings rather than nesting another editor.
-        <Link
-          href={`/spaces/${space.slug}/settings/memberships`}
-          className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-border-strong hover:bg-surface-elevated"
-        >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-            <BadgeCheck className="h-5 w-5" aria-hidden />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-text">Memberships</span>
-            <span className="block text-xs text-muted">
-              Define the tiers members can join, and see who has joined.
-            </span>
-          </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        </Link>
-      )}
+      <div className="mt-4 space-y-3">
+        {space.type === 'practitioner' && (
+          // The Practitioner's 1:1 booking lives on its own Focus surface (weekly availability + the
+          // owner's upcoming bookings). Link to it from the hub rather than nesting another editor.
+          <HubCard
+            href={`/spaces/${space.slug}/settings/availability`}
+            icon={CalendarClock}
+            title="Availability and bookings"
+            description="Set the weekly times members can book, and see who is on your calendar."
+          />
+        )}
+
+        {space.type === 'business' && (
+          // The Business's memberships live on their own Focus surface (the tier editor + the member
+          // list). Link to it from the hub rather than nesting another editor.
+          <HubCard
+            href={`/spaces/${space.slug}/settings/memberships`}
+            icon={BadgeCheck}
+            title="Memberships"
+            description="Define the tiers members can join, and see who has joined."
+          />
+        )}
+
+        {/* Members is available for every Space type: who is on the team, and their roles. */}
+        <HubCard
+          href={`/spaces/${space.slug}/settings/members`}
+          icon={Users}
+          title="Members"
+          description="See who is on your team and the role each one holds."
+        />
+      </div>
     </FocusTemplate>
   )
 }

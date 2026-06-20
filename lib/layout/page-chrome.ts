@@ -68,6 +68,7 @@ const FOCUS_PATTERNS: RegExp[] = [
   /^\/spaces\/[^/]+\/settings$/, // the owner profile-settings surface (Epic 1.7)
   /^\/spaces\/[^/]+\/settings\/availability$/, // the owner 1:1 availability editor (booking v1)
   /^\/spaces\/[^/]+\/settings\/memberships$/, // the owner membership tier editor (memberships v1)
+  /^\/spaces\/[^/]+\/settings\/members$/, // the owner team / members surface (owner hub)
 ]
 
 // SCOPED — entity-detail sections that render their OWN in-body scope rail

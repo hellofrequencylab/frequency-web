@@ -23,9 +23,10 @@
 // conversion. v1 keeps ONE timezone per Space and displays slots in that labeled timezone.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -414,14 +415,14 @@ export async function setSpaceAvailability(
 }
 
 /** A Space's published windows as the editor reads them back (service-role; FAIL-SAFE to []). Gated
- *  on canEditProfile so only an owner/editor sees the raw rule set. */
+ *  on canManage (owner/admin/editor) OR a platform janitor previewing as staff, so the owner and a
+ *  staff preview both see the real rule set; WRITES stay on canEditProfile. */
 export async function listSpaceAvailability(spaceId: string): Promise<AvailabilityWindow[]> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return []
+  const caller = await getCallerProfile()
   const space = await getSpaceById(spaceId)
   if (!space) return []
-  const caps = await getSpaceCapabilities(space, profileId)
-  if (!caps.canEditProfile) return []
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
   return readWindows(spaceId)
 }
 
@@ -569,12 +570,11 @@ export async function cancelBooking(bookingId: string): Promise<ActionResult> {
  * one batched lookup. FAIL-SAFE to [] for an anonymous / unauthorized caller or any error.
  */
 export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return []
+  const caller = await getCallerProfile()
   const space = await getSpaceById(spaceId)
   if (!space) return []
-  const caps = await getSpaceCapabilities(space, profileId)
-  if (!caps.canEditProfile) return []
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
 
   try {
     const rows = await readConfirmedBookings(spaceId, new Date().toISOString())

@@ -22,9 +22,10 @@
 // pure helpers cannot live there). SERVER components import the read actions straight from here.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -371,14 +372,14 @@ export async function listMembershipTiers(spaceId: string): Promise<MembershipTi
 }
 
 /** A Space's ALL tiers as the editor reads them back (service-role; FAIL-SAFE to []). Gated on
- *  canEditProfile so only an owner/editor sees the full (incl. inactive) tier set. */
+ *  canManage (owner/admin/editor) OR a platform janitor previewing as staff; WRITES stay on
+ *  canEditProfile. */
 export async function listAllMembershipTiers(spaceId: string): Promise<MembershipTier[]> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return []
+  const caller = await getCallerProfile()
   const space = await getSpaceById(spaceId)
   if (!space) return []
-  const caps = await getSpaceCapabilities(space, profileId)
-  if (!caps.canEditProfile) return []
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
   return readTiers(spaceId, false)
 }
 
@@ -498,12 +499,11 @@ export async function cancelMembership(membershipId: string): Promise<ActionResu
  * batched lookups. FAIL-SAFE to [] for an anonymous / unauthorized caller or any error.
  */
 export async function listSpaceMemberships(spaceId: string): Promise<SpaceMembership[]> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return []
+  const caller = await getCallerProfile()
   const space = await getSpaceById(spaceId)
   if (!space) return []
-  const caps = await getSpaceCapabilities(space, profileId)
-  if (!caps.canEditProfile) return []
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
 
   try {
     const rows = await readActiveMemberships(spaceId)

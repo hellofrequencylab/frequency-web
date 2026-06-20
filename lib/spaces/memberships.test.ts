@@ -14,8 +14,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // ── Mock the caller identity + Space resolver + capability seam (toggled per test) ──────────────
 let currentProfileId: string | null = 'member-0000-4000-a000-0000000membr'
+let currentWebRole: 'none' | 'admin' | 'janitor' = 'none'
 vi.mock('@/lib/auth', () => ({
   getMyProfileId: async () => currentProfileId,
+  getCallerProfile: async () =>
+    currentProfileId ? { id: currentProfileId, webRole: currentWebRole } : null,
 }))
 
 let resolvedSpace: { id: string; slug: string; ownerProfileId?: string | null } | null = {
@@ -212,6 +215,7 @@ import {
 
 beforeEach(() => {
   currentProfileId = 'member-0000-4000-a000-0000000membr'
+  currentWebRole = 'none'
   resolvedSpace = { id: 'space-1', slug: 'river-studio', ownerProfileId: 'owner-0000-4000-a000-0000000ownr' }
   canEdit = true
   isAdmin = true
@@ -539,6 +543,14 @@ describe('listSpaceMemberships (action) — owner only', () => {
   it('returns [] for a non-editor (gated on canEditProfile)', async () => {
     canEdit = false
     expect(await listSpaceMemberships('space-1')).toEqual([])
+  })
+
+  it('a platform janitor (staff preview) sees the real members even as a non-editor', async () => {
+    canEdit = false
+    currentWebRole = 'janitor'
+    const list = await listSpaceMemberships('space-1')
+    expect(list).toHaveLength(1)
+    expect(list[0]!.memberName).toBe('Ada Lovelace')
   })
 
   it('returns the owner members with member + tier names', async () => {

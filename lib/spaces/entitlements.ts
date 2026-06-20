@@ -15,6 +15,7 @@
 // readers pure (a plain object in, a boolean out) makes them trivially unit-testable.
 
 import { isSpaceRole, atLeastSpaceRole, getSpaceMembership, type SpaceRole } from './membership'
+import { isJanitor, type WebRole } from '@/lib/core/roles'
 
 // ── Entitlements (pure: jsonb in, boolean out, default-deny) ─────────────────────────────
 
@@ -127,4 +128,44 @@ export async function getSpaceCapabilities(
   // An anonymous-to-this-space caller (not owner, no active membership) gets nothing.
   if (!isOwner && !memberRole) return NO_CAPABILITIES
   return spaceCapabilitiesFor(isOwner, memberRole)
+}
+
+// ── Manage access: "can manage" (owner/admin/editor) vs "staff viewing" (a janitor, not a member) ──
+
+/** Whether a viewer may open a Space's owner back-end, and in which mode. TWO distinct grants:
+ *  - `canManage`  — the viewer may EDIT (owner / admin / editor; the canEditProfile gate, unchanged).
+ *  - `staffViewing` — the viewer is platform STAFF previewing a Space they do NOT manage (a janitor
+ *    who is not the owner / an active editor+ member). VIEW only: every owner WRITE action stays
+ *    gated on canEditProfile server-side, so a staff viewer can read the surfaces but never write
+ *    through them. The two are mutually exclusive (a janitor who genuinely owns/edits this Space
+ *    reads as `canManage`, not `staffViewing`).
+ *
+ *  An owner surface renders when `canManage || staffViewing`, and 404s for everyone else (no
+ *  existence leak). Only the EXECUTIVE admin (janitor / web_role) gets the staff preview — a Site
+ *  Admin does not reach into another operator's owner back-end. */
+export interface SpaceManageAccess {
+  /** May the viewer edit (owner / admin / editor). The existing canEditProfile authority. */
+  canManage: boolean
+  /** Is the viewer a janitor PREVIEWING a Space they do not manage (read-only)? */
+  staffViewing: boolean
+}
+
+const NO_MANAGE_ACCESS: SpaceManageAccess = { canManage: false, staffViewing: false }
+
+/** Resolve a viewer's owner-back-end access for a Space. Combines the per-Space capability gate
+ *  (canEditProfile, the unchanged write authority) with the platform STAFF axis (web_role): a
+ *  janitor who is NOT an editor+ of the Space is granted a READ-ONLY staff preview. FAIL-SAFE: an
+ *  anonymous caller (or a missing Space) yields no access. This is the entry the three owner
+ *  surfaces gate their RENDER on; the WRITE actions keep gating on canEditProfile independently, so
+ *  the staff preview never confers a write. */
+export async function resolveSpaceManageAccess(
+  space: SpaceLike | null | undefined,
+  profileId: string | null | undefined,
+  webRole: WebRole | null | undefined,
+): Promise<SpaceManageAccess> {
+  if (!space) return NO_MANAGE_ACCESS
+  const caps = await getSpaceCapabilities(space, profileId)
+  if (caps.canEditProfile) return { canManage: true, staffViewing: false }
+  // Not an editor of this Space: an Executive Admin (janitor) still gets a read-only preview.
+  return { canManage: false, staffViewing: isJanitor(webRole) }
 }
