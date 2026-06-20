@@ -225,25 +225,105 @@ const EVENT_SPACE: RoleBlueprint = {
   defaultAccent: '--color-warning',
 }
 
+// ── Lab: a physical Frequency Lab (§1, ADR-339, ADR-341) ───────────────────────────────────────
+// JTBD: a Lab is a real-world Frequency place (entity partition `labs`) where people gather for
+// in-person sessions, practices, and community. It is venue-shaped like Event Space, but its job is
+// "come in and take part", not box-office ticketing. Same eight entity modules + the same five wired
+// route segments as every other role; only the labels, CTA, hero stats, and accent differ.
+// Tabs: About · What's on (entity-offerings) · Practices · Community · Visit (entity-cta).
+// Hero CTA: "Visit". Hero stats: offerings (what's on) · circles · members (regulars).
+// OWNER CONTROLS (§2.10): a Lab composes the UNIVERSAL FOUR (Members / QR / CRM / Email) the
+// settings hub already renders for every type; it needs NO role-specific deep control in v1 (a Lab
+// runs on the shared event + circle + QR door tools it already has, so a bespoke owner surface would
+// duplicate them). Recorded in ADR-341.
+const LAB: RoleBlueprint = {
+  type: 'lab',
+  typeLabel: 'Lab',
+  tabs: [
+    // A Lab leads with what's on (the in-person sessions you can join now), then a short about, then
+    // the team (the people who run the room). entity-stats dropped (the hero shows the same counts,
+    // §3 dedupe). entity-getting-started leads every browse tab (the composite empty for a new Space).
+    { id: 'about', label: 'About', modules: ['entity-getting-started', 'entity-offerings', 'entity-about', 'entity-team'] },
+    { id: 'offerings', label: "What's on", modules: ['entity-getting-started', 'entity-offerings'] },
+    { id: 'practices', label: 'Practices', modules: ['entity-getting-started', 'entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-getting-started', 'entity-community'] },
+    { id: 'book', label: 'Visit', modules: ['entity-cta'] },
+  ],
+  primaryCta: { label: 'Visit', tab: 'book' },
+  // Lead with what's on (live offerings): a Lab always has a calendar; regulars accrue over time, so
+  // members rides last to avoid an always-zero first stat (the hero drops zero stats, §5).
+  heroStats: [
+    { metric: 'offerings', label: "What's on" },
+    { metric: 'circles', label: 'Circles' },
+    { metric: 'members', label: 'Regulars' },
+  ],
+  // SAME curated DAWN skin as Practitioner (no bespoke per-role skin yet, as in Wave B).
+  defaultSkin: 'dawn',
+  // Green (--color-success): the only accent family lib/spaces/accent.ts still has free, and it
+  // reads as the "in-person, growing room" hue, distinct from the other six role accents.
+  defaultAccent: '--color-success',
+}
+
+// ── Partner: a loyalty / perks Partner brand (§1, §5, ADR-339, ADR-341) ────────────────────────
+// JTBD: a Partner is a business that runs a Frequency loyalty Partner program (entity partition
+// `partner`): it publishes perks/offers, a brand story, and a place to join the program. Brand-shaped
+// like Business; its job is "join the program", not classes/memberships. Same eight entity modules +
+// the same five wired route segments; only the labels, CTA, hero stats, and accent differ.
+// Tabs: About · Perks (entity-offerings) · Practices · Community · Join (entity-cta).
+// Hero CTA: "Join". Hero stats: offerings (perks) · members · circles.
+// OWNER CONTROLS (§2.10): a Partner composes the UNIVERSAL FOUR (Members / QR / CRM / Email) the
+// settings hub already renders for every type; it needs NO role-specific deep control in v1 (the
+// loyalty-program engine is a LATER, money-adjacent phase like memberships v1, so v1 ships the
+// legible profile + the shared owner tools). Recorded in ADR-341.
+const PARTNER: RoleBlueprint = {
+  type: 'partner',
+  typeLabel: 'Partner',
+  tabs: [
+    // A Partner is a brand: lead About with the brand story (who they are), then the perks, then the
+    // team. entity-stats dropped (§3 dedupe). entity-getting-started leads every browse tab (the
+    // composite empty for a brand-new Space, §3).
+    { id: 'about', label: 'About', modules: ['entity-getting-started', 'entity-about', 'entity-offerings', 'entity-team'] },
+    { id: 'offerings', label: 'Perks', modules: ['entity-getting-started', 'entity-offerings'] },
+    { id: 'practices', label: 'Practices', modules: ['entity-getting-started', 'entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-getting-started', 'entity-community'] },
+    { id: 'book', label: 'Join', modules: ['entity-cta'] },
+  ],
+  primaryCta: { label: 'Join', tab: 'book' },
+  // Lead with perks (live offerings): a Partner publishes perks from day one; program members accrue
+  // over time, so members rides second to avoid an always-zero first stat (the hero drops zeros, §5).
+  heroStats: [
+    { metric: 'offerings', label: 'Perks' },
+    { metric: 'members', label: 'Members' },
+    { metric: 'circles', label: 'Circles' },
+  ],
+  // SAME curated DAWN skin as Practitioner (no bespoke per-role skin yet, as in Wave B).
+  defaultSkin: 'dawn',
+  // Cyan-teal (--color-broadcast): a Partner is a brand running a loyalty program, so it shares the
+  // Business "product / brand" family by design. lib/spaces/accent.ts (out of ADMIN-05's scope) ships
+  // exactly six accent families and five are taken by the other roles; a Partner-specific family is a
+  // LATER step there. Documented in ADR-341.
+  defaultAccent: '--color-broadcast',
+}
+
 /** Every registered role blueprint, keyed by `spaces.type`. Practitioner is the Wave A first
- *  role; Business/Organization/Coaching/Event Space ship in Wave B (this is the §2.10 extension
- *  point: a descriptor, no core edit).
+ *  role; Business/Organization/Coaching/Event Space ship in Wave B; Lab + Partner ship in ADMIN-05
+ *  (this is the §2.10 extension point: a descriptor, no core edit).
  *
- *  CANONICAL ROLE-TYPE CONTRACT (reconciled in ADR-339, recorded in docs/SPACES.md). The full
- *  role-type set is: root, practitioner, business, organization, coaching, event_space, lab,
- *  partner. The keys registered here are exactly the PROVISIONABLE types: the ones the create
- *  wizard offers (it derives its choices from this registry via blueprintForType) and the profile
- *  shell can render. `root` is the platform host (never wizard-provisioned, no member-facing
- *  blueprint). `lab` and `partner` are live role values in the SpaceType union but their blueprints
- *  are DEFERRED to item ADMIN-05; until that ships they are intentionally absent here, so the
- *  wizard does not offer them and blueprintForType fails closed for them. Adding a Lab/Partner
- *  blueprint = a descriptor here (no core edit); do NOT remove their values from SpaceType. */
+ *  CANONICAL ROLE-TYPE CONTRACT (reconciled in ADR-339, recorded in docs/SPACES.md; Lab + Partner
+ *  blueprints added in ADR-341). The full role-type set is: root, practitioner, business,
+ *  organization, coaching, event_space, lab, partner. The keys registered here are exactly the
+ *  PROVISIONABLE types: the ones the create wizard offers (it derives its choices from this registry
+ *  via provisionableTypes / blueprintForType) and the profile shell can render. `root` is the
+ *  platform host (never wizard-provisioned, no member-facing blueprint). As of ADMIN-05 all seven
+ *  member-facing role types are registered; do NOT remove any value from SpaceType. */
 const BLUEPRINTS: Record<string, RoleBlueprint> = {
   practitioner: PRACTITIONER,
   business: BUSINESS,
   organization: ORGANIZATION,
   coaching: COACHING,
   event_space: EVENT_SPACE,
+  lab: LAB,
+  partner: PARTNER,
 }
 
 /** The blueprint for a `spaces.type`, or null when no blueprint is registered for that type yet
@@ -251,6 +331,28 @@ const BLUEPRINTS: Record<string, RoleBlueprint> = {
 export function blueprintForType(type: string | null | undefined): RoleBlueprint | null {
   if (!type) return null
   return BLUEPRINTS[type] ?? null
+}
+
+/** The PROVISIONABLE role types in canonical display order, each as a `{ value, label }` choice for
+ *  the create wizard. This registry is the source of truth for "which types a member can stand up"
+ *  (ADR-339), so the wizard derives its choices straight from here (the type value + the blueprint's
+ *  own typeLabel) and auto-includes every wired role with no hardcoded list anywhere. The order is
+ *  the canonical role order; any future blueprint appended to BLUEPRINTS shows up automatically. */
+const PROVISIONABLE_ORDER: readonly string[] = [
+  'practitioner',
+  'business',
+  'organization',
+  'coaching',
+  'event_space',
+  'lab',
+  'partner',
+]
+export function provisionableTypes(): { value: string; label: string }[] {
+  // Iterate the canonical order, then append any registered type not listed above (defensive: a new
+  // blueprint can never silently fall out of the wizard just because someone forgot to order it).
+  const ordered = PROVISIONABLE_ORDER.filter((t) => t in BLUEPRINTS)
+  const extra = Object.keys(BLUEPRINTS).filter((t) => !PROVISIONABLE_ORDER.includes(t))
+  return [...ordered, ...extra].map((t) => ({ value: t, label: BLUEPRINTS[t]!.typeLabel }))
 }
 
 /** The blueprint's tab whose id matches `tabId`, or the first (index) tab when the id is unknown

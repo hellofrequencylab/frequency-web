@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { blueprintForType, tabForSegment, allEntityModuleIds } from './blueprints'
+import { blueprintForType, tabForSegment, allEntityModuleIds, provisionableTypes } from './blueprints'
 import { SUPPORTED_ACCENT_TOKENS } from './accent'
 
 // PER-TYPE BLUEPRINT contract (ENTITY-SPACES-BUILD §B.3, Epic 1.3). Locks the Practitioner typed
@@ -43,38 +43,65 @@ describe('blueprintForType', () => {
     expect(blueprintForType(undefined)).toBeNull()
   })
 
-  it('has NO blueprint yet for lab / partner (their blueprints are deferred to ADMIN-05, ADR-339)', () => {
-    // `lab` and `partner` are live values in the SpaceType union but are NOT provisionable until
-    // their blueprints ship (ADMIN-05). The registry must fail closed for them today, so the
-    // create wizard (which derives its choices from blueprintForType) does not offer them.
-    expect(blueprintForType('lab')).toBeNull()
-    expect(blueprintForType('partner')).toBeNull()
+  it('now registers a blueprint for lab and partner (ADMIN-05 / ADR-341)', () => {
+    // `lab` and `partner` were deferred under ADR-339; ADMIN-05 ships their blueprints, so they are
+    // now provisionable. The create wizard derives its choices from this registry, so registering
+    // them here is what makes the wizard offer them.
+    expect(blueprintForType('lab')).not.toBeNull()
+    expect(blueprintForType('partner')).not.toBeNull()
   })
 })
 
-describe('the canonical PROVISIONABLE role set (ADR-339)', () => {
-  it('registers a blueprint for exactly the provisionable role types', () => {
-    // The blueprint registry is the source of truth for which types the wizard can stand up. The
-    // canonical provisionable set is root, practitioner, business, organization, coaching,
-    // event_space (root is the platform host with no member-facing blueprint, so it has none here);
-    // lab and partner are deferred (ADMIN-05). This locks the registry to that contract.
-    const PROVISIONABLE_WITH_BLUEPRINT = ['practitioner', 'business', 'organization', 'coaching', 'event_space']
+describe('the canonical PROVISIONABLE role set (ADR-339 + ADR-341)', () => {
+  it('registers a blueprint for exactly the seven member-facing role types', () => {
+    // The blueprint registry is the source of truth for which types the wizard can stand up. As of
+    // ADMIN-05 (ADR-341) the provisionable set is the full member-facing seven: practitioner,
+    // business, organization, coaching, event_space, lab, partner. `root` is the platform host with
+    // no member-facing blueprint, so it never registers one. This locks the registry to that contract.
+    const PROVISIONABLE_WITH_BLUEPRINT = [
+      'practitioner',
+      'business',
+      'organization',
+      'coaching',
+      'event_space',
+      'lab',
+      'partner',
+    ]
     for (const type of PROVISIONABLE_WITH_BLUEPRINT) {
       expect(blueprintForType(type)).not.toBeNull()
     }
-    // The deferred and host types have no blueprint yet.
-    for (const type of ['root', 'lab', 'partner']) {
+    // The host type has no member-facing blueprint; an unknown type fails closed.
+    for (const type of ['root', 'school']) {
       expect(blueprintForType(type)).toBeNull()
+    }
+  })
+
+  it('exposes the provisionable types as wizard choices in canonical order (the wizard reads this)', () => {
+    // The create wizard derives its type buttons from provisionableTypes(); this is what makes Lab +
+    // Partner offerable. Lock the order + the labels (sourced from each blueprint's typeLabel).
+    expect(provisionableTypes()).toEqual([
+      { value: 'practitioner', label: 'Practitioner' },
+      { value: 'business', label: 'Business' },
+      { value: 'organization', label: 'Organization' },
+      { value: 'coaching', label: 'Coaching' },
+      { value: 'event_space', label: 'Event Space' },
+      { value: 'lab', label: 'Lab' },
+      { value: 'partner', label: 'Partner' },
+    ])
+    // Every offered choice resolves to a real blueprint (the wizard never offers an unrenderable type).
+    for (const c of provisionableTypes()) {
+      expect(blueprintForType(c.value)).not.toBeNull()
     }
   })
 })
 
-// ── Wave B role blueprints (Business · Organization · Coaching · Event Space, §2.5 - §2.8) ──────
+// ── Non-Practitioner role blueprints (Wave B + ADMIN-05: Business · Organization · Coaching ·
+// Event Space · Lab · Partner, §2.5 - §2.8, ADR-341) ────────────────────────────────────────────
 // Each reuses the SAME seven entity modules + the same wired route segments as Practitioner; only
 // the tab labels, the primary CTA label, the hero stat keys, and the order vary. Every CTA routes
 // to a wired segment (book/offerings/practices/community), so no tab link 404s.
 
-describe('Wave B blueprints (business / organization / coaching / event_space)', () => {
+describe('non-practitioner blueprints (business / organization / coaching / event_space / lab / partner)', () => {
   // Every tab id MUST be a wired profile route segment (a page.tsx exists for it) so the tab row
   // never links to a 404. These are the segments live today.
   const WIRED_SEGMENTS = new Set(['about', 'offerings', 'practices', 'community', 'book'])
@@ -98,6 +125,11 @@ describe('Wave B blueprints (business / organization / coaching / event_space)',
     { type: 'organization', typeLabel: 'Organization', cta: 'Donate', labels: ['About', 'Programs', 'Practices', 'Community', 'Donate'], aboutLead: 'entity-about', stats: ['offerings', 'members', 'circles'], accent: '--color-signal' },
     { type: 'coaching', typeLabel: 'Coaching', cta: 'Enroll', labels: ['About', 'Programs', 'Curriculum', 'Community', 'Enroll'], aboutLead: 'entity-practices', stats: ['practices', 'members', 'circles'], accent: '--color-info' },
     { type: 'event_space', typeLabel: 'Event Space', cta: 'Get tickets', labels: ['About', 'Events', 'Practices', 'Community', 'Tickets'], aboutLead: 'entity-offerings', stats: ['offerings', 'members', 'circles'], accent: '--color-warning' },
+    // ADMIN-05 (ADR-341): Lab leads About with what's on (a physical room is its calendar); Partner
+    // leads with the brand story (a Partner is a brand). Both compose the universal owner four (no
+    // role-specific deep control in v1). Partner shares the Business brand accent by design.
+    { type: 'lab', typeLabel: 'Lab', cta: 'Visit', labels: ['About', "What's on", 'Practices', 'Community', 'Visit'], aboutLead: 'entity-offerings', stats: ['offerings', 'circles', 'members'], accent: '--color-success' },
+    { type: 'partner', typeLabel: 'Partner', cta: 'Join', labels: ['About', 'Perks', 'Practices', 'Community', 'Join'], aboutLead: 'entity-about', stats: ['offerings', 'members', 'circles'], accent: '--color-broadcast' },
   ] as const
 
   for (const c of cases) {
@@ -186,19 +218,32 @@ describe('tabForSegment', () => {
   })
 })
 
-describe('per-role default accents (§1 KEYSTONE — the five roles read distinct)', () => {
-  const ROLES = ['practitioner', 'business', 'organization', 'coaching', 'event_space'] as const
+describe('per-role default accents (§1 KEYSTONE: every role reads on a supported accent)', () => {
+  // ALL seven member-facing roles get a supported default accent.
+  const ALL_ROLES = ['practitioner', 'business', 'organization', 'coaching', 'event_space', 'lab', 'partner'] as const
+  // The five roles whose accent is UNIQUE. lib/spaces/accent.ts ships exactly six accent families;
+  // five are taken one-each by these roles, Lab takes the last free one (success), and Partner shares
+  // the Business brand family (broadcast) by design (ADR-341) until a Partner-specific family lands.
+  const DISTINCT_ACCENT_ROLES = ['practitioner', 'business', 'organization', 'coaching', 'event_space'] as const
 
   it('gives every role a supported default accent', () => {
-    for (const r of ROLES) {
+    for (const r of ALL_ROLES) {
       const bp = blueprintForType(r)!
       expect(SUPPORTED_ACCENT_TOKENS.has(bp.defaultAccent)).toBe(true)
     }
   })
 
-  it('assigns a DISTINCT default accent per role (so an un-customized profile differs by type)', () => {
-    const accents = ROLES.map((r) => blueprintForType(r)!.defaultAccent)
-    expect(new Set(accents).size).toBe(ROLES.length)
+  it('assigns a DISTINCT default accent to each of the five core roles', () => {
+    const accents = DISTINCT_ACCENT_ROLES.map((r) => blueprintForType(r)!.defaultAccent)
+    expect(new Set(accents).size).toBe(DISTINCT_ACCENT_ROLES.length)
+  })
+
+  it('gives Lab its own free accent and lets Partner share the Business brand family (ADR-341)', () => {
+    expect(blueprintForType('lab')!.defaultAccent).toBe('--color-success')
+    // Partner is a brand running a loyalty program, so it shares the Business "product / brand" hue
+    // on purpose; this is the documented exception to per-role distinctness (ADR-341).
+    expect(blueprintForType('partner')!.defaultAccent).toBe('--color-broadcast')
+    expect(blueprintForType('business')!.defaultAccent).toBe('--color-broadcast')
   })
 })
 
