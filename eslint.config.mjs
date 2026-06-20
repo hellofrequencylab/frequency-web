@@ -15,6 +15,10 @@ const eslintConfig = defineConfig([
     // Transient agent worktrees (parallel Claude sandboxes): stale copies of
     // repo files that double-report fixed warnings. Never lint them.
     ".claude/worktrees/**",
+    // Standalone embeddable project (codename Resonance). Self-contained, with
+    // its own toolchain; Frequency's lint must never reach into it. Designed to
+    // be lifted out into its own repo later (see resonance/docs/ISOLATION.md).
+    "resonance/**",
   ]),
   // ADR-246: ban the untyped admin-client cast. Use the typed `createAdminClient()`
   // and cast the specific payload/value if a column/table needs it. Genuinely-untyped

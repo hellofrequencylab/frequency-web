@@ -1,0 +1,29 @@
+# Resonance — standalone Supabase config.
+#
+# Separate from Frequency's supabase/config.toml. When this app lives in the
+# shared project, only these migrations under the `resonance` schema apply. When
+# it breaks out into its own project, this config and these migrations move with
+# it unchanged. See ../docs/ISOLATION.md.
+project_id = "resonance"
+
+[api]
+enabled = true
+port = 54321
+# This app's data lives entirely in the `resonance` schema. In the shared
+# Frequency project the app reaches its data through a trusted server (service
+# role), so the schema does NOT need to be added to the shared project's exposed
+# schemas. In a dedicated project you may expose it here.
+schemas = ["resonance"]
+extra_search_path = ["resonance", "public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
