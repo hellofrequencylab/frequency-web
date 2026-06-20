@@ -239,6 +239,10 @@ as today**.
 
 > **Phase 2 per-Space column additions (ADR-332/333/334).** Existing shared tables gained a NULLABLE `space_id` (backfilled to root, interim per ADR-321/331) so a Space owns its own slice without breaking the global tools: `qr_codes` (+ `splash jsonb`, ADR-332), `crm_deals`/`crm_activities`/`crm_stages`/`contacts` (ADR-333, the global `/admin/crm` reads unscoped and is unchanged), and `nodes` (+ `kind` marker: 'standard' or 'checkin') / `captures` (ADR-334, Event Space check-in reuses the existing scan pipeline).
 
+| `outreach_sends` | applied (ADR-335; `20260714000000`) | `space_id (not null), campaign_id, contact_id, email, status CHECK (queued\|sent\|delivered\|bounced\|complained\|failed\|suppressed), resend_id, error, created_at, updated_at`; the per-Space email send ledger; service-role RLS, no policies | `space_id` |
+
+> **Phase 3 per-Space email additions (ADR-335/336/337).** `campaigns` gained nullable `space_id` (backfilled to root) + `scheduled_for`; `email_suppressions` gained nullable `space_id` (NULL = a GLOBAL suppression honored by every Space; set = one Space) and its email-only PK was replaced by a synthetic `id` + a unique `(coalesce(space_id, zero-uuid), lower(email))` index; `spaces.email_enabled boolean default false` is the per-Space email KILL-SWITCH (fail-closed). The global Studio campaigns + global unsubscribe + Resend webhook are unchanged; per-Space sending (`lib/spaces/email.ts`) is gated on the kill-switch, a 500/day cap, and suppression, on the existing Resend integration.
+
 > **`space_members`** (ADR-320) is the **per-space membership + authorization** primitive: a
 > **third, orthogonal authority axis**, distinct from the **community trust ladder**
 > (`profiles.community_role`, network-wide reputation) and the **staff axis**

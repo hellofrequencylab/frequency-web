@@ -47,22 +47,37 @@ export interface EmailPayload {
   html: string
   text?: string
   headers?: Record<string, string>
+  /** Override the default From (e.g. a per-Space "Studio Name <noreply@send...>"). Falls back to
+   *  EMAIL_FROM. The address must still be on a Resend-verified domain (v1 reuses the shared one). */
+  from?: string
+  /** Optional Reply-To so replies reach the Space's own inbox instead of the platform noreply. */
+  replyTo?: string | string[]
 }
 
 // Low-level send, called by the queue's `email` handler. Throws on provider error
-// so the outbox retries; no-ops when RESEND_API_KEY is unset.
-export async function sendRawEmail(payload: EmailPayload): Promise<void> {
+// so the outbox retries; no-ops when RESEND_API_KEY is unset. Returns the Resend email
+// id on success (or null when sending is disabled / the address was suppressed), so a
+// per-recipient ledger (lib/spaces/email.ts) can record the provider id. The existing
+// callers ignore the return value, so widening void -> { id } is backward-compatible.
+export async function sendRawEmail(payload: EmailPayload): Promise<{ id: string | null }> {
   const client = getClient()
-  if (!client) return
-  // Deliverability guard: never re-mail a suppressed address (hard bounce / complaint).
+  if (!client) return { id: null }
+  const { from, replyTo, ...rest } = payload
+  // Deliverability guard: never re-mail a GLOBALLY suppressed address (hard bounce / complaint).
+  // Per-Space suppression is enforced upstream in lib/spaces/email.ts before this is called.
   if (await isSuppressed(payload.to)) {
     console.warn(`[email] skipped suppressed address: ${payload.to}`)
-    return
+    return { id: null }
   }
-  const { error } = await client.emails.send({ from: FROM, ...payload })
+  const { data, error } = await client.emails.send({
+    from: from ?? FROM,
+    ...(replyTo ? { replyTo } : {}),
+    ...rest,
+  })
   if (error) {
     throw new Error(`[email] send failed: ${typeof error === 'string' ? error : JSON.stringify(error)}`)
   }
+  return { id: data?.id ?? null }
 }
 
 // Enqueue an email onto the durable outbox. Drained by /api/cron/process-queue

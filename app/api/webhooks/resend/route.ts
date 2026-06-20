@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server'
 import { recordEmailEvent, suppress } from '@/lib/suppression'
 import { verifyResendSignature } from '@/lib/webhook-verify'
+import { handleSpaceSendWebhook } from '@/lib/spaces/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +52,15 @@ export async function POST(req: Request) {
       await suppress(to, type === 'bounced' ? 'hard_bounce' : 'complaint')
     } catch (err) {
       errors.push(`suppress: ${err instanceof Error ? err.message : String(err)}`)
+    }
+    // ALSO update a per-Space send (ENTITY-SPACES-BUILD Phase 3): if this Resend id belongs to a
+    // Space's outreach_sends row, set that row's status and add a SPACE-SCOPED suppression. Best-
+    // effort + additive: the global suppression above is unchanged, and a failure here is logged
+    // (not fatal) so the global integrity signal still drives the response.
+    try {
+      await handleSpaceSendWebhook(event.data?.email_id ?? null, type)
+    } catch (err) {
+      errors.push(`spaceSend: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 

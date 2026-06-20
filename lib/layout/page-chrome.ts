@@ -74,6 +74,7 @@ const FOCUS_PATTERNS: RegExp[] = [
   /^\/spaces\/[^/]+\/settings\/qr$/, // the owner QR studio (codes + splash, Phase 2)
   /^\/spaces\/[^/]+\/settings\/crm$/, // the owner per-space CRM (pipeline + contacts + client notes, Phase 2)
   /^\/spaces\/[^/]+\/settings\/checkin$/, // the owner check-in roster (Event Space check-in, Phase 2)
+  /^\/spaces\/[^/]+\/settings\/email$/, // the owner email / campaign composer (Phase 3)
 ]
 
 // SCOPED — entity-detail sections that render their OWN in-body scope rail

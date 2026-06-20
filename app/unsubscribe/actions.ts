@@ -1,7 +1,8 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { verifyUnsubscribeToken } from '@/lib/unsubscribe-tokens'
+import { verifyUnsubscribeToken, verifySpaceUnsubscribeToken } from '@/lib/unsubscribe-tokens'
+import { suppress } from '@/lib/suppression'
 import {
   DEFAULT_PREFERENCES,
   type NotificationCategory,
@@ -59,4 +60,32 @@ export async function processUnsubscribe(params: {
   }
 
   return ok({ category: cat })
+}
+
+// Per-Space one-click unsubscribe (ENTITY-SPACES-BUILD Phase 3). Verifies the (spaceId, email)
+// HMAC token, then records a SPACE-SCOPED suppression so the recipient stops hearing from THAT
+// Space only (never the whole platform). Idempotent: re-running adds nothing. Never reveals whether
+// the Space or address exists; a bad token and an unknown pair return the same error.
+export async function processSpaceUnsubscribe(params: {
+  spaceId: string
+  email:   string
+  token:   string
+}): Promise<ActionResult<{ scope: 'space' }>> {
+  const { spaceId, email, token } = params
+
+  if (!spaceId || !email) {
+    return fail('This unsubscribe link is invalid or expired.')
+  }
+  if (!verifySpaceUnsubscribeToken(spaceId, email, token)) {
+    return fail('This unsubscribe link is invalid or expired.')
+  }
+
+  try {
+    await suppress(email, 'unsubscribe', spaceId)
+  } catch (err) {
+    console.error('[unsubscribe] space suppress:', err instanceof Error ? err.message : String(err))
+    return fail('Could not save your preference. Please try again.')
+  }
+
+  return ok({ scope: 'space' })
 }
