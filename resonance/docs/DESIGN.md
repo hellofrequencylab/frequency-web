@@ -306,9 +306,9 @@ by screen, behind the same routes, so nothing breaks.
 |---|---|---|
 | **A. Foundation** ✅ | `app/globals.css` (OKLCH `@theme`), fonts, reset, focus, reduced-motion, `/dev/style` gallery | Tokens live |
 | **B. Primitives** ✅ | The §10 foundations + `Avatar`/`AvatarStack`, `PresenceChip`, `LiveBadge` in `components/ui`; live `/dev/kit` gallery | Component kit |
-| **C. Shell** ⬜ | App Shell, top bar, `NowBar`, mobile tab bar | Navigation |
-| **D. Core screens** ⬜ | Home → Lobby → Room (StagePlayer + DeckStrip + ChatRail + EmoteLayer) | The product's spine |
-| **E. Breadth** ⬜ | Spatial (Canvas), Discover, Events, Market, Profile, Moderation, Account | Full coverage |
+| **C. Shell** ✅ | App Shell, top bar, `NowBar`, mobile tab bar | Navigation |
+| **D. Core screens** 🔨 | Home ✅ · Lobby ✅ (+`RoomCard`) · Room (StagePlayer + DeckStrip + ChatRail) ⬜ next | The product's spine |
+| **E. Breadth** 🔨 | Discover ✅ · Events ✅ · Market ✅ · Earnings ✅ · Account ✅ · Moderation ✅ · Spatial + Profile ⬜ | Most coverage |
 | **F. Polish** ⬜ | Motion pass, APCA audit, responsive QA, per-venue theming, optional light mode | Ship-quality |
 
 Each step is shippable, verified (tsc/eslint/test/build), and gated like every other section
