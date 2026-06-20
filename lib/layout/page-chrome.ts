@@ -63,7 +63,8 @@ const FOCUS_PATTERNS: RegExp[] = [
   /^\/connections\/.+/, // a contact editor / new contact (the index keeps the rail)
   // Entity-space Focus surfaces (ENTITY-SPACES-BUILD §B.5): the provisioning wizard and the owner
   // profile-settings surface are centered, no-rail FOCUS pages (FocusTemplate). The PROFILE itself
-  // (/spaces/<slug> + tabs) is SCOPED below; the directory (/spaces) keeps the global rail.
+  // (/spaces/<slug> + tabs) now keeps the GLOBAL community rail (operator request — see SCOPED_PREFIXES
+  // below, now empty); the directory (/spaces) keeps the global rail too.
   /^\/spaces\/new$/, // the provisioning wizard (Epic 1.6)
   /^\/spaces\/[^/]+\/settings$/, // the owner profile-settings surface (Epic 1.7)
   /^\/spaces\/[^/]+\/settings\/availability$/, // the owner 1:1 availability editor (booking v1)
@@ -78,11 +79,14 @@ const FOCUS_PATTERNS: RegExp[] = [
 // Frequency Signature live in its interior content column, not a rail. Re-add a
 // prefix here only if a section grows a genuine in-body rail.
 const SCOPED_PREFIXES: string[] = [
-  // The entity-space PROFILE (ENTITY-SPACES-BUILD §B.5): /spaces/<slug> and its tabs are Detail
-  // pages whose context band IS the in-body scope, so the global rail is suppressed (the double-
-  // rail trap). The trailing slash keeps the DIRECTORY (/spaces) on the global rail; the wizard /
-  // settings sub-surfaces are Focus (matched above), so they're 'none', not 'scoped'.
-  '/spaces/',
+  // The entity-space PROFILE (/spaces/<slug> + tabs) now keeps the GLOBAL community rail like the
+  // rest of the app (operator request): a profile reads as a normal Detail page beside the site's
+  // Quest rail, not a suppressed-rail island. Its context band lives in the interior content column
+  // (a hero CARD, not a shell rail), so there is no double-rail trap to avoid. The profile therefore
+  // falls through to 'global' below; the wizard (/spaces/new) and the owner settings sub-surfaces
+  // (/spaces/<slug>/settings*) stay Focus ('none', matched in FOCUS_PATTERNS above), and the
+  // directory (/spaces) was always global. Re-add '/spaces/' here only if the profile ever grows a
+  // genuine in-body scope rail of its own.
   // (Empty otherwise.) Journeys used to be SCOPED: the old course-player detail page rendered its
   // own left syllabus as a scope rail, so the global rail was suppressed. After the v2
   // rebuild (ADR-252) that player is retired — /journeys/<slug> redirects to the learner

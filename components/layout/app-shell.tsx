@@ -1478,10 +1478,10 @@ export default function AppShell({
       {/* Both rails now live IN normal flow inside the one shared page scroll, so the
           LEFT nav scrolls up with the content exactly like the right rail (its profile
           card sits at the bottom of the column and rides up with the page). */}
-      <div className="flex flex-1">
+      <div className="flex min-w-0 flex-1">
         <div
           data-feed-scroll
-          className="flex-1 min-w-0 pb-[calc(3.5rem_+_env(safe-area-inset-bottom))] md:pb-0"
+          className="min-w-0 flex-1 pb-[calc(3.5rem_+_env(safe-area-inset-bottom))] md:pb-0"
         >
           <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-3.5rem)]">
 

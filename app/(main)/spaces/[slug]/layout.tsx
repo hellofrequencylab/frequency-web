@@ -6,9 +6,9 @@ import { headers } from 'next/headers'
 import { DetailTemplate, type DetailTab } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { blueprintForType, tabForSegment } from '@/lib/spaces/blueprints'
 import { resolveAccentVars } from '@/lib/spaces/accent'
@@ -33,8 +33,9 @@ import { AccentScope } from '@/components/spaces/accent-scope'
 // AccentScope wrapper (lib/spaces/accent.ts), so the CTA, active tab, and type badge carry the Space's
 // color while the canvas stays neutral. Tokens only — never a hex (D6). The five roles read distinct.
 //
-// CHROME: /spaces/* is registered 'scoped' in lib/layout/page-chrome.ts (the band IS the in-body
-// scope; the global rail is suppressed to avoid the double-rail trap, §B.5).
+// CHROME: the profile (/spaces/<slug> + tabs) keeps the GLOBAL community rail (lib/layout/page-chrome.ts):
+// the context band is an in-body hero CARD, not a shell rail, so it reads as a normal Detail page beside
+// the site's Quest rail (operator request). The owner settings sub-surfaces stay Focus (no rail).
 
 export default async function SpaceProfileLayout({
   children,
@@ -68,8 +69,14 @@ export default async function SpaceProfileLayout({
   const segs = pathname.split('/').filter(Boolean) // ['spaces', '<slug>', '<tab>'?]
   const activeSegment = segs.length >= 3 ? segs[2] : undefined
 
-  // Capability gate for the operator-edit affordance (server-authoritative, §A.4 / Epic 1.7).
-  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  // Owner-affordance gate (server-authoritative, §A.4 / Epic 1.7), now STAFF-AWARE: an owner / admin /
+  // editor of THIS Space gets `canManage` (the unchanged canEditProfile authority), and a platform
+  // janitor previewing a Space they do NOT manage gets `staffViewing` (read-only). The affordance shows
+  // for either; the settings surface it routes to renders a read-only staff preview for the janitor.
+  // No WRITE gate changes — every owner write still re-checks canEditProfile server-side independently.
+  const caller = await getCallerProfile()
+  const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
+  const canSeeAsOwner = manage.canManage || manage.staffViewing
 
   // The one-line tagline shows under the name. It isn't on the mapped Space (not in the generated DB
   // types yet, ADR-246), so read it through the untyped client by id. Fail-safe to null.
@@ -118,10 +125,10 @@ export default async function SpaceProfileLayout({
                 >
                   <QrCode className="h-4 w-4" aria-hidden />
                 </Link>
-                {caps.canEditProfile && (
+                {canSeeAsOwner && (
                   <Link href={`${base}/settings`} className={buttonClasses('secondary', 'md')}>
                     <Pencil className="h-3.5 w-3.5" aria-hidden />
-                    Edit profile
+                    {manage.staffViewing ? 'Owner view (staff)' : 'Edit profile'}
                   </Link>
                 )}
               </>
