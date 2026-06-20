@@ -71,19 +71,24 @@ describe('railFor — the single source of truth for page chrome', () => {
     }
   })
 
-  it('frames entity-space profiles SCOPED, the directory GLOBAL, and the wizard/settings FOCUS', () => {
+  it('frames entity-space profiles + the directory GLOBAL, and the wizard/settings FOCUS', () => {
     // The directory (/spaces) is an Index page — it keeps the global community rail.
     expect(railFor('/spaces')).toBe('global')
-    // A profile (/spaces/<slug>) and its tabs render their own in-body context band, so the
-    // global rail is suppressed ('scoped', §B.5 — avoids the double-rail trap).
-    expect(railFor('/spaces/demo-practitioner')).toBe('scoped')
-    expect(railFor('/spaces/demo-practitioner/offerings')).toBe('scoped')
-    expect(railFor('/spaces/demo-practitioner/practices')).toBe('scoped')
-    expect(railFor('/spaces/demo-practitioner/community')).toBe('scoped')
-    expect(railFor('/spaces/demo-practitioner/book')).toBe('scoped')
-    // The provisioning wizard + the owner settings surface are centered Focus pages (no rail).
+    // A profile (/spaces/<slug>) and its tabs now ride the GLOBAL community rail like the rest of
+    // the app (operator request): the context band is an in-body hero card, not a shell rail, so
+    // there is no double-rail trap. Nothing is 'scoped' anymore.
+    expect(railFor('/spaces/demo-practitioner')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/offerings')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/practices')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/community')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/book')).toBe('global')
+    // The provisioning wizard + the owner settings surfaces stay centered Focus pages (no rail),
+    // unaffected by the profile's switch to the global rail.
     expect(railFor('/spaces/new')).toBe('none')
     expect(railFor('/spaces/demo-practitioner/settings')).toBe('none')
+    expect(railFor('/spaces/demo-practitioner/settings/availability')).toBe('none')
+    expect(railFor('/spaces/demo-practitioner/settings/memberships')).toBe('none')
+    expect(railFor('/spaces/demo-practitioner/settings/members')).toBe('none')
   })
 
   it('keeps the global rail on the events index and the slug ICS sub-route (only the bare Invite slug is no-rail)', () => {

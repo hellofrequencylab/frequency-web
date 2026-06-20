@@ -7,17 +7,20 @@
 //      empty (entity-getting-started) instead of N dashed boxes; the per-section modules suppress
 //      their own empties so they don't stack under it. Request-CACHED so the four counts run once
 //      across every module on the page.
-//   2. `viewerCanEditActiveSpace()` — may the current viewer edit the active Space (owner / admin /
-//      editor)? When true the empties become ACTIONABLE ("Add your first session", routed to the
-//      editor); a plain member sees the quiet "check back" voice. Also request-cached.
+//   2. `viewerCanEditActiveSpace()` — should the viewer see the OWNER-facing empties? True for an
+//      owner / admin / editor (the canEditProfile authority) AND for a platform janitor previewing a
+//      Space they don't manage (read-only), so an admin sees the profile as the owner does. When true
+//      the empties become ACTIONABLE ("Add your first session", routed to the management hub); a plain
+//      member sees the quiet "check back" voice. Still server-authoritative + read-only (no write gate
+//      is widened — the hub renders a read-only staff preview for the janitor). Also request-cached.
 //
 // Both are fail-safe (any read error → treated as empty / not-owner), so a brand-new or half-seeded
 // Space degrades to the calm path rather than throwing.
 
 import { cache } from 'react'
 import { getActiveSpace } from './active-space'
-import { getMyProfileId } from '@/lib/auth'
-import { getSpaceCapabilities } from './entitlements'
+import { getCallerProfile } from '@/lib/auth'
+import { resolveSpaceManageAccess } from './entitlements'
 import { listEventsForSpace } from '@/lib/events/store'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
@@ -51,16 +54,20 @@ export async function spaceProfileIsEmpty(): Promise<boolean> {
   return !(await spaceHasContent())
 }
 
-/** May the current viewer edit the active Space (owner / admin / editor — the canEditProfile gate)?
+/** Should the current viewer see the active Space's OWNER-facing, actionable empties ("Add your
+ *  first …")? True for someone who can manage the Space (owner / admin / editor — the unchanged
+ *  canEditProfile authority) AND for a platform janitor PREVIEWING a Space they do not manage, so an
+ *  admin sees the profile as its owner would. STILL READ-ONLY: the empties only link to the settings
+ *  hub, which renders a read-only staff preview for the janitor; no write gate is widened here.
  *  Request-cached. Fail-safe to false (a denied/anon viewer sees the member-facing empties). */
 export const viewerCanEditActiveSpace = cache(async (): Promise<boolean> => {
   const space = getActiveSpace()
   if (!space) return false
   try {
-    const viewerProfileId = await getMyProfileId()
-    if (!viewerProfileId) return false
-    const caps = await getSpaceCapabilities(space, viewerProfileId)
-    return caps.canEditProfile
+    const caller = await getCallerProfile()
+    if (!caller) return false
+    const manage = await resolveSpaceManageAccess(space, caller.id, caller.webRole)
+    return manage.canManage || manage.staffViewing
   } catch {
     return false
   }
