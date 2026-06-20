@@ -4,9 +4,31 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // types yet, so every read/write goes through an untyped client cast (the same
 // pattern used across lib/studio + lib/page-editor). Service-role only — callers
 // gate on host+ (see app/(main)/admin/crm/actions.ts requireCrm()).
+//
+// PER-SPACE TENANCY (ENTITY-SPACES-BUILD Phase 2). Every read here takes an OPTIONAL
+// `spaceId`. It is purely ADDITIVE and BACKWARD-COMPATIBLE:
+//   • ABSENT (undefined)  -> NO space filter is applied, so the GLOBAL /admin/crm
+//     operator tool sees EXACTLY the rows it sees today (the whole table). This is the
+//     unchanged path; the global admin actions call these with no spaceId.
+//   • PRESENT             -> the query filters `space_id = spaceId`, so a Space owner's
+//     per-space pipeline sees only their own rows (cross-space isolation).
+// The column was backfilled to the root space, so existing data is root-owned and the
+// per-space pipeline for the root space still sees it (the global tool ignores space_id).
 
 function db() {
   return createAdminClient()
+}
+
+// Apply the OPTIONAL space filter to a query builder. When spaceId is undefined the
+// builder is returned untouched (exact current global behavior); when present it adds an
+// `.eq('space_id', spaceId)`. Kept as one helper so every read scopes identically and the
+// "absent = unchanged" guarantee lives in a single place. Typed loosely because the
+// crm_* tables are not in the generated DB types (ADR-246).
+function scopeBySpace<Q extends { eq: (col: string, val: string) => Q }>(
+  query: Q,
+  spaceId?: string,
+): Q {
+  return spaceId ? query.eq('space_id', spaceId) : query
 }
 
 export type StageKind = 'open' | 'won' | 'lost'
@@ -49,16 +71,18 @@ export type CrmActivity = {
 
 const PERSON_COLS = 'id, display_name, handle, avatar_url'
 
-export async function getStages(): Promise<CrmStage[]> {
-  const { data } = await db().from('crm_stages').select('id, name, sort_order, kind').order('sort_order')
+export async function getStages(spaceId?: string): Promise<CrmStage[]> {
+  const { data } = await scopeBySpace(
+    db().from('crm_stages').select('id, name, sort_order, kind'),
+    spaceId,
+  ).order('sort_order')
   return (data as CrmStage[] | null) ?? []
 }
 
 // All deals + resolved owner/member people, newest activity first within a stage.
-export async function getDeals(): Promise<CrmDeal[]> {
-  const { data } = await db()
-    .from('crm_deals')
-    .select('*')
+// Optional spaceId scopes to one Space (absent = the global, unscoped admin view).
+export async function getDeals(spaceId?: string): Promise<CrmDeal[]> {
+  const { data } = await scopeBySpace(db().from('crm_deals').select('*'), spaceId)
     .order('sort_order', { ascending: true })
     .order('updated_at', { ascending: false })
   const deals = (data as Record<string, unknown>[] | null) ?? []
@@ -66,20 +90,23 @@ export async function getDeals(): Promise<CrmDeal[]> {
   return deals.map((d) => hydrateDeal(d, people))
 }
 
-export async function getDeal(id: string): Promise<CrmDeal | null> {
-  const { data } = await db().from('crm_deals').select('*').eq('id', id).maybeSingle()
+// A single deal. Optional spaceId pins the read to one Space (the per-space surface passes
+// it so a caller can never open a deal belonging to another Space by id); absent = global.
+export async function getDeal(id: string, spaceId?: string): Promise<CrmDeal | null> {
+  const { data } = await scopeBySpace(db().from('crm_deals').select('*').eq('id', id), spaceId).maybeSingle()
   if (!data) return null
   const d = data as Record<string, unknown>
   const people = await resolvePeople([d.owner_id, d.profile_id].filter(Boolean) as string[])
   return hydrateDeal(d, people)
 }
 
-export async function getActivities(dealId: string): Promise<CrmActivity[]> {
-  const { data } = await db()
-    .from('crm_activities')
-    .select('*')
-    .eq('deal_id', dealId)
-    .order('created_at', { ascending: false })
+// Activities on a deal. Optional spaceId scopes the read to one Space (a defense-in-depth
+// filter on top of deal_id, so a cross-space deal id leaks nothing); absent = global.
+export async function getActivities(dealId: string, spaceId?: string): Promise<CrmActivity[]> {
+  const { data } = await scopeBySpace(
+    db().from('crm_activities').select('*').eq('deal_id', dealId),
+    spaceId,
+  ).order('created_at', { ascending: false })
   const rows = (data as Record<string, unknown>[] | null) ?? []
   const people = await resolvePeople(rows.map((r) => r.created_by).filter(Boolean) as string[])
   return rows.map((r) => ({
@@ -95,14 +122,60 @@ export async function getActivities(dealId: string): Promise<CrmActivity[]> {
   }))
 }
 
-// Count of open tasks (a due-dated activity not yet completed).
-export async function countOpenTasks(): Promise<number> {
-  const { count } = await db()
-    .from('crm_activities')
-    .select('id', { count: 'exact', head: true })
-    .eq('kind', 'task')
-    .is('completed_at', null)
+// Count of open tasks (a due-dated activity not yet completed). Optional spaceId scopes the
+// count to one Space (absent = the global admin count, unchanged).
+export async function countOpenTasks(spaceId?: string): Promise<number> {
+  const { count } = await scopeBySpace(
+    db().from('crm_activities').select('id', { count: 'exact', head: true }).eq('kind', 'task'),
+    spaceId,
+  ).is('completed_at', null)
   return count ?? 0
+}
+
+export type CrmContact = {
+  id: string
+  email: string
+  display_name: string | null
+  consent_state: string
+  created_at: string | null
+}
+
+// A Space's CRM contacts (the per-space people list). Optional spaceId scopes to one Space;
+// absent = the global contacts table (unchanged). Newest first. Reads only the columns the
+// per-space contacts surface needs.
+export async function getContacts(spaceId?: string, limit = 200): Promise<CrmContact[]> {
+  const { data } = await scopeBySpace(
+    db().from('contacts').select('id, email, display_name, consent_state, created_at'),
+    spaceId,
+  )
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  const rows = (data as Record<string, unknown>[] | null) ?? []
+  return rows.map((c) => ({
+    id: c.id as string,
+    email: (c.email as string) ?? '',
+    display_name: (c.display_name as string) ?? null,
+    consent_state: (c.consent_state as string) ?? 'unknown',
+    created_at: (c.created_at as string) ?? null,
+  }))
+}
+
+// A single contact, scoped to a Space when spaceId is present (so the notes surface can confirm
+// the contact belongs to the Space before reading its notes). Absent = global lookup by id.
+export async function getContact(id: string, spaceId?: string): Promise<CrmContact | null> {
+  const { data } = await scopeBySpace(
+    db().from('contacts').select('id, email, display_name, consent_state, created_at').eq('id', id),
+    spaceId,
+  ).maybeSingle()
+  if (!data) return null
+  const c = data as Record<string, unknown>
+  return {
+    id: c.id as string,
+    email: (c.email as string) ?? '',
+    display_name: (c.display_name as string) ?? null,
+    consent_state: (c.consent_state as string) ?? 'unknown',
+    created_at: (c.created_at as string) ?? null,
+  }
 }
 
 async function resolvePeople(ids: string[]): Promise<Map<string, PersonLite>> {

@@ -15,6 +15,8 @@ import { joinCircle } from '@/app/(main)/circles/actions'
 import { checkInEvent } from '@/app/(main)/events/actions'
 import { listActiveVariants, pickVariant } from '@/lib/entry-points/ab'
 import { referralsEnabled } from '@/lib/platform-flags'
+import { normalizeSplash, primarySplashLink } from '@/lib/qr/splash'
+import { renderSplashPage } from '@/lib/qr/splash-render'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,9 +34,36 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   const to = (path: string) => NextResponse.redirect(new URL(path, origin))
   const unavailable = to('/code-unavailable')
 
-  const { data: code } = await admin
-    .from('qr_codes')
-    .select('id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id, source_tag')
+  // `splash` isn't in the generated DB types yet (ADR-246), so the typed `.select` rejects it. Read
+  // this row through an UNTYPED client cast (like getSpaceBySlug reads `visibility` in store.ts) and
+  // hand-type the projected shape, so the new `splash` column rides along with the existing columns.
+  type CodeRow = {
+    id: string
+    active: boolean
+    valid_from: string | null
+    valid_until: string | null
+    destination_type: string
+    target_url: string | null
+    alt_target_url: string | null
+    switch_at: string | null
+    node_id: string | null
+    circle_id: string | null
+    event_id: string | null
+    purpose: string | null
+    owner_profile_id: string | null
+    source_tag: string | null
+    splash: unknown
+  }
+  type UntypedQuery = {
+    select: (cols: string) => UntypedQuery
+    eq: (col: string, val: string) => UntypedQuery
+    maybeSingle: () => Promise<{ data: CodeRow | null }>
+  }
+  const untypedQr = (admin as unknown as { from: (t: string) => UntypedQuery }).from('qr_codes')
+  const { data: code } = await untypedQr
+    .select(
+      'id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id, source_tag, splash',
+    )
     .eq('slug', slug)
     .maybeSingle()
 
@@ -142,6 +171,28 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       })
     }
     return res
+  }
+
+  // SPLASH (ENTITY-SPACES-BUILD §C, Phase 2): when a code carries a valid splash, a scan sees the
+  // splash landing instead of a bare redirect. Two behaviors, both AFTER the scan is logged + the
+  // referral/first-touch cookies are set (so a splash code still counts + attributes):
+  //   • A/B variant in play -> the variant wins (skip the splash), so split-traffic codes keep their
+  //     existing behavior unchanged.
+  //   • Otherwise, if the splash has a PRIMARY CTA, redirect straight to it (the owner's chosen main
+  //     action). If it has no links, RENDER the splash landing page (heading + blurb + image).
+  // A code WITHOUT a splash (or a malformed one) falls through to every existing branch below,
+  // unchanged. A relative-path or a same-origin CTA resolves against the request origin.
+  const splash = abTarget ? null : normalizeSplash(code.splash)
+  if (splash) {
+    const cta = primarySplashLink(splash)
+    if (cta) {
+      return withReferral(NextResponse.redirect(new URL(cta.url, origin)))
+    }
+    // No CTA: render the splash landing itself (cookies are set via withReferral on the HTML response).
+    const html = renderSplashPage(splash, origin)
+    return withReferral(
+      new NextResponse(html, { headers: { 'content-type': 'text/html; charset=utf-8' } }),
+    )
   }
 
   if (code.destination_type === 'url' && (abTarget || code.target_url)) {
