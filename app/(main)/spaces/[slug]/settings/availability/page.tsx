@@ -1,23 +1,29 @@
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { FocusTemplate } from '@/components/templates'
-import { getMyProfileId } from '@/lib/auth'
+import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { listSpaceAvailability } from '@/lib/spaces/booking'
 import { BookingAvailabilityForm } from '@/components/spaces/booking-availability-form'
 import { BookingOwnerList } from '@/components/spaces/booking-owner-list'
+import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SectionHeader } from '@/components/ui/section-header'
 
 // OWNER AVAILABILITY EDITOR + BOOKINGS (ENTITY-SPACES-SYSTEM section 2.4, booking v1). A centered,
 // no-rail Focus surface (registered 'none' for /spaces/<slug>/settings/availability in
-// page-chrome.ts). It resolves the Space, gates on canEditProfile (404s otherwise so a non-editor
-// cannot tell the surface exists), then renders:
+// page-chrome.ts). It resolves the Space, gates RENDER on canManage || staffViewing (404s otherwise
+// so a non-editor / non-staff viewer cannot tell the surface exists), then renders:
 //   1. the weekly availability editor (setSpaceAvailability behind the form), seeded with the
 //      current windows + the Space's configured timezone, and
 //   2. the owner's UPCOMING bookings (member name + time), streamed behind <Suspense>.
 //
-// COPY runs CONTENT-VOICE: plain labels, no narrated feelings, no em/en dashes.
+// STAFF PREVIEW (a janitor viewing a Space they don't manage): a Staff preview banner shows and the
+// editor is wrapped in a disabled fieldset (read-only). The write action (setSpaceAvailability) stays
+// gated on canEditProfile server-side, so staff viewing never confers a write. NOTE: the streamed
+// lists (listSpaceAvailability / listSpaceBookings) are themselves gated on canEditProfile, so a
+// staff viewer sees the editor structure but the seeded windows + bookings read empty (read-only +
+// no leak of who booked). COPY runs CONTENT-VOICE: plain labels, no narrated feelings, no em/en dashes.
 
 export const metadata = {
   title: 'Availability',
@@ -29,16 +35,22 @@ export default async function SpaceAvailabilityPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const viewerProfileId = await getMyProfileId()
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
 
   // Resolve the Space, failing closed on a missing / not-visible Space (no existence leak).
   const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
   if (!space) notFound()
 
-  // Gate: only an editor+ (owner / admin / editor) may set availability. 404 (not 403) so the
-  // surface never confirms it exists to someone who cannot edit.
-  const caps = await getSpaceCapabilities(space, viewerProfileId)
-  if (!caps.canEditProfile) notFound()
+  // Gate RENDER on canManage (owner / admin / editor) OR staffViewing (a janitor previewing). 404
+  // (not 403) for everyone else. The WRITE action (setSpaceAvailability) stays gated on
+  // canEditProfile, so staff viewing is read-only end to end.
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(
+    space,
+    viewerProfileId,
+    caller?.webRole,
+  )
+  if (!canManage && !staffViewing) notFound()
 
   const windows = await listSpaceAvailability(space.id)
   // Seed the timezone from the saved windows, else a sensible default the owner can change.
@@ -50,16 +62,22 @@ export default async function SpaceAvailabilityPage({
       eyebrow={brandName}
       title="Availability"
       description="Set the weekly windows members can book. Times are in the timezone you choose, and members see them in that zone."
-      back={{ href: `/spaces/${space.slug}/settings`, label: 'Space settings' }}
+      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
       width="wide"
     >
+      {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
+
       <div className="space-y-8">
-        <BookingAvailabilityForm
-          spaceId={space.id}
-          slug={space.slug}
-          initialWindows={windows}
-          initialTimezone={initialTimezone}
-        />
+        {/* A disabled fieldset renders the editor READ-ONLY for a staff preview (it natively disables
+            every nested control in the form). `display: contents` keeps it out of the layout box. */}
+        <fieldset disabled={staffViewing} className="contents">
+          <BookingAvailabilityForm
+            spaceId={space.id}
+            slug={space.slug}
+            initialWindows={windows}
+            initialTimezone={initialTimezone}
+          />
+        </fieldset>
 
         <section>
           <SectionHeader title="Upcoming bookings" />

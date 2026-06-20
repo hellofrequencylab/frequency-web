@@ -29,7 +29,18 @@ const fieldClass =
   'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
 const labelClass = 'block text-xs font-semibold uppercase tracking-wide text-muted mb-1'
 
-export function SpaceBrandEditor({ space, skins }: { space: Space; skins: SkinOption[] }) {
+export function SpaceBrandEditor({
+  space,
+  skins,
+  children,
+}: {
+  space: Space
+  skins: SkinOption[]
+  /** Optional extra content rendered as a sibling section below the branding form (server-rendered
+   *  from the page, e.g. the "Preview owner back-end" links). Kept as a slot so this client editor
+   *  never has to own those server-side links. */
+  children?: React.ReactNode
+}) {
   const router = useRouter()
   const [skin, setSkin] = useState(space.skin)
   const [brandName, setBrandName] = useState(space.brandName ?? '')
@@ -185,6 +196,7 @@ export function SpaceBrandEditor({ space, skins }: { space: Space; skins: SkinOp
           </div>
         </div>
       </AdminSection>
+      {children}
     </AdminTemplate>
   )
 }
