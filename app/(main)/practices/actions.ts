@@ -38,6 +38,10 @@ export async function logPracticeAction(
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
   const res = await logPractice({ profileId, practiceId, circleId: circleId ?? null })
+  // Re-seed the "your practices" tight rows so an already-logged practice paints in
+  // its collapsed state on the next server render (B.4). The client wrapper collapses
+  // optimistically too, so this is the durable, refresh-safe path, not the live one.
+  revalidatePath('/practices')
   return ok(res)
 }
 
