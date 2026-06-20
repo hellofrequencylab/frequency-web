@@ -14,6 +14,7 @@
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { listFollowedSpaceIds } from './follows'
 import type { SpaceType } from './types'
 
 /** One networked Space as the directory consumes it — the brand anchor, the type, and a couple of
@@ -32,12 +33,18 @@ export interface NetworkedSpace {
   memberCount: number | null
 }
 
-/** The filters the directory passes in. Both optional; absent = unfiltered. */
+/** The filters the directory passes in. All optional; absent = unfiltered. */
 export interface DiscoveryFilters {
   /** Narrow to one entity type (practitioner / business / organization / coaching / event_space). */
   type?: string
   /** Free-text query over name / brand name / slug (case-insensitive substring). */
   q?: string
+  /** When set with `onlyFollowed`, the viewer whose follows the directory intersects against (the
+   *  "Following" filter). */
+  followerProfileId?: string | null
+  /** Narrow the result to the Spaces `followerProfileId` follows (the "Following" pill). Ignored
+   *  when no `followerProfileId` is given (a signed-out viewer follows nothing). */
+  onlyFollowed?: boolean
 }
 
 // The columns the directory projects. `visibility` is selected too (it's the discovery filter) but
@@ -132,8 +139,14 @@ async function memberCountsFor(spaceIds: string[]): Promise<Map<string, number>>
  * and a cheap active-member count. Ordered by name. FAIL-SAFE: `[]` on any error. REQUEST-CACHED.
  */
 export const listNetworkedSpaces = cache(
-  async ({ type, q }: DiscoveryFilters = {}): Promise<NetworkedSpace[]> => {
+  async ({ type, q, followerProfileId, onlyFollowed }: DiscoveryFilters = {}): Promise<NetworkedSpace[]> => {
     try {
+      // The "Following" filter: resolve the viewer's followed Space ids up front. A signed-out viewer
+      // (no profile) follows nothing, so the filtered directory is correctly empty. Fail-safe to an
+      // empty set, so any error just yields no matches rather than throwing.
+      const followedIds = onlyFollowed ? await listFollowedSpaceIds(followerProfileId ?? null) : null
+      if (onlyFollowed && (!followedIds || followedIds.size === 0)) return []
+
       let query = spacesTable()
         .select(COLS)
         .eq('visibility', 'network')
@@ -156,7 +169,9 @@ export const listNetworkedSpaces = cache(
         .limit(DISCOVERY_FETCH_LIMIT)) as { data: SpaceDiscoveryRow[] | null; error: unknown }
 
       if (result.error || !result.data) return []
-      const rows = result.data
+      // The "Following" filter intersects the networked set with the viewer's follows (computed
+      // above). When it's off, `followedIds` is null and every networked row passes.
+      const rows = followedIds ? result.data.filter((r) => followedIds.has(r.id)) : result.data
 
       // One grouped member-count read over just the matched ids (cheap; fail-safe to no counts).
       const counts = await memberCountsFor(rows.map((r) => r.id))

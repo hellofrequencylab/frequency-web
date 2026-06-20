@@ -10,11 +10,13 @@ import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { setActiveSpace } from '@/lib/spaces/active-space'
+import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { blueprintForType, tabForSegment } from '@/lib/spaces/blueprints'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { ProfileHeroStats } from '@/components/spaces/profile-hero-stats'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
+import { isFollowing } from '@/lib/spaces/follows'
 import { AccentScope } from '@/components/spaces/accent-scope'
 
 // ── THE NETWORKED ENTITY PROFILE (ENTITY-SPACES-BUILD §A.4 / §B.1) ──────────────────────────────
@@ -54,6 +56,12 @@ export default async function SpaceProfileLayout({
   // Stamp the active Space so every entity module (a parameterless RSC) reads this tenant's rows.
   setActiveSpace(space)
 
+  // Profile telemetry (the first signal on /spaces profiles): record a profile-VIEW into the
+  // existing engagement ledger, tagged with space_id, so operators can later see how a profile
+  // performs. Non-blocking side effect — `void`-ed (never awaited, never throws) and deduped per
+  // request via React.cache so tab navigation within one profile doesn't double-count (analytics.ts).
+  void trackSpaceProfileViewOnce(space.id, viewerProfileId)
+
   const blueprint = blueprintForType(space.type)
   const brandName = space.brandName ?? space.name
   const typeLabel = spaceTypeLabel(space.type)
@@ -81,6 +89,10 @@ export default async function SpaceProfileLayout({
   // The one-line tagline shows under the name. It isn't on the mapped Space (not in the generated DB
   // types yet, ADR-246), so read it through the untyped client by id. Fail-safe to null.
   const tagline = await readTagline(space.id)
+
+  // Whether the signed-in viewer already follows this Space (resolved server-side so the Follow
+  // button paints in the right state with no mount flicker). Fail-safe to false for an anon viewer.
+  const viewerFollows = viewerProfileId ? await isFollowing(space.id, viewerProfileId) : false
 
   const base = `/spaces/${space.slug}`
   const tabs: DetailTab[] = (blueprint?.tabs ?? [{ id: 'about', label: 'About', modules: [] }]).map((t) => ({
@@ -116,7 +128,13 @@ export default async function SpaceProfileLayout({
                 <Link href={ctaHref} className={buttonClasses('primary', 'md')}>
                   {ctaLabel}
                 </Link>
-                {viewerProfileId && <FollowSpaceButton spaceId={space.id} spaceName={brandName} />}
+                {viewerProfileId && (
+                  <FollowSpaceButton
+                    spaceId={space.id}
+                    spaceName={brandName}
+                    initialFollowing={viewerFollows}
+                  />
+                )}
                 <Link
                   href="/codes"
                   aria-label={`Connect with ${brandName}`}

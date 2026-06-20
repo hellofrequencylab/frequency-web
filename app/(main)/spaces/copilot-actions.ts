@@ -39,6 +39,7 @@ async function authorizeEdit(
 
   return {
     ctx: {
+      spaceId,
       name: space.name,
       type: space.type,
       brandName: space.brandName,

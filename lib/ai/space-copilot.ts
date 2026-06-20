@@ -32,6 +32,8 @@ const FEATURE = 'space-copilot'
  *  shape (not the full `Space`) so callers can pass a resolved Space row directly — every
  *  field is optional and defended, so a thin/empty Space still yields a sensible fallback. */
 export interface SpaceContext {
+  /** The Space's id, for per-Space cost attribution + the per-Space daily cap (never blocks). */
+  spaceId?: string | null
   /** The Space's slug/name (the canonical handle). */
   name?: string | null
   /** The kind of Space (practitioner, business, coaching…), shapes the framing. */
@@ -137,6 +139,7 @@ export async function draftSpaceBio(ctx: SpaceContext): Promise<string> {
     user: `FACTS (the only material you may use):\n${facts}\n\nWrite the short About for this Space.`,
     maxTokens: 200,
     profileId: ctx.profileId,
+    spaceId: ctx.spaceId,
   })
   return text ?? fallbackBio(ctx)
 }
@@ -178,6 +181,7 @@ export async function draftOfferingBlurb(ctx: SpaceContext, offering: OfferingCo
     user: `FACTS (the only material you may use):\n${facts}\n\nWrite the short blurb for this offering.`,
     maxTokens: 160,
     profileId: ctx.profileId,
+    spaceId: ctx.spaceId,
   })
   return text ?? fallbackOfferingBlurb(ctx, offering)
 }
@@ -216,6 +220,7 @@ export async function suggestTagline(ctx: SpaceContext): Promise<string> {
     user: `FACTS (the only material you may use):\n${facts}\n\nWrite ONE short tagline for this Space.`,
     maxTokens: 40,
     profileId: ctx.profileId,
+    spaceId: ctx.spaceId,
   })
   // Taglines are one short line: take the first line, drop a trailing period, clamp to ~80 chars.
   const line = (text ?? fallbackTagline(ctx)).split('\n')[0].trim().replace(/\.$/, '')
@@ -255,11 +260,13 @@ async function draft(p: {
   user: string
   maxTokens: number
   profileId?: string | null
+  spaceId?: string | null
 }): Promise<string | null> {
   if (!aiEnabled()) return null
-  // Per-feature daily spend cap (the codebase pattern, lib/ai/usage.ts): fall back deterministically
-  // when the 'space-copilot' budget is spent, so drafting can never bill unbounded.
-  if (await featureOverBudget(FEATURE)) return null
+  // Per-Space daily spend cap (lib/ai/usage.ts): when we know the Space, gate on ITS spend so a
+  // single Space can't run up the whole feature's bill; the global 'space-copilot' cap still
+  // applies underneath. Either over budget => fall back deterministically, never bill unbounded.
+  if (await featureOverBudget(FEATURE, p.spaceId)) return null
   try {
     const res = await completeText({
       system: withVoice(p.system),
@@ -274,6 +281,7 @@ async function draft(p: {
       usage: res.usage,
       costUsd: res.costUsd,
       profileId: p.profileId ?? null,
+      spaceId: p.spaceId ?? null,
     })
     const text = stripEmDashes(res.text)
     return text || null

@@ -37,3 +37,16 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {
   return FEATURE_DAILY_CAP_USD[feature] ?? fallbackUsd
 }
+
+// Per-Space daily spend cap (USD). A single Space can spend at most this much per day on a
+// space-scoped feature, so no one Space can run up the whole feature's bill (the feature's
+// global cap in FEATURE_DAILY_CAP_USD still applies on top). A small fraction of the feature
+// cap keeps any one Space well under the surface ceiling; tuned conservatively until real usage
+// data exists.
+export const SPACE_DAILY_CAP_USD = 0.5
+
+/** The per-Space daily cap for a feature: the smaller of a fixed per-Space ceiling and the
+ *  feature's own global cap (a Space can never be allowed more than the whole feature). */
+export function spaceDailyCapFor(feature: string): number {
+  return Math.min(SPACE_DAILY_CAP_USD, dailyCapFor(feature))
+}
