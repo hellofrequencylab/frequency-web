@@ -204,6 +204,11 @@ export function SpaceSettingsForm({
         )}
       />
 
+      <p className="text-xs text-subtle">
+        Vera is AI. The Draft and Suggest buttons write a starting point you review and edit; nothing
+        is saved or published until you do.
+      </p>
+
       <VisibilityField value={visibility} onChange={setVisibility} />
 
       {veraError && (

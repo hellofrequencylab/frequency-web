@@ -31,6 +31,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'room-search': 1,       // semantic search over room history (free embeddings; cap is a safety net)
   'vera-chat': 5,         // Vera's live companion loop (Haiku, high-volume member-facing)
   'journey-review': 3,    // Vera's rank quality gate on member-built Journeys (Opus; low-volume, fail-closed)
+  'space-copilot': 2,     // per-Space owner profile drafting (bio/tagline/offering blurb, Haiku)
 }
 
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {
