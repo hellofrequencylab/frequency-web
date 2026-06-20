@@ -92,6 +92,7 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/spaces/demo-practitioner/settings/qr')).toBe('none')
     expect(railFor('/spaces/demo-practitioner/settings/crm')).toBe('none')
     expect(railFor('/spaces/demo-event-space/settings/checkin')).toBe('none')
+    expect(railFor('/spaces/demo-business/settings/email')).toBe('none')
   })
 
   it('keeps the global rail on the events index and the slug ICS sub-route (only the bare Invite slug is no-rail)', () => {

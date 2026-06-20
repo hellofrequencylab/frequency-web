@@ -5,7 +5,7 @@
 
 import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
-import { processUnsubscribe } from './actions'
+import { processUnsubscribe, processSpaceUnsubscribe } from './actions'
 import { isError } from '@/lib/action-result'
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -15,14 +15,37 @@ const CATEGORY_LABELS: Record<string, string> = {
   lifecycle:  'onboarding nudges',
 }
 
-type SP = { p?: string; c?: string; t?: string }
+// `p`/`c` carry the GLOBAL member unsubscribe; `s`/`e` carry the per-Space unsubscribe (a Space
+// emails contacts who may have no Frequency profile, so it is keyed on space + email, not profile +
+// category). Both share `t` (the HMAC token).
+type SP = { p?: string; c?: string; s?: string; e?: string; t?: string }
 
 export default async function UnsubscribePage({
   searchParams,
 }: {
   searchParams: Promise<SP>
 }) {
-  const { p, c, t } = await searchParams
+  const { p, c, s, e, t } = await searchParams
+
+  // Per-Space unsubscribe: a single Space's outreach, recorded as a space-scoped suppression. The
+  // global member preferences are untouched, so this never quiets Frequency itself.
+  if (s || e) {
+    if (!s || !e || !t) {
+      return <Layout title="Missing unsubscribe details." description="This link looks incomplete. If you got here from an email, please reply to it and we'll help.">
+        <ManageLink />
+      </Layout>
+    }
+    const spaceResult = await processSpaceUnsubscribe({ spaceId: s, email: e, token: t })
+    if (isError(spaceResult)) {
+      return <Layout title="Couldn't process unsubscribe" description={spaceResult.error}>
+        <ManageLink />
+      </Layout>
+    }
+    return <Layout title="You're unsubscribed." description="You'll no longer get email from this space. This only stops this one sender, not Frequency itself.">
+      <Body>Changed your mind? Reply to one of their emails and they can add you back.</Body>
+      <ManageLink />
+    </Layout>
+  }
 
   if (!p || !c || !t) {
     return <Layout title="Missing unsubscribe details." description="This link looks incomplete. If you got here from an email, please reply to it and we'll help.">

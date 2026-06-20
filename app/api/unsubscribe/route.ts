@@ -8,23 +8,32 @@
 // the profile exists.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { processUnsubscribe } from '@/app/unsubscribe/actions'
-import { isError } from '@/lib/action-result'
+import { processUnsubscribe, processSpaceUnsubscribe } from '@/app/unsubscribe/actions'
+import { isError, type ActionResult } from '@/lib/action-result'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   const { searchParams } = req.nextUrl
-  const p = searchParams.get('p') ?? ''
-  const c = searchParams.get('c') ?? ''
   const t = searchParams.get('t') ?? ''
 
-  const result = await processUnsubscribe({ profileId: p, category: c, token: t })
+  // Per-Space one-click (ENTITY-SPACES-BUILD Phase 3): `s` (space) + `e` (email) records a
+  // space-scoped suppression. Otherwise fall back to the GLOBAL member unsubscribe (`p` + `c`).
+  const s = searchParams.get('s')
+  const e = searchParams.get('e')
+  const result: ActionResult<unknown> =
+    s || e
+      ? await processSpaceUnsubscribe({ spaceId: s ?? '', email: e ?? '', token: t })
+      : await processUnsubscribe({
+          profileId: searchParams.get('p') ?? '',
+          category: searchParams.get('c') ?? '',
+          token: t,
+        })
 
   if (isError(result)) {
     // Log the reason internally but return 200 so the mailbox UI shows
     // success. (Revealing the failure invites probing.)
-    console.warn('[api/unsubscribe] processUnsubscribe failed:', result.error)
+    console.warn('[api/unsubscribe] unsubscribe failed:', result.error)
   }
 
   return NextResponse.json({ ok: true })

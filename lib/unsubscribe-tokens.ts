@@ -67,3 +67,44 @@ export function buildUnsubscribeUrl(params: {
   const token = makeUnsubscribeToken(profileId, category)
   return `${baseUrl}/unsubscribe?p=${encodeURIComponent(profileId)}&c=${encodeURIComponent(category)}&t=${token}`
 }
+
+// ── Per-Space unsubscribe (ENTITY-SPACES-BUILD Phase 3) ─────────────────────────────────────────
+//
+// A Space emails CONTACTS, not just members, so the per-Space unsubscribe is keyed on
+// (spaceId, email) rather than (profileId, category): the recipient may have no Frequency profile.
+// A successful click records a SPACE-SCOPED suppression (email_suppressions.space_id = spaceId), so
+// the person stops hearing from THAT Space only, never the whole platform. This lives ALONGSIDE the
+// global token above (the global member unsubscribe is unchanged). The same HMAC secret signs both;
+// the inputs differ, so a global token never validates as a space token and vice versa.
+
+/** Mint a per-Space unsubscribe token over (spaceId, email). Lowercases the email so the URL in the
+ *  send and the verification at click time agree regardless of how the address was cased. */
+export function makeSpaceUnsubscribeToken(spaceId: string, email: string): string {
+  const hmac = createHmac('sha256', getSecret())
+  hmac.update(`space:${spaceId}:${email.trim().toLowerCase()}`)
+  return hmac.digest('hex').slice(0, 32)
+}
+
+/** Verify a per-Space unsubscribe token (constant-time). Fail-closed on a bad length / mismatch. */
+export function verifySpaceUnsubscribeToken(spaceId: string, email: string, token: string): boolean {
+  if (!token || token.length !== 32) return false
+  const expected = makeSpaceUnsubscribeToken(spaceId, email)
+  try {
+    return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(token, 'hex'))
+  } catch {
+    return false
+  }
+}
+
+/** Build the per-Space unsubscribe URL carried in a Space send's List-Unsubscribe header + footer.
+ *  Distinguished from the global URL by the `s` (space) + `e` (email) params (no `c` category). */
+export function buildSpaceUnsubscribeUrl(params: {
+  baseUrl: string
+  spaceId: string
+  email:   string
+}): string {
+  const { baseUrl, spaceId, email } = params
+  const addr = email.trim().toLowerCase()
+  const token = makeSpaceUnsubscribeToken(spaceId, addr)
+  return `${baseUrl}/unsubscribe?s=${encodeURIComponent(spaceId)}&e=${encodeURIComponent(addr)}&t=${token}`
+}

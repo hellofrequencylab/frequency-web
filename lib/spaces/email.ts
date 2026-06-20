@@ -1,0 +1,435 @@
+// Per-Space EMAIL: the send backbone (ENTITY-SPACES-BUILD §C Phase 3, "Email / marketing / comms").
+// This is the SEAM the email surface agent calls. It sends a Space's email through the EXISTING
+// Resend sender (lib/email.ts), fail-closed and anti-spam-safe, and writes a per-recipient ledger
+// (outreach_sends). It is the Email analog of lib/spaces/memberships.ts / lib/spaces/booking.ts:
+// backed by the service-role admin client plus untyped casts (the new tables/columns are not in the
+// generated DB types yet, ADR-246). The server is the authority for "which space" and "what may this
+// caller do here" (P5): every write re-checks authorization; reads fail-safe (false/0), writes fail
+// CLOSED on any miss.
+//
+// ANTI-SPAM IS THE WHOLE POINT. sendSpaceCampaign sends NOTHING unless ALL of these hold, in order:
+//   (a) the caller has canEditProfile on the Space (owner / admin / editor);
+//   (b) the Space's email KILL-SWITCH (spaces.email_enabled) is ON (default OFF, fail-closed);
+//   (c) today's send count for the Space is under the conservative DAILY CAP;
+//   (d) the recipient is not suppressed (GLOBAL or this-Space) -> logged as 'suppressed', not sent.
+// Each accepted send carries a per-Space From + Reply-To and an RFC 8058 List-Unsubscribe header with
+// a per-Space unsubscribe token, and writes one outreach_sends row with the provider id + status.
+//
+// OUT OF SCOPE (counsel / cost gated): a custom per-Space sender domain with DKIM (we reuse the shared
+// Resend `send.` subdomain), SMS / A2P, AUP/DPA legal copy, SES at scale. v1 caps volume conservatively.
+
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getMyProfileId } from '@/lib/auth'
+import { getSpaceById } from '@/lib/spaces/store'
+import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { sendRawEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { isSuppressed, suppress } from '@/lib/suppression'
+import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
+
+// ── Tunables (documented v1 values) ─────────────────────────────────────────────────────────────
+
+/** The conservative per-Space per-day send CAP (v1). A Space may send at most this many emails per
+ *  calendar day (UTC), counted from outreach_sends rows created today. This is the anti-spam volume
+ *  guard: a v1 Space ramps reputation slowly, and a misconfigured or hostile send can never blast.
+ *  Raised later per-plan; 500/day is a safe Resend-free-tier-friendly ceiling. */
+export const DAILY_SEND_CAP = 500
+
+/** Hard ceiling on recipients accepted in a single sendSpaceCampaign call, so one request can never
+ *  attempt an unbounded batch (the daily cap still applies across calls). */
+const MAX_RECIPIENTS_PER_CALL = 1000
+
+/** The token a caller puts in the email body where the PER-RECIPIENT unsubscribe link belongs. The
+ *  send loop replaces every occurrence with that recipient's own space-scoped unsubscribe URL before
+ *  sending, so a single rendered `html` yields a correct one-click link for each person (the RFC 8058
+ *  List-Unsubscribe header carries the same URL). An html with no token simply sends as-is. */
+export const SPACE_UNSUBSCRIBE_PLACEHOLDER = '%%SPACE_UNSUBSCRIBE_URL%%'
+
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
+
+// ── Types ────────────────────────────────────────────────────────────────────────────────────────
+
+/** One recipient of a Space send: an email plus an optional Space contact id (for the ledger link). */
+export interface SpaceRecipient {
+  contactId?: string
+  email: string
+}
+
+/** The input to sendSpaceCampaign. `campaignId` links the sends to a saved campaign (optional for a
+ *  one-off). subject + html are the rendered email; recipients is the resolved audience. */
+export interface SendSpaceCampaignInput {
+  campaignId?: string
+  subject: string
+  html: string
+  recipients: SpaceRecipient[]
+}
+
+/** What sendSpaceCampaign reports back: how many were actually sent, skipped as suppressed, or failed. */
+export interface SendSpaceCampaignResult {
+  sent: number
+  suppressed: number
+  failed: number
+}
+
+// ── PURE helpers (no IO, unit-testable) ──────────────────────────────────────────────────────────
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** Normalize an email for comparison + storage (trim + lowercase). */
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+/** Clean a raw recipient list: normalize each email, drop blank / malformed addresses, de-dupe by
+ *  address (first wins, so a contactId is kept), and cap the batch. Pure + fail-closed: a bad entry
+ *  is DROPPED, never sent to. */
+export function normalizeRecipients(raw: SpaceRecipient[] | null | undefined): SpaceRecipient[] {
+  if (!Array.isArray(raw)) return []
+  const seen = new Set<string>()
+  const out: SpaceRecipient[] = []
+  for (const r of raw) {
+    const email = typeof r?.email === 'string' ? normalizeEmail(r.email) : ''
+    if (!email || !EMAIL_RE.test(email) || seen.has(email)) continue
+    seen.add(email)
+    const rec: SpaceRecipient = { email }
+    if (typeof r.contactId === 'string' && r.contactId.trim()) rec.contactId = r.contactId.trim()
+    out.push(rec)
+    if (out.length >= MAX_RECIPIENTS_PER_CALL) break
+  }
+  return out
+}
+
+/** The per-Space From line. v1 reuses the shared verified sender domain (no per-Space DKIM yet), but
+ *  shows the Space's brand NAME so the inbox reads as the Space, not "Frequency". Falls back to the
+ *  configured EMAIL_FROM when no brand name is set. */
+export function spaceFromLine(brandName: string | null | undefined, fallbackFrom: string): string {
+  const name = (brandName ?? '').trim()
+  if (!name) return fallbackFrom
+  // Derive the address from EMAIL_FROM ("Name <addr>" or a bare "addr"); keep the verified address,
+  // swap the display name to the Space's. Sanitize the name so it can never break the header.
+  const m = fallbackFrom.match(/<([^>]+)>/)
+  const addr = m ? m[1] : fallbackFrom
+  const safeName = name.replace(/["\r\n<>]/g, '').slice(0, 78)
+  return `${safeName} <${addr}>`
+}
+
+// ── IO seam: the untyped admin-client builders (tables not in generated types yet, ADR-246) ───────
+
+type SpaceEmailRow = { email_enabled?: boolean | null }
+
+/** Read spaces.email_enabled for a Space directly (the column is not in the generated types yet, so
+ *  reach it untyped). FAIL-SAFE to false: any error reads as "disabled" so we never send on a blip. */
+async function readEmailEnabled(spaceId: string): Promise<boolean> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: SpaceEmailRow | null }> }
+        }
+      }
+    }
+    const { data } = await db.from('spaces').select('email_enabled').eq('id', spaceId).maybeSingle()
+    return data?.email_enabled === true
+  } catch {
+    return false
+  }
+}
+
+/** Count today's (UTC) outreach_sends for a Space, so the daily cap can be enforced. Counts every row
+ *  EXCEPT those skipped as 'suppressed' (a suppressed recipient never touched the provider, so it must
+ *  not consume the send budget). FAIL-CLOSED for the cap: on a read error, return the cap so the send
+ *  is refused rather than risk exceeding it. */
+async function countTodaySends(spaceId: string): Promise<number> {
+  const startOfDay = new Date()
+  startOfDay.setUTCHours(0, 0, 0, 0)
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string, opts: { count: 'exact'; head: true }) => {
+          eq: (col: string, val: string) => {
+            neq: (col: string, val: string) => {
+              gte: (col: string, val: string) => Promise<{ count: number | null }>
+            }
+          }
+        }
+      }
+    }
+    const { count } = await db
+      .from('outreach_sends')
+      .select('id', { count: 'exact', head: true })
+      .eq('space_id', spaceId)
+      .neq('status', 'suppressed')
+      .gte('created_at', startOfDay.toISOString())
+    return typeof count === 'number' ? count : DAILY_SEND_CAP
+  } catch {
+    return DAILY_SEND_CAP
+  }
+}
+
+/** Insert one outreach_sends ledger row. Service-role; swallows errors (logged) so a ledger write
+ *  failure never throws into the send loop (the email already went; the row is best-effort). */
+async function recordSend(row: {
+  spaceId: string
+  campaignId?: string
+  contactId?: string
+  email: string
+  status: 'sent' | 'failed' | 'suppressed'
+  resendId?: string | null
+  error?: string | null
+}): Promise<void> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { insert: (rows: Record<string, unknown>[]) => Promise<{ error: unknown }> }
+    }
+    await db.from('outreach_sends').insert([
+      {
+        space_id: row.spaceId,
+        campaign_id: row.campaignId ?? null,
+        contact_id: row.contactId ?? null,
+        email: row.email,
+        status: row.status,
+        resend_id: row.resendId ?? null,
+        error: row.error ?? null,
+      },
+    ])
+  } catch (err) {
+    console.error('[spaces/email] recordSend failed:', err instanceof Error ? err.message : String(err))
+  }
+}
+
+// ── PUBLIC SEAM ──────────────────────────────────────────────────────────────────────────────────
+
+/** Is a Space allowed to send email right now? The per-Space KILL-SWITCH read. FAIL-SAFE to false:
+ *  an unknown Space, a read error, or an unset flag all read as "cannot send". */
+export async function isSpaceEmailEnabled(spaceId: string): Promise<boolean> {
+  if (!spaceId) return false
+  return readEmailEnabled(spaceId)
+}
+
+/**
+ * Flip a Space's email KILL-SWITCH. Gated on canEditProfile (owner / admin / editor). Turning email
+ * ON REQUIRES `acknowledged === true`: the owner affirms they have permission to email these people
+ * and will follow anti-spam rules (CAN-SPAM / one-click unsubscribe). Turning OFF needs no
+ * acknowledgement (stopping sends is always allowed). Fail-closed on permission and on a missing ack.
+ */
+export async function setSpaceEmailEnabled(
+  spaceId: string,
+  enabled: boolean,
+  acknowledged: boolean,
+): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to manage email for this space.')
+
+  const space = await getSpaceById(spaceId)
+  if (!space) return fail('Space not found.')
+
+  const caps = await getSpaceCapabilities(space, profileId)
+  if (!caps.canEditProfile)
+    return fail('You do not have permission to manage email for this space.')
+
+  // Enabling REQUIRES the explicit acknowledgement (the anti-spam affirmation). Disabling does not.
+  if (enabled && acknowledged !== true) {
+    return fail('Confirm you have permission to email these people and will follow anti-spam rules before turning email on.')
+  }
+
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        update: (patch: Record<string, unknown>) => {
+          eq: (col: string, val: string) => Promise<{ error: unknown }>
+        }
+      }
+    }
+    const { error } = await db.from('spaces').update({ email_enabled: enabled }).eq('id', spaceId)
+    if (error) return fail('Could not update email settings. Try again.')
+  } catch {
+    return fail('Could not update email settings. Try again.')
+  }
+  return ok()
+}
+
+/**
+ * Send a Space campaign / one-off to a recipient list. The anti-spam, fail-closed send pipeline. In
+ * order: gate on canEditProfile; refuse if the Space's kill-switch is off; enforce the per-Space
+ * daily cap; filter suppressed recipients (global OR this-Space, logged as 'suppressed'); send each
+ * remaining recipient through the existing Resend sender with a per-Space From + Reply-To and an RFC
+ * 8058 List-Unsubscribe header carrying a per-Space unsubscribe token; and write one outreach_sends
+ * row per recipient with the resulting status + resend id. Returns the {sent, suppressed, failed}
+ * tallies. Fail-closed: on any gate miss it returns an error and sends NOTHING.
+ */
+export async function sendSpaceCampaign(
+  spaceId: string,
+  input: SendSpaceCampaignInput,
+): Promise<ActionResult<SendSpaceCampaignResult>> {
+  // (a) AuthZ: only an editor+ of THIS Space may send as it.
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to send email for this space.')
+
+  const space = await getSpaceById(spaceId)
+  if (!space) return fail('Space not found.')
+
+  const caps = await getSpaceCapabilities(space, profileId)
+  if (!caps.canEditProfile)
+    return fail('You do not have permission to send email for this space.')
+
+  // (b) KILL-SWITCH: fail closed if email is not explicitly enabled for this Space.
+  if (!(await isSpaceEmailEnabled(spaceId))) {
+    return fail('Email is turned off for this space. Turn it on in settings before sending.')
+  }
+
+  // Validate the payload up front (nothing sends on a malformed campaign).
+  const subject = (input?.subject ?? '').trim()
+  const html = input?.html ?? ''
+  if (!subject || !html.trim()) {
+    return fail('Add a subject and a message before sending.')
+  }
+
+  const recipients = normalizeRecipients(input?.recipients)
+  if (recipients.length === 0) {
+    return fail('Add at least one valid recipient before sending.')
+  }
+
+  // (c) DAILY CAP: how many more may this Space send today?
+  const sentToday = await countTodaySends(spaceId)
+  const remaining = DAILY_SEND_CAP - sentToday
+  if (remaining <= 0) {
+    return fail(`This space hit its daily send limit of ${DAILY_SEND_CAP}. Try again tomorrow.`)
+  }
+
+  const fallbackFrom = process.env.EMAIL_FROM ?? 'Frequency <noreply@send.frequencylocal.com>'
+  const fromLine = spaceFromLine(space.brandName ?? space.name, fallbackFrom)
+  // Reply-To: only set when the owner configured a real reply address; v1 has none on the Space, so
+  // replies go to the verified sender. (A per-Space reply inbox is a later, additive step.)
+
+  let sent = 0
+  let suppressed = 0
+  let failed = 0
+
+  for (const rec of recipients) {
+    // Stop once the day's remaining budget is exhausted (suppressed skips do not consume budget).
+    if (sent >= remaining) break
+
+    // (d) SUPPRESSION: skip a recipient suppressed globally OR for this Space; log it, do not send.
+    if (await isSuppressed(rec.email, spaceId)) {
+      suppressed++
+      await recordSend({
+        spaceId,
+        campaignId: input.campaignId,
+        contactId: rec.contactId,
+        email: rec.email,
+        status: 'suppressed',
+      })
+      continue
+    }
+
+    // (e) RFC 8058 per-Space one-click unsubscribe: a space-scoped token in the List-Unsubscribe
+    // header + the POST endpoint. Unsubscribing records a suppression for THIS Space only.
+    const unsubscribeUrl = buildSpaceUnsubscribeUrl({ baseUrl: BASE_URL, spaceId, email: rec.email })
+    const headers = listUnsubscribeHeaders(unsubscribeUrl)
+    // Personalize the body's unsubscribe link for THIS recipient (the header carries the same URL).
+    // A body with no placeholder is sent unchanged, so this is safe for any html.
+    const personalizedHtml = html.split(SPACE_UNSUBSCRIBE_PLACEHOLDER).join(unsubscribeUrl)
+
+    try {
+      const { id } = await sendRawEmail({
+        to: rec.email,
+        subject,
+        html: personalizedHtml,
+        from: fromLine,
+        headers,
+      })
+      // sendRawEmail returns id=null when sending is disabled (no key) or the GLOBAL guard skipped it.
+      // We already filtered this-Space + global suppression above, so a null id here means "disabled"
+      // (treat as failed so the tally is honest) unless the address slipped a global-only race.
+      if (id) {
+        sent++
+        await recordSend({
+          spaceId,
+          campaignId: input.campaignId,
+          contactId: rec.contactId,
+          email: rec.email,
+          status: 'sent',
+          resendId: id,
+        })
+      } else {
+        failed++
+        await recordSend({
+          spaceId,
+          campaignId: input.campaignId,
+          contactId: rec.contactId,
+          email: rec.email,
+          status: 'failed',
+          error: 'send disabled or address suppressed',
+        })
+      }
+    } catch (err) {
+      failed++
+      await recordSend({
+        spaceId,
+        campaignId: input.campaignId,
+        contactId: rec.contactId,
+        email: rec.email,
+        status: 'failed',
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
+  return ok({ sent, suppressed, failed })
+}
+
+// ── Webhook seam: update a Space send on a provider bounce / complaint ────────────────────────────
+
+/**
+ * Resolve a Space send from a Resend email id and apply a bounce / complaint outcome. Called by the
+ * Resend webhook (app/api/webhooks/resend/route.ts) IN ADDITION to the existing global handling, so
+ * the global flow is unchanged. If an outreach_sends row matches the resend id, its status is set to
+ * the event ('bounced' | 'complained') and a SPACE-SCOPED suppression is recorded for that address +
+ * Space (so that Space stops re-mailing the person). Returns true when a Space send was matched +
+ * handled, false when no Space send owns this id (the caller then relies on the global path only).
+ * Best-effort + fail-safe: any error returns false and is logged, never thrown.
+ */
+export async function handleSpaceSendWebhook(
+  resendId: string | null | undefined,
+  eventType: 'bounced' | 'complained',
+): Promise<boolean> {
+  if (!resendId) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => {
+            maybeSingle: () => Promise<{ data: { id: string; space_id: string; email: string } | null }>
+          }
+        }
+        update: (patch: Record<string, unknown>) => {
+          eq: (col: string, val: string) => Promise<{ error: unknown }>
+        }
+      }
+    }
+    const { data: row } = await db
+      .from('outreach_sends')
+      .select('id, space_id, email')
+      .eq('resend_id', resendId)
+      .maybeSingle()
+    if (!row) return false
+
+    // Set the ledger row's status to the provider outcome.
+    await db
+      .from('outreach_sends')
+      .update({ status: eventType, updated_at: new Date().toISOString() })
+      .eq('id', row.id)
+
+    // Record a SPACE-SCOPED suppression so this Space stops re-mailing the address. A complaint is
+    // also globally significant, but the global webhook path already adds the GLOBAL suppression; we
+    // only add the per-Space row here.
+    await suppress(row.email, eventType === 'bounced' ? 'hard_bounce' : 'complaint', row.space_id)
+    return true
+  } catch (err) {
+    console.error(
+      '[spaces/email] handleSpaceSendWebhook failed:',
+      err instanceof Error ? err.message : String(err),
+    )
+    return false
+  }
+}

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, DoorOpen, QrCode, Users } from 'lucide-react'
+import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, DoorOpen, Mail, QrCode, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
@@ -187,6 +187,12 @@ export default async function SpaceSettingsPage({
           icon={Briefcase}
           title="CRM"
           description="Track your pipeline and contacts, and keep private notes on the people you work with."
+        />
+        <HubCard
+          href={`/spaces/${space.slug}/settings/email`}
+          icon={Mail}
+          title="Email"
+          description="Write a campaign, pick who gets it, and send or schedule it."
         />
       </div>
     </FocusTemplate>
