@@ -22,7 +22,7 @@
 
 import { completeText, AiUnavailableError } from './complete'
 import { aiEnabled } from './client'
-import { recordAiUsage } from './usage'
+import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
 import type { SpaceType } from '@/lib/spaces/types'
 
@@ -257,6 +257,9 @@ async function draft(p: {
   profileId?: string | null
 }): Promise<string | null> {
   if (!aiEnabled()) return null
+  // Per-feature daily spend cap (the codebase pattern, lib/ai/usage.ts): fall back deterministically
+  // when the 'space-copilot' budget is spent, so drafting can never bill unbounded.
+  if (await featureOverBudget(FEATURE)) return null
   try {
     const res = await completeText({
       system: withVoice(p.system),
