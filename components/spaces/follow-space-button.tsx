@@ -1,23 +1,49 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { Check, Plus } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
+import { followSpace, unfollowSpace } from '@/lib/spaces/follows-actions'
+import { isError } from '@/lib/action-result'
 
 // The FOLLOW affordance in the entity-profile context band (ENTITY-SPACES-BUILD §A.4). A secondary
-// action a signed-in viewer taps to follow a Space. The network-follow ledger (a `space_follows`
-// table feeding cross-space discovery + the feed) is a later epic; until it lands this is the
-// honest UI seam — a local toggle that flips the label, so the design + interaction are real and the
-// persistence swaps in behind it without a UI change.
+// action a signed-in viewer taps to follow a Space. It now PERSISTS: the `space_follows` ledger
+// (lib/spaces/follows.ts) backs the toggle via the followSpace / unfollowSpace server actions, so
+// the relationship survives a reload and feeds the "Following" filter on the /spaces directory.
+//
+// The caller (the Space profile layout) resolves `initialFollowing` server-side and passes it in, so
+// the button paints in the right state with no mount flicker. The click is OPTIMISTIC: the label
+// flips immediately inside a useTransition, then the server action confirms. FAIL-SAFE: if the action
+// errors (or returns one), the optimistic flip is rolled back so the UI never lies about the state.
 //
 // COPY (CONTENT-VOICE §10): "Follow" / "Following" are plain; no hype, no narrated feelings.
-export function FollowSpaceButton({ spaceId, spaceName }: { spaceId: string; spaceName: string }) {
-  void spaceId
-  const [following, setFollowing] = useState(false)
+export function FollowSpaceButton({
+  spaceId,
+  spaceName,
+  initialFollowing = false,
+}: {
+  spaceId: string
+  spaceName: string
+  initialFollowing?: boolean
+}) {
+  const [following, setFollowing] = useState(initialFollowing)
+  const [isPending, startTransition] = useTransition()
+
+  function toggle() {
+    const next = !following
+    // Optimistic: flip the label now; roll back if the server action reports a failure.
+    setFollowing(next)
+    startTransition(async () => {
+      const result = next ? await followSpace(spaceId) : await unfollowSpace(spaceId)
+      if (isError(result)) setFollowing(!next)
+    })
+  }
+
   return (
     <button
       type="button"
-      onClick={() => setFollowing((v) => !v)}
+      onClick={toggle}
+      disabled={isPending}
       aria-pressed={following}
       aria-label={following ? `Following ${spaceName}` : `Follow ${spaceName}`}
       className={buttonClasses('secondary', 'md')}

@@ -291,6 +291,11 @@ as today**.
 > active editor+), so a writer can only create, alter, or move content in a Space they control;
 > community (root) authoring is unchanged. The layout infra (`pages`/`page_settings`) and child
 > tables (rsvps/blocks) are deferred follow-ups.
+> **Default-to-root on insert (ADR-331, migration `20260712030000`):** because both helpers treat a NULL
+> `space_id` as visible/writable to all, a `BEFORE INSERT` trigger (`default_space_id_to_root`, SECURITY
+> DEFINER, root resolved at insert time) stamps the root id on any insert that omits `space_id`, so a null
+> can never escape tenancy; it only fills nulls (rows that set `space_id` are untouched), and `NOT NULL` is
+> deferred until app dual-write is confirmed.
 
 > **Profile copy columns** (ADR-324, migration `20260711030000_spaces_about_tagline.sql`): `about text`
 > (the long profile bio rendered by the `entity-about` module) and `tagline text` (the one-line hero

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Phase 1 (ENTITY-SPACES) — the Vera co-host SEAM. Two invariants must hold WITHOUT any
 // network: the deterministic fallback returns sensible, grounded copy (so the affordance
@@ -120,5 +120,69 @@ describe('public drafters fall back deterministically when AI is off (no network
     await expect(draftSpaceBio({})).resolves.toBeTypeOf('string')
     await expect(draftOfferingBlurb({}, {})).resolves.toBeTypeOf('string')
     await expect(suggestTagline({})).resolves.toBeTypeOf('string')
+  })
+})
+
+// Per-Space cost attribution (no network): with AI mocked ON and the ledger + completion
+// stubbed at the module boundary, a draft must record its usage tagged with the Space's id, so
+// spend is attributable and the per-Space cap has something to sum. Mocks keep this offline.
+describe('spaceId flows into the cost ledger (no network)', () => {
+  const inserts: Array<Record<string, unknown>> = []
+
+  beforeEach(() => {
+    vi.resetModules()
+    inserts.length = 0
+  })
+
+  it('records space_id when a Space is drafted with AI on', async () => {
+    // AI on, but every call is stubbed: aiEnabled() true; the completion returns fixed text +
+    // usage; the admin client captures inserts and reports an empty (under-budget) ledger.
+    vi.doMock('./client', () => ({ aiEnabled: () => true, getAnthropic: () => ({}) }))
+    vi.doMock('./complete', async (orig) => {
+      const actual = await (orig() as Promise<typeof import('./complete')>)
+      return {
+        ...actual,
+        completeText: vi.fn(async () => ({
+          text: 'A grounded About for this space.',
+          usage: { inputTokens: 10, outputTokens: 20 },
+          costUsd: 0.0001,
+          tier: 'haiku' as const,
+        })),
+      }
+    })
+    vi.doMock('@/lib/supabase/admin', () => ({
+      createAdminClient: () => ({
+        from: () => ({
+          insert: (row: Record<string, unknown>) => {
+            inserts.push(row)
+            return Promise.resolve({ error: null })
+          },
+          // featureOverBudget's chained query: select().eq().gte()[.eq()] resolves to no rows.
+          select: () => ({
+            eq: () => ({
+              gte: () => {
+                const p = Promise.resolve({ data: [] as { cost_usd: number }[] })
+                return Object.assign(p, { eq: () => p })
+              },
+            }),
+          }),
+        }),
+      }),
+    }))
+
+    const { draftSpaceBio: drafter } = await import('./space-copilot')
+    const out = await drafter({
+      spaceId: 'space-123',
+      name: 'Still Point',
+      type: 'practitioner',
+      profileId: 'profile-9',
+    })
+
+    expect(out).toBe('A grounded About for this space.')
+    const usageRow = inserts.find((r) => 'space_id' in r && 'feature' in r)
+    expect(usageRow).toBeDefined()
+    expect(usageRow?.space_id).toBe('space-123')
+    expect(usageRow?.feature).toBe('space-copilot')
+    expect(usageRow?.profile_id).toBe('profile-9')
   })
 })

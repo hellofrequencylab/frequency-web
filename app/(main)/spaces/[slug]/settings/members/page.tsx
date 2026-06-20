@@ -3,12 +3,15 @@ import { Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { listSpaceMembers } from '@/lib/spaces/membership'
+import { listInvites } from '@/lib/spaces/invites'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PersonCard } from '@/components/cards/person-card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { SectionHeader } from '@/components/ui/section-header'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { InviteForm } from '@/components/spaces/invite-form'
 
 // MEMBERS — the owner back-end's TEAM surface (entity-spaces owner hub). A centered, no-rail Focus
 // surface (registered 'none' for /spaces/<slug>/settings/members in page-chrome.ts, alongside the
@@ -16,10 +19,12 @@ import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 // (404s otherwise so a non-editor / non-staff viewer cannot tell the surface exists), then lists who
 // is already on the team and the role each one holds.
 //
-// SCOPE (honest, CONTENT-VOICE skeptic test): this LISTS the current team only. Inviting a teammate
-// by email is NOT built yet (the space_invites table does not exist), so the page says so plainly
-// rather than offering a control that does nothing. The OWNER is always seated here as Admin (the
-// owner is all-powerful on their own Space; they hold no member row, so we seat them explicitly).
+// SCOPE: this lists the current team AND lets an owner / admin (canManageMembers) invite a teammate
+// by email (space_invites — lib/spaces/invites.ts). Email DELIVERY is not built yet, so the invite
+// section surfaces a copyable link to share by hand and says so plainly (CONTENT-VOICE skeptic test).
+// The OWNER is always seated here as Admin (the owner is all-powerful on their own Space; they hold no
+// member row, so we seat them explicitly). A STAFF PREVIEW (a janitor) does NOT manage the Space, so
+// the invite section is hidden for them (read-only); they still see the roster.
 //
 // READ NOTE: listSpaceMembers reads through the service-role admin client (NOT gated on
 // canEditProfile), so a STAFF PREVIEW (a janitor) sees the real roster here. There is nothing to
@@ -61,6 +66,13 @@ export default async function SpaceMembersPage({
     caller?.webRole,
   )
   if (!canManage && !staffViewing) notFound()
+
+  // The INVITE section is owner / admin only (canManageMembers); a staff janitor previewing the
+  // Space does not manage it, so they see the roster read-only without the invite controls. The
+  // pending-invite list is gated the same way inside listInvites (fail-safe to []), so this only
+  // decides whether to mount the section.
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  const pendingInvites = caps.canManageMembers ? await listInvites(space.id) : []
 
   const brandName = space.brandName ?? space.name
 
@@ -109,32 +121,44 @@ export default async function SpaceMembersPage({
     <FocusTemplate
       eyebrow={brandName}
       title="Members"
-      description="Who is on your team, and the role each one holds. Adding teammates by email invite is coming soon. For now this lists everyone who is already a member."
+      description="Who is on your team, and the role each one holds. Invite a teammate by email below, then share their link until email delivery ships."
       back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
-      {people.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title="No members yet."
-          description="When someone joins, they show here with their role. Adding teammates by email invite is coming soon."
-        />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {people.map((p) => (
-            <PersonCard
-              key={p.id}
-              handle={p.handle}
-              displayName={p.displayName}
-              avatarUrl={p.avatarUrl}
-              isDemo={p.isDemo}
-              meta={<span className="font-medium text-primary-strong">{byProfile.get(p.id)}</span>}
-            />
-          ))}
-        </div>
+      {caps.canManageMembers && (
+        <section className="mb-10">
+          <SectionHeader title="Invite a teammate" />
+          <InviteForm spaceId={space.id} initialInvites={pendingInvites} />
+        </section>
       )}
+
+      <section>
+        <SectionHeader title="On the team" count={people.length} />
+        {people.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="No members yet."
+            description="When someone accepts an invite, they show here with their role."
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {people.map((p) => (
+              <PersonCard
+                key={p.id}
+                handle={p.handle}
+                displayName={p.displayName}
+                avatarUrl={p.avatarUrl}
+                isDemo={p.isDemo}
+                meta={
+                  <span className="font-medium text-primary-strong">{byProfile.get(p.id)}</span>
+                }
+              />
+            ))}
+          </div>
+        )}
+      </section>
     </FocusTemplate>
   )
 }

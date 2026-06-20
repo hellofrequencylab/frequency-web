@@ -37,23 +37,46 @@ function GridSkeleton() {
   )
 }
 
-async function SpacesGrid({ type, q }: { type?: string; q?: string }) {
-  const spaces = await listNetworkedSpaces({ type, q })
+async function SpacesGrid({
+  type,
+  q,
+  following,
+  viewerProfileId,
+}: {
+  type?: string
+  q?: string
+  following: boolean
+  viewerProfileId: string | null
+}) {
+  const spaces = await listNetworkedSpaces({
+    type,
+    q,
+    followerProfileId: viewerProfileId,
+    onlyFollowed: following,
+  })
 
   if (spaces.length === 0) {
-    const filtering = !!((type ?? '').trim() || (q ?? '').trim())
+    const filtering = !!((type ?? '').trim() || (q ?? '').trim() || following)
     const typeLabel = type ? spaceTypeLabel(type) : null
     return (
       <EmptyState
         icon={Building2}
         variant={filtering ? 'no-results' : 'first-use'}
-        title={filtering ? 'No Spaces match your search.' : 'No Spaces yet.'}
+        title={
+          following
+            ? 'You are not following any Spaces yet.'
+            : filtering
+              ? 'No Spaces match your search.'
+              : 'No Spaces yet.'
+        }
         description={
-          filtering
-            ? typeLabel
-              ? `No ${typeLabel} Spaces matched. Try a different type or a wider search.`
-              : 'Try a different type or a wider search.'
-            : 'This is where practitioners, businesses, and organizations in the network will live. Check back soon.'
+          following
+            ? 'Follow a Space from its profile and it shows up here.'
+            : filtering
+              ? typeLabel
+                ? `No ${typeLabel} Spaces matched. Try a different type or a wider search.`
+                : 'Try a different type or a wider search.'
+              : 'This is where practitioners, businesses, and organizations in the network will live. Check back soon.'
         }
       />
     )
@@ -75,11 +98,13 @@ async function SpacesGrid({ type, q }: { type?: string; q?: string }) {
 export default async function SpacesDirectoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; q?: string }>
+  searchParams: Promise<{ type?: string; q?: string; following?: string }>
 }) {
-  const { type, q } = await searchParams
+  const { type, q, following: followingParam } = await searchParams
+  const following = followingParam === '1'
 
   // The "Create a space" affordance is for signed-in members (the create action re-checks auth).
+  // The viewer id also feeds the "Following" filter (a signed-out viewer follows nothing).
   const viewerProfileId = await getMyProfileId()
 
   return (
@@ -98,8 +123,8 @@ export default async function SpacesDirectoryPage({
     >
       {/* Keyed on the filters so a new search remounts the boundary and shows the skeleton while the
           next result set streams in. */}
-      <Suspense key={`${type ?? ''}:${q ?? ''}`} fallback={<GridSkeleton />}>
-        <SpacesGrid type={type} q={q} />
+      <Suspense key={`${type ?? ''}:${q ?? ''}:${following ? '1' : ''}`} fallback={<GridSkeleton />}>
+        <SpacesGrid type={type} q={q} following={following} viewerProfileId={viewerProfileId} />
       </Suspense>
     </IndexTemplate>
   )
