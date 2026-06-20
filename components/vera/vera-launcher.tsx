@@ -116,7 +116,8 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
               </span>
               <div className="min-w-0 flex-1">
                 <p id="vera-launcher-title" className="text-sm font-bold text-text">Vera</p>
-                <p className="truncate text-xs text-subtle">Your companion here. Ask anything, or find your way.</p>
+                {/* AI disclosure (EU AI Act Art. 50): members must know they're talking to AI. */}
+                <p className="truncate text-xs text-subtle">Vera is AI. Ask anything, or find your way.</p>
               </div>
               <button type="button" onClick={close} aria-label="Close" className="rounded-lg p-1 text-muted transition-colors hover:text-text">
                 <X className="h-4 w-4" aria-hidden />

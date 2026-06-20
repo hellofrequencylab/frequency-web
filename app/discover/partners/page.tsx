@@ -10,7 +10,7 @@ export const revalidate = 3600
 
 const TITLE = 'Local partners'
 const DESCRIPTION =
-  'Local businesses in the Frequency community — find them, see member offers, and show up in person. A directory of the shops, studios, and makers near you.'
+  'Local businesses in the Frequency community. Find them, see member offers, and show up in person. A directory of the shops, studios, and makers near you.'
 
 export const metadata: Metadata = {
   title: TITLE,

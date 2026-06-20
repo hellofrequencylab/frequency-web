@@ -131,12 +131,14 @@ function capturesBuilder() {
     limit() {
       return api
     },
-    then(resolve: (r: { data: CaptureRow[] | null; error: null }) => unknown) {
+    then(resolve: (r: { data: CaptureRow[] | null; error: null; count: number }) => unknown) {
       let data = store.captures.filter((c) => c.node_id === filters.node_id)
       if (filters.since) data = data.filter((c) => c.captured_at >= filters.since!)
       // newest first (the lib asks for desc; the mock sorts to match)
       data = [...data].sort((a, b) => (a.captured_at < b.captured_at ? 1 : -1))
-      return Promise.resolve(resolve({ data, error: null }))
+      // The list path reads `data`; the head/count path (countCheckins) awaits the same builder and
+      // reads `count`. Surfacing both keeps the one mock honest for either query.
+      return Promise.resolve(resolve({ data, error: null, count: data.length }))
     },
   }
   return api

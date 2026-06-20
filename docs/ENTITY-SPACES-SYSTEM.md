@@ -558,6 +558,21 @@ self-serve native apps early.
 
 ## 4. Complete data model
 
+> **As-built note (2026-06): design names vs shipped names.** The tables below are the design
+> plan; several shipped under different names or were deliberately not created. The shipped schema
+> is the source of truth ([DATABASE.md](DATABASE.md) "Entity Spaces", ADR-320 to ADR-337). The
+> deltas:
+>
+> | This doc (design) | Shipped as | Note |
+> |---|---|---|
+> | `bookings` / `availability` (§4.7) | `space_bookings` / `space_availability` | Practitioner 1:1 booking v1 (ADR-325); service-role, double-book guard, pure DST-aware slots. |
+> | `subscriptions` (§4.7, member-of-space billing) | `space_membership_tiers` / `space_memberships` | Business memberships v1 (ADR-327); tiers + join with **no billing** (Stripe deferred to Phase 4). |
+> | `sender_domains` (§4.6) | **not created** | Deliberately deferred in Phase 3 (ADR-335): Spaces share the verified Resend `send.` subdomain; a per-Space DKIM domain is counsel/cost gated. |
+>
+> Other Phase 2/3 tables shipped close to plan (`client_notes`, `outreach_sends`) or as additive
+> nullable `space_id` on existing tables (`qr_codes`+`splash`, `crm_*`, `nodes`/`captures`,
+> `campaigns`, `email_suppressions`); `ai_usage` also gained a nullable `space_id` (ADR-330 follow-up).
+
 ### 4.1 Isolation model (the foundation)
 
 - **Shared-schema + `space_id` + RLS.** Every space-private row carries `space_id` (or

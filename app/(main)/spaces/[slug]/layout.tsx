@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
@@ -7,7 +8,7 @@ import { DetailTemplate, type DetailTab } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, getSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
@@ -18,6 +19,9 @@ import { ProfileHeroStats } from '@/components/spaces/profile-hero-stats'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
 import { isFollowing } from '@/lib/spaces/follows'
 import { AccentScope } from '@/components/spaces/accent-scope'
+import { JsonLd } from '@/components/json-ld'
+import { spaceSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { SITE_NAME } from '@/lib/site'
 
 // ── THE NETWORKED ENTITY PROFILE (ENTITY-SPACES-BUILD §A.4 / §B.1) ──────────────────────────────
 // A profile is NOT a new layout: it is the DETAIL template (context band + tabs) composed from
@@ -38,6 +42,62 @@ import { AccentScope } from '@/components/spaces/accent-scope'
 // CHROME: the profile (/spaces/<slug> + tabs) keeps the GLOBAL community rail (lib/layout/page-chrome.ts):
 // the context band is an in-body hero CARD, not a shell rail, so it reads as a normal Detail page beside
 // the site's Quest rail (operator request). The owner settings sub-surfaces stay Focus (no rail).
+
+// The lowercase, article-prefixed role phrase for the meta description ("a practitioner",
+// "an event space"). spaceTypeLabel returns a title-cased badge ("Event Space"); the description
+// reads as a plain sentence, so it is lowercased and given the right article. Sentence case, no
+// em/en dashes (CONTENT-VOICE §5e).
+function typePhrase(type: string): string {
+  const noun = spaceTypeLabel(type).toLowerCase()
+  const article = /^[aeiou]/.test(noun) ? 'an' : 'a'
+  return `${article} ${noun}`
+}
+
+// ── PROFILE METADATA + INDEXABILITY (SEO/AIO flagship) ──────────────────────────────────────────
+// generateMetadata resolves the Space ANONYMOUSLY (getSpaceBySlug, no viewer) so a crawler gets the
+// right title/description/canonical without an auth round-trip. The single most important rule here:
+// a NETWORK (public) Space is fully indexable; a PRIVATE Space emits noindex,nofollow so it can never
+// leak into a search index or an answer engine, even if a member shares the link. A missing Space
+// gets a plain "not found" title (no existence signal beyond the 404 the page itself returns).
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const space = await getSpaceBySlug(slug)
+  if (!space || space.status !== 'active') return { title: 'Space not found' }
+
+  const visibility = await getSpaceVisibility(slug)
+  const isPrivate = visibility === 'private'
+
+  const brandName = space.brandName?.trim() || space.name
+  const tagline = await readTagline(space.id)
+
+  // "{name}: a {type} on Frequency. {tagline}", trimmed under ~155 chars for the search snippet.
+  const base = `${brandName}: ${typePhrase(space.type)} on ${SITE_NAME}.`
+  const full = tagline ? `${base} ${tagline}` : base
+  const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}...` : full
+  const ogTitle = `${brandName} · ${SITE_NAME}`
+  const canonical = `/spaces/${space.slug}`
+
+  // PRIVATE: never index or follow (no leak). NETWORK: full canonical + OG (profile) + Twitter.
+  if (isPrivate) {
+    return {
+      title: brandName,
+      description,
+      robots: { index: false, follow: false },
+    }
+  }
+
+  return {
+    title: brandName,
+    description,
+    alternates: { canonical },
+    openGraph: { title: ogTitle, description, url: canonical, type: 'profile' },
+    twitter: { card: 'summary_large_image', title: ogTitle, description },
+  }
+}
 
 export default async function SpaceProfileLayout({
   children,
@@ -90,6 +150,12 @@ export default async function SpaceProfileLayout({
   // types yet, ADR-246), so read it through the untyped client by id. Fail-safe to null.
   const tagline = await readTagline(space.id)
 
+  // Whether THIS Space is publicly networked. The per-type JSON-LD (Person / LocalBusiness /
+  // Organization + Breadcrumb) is emitted ONLY for a network Space. A private Space a member can
+  // see here must still never publish structured data (it is noindex; no schema leak). Fail-safe
+  // 'private' on a read error means a private Space defaults to no schema, the safe direction.
+  const isNetwork = (await getSpaceVisibility(slug)) !== 'private'
+
   // Whether the signed-in viewer already follows this Space (resolved server-side so the Follow
   // button paints in the right state with no mount flicker). Fail-safe to false for an anon viewer.
   const viewerFollows = viewerProfileId ? await isFollowing(space.id, viewerProfileId) : false
@@ -109,6 +175,25 @@ export default async function SpaceProfileLayout({
 
   return (
     <AccentScope vars={accentVars}>
+      {/* Per-type structured data for the PUBLIC profile (Person / LocalBusiness / Organization by
+          role) plus a Breadcrumb back to the directory. Network spaces only, never on a private one. */}
+      {isNetwork && (
+        <JsonLd
+          data={[
+            spaceSchema({
+              slug: space.slug,
+              type: space.type,
+              name: brandName,
+              tagline,
+              logoUrl: space.brandLogoUrl,
+            }),
+            breadcrumbSchema([
+              { name: 'Spaces', path: '/spaces' },
+              { name: brandName, path: `/spaces/${space.slug}` },
+            ]),
+          ]}
+        />
+      )}
       <DetailTemplate
         back={{ href: '/spaces', label: 'Spaces' }}
         title={brandName}

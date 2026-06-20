@@ -8,11 +8,13 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from './complete'
+import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
-import { recordAiUsage } from './usage'
+import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
 
+const FEATURE = 'journey-slot-coaching'
 const TOOL_NAME = 'draft_slot_coaching'
 
 const TOOL: Anthropic.Tool = {
@@ -48,6 +50,10 @@ export async function draftSlotCoaching(input: {
   season?: { name: string; theme?: string | null } | null
   profileId?: string | null
 }): Promise<string | null> {
+  if (!aiEnabled()) return null
+  // Per-feature daily cap (lib/ai/budget.ts): over budget => return null, so the builder falls back
+  // to the author writing the line by hand, never bill on.
+  if (await featureOverBudget(FEATURE)) return null
   const practiceTitle = input.practiceTitle.trim().slice(0, 200)
   if (!practiceTitle) return null
 
@@ -74,7 +80,7 @@ export async function draftSlotCoaching(input: {
       messages: [{ role: 'user', content: userText }],
     })
     void recordAiUsage({
-      feature: 'journey-slot-coaching',
+      feature: FEATURE,
       model: MODELS.haiku,
       usage: res.usage,
       costUsd: estimateCostUsd('haiku', res.usage),

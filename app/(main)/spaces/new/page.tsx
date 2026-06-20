@@ -17,6 +17,9 @@ import { CreateSpaceForm, type SpaceTypeChoice } from './create-space-form'
 export const metadata = {
   title: 'Create a space',
   description: 'Stand up a space for your practice, business, or organization on Frequency.',
+  // An authenticated compose surface, not a content page: keep it out of the index and answer
+  // engines (it only redirects a signed-out crawler to /sign-in).
+  robots: { index: false, follow: false },
 }
 
 /** The types a blueprint is registered for, in the canonical directory order. Auto-expands as more

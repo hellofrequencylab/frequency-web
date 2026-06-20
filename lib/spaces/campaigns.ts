@@ -16,10 +16,9 @@
 // module has NO 'use server' directive (so it can ALSO export the pure helpers + types the surfaces
 // import). The thin 'use server' wrappers the CLIENT calls live in lib/spaces/campaigns-actions.ts.
 //
-// SENDING IS NOT BUILT HERE. The send pipeline + the `campaigns.space_id`/`scheduled_for` migration are
-// the sibling backbone agent's (the seam: sendSpaceCampaign / isSpaceEmailEnabled / setSpaceEmailEnabled
-// from @/lib/spaces/email). That module may not exist during this build, so sendSpaceCampaign(...) here
-// is a clearly-commented PLACEHOLDER the integrator replaces; it never imports the seam.
+// SENDING is wired to the send backbone. sendSpaceCampaign(...) here resolves the audience over this
+// Space's contacts and hands them to the send seam (sendSpaceCampaign from @/lib/spaces/email), which
+// owns the kill-switch, daily cap, suppression, per-recipient unsubscribe, and the outreach_sends ledger.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
@@ -343,13 +342,11 @@ export async function scheduleSpaceCampaign(
 /**
  * Send a campaign now to a resolved audience. Gated on canEditProfile AND the campaign belonging to
  * the Space. Resolves the recipients over the Space's own contacts (resolveAudience), then hands them
- * to the send seam.
+ * to the send seam (sendSpaceCampaign from @/lib/spaces/email).
  *
- * INTEGRATION: the integrator wires this to sendSpaceCampaign(@/lib/spaces/email). The send seam owns
- * suppression, per-recipient unsubscribe, the kill-switch (isSpaceEmailEnabled), and stamping
- * status='sent' + recipient_count + sent_at. Until that module exists this is a clearly-commented
- * PLACEHOLDER: it validates + resolves the audience (so the wiring is a one-line swap) and returns a
- * friendly "being connected" message rather than importing the not-yet-existing seam.
+ * The send seam owns suppression, per-recipient unsubscribe, the kill-switch (isSpaceEmailEnabled),
+ * and the per-Space daily cap; on a successful send this action stamps the campaign status='sent' +
+ * sent_at (best-effort, since the emails already went out). Fail-closed on any gate / validation miss.
  */
 export async function sendSpaceCampaign(
   spaceId: string,

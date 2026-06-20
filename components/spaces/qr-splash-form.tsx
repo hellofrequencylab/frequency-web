@@ -442,10 +442,19 @@ function SplashEditor({
           variant="ghost"
           onClick={() => window.open(`/q/${code.slug}`, '_blank')}
           disabled={pending}
+          aria-label={`Open /q/${code.slug} in a new tab`}
         >
           Open /q/{code.slug}
         </Button>
-        <span className="sr-only">View this code at /spaces/{slug}</span>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => window.open(`/spaces/${slug}`, '_blank')}
+          disabled={pending}
+          aria-label="View this space profile in a new tab"
+        >
+          View space
+        </Button>
       </div>
     </div>
   )

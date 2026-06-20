@@ -13,9 +13,10 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from './complete'
+import { aiEnabled } from './client'
 import { MODELS, type ModelTier } from './models'
 import { estimateCostUsd } from './budget'
-import { recordAiUsage } from './usage'
+import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
 import { coerceEventExtraction } from '@/lib/events/normalize'
 import type { ExtractedEvent } from '@/lib/events/types'
@@ -238,6 +239,11 @@ async function runExtraction(opts: {
   content: Anthropic.MessageParam['content']
   profileId?: string | null
 }): Promise<ExtractedEvent | null> {
+  // Kill switch + per-feature daily cap (lib/ai/budget.ts). Both surfaces (Sonnet vision scan +
+  // Haiku text assist) gate here, so AI off / over budget falls back to plain manual entry and
+  // never bills on. event-poster-scan is the vision path, so its cap is the higher one.
+  if (!aiEnabled()) return null
+  if (await featureOverBudget(opts.feature)) return null
   try {
     const res = await completeRaw({
       tier: opts.tier,

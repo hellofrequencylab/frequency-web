@@ -11,6 +11,12 @@ Frequency connects neighborhoods into real-world community. Members find their p
 - [The Quest](https://frequencylocal.com/the-quest): the gamified path, Zaps and Gems, season ranks, and Journeys.
 - [About](https://frequencylocal.com/about): the mission and the origin story.
 - [Discover](https://frequencylocal.com/discover): live Circles and Events near you, sorted by Channel.
+- [Circles](https://frequencylocal.com/discover/circles): small standing local groups, browsable by topic.
+- [Events](https://frequencylocal.com/discover/events): real-world gatherings near you, public city-level pages.
+- [Journeys](https://frequencylocal.com/discover/journeys): guided, multi-step practice programs for a season.
+- [Partners](https://frequencylocal.com/discover/partners): local businesses in the community, with member offers.
+- [Practices](https://frequencylocal.com/discover/practices): the library of small, repeatable real-world acts.
+- [Spaces](https://frequencylocal.com/spaces): the entity network of practitioners, businesses, organizations, coaching academies, and event spaces with their own profiles.
 - [Join the Beta](https://frequencylocal.com/onboarding/beta): begin the founding-member induction.
 
 ## Vocabulary

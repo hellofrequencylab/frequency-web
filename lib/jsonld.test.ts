@@ -7,6 +7,8 @@ import {
   circleListSchema,
   eventListSchema,
   faqSchema,
+  personSchema,
+  spaceSchema,
 } from './jsonld'
 import { SITE_URL, SITE_NAME } from './site'
 import type { PublicEvent, PublicCircle } from './discover'
@@ -276,6 +278,71 @@ describe('eventListSchema', () => {
     expect(result.numberOfItems).toBe(2)
     expect(result.itemListElement[0].url).toBe(`${SITE_URL}/discover/events/evt-a`)
     expect(result.itemListElement[1].name).toBe('B')
+  })
+})
+
+// ── personSchema ──────────────────────────────────────────────────────────────
+
+describe('personSchema', () => {
+  it('returns a Person with name and absolute url', () => {
+    const result = personSchema({ name: 'Ada Lovelace', path: '/discover/events/organizer/ada' })
+    expect(result['@context']).toBe('https://schema.org')
+    expect(result['@type']).toBe('Person')
+    expect(result.name).toBe('Ada Lovelace')
+    expect(result.url).toBe(`${SITE_URL}/discover/events/organizer/ada`)
+  })
+
+  it('includes image when an avatar is provided', () => {
+    const result = personSchema({ name: 'Ada', path: '/x', image: 'https://cdn/a.png' })
+    expect(result).toHaveProperty('image', 'https://cdn/a.png')
+  })
+
+  it('omits image when avatar is null', () => {
+    const result = personSchema({ name: 'Ada', path: '/x', image: null })
+    expect(result).not.toHaveProperty('image')
+  })
+})
+
+// ── spaceSchema ───────────────────────────────────────────────────────────────
+
+describe('spaceSchema', () => {
+  it('maps a practitioner to a Person', () => {
+    const result = spaceSchema({ slug: 'river-yoga', type: 'practitioner', name: 'River Yoga' })
+    expect(result['@type']).toBe('Person')
+    expect(result.name).toBe('River Yoga')
+    expect(result.url).toBe(`${SITE_URL}/spaces/river-yoga`)
+  })
+
+  it('maps business / event_space / coaching to LocalBusiness', () => {
+    for (const type of ['business', 'event_space', 'coaching']) {
+      const result = spaceSchema({ slug: 's', type, name: 'N' })
+      expect(result['@type']).toBe('LocalBusiness')
+    }
+  })
+
+  it('maps an organization (and any unknown type) to Organization', () => {
+    expect(spaceSchema({ slug: 's', type: 'organization', name: 'N' })['@type']).toBe('Organization')
+    expect(spaceSchema({ slug: 's', type: 'mystery', name: 'N' })['@type']).toBe('Organization')
+  })
+
+  it('leads image with the operator logo, then the per-space OG card, then the site image', () => {
+    const result = spaceSchema({ slug: 'sp', type: 'business', name: 'N', logoUrl: 'https://cdn/l.png' })
+    expect(result.image).toEqual([
+      'https://cdn/l.png',
+      `${SITE_URL}/spaces/sp/opengraph-image`,
+      `${SITE_URL}/opengraph-image`,
+    ])
+  })
+
+  it('falls back to the OG card + site image when no logo, and includes tagline as description', () => {
+    const result = spaceSchema({ slug: 'sp', type: 'business', name: 'N', tagline: 'Move well, locally.' })
+    expect(result.image).toEqual([`${SITE_URL}/spaces/sp/opengraph-image`, `${SITE_URL}/opengraph-image`])
+    expect(result).toHaveProperty('description', 'Move well, locally.')
+  })
+
+  it('omits description when there is no tagline', () => {
+    const result = spaceSchema({ slug: 'sp', type: 'practitioner', name: 'N' })
+    expect(result).not.toHaveProperty('description')
   })
 })
 

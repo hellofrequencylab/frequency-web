@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { FocusTemplate } from '@/components/templates'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy',
+  title: 'Privacy policy',
   description: 'How Frequency collects, uses, and protects your personal information.',
   alternates: { canonical: '/privacy' },
   robots: { index: true, follow: true },

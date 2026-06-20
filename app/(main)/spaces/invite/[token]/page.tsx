@@ -22,6 +22,9 @@ import { isError } from '@/lib/action-result'
 
 export const metadata = {
   title: 'Join a space',
+  // A tokened, single-use landing: never index or follow it. The token is private to the invitee
+  // and the page only seats a signed-in user or shows a sign-in prompt.
+  robots: { index: false, follow: false },
 }
 
 export default async function AcceptInvitePage({

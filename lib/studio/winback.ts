@@ -6,6 +6,12 @@
 
 import { completeRaw } from '@/lib/ai/complete'
 import { aiEnabled } from '@/lib/ai/client'
+import { MODELS } from '@/lib/ai/models'
+import { estimateCostUsd } from '@/lib/ai/budget'
+import { recordAiUsage } from '@/lib/ai/usage'
+import { withVoice } from '@/lib/ai/voice'
+
+const FEATURE = 'studio-winback'
 
 export const LAPSE_DAYS = 14
 
@@ -44,11 +50,11 @@ export async function filterByConsent(
   return kept
 }
 
-const SYSTEM_PROMPT = `You write short, warm win-back emails for Frequency, a platform for real-world community built on in-person "practices" (small recurring rituals members do together).
+// Task-specific contract only; the Frequency voice + no-em-dash rules come from withVoice (the
+// shared primer, lib/ai/voice.ts), so this prompt no longer hand-rolls them.
+const SYSTEM_PROMPT = `You write a short, warm win-back email for Frequency, a platform for real-world community built on in-person Practices (small recurring rituals members do together).
 
-Voice: warm, human, specific, never salesy or guilt-trippy. No exclamation spam, no emoji, no fake urgency, no invented facts about the member.
-
-Goal: gently invite a lapsed member back to log one practice. Keep it to 2–3 sentences.
+Goal: gently invite a lapsed member back to log one Practice. Never invent a fact about the member. Keep it to 2 or 3 sentences.
 
 Respond with ONLY a JSON object, no other text, no markdown fences:
 {"subject": "<= 60 characters", "body": "2-3 sentence plain-text email body"}`
@@ -83,10 +89,13 @@ function isValidDraft(v: unknown): v is WinbackDraft {
 
 // Bounded Claude drafter. Returns null (→ caller uses the deterministic fallback)
 // when AI is off, the call errors, or the output doesn't parse to a valid
-// {subject, body}. The model only DRAFTS copy; it never sends. Routes through the
-// shared AI chokepoint (lib/ai/complete) so the provider/model tier is governed in
-// one place — no per-call SDK instance, no hardcoded model id (the opus tier here
-// is the same 'claude-opus-4-8' as before).
+// {subject, body}. The model only DRAFTS copy; it never sends (still COPILOT-gated:
+// a human approves before anything goes out, see executeAction in agent.ts). Routes
+// through the shared AI chokepoint (lib/ai/complete) so the provider/model tier is
+// governed in one place — no per-call SDK instance, no hardcoded model id. Runs on
+// Haiku: a 2 to 3 sentence email needs no Opus, and tiering is the biggest cost
+// lever (lib/ai/models.ts). Voice comes from the shared withVoice primer, and the
+// usage ledger is tagged best-effort.
 export async function draftWinbackWithClaude(
   name: string,
   opts: { lapseDays?: number } = {},
@@ -98,19 +107,25 @@ export async function draftWinbackWithClaude(
 
   try {
     const res = await completeRaw({
-      tier: 'opus',
+      tier: 'haiku',
       maxTokens: 400,
       cacheSystem: true,
       // Simple, single-shot generation — no thinking needed. Respond with the
       // final JSON only (the prompt constrains the shape; we still parse defensively).
       thinking: { type: 'disabled' },
-      system: SYSTEM_PROMPT,
+      system: withVoice(SYSTEM_PROMPT),
       messages: [
         {
           role: 'user',
           content: `Member's first name: ${lead}. They have no verified practice in the last ${lapseDays} days. Write their win-back email.`,
         },
       ],
+    })
+    void recordAiUsage({
+      feature: FEATURE,
+      model: MODELS.haiku,
+      usage: res.usage,
+      costUsd: estimateCostUsd('haiku', res.usage),
     })
     const parsed = extractJson(res.text)
     if (isValidDraft(parsed)) {

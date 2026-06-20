@@ -13,6 +13,7 @@ import { ComposerShell } from '@/components/spaces/email/composer-shell'
 import { CampaignList } from '@/components/spaces/email/campaign-list'
 import { AnalyticsPanel } from '@/components/spaces/email/analytics-panel'
 import { SuppressionList } from '@/components/spaces/email/suppression-list'
+import { RecentSends } from '@/components/spaces/email/recent-sends'
 
 // OWNER EMAIL SURFACE (ENTITY-SPACES-BUILD §C Phase 3, "campaign authoring"). A centered, no-rail Focus
 // surface (registered 'none' for /spaces/<slug>/settings/email in page-chrome.ts, alongside the other
@@ -28,9 +29,9 @@ import { SuppressionList } from '@/components/spaces/email/suppression-list'
 // composer / enable card render read-only. Every WRITE action stays gated on canEditProfile
 // server-side, so staff viewing never confers a write.
 //
-// SENDING is the sibling backbone agent's seam (sendSpaceCampaign / the kill-switch). This surface
-// authors + schedules; the actual send is wired by the integrator (the actions return a placeholder
-// until then). The analytics agent's panel embeds at the marked slot (NOT imported here).
+// SENDING is wired to the backbone seam (sendSpaceCampaign / the kill-switch in @/lib/spaces/email).
+// This surface authors + schedules + sends. The Deliverability section renders the analytics panel
+// (AnalyticsPanel) and the opt-out list (SuppressionList), both self-fetching and gated server-side.
 
 export const metadata = {
   title: 'Email',
@@ -99,6 +100,9 @@ export default async function SpaceEmailPage({
             </Suspense>
             <Suspense fallback={null}>
               <SuppressionList spaceId={space.id} />
+            </Suspense>
+            <Suspense fallback={null}>
+              <RecentSends spaceId={space.id} />
             </Suspense>
           </div>
         </section>

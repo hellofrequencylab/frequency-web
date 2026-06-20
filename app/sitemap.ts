@@ -8,6 +8,7 @@ import {
 import { listPublicJourneys } from "@/lib/journey-plans";
 import { listActivePartners } from "@/lib/partners/read";
 import { listPublicPractices } from "@/lib/practices";
+import { listNetworkedSpaces } from "@/lib/spaces/discovery";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
 import { getCityCategoryHubs } from "@/app/discover/events/_data";
@@ -54,6 +55,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/discover/topics`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/discover/partners`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/discover/practices`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    // The entity Spaces directory (the networked profile network) + the indexable pricing page.
+    { url: `${SITE_URL}/spaces`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${SITE_URL}/pricing`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     // The four Pillar landing pages (fixed taxonomy — Mind · Body · Spirit · Expression).
     ...(["mind", "body", "spirit", "expression"] as const).map((slug) => ({
       url: `${SITE_URL}/discover/practices/pillar/${slug}`,
@@ -99,7 +103,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let organizerRoutes: MetadataRoute.Sitemap = [];
   let hubRoutes: MetadataRoute.Sitemap = [];
   try {
-    const [channels, circles, events, journeys, organizers, hubs, partners, practices] = await Promise.all([
+    const [channels, circles, events, journeys, organizers, hubs, partners, practices, spaces] = await Promise.all([
       getTopicalChannels(),
       getPublicCircles(200),
       getPublicEvents(200),
@@ -110,8 +114,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       getCityCategoryHubs().catch(() => []),
       listActivePartners({ limit: 500 }).catch(() => []),
       listPublicPractices("top").catch(() => []),
+      // Networked entity Spaces, via the same redaction-safe reader the directory uses. It returns
+      // ONLY visibility='network', status='active' Spaces and excludes the root, so PRIVATE Spaces
+      // are isolated OUT of the sitemap by construction (fail-safe to [] on any error).
+      listNetworkedSpaces().catch(() => []),
     ]);
     organizerRoutes = organizers;
+
+    const spaceRoutes: MetadataRoute.Sitemap = spaces.map((s) => ({
+      url: `${SITE_URL}/spaces/${s.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+      images: [`${SITE_URL}/spaces/${s.slug}/opengraph-image`],
+    }));
 
     const partnerRoutes: MetadataRoute.Sitemap = partners.map((p) => ({
       url: `${SITE_URL}/discover/partners/${p.slug}`,
@@ -175,6 +191,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...journeyRoutes,
       ...partnerRoutes,
       ...practiceRoutes,
+      ...spaceRoutes,
     ];
   } catch {
     // Fall back to static routes only.

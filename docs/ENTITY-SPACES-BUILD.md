@@ -430,6 +430,17 @@ real money, defer.
 
 ## Phase 0: Foundation (the isolation spine) 🟢
 
+> **✅ Shipped (the tenancy spine is live; see ADR-320 + ADR-321 + ADR-322).** The isolation
+> primitive `space_members` + `space_invites` is migrated (`20260711010000`, `20260712000000`,
+> ADR-320), with the `is_space_admin`/`is_space_member` `SECURITY DEFINER` helpers
+> (`20260711060000`, `20260711080000`) the capability resolver reads; `space_id` ownership FKs are on
+> `circles`/`events`/`practices`/`journey_plans`/`programs` (ADR-321), backfilled to the root space and
+> contracted with the read/write isolation policies + the default-to-root insert trigger (ADR-328 `20260711090000`,
+> ADR-329 `20260711100000`, ADR-331 `20260712030000`); and `spaces.visibility`/`plan`/`entitlements`
+> are added (ADR-322), with the visibility-aware `spaces` SELECT policy security fix (ADR-326
+> `20260711080000`). The root space owns all pre-existing data and behaves exactly as today. The
+> granular Epic boxes below are the original plan of record; this block is the authoritative status.
+>
 > Nothing member-facing. Everything reversible. This is the gate for all of Phase 1. Uses the
 > expand -> migrate -> contract approach (ENTITY-SPACES-SYSTEM §4.12). All free / existing infra.
 
@@ -484,6 +495,15 @@ real money, defer.
 
 ## Phase 0.5: Streamline the existing system to best practice 🟢
 
+> **✅ Shipped (the streamline landed; see ADR-318 + ADR-319 + ADR-323).** The layout store is
+> re-keyed to the space layer (`page_settings` carries `space_id`; the cascade extends to `space ->
+> route -> section -> global`, the `space` layer of ADR-323) with the cross-tenant cache keys fixed; the
+> AI layer is consolidated onto the one `completeText` chokepoint behind a model-agnostic gateway
+> (ADR-318), the two bypass leaks closed; the kit consolidation shipped (ADR-319: 10 modals onto
+> `ui/Dialog`, `SidebarCard` unified, the moderation `ReportDialog` renamed `ContentReportDialog`);
+> and template adoption finished (the `people/[handle]` hand-roller is the reference Detail page).
+> The granular Epic boxes below are the original plan of record; this block is the authoritative status.
+>
 > From a current-state audit (the system is already ~85% best-practice). This is consolidation
 > plus ONE real re-keying (`page_settings` -> `space_id`) and ONE AI-gateway consolidation, not
 > a rebuild. Ordered test-first / expand-contract so live pages never break. Lock it in BEFORE
@@ -533,8 +553,11 @@ real money, defer.
 > owner gate D-2); role tabs keep their **ids on the five wired route segments** and vary only labels +
 > CTA verb, so dedicated team/join/donate/enroll routes are a later step; the four roles share the
 > `dawn` skin (bespoke per-role skins later). **Deferred seams:** the `space_follows` ledger (Follow is
-> a UI toggle today), the profile module-order layout editor, and role-specific deep modules
-> (memberships · donations + tax receipts · curriculum journeys). The granular Epic 1.x /
+> a UI toggle today), the profile module-order layout editor, role-specific deep modules
+> (memberships · donations + tax receipts · curriculum journeys), and the per-space `space_embeddings`
+> table + `space_id`-scoped RAG retrieval (Epic 1.9): the Vera draft seam (ADR-324) ships on the
+> consolidated gateway with a daily cap (ADR-330) but draws from the owner's prompt, not yet from a
+> per-space pgvector index. The granular Epic 1.x /
 > 0.5 boxes below are left as the original plan of record; this block is the authoritative status.
 >
 > **Next wave (PR #926, ADR-325).** The fifth role **Event Space** now ships (CTA "Get tickets",
@@ -642,7 +665,8 @@ real money, defer.
 - [ ] Voice: final §10 checklist sign-off on all member-facing copy.
 
 ### Epic 1.13: Docs / ADRs for Phase 1
-- [ ] ADR-317: the entity module catalog + per-type blueprint composition.
+- [ ] ADR-323: the entity module catalog + per-type blueprint composition (the profile shell).
+- [ ] ADR-324: the write side (create wizard, owner Focus settings, the per-space Vera draft seam).
 - [ ] ADR-318: the AI gateway seam (decouple Vera from the raw Anthropic SDK).
 - [ ] Update `docs/PAGE-FRAMEWORK.md` route map with `/spaces/*` (Detail, scoped rail).
 - [ ] Update `docs/THEME.md` if any token/accent guardrail changed.
@@ -655,6 +679,17 @@ real money, defer.
 > ENTITY-SPACES-PLAN §12.
 
 ### Phase 2: QR studio + CRM per space 🟢 (mostly free/existing)
+
+> **✅ Shipped (per-space reach + relationships are live; see ADR-332 + ADR-333 + ADR-334).**
+> Per-Space QR codes + a constrained splash landing shipped (ADR-332, `20260713000000`: `qr_codes`
+> gains `space_id` + `splash jsonb`, an app-code per-plan code cap, the `/q/<slug>` splash redirect,
+> the `/spaces/<slug>/settings/qr` owner surface); per-Space CRM shipped additively (ADR-333,
+> `20260713010000`: nullable `space_id` on `crm_deals`/`crm_activities`/`crm_stages`/`contacts` with
+> the global `/admin/crm` untouched, plus `client_notes` as fail-closed GDPR/CCPA personal data); and
+> Event Space check-in reuses `nodes`/`captures` with additive space scoping (ADR-334,
+> `20260713020000`: nullable `space_id` + a `nodes.kind` check-in marker, the `/spaces/<slug>/settings/checkin`
+> roster). The granular Epic boxes below are the original plan of record; this block is the authoritative status.
+
 - [ ] Migration: add `space_id` + `splash jsonb` to `qr_codes`; per-plan code cap.
 - [ ] Splash builder at `/q/<slug>` reusing the constrained block pattern (the same kit, not Puck).
 - [ ] Migration: add `space_id` scope to `crm_deals` / `crm_activities` / `crm_stages`; per-space pipeline.
@@ -663,6 +698,23 @@ real money, defer.
 - [ ] Per-space QR analytics (RLS-scoped); contract tests; copy; ADR.
 
 ### Phase 3: Email / marketing / comms 🟡 (Resend free tier now, costs scale later)
+
+> **✅ Shipped (per-space email send + authoring + analytics are live; see ADR-335 + ADR-336 + ADR-337).**
+> The fail-closed send backbone shipped on the existing Resend integration (ADR-335,
+> `20260714000000`: `spaces.email_enabled` kill-switch default false, `outreach_sends` ledger,
+> per-Space `email_suppressions` scope, a 500/day cap, RFC 8058 one-click unsubscribe scoped per
+> Space); the campaign composer + audiences shipped over the Space's own `contacts` at
+> `/spaces/<slug>/settings/email` (ADR-336); and deliverability reads (sent/delivered/bounced/complained
+> + the suppression list, union the global rows) shipped fail-safe (ADR-337). Sending reuses the shared
+> verified Resend `send.` subdomain. The granular Epic boxes below are the original plan of record; this
+> block is the authoritative status.
+>
+> **⚠️ Still-open DEFERRALS (counsel / cost gated, NOT shipped):**
+> - **SMS / A2P 10DLC / TCPA** (the `sms_consent` + `space_id` work). Needs a registered brand + campaign.
+> - **Per-Space `sender_domains` + DKIM** (a custom per-Space sending domain with aligned Return-Path). Spaces share the verified `send.` subdomain for now.
+> - **Amazon SES "tenants" at scale** (the migration off Resend once volume justifies it). 🔴 defer.
+> - **AUP / anti-spam terms + Art. 28 DPA + per-space physical address** (the legal copy). ⚠️ Counsel: CAN-SPAM initiator reach; Vera joint-controller. The composer requires only a plain anti-spam acknowledgment today.
+
 - [ ] Integrate Resend (already in the stack); per-space sender domain (DKIM + aligned Return-Path; DMARC aligns on SPF+DKIM).
 - [ ] Migration: `sender_domains`, `outreach_sends`; `space_id` on `campaigns`; per-space `email_suppressions` scope.
 - [ ] Audience builder over `contacts` (segments/tags); campaign composer (reuse the block pattern); schedule.

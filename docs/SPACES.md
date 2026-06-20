@@ -15,6 +15,26 @@ Status legend: ✅ built · ⏳ partial · 🔴 not built yet · 🅿️ parked.
 
 ---
 
+## Status update (2026-06): the tenancy spine and entity profiles shipped
+
+> **What changed since this doc was written.** The Space model below is the strategy and the
+> primitive; the **Entity Spaces** build then shipped Phases 0 to 3 of it (the tenancy spine,
+> `/spaces` profiles, and per-space QR / CRM / check-in / email). This doc is no longer the
+> current build status; read it for the *why*, and the trilogy + ADRs for what is live:
+
+- **The build spec + status:** [`ENTITY-SPACES-SYSTEM.md`](ENTITY-SPACES-SYSTEM.md) (the data
+  model + architecture), [`ENTITY-SPACES-BUILD.md`](ENTITY-SPACES-BUILD.md) (the phased backlog
+  + the per-phase `✅ Shipped` status blocks), and [`ENTITY-SPACES-PLAN.md`](ENTITY-SPACES-PLAN.md)
+  (strategy + roadmap).
+- **The decisions:** [ADR-320 through ADR-337](DECISIONS.md) (the tenancy primitive, the profile
+  shell, the deep features, and the security-isolation hardening).
+- **Two corrections to §1 below:** (1) the live `spaces.type` set now includes **`event_space`**
+  (a venue / retreat role, ADR-325), in addition to the types in the §1 table. (2) The
+  public-vs-walled axis is now the first-class `spaces.visibility` column (`network` vs `private`,
+  ADR-322), distinct from the `network_connected` gamification switch in §3.
+
+---
+
 ## 0. Why this exists
 
 The grand vision has many subsidiary verticals and many sub-brands: Practitioners,
@@ -37,7 +57,7 @@ one operator (a practitioner, a business, an org, a Lab, a Hook-style coaching b
 
 | Facet | What it carries |
 |---|---|
-| **Type** | `practitioner` · `business` · `organization` · `lab` · `partner` · `coaching` (Hook-like) — drives the default capabilities, templates, and onboarding track. |
+| **Type** | `practitioner` · `business` · `organization` · `event_space` (venue / retreat, ADR-325) · `lab` · `partner` · `coaching` (Hook-like). Drives the default capabilities, templates, and onboarding track. |
 | **Brand / skin** | name, logo, palette, and a `skin` token set (the `[data-skin]` axis of the four-axis theme model, [`docs/THEME.md`](THEME.md)). The look is the operator's; the kit underneath is ours. |
 | **Domain** | a Frequency subpath, a subdomain, or a custom domain — routing resolves the Space from the host/path. |
 | **Entity** | `foundation` · `labs` · `partner` — the money-partition tag (PLATFORM-VISION §1). A Space's commerce posts to `financial_transactions` under its entity; money never commingles. |

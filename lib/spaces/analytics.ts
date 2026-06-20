@@ -59,10 +59,10 @@ export async function recordSpaceProfileView(
 /**
  * Record one primary-CTA click on a Space profile, tagged with `space_id`.
  *
- * Provided as the trackable seam for when the CTA routes through an action/route handler that
- * can call it (e.g. a booking action). It is NOT wired into the current plain `<Link>` CTA,
- * which is bare navigation with no server seam to hang a write on (instrumenting it would mean
- * a client wrapper + endpoint — out of scope). Fail-safe and fire-and-forget like the view.
+ * Wired into the entity profile's primary CTA (Epic 1.11): the session-list CTA renders through the
+ * EntityCtaLink client wrapper, which fires recordSpaceCtaClickAction (the thin 'use server' seam in
+ * analytics-actions.ts) fire-and-forget on click, then navigates. Each click is its own row. Fail-safe
+ * and fire-and-forget like the view: it never throws into, or blocks, the click path.
  */
 export async function recordSpaceCtaClick(
   spaceId: string,

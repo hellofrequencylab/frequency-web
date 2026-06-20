@@ -11,9 +11,15 @@ import { completeRaw } from './complete'
 import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
-import { recordAiUsage } from './usage'
+import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
 import { withJourneyShape } from './journey-shape'
+
+const FEATURE = 'journey-spark'
+// Drafting a title, a one-line promise, a short overview and a weekly arc is structured but not
+// deep reasoning, so Sonnet clears the quality bar at a fraction of Opus's cost (lib/ai/models.ts:
+// "escalate to Opus only deliberately"). The composition + edit paths stay on Opus.
+const SPARK_TIER = 'sonnet' as const
 
 export type JourneyPace = 'light' | 'medium'
 
@@ -144,6 +150,8 @@ export async function draftJourneySpark(
   input: SparkAnswers & { profileId?: string | null; sourceText?: string },
 ): Promise<JourneySpark | null> {
   if (!aiEnabled()) return null
+  // Per-feature daily cap (lib/ai/budget.ts): over budget => fall back to hand-entry, never bill on.
+  if (await featureOverBudget(FEATURE)) return null
 
   const src = input.sourceText?.trim().slice(0, 8000)
   const userText = [
@@ -163,7 +171,7 @@ export async function draftJourneySpark(
 
   try {
     const res = await completeRaw({
-      tier: 'opus',
+      tier: SPARK_TIER,
       maxTokens: 600,
       thinking: { type: 'disabled' },
       system: withVoice(withJourneyShape(SYSTEM)),
@@ -172,10 +180,10 @@ export async function draftJourneySpark(
       messages: [{ role: 'user', content: userText }],
     })
     void recordAiUsage({
-      feature: 'journey-spark',
-      model: MODELS.opus,
+      feature: FEATURE,
+      model: MODELS[SPARK_TIER],
       usage: res.usage,
-      costUsd: estimateCostUsd('opus', res.usage),
+      costUsd: estimateCostUsd(SPARK_TIER, res.usage),
       profileId: input.profileId ?? null,
     })
     const block = res.content.find(

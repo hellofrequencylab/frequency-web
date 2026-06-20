@@ -8,7 +8,7 @@
 // surfaces import, so the mutations cross the network boundary as proper Server Actions:
 //   composer-form.tsx     -> createSpaceCampaign / updateSpaceCampaign
 //   composer-send.tsx      -> scheduleSpaceCampaign / sendSpaceCampaign
-//   email-enable-card.tsx  -> setSpaceEmailEnabled (the kill-switch placeholder)
+//   email-enable-card.tsx  -> setSpaceEmailEnabled (the backbone kill-switch, @/lib/spaces/email-toggle)
 //
 // SERVER components (the page, campaign-list) import the READ action (listSpaceCampaigns) directly
 // from lib/spaces/campaigns.ts: it never crosses a client boundary, so it needs no wrapper. The
@@ -73,8 +73,8 @@ export async function scheduleSpaceCampaign(
   return res
 }
 
-/** Send a campaign now to a resolved audience. Gated on canEditProfile; the send itself is the
- *  integrator's seam (the implementation returns a placeholder until it is wired). */
+/** Send a campaign now to a resolved audience. Gated on canEditProfile; the implementation resolves
+ *  the audience and hands it to the send backbone (@/lib/spaces/email), then revalidates the surface. */
 export async function sendSpaceCampaign(
   spaceId: string,
   slug: string,
@@ -103,8 +103,8 @@ export async function countSpaceAudience(
 }
 
 /** Turn this Space's email on / off (the per-Space kill-switch). `acknowledged` is the owner's
- *  anti-spam confirmation, required to ENABLE. Gated on canEditProfile (see the implementation). The
- *  real backbone seam (setSpaceEmailEnabled in @/lib/spaces/email) replaces the placeholder. */
+ *  anti-spam confirmation, required to ENABLE. Gated on canEditProfile (see the implementation in
+ *  @/lib/spaces/email-toggle, the backbone kill-switch). */
 export async function setSpaceEmailEnabled(
   spaceId: string,
   slug: string,

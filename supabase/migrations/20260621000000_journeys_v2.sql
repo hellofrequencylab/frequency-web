@@ -3,9 +3,9 @@
 -- cohort layer (runs + enrollments). The season-coupled fields are left in place but
 -- DEPRECATED (dropped in J5 cleanup), so this migration stays additive + idempotent.
 --
--- ⚠️ NOT yet applied. Apply via the Supabase SQL Editor (db push isn't safe against this
--- project's migration-history baseline — see docs/WORKFLOW.md), then regenerate
--- lib/database.types.ts. Additive + idempotent, so safe to re-run.
+-- ✅ Applied (live; the v2 objects exist in the schema). Was applied via the Supabase SQL
+-- Editor (db push isn't safe against this project's migration-history baseline, see
+-- docs/WORKFLOW.md), then lib/database.types.ts regenerated. Additive + idempotent, so safe to re-run.
 
 -- ── 1. Plan: drip + certificate (season fields left deprecated, not dropped here) ──────
 alter table public.journey_plans
