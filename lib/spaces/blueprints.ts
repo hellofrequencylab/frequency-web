@@ -227,7 +227,17 @@ const EVENT_SPACE: RoleBlueprint = {
 
 /** Every registered role blueprint, keyed by `spaces.type`. Practitioner is the Wave A first
  *  role; Business/Organization/Coaching/Event Space ship in Wave B (this is the §2.10 extension
- *  point: a descriptor, no core edit). */
+ *  point: a descriptor, no core edit).
+ *
+ *  CANONICAL ROLE-TYPE CONTRACT (reconciled in ADR-339, recorded in docs/SPACES.md). The full
+ *  role-type set is: root, practitioner, business, organization, coaching, event_space, lab,
+ *  partner. The keys registered here are exactly the PROVISIONABLE types: the ones the create
+ *  wizard offers (it derives its choices from this registry via blueprintForType) and the profile
+ *  shell can render. `root` is the platform host (never wizard-provisioned, no member-facing
+ *  blueprint). `lab` and `partner` are live role values in the SpaceType union but their blueprints
+ *  are DEFERRED to item ADMIN-05; until that ships they are intentionally absent here, so the
+ *  wizard does not offer them and blueprintForType fails closed for them. Adding a Lab/Partner
+ *  blueprint = a descriptor here (no core edit); do NOT remove their values from SpaceType. */
 const BLUEPRINTS: Record<string, RoleBlueprint> = {
   practitioner: PRACTITIONER,
   business: BUSINESS,

@@ -1,9 +1,11 @@
 // Notification preferences helper.
 //
 // Reads from `notification_preferences` (one row per profile). Missing-row
-// case returns the canonical defaults — opt-in for email + inapp, off for
-// push (P1.4 hasn't shipped yet). This lazy-create pattern avoids the need
-// to backfill every existing profile when the table ships.
+// case returns the canonical defaults: opt-in for email + inapp, opt-OUT for
+// push. Push is live (see lib/push.ts), but it stays off by default because it
+// needs an explicit browser-permission grant before it can deliver, so a member
+// opts in rather than starting subscribed. This lazy-create pattern avoids the
+// need to backfill every existing profile when the table ships.
 //
 // All reads use the admin client because the caller is typically a server
 // action sending email/in-app, not the user themselves. RLS still protects

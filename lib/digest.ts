@@ -67,7 +67,7 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
     circle_id: string
     circles: { hub_id: string | null; hubs: { nexus_id: string | null } | null } | null
   }
-  const mems = (memberships ?? []) as unknown as MembershipRow[]
+  const mems = (memberships ?? []) as MembershipRow[]
 
   const circleIds = mems.map((m) => m.circle_id)
   const hubIds    = mems.map((m) => m.circles?.hub_id).filter((x): x is string => !!x)
@@ -96,7 +96,7 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
       id: string; title: string; excerpt: string | null; published_at: string
       author: { display_name: string } | null
     }
-    dispatches = ((dispRaw ?? []) as unknown as DispRow[]).map((d) => ({
+    dispatches = ((dispRaw ?? []) as DispRow[]).map((d) => ({
       id:         d.id,
       title:      d.title,
       excerpt:    d.excerpt,
@@ -119,7 +119,7 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
       slug: string; is_cancelled: boolean
     } | null
   }
-  const upcomingEvents: DigestEvent[] = ((rsvps ?? []) as unknown as RsvpRow[])
+  const upcomingEvents: DigestEvent[] = ((rsvps ?? []) as RsvpRow[])
     .map((r) => r.events)
     .filter((e): e is NonNullable<RsvpRow['events']> => !!e && !e.is_cancelled)
     .filter((e) => e.starts_at >= new Date().toISOString() && e.starts_at <= weekAhead)
@@ -152,7 +152,7 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
     id: string; display_name: string; auth_user_id: string | null
     current_season_rank: string | null; current_season_zaps: number | null
   }
-  const p = profile as unknown as ProfileRow
+  const p = profile as ProfileRow
 
   return {
     profileId:      p.id,

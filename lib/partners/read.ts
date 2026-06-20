@@ -120,7 +120,7 @@ export async function listLiveOffers(profileId: string | null): Promise<LiveOffe
     partner_id: string
     partners: { slug: string; name: string; city: string | null; status: string } | null
   }
-  const live = ((offers ?? []) as unknown as Row[]).filter(
+  const live = ((offers ?? []) as Row[]).filter(
     (o) =>
       o.partners?.status === 'active' &&
       (!o.valid_until || o.valid_until >= nowIso),

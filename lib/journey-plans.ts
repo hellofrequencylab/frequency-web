@@ -293,7 +293,7 @@ export async function getPlan(
   slug: string,
 ): Promise<{ plan: JourneyPlan; items: JourneyPlanItem[] } | null> {
   const { data: planRow } = await db().from('journey_plans').select(PLAN_COLS).eq('slug', slug).maybeSingle()
-  const plan = (planRow ?? null) as unknown as JourneyPlan | null
+  const plan = (planRow ?? null) as JourneyPlan | null
   if (!plan) return null
   const { data: itemRows } = await db()
     .from('journey_plan_items')
@@ -766,7 +766,7 @@ export async function adoptPlan(profileId: string, planId: string): Promise<void
 export async function forkPlan(profileId: string, planId: string): Promise<JourneyPlan | null> {
   const client = db()
   const { data: srcRow } = await client.from('journey_plans').select(PLAN_COLS).eq('id', planId).maybeSingle()
-  const src = srcRow as unknown as JourneyPlan | null
+  const src = srcRow as JourneyPlan | null
   if (!src || src.visibility !== 'public') return null
 
   const { data: itemRows } = await client
@@ -788,7 +788,7 @@ export async function forkPlan(profileId: string, planId: string): Promise<Journ
     })
     .select(PLAN_COLS)
     .maybeSingle()
-  const fork = forkRow as unknown as JourneyPlan | null
+  const fork = forkRow as JourneyPlan | null
   if (!fork) return null
 
   if (items.length > 0) {
@@ -855,7 +855,7 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
     })
     .select(PLAN_COLS)
     .maybeSingle()
-  const dup = dupRow as unknown as JourneyPlan | null
+  const dup = dupRow as JourneyPlan | null
   if (!dup) return null
 
   const { data: itemRows } = await client

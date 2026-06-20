@@ -33,6 +33,20 @@ Status legend: ✅ built · ⏳ partial · 🔴 not built yet · 🅿️ parked.
   public-vs-walled axis is now the first-class `spaces.visibility` column (`network` vs `private`,
   ADR-322), distinct from the `network_connected` gamification switch in §3.
 
+> **Canonical role-type set (2026-06-20, ADR-339).** Two sources of truth had drifted: the
+> `SpaceType` union in `lib/spaces/types.ts` listed `lab`/`partner` but not `event_space`, while the
+> blueprint registry in `lib/spaces/blueprints.ts` had `event_space` but no `lab`/`partner`. They are
+> now reconciled to one contract. The **full role-type set** (every value a `spaces.type` row may
+> hold) is: `root`, `practitioner`, `business`, `organization`, `coaching`, `event_space`, `lab`,
+> `partner`. All eight are members of `SpaceType`. The **provisionable set** (a member can stand one
+> up in the create wizard, which derives its choices from the blueprint registry via
+> `blueprintForType`) is the subset with a registered blueprint: `practitioner`, `business`,
+> `organization`, `coaching`, `event_space` (plus `root`, the platform host, which is never
+> wizard-provisioned and has no member-facing blueprint). **`lab` and `partner` stay in the union but
+> their blueprints are intentionally DEFERRED to item ADMIN-05**, so they are not yet provisionable
+> and `blueprintForType` fails closed for them. Adding a Lab or Partner blueprint is a descriptor in
+> `blueprints.ts` (the §2.10 extension point), never a removal from `SpaceType`.
+
 ---
 
 ## 0. Why this exists

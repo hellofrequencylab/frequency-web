@@ -1,0 +1,14 @@
+// FIXTURE (not compiled/collected — read as text by check-authz-lib.test.ts).
+// A confused-deputy `lib/` mutation helper: it MUTATES through the RLS-bypassing admin
+// client, takes a caller-supplied id, and writes by that bare id with NO guard and NO
+// ownership/scope binding. This is exactly the class the lib scan must FLAG (B8 / ADR-274).
+
+import { createAdminClient } from '@/lib/supabase/admin'
+
+/** Deletes a note by id — trusts whatever id the caller hands it. No gate, no scope. */
+export async function deleteNote(noteId: string): Promise<void> {
+  const admin = createAdminClient()
+  // Bare, unscoped privileged delete: no caller check, no owner_id / space_id binding.
+  await admin.from('notes').delete()
+  void noteId
+}

@@ -61,9 +61,10 @@ const TYPE_LABEL: Record<SpaceType, string> = {
   practitioner: 'practitioner',
   business: 'business',
   organization: 'organization',
+  coaching: 'coach',
+  event_space: 'event space',
   lab: 'lab',
   partner: 'partner',
-  coaching: 'coach',
 }
 
 function typeLabel(type: SpaceType | null | undefined): string {

@@ -42,6 +42,31 @@ describe('blueprintForType', () => {
     expect(blueprintForType(null)).toBeNull()
     expect(blueprintForType(undefined)).toBeNull()
   })
+
+  it('has NO blueprint yet for lab / partner (their blueprints are deferred to ADMIN-05, ADR-339)', () => {
+    // `lab` and `partner` are live values in the SpaceType union but are NOT provisionable until
+    // their blueprints ship (ADMIN-05). The registry must fail closed for them today, so the
+    // create wizard (which derives its choices from blueprintForType) does not offer them.
+    expect(blueprintForType('lab')).toBeNull()
+    expect(blueprintForType('partner')).toBeNull()
+  })
+})
+
+describe('the canonical PROVISIONABLE role set (ADR-339)', () => {
+  it('registers a blueprint for exactly the provisionable role types', () => {
+    // The blueprint registry is the source of truth for which types the wizard can stand up. The
+    // canonical provisionable set is root, practitioner, business, organization, coaching,
+    // event_space (root is the platform host with no member-facing blueprint, so it has none here);
+    // lab and partner are deferred (ADMIN-05). This locks the registry to that contract.
+    const PROVISIONABLE_WITH_BLUEPRINT = ['practitioner', 'business', 'organization', 'coaching', 'event_space']
+    for (const type of PROVISIONABLE_WITH_BLUEPRINT) {
+      expect(blueprintForType(type)).not.toBeNull()
+    }
+    // The deferred and host types have no blueprint yet.
+    for (const type of ['root', 'lab', 'partner']) {
+      expect(blueprintForType(type)).toBeNull()
+    }
+  })
 })
 
 // ── Wave B role blueprints (Business · Organization · Coaching · Event Space, §2.5 - §2.8) ──────

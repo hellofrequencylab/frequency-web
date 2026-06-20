@@ -2,14 +2,23 @@
 // tenant of the one app/DB: its own type, brand/skin, domain, entity (money partition), a
 // network-connected switch, and the set of registered verticals it turns on.
 
+// The canonical role-type set (reconciled in ADR-339, see docs/SPACES.md). Every value a
+// `spaces.type` row can hold lives here. PROVISIONABLE types (a member can stand one up in the
+// create wizard) are the ones with a registered blueprint in lib/spaces/blueprints.ts: root,
+// practitioner, business, organization, coaching, event_space. `lab` and `partner` are live
+// platform/internal role values (an operator-gated CHECK and the §1 type facet, docs/SPACES.md)
+// but their blueprints are intentionally DEFERRED to item ADMIN-05, so they are NOT yet
+// provisionable through the wizard. They stay in the union so existing rows and the discovery /
+// label paths type-check; do not remove them when adding the blueprints.
 export type SpaceType =
   | 'root'
   | 'practitioner'
   | 'business'
   | 'organization'
+  | 'coaching'
+  | 'event_space'
   | 'lab'
   | 'partner'
-  | 'coaching'
 
 export type SpaceStatus = 'active' | 'suspended' | 'archived'
 

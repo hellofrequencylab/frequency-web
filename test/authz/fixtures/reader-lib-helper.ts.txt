@@ -1,0 +1,12 @@
+// FIXTURE (not compiled/collected — read as text by check-authz-lib.test.ts).
+// A pure READER through the admin client: it selects, it never writes. The lib scan targets
+// MUTATION helpers only, so this must PASS even with no guard (reads are RLS-bypassing but are
+// not the confused-deputy write class this scan covers).
+
+import { createAdminClient } from '@/lib/supabase/admin'
+
+export async function listNotes(): Promise<unknown[]> {
+  const admin = createAdminClient()
+  const { data } = await admin.from('notes').select('*')
+  return data ?? []
+}
