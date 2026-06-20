@@ -60,6 +60,15 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // ── Friends blocks (/friends) — the assignable section of the people surface ──
   { id: 'friends-impact', label: 'Your impact', description: 'The member’s own private lead-funnel view: the people on Frequency because of them. Shows nothing until they’ve brought someone in.' },
 
+  // ── Leaderboard blocks (/crew/leaderboard) — the consistency layer ──
+  { id: 'leaderboard-consistency', label: 'Consistency', description: 'The daily practice streak (bounded forgiveness) and the weekly show-up rhythms — how the steady person wins, beneath the board.' },
+
+  // ── Journal blocks (/journal) — the member’s captured-moments log ──
+  { id: 'journal-entries', label: 'Journal entries', description: 'The member’s captured moments grouped by day, newest first — the feed as a journal.' },
+
+  // ── Library review blocks (/library/review) — the leadership approval queue ──
+  { id: 'library-review-queue', label: 'Review queue', description: 'Community submissions waiting to join the Library — approve to publish, reject to send back (Host+ only).' },
+
   // ── The Vault blocks (/crew/store) — the member's earnings + the Gem Store ──
   { id: 'vault-standing', label: 'Standing hero', description: 'The four counts — Zaps · Rank · Streak · Gems — the one way a member’s standing renders.' },
   { id: 'vault-leaderboard', label: 'Standing link', description: 'A card linking to the cooperative leaderboard and streaks.' },
@@ -133,6 +142,23 @@ const JOURNEYS_MODULE_IDS = ['journeys-start', 'journeys-mine', 'journeys-librar
 // block, so the page renders it through <PageModules> like every other module-driven surface.
 const FRIENDS_MODULE_IDS = ['friends-impact'] as const
 
+// The Leaderboard page (/crew/leaderboard). Only the consistency layer is a module: the collective
+// goal, the viewer's standing band, and the individual board all read the scope/track search params a
+// nested module never receives, so they stay hand-composed in the page (mirroring how /practices keeps
+// its facet toolbar and /friends keeps its mode buckets). The consistency block is keyed only on the
+// viewer, so it converts cleanly.
+const LEADERBOARD_MODULE_IDS = ['leaderboard-consistency'] as const
+
+// The Journal page (/journal). The whole interior is one self-fetching block — the member's captured
+// moments grouped by day (including the first-capture empty) — so it converts wholesale to one module.
+const JOURNAL_MODULE_IDS = ['journal-entries'] as const
+
+// The Library review queue (/library/review). The whole interior is one self-fetching, Host-gated
+// block, so it converts wholesale. (The /library index itself stays hand-composed: its grid is a
+// faceted, type/pillar search-param-driven view a nested module can't receive — like the /practices
+// toolbar's facets, but with no x-search seam here.)
+const LIBRARY_REVIEW_MODULE_IDS = ['library-review-queue'] as const
+
 // The Practices page (/practices) blocks, in default render order. The faceted Practice Library is
 // a module too (practices-library): it's URL-driven, so it reads the page's facets from the
 // `x-search` request header (proxy.ts) rather than searchParams, which a nested module never gets.
@@ -186,6 +212,9 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
   '/friends': FRIENDS_MODULE_IDS,
+  '/crew/leaderboard': LEADERBOARD_MODULE_IDS,
+  '/journal': JOURNAL_MODULE_IDS,
+  '/library/review': LIBRARY_REVIEW_MODULE_IDS,
   '/practices': PRACTICES_MODULE_IDS,
   // Section scope: applies to every /practices/<id> detail page (shared layout).
   '/practices/*': PRACTICE_DETAIL_MODULE_IDS,

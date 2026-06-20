@@ -9,9 +9,12 @@ export const MODULE_ROUTES: readonly string[] = [
   '/lead',
   '/crew',
   '/crew/store',
+  '/crew/leaderboard',
   '/admin/content/journeys',
   '/journeys',
   '/friends',
+  '/journal',
+  '/library/review',
   '/practices',
 ]
 
