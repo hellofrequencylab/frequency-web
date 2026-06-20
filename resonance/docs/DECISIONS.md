@@ -114,6 +114,17 @@ parent frame (live UI) and an HMAC-signed server-to-server webhook (durable,
 survives a closed iframe). The embed route sets `frame-ancestors *` (restrict to
 host origins in production). We never write into the host's tables (ADR-010).
 
+### ADR-018 — Dark-first OKLCH token system, authored as Tailwind v4 `@theme` ✅
+Resonance owns its entire design system (zero dependency on Frequency's UI kit, per
+ISOLATION). The palette is authored in OKLCH for perceptual-uniform ramps, dark mode,
+and per-venue re-hue from a single `--venue-h`. Tokens follow the 3-tier W3C DTCG
+model (primitive -> semantic -> component) with effort concentrated in the semantic
+layer, so theming and white-label are token swaps. They live in one `app/theme.css`
+`@theme` layer (Tailwind v4 is already in the stack and emits OKLCH), so there is no
+separate token build step at this size; a DTCG JSON export stays possible for Figma
+sync later. Accessibility targets are WCAG 2.2 AA as a floor and APCA (Lc) for what
+actually reads on dark surfaces. Full spec: `docs/DESIGN.md`.
+
 ### ADR-010 — Gamification mirrors, not merges, the host economy ✅
 Zaps/reputation are computed in-app on an append-only ledger with verified
 play-through awards, then **mirrored** to the host (Frequency's Zaps + The Field)
