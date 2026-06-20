@@ -62,6 +62,7 @@ import type { WebRole } from '@/lib/core/roles'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
 import { MindlessProvider, useMindless } from '@/components/on-air/mindless'
+import { MovementProvider } from '@/components/on-air/movement'
 import { LotusIcon } from '@/components/on-air/icons'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
@@ -1337,10 +1338,12 @@ export default function AppShell({
     theme === 'dark' ? 'Dark mode' : theme === 'light' ? 'Light mode' : 'System theme'
 
   return (
-    // MindlessProvider wraps the whole shell so the header launcher AND every
-    // in-app page can open the global Mindless overlay via useMindless(). The
-    // overlay it renders is `fixed inset-0 z-50`, so it layers over everything.
+    // MindlessProvider + MovementProvider wrap the whole shell so the header
+    // launcher AND every in-app page can open the global Mindless / Movement
+    // timer overlays via useMindless() / useMovement(). Each renders a `fixed
+    // inset-0 z-50` overlay, so they layer over everything.
     <MindlessProvider>
+    <MovementProvider>
     {/* The document itself scrolls (not an inner pane) so the whole page renders in
         normal flow — full-page screenshot tools capture everything, and Next's native
         scroll restoration works. The header + side rails stay put via `sticky`. */}
@@ -1661,6 +1664,7 @@ export default function AppShell({
       />
 
     </div>
+    </MovementProvider>
     </MindlessProvider>
   )
 }
