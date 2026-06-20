@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthedUserId } from "@/lib/auth/server";
+import { isVenueHost } from "@/lib/auth/venue-roles";
 import { broadcastToVenue } from "@/lib/realtime/server-broadcast";
 import {
   getSession,
@@ -29,12 +30,17 @@ type Ctx = { params: Promise<{ venueId: string }> };
  * - reveal: broadcasts `game:reveal` with the answer index + current scores.
  * - end: resets to idle and broadcasts `game:end`.
  *
- * Host-gating is a follow-up; for now any authed caller can drive the round.
+ * Only the venue host may drive the round. Players answer freely via the
+ * separate answer route.
  */
 export async function POST(req: Request, ctx: Ctx) {
   const { venueId } = await ctx.params;
   const userId = await getAuthedUserId(req);
   if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  if (!(await isVenueHost(venueId, userId))) {
+    return NextResponse.json({ error: "only the host can run the game" }, { status: 403 });
+  }
 
   const body = (await req.json().catch(() => ({}))) as { action?: HostAction };
   const action = body.action;

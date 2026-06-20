@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import type { VenueSummary, MediaType } from "@/lib/dj/types";
+import { AppShell } from "@/components/shell/AppShell";
+import { Card, Field, Input, Select, Button, EmptyState } from "@/components/ui";
+import { RoomCard } from "@/components/lobby/RoomCard";
 
 async function fetchVenues(): Promise<VenueSummary[]> {
   const res = await fetch("/api/venues", { cache: "no-store" });
@@ -60,88 +62,71 @@ export default function LobbyPage() {
   };
 
   return (
-    <main style={{ maxWidth: "48rem", margin: "0 auto", padding: "2rem", fontFamily: "system-ui" }}>
-      <h1>Lobby</h1>
+    <AppShell>
+      <div className="space-y-8">
+        <header className="space-y-1">
+          <h1 className="font-display text-2xl text-text">Lobby</h1>
+          <p className="text-sm text-mute">
+            Pick a room and step inside, or open one of your own.
+          </p>
+        </header>
 
-      <div style={{ display: "grid", gap: "0.75rem", margin: "1rem 0" }}>
-        {venues.map((v) => {
-          const live = v.isPlaying || v.djs > 0;
-          return (
-            <div
-              key={v.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                border: "1px solid #e4e4e7",
-                borderRadius: 8,
-                padding: "0.75rem 1rem",
-              }}
-            >
-              <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-                <Link href={`/dev/room/${v.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                  <b>{v.name}</b>{" "}
-                  <span style={{ color: "#888", fontSize: 12 }}>
-                    {v.theme ? `· ${v.theme} ` : ""}· {v.mediaType}
-                  </span>
-                </Link>
-                <span style={{ fontSize: 12, color: "#888" }}>
-                  <Link href={`/dev/room/${v.id}`}>enter</Link> ·{" "}
-                  <Link href={`/dev/space/${v.id}`}>walk</Link> ·{" "}
-                  <Link href={`/dev/games/${v.id}`}>play</Link> ·{" "}
-                  <Link href={`/dev/decorate/${v.id}`}>decorate</Link>
-                </span>
-              </span>
-              <span style={{ fontSize: 13, color: v.here > 0 || live ? "#16a34a" : "#999" }}>
-                {v.here > 0
-                  ? `● ${v.here} here`
-                  : live
-                    ? `● live · ${v.djs} on deck`
-                    : "○ quiet"}
-              </span>
-            </div>
-          );
-        })}
-        {venues.length === 0 && <p style={{ color: "#888" }}>No venues yet. Create one below.</p>}
-      </div>
-
-      <section
-        style={{ border: "1px solid #e4e4e7", borderRadius: 8, padding: "1rem" }}
-      >
-        <h3>Open a room</h3>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void create();
-          }}
-          style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
-        >
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="name (e.g. Synthwave Lounge)"
-            style={{ flex: 2, minWidth: "12rem", padding: "0.4rem" }}
-          />
-          <input
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-            placeholder="theme"
-            style={{ flex: 1, minWidth: "8rem", padding: "0.4rem" }}
-          />
-          <select
-            value={mediaType}
-            onChange={(e) => setMediaType(e.target.value as MediaType)}
-            style={{ padding: "0.4rem" }}
-          >
-            {TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
+        {venues.length === 0 ? (
+          <Card padding="none">
+            <EmptyState
+              title="No rooms yet"
+              description="Nothing is open right now. Start one below and the floor fills in."
+            />
+          </Card>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {venues.map((v) => (
+              <RoomCard key={v.id} venue={v} />
             ))}
-          </select>
-          <button type="submit">Create</button>
-        </form>
-      </section>
-    </main>
+          </div>
+        )}
+
+        <Card as="section" className="space-y-4">
+          <h2 className="font-display text-lg text-text">Open a room</h2>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void create();
+            }}
+            className="grid gap-4 sm:grid-cols-2"
+          >
+            <Field label="Name" className="sm:col-span-2">
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Synthwave Lounge"
+              />
+            </Field>
+            <Field label="Theme">
+              <Input
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+                placeholder="optional"
+              />
+            </Field>
+            <Field label="Type">
+              <Select
+                value={mediaType}
+                onChange={(e) => setMediaType(e.target.value as MediaType)}
+              >
+                {TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <div className="sm:col-span-2">
+              <Button type="submit">Create</Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    </AppShell>
   );
 }

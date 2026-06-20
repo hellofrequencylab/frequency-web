@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AppShell } from "@/components/shell/AppShell";
+import { Card } from "@/components/ui";
 
 const ROOMS = [
   {
@@ -21,70 +23,67 @@ const SURFACES = [
   { href: "/dev/events", label: "Events", note: "What is coming up. RSVP or grab a ticket." },
   { href: "/dev/market", label: "Market", note: "Spend Zaps on frames, colors, and badges." },
   { href: "/dev/earnings", label: "Earnings", note: "What your cosmetics have earned you in Zaps." },
+  { href: "/dev/moderation", label: "Moderation", note: "Report a problem or block someone." },
+  { href: "/dev/account", label: "Your data", note: "Download or delete the data we hold for you." },
   { href: "/dev/dj", label: "Quick room", note: "Jump straight into one DJ room." },
   { href: "/dev/sync", label: "Sync demo", note: "The raw playback clock. Two windows, one follows." },
 ];
 
 export default function Home() {
   return (
-    <main style={{ padding: "3rem 1.5rem", maxWidth: "44rem", margin: "0 auto", fontFamily: "system-ui" }}>
-      <h1 style={{ marginBottom: "0.25rem" }}>Resonance</h1>
-      <p style={{ color: "#555", fontSize: 18, marginTop: 0 }}>
-        A little world you can drop into. Pick a room, take the decks, or just hang.
-      </p>
-
-      <Link
-        href="/dev/lobby"
-        style={{
-          display: "inline-block",
-          marginTop: "1rem",
-          padding: "0.6rem 1.1rem",
-          borderRadius: 8,
-          background: "#111",
-          color: "#fff",
-          textDecoration: "none",
-          fontWeight: 600,
-        }}
-      >
-        Enter the lobby →
-      </Link>
-
-      <h2 style={{ marginTop: "2.5rem" }}>Three kinds of room</h2>
-      <div style={{ display: "grid", gap: "0.75rem" }}>
-        {ROOMS.map((r) => (
-          <div key={r.type} style={card}>
-            <b>{r.type}</b>
-            <p style={{ margin: "0.25rem 0 0", color: "#555", fontSize: 14 }}>{r.blurb}</p>
+    <AppShell>
+      <div className="space-y-10">
+        <header className="space-y-3">
+          <h1 className="font-display text-3xl text-text">Resonance</h1>
+          <p className="max-w-prose text-lg text-soft">
+            A little world you can drop into. Pick a room, take the decks, or just hang.
+          </p>
+          <div>
+            <Link
+              href="/dev/lobby"
+              className="inline-flex min-h-11 items-center justify-center rounded-sm border border-transparent bg-pulse px-4 text-sm font-medium text-text transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-[var(--color-pulse-strong)]"
+            >
+              Enter the lobby
+            </Link>
           </div>
-        ))}
-      </div>
+        </header>
 
-      <h2 style={{ marginTop: "2.5rem" }}>Jump in</h2>
-      <div style={{ display: "grid", gap: "0.5rem" }}>
-        {SURFACES.map((s) => (
-          <Link
-            key={s.href}
-            href={s.href}
-            style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", textDecoration: "none", color: "inherit" }}
-          >
-            <span>
-              <b>{s.label}</b>
-              <span style={{ color: "#888", fontSize: 13 }}> · {s.note}</span>
-            </span>
-            <span aria-hidden style={{ color: "#bbb" }}>→</span>
-          </Link>
-        ))}
-      </div>
+        <section className="space-y-3">
+          <h2 className="font-display text-xl text-text">Three kinds of room</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {ROOMS.map((r) => (
+              <Card key={r.type} className="space-y-1">
+                <h3 className="font-display text-lg text-text">{r.type}</h3>
+                <p className="text-sm text-mute">{r.blurb}</p>
+              </Card>
+            ))}
+          </div>
+        </section>
 
-      <p style={{ color: "#aaa", fontSize: 12, marginTop: "2.5rem" }}>
-        Built one section at a time. Roadmap in <code>docs/BUILD-PLAN.md</code>.
-      </p>
-    </main>
+        <section className="space-y-3">
+          <h2 className="font-display text-xl text-text">Jump in</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SURFACES.map((s) => (
+              <Link key={s.href} href={s.href} className="rounded-md">
+                <Card interactive className="flex items-center justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="font-medium text-text">{s.label}</span>
+                    <span className="block text-sm text-mute">{s.note}</span>
+                  </span>
+                  <span aria-hidden className="shrink-0 text-mute">
+                    →
+                  </span>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <p className="text-xs text-mute">
+          Built one section at a time. Roadmap in{" "}
+          <code className="font-mono">docs/BUILD-PLAN.md</code>.
+        </p>
+      </div>
+    </AppShell>
   );
 }
-
-const card: React.CSSProperties = {
-  border: "1px solid #e4e4e7",
-  borderRadius: 8,
-  padding: "0.85rem 1rem",
-};

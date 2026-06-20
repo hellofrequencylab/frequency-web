@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import type { DiscoverFeed, WorldActivity } from "@/lib/worlds/types";
+import { AppShell } from "@/components/shell/AppShell";
+import { Card, LiveBadge, EmptyState } from "@/components/ui";
 
 async function fetchFeed(): Promise<WorldActivity[]> {
   const res = await fetch("/api/discover", { cache: "no-store" });
@@ -31,49 +32,52 @@ export default function DiscoverPage() {
   }, []);
 
   return (
-    <main style={{ maxWidth: "48rem", margin: "0 auto", padding: "2rem", fontFamily: "system-ui" }}>
-      <h1>Discover</h1>
-      <p style={{ fontSize: 13 }}>
-        <Link href="/">Home</Link>
-      </p>
+    <AppShell>
+      <h1 className="font-display text-2xl text-text">Discover</h1>
+      <p className="mt-1 text-sm text-mute">What&apos;s live across every world right now.</p>
 
-      <div style={{ display: "grid", gap: "0.75rem", margin: "1rem 0" }}>
+      <div className="mt-6 grid gap-3">
         {worlds.map((w) => {
-          const active = w.hereNow > 0 || w.liveVenues > 0;
+          const isLive = w.hereNow > 0 || w.liveVenues > 0;
           return (
-            <div
-              key={w.world.id}
-              style={{
-                border: "1px solid #e4e4e7",
-                borderRadius: 8,
-                padding: "0.75rem 1rem",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <b>{w.world.name}</b>
-                <span style={{ fontSize: 13, color: active ? "#16a34a" : "#999" }}>
-                  {active
-                    ? `● ${w.hereNow} here · ${w.liveVenues} live rooms`
-                    : "○ quiet"}
-                </span>
+            <Card key={w.world.id} className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-display text-lg text-text">{w.world.name}</h2>
+                {isLive ? (
+                  <span className="flex items-center gap-2">
+                    <LiveBadge
+                      state="live"
+                      count={w.hereNow}
+                      aria-label={`${w.hereNow} here, ${w.liveVenues} live rooms`}
+                    />
+                    <span className="text-xs text-mute tabular-nums">
+                      {w.liveVenues} live rooms
+                    </span>
+                  </span>
+                ) : (
+                  <LiveBadge state="quiet" />
+                )}
               </div>
               {w.upcoming.length > 0 && (
-                <ul style={{ margin: "0.5rem 0 0", padding: 0, listStyle: "none" }}>
+                <ul className="flex flex-col gap-1.5">
                   {w.upcoming.map((e) => (
-                    <li key={e.id} style={{ fontSize: 12, color: "#888", marginTop: "0.2rem" }}>
-                      {e.title}{" "}
-                      <span>· {new Date(e.startsAt).toLocaleString()}</span>
+                    <li key={e.id} className="flex flex-wrap gap-x-2 text-sm text-soft">
+                      <span className="text-text">{e.title}</span>
+                      <span className="text-mute">{new Date(e.startsAt).toLocaleString()}</span>
                     </li>
                   ))}
                 </ul>
               )}
-            </div>
+            </Card>
           );
         })}
         {worlds.length === 0 && (
-          <p style={{ color: "#888" }}>Nothing happening across worlds yet.</p>
+          <EmptyState
+            title="Quiet for now"
+            description="Nothing happening across worlds yet. Check back soon."
+          />
         )}
       </div>
-    </main>
+    </AppShell>
   );
 }

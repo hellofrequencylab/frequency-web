@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { authedFetch } from "@/lib/api/fetch";
 import type { EventSummary, TicketType } from "@/lib/events/types";
+import { AppShell } from "@/components/shell/AppShell";
+import { Card, Badge, Button, Field, Input, Select, EmptyState } from "@/components/ui";
 
 async function fetchEvents(): Promise<EventSummary[]> {
   const res = await authedFetch("/api/events", { cache: "no-store" });
@@ -100,117 +101,122 @@ export default function EventsPage() {
   };
 
   return (
-    <main style={{ maxWidth: "48rem", margin: "0 auto", padding: "2rem", fontFamily: "system-ui" }}>
-      <h1>Events</h1>
-      <p style={{ fontSize: 13 }}>
-        <Link href="/">Home</Link> · <Link href="/dev/lobby">Lobby</Link>
-      </p>
+    <AppShell>
+      <h1 className="font-display text-2xl text-text">Events</h1>
+      <p className="mt-1 text-sm text-mute">Upcoming sets and gatherings. Claim your spot.</p>
 
-      <div style={{ display: "grid", gap: "0.75rem", margin: "1rem 0" }}>
+      <div className="mt-6 grid gap-3">
         {events.map((ev) => (
-          <div
-            key={ev.id}
-            style={{
-              border: "1px solid #e4e4e7",
-              borderRadius: 8,
-              padding: "0.75rem 1rem",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>
-                <b>{ev.title}</b>{" "}
-                <span style={{ color: "#888", fontSize: 12 }}>
-                  · {new Date(ev.startsAt).toLocaleString()}
-                </span>
-              </span>
+          <Card key={ev.id} className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="font-display text-lg text-text">{ev.title}</h2>
+                <p className="mt-0.5 text-sm text-mute">
+                  {new Date(ev.startsAt).toLocaleString()}
+                </p>
+              </div>
               {ev.myTicket ? (
-                <span style={{ fontSize: 13, color: "#16a34a" }}>You&apos;re in</span>
+                <Badge tone="signal">You&apos;re in</Badge>
               ) : (
-                <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+                <div className="flex items-center gap-2">
                   {ev.ticketType === "pwyc" && (
-                    <input
-                      value={amounts[ev.id] ?? ""}
-                      onChange={(e) =>
-                        setAmounts((m) => ({ ...m, [ev.id]: e.target.value }))
-                      }
-                      placeholder="$"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      style={{ width: "5rem", padding: "0.3rem" }}
-                    />
+                    <Field label="Name your price" className="w-28">
+                      <Input
+                        value={amounts[ev.id] ?? ""}
+                        onChange={(e) =>
+                          setAmounts((m) => ({ ...m, [ev.id]: e.target.value }))
+                        }
+                        placeholder="$"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                      />
+                    </Field>
                   )}
-                  <button onClick={() => void claim(ev)}>{claimLabel(ev.ticketType)}</button>
+                  <Button onClick={() => void claim(ev)}>{claimLabel(ev.ticketType)}</Button>
                 </div>
               )}
             </div>
-            <div style={{ color: "#888", fontSize: 12, marginTop: "0.35rem" }}>
-              {TYPE_LABEL[ev.ticketType]}
-              {ev.priceCents != null ? ` · $${(ev.priceCents / 100).toFixed(2)}` : ""}
-              {" · "}
-              {ev.ticketCount} going
-              {ev.capacity != null ? ` / ${ev.capacity}` : ""}
+            <div className="flex flex-wrap items-center gap-2 text-sm text-mute">
+              <Badge tone={ev.ticketType === "free" ? "neutral" : "spark"}>
+                {TYPE_LABEL[ev.ticketType]}
+                {ev.priceCents != null ? ` · $${(ev.priceCents / 100).toFixed(2)}` : ""}
+              </Badge>
+              <span className="tabular-nums">
+                {ev.ticketCount} going
+                {ev.capacity != null ? ` / ${ev.capacity}` : ""}
+              </span>
             </div>
-          </div>
+          </Card>
         ))}
         {events.length === 0 && (
-          <p style={{ color: "#888" }}>No upcoming events. Create one below.</p>
+          <EmptyState
+            title="No upcoming events"
+            description="Nothing on the calendar yet. Schedule one below."
+          />
         )}
       </div>
 
-      <section style={{ border: "1px solid #e4e4e7", borderRadius: 8, padding: "1rem" }}>
-        <h3>Schedule an event</h3>
+      <Card as="section" padding="lg" className="mt-8">
+        <h2 className="font-display text-lg text-text">Schedule an event</h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
             void create();
           }}
-          style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
+          className="mt-4 grid gap-4 sm:grid-cols-2"
         >
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="title (e.g. Friday Night Set)"
-            style={{ flex: 2, minWidth: "12rem", padding: "0.4rem" }}
-          />
-          <input
-            value={startsAt}
-            onChange={(e) => setStartsAt(e.target.value)}
-            type="datetime-local"
-            style={{ padding: "0.4rem" }}
-          />
-          <select
-            value={ticketType}
-            onChange={(e) => setTicketType(e.target.value as TicketType)}
-            style={{ padding: "0.4rem" }}
-          >
-            {TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          <input
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="price ($)"
-            type="number"
-            min="0"
-            step="0.01"
-            style={{ width: "7rem", padding: "0.4rem" }}
-          />
-          <input
-            value={capacity}
-            onChange={(e) => setCapacity(e.target.value)}
-            placeholder="capacity"
-            type="number"
-            min="1"
-            step="1"
-            style={{ width: "7rem", padding: "0.4rem" }}
-          />
-          <button type="submit">Create</button>
+          <Field label="Title" className="sm:col-span-2">
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Friday Night Set"
+            />
+          </Field>
+          <Field label="Starts at">
+            <Input
+              value={startsAt}
+              onChange={(e) => setStartsAt(e.target.value)}
+              type="datetime-local"
+            />
+          </Field>
+          <Field label="Ticket type">
+            <Select
+              value={ticketType}
+              onChange={(e) => setTicketType(e.target.value as TicketType)}
+            >
+              {TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {TYPE_LABEL[t]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Price ($)">
+            <Input
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="0.00"
+              type="number"
+              min="0"
+              step="0.01"
+            />
+          </Field>
+          <Field label="Capacity">
+            <Input
+              value={capacity}
+              onChange={(e) => setCapacity(e.target.value)}
+              placeholder="Unlimited"
+              type="number"
+              min="1"
+              step="1"
+            />
+          </Field>
+          <div className="sm:col-span-2">
+            <Button type="submit">Create</Button>
+          </div>
         </form>
-      </section>
-    </main>
+      </Card>
+    </AppShell>
   );
 }
