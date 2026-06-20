@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/useAuth";
 import { useProfile } from "@/components/profile/useProfile";
 import { Room } from "./Room";
-import { AvatarChip, AVATAR_EMOJIS as EMOJIS, AVATAR_COLORS as COLORS, avatarOf } from "./AvatarChip";
+import { AVATAR_EMOJIS as EMOJIS, AVATAR_COLORS as COLORS, avatarOf } from "./AvatarChip";
+import { Avatar, Button, Card, Field, Input, cn } from "@/components/ui";
 
 /**
  * Wraps a Room with standalone identity: ensures a session, loads/edits the
@@ -21,15 +22,15 @@ export function RoomShell({
   const { userId, ready } = useAuth();
   const { profile, loaded, save } = useProfile(ready);
 
-  if (!ready || !loaded) return <p>Starting a session…</p>;
+  if (!ready || !loaded) return <p className="text-mute">Starting a session…</p>;
   if (!userId) {
     return (
-      <div>
-        <h1>Couldn’t start a session</h1>
-        <p style={{ color: "#555" }}>
-          Enable “Anonymous sign-ins” in the Supabase project’s Auth settings, then reload.
+      <Card className="space-y-1 border-alert">
+        <h1 className="font-display text-lg text-text">Couldn&apos;t start a session</h1>
+        <p className="text-sm text-soft">
+          Enable Anonymous sign-ins in the Supabase project&apos;s Auth settings, then reload.
         </p>
-      </div>
+      </Card>
     );
   }
 
@@ -69,11 +70,16 @@ function ProfileBar({
 
   if (editing || !profile) {
     return (
-      <section style={card}>
-        <h3>{profile ? "Edit your look" : "Pick a name to take the decks"}</h3>
-        <p style={{ color: "#888", fontSize: 13 }}>
-          You’re in as <b>{displayName}</b>. Lurkers can chat and vote; DJing needs a name.
-        </p>
+      <Card className="mb-4 space-y-3">
+        <div>
+          <h3 className="font-display text-lg text-text">
+            {profile ? "Edit your look" : "Pick a name to take the decks"}
+          </h3>
+          <p className="text-sm text-mute">
+            You&apos;re in as <b className="text-soft">{displayName}</b>. Lurkers chat and vote.
+            DJing needs a name.
+          </p>
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -82,67 +88,57 @@ function ProfileBar({
               setEditing(false);
             }
           }}
-          style={{ display: "grid", gap: "0.6rem" }}
+          className="space-y-3"
         >
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="display name"
-            style={{ padding: "0.4rem" }}
-          />
-          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", alignItems: "center" }}>
-            <AvatarChip emoji={emoji} color={color} name={name || displayName} />
-            <span style={{ color: "#888", fontSize: 12 }}>·</span>
+          <Field label="Display name">
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Vera" />
+          </Field>
+          <div className="flex flex-wrap items-center gap-2">
+            <Avatar name={name || displayName} emoji={emoji} color={color} size="md" />
+            <span className="text-mute">·</span>
             {EMOJIS.map((e) => (
               <button
                 key={e}
                 type="button"
                 onClick={() => setEmoji(e)}
-                style={{ fontSize: 18, opacity: e === emoji ? 1 : 0.5 }}
+                aria-label={`Emoji ${e}`}
+                aria-pressed={e === emoji}
+                className={cn(
+                  "rounded-sm px-1 text-lg transition-opacity",
+                  e === emoji ? "opacity-100" : "opacity-50 hover:opacity-100",
+                )}
               >
                 {e}
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+          <div className="flex flex-wrap gap-2">
             {COLORS.map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setColor(c)}
-                aria-label={`color ${c}`}
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: "50%",
-                  background: c,
-                  border: c === color ? "2px solid #111" : "1px solid #ccc",
-                }}
+                aria-label={`Color ${c}`}
+                aria-pressed={c === color}
+                className={cn("h-6 w-6 rounded-pill border-2", c === color ? "border-text" : "border-line")}
+                style={{ background: c }}
               />
             ))}
           </div>
-          <button type="submit" style={{ justifySelf: "start" }}>
-            Save
-          </button>
+          <Button type="submit">Save</Button>
         </form>
-      </section>
+      </Card>
     );
   }
 
   const cfg = avatarOf(profile.avatarConfig);
   return (
-    <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <small style={{ color: "#555", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-        <AvatarChip emoji={cfg.emoji} color={cfg.color} name={profile.displayName} />
-        <button onClick={() => setEditing(true)}>edit</button>
-      </small>
-    </header>
+    <div className="mb-4 flex items-center gap-2">
+      <Avatar name={profile.displayName} emoji={cfg.emoji} color={cfg.color} size="sm" />
+      <span className="text-sm text-soft">{profile.displayName}</span>
+      <Button variant="quiet" size="sm" onClick={() => setEditing(true)}>
+        Edit
+      </Button>
+    </div>
   );
 }
-
-const card: React.CSSProperties = {
-  border: "1px solid #e4e4e7",
-  borderRadius: 8,
-  padding: "1rem",
-  marginBottom: "1rem",
-};
