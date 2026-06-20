@@ -469,6 +469,27 @@ every section that is a self-contained, self-fetching block. For each one:
 
 **Long-tail progress (the converted pages, newest first):**
 
+- ✅ **Batch 3 (2026-06-20):** two more member surfaces converted; one shell-only fix; two skips.
+  - `/programs` → the open browse list (the framework library + the viewer's completion, including the
+    "coming soon" empty) is the `programs-list` module
+    (`components/widgets/programs/programs-list.tsx`). Keyed only on the viewer, no searchParams facet.
+  - `/crew/challenges` → the season KPI band + the challenges-by-difficulty grid are one
+    `challenges-season` module (`components/widgets/challenges/challenges-season.tsx`): both views
+    derive from one viewer-scoped fetch, so they stay one block rather than a double-fetch. Reads the
+    challenge rows directly (not the redirecting `getChallengesData`) so it degrades to `null`; the
+    page keeps its own auth guard.
+  - `/programs/<slug>` → **shell only** (Part A): the hand-rolled back-link became the `DetailTemplate`
+    `back` slot. The body is one prose blob keyed on the `slug` route param (not standalone stacked
+    sections), so it stays hand-composed.
+  - **`/broadcast` (the index) stays hand-composed:** its interior is one cohesive, viewer-scoped
+    dashboard from a single fetch — the hero and at-a-glance line are derived from the SAME
+    dispatch/event arrays as the main feed and the sidebar, not independent sections — and its
+    two-column `main`/`side` visual cannot be preserved under the default `single` template (which
+    stacks every module in `main`). Like `/library`, it is a single coupled view, not a stack of
+    standalone blocks.
+  - **`/entry-points` is skipped:** it is a Crew-gated Focus builder (the interactive
+    `EntryPointsManager` client manager with a paid-gate early return), not a stack of standalone
+    self-fetching sections (the "Focus editor" skip in this batch's rules).
 - ✅ **Batch 2 (2026-06-20):** three more member surfaces converted.
   - `/crew/leaderboard` → the **Consistency** layer (daily practice streak + weekly rhythms) is now
     the `leaderboard-consistency` module (`components/widgets/leaderboard/leaderboard-consistency.tsx`).

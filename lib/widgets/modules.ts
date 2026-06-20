@@ -84,6 +84,12 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'practice-detail-tags', label: 'Tags', description: 'The practice’s tags.' },
   { id: 'practice-detail-usedin', label: 'Used in', description: 'The Journeys and Circles running this practice.' },
 
+  // ── Programs blocks (/programs) — the Foundation's frameworks browse list ──
+  { id: 'programs-list', label: 'Programs', description: 'The open browse list of frameworks and trainings for starting, running, and growing a circle, each with the viewer’s completion.' },
+
+  // ── Season Challenges blocks (/crew/challenges) — the season's bonus-zap challenges ──
+  { id: 'challenges-season', label: 'Season Challenges', description: 'The season KPI band (progress, zaps, remaining) over the challenges-by-difficulty grid.' },
+
   // ── Entity profile blocks (/spaces/<slug>/*) — the networked profile module set ──
   // (ENTITY-SPACES-BUILD §B.2). Each is a self-fetching RSC scoped to the ACTIVE Space
   // (lib/spaces/active-space.ts); it reads only that Space's own rows and renders kit primitives,
@@ -185,6 +191,15 @@ const VAULT_MODULE_IDS = [
   'vault-store',
 ] as const
 
+// The Programs page (/programs). The whole interior is one self-fetching browse list (the framework
+// library + the viewer's completion, including the "coming soon" empty), keyed only on the viewer
+// with no searchParams facet, so it converts wholesale to one module.
+const PROGRAMS_MODULE_IDS = ['programs-list'] as const
+
+// Season Challenges (/crew/challenges). The KPI band and the challenges-by-difficulty grid derive
+// from one viewer-scoped fetch, so the whole interior is one module rather than a double-fetch.
+const CHALLENGES_MODULE_IDS = ['challenges-season'] as const
+
 // Every entity-profile block, in the Practitioner default order (ENTITY-SPACES-BUILD §B.3). This
 // is the FAMILY palette for the '/spaces/*' section scope — the full set the layout editor offers
 // on any profile tab. The route shell passes the per-TAB subset (the blueprint's tab.modules) to
@@ -219,6 +234,8 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   // Section scope: applies to every /practices/<id> detail page (shared layout).
   '/practices/*': PRACTICE_DETAIL_MODULE_IDS,
   '/crew/store': VAULT_MODULE_IDS,
+  '/crew/challenges': CHALLENGES_MODULE_IDS,
+  '/programs': PROGRAMS_MODULE_IDS,
   // Section scope: every entity profile tab (/spaces/<slug>/<tab>) shares one family module set;
   // the shell narrows it to the active tab's blocks via the `moduleIds` override (ADR-294).
   '/spaces/*': SPACE_MODULE_IDS,

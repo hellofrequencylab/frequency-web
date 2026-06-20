@@ -40,6 +40,8 @@ import { PracticeDetailAbout } from '@/components/widgets/practice-detail/practi
 import { PracticeDetailGuide } from '@/components/widgets/practice-detail/practice-detail-guide'
 import { PracticeDetailTags } from '@/components/widgets/practice-detail/practice-detail-tags'
 import { PracticeDetailUsedIn } from '@/components/widgets/practice-detail/practice-detail-usedin'
+import { ProgramsList } from '@/components/widgets/programs/programs-list'
+import { ChallengesSeason } from '@/components/widgets/challenges/challenges-season'
 import { EntityGettingStarted } from '@/components/widgets/entity/entity-getting-started'
 import { EntityAbout } from '@/components/widgets/entity/entity-about'
 import { EntityStats } from '@/components/widgets/entity/entity-stats'
@@ -107,6 +109,10 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'practice-detail-guide': PracticeDetailGuide,
   'practice-detail-tags': PracticeDetailTags,
   'practice-detail-usedin': PracticeDetailUsedIn,
+  // Programs page (/programs) — the frameworks browse list.
+  'programs-list': ProgramsList,
+  // Season Challenges (/crew/challenges) — the season KPI band + challenges grid.
+  'challenges-season': ChallengesSeason,
   // Entity profile (/spaces/<slug>/*) — the networked profile module set (ENTITY-SPACES-BUILD §B.2).
   'entity-getting-started': EntityGettingStarted,
   'entity-about': EntityAbout,

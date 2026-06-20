@@ -10,12 +10,14 @@ export const MODULE_ROUTES: readonly string[] = [
   '/crew',
   '/crew/store',
   '/crew/leaderboard',
+  '/crew/challenges',
   '/admin/content/journeys',
   '/journeys',
   '/friends',
   '/journal',
   '/library/review',
   '/practices',
+  '/programs',
 ]
 
 // Section roots whose DIRECT children each render <PageModules> against ONE shared '/seg/*'
