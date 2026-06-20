@@ -5,15 +5,19 @@ import { rankForPoints, type RankName } from "./ranks";
 /**
  * The zaps_ledger ref_id column is a uuid, so callers that key idempotency off a
  * human-readable string (e.g. `trivia:<venue>:<round>`, `revshare:<item>:<buyer>`)
- * hash it into a stable v5-style uuid. Same seed -> same uuid, so the ledger's
- * unique (world,user,reason,ref) key dedupes retries.
+ * map it to a stable uuid. Same seed -> same uuid, so the ledger's unique
+ * (world,user,reason,ref) key dedupes retries.
+ *
+ * This is NOT a security primitive: it is a deterministic id derivation, so the
+ * digest only needs to be stable and collision-resistant. We use SHA-256 (not
+ * SHA-1) and format the first 16 bytes as an RFC 9562 v8 (custom) uuid.
  */
 export function seededRefId(seed: string): string {
-  const h = createHash("sha1").update(seed).digest("hex").slice(0, 32);
+  const h = createHash("sha256").update(seed).digest("hex").slice(0, 32);
   return [
     h.slice(0, 8),
     h.slice(8, 12),
-    "5" + h.slice(13, 16),
+    "8" + h.slice(13, 16),
     ((parseInt(h.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + h.slice(17, 20),
     h.slice(20, 32),
   ].join("-");
