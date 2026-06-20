@@ -3,7 +3,7 @@ import { getActiveSpace } from '@/lib/spaces/active-space'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EntityCard } from '@/components/cards/entity-card'
-import { EmptyState } from '@/components/ui/empty-state'
+import { EntitySectionEmpty } from '@/components/widgets/entity/entity-empty'
 
 // ENTITY MODULE — Community (ENTITY-SPACES-BUILD §B.2, row `entity-community`). A self-fetching
 // RSC: reads the active Space, lists its OWN Circles (space_id-filtered + fail-safe), and renders
@@ -21,10 +21,12 @@ export async function EntityCommunity() {
     <div>
       <SectionHeader title="Circles" count={circles.length || undefined} />
       {circles.length === 0 ? (
-        <EmptyState
+        <EntitySectionEmpty
           icon={Users}
           title="No circles yet."
           description="Circles this space runs show up here to join."
+          ownerTitle="No circles yet."
+          ownerActionLabel="Start your first circle"
         />
       ) : (
         <div className="grid gap-4 @lg:grid-cols-2">

@@ -29,6 +29,7 @@ export function DetailTemplate({
   badges,
   actions,
   back,
+  band,
   tabs,
   children,
 }: {
@@ -44,6 +45,12 @@ export function DetailTemplate({
   /** Back-link shown above the identity band (nested detail pages). The single
    *  back affordance — don't also hand-roll one in `actions`. */
   back?: { href: string; label: string }
+  /** OPTIONAL self-contained identity band. When provided it REPLACES the default
+   *  title/subtitle/badges/actions lockup (the entity profile passes its own hero
+   *  CARD here, §A.4), while the back-link, tab row, and divider stay identical.
+   *  Every other Detail page omits it and is unchanged. The band must own the single
+   *  page `<h1>` itself; `title` is then ignored for rendering. */
+  band?: React.ReactNode
   tabs?: DetailTab[]
   children: React.ReactNode
 }) {
@@ -65,18 +72,22 @@ export function DetailTemplate({
             {back.label}
           </Link>
         )}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-text break-words">{title}</h1>
-              {badges}
+        {/* The identity band: a page-supplied self-contained `band` (e.g. the entity profile's hero
+            card) when given, else the default title/badges/subtitle/actions lockup. */}
+        {band ?? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-bold text-text break-words">{title}</h1>
+                {badges}
+              </div>
+              {subtitle && (
+                <div className="mt-1 text-sm text-muted">{subtitle}</div>
+              )}
             </div>
-            {subtitle && (
-              <div className="mt-1 text-sm text-muted">{subtitle}</div>
-            )}
+            {actions && <div className="flex items-center gap-2 flex-wrap sm:shrink-0">{actions}</div>}
           </div>
-          {actions && <div className="flex items-center gap-2 flex-wrap sm:shrink-0">{actions}</div>}
-        </div>
+        )}
 
         {/* Context tabs */}
         {tabs && tabs.length > 0 && (
