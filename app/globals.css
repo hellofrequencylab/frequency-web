@@ -673,6 +673,12 @@
   --radius-card:    var(--radius-card);
   --radius-pill:    var(--radius-pill);
 
+  /* Named size for the profile hero-stat skeleton tile. A `--spacing-*` key, so
+     Tailwind v4 generates `h-hero-stat` (and `w-hero-stat`) — the profile hero
+     stats skeleton + its loading fallback share this one height instead of a
+     duplicated `h-[58px]` arbitrary value. */
+  --spacing-hero-stat: var(--spacing-hero-stat);
+
   /* Motion durations exposed as transition/animation-duration tokens — Tailwind v4
      does not synthesize duration utilities from these, so consume via
      `duration-[var(--motion-base)]` or in CSS; defined here to keep the feel axis
@@ -723,6 +729,44 @@
 @utility tap-target {
   min-block-size:  var(--tap-min, 32px);
   min-inline-size: var(--tap-min, 32px);
+}
+
+/* ── Press (kit-card affordance) ───────────────────────────────────────────────
+   A subtle, self-defending "press" for the high-reuse browse cards: the card eases
+   down a hair on `:active` so a tap/click feels responsive, and a keyboard focus
+   lights the brand ring (via the card's own `has-[:focus-visible]` ring, set inline).
+   The scale lives here (the one place raw values belong) so the cards consume a named
+   class, not an arbitrary `scale-[…]`. `motion-reduce` collapses the press to nothing,
+   honoring prefers-reduced-motion (the transition itself is set on the card). */
+@utility press {
+  &:active {
+    transform: scale(0.99);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .press:active {
+    transform: none;
+  }
+}
+
+/* ── Dimmed (Beta demo content recede) ─────────────────────────────────────────
+   The single source for the "receded demo content" treatment: muted + desaturated,
+   so a Beta demo card / cover / avatar reads as not-quite-real behind real members.
+   Was duplicated as `opacity-[0.72]` + `grayscale-[0.5]` arbitrary values across the
+   browse + profile cards; centralized here so the recede lives in ONE place (the
+   only place raw values belong) and every card consumes the same `.dimmed` class.
+   Put it on the card root (or the imagery) to recede everything beneath it. */
+@utility dimmed {
+  opacity: 0.72;
+  filter: grayscale(0.5);
+}
+
+/* The profile hero stats skeleton tile height — a named size for the streamed
+   hero-stats placeholders (and the matching profile-body fallback), so the figure
+   lives in ONE place instead of a duplicated `h-[58px]` arbitrary value. Exposed via
+   `@theme inline` (`--spacing-hero-stat`) below, so `h-hero-stat` is generated. */
+:root {
+  --spacing-hero-stat: 58px;
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────── */

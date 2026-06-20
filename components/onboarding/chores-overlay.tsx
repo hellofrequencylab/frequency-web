@@ -177,7 +177,7 @@ export function ChoresOverlay({
                 <PartyPopper className="h-6 w-6" aria-hidden />
               </span>
               <h2 id="chores-title" className="mt-4 text-2xl font-bold text-text">There. Lived-in.</h2>
-              <p className="mt-2 max-w-sm text-pretty text-[15px] leading-relaxed text-muted">
+              <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted">
                 Place looks like someone actually lives here now. Knew you had it in you.
                 {nextAction ? ' One more nudge and I’ll leave you be.' : ' Off you go. Go meet your people.'}
               </p>
@@ -214,7 +214,7 @@ export function ChoresOverlay({
                 <Rocket className="h-7 w-7" aria-hidden />
               </span>
               <h2 id="chores-title" className="mt-4 text-2xl font-bold leading-tight text-text">{nextAction!.headline}</h2>
-              <p className="mt-2 max-w-sm text-pretty text-[15px] leading-relaxed text-muted">{nextAction!.blurb}</p>
+              <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted">{nextAction!.blurb}</p>
               <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-signal-bg px-3 py-1.5 text-xs font-semibold text-signal">
                 <Gem className="h-3.5 w-3.5" aria-hidden /> Every step earns Gems and brings your people closer
               </p>

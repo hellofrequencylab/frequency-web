@@ -180,7 +180,7 @@ export function MiniStat({
   const valueTone = tone === 'good' ? 'text-success' : tone === 'bad' ? 'text-danger' : 'text-text'
   return (
     <div className="min-w-0">
-      <p className={`text-[1.625rem] font-bold leading-none tabular-nums ${valueTone}`}>{value}</p>
+      <p className={`text-2xl font-bold leading-none tabular-nums ${valueTone}`}>{value}</p>
       <p className="mt-1.5 truncate text-xs font-medium text-muted">{label}</p>
     </div>
   )

@@ -74,7 +74,7 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
         placeholder="What should guests know? Parking, a time change, what to bring."
         rows={3}
         disabled={pending}
-        className="w-full resize-none rounded-lg bg-transparent px-1 text-[15px] leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
+        className="w-full resize-none rounded-lg bg-transparent px-1 text-sm leading-relaxed text-text/90 outline-none placeholder:text-subtle disabled:opacity-60"
       />
 
       {/* Channel toggles. Page post is always on (the base action). */}

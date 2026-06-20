@@ -22,7 +22,7 @@ function DateChip({ iso }: { iso: string }) {
   const day = d.getDate()
   return (
     <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-success-bg text-success shrink-0">
-      <span className="text-[9px] font-semibold uppercase leading-none">{month}</span>
+      <span className="text-3xs font-semibold uppercase leading-none">{month}</span>
       <span className="text-sm font-bold leading-tight">{day}</span>
     </div>
   )
@@ -90,7 +90,7 @@ export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/events" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/events" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           See all events →
         </Link>
       </div>
@@ -174,7 +174,7 @@ export async function MembersPanel({ profileId, circleIds }: { profileId: string
         })}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/people" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/people" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           View directory →
         </Link>
       </div>
@@ -207,7 +207,7 @@ export async function DispatchesPanel({ profileId, circleIds }: { profileId: str
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/broadcast" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/broadcast" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           View all broadcasts →
         </Link>
       </div>
@@ -253,7 +253,7 @@ export async function LeaderboardPanel() {
             )}
             <span className="text-sm flex-1 truncate text-text">{member.display_name}</span>
             <div className="flex items-center gap-1 shrink-0">
-              <span className="rank-badge text-[9px] font-bold leading-tight" style={seasonRankStyle(member.current_season_rank)}>
+              <span className="rank-badge text-3xs font-bold leading-tight" style={seasonRankStyle(member.current_season_rank)}>
                 {RANK_LABELS[member.current_season_rank] ?? member.current_season_rank}
               </span>
               <div className="flex items-center gap-0.5">
@@ -265,7 +265,7 @@ export async function LeaderboardPanel() {
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/crew/leaderboard" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/crew/leaderboard" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           Full leaderboard →
         </Link>
       </div>
@@ -434,7 +434,7 @@ export async function WhoOnlinePanel({ profileId }: { profileId: string }) {
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/people" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/people" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           See who’s around →
         </Link>
       </div>
@@ -478,7 +478,7 @@ export async function CirclesPanel({ circleIds }: { circleIds: string[] }) {
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/circles" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/circles" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           Browse all circles →
         </Link>
       </div>
@@ -545,7 +545,7 @@ export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
         ))}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/circles" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/circles" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           Browse all circles →
         </Link>
       </div>
@@ -629,7 +629,7 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
         })}
       </div>
       <div className="px-1 pt-3">
-        <Link href="/people" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+        <Link href="/people" className="text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           {fellBack ? 'Meet the community →' : 'See who’s around →'}
         </Link>
       </div>

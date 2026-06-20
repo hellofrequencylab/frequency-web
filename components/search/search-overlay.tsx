@@ -213,7 +213,7 @@ function ResultRow({
     >
       {dateIso ? (
         <span className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-          <span className="text-[9px] font-semibold uppercase leading-none">{new Date(dateIso).toLocaleDateString('en-US', { month: 'short' })}</span>
+          <span className="text-3xs font-semibold uppercase leading-none">{new Date(dateIso).toLocaleDateString('en-US', { month: 'short' })}</span>
           <span className="text-sm font-bold leading-tight">{new Date(dateIso).getDate()}</span>
         </span>
       ) : avatar ? (

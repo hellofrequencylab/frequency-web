@@ -67,7 +67,7 @@ export function LiveEventsBlock({ live, pad, vis = '' }: { live?: LiveData; pad?
           return (
             <div key={event.id} className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4">
               <div className="shrink-0 w-12 h-12 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
-                <span className="text-[9px] font-bold text-primary-strong leading-none">{month}</span>
+                <span className="text-3xs font-bold text-primary-strong leading-none">{month}</span>
                 <span className="text-base font-bold text-primary-strong leading-tight">{day}</span>
               </div>
               <div className="flex-1 min-w-0">

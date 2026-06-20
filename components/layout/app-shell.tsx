@@ -210,7 +210,19 @@ function useTheme() {
     const isDark = mode === 'dark' || (mode === 'system' && sysDark)
     document.documentElement.classList.toggle('dark', isDark)
     const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', isDark ? '#16130E' : '#FBFAF6')
+    if (meta) {
+      // Derive the status-bar color from the live token source so it can't drift
+      // from the design system. We read AFTER toggling .dark, so the computed
+      // value is already the mode-specific token: the page background is
+      // --color-canvas in light, and the deep ink band is --color-ink in dark
+      // (app/globals.css :root / .dark). Trim because getPropertyValue keeps
+      // the declaration's leading whitespace.
+      const token = isDark ? '--color-ink' : '--color-canvas'
+      const color = getComputedStyle(document.documentElement)
+        .getPropertyValue(token)
+        .trim()
+      if (color) meta.setAttribute('content', color)
+    }
   }
 
   function setTheme(next: Theme) {

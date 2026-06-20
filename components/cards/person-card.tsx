@@ -7,6 +7,11 @@ import { DemoBadge } from '@/components/ui/demo-badge'
 // this so a person reads identically everywhere. It wraps EntityCard with a round
 // avatar anchor (+ optional online dot). Businesses/partners use EntityCard
 // directly with an icon tile, since they aren't people.
+//
+// Self-defending focus + press: PersonCard renders no interactive DOM of its own —
+// it is a pure EntityCard wrapper — so the explicit keyboard focus ring and the
+// subtle `active:` press affordance live on EntityCard (and `motion-reduce` is
+// honored there). A person card therefore inherits both with nothing to duplicate.
 export function PersonCard({
   handle,
   displayName,

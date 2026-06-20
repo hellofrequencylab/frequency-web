@@ -70,7 +70,7 @@ export function RingGauge({ pct, label, sub }: { pct: number; label: string; sub
           strokeDasharray={`${(clamped * c).toFixed(1)} ${c.toFixed(1)}`}
           transform="rotate(-90 40 40)"
         />
-        <text x="40" y="46" textAnchor="middle" className="fill-text text-[19px] font-bold">
+        <text x="40" y="46" textAnchor="middle" className="fill-text text-xl font-bold">
           {Math.round(clamped * 100)}%
         </text>
       </svg>

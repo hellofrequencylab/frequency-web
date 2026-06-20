@@ -167,7 +167,7 @@ function SplashPreview({ values }: { values: SequenceSplash }) {
       )}
       <div className="p-6 text-center">
         {values.eyebrow && (
-          <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-primary-strong">{values.eyebrow}</p>
+          <p className="text-3xs font-semibold uppercase tracking-widest text-primary-strong">{values.eyebrow}</p>
         )}
         {values.headline && (
           <p className="mt-2 text-balance text-2xl font-bold leading-tight text-text">{values.headline}</p>

@@ -22,7 +22,7 @@ export function ProfileCover({
           sizes="100vw"
           src={imageUrl}
           alt=""
-          className={`object-cover ${dimmed ? 'grayscale-[0.5]' : ''}`}
+          className={`object-cover ${dimmed ? 'dimmed' : ''}`}
         />
       ) : (
         <div className="absolute inset-0 bg-[url('/images/hero.jpg')] bg-cover bg-center opacity-30 mix-blend-overlay" />

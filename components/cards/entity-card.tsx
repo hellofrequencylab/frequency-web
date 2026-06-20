@@ -62,19 +62,19 @@ export function EntityCard({
 }) {
   return (
     <div
-      className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-colors hover:border-primary-bg hover:shadow-md motion-reduce:transition-none ${
-        dimmed ? 'opacity-[0.72]' : ''
+      className={`group press relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-[colors,transform] hover:border-primary-bg hover:shadow-md has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/50 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-canvas motion-reduce:transition-none ${
+        dimmed ? 'dimmed' : ''
       }`}
     >
-      <Link href={href} className="flex flex-1 flex-col">
+      <Link href={href} className="flex flex-1 flex-col outline-none">
         {cover && (
-          <div className={`relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-surface-elevated ${dimmed ? 'grayscale-[0.5]' : ''}`}>
+          <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-surface-elevated">
             {cover}
           </div>
         )}
         <div className="flex flex-1 flex-col p-5">
           <div className="flex items-start gap-3">
-            {anchor && <div className={`shrink-0 ${dimmed ? 'grayscale-[0.5]' : ''}`}>{anchor}</div>}
+            {anchor && <div className="shrink-0">{anchor}</div>}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <h3 className="truncate text-base font-bold leading-tight text-text">{title}</h3>
