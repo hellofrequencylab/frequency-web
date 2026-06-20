@@ -233,6 +233,7 @@ export type Database = {
           model: string
           output_tokens: number
           profile_id: string | null
+          space_id: string | null
         }
         Insert: {
           cost_usd?: number
@@ -243,6 +244,7 @@ export type Database = {
           model: string
           output_tokens?: number
           profile_id?: string | null
+          space_id?: string | null
         }
         Update: {
           cost_usd?: number
@@ -253,6 +255,7 @@ export type Database = {
           model?: string
           output_tokens?: number
           profile_id?: string | null
+          space_id?: string | null
         }
         Relationships: [
           {
@@ -260,6 +263,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -377,8 +387,10 @@ export type Database = {
           created_by: string | null
           id: string
           recipient_count: number
+          scheduled_for: string | null
           segment: string
           sent_at: string | null
+          space_id: string | null
           status: string
           subject: string
         }
@@ -388,8 +400,10 @@ export type Database = {
           created_by?: string | null
           id?: string
           recipient_count?: number
+          scheduled_for?: string | null
           segment?: string
           sent_at?: string | null
+          space_id?: string | null
           status?: string
           subject: string
         }
@@ -399,8 +413,10 @@ export type Database = {
           created_by?: string | null
           id?: string
           recipient_count?: number
+          scheduled_for?: string | null
           segment?: string
           sent_at?: string | null
+          space_id?: string | null
           status?: string
           subject?: string
         }
@@ -410,6 +426,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -454,6 +477,7 @@ export type Database = {
           id: string
           location: unknown
           node_id: string
+          space_id: string | null
           verified: boolean
         }
         Insert: {
@@ -463,6 +487,7 @@ export type Database = {
           id?: string
           location?: unknown
           node_id: string
+          space_id?: string | null
           verified?: boolean
         }
         Update: {
@@ -472,6 +497,7 @@ export type Database = {
           id?: string
           location?: unknown
           node_id?: string
+          space_id?: string | null
           verified?: boolean
         }
         Relationships: [
@@ -494,6 +520,13 @@ export type Database = {
             columns: ["node_id"]
             isOneToOne: false
             referencedRelation: "nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "captures_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -822,9 +855,9 @@ export type Database = {
           name: string
           neighborhood: string | null
           resonance_public: boolean
-          season_current: number
           sidebar_order: Json | null
           slug: string
+          space_id: string | null
           status: Database["public"]["Enums"]["group_status"]
           timezone: string | null
           topical_channel_id: string | null
@@ -848,9 +881,9 @@ export type Database = {
           name: string
           neighborhood?: string | null
           resonance_public?: boolean
-          season_current?: number
           sidebar_order?: Json | null
           slug: string
+          space_id?: string | null
           status?: Database["public"]["Enums"]["group_status"]
           timezone?: string | null
           topical_channel_id?: string | null
@@ -874,9 +907,9 @@ export type Database = {
           name?: string
           neighborhood?: string | null
           resonance_public?: boolean
-          season_current?: number
           sidebar_order?: Json | null
           slug?: string
+          space_id?: string | null
           status?: Database["public"]["Enums"]["group_status"]
           timezone?: string | null
           topical_channel_id?: string | null
@@ -898,10 +931,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "circles_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "circles_topical_channel_id_fkey"
             columns: ["topical_channel_id"]
             isOneToOne: false
             referencedRelation: "topical_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_notes: {
+        Row: {
+          author_profile_id: string | null
+          body: string
+          contact_id: string | null
+          created_at: string
+          id: string
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_profile_id?: string | null
+          body?: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_profile_id?: string | null
+          body?: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_notes_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_notes_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1013,6 +1105,7 @@ export type Database = {
           meta: Json
           profile_id: string | null
           source: string | null
+          space_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1027,6 +1120,7 @@ export type Database = {
           meta?: Json
           profile_id?: string | null
           source?: string | null
+          space_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1041,6 +1135,7 @@ export type Database = {
           meta?: Json
           profile_id?: string | null
           source?: string | null
+          space_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1049,6 +1144,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1367,6 +1469,7 @@ export type Database = {
           due_at: string | null
           id: string
           kind: string
+          space_id: string | null
         }
         Insert: {
           body?: string
@@ -1378,6 +1481,7 @@ export type Database = {
           due_at?: string | null
           id?: string
           kind?: string
+          space_id?: string | null
         }
         Update: {
           body?: string
@@ -1389,6 +1493,7 @@ export type Database = {
           due_at?: string | null
           id?: string
           kind?: string
+          space_id?: string | null
         }
         Relationships: [
           {
@@ -1412,6 +1517,13 @@ export type Database = {
             referencedRelation: "crm_deals"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "crm_activities_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
         ]
       }
       crm_deals: {
@@ -1428,6 +1540,7 @@ export type Database = {
           profile_id: string | null
           sort_order: number
           source: string | null
+          space_id: string | null
           stage_id: string | null
           status: string
           title: string
@@ -1447,6 +1560,7 @@ export type Database = {
           profile_id?: string | null
           sort_order?: number
           source?: string | null
+          space_id?: string | null
           stage_id?: string | null
           status?: string
           title: string
@@ -1466,6 +1580,7 @@ export type Database = {
           profile_id?: string | null
           sort_order?: number
           source?: string | null
+          space_id?: string | null
           stage_id?: string | null
           status?: string
           title?: string
@@ -1502,6 +1617,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "crm_deals_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "crm_deals_stage_id_fkey"
             columns: ["stage_id"]
             isOneToOne: false
@@ -1517,6 +1639,7 @@ export type Database = {
           kind: string
           name: string
           sort_order: number
+          space_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1524,6 +1647,7 @@ export type Database = {
           kind?: string
           name: string
           sort_order?: number
+          space_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1531,8 +1655,17 @@ export type Database = {
           kind?: string
           name?: string
           sort_order?: number
+          space_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "crm_stages_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dispatch_comments: {
         Row: {
@@ -1790,19 +1923,33 @@ export type Database = {
         Row: {
           created_at: string
           email: string
+          id: string
           reason: string
+          space_id: string | null
         }
         Insert: {
           created_at?: string
           email: string
+          id?: string
           reason: string
+          space_id?: string | null
         }
         Update: {
           created_at?: string
           email?: string
+          id?: string
           reason?: string
+          space_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_suppressions_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       engagement_events: {
         Row: {
@@ -2645,12 +2792,12 @@ export type Database = {
           cover_image_path: string | null
           created_at: string | null
           currency: string
-          featured_at: string | null
           description: string | null
           details: Json
           domain_id: string | null
           ends_at: string | null
           energy_tag: string | null
+          featured_at: string | null
           geog: unknown
           host_id: string | null
           id: string
@@ -2677,6 +2824,7 @@ export type Database = {
           scope_type: string
           slug: string
           source: string
+          space_id: string | null
           starts_at: string
           status: string
           street: string | null
@@ -2694,7 +2842,6 @@ export type Database = {
           claimed_at?: string | null
           country?: string | null
           cover_image_path?: string | null
-          featured_at?: string | null
           created_at?: string | null
           currency?: string
           description?: string | null
@@ -2702,6 +2849,7 @@ export type Database = {
           domain_id?: string | null
           ends_at?: string | null
           energy_tag?: string | null
+          featured_at?: string | null
           geog?: unknown
           host_id?: string | null
           id?: string
@@ -2728,6 +2876,7 @@ export type Database = {
           scope_type: string
           slug: string
           source?: string
+          space_id?: string | null
           starts_at: string
           status?: string
           street?: string | null
@@ -2745,7 +2894,6 @@ export type Database = {
           claimed_at?: string | null
           country?: string | null
           cover_image_path?: string | null
-          featured_at?: string | null
           created_at?: string | null
           currency?: string
           description?: string | null
@@ -2753,6 +2901,7 @@ export type Database = {
           domain_id?: string | null
           ends_at?: string | null
           energy_tag?: string | null
+          featured_at?: string | null
           geog?: unknown
           host_id?: string | null
           id?: string
@@ -2779,6 +2928,7 @@ export type Database = {
           scope_type?: string
           slug?: string
           source?: string
+          space_id?: string | null
           starts_at?: string
           status?: string
           street?: string | null
@@ -2814,6 +2964,13 @@ export type Database = {
             columns: ["posted_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -2968,6 +3125,45 @@ export type Database = {
           is_active?: boolean
         }
         Relationships: []
+      }
+      gem_gifts: {
+        Row: {
+          amount: number
+          created_at: string
+          giver_id: string
+          id: string
+          recipient_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          giver_id: string
+          id?: string
+          recipient_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          giver_id?: string
+          id?: string
+          recipient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gem_gifts_giver_id_fkey"
+            columns: ["giver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gem_gifts_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gem_transactions: {
         Row: {
@@ -3378,6 +3574,58 @@ export type Database = {
           },
         ]
       }
+      journey_phase_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          kind: string
+          phase_id: string
+          run_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          kind: string
+          phase_id: string
+          run_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          kind?: string
+          phase_id?: string
+          run_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_phase_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_phase_events_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plan_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_phase_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "journey_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_plan_adoptions: {
         Row: {
           active: boolean
@@ -3512,12 +3760,16 @@ export type Database = {
           accent: string | null
           adopt_count: number
           author_id: string | null
+          category: string | null
           certificate_enabled: boolean
           completion_gems: number
           cover_image: string | null
           created_at: string
+          daily_minutes: number | null
+          difficulty: string | null
           drip_interval_days: number
           emoji: string | null
+          enroll_cap: number | null
           featured_at: string | null
           fork_of: string | null
           forked_count: number
@@ -3535,8 +3787,10 @@ export type Database = {
           sequential: boolean
           slug: string
           source_overview: string | null
+          space_id: string | null
           status: string
           summary: string | null
+          tags: string[]
           title: string
           updated_at: string
           vera_review: Json | null
@@ -3548,12 +3802,16 @@ export type Database = {
           accent?: string | null
           adopt_count?: number
           author_id?: string | null
+          category?: string | null
           certificate_enabled?: boolean
           completion_gems?: number
           cover_image?: string | null
           created_at?: string
+          daily_minutes?: number | null
+          difficulty?: string | null
           drip_interval_days?: number
           emoji?: string | null
+          enroll_cap?: number | null
           featured_at?: string | null
           fork_of?: string | null
           forked_count?: number
@@ -3571,8 +3829,10 @@ export type Database = {
           sequential?: boolean
           slug: string
           source_overview?: string | null
+          space_id?: string | null
           status?: string
           summary?: string | null
+          tags?: string[]
           title: string
           updated_at?: string
           vera_review?: Json | null
@@ -3584,12 +3844,16 @@ export type Database = {
           accent?: string | null
           adopt_count?: number
           author_id?: string | null
+          category?: string | null
           certificate_enabled?: boolean
           completion_gems?: number
           cover_image?: string | null
           created_at?: string
+          daily_minutes?: number | null
+          difficulty?: string | null
           drip_interval_days?: number
           emoji?: string | null
+          enroll_cap?: number | null
           featured_at?: string | null
           fork_of?: string | null
           forked_count?: number
@@ -3607,8 +3871,10 @@ export type Database = {
           sequential?: boolean
           slug?: string
           source_overview?: string | null
+          space_id?: string | null
           status?: string
           summary?: string | null
+          tags?: string[]
           title?: string
           updated_at?: string
           vera_review?: Json | null
@@ -3643,6 +3909,13 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plans_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -4336,6 +4609,7 @@ export type Database = {
           city: string | null
           created_at: string
           id: string
+          kind: string
           label: string | null
           location: unknown
           max_claims: number | null
@@ -4344,6 +4618,7 @@ export type Database = {
           proximity_m: number | null
           reward_event_type: string | null
           secret: string | null
+          space_id: string | null
           style: Json
           type: string
           valid_from: string | null
@@ -4356,6 +4631,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           id?: string
+          kind?: string
           label?: string | null
           location?: unknown
           max_claims?: number | null
@@ -4364,6 +4640,7 @@ export type Database = {
           proximity_m?: number | null
           reward_event_type?: string | null
           secret?: string | null
+          space_id?: string | null
           style?: Json
           type: string
           valid_from?: string | null
@@ -4376,6 +4653,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           id?: string
+          kind?: string
           label?: string | null
           location?: unknown
           max_claims?: number | null
@@ -4384,6 +4662,7 @@ export type Database = {
           proximity_m?: number | null
           reward_event_type?: string | null
           secret?: string | null
+          space_id?: string | null
           style?: Json
           type?: string
           valid_from?: string | null
@@ -4403,6 +4682,13 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nodes_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -4726,6 +5012,67 @@ export type Database = {
           },
         ]
       }
+      outreach_sends: {
+        Row: {
+          campaign_id: string | null
+          contact_id: string | null
+          created_at: string
+          email: string
+          error: string | null
+          id: string
+          resend_id: string | null
+          space_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          email: string
+          error?: string | null
+          id?: string
+          resend_id?: string | null
+          space_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          email?: string
+          error?: string | null
+          id?: string
+          resend_id?: string | null
+          space_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_sends_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_sends_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_sends_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_chrome_overrides: {
         Row: {
           note: string | null
@@ -4801,39 +5148,52 @@ export type Database = {
       }
       page_settings: {
         Row: {
+          header_image_url: string | null
           layout: Json | null
           og_image_url: string | null
           route: string
           seo_description: string | null
           seo_title: string | null
+          space_id: string
           status: string
           updated_at: string
           updated_by: string | null
           visibility_role: string | null
         }
         Insert: {
+          header_image_url?: string | null
           layout?: Json | null
           og_image_url?: string | null
           route: string
           seo_description?: string | null
           seo_title?: string | null
+          space_id: string
           status?: string
           updated_at?: string
           updated_by?: string | null
           visibility_role?: string | null
         }
         Update: {
+          header_image_url?: string | null
           layout?: Json | null
           og_image_url?: string | null
           route?: string
           seo_description?: string | null
           seo_title?: string | null
+          space_id?: string
           status?: string
           updated_at?: string
           updated_by?: string | null
           visibility_role?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "page_settings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "page_settings_updated_by_fkey"
             columns: ["updated_by"]
@@ -4853,6 +5213,7 @@ export type Database = {
           seo_description: string | null
           seo_title: string | null
           slug: string
+          space_id: string | null
           status: string
           title: string
           updated_at: string
@@ -4867,6 +5228,7 @@ export type Database = {
           seo_description?: string | null
           seo_title?: string | null
           slug: string
+          space_id?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -4881,12 +5243,20 @@ export type Database = {
           seo_description?: string | null
           seo_title?: string | null
           slug?: string
+          space_id?: string | null
           status?: string
           title?: string
           updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pages_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pages_updated_by_fkey"
             columns: ["updated_by"]
@@ -5607,6 +5977,7 @@ export type Database = {
           reward_note: string | null
           reward_zaps: number | null
           slug: string | null
+          space_id: string | null
           status: string
           subcategory_id: string | null
           summary: string | null
@@ -5637,6 +6008,7 @@ export type Database = {
           reward_note?: string | null
           reward_zaps?: number | null
           slug?: string | null
+          space_id?: string | null
           status?: string
           subcategory_id?: string | null
           summary?: string | null
@@ -5667,6 +6039,7 @@ export type Database = {
           reward_note?: string | null
           reward_zaps?: number | null
           slug?: string | null
+          space_id?: string | null
           status?: string
           subcategory_id?: string | null
           summary?: string | null
@@ -5694,6 +6067,13 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
@@ -5781,7 +6161,6 @@ export type Database = {
           community_level: string
           community_role: Database["public"]["Enums"]["community_role"] | null
           created_at: string | null
-          current_season_gems: number
           current_season_rank: Database["public"]["Enums"]["season_rank_enum"]
           current_season_zaps: number
           current_streak: number
@@ -5826,7 +6205,6 @@ export type Database = {
           profile_flair: string | null
           profile_theme: string | null
           referred_by_profile_id: string | null
-          season_challenges_complete: boolean
           stripe_account_id: string | null
           stripe_charges_enabled: boolean
           stripe_customer_id: string | null
@@ -5852,7 +6230,6 @@ export type Database = {
           community_level?: string
           community_role?: Database["public"]["Enums"]["community_role"] | null
           created_at?: string | null
-          current_season_gems?: number
           current_season_rank?: Database["public"]["Enums"]["season_rank_enum"]
           current_season_zaps?: number
           current_streak?: number
@@ -5897,7 +6274,6 @@ export type Database = {
           profile_flair?: string | null
           profile_theme?: string | null
           referred_by_profile_id?: string | null
-          season_challenges_complete?: boolean
           stripe_account_id?: string | null
           stripe_charges_enabled?: boolean
           stripe_customer_id?: string | null
@@ -5923,7 +6299,6 @@ export type Database = {
           community_level?: string
           community_role?: Database["public"]["Enums"]["community_role"] | null
           created_at?: string | null
-          current_season_gems?: number
           current_season_rank?: Database["public"]["Enums"]["season_rank_enum"]
           current_season_zaps?: number
           current_streak?: number
@@ -5968,7 +6343,6 @@ export type Database = {
           profile_flair?: string | null
           profile_theme?: string | null
           referred_by_profile_id?: string | null
-          season_challenges_complete?: boolean
           stripe_account_id?: string | null
           stripe_charges_enabled?: boolean
           stripe_customer_id?: string | null
@@ -6057,6 +6431,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           slug: string
+          space_id: string | null
           status: string
           summary: string | null
           title: string
@@ -6075,6 +6450,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           slug: string
+          space_id?: string | null
           status?: string
           summary?: string | null
           title: string
@@ -6093,6 +6469,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           slug?: string
+          space_id?: string | null
           status?: string
           summary?: string | null
           title?: string
@@ -6111,6 +6488,13 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programs_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -6176,6 +6560,8 @@ export type Database = {
           scan_count: number
           slug: string
           source_tag: string | null
+          space_id: string | null
+          splash: Json | null
           style: Json
           switch_at: string | null
           target_url: string | null
@@ -6204,6 +6590,8 @@ export type Database = {
           scan_count?: number
           slug: string
           source_tag?: string | null
+          space_id?: string | null
+          splash?: Json | null
           style?: Json
           switch_at?: string | null
           target_url?: string | null
@@ -6232,6 +6620,8 @@ export type Database = {
           scan_count?: number
           slug?: string
           source_tag?: string | null
+          space_id?: string | null
+          splash?: Json | null
           style?: Json
           switch_at?: string | null
           target_url?: string | null
@@ -6289,6 +6679,13 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -6437,45 +6834,6 @@ export type Database = {
           {
             foreignKeyName: "reports_reviewed_by_fkey"
             columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gem_gifts: {
-        Row: {
-          amount: number
-          created_at: string
-          giver_id: string
-          id: string
-          recipient_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          giver_id: string
-          id?: string
-          recipient_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          giver_id?: string
-          id?: string
-          recipient_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gem_gifts_giver_id_fkey"
-            columns: ["giver_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gem_gifts_recipient_id_fkey"
-            columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -6879,60 +7237,411 @@ export type Database = {
           },
         ]
       }
+      space_availability: {
+        Row: {
+          created_at: string
+          end_minute: number
+          id: string
+          slot_minutes: number
+          space_id: string
+          start_minute: number
+          timezone: string
+          weekday: number
+        }
+        Insert: {
+          created_at?: string
+          end_minute: number
+          id?: string
+          slot_minutes?: number
+          space_id: string
+          start_minute: number
+          timezone?: string
+          weekday: number
+        }
+        Update: {
+          created_at?: string
+          end_minute?: number
+          id?: string
+          slot_minutes?: number
+          space_id?: string
+          start_minute?: number
+          timezone?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_availability_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_bookings: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          member_profile_id: string
+          note: string | null
+          space_id: string
+          starts_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          member_profile_id: string
+          note?: string | null
+          space_id: string
+          starts_at: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          member_profile_id?: string
+          note?: string | null
+          space_id?: string
+          starts_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_bookings_member_profile_id_fkey"
+            columns: ["member_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_bookings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_follows: {
+        Row: {
+          created_at: string
+          follower_profile_id: string
+          id: string
+          space_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_profile_id: string
+          id?: string
+          space_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_profile_id?: string
+          id?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_follows_follower_profile_id_fkey"
+            columns: ["follower_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_follows_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: string
+          space_id: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: string
+          space_id: string
+          status?: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: string
+          space_id?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_invites_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_members: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string | null
+          profile_id: string
+          role: string
+          space_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          profile_id: string
+          role?: string
+          space_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          profile_id?: string
+          role?: string
+          space_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_members_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_membership_tiers: {
+        Row: {
+          benefits: Json
+          created_at: string
+          description: string | null
+          id: string
+          interval: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          sort: number
+          space_id: string
+        }
+        Insert: {
+          benefits?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          interval?: string
+          is_active?: boolean
+          name: string
+          price_cents?: number
+          sort?: number
+          space_id: string
+        }
+        Update: {
+          benefits?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          interval?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          sort?: number
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_membership_tiers_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_memberships: {
+        Row: {
+          created_at: string
+          id: string
+          member_profile_id: string
+          space_id: string
+          started_at: string
+          status: string
+          tier_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_profile_id: string
+          space_id: string
+          started_at?: string
+          status?: string
+          tier_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_profile_id?: string
+          space_id?: string
+          started_at?: string
+          status?: string
+          tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_memberships_member_profile_id_fkey"
+            columns: ["member_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_memberships_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_memberships_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "space_membership_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spaces: {
         Row: {
+          about: string | null
           brand_accent: string | null
           brand_logo_url: string | null
           brand_name: string | null
           created_at: string
           domain: string | null
+          email_enabled: boolean
           enabled_verticals: string[]
+          entitlements: Json
           entity_id: string
+          generation: string | null
           id: string
           name: string
           network_connected: boolean
           owner_profile_id: string | null
+          plan: string | null
           skin: string
           slug: string
           status: string
+          tagline: string | null
           type: string
           updated_at: string
+          visibility: string
         }
         Insert: {
+          about?: string | null
           brand_accent?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
           created_at?: string
           domain?: string | null
+          email_enabled?: boolean
           enabled_verticals?: string[]
+          entitlements?: Json
           entity_id: string
+          generation?: string | null
           id?: string
           name: string
           network_connected?: boolean
           owner_profile_id?: string | null
+          plan?: string | null
           skin?: string
           slug: string
           status?: string
+          tagline?: string | null
           type: string
           updated_at?: string
+          visibility?: string
         }
         Update: {
+          about?: string | null
           brand_accent?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
           created_at?: string
           domain?: string | null
+          email_enabled?: boolean
           enabled_verticals?: string[]
+          entitlements?: Json
           entity_id?: string
+          generation?: string | null
           id?: string
           name?: string
           network_connected?: boolean
           owner_profile_id?: string | null
+          plan?: string | null
           skin?: string
           slug?: string
           status?: string
+          tagline?: string | null
           type?: string
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -8180,6 +8889,11 @@ export type Database = {
       am_room_member: { Args: { p_room_id: string }; Returns: boolean }
       are_friends: { Args: { a: string; b: string }; Returns: boolean }
       can_read_event: { Args: { p_event_id: string }; Returns: boolean }
+      can_view_space_content: { Args: { p_space_id: string }; Returns: boolean }
+      can_write_space_content: {
+        Args: { p_space_id: string }
+        Returns: boolean
+      }
       challenge_outcomes: {
         Args: never
         Returns: {
@@ -8479,6 +9193,8 @@ export type Database = {
         Returns: boolean
       }
       is_my_event: { Args: { p_event_id: string }; Returns: boolean }
+      is_space_admin: { Args: { p_space_id: string }; Returns: boolean }
+      is_space_member: { Args: { p_space_id: string }; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
       match_help_chunks: {
         Args: {
@@ -9782,4 +10498,3 @@ export const Constants = {
     },
   },
 } as const
-
