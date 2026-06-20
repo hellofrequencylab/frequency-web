@@ -37,7 +37,7 @@ describe('DEFAULT_PREFERENCES', () => {
     expect(DEFAULT_PREFERENCES.inapp_lifecycle).toBe(true)
   })
 
-  it('push is opted-out by default for all categories (P1.4 not yet shipped)', () => {
+  it('push is opted-out by default for all categories (opt-in: needs a browser-permission grant)', () => {
     expect(DEFAULT_PREFERENCES.push_dispatches).toBe(false)
     expect(DEFAULT_PREFERENCES.push_events).toBe(false)
     expect(DEFAULT_PREFERENCES.push_mentions).toBe(false)

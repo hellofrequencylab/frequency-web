@@ -153,10 +153,9 @@ export default async function SpaceSettingsPage({
           />
         )}
 
-        {/* `SpaceType` does not yet list 'event_space' (the role is live in the DB CHECK + blueprints +
-            picker, but widening the hand-written union is a deferred solo task that risks exhaustiveness
-            cascades), so compare as a string the way event_space is resolved elsewhere. */}
-        {(space.type as string) === 'event_space' && (
+        {/* `event_space` is a first-class member of `SpaceType` (HARD-01 / ADR-339), so this branch is a
+            plain, exhaustively-checked comparison: no `as string` cast. */}
+        {space.type === 'event_space' && (
           // An Event Space runs door check-in: a reusable QR by the door, and the live roster of who
           // scanned in. Reuses the existing scan path; this card links to the owner roster surface.
           <HubCard

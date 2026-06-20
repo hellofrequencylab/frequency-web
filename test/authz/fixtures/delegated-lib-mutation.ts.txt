@@ -1,0 +1,12 @@
+// FIXTURE (not compiled/collected — read as text by check-authz-lib.test.ts).
+// A `lib/` mutation helper that consciously trusts its caller — the gate lives at the call
+// site (a cron / system path). It carries the `// authz-delegated:` marker, so the lib scan
+// must PASS it: the missing gate is acknowledged, not accidental.
+
+import { createAdminClient } from '@/lib/supabase/admin'
+
+// authz-delegated: nightly system sweep; runs unattended, no per-caller scope by design.
+export async function purgeExpired(): Promise<void> {
+  const admin = createAdminClient()
+  await admin.from('sessions').delete()
+}

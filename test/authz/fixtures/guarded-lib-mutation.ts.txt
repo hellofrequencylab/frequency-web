@@ -1,0 +1,15 @@
+// FIXTURE (not compiled/collected — read as text by check-authz-lib.test.ts).
+// A SAFE `lib/` mutation helper that SELF-GUARDS: it establishes the caller and checks a
+// capability before the privileged write. A guard token present in the file means the lib
+// scan must PASS it (the helper is not a confused deputy).
+
+import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/auth/guards'
+
+/** Deletes any note — but only after proving the caller is an admin. */
+export async function deleteNoteAsAdmin(noteId: string): Promise<void> {
+  await requireAdmin()
+  const admin = createAdminClient()
+  await admin.from('notes').delete()
+  void noteId
+}

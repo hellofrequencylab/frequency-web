@@ -30,6 +30,7 @@ import { DemoBadge } from '@/components/ui/demo-badge'
 import { SupporterBadge } from '@/components/supporter-badge'
 import { VeraProfile } from '@/components/people/vera-profile'
 import { getMemberSignature } from '@/lib/frequency-signature-data'
+import { getProfileZapTotal } from '@/lib/profile-zaps'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
 import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
@@ -165,8 +166,9 @@ export default async function ProfilePage({
     isBlocked = await hasBlocked(myProfileId, profileId)
   }
 
-  const [zapsResult, completionsCountResult, postsCountResult, circlesResult, signature] = await Promise.all([
-    admin.from('crew_completions').select('zaps_earned').eq('profile_id', profileId),
+  const [totalZaps, completionsCountResult, postsCountResult, circlesResult, signature] = await Promise.all([
+    // Lifetime Zaps as one SQL aggregate (HARD-05): no per-row tally / N+1.
+    getProfileZapTotal(profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
     admin.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', profileId).is('parent_id', null).is('hidden_at', null),
     admin.from('memberships').select('circles!circle_id ( id, name, slug )').eq('profile_id', profileId).eq('status', 'active'),
@@ -175,7 +177,6 @@ export default async function ProfilePage({
     getMemberSignature(profileId),
   ])
 
-  const totalZaps = (zapsResult.data ?? []).reduce((sum: number, r: { zaps_earned: number }) => sum + (r.zaps_earned ?? 0), 0)
   const tasksCompleted = completionsCountResult.count ?? 0
   const postCount = postsCountResult.count ?? 0
   const currentStreak = (profile.current_streak as number | null) ?? 0

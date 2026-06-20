@@ -97,7 +97,7 @@ function UnpublishButton({ slug }: { slug: string }) {
       onClick={handleUnpublish}
       disabled={status === 'working'}
       title="Take the editor version offline. The public page reverts to the coded design"
-      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-[#a33] hover:text-[#7a1f1f]"
+      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-danger hover:text-danger"
     >
       {status === 'working' ? 'Unpublishing…' : status === 'error' ? 'Retry unpublish' : 'Unpublish'}
     </button>
@@ -127,7 +127,7 @@ export function PageEditor({
           <>
             <Link
               href="/pages"
-              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-[#555] hover:text-black"
+              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
             >
               ← Exit
             </Link>

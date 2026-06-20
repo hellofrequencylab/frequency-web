@@ -9473,6 +9473,7 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      profile_zap_total: { Args: { _profile: string }; Returns: number }
       public_active_circle_count: { Args: never; Returns: number }
       public_circle_by_id: {
         Args: { _id: string }

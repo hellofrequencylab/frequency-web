@@ -148,12 +148,15 @@ export const TRIGGERS = Object.keys(TRIGGER_LABELS) as WalkthroughTrigger[]
 
 /** Triggers whose runtime qualifier is NOT wired yet. `project` has no project entity on
  *  this model (see lib/walkthroughs/runtime.ts `triggerQualifies` + ADR-243), so a
- *  walkthrough set to it would silently never show. It stays in the union + labels so any
- *  legacy row still renders its chip — it's just never offered as a choice. Wire the
- *  qualifier, then drop it from here to light it up. */
+ *  walkthrough set to it would silently never show. This set is load-bearing, not dormant:
+ *  it derives AVAILABLE_TRIGGERS, which the editor dropdown and the save-action gate both
+ *  read to keep `project` out of an operator's choices. The trigger stays in the union and
+ *  labels so any legacy row still renders its chip; it is just never offered as a choice.
+ *  Lighting it up later is a one-line change: wire its qualifier in `triggerQualifies`,
+ *  then drop it from here (a real "project" entity has to exist first, per ADR-243). */
 export const UNWIRED_TRIGGERS = new Set<WalkthroughTrigger>(['project'])
 
-/** The triggers an operator can author against today — every wired trigger. Both the
+/** The triggers an operator can author against today: every wired trigger. Both the
  *  editor dropdown and the save action gate on this so no one can ship a dead trigger. */
 export const AVAILABLE_TRIGGERS = TRIGGERS.filter((t) => !UNWIRED_TRIGGERS.has(t))
 

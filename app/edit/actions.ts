@@ -40,19 +40,6 @@ export async function publishPage(slug: string, data: Data, spaceId?: string | n
   revalidatePath('/pages')
 }
 
-// Save the working draft only (not yet wired to a UI button; kept for parity).
-export async function savePageDraft(slug: string, data: Data, spaceId?: string | null): Promise<void> {
-  const janitor = await requireJanitor()
-  if (!isEditableSlug(slug)) return
-  const meta = EDITABLE_PAGES.find((p) => p.slug === slug)!
-  const sid = await resolveSpaceId(spaceId)
-  const db = createAdminClient()
-  await db.from('pages').upsert(
-    { slug, space_id: sid, title: meta.title, data, updated_at: new Date().toISOString(), updated_by: janitor.profileId } as never,
-    { onConflict: 'slug' },
-  )
-}
-
 // Unpublish — clear the live document so the public route falls back to the
 // hardcoded (coded) design. The working draft (`data`) is kept so the editor
 // content isn't lost; only `published_data` is cleared.

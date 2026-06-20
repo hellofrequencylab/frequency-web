@@ -1,0 +1,12 @@
+// FIXTURE (not compiled/collected — read as text by check-authz-lib.test.ts).
+// A SAFE `lib/` mutation helper: it mutates through the admin client but BINDS the write
+// to an ownership/scope column (.eq('owner_id', …)). The scoping filter is the static
+// proxy for "this write can't be a confused deputy", so the lib scan must PASS it.
+
+import { createAdminClient } from '@/lib/supabase/admin'
+
+/** Deletes a note, bound to the owner — a cross-owner id simply matches nothing. */
+export async function deleteOwnNote(noteId: string, ownerId: string): Promise<void> {
+  const admin = createAdminClient()
+  await admin.from('notes').delete().eq('id', noteId).eq('owner_id', ownerId)
+}
