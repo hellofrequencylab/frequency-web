@@ -4,8 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { useVenue } from "@/components/dj/useVenue";
 import { SyncedPlayer } from "@/components/sync/SyncedPlayer";
 import { computePosition } from "@/lib/sync/clock";
-import { AvatarChip, avatarOf } from "./AvatarChip";
 import { DecorCanvas } from "@/components/venue/DecorCanvas";
+import {
+  AvatarStack,
+  Badge,
+  Button,
+  Card,
+  IconButton,
+  Input,
+  LiveBadge,
+  cn,
+} from "@/components/ui";
 
 type RoomProps = {
   venueId: string;
@@ -22,7 +31,8 @@ type Venue = ReturnType<typeof useVenue>;
 /**
  * Renders a venue by its media type: DJ Room (rotating decks), Watch Party (one
  * host drives a shared video), or Lounge (always-on auto-DJ). All share one
- * channel, chat, presence, and floating emotes (one `useVenue`).
+ * channel, chat, presence, and floating emotes (one `useVenue`). Presentation is
+ * the design-system kit; the live wiring is unchanged.
  */
 export function Room(props: RoomProps) {
   const v = useVenue(props.venueId, props.userId, props.name, props.avatar, props.onGameEvent);
@@ -31,54 +41,72 @@ export function Room(props: RoomProps) {
   return <DjLayout v={v} {...props} />;
 }
 
-function Header({ v, onLeaveVenue }: { v: Venue; onLeaveVenue?: () => void }) {
+/** Two-column room body: the main column and the chat rail (rail drops below on
+ * narrow screens). */
+const SPLIT = "mt-4 grid gap-4 lg:grid-cols-[1fr_320px]";
+
+function RoomHeader({ v, onLeaveVenue }: { v: Venue; onLeaveVenue?: () => void }) {
+  const people = v.roster.map((p) => ({
+    userId: p.userId,
+    name: p.name,
+    config: p.avatar ?? undefined,
+  }));
   return (
-    <div style={{ marginBottom: "0.5rem" }}>
-      <p style={{ color: "#888", fontSize: 12, margin: "0 0 0.35rem", wordBreak: "break-all" }}>
-        {v.venue?.name} · {v.roster.length} here
-        {onLeaveVenue ? (
-          <>
-            {" "}
-            · <button onClick={onLeaveVenue}>switch venue</button>
-          </>
-        ) : null}
-      </p>
-      <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-        {v.roster.map((p) => {
-          const a = avatarOf(p.avatar);
-          return <AvatarChip key={p.userId} emoji={a.emoji} color={a.color} name={p.name} />;
-        })}
-        {v.roster.length === 0 && <small style={{ color: "#bbb" }}>…</small>}
+    <div className="mb-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <h1 className="min-w-0 truncate font-display text-2xl text-text">
+          {v.venue?.name ?? "Room"}
+        </h1>
+        <LiveBadge state={v.roster.length > 0 ? "live" : "quiet"} count={v.roster.length} />
+        {onLeaveVenue && (
+          <Button variant="quiet" size="sm" className="ml-auto" onClick={onLeaveVenue}>
+            Switch venue
+          </Button>
+        )}
       </div>
-      {v.venue && v.venue.decor.length > 0 ? (
-        <div style={{ marginTop: "0.6rem" }}>
+      {people.length > 0 ? (
+        <AvatarStack people={people} max={8} />
+      ) : (
+        <p className="text-sm text-mute">Nobody here yet.</p>
+      )}
+      {v.venue && v.venue.decor.length > 0 && (
+        <div className="overflow-hidden rounded-md border">
           <DecorCanvas decor={v.venue.decor} />
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
 
-/** Emotes that float up over the player for a beat, then vanish. */
+/** The shared video framed as the stage, with a Pulse glow while it is playing
+ * and the floating-emote overlay. */
+function Stage({ v, onEnded }: { v: Venue; onEnded?: () => void }) {
+  const playing = !!v.roomState?.isPlaying;
+  return (
+    <div className="relative">
+      <div
+        className="overflow-hidden rounded-lg border"
+        style={playing ? { boxShadow: "var(--glow-pulse)" } : undefined}
+      >
+        <SyncedPlayer state={v.roomState} onEnded={onEnded} />
+      </div>
+      <FloatingEmotes v={v} />
+    </div>
+  );
+}
+
+/** Emotes that float up over the stage for a beat, then vanish. */
 function FloatingEmotes({ v }: { v: Venue }) {
   return (
-    <div style={{ position: "relative", height: 0 }}>
+    <div className="relative h-0">
       <style>{"@keyframes rs-float{from{transform:translateY(0);opacity:1}to{transform:translateY(-72px);opacity:0}}"}</style>
-      <div
-        style={{
-          position: "absolute",
-          right: 12,
-          bottom: 8,
-          display: "flex",
-          gap: 8,
-          pointerEvents: "none",
-        }}
-      >
+      <div className="pointer-events-none absolute right-3 bottom-2 flex gap-2">
         {v.reactions.map((r) => (
           <span
             key={r.id}
             title={r.name}
-            style={{ fontSize: 30, animation: "rs-float 2.5s ease-out forwards" }}
+            className="text-3xl"
+            style={{ animation: "rs-float 2.5s var(--ease-out) forwards" }}
           >
             {r.emoji}
           </span>
@@ -88,24 +116,34 @@ function FloatingEmotes({ v }: { v: Venue }) {
   );
 }
 
-function ChatBox({ v }: { v: Venue }) {
+const EMOTES = ["🔥", "😂", "❤️", "🙌", "👀"];
+
+function ChatRail({ v }: { v: Venue }) {
   const [chatText, setChatText] = useState("");
   return (
-    <section style={card}>
-      <h3>Chat</h3>
-      <div style={{ display: "flex", gap: "0.35rem", marginBottom: "0.5rem" }}>
-        {["🔥", "😂", "❤️", "🙌", "👀"].map((e) => (
-          <button key={e} onClick={() => v.actions.react(e)} title="send a reaction">
-            {e}
-          </button>
-        ))}
+    <Card className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-lg text-text">Chat</h3>
+        <div className="flex gap-1">
+          {EMOTES.map((e) => (
+            <IconButton
+              key={e}
+              aria-label={`Send ${e} reaction`}
+              variant="quiet"
+              onClick={() => v.actions.react(e)}
+            >
+              {e}
+            </IconButton>
+          ))}
+        </div>
       </div>
-      <div style={{ maxHeight: 160, overflow: "auto", fontSize: 13, marginBottom: "0.5rem" }}>
+      <div className="max-h-48 space-y-1 overflow-auto text-sm">
         {v.chat.map((c, i) => (
           <div key={i}>
-            <b>{c.name}:</b> {c.text}
+            <b className="text-text">{c.name}:</b> <span className="text-soft">{c.text}</span>
           </div>
         ))}
+        {v.chat.length === 0 && <p className="text-mute">Say hi to the room.</p>}
       </div>
       <form
         onSubmit={(e) => {
@@ -115,17 +153,18 @@ function ChatBox({ v }: { v: Venue }) {
             setChatText("");
           }
         }}
-        style={{ display: "flex", gap: "0.5rem" }}
+        className="flex gap-2"
       >
-        <input
+        <Input
+          className="flex-1"
           value={chatText}
           onChange={(e) => setChatText(e.target.value)}
-          placeholder="say something"
-          style={{ flex: 1, padding: "0.4rem" }}
+          placeholder="Say something"
+          aria-label="Chat message"
         />
-        <button type="submit">Send</button>
+        <Button type="submit">Send</Button>
       </form>
-    </section>
+    </Card>
   );
 }
 
@@ -137,44 +176,55 @@ function WatchLayout({ v, userId, canDj, onLeaveVenue }: { v: Venue } & RoomProp
 
   return (
     <>
-      <Header v={v} onLeaveVenue={onLeaveVenue} />
-      <SyncedPlayer state={v.roomState} />
-      <FloatingEmotes v={v} />
-
-      <section style={card}>
-        {isHost ? (
-          <>
-            <h3>You’re hosting</h3>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
-              <input
-                value={mediaId}
-                onChange={(e) => setMediaId(e.target.value)}
-                placeholder="YouTube video id"
-                style={{ flex: 1, minWidth: "12rem", padding: "0.4rem" }}
-              />
-              <button onClick={() => v.actions.loadVideo(mediaId)}>Load</button>
-              <button onClick={() => v.actions.play()}>Play</button>
-              <button onClick={() => v.actions.pause()}>Pause</button>
-              <button onClick={() => v.actions.seek(Math.max(0, posNow() + 10))}>+10s</button>
-              <button onClick={() => v.actions.seek(Math.max(0, posNow() - 10))}>-10s</button>
+      <RoomHeader v={v} onLeaveVenue={onLeaveVenue} />
+      <Stage v={v} />
+      <div className={SPLIT}>
+        <Card className="space-y-3">
+          {isHost ? (
+            <>
+              <h3 className="font-display text-lg text-text">You&apos;re hosting</h3>
+              <div className="flex flex-wrap gap-2">
+                <Input
+                  className="min-w-48 flex-1"
+                  value={mediaId}
+                  onChange={(e) => setMediaId(e.target.value)}
+                  placeholder="YouTube video id"
+                  aria-label="Video id"
+                />
+                <Button onClick={() => v.actions.loadVideo(mediaId)}>Load</Button>
+                <Button variant="ghost" onClick={() => v.actions.play()}>
+                  Play
+                </Button>
+                <Button variant="ghost" onClick={() => v.actions.pause()}>
+                  Pause
+                </Button>
+                <Button variant="ghost" onClick={() => v.actions.seek(Math.max(0, posNow() + 10))}>
+                  +10s
+                </Button>
+                <Button variant="ghost" onClick={() => v.actions.seek(Math.max(0, posNow() - 10))}>
+                  -10s
+                </Button>
+              </div>
+              <Button variant="quiet" onClick={v.actions.leaveSeat}>
+                Leave host
+              </Button>
+            </>
+          ) : host ? (
+            <p className="text-soft">
+              Following <b className="text-text">{host.occupantUserId.slice(0, 8)}</b>. Sit back and
+              watch.
+            </p>
+          ) : canDj ? (
+            <div className="space-y-2">
+              <p className="text-mute">No host yet.</p>
+              <Button onClick={v.actions.takeSeat}>Take host</Button>
             </div>
-            <button onClick={v.actions.leaveSeat}>Leave host</button>
-          </>
-        ) : host ? (
-          <p>
-            Following <b>{host.occupantUserId.slice(0, 8)}</b>. Sit back and watch.
-          </p>
-        ) : canDj ? (
-          <>
-            <p style={{ color: "#555" }}>No host yet.</p>
-            <button onClick={v.actions.takeSeat}>Take host</button>
-          </>
-        ) : (
-          <small style={{ color: "#888" }}>Set a name to host.</small>
-        )}
-      </section>
-
-      <ChatBox v={v} />
+          ) : (
+            <p className="text-sm text-mute">Set a name to host.</p>
+          )}
+        </Card>
+        <ChatRail v={v} />
+      </div>
     </>
   );
 }
@@ -197,44 +247,49 @@ function LoungeLayout({ v, canDj, onLeaveVenue }: { v: Venue } & RoomProps) {
 
   return (
     <>
-      <Header v={v} onLeaveVenue={onLeaveVenue} />
-      <p style={{ fontSize: 13, color: "#888" }}>🎚️ Auto-DJ · always on</p>
-      <SyncedPlayer state={v.roomState} onEnded={v.actions.advance} />
-      <FloatingEmotes v={v} />
-
-      <section style={card}>
-        <h3>On rotation</h3>
-        <ol style={{ fontSize: 13 }}>
-          {playlist.map((m, i) => (
-            <li key={`${m}-${i}`} style={{ fontWeight: m === nowPlaying ? 700 : 400 }}>
-              {m} {m === nowPlaying ? "▶" : ""}
-            </li>
-          ))}
-          {playlist.length === 0 && <li style={{ color: "#888" }}>empty — add a track</li>}
-        </ol>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (mediaId.trim()) {
-              v.actions.addToPlaylist(mediaId.trim());
-              setMediaId("");
-            }
-          }}
-          style={{ display: "flex", gap: "0.5rem" }}
-        >
-          <input
-            value={mediaId}
-            onChange={(e) => setMediaId(e.target.value)}
-            placeholder="YouTube video id"
-            style={{ flex: 1, padding: "0.4rem" }}
-          />
-          <button type="submit" disabled={!canDj}>
-            Add to queue
-          </button>
-        </form>
-      </section>
-
-      <ChatBox v={v} />
+      <RoomHeader v={v} onLeaveVenue={onLeaveVenue} />
+      <div className="mb-3">
+        <Badge tone="pulse">🎚️ Auto-DJ · always on</Badge>
+      </div>
+      <Stage v={v} onEnded={v.actions.advance} />
+      <div className={SPLIT}>
+        <Card className="space-y-3">
+          <h3 className="font-display text-lg text-text">On rotation</h3>
+          <ol className="space-y-1 text-sm">
+            {playlist.map((m, i) => (
+              <li
+                key={`${m}-${i}`}
+                className={cn(m === nowPlaying ? "font-medium text-text" : "text-soft")}
+              >
+                {m} {m === nowPlaying ? <span className="text-pulse">▶</span> : null}
+              </li>
+            ))}
+            {playlist.length === 0 && <li className="text-mute">Empty. Add a track.</li>}
+          </ol>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (mediaId.trim()) {
+                v.actions.addToPlaylist(mediaId.trim());
+                setMediaId("");
+              }
+            }}
+            className="flex gap-2"
+          >
+            <Input
+              className="flex-1"
+              value={mediaId}
+              onChange={(e) => setMediaId(e.target.value)}
+              placeholder="YouTube video id"
+              aria-label="Add a track"
+            />
+            <Button type="submit" disabled={!canDj}>
+              Add
+            </Button>
+          </form>
+        </Card>
+        <ChatRail v={v} />
+      </div>
     </>
   );
 }
@@ -243,93 +298,111 @@ function DjLayout({ v, userId, canDj, onLeaveVenue }: { v: Venue } & RoomProps) 
   const [mediaId, setMediaId] = useState("dQw4w9WgXcQ");
   const onStage = v.seats.some((s) => s.occupantUserId === userId);
   const currentDjIsMe = v.roomState?.currentDjUserId === userId;
+  const seatCount = v.venue?.seatCount ?? 5;
 
   return (
     <>
-      <Header v={v} onLeaveVenue={onLeaveVenue} />
-      <p style={{ fontSize: 13 }}>
-        ⚡ <b>{v.standing?.balance ?? 0}</b> Zaps · rank <b>{v.standing?.rank ?? "Crew"}</b>{" "}
-        <small style={{ color: "#888" }}>({v.standing?.djPoints ?? 0} DJ pts this season)</small>
-      </p>
+      <RoomHeader v={v} onLeaveVenue={onLeaveVenue} />
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+        <Badge tone="spark">⚡ {v.standing?.balance ?? 0} Zaps</Badge>
+        <Badge tone="neutral">Rank {v.standing?.rank ?? "Crew"}</Badge>
+        <span className="text-mute">{v.standing?.djPoints ?? 0} DJ pts this season</span>
+      </div>
 
-      <SyncedPlayer state={v.roomState} onEnded={v.actions.advance} />
-      <FloatingEmotes v={v} />
+      <Stage v={v} onEnded={v.actions.advance} />
 
-      <section style={{ display: "flex", gap: "1rem", margin: "1rem 0", flexWrap: "wrap" }}>
-        <div style={card}>
-          <h3>Stage ({v.seats.length}/{v.venue?.seatCount ?? 5})</h3>
-          <ol>
-            {Array.from({ length: v.venue?.seatCount ?? 5 }).map((_, i) => {
-              const seat = v.seats.find((s) => s.seatIndex === i);
-              const here = seat?.occupantUserId === userId;
-              const spinning = v.roomState?.currentDjUserId === seat?.occupantUserId;
-              return (
-                <li key={i}>
-                  {seat ? (here ? "you" : seat.occupantUserId.slice(0, 8)) : "(empty)"}
-                  {spinning ? " 🎧" : ""}
+      <div className={SPLIT}>
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card className="space-y-2">
+              <h3 className="font-display text-lg text-text">
+                Stage <span className="text-sm text-mute">({v.seats.length}/{seatCount})</span>
+              </h3>
+              <ol className="space-y-1 text-sm">
+                {Array.from({ length: seatCount }).map((_, i) => {
+                  const seat = v.seats.find((s) => s.seatIndex === i);
+                  const here = seat?.occupantUserId === userId;
+                  const spinning = v.roomState?.currentDjUserId === seat?.occupantUserId;
+                  return (
+                    <li key={i} className={cn(seat ? "text-soft" : "text-mute")}>
+                      {seat ? (here ? "you" : seat.occupantUserId.slice(0, 8)) : "(empty)"}
+                      {spinning ? " 🎧" : ""}
+                    </li>
+                  );
+                })}
+              </ol>
+              {onStage ? (
+                <Button variant="ghost" onClick={v.actions.leaveSeat}>
+                  Leave stage
+                </Button>
+              ) : canDj ? (
+                <Button onClick={v.actions.takeSeat}>Take a seat</Button>
+              ) : (
+                <p className="text-sm text-mute">Set a name to take the decks.</p>
+              )}
+            </Card>
+
+            <Card className="space-y-2">
+              <h3 className="font-display text-lg text-text">Now playing</h3>
+              <p className="text-sm text-soft">
+                {v.roomState?.currentMediaId
+                  ? `${v.roomState.currentMediaId}${currentDjIsMe ? " (yours)" : ""}`
+                  : "Nothing yet."}
+              </p>
+              <p className="text-sm">
+                <span className="text-signal">👍 {v.tally?.awesome ?? 0}</span>
+                <span className="px-2 text-alert">👎 {v.tally?.lame ?? 0}</span>
+                <span className="text-mute">net {v.tally?.net ?? 0}</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="ghost" size="sm" onClick={() => v.actions.vote("awesome")}>
+                  Awesome
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => v.actions.vote("lame")}>
+                  Lame
+                </Button>
+                <Button variant="quiet" size="sm" onClick={() => v.actions.advance()}>
+                  Next ⤼
+                </Button>
+              </div>
+            </Card>
+          </div>
+
+          <Card className="space-y-2">
+            <h3 className="font-display text-lg text-text">Your queue</h3>
+            <div className="flex gap-2">
+              <Input
+                className="flex-1"
+                value={mediaId}
+                onChange={(e) => setMediaId(e.target.value)}
+                placeholder="YouTube video id"
+                aria-label="Queue a track"
+              />
+              <Button onClick={() => v.actions.enqueue(mediaId)} disabled={!canDj}>
+                Queue
+              </Button>
+            </div>
+            <ul className="space-y-1 text-sm">
+              {v.myQueue.map((q) => (
+                <li key={q.id} className="flex items-center gap-2">
+                  <span className="min-w-0 truncate text-soft">{q.mediaId}</span>
+                  <Button
+                    variant="quiet"
+                    size="sm"
+                    className="ml-auto"
+                    onClick={() => v.actions.removeQueue(q.id)}
+                  >
+                    remove
+                  </Button>
                 </li>
-              );
-            })}
-          </ol>
-          {onStage ? (
-            <button onClick={v.actions.leaveSeat}>Leave stage</button>
-          ) : canDj ? (
-            <button onClick={v.actions.takeSeat}>Take a seat</button>
-          ) : (
-            <small style={{ color: "#888" }}>Set a name to take the decks.</small>
-          )}
+              ))}
+              {v.myQueue.length === 0 && <li className="text-mute">Empty.</li>}
+            </ul>
+          </Card>
         </div>
 
-        <div style={card}>
-          <h3>Now playing</h3>
-          <p style={{ fontSize: 13 }}>
-            {v.roomState?.currentMediaId
-              ? `${v.roomState.currentMediaId}${currentDjIsMe ? " (yours)" : ""}`
-              : "nothing yet"}
-          </p>
-          <p>
-            👍 {v.tally?.awesome ?? 0} &nbsp; 👎 {v.tally?.lame ?? 0} &nbsp;
-            <small style={{ color: "#888" }}>net {v.tally?.net ?? 0}</small>
-          </p>
-          <button onClick={() => v.actions.vote("awesome")}>Awesome</button>{" "}
-          <button onClick={() => v.actions.vote("lame")}>Lame</button>{" "}
-          <button onClick={() => v.actions.advance()}>Next ⤼</button>
-        </div>
-      </section>
-
-      <section style={card}>
-        <h3>Your queue</h3>
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-          <input
-            value={mediaId}
-            onChange={(e) => setMediaId(e.target.value)}
-            placeholder="YouTube video id"
-            style={{ flex: 1, padding: "0.4rem" }}
-          />
-          <button onClick={() => v.actions.enqueue(mediaId)} disabled={!canDj}>
-            Queue
-          </button>
-        </div>
-        <ul>
-          {v.myQueue.map((q) => (
-            <li key={q.id}>
-              {q.mediaId} <button onClick={() => v.actions.removeQueue(q.id)}>remove</button>
-            </li>
-          ))}
-          {v.myQueue.length === 0 && <li style={{ color: "#888" }}>empty</li>}
-        </ul>
-      </section>
-
-      <ChatBox v={v} />
+        <ChatRail v={v} />
+      </div>
     </>
   );
 }
-
-const card: React.CSSProperties = {
-  flex: 1,
-  minWidth: "16rem",
-  border: "1px solid #e4e4e7",
-  borderRadius: 8,
-  padding: "1rem",
-  marginBottom: "1rem",
-};
