@@ -92,7 +92,9 @@ export async function getSpaceVisibility(slug: string): Promise<'network' | 'pri
       .maybeSingle()) as { data: { visibility?: string | null } | null }
     return data?.visibility === 'private' ? 'private' : 'network'
   } catch {
-    return 'network'
+    // Fail CLOSED on a read error: treat the Space as private so the gate 404s for non-members
+    // rather than briefly exposing a Private Space (matches the empty-slug branch above).
+    return 'private'
   }
 }
 

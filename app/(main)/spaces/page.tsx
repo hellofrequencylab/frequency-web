@@ -47,7 +47,7 @@ async function SpacesGrid({ type, q }: { type?: string; q?: string }) {
       <EmptyState
         icon={Building2}
         variant={filtering ? 'no-results' : 'first-use'}
-        title={filtering ? 'No Spaces match your search' : 'No Spaces yet'}
+        title={filtering ? 'No Spaces match your search.' : 'No Spaces yet.'}
         description={
           filtering
             ? typeLabel

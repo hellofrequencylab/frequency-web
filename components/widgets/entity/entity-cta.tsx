@@ -9,6 +9,7 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { BookingMember } from '@/components/spaces/booking-member'
+import { MembershipJoin } from '@/components/spaces/membership-join'
 
 // ENTITY MODULE - Action / Book (ENTITY-SPACES-BUILD section B.2, row `entity-booking`). A
 // self-fetching RSC for a blueprint's action tab. It reads the active Space and branches by role:
@@ -18,9 +19,15 @@ import { BookingMember } from '@/components/spaces/booking-member'
 //   timezone, labeled), picks one, and confirms. The slot fetch sits behind <Suspense> so the tab
 //   paints instantly (PAGE-FRAMEWORK section 5).
 //
-//   OTHER ROLES (Business "Join", Organization "Donate", Coaching "Enroll", Event Space "Get
-//   tickets"): the deep conversion engines are a LATER phase, so these keep the current PLACEHOLDER
-//   - the Space's own upcoming sessions, each routing to the session page to RSVP. Out of scope here.
+//   BUSINESS ("Join"-type CTA): renders the real MEMBERSHIP surface (ENTITY-SPACES-SYSTEM section
+//   2.5, memberships v1). The member sees the Space's active tiers (name / price / benefits) and
+//   joins one, or, if already a member, sees their tier + a Cancel. v1 takes NO payment: joining
+//   registers the member, and the copy says so plainly (CONTENT-VOICE skeptic test). The tier fetch
+//   sits behind <Suspense> so the tab paints instantly (PAGE-FRAMEWORK section 5).
+//
+//   OTHER ROLES (Organization "Donate", Coaching "Enroll", Event Space "Get tickets"): the deep
+//   conversion engines are a LATER phase, so these keep the current PLACEHOLDER - the Space's own
+//   upcoming sessions, each routing to the session page to RSVP. Out of scope here.
 //
 // NULL only when there is no active Space.
 //
@@ -39,6 +46,18 @@ export async function EntityCta() {
       <ModuleCard title="Book a session" tile>
         <Suspense fallback={<BookingSkeleton />}>
           <BookingMember spaceId={space.id} />
+        </Suspense>
+      </ModuleCard>
+    )
+  }
+
+  // Business is the role whose deep feature is memberships (the "Join" CTA). Render the live
+  // membership/join surface for it; every other role keeps the placeholder session list below.
+  if (space.type === 'business') {
+    return (
+      <ModuleCard title="Become a member" tile>
+        <Suspense fallback={<MembershipSkeleton />}>
+          <MembershipJoin spaceId={space.id} />
         </Suspense>
       </ModuleCard>
     )
@@ -85,6 +104,20 @@ export async function EntityCta() {
         </div>
       )}
     </ModuleCard>
+  )
+}
+
+// Dimension-matched skeleton for the streamed tier fetch (no CLS, PAGE-FRAMEWORK section 5.4).
+function MembershipSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="h-4 w-64 animate-pulse rounded bg-surface-elevated/60" />
+      <div className="grid gap-4 @lg:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="h-44 animate-pulse rounded-2xl bg-surface-elevated/60" />
+        ))}
+      </div>
+    </div>
   )
 }
 
