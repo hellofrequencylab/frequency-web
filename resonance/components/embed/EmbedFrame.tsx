@@ -73,10 +73,12 @@ export function EmbedFrame({ venueId }: { venueId: string }) {
     let active = true;
     const timer = setTimeout(() => {
       void (async () => {
-        // A host token may still be in flight; re-check before falling back.
-        if (!active || claims) return;
+        // If a host token arrived meanwhile, this effect re-ran and its cleanup
+        // set `active` false (and cleared this timer), so the `active` guard is
+        // the re-check: bail before falling back to anonymous.
+        if (!active) return;
         const userId = await ensureSession();
-        if (!active || !userId || claims) return;
+        if (!active || !userId) return;
         const name = `Guest ${userId.slice(0, 4)}`;
         const res = await authedFetch("/api/profile", {
           method: "PUT",
