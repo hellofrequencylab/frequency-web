@@ -19,6 +19,16 @@
 | **D5** | Anti-cheat aggressiveness. | Rate-limit the log action; cap total logs/day; require timer-completion proof for `uses_timer` practices. | **All three.** The timer-completion proof (server validates elapsed vs claimed seconds) is the strongest and closes the "log a timed practice with no real sit" hole. |
 | **D6** | Movement timer scope. | The 4 modes (Walk/Yoga/Play/Workout) on one phase engine. Walk steps/distance via web sensors is unreliable (iOS gesture-gated, no background). | Ship the **4 modes + the interval engine** now; **defer steps/distance** to a later best-effort opt-in. Add a `timer_kind` enum so practices route to Mindless vs Movement. |
 
+**Decisions locked (2026-06-20, from review):**
+- **D1 = Broad now.** Convert app-page interiors to header + `<PageModules>` editable blocks. This makes Workstream F a major, multi-PR track (do it in batched groups of routes, not one PR).
+- **D2 = Rebuild the ADR-128 dock + QR & Share split.** As described in §5.
+- **D3 = Launcher only.** The header mega-menu is a pure entity launcher with NO persistent active-Space context; the operator/admin world STAYS in the left rail as a telescoped group (it does not move into the mega-menu); the settings drawer stays per-page (the page you are on), not active-Space-scoped. This simplifies §6 (no active-Space state machine) and decouples D from E.
+- **D4 = Today-only un-log.** As in §3 B.1.
+- **D5 (default) = all three anti-cheat mechanisms** (rate-limit, daily cap, timer-completion proof).
+- **D6 (default) = 4 Movement modes + interval engine now, steps deferred, `timer_kind` enum.**
+
+These adjust §6 (E becomes a launcher, not an active-Space system) and §7 (F is the broad interior-coverage migration, a major multi-PR track run in route-group batches).
+
 ---
 
 ## 2. Workstream A: Post boxes (ship first, fastest win)
