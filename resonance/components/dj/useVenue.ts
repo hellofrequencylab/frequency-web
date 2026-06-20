@@ -180,6 +180,18 @@ export function useVenue(
     };
   }, [venueId, userId, displayName, avatar, refetch, onGameEvent]);
 
+  // Presence heartbeat (build plan §11): tell the server we're here now, then keep
+  // saying so every 20s. The lobby counts pings seen in the last ~45s as "here now".
+  // Self-contained so it can't churn the channel subscription; failures are ignored.
+  useEffect(() => {
+    const ping = () => {
+      void authedFetch(`/api/venues/${venueId}/ping`, { method: "POST" }).catch(() => {});
+    };
+    ping();
+    const id = setInterval(ping, 20000);
+    return () => clearInterval(id);
+  }, [venueId]);
+
   const post = useCallback(
     (path: string, body: unknown) =>
       authedFetch(`/api/venues/${venueId}${path}`, {

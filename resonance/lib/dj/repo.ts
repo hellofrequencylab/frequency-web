@@ -58,9 +58,15 @@ export async function listVenues(worldId: string): Promise<VenueSummary[]> {
   const ids = (venues ?? []).map((v) => v.id as string);
   if (ids.length === 0) return [];
 
-  const [{ data: seats }, { data: rooms }] = await Promise.all([
+  const since = new Date(Date.now() - 45_000).toISOString();
+  const [{ data: seats }, { data: rooms }, { data: pings }] = await Promise.all([
     supabase.from("venue_seats").select("venue_id").in("venue_id", ids),
     supabase.from("room_state").select("venue_id, is_playing").in("venue_id", ids),
+    supabase
+      .from("presence_pings")
+      .select("venue_id, user_id")
+      .in("venue_id", ids)
+      .gt("last_seen", since),
   ]);
 
   const djs = new Map<string, number>();
@@ -70,10 +76,21 @@ export async function listVenues(worldId: string): Promise<VenueSummary[]> {
   const playing = new Map<string, boolean>();
   (rooms ?? []).forEach((r) => playing.set(r.venue_id as string, r.is_playing as boolean));
 
+  // Count distinct present users per venue (a stale row can't be double-counted
+  // because the primary key is (venue_id, user_id), but stay defensive in JS).
+  const present = new Map<string, Set<string>>();
+  (pings ?? []).forEach((p) => {
+    const vid = p.venue_id as string;
+    const set = present.get(vid) ?? new Set<string>();
+    set.add(p.user_id as string);
+    present.set(vid, set);
+  });
+
   return (venues ?? []).map((v) => ({
     ...toVenue(v),
     djs: djs.get(v.id as string) ?? 0,
     isPlaying: playing.get(v.id as string) ?? false,
+    here: present.get(v.id as string)?.size ?? 0,
   }));
 }
 

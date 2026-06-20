@@ -146,12 +146,18 @@ The room UI now branches by media type off one `useVenue` (DJ vs Watch).
 - [x] Reaction buttons send emotes (not chat); shared `AvatarChip` across bar/roster
 - [ ] 🚪 GO (manual): set an avatar, see your chip in the roster from another window; emotes float
 
-### Section 10 — Scheduled events + simple ticketing  ⬜
-`events` table, schedule/host, free/paid/PWYC ticket types (reuse Frequency's model).
+### Section 10 — Scheduled events + simple ticketing  🔨
+- [x] `events` + `event_tickets` tables (migration `0008`); free / paid / PWYC ticket types
+- [x] `GET/POST /api/events`, `POST /api/events/[eventId]/tickets` (capacity-aware, 409 when full)
+- [x] `/dev/events`: upcoming list, RSVP / get ticket / name-your-price, create form
+- [x] Paid + PWYC tickets recorded as `reserved` (real charge deferred to Phase 2 / Stripe)
+- [ ] 🚪 GO (manual): create an event, RSVP from a second window, see the count rise
 
-### Section 11 — Presence surfacing  ⬜
-"N here now" / "friends in X right now" across the lobby — the gravity that drives
-returns (§3.1, §3.7).
+### Section 11 — Presence surfacing  🔨
+- [x] `presence_pings` heartbeat table (migration `0009`); clients ping every ~20s from `useVenue`
+- [x] `POST /api/venues/[venueId]/ping`; `listVenues` counts pings in the last 45s as `here`
+- [x] Lobby shows `● N here` (live headcount) ahead of the seat/playing fallback
+- [ ] 🚪 GO (manual): sit in a room in one window, watch the lobby headcount in another
 
 ## Phase 2 — The Little World (spatial + UGC decor)
 Rung-1 spatial layer (walk the map, proximity audio/chat via Phaser/tilemap) ·

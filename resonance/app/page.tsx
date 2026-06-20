@@ -17,6 +17,7 @@ const ROOMS = [
 
 const SURFACES = [
   { href: "/dev/lobby", label: "Lobby", note: "Browse rooms, open a new one, and step inside." },
+  { href: "/dev/events", label: "Events", note: "What is coming up. RSVP or grab a ticket." },
   { href: "/dev/dj", label: "Quick room", note: "Jump straight into one DJ room." },
   { href: "/dev/sync", label: "Sync demo", note: "The raw playback clock. Two windows, one follows." },
 ];

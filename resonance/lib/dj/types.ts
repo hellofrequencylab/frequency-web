@@ -15,6 +15,8 @@ export interface Venue {
 export interface VenueSummary extends Venue {
   djs: number;
   isPlaying: boolean;
+  /** People present right now (presence pings seen in the last ~45s). */
+  here: number;
 }
 
 export interface SeatRow {

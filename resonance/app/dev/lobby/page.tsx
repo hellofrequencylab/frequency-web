@@ -87,8 +87,12 @@ export default function LobbyPage() {
                   {v.theme ? `· ${v.theme} ` : ""}· {v.mediaType}
                 </span>
               </span>
-              <span style={{ fontSize: 13, color: live ? "#16a34a" : "#999" }}>
-                {live ? `● live · ${v.djs} on deck` : "○ quiet"}
+              <span style={{ fontSize: 13, color: v.here > 0 || live ? "#16a34a" : "#999" }}>
+                {v.here > 0
+                  ? `● ${v.here} here`
+                  : live
+                    ? `● live · ${v.djs} on deck`
+                    : "○ quiet"}
               </span>
             </Link>
           );
