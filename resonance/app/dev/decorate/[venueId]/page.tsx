@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { authedFetch } from "@/lib/api/fetch";
 import { useAuth } from "@/components/auth/useAuth";
 import { useProfile } from "@/components/profile/useProfile";
 import { DecorEditor } from "@/components/venue/DecorEditor";
+import { AppShell } from "@/components/shell/AppShell";
+import { Badge, Button, Card } from "@/components/ui";
 import type { Venue } from "@/lib/dj/types";
 
 /** Decorate a venue (build plan §13). Loads the venue snapshot for its current
@@ -14,6 +15,7 @@ import type { Venue } from "@/lib/dj/types";
 export default function DecoratePage() {
   const params = useParams<{ venueId: string }>();
   const venueId = params.venueId;
+  const router = useRouter();
   const { ready } = useAuth();
   const { loaded } = useProfile(ready);
   const [venue, setVenue] = useState<Venue | null>(null);
@@ -38,23 +40,36 @@ export default function DecoratePage() {
     };
   }, [ready, venueId]);
 
-  return (
-    <main style={{ maxWidth: "52rem", margin: "0 auto", padding: "2rem", fontFamily: "system-ui" }}>
-      <p>
-        <Link href="/dev/lobby">← lobby</Link>
-      </p>
+  const loading = !ready || !loaded || status === "loading";
 
-      {!ready || !loaded || status === "loading" ? (
-        <p style={{ color: "#888" }}>Loading...</p>
-      ) : status === "missing" || !venue ? (
-        <p style={{ color: "#888" }}>Venue not found.</p>
-      ) : (
-        <>
-          <h1 style={{ marginBottom: "0.25rem" }}>Decorate {venue.name}</h1>
-          <p style={{ color: "#888", marginTop: 0 }}>Level {venue.level}</p>
+  return (
+    <AppShell>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <h1 className="truncate font-display text-2xl text-text">
+              {venue ? `Decorate ${venue.name}` : "Decorate"}
+            </h1>
+            {venue && <Badge tone="neutral">Level {venue.level}</Badge>}
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => router.push("/dev/lobby")}>
+            Back to lobby
+          </Button>
+        </div>
+
+        {loading ? (
+          <p className="text-sm text-mute">Loading the venue.</p>
+        ) : status === "missing" || !venue ? (
+          <Card as="section" className="space-y-1">
+            <h2 className="font-display text-lg text-text">Venue not found</h2>
+            <p className="text-sm text-mute">
+              This venue is not available. Head back to the lobby and pick another.
+            </p>
+          </Card>
+        ) : (
           <DecorEditor venueId={venue.id} initialDecor={venue.decor} level={venue.level} />
-        </>
-      )}
-    </main>
+        )}
+      </div>
+    </AppShell>
   );
 }

@@ -4,6 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/useAuth";
 import { useProfile } from "@/components/profile/useProfile";
 import { SpatialRoom } from "@/components/spatial/SpatialRoom";
+import { AppShell } from "@/components/shell/AppShell";
+import { Button, Card } from "@/components/ui";
 
 /**
  * Rung-1 spatial surface (Section 12): walk around a shared 2D room and talk to
@@ -17,32 +19,30 @@ export default function SpaceRoute() {
   const { profile, loaded } = useProfile(ready);
 
   return (
-    <main
-      style={{
-        maxWidth: "52rem",
-        margin: "0 auto",
-        padding: "2rem",
-        fontFamily: "system-ui",
-      }}
-    >
-      <p>
-        <button onClick={() => router.push("/dev/lobby")}>← lobby</button>
-      </p>
-
-      {!ready || !loaded ? (
-        <p>Starting a session…</p>
-      ) : !userId ? (
-        <div>
-          <h1>Couldn’t start a session</h1>
-          <p style={{ color: "#555" }}>
-            Enable “Anonymous sign-ins” in the Supabase project’s Auth settings,
-            then reload.
-          </p>
+    <AppShell>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-display text-2xl text-text">Walk the room</h1>
+          <Button variant="ghost" size="sm" onClick={() => router.push("/dev/lobby")}>
+            Back to lobby
+          </Button>
         </div>
-      ) : (
-        <SpaceBody userId={userId} profile={profile} venueId={params.venueId} />
-      )}
-    </main>
+
+        {!ready || !loaded ? (
+          <p className="text-sm text-mute">Starting a session.</p>
+        ) : !userId ? (
+          <Card as="section" className="space-y-1">
+            <h2 className="font-display text-lg text-text">Could not start a session</h2>
+            <p className="text-sm text-mute">
+              Enable Anonymous sign-ins in the Supabase project Auth settings, then
+              reload.
+            </p>
+          </Card>
+        ) : (
+          <SpaceBody userId={userId} profile={profile} venueId={params.venueId} />
+        )}
+      </div>
+    </AppShell>
   );
 }
 
@@ -63,21 +63,12 @@ function SpaceBody({
   const name = profile?.displayName ?? `Guest ${userId.slice(0, 4)}`;
 
   return (
-    <>
+    <div className="space-y-4">
       {!profile && (
-        <p
-          style={{
-            border: "1px solid #e4e4e7",
-            borderRadius: 8,
-            padding: "0.75rem 1rem",
-            marginBottom: "1rem",
-            color: "#52525b",
-            fontSize: 13,
-          }}
-        >
-          You’re walking around as <b>{name}</b>. Set a name and avatar in a room
-          to bring your own look here.
-        </p>
+        <Card padding="sm" className="text-sm text-soft">
+          You are walking around as <b className="text-text">{name}</b>. Set a name and
+          avatar in a room to bring your own look here.
+        </Card>
       )}
       <SpatialRoom
         venueId={venueId}
@@ -85,6 +76,6 @@ function SpaceBody({
         name={name}
         avatar={profile?.avatarConfig ?? null}
       />
-    </>
+    </div>
   );
 }
