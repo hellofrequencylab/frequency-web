@@ -40,10 +40,10 @@ export function ContactCard({
     <Link
       href={`/people/${handle}`}
       className={`group flex h-full flex-col items-center rounded-2xl border border-border bg-surface p-5 text-center shadow-sm transition-all hover:border-primary-bg hover:shadow-md motion-reduce:transition-none ${
-        isDemo ? 'opacity-[0.72]' : ''
+        isDemo ? 'dimmed' : ''
       }`}
     >
-      <div className={`relative ${isDemo ? 'grayscale-[0.5]' : ''}`}>
+      <div className="relative">
         {avatarUrl ? (
           <Image
             src={avatarUrl}

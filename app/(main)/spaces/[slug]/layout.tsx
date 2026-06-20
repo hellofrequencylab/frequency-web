@@ -342,7 +342,7 @@ function HeroStatsSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="h-[58px] animate-pulse rounded-2xl bg-surface-elevated/60" />
+        <div key={i} className="h-hero-stat animate-pulse rounded-2xl bg-surface-elevated/60" />
       ))}
     </div>
   )

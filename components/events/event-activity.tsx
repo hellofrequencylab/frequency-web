@@ -222,7 +222,7 @@ export function EventActivity({
             placeholder={isPast ? 'Say thanks, share a moment, tag a friend.' : 'Say hi before the day.'}
             rows={2}
             disabled={pending}
-            className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-text/90 placeholder:text-subtle outline-none disabled:opacity-60"
+            className="w-full resize-none bg-transparent text-sm leading-relaxed text-text/90 placeholder:text-subtle outline-none disabled:opacity-60"
           />
 
           {(imagePreview || gifUrl) && (

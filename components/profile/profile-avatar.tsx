@@ -26,7 +26,7 @@ export function ProfileAvatar({
       width={112}
       height={112}
       className={`h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-surface sm:h-20 sm:w-20 ${
-        dimmed ? 'grayscale-[0.5]' : ''
+        dimmed ? 'dimmed' : ''
       }`}
     />
   ) : (

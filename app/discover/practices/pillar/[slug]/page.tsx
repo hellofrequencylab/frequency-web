@@ -7,6 +7,7 @@ import { PracticeCard, PillarChips } from '../../practice-card'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceListSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { IndexTemplate } from '@/components/templates'
 
 export const revalidate = 3600
 
@@ -81,30 +82,32 @@ export default async function PillarPracticesPage({
         ]}
       />
 
-      <header className="mb-8 max-w-2xl">
-        <h1 className="text-3xl font-bold tracking-tight text-text">{title}</h1>
-        <p className="mt-3 text-lg text-muted">
-          {pillarDescription(pillar.name, pillar.description)}
-        </p>
-      </header>
+      {/* Public SEO surface: no operator admin bar (that's a member-app control). A
+          back-link returns to the full library, matching the breadcrumb trail. */}
+      <IndexTemplate
+        title={title}
+        description={pillarDescription(pillar.name, pillar.description)}
+        back={{ href: '/discover/practices', label: 'Practices' }}
+        adminBar={false}
+      >
+        <PillarChips pillars={pillars} active={slug} />
 
-      <PillarChips pillars={pillars} active={slug} />
-
-      {rows.length === 0 ? (
-        <p className="text-muted">
-          No {pillar.name} practices yet.{' '}
-          <Link className="underline hover:text-text" href="/discover/practices">
-            Browse the full library
-          </Link>
-          .
-        </p>
-      ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((p) => (
-            <PracticeCard key={p.id} p={p} />
-          ))}
-        </ul>
-      )}
+        {rows.length === 0 ? (
+          <p className="text-muted">
+            No {pillar.name} practices yet.{' '}
+            <Link className="underline hover:text-text" href="/discover/practices">
+              Browse the full library
+            </Link>
+            .
+          </p>
+        ) : (
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {rows.map((p) => (
+              <PracticeCard key={p.id} p={p} />
+            ))}
+          </ul>
+        )}
+      </IndexTemplate>
     </div>
   )
 }

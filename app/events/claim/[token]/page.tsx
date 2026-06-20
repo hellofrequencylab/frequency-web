@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { posterSignedUrl } from '@/lib/events/poster-media'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
+import { FocusTemplate } from '@/components/templates'
 import { ClaimButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
@@ -64,21 +65,17 @@ export default async function ClaimEventPage({ params }: { params: Promise<{ tok
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-canvas px-4 py-16">
-      {/* Brand header (matches /join/[token]) */}
-      <div className="mb-8 text-center">
-        <span className="text-2xl font-black tracking-tight text-text">frequency</span>
-      </div>
-
-      <div className="w-full max-w-md space-y-4">
-        <div className="text-center">
-          <h1 className="text-xl font-bold text-text">Claim your event</h1>
-          <p className="mt-1 text-sm text-muted">
-            {posterName
-              ? `This event was posted by ${posterName}. If it is yours, claim it to manage it.`
-              : 'This event was posted by a community member. If it is yours, claim it to manage it.'}
-          </p>
-        </div>
-
+      <FocusTemplate
+        width="narrow"
+        divider={false}
+        title="Claim your event"
+        description={
+          posterName
+            ? `This event was posted by ${posterName}. If it is yours, claim it to manage it.`
+            : 'This event was posted by a community member. If it is yours, claim it to manage it.'
+        }
+      >
+      <div className="w-full space-y-4">
         {/* The event preview. */}
         <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
           {coverUrl && (
@@ -132,6 +129,7 @@ export default async function ClaimEventPage({ params }: { params: Promise<{ tok
           </div>
         )}
       </div>
+      </FocusTemplate>
     </div>
   )
 }

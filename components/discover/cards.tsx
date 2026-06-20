@@ -91,7 +91,7 @@ export function EventRow({ event, isAuthed = false }: { event: PublicEvent; isAu
         className="flex items-center gap-4 px-5 py-4 hover:border-border-strong hover:shadow-pop transition-all"
       >
         <div className="shrink-0 w-12 h-12 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
-          <span className="text-[9px] font-bold text-primary-strong leading-none">{badge.month}</span>
+          <span className="text-3xs font-bold text-primary-strong leading-none">{badge.month}</span>
           <span className="text-base font-bold text-primary-strong leading-tight">{badge.day}</span>
         </div>
         <div className="flex-1 min-w-0">

@@ -73,7 +73,7 @@ export function VeraProfile({
       badges={<RoleBadge role="moderator" className="text-xs leading-tight" />}
       actions={<AskVeraButton />}
     >
-      {bio && <p className="mb-6 max-w-prose text-[15px] leading-relaxed text-text/90">{bio}</p>}
+      {bio && <p className="mb-6 max-w-prose text-sm leading-relaxed text-text/90">{bio}</p>}
 
       <section>
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-subtle">

@@ -340,7 +340,7 @@ function EventTimelineCard({ event: e }: { event: EventItem }) {
     >
       <div className="flex items-center gap-3">
         <div className="shrink-0 w-10 h-10 rounded-lg bg-warning-bg dark:bg-warning-bg flex flex-col items-center justify-center">
-          <span className="text-[9px] font-bold uppercase text-warning leading-none">{month}</span>
+          <span className="text-3xs font-bold uppercase text-warning leading-none">{month}</span>
           <span className="text-sm font-bold text-warning leading-tight">{day}</span>
         </div>
         <div className="flex-1 min-w-0">

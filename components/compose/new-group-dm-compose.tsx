@@ -134,7 +134,7 @@ export function NewGroupDMCompose({
                   {r.avatar_url ? (
                     <Image src={r.avatar_url} alt={r.display_name} width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
                   ) : (
-                    <span className="w-4 h-4 rounded-full bg-primary-bg dark:bg-primary-bg text-primary-strong text-[8px] font-bold flex items-center justify-center">
+                    <span className="w-4 h-4 rounded-full bg-primary-bg dark:bg-primary-bg text-primary-strong text-3xs font-bold flex items-center justify-center">
                       {getInitials(r.display_name)}
                     </span>
                   )}

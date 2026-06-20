@@ -245,7 +245,7 @@ function StepPreview({ step, seq }: { step: StepId; seq: BetaSequence }) {
             <img src={s.image} alt={s.imageAlt || ''} className="h-40 w-full object-cover" />
           : <div className="h-40 w-full bg-gradient-to-br from-primary via-signal to-signal-strong opacity-80" />}
         <div className="p-6 text-center">
-          {s.eyebrow && <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-primary-strong">{s.eyebrow}</p>}
+          {s.eyebrow && <p className="text-3xs font-semibold uppercase tracking-widest text-primary-strong">{s.eyebrow}</p>}
           {s.headline && <p className="mt-2 text-balance text-2xl font-bold leading-tight text-text">{s.headline}</p>}
           {s.body && <p className="mx-auto mt-2 max-w-lg whitespace-pre-line text-sm leading-relaxed text-muted">{s.body}</p>}
           {s.statement && <p className="mx-auto mt-3 max-w-lg text-sm font-semibold text-text">{withAccents(s.statement)}</p>}
@@ -258,7 +258,7 @@ function StepPreview({ step, seq }: { step: StepId; seq: BetaSequence }) {
     return (
       <Card>
         <div className="p-6 text-center">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-primary-strong">{seq.vera.oath.eyebrow}</p>
+          <p className="text-3xs font-semibold uppercase tracking-widest text-primary-strong">{seq.vera.oath.eyebrow}</p>
           <p className="mt-2 text-2xl font-bold leading-tight text-text">{withAccents(seq.vera.oath.heading)}</p>
           <div className="mx-auto mt-4 max-w-sm space-y-2 text-left">
             {seq.oaths.map((o) => (
@@ -289,7 +289,7 @@ function StepPreview({ step, seq }: { step: StepId; seq: BetaSequence }) {
     return (
       <Card>
         <div className="space-y-2 p-6 text-center">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-primary-strong">{seq.audience}</p>
+          <p className="text-3xs font-semibold uppercase tracking-widest text-primary-strong">{seq.audience}</p>
           <p className="text-xl font-bold text-text">{seq.splash.headline}</p>
           <p className="text-xs text-muted">Tag: {seq.marketingTag}</p>
         </div>
@@ -301,7 +301,7 @@ function StepPreview({ step, seq }: { step: StepId; seq: BetaSequence }) {
   return (
     <Card>
       <div className="p-8 text-center">
-        {beat.eyebrow && <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-primary-strong">{beat.eyebrow}</p>}
+        {beat.eyebrow && <p className="text-3xs font-semibold uppercase tracking-widest text-primary-strong">{beat.eyebrow}</p>}
         <p className="mt-2 text-3xl font-bold leading-tight text-text">{withAccents(beat.heading)}</p>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">{beat.body}</p>
         {beat.cta && <CtaBtn>{beat.cta}</CtaBtn>}

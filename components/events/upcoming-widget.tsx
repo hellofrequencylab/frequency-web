@@ -33,7 +33,7 @@ function DateChip({ iso }: { iso: string }) {
   const day = d.getDate()
   return (
     <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-primary-bg text-primary-strong shrink-0">
-      <span className="text-[9px] font-semibold uppercase leading-none">{month}</span>
+      <span className="text-3xs font-semibold uppercase leading-none">{month}</span>
       <span className="text-sm font-bold leading-tight">{day}</span>
     </div>
   )

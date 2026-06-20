@@ -767,7 +767,7 @@ function EventRow({ event }: { event: LiveEvent }) {
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
       <div className="shrink-0 flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-primary-bg">
-        <span className="text-[9px] font-bold leading-none text-primary-strong">{month}</span>
+        <span className="text-3xs font-bold leading-none text-primary-strong">{month}</span>
         <span className="text-base font-bold leading-tight text-primary-strong">{day}</span>
       </div>
       <div className="min-w-0 flex-1">

@@ -34,7 +34,10 @@ export function SectionHeader({
   return (
     <div className="mb-3 flex items-end justify-between gap-3">
       {href ? (
-        <Link href={href} className="group min-w-0">
+        <Link
+          href={href}
+          className="group press min-w-0 rounded-lg outline-none transition-transform focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+        >
           {heading}
         </Link>
       ) : (

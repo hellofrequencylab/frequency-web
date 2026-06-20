@@ -459,7 +459,7 @@ export function Composer({
           rows={expanded ? 6 : 3}
           disabled={isPending}
           className={`w-full resize-none bg-transparent leading-relaxed text-text/90 placeholder:text-subtle outline-none focus-visible:shadow-none disabled:opacity-60 ${
-            expanded ? 'min-h-[40vh] text-base' : 'min-h-24 text-[15px]'
+            expanded ? 'min-h-[40vh] text-base' : 'min-h-24 text-sm'
           }`}
         />
 

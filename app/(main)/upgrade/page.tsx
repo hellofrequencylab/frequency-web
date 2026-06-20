@@ -67,7 +67,7 @@ export default async function UpgradePage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
             <Zap className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1">Join the Crew</h1>
+          <p className="text-2xl font-bold text-white mb-1">Join the Crew</p>
           <p className="text-primary-bg/80 text-sm">Full access to the Frequency community</p>
           <div className="mt-4 flex items-baseline justify-center gap-1">
             <span className="text-3xl font-black text-white line-through opacity-50">$10</span>

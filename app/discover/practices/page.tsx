@@ -4,6 +4,7 @@ import { getPillars } from '@/lib/pillars'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceListSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { IndexTemplate } from '@/components/templates'
 import { PracticeCard, PillarChips } from './practice-card'
 
 export const revalidate = 3600
@@ -38,22 +39,20 @@ export default async function PublicPracticesPage() {
         ]}
       />
 
-      <header className="mb-8 max-w-2xl">
-        <h1 className="text-3xl font-bold tracking-tight text-text">{TITLE}</h1>
-        <p className="mt-3 text-lg text-muted">{DESCRIPTION}</p>
-      </header>
+      {/* Public SEO surface: no operator admin bar (that's a member-app control). */}
+      <IndexTemplate title={TITLE} description={DESCRIPTION} adminBar={false}>
+        {pillars.length > 0 && <PillarChips pillars={pillars} active="all" />}
 
-      {pillars.length > 0 && <PillarChips pillars={pillars} active="all" />}
-
-      {practices.length === 0 ? (
-        <p className="text-muted">The library is filling in. Check back soon.</p>
-      ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {practices.map((p) => (
-            <PracticeCard key={p.id} p={p} />
-          ))}
-        </ul>
-      )}
+        {practices.length === 0 ? (
+          <p className="text-muted">The library is filling in. Check back soon.</p>
+        ) : (
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {practices.map((p) => (
+              <PracticeCard key={p.id} p={p} />
+            ))}
+          </ul>
+        )}
+      </IndexTemplate>
     </div>
   )
 }

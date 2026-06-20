@@ -177,7 +177,7 @@ export function PostCard({
                   {post.scopeContext.avatar_url ? (
                     <Image src={post.scopeContext.avatar_url} alt={post.scopeContext.name} width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
                   ) : (
-                    <div className="w-5 h-5 rounded-full bg-border-strong text-muted text-[8px] font-bold flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full bg-border-strong text-muted text-3xs font-bold flex items-center justify-center">
                       {getInitials(post.scopeContext.name)}
                     </div>
                   )}
