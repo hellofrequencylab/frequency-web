@@ -7637,3 +7637,33 @@ Defaults make every existing row a Networked, free, no-add-ons space, so the roo
 **Accent constraint.** `lib/spaces/accent.ts` (out of this item's scope) ships exactly six remappable accent families; five are taken one-each by the other roles, leaving one free (`--color-success`), which Lab takes. **Partner shares the Business `--color-broadcast` family on purpose** - a Partner is a brand running a loyalty program, so the "product / brand" hue fits - rather than introducing a seventh family in `accent.ts`. A Partner-specific accent family is a later step there. The per-role-distinctness guarantee therefore holds for the five core roles; Lab is distinct, and Partner's shared accent is the documented exception.
 
 **Consequences.** All seven member-facing role types are now provisionable through one wizard onto a legible, role-distinct profile; the contract test now expects the full seven (`root` remains the only blueprint-less type). The change is purely additive: no migration, no union edit, no settings-hub or `accent.ts` edit. `tsc`, eslint, the test suite, and the build stay green. When the Partner loyalty engine or a Partner accent family ships, each is a further additive step that does not revisit this contract.
+
+## ADR-342: Organization donations owner control (forms only, no money) (ADMIN-01)
+
+**Status:** Accepted. Migration `20260716000000_space_donations`, applied. Code: `lib/spaces/donations.ts`, `app/(main)/spaces/[slug]/settings/donations/`.
+
+**Context.** The Organization role had a blueprint and a Donate CTA but no owner control to configure it. Phase 4 (Stripe Connect, charges, tax receipts) is Held, so v1 delivers the owner surface and structured data only, with no payment, exactly as Business memberships v1 (ADR-327).
+
+**Decision.** A `settings/donations` owner Focus surface where an Organization owner configures one donation ask per Space (a fund label, a short description, and a set of suggested amounts), stored in the additive `space_id`-scoped `space_donation_asks` (one row per Space via a unique index on `space_id`; RLS enabled with no client policies, service-role only, ADR-246 untyped casts). The fund label and amounts are display only; nothing takes a payment and there is no Stripe path, and the copy says so (skeptic test). Writes re-check `canEditProfile` server-side; the janitor preview is read-only; render gates on `resolveSpaceManageAccess`. The hub registers the card gated to `organization`; the route is Focus in `page-chrome.ts`.
+
+**Consequences.** An Organization owner can configure donation asks today, ready for the member Donate engine (ADMIN-04) to read. Real charges are additive later (a payments table + a charge id), never a refactor. The single-row-per-Space shape keeps the editor simple; relaxing the unique index makes multiple funds an additive change.
+
+## ADR-343: Coaching enrollment v1 (program definition + enroll, billing deferred) (ADMIN-02)
+
+**Status:** Accepted. Migration `20260716000100_space_enroll`, applied. Code: `lib/spaces/enroll.ts`, `app/(main)/spaces/[slug]/settings/enroll/`.
+
+**Context.** The Coaching role had the profile shell and an Enroll CTA but no owner admin. Honoring the no-paid-infrastructure constraint (ADR-327), build the owner-defines-program / member-enrolls flow without charging.
+
+**Decision.** Two additive service-role tables mirroring memberships: `space_programs` (one row per Space via a partial unique index on `space_id`; name, description, free-text schedule, optional dates, capacity with 0 = no cap, is_published; NO price column) and `space_enrollments` (member_profile_id, program_id, status active/cancelled, with a partial unique index `(space_id, member_profile_id) where status='active'` as the one-active guard; a cancelled row frees a re-enroll). RLS enabled with no client policies; all access via gated server actions in `lib/spaces/enroll.ts` (`canEditProfile` on writes; `enrollInProgram` refuses an over-capacity or duplicate enrollment). v1 takes NO payment and the copy says so. Member-facing copy says "program"/"enroll", never "cohort" (NAMING).
+
+**Consequences.** A third role gains real depth on the same generalizable shape. Deferred to Phase 4 (additive): paid enrollment / billing, multiple concurrent cohorts (drop the one-program index, add a cohort label), structured sessions, waitlists. v1 caveat: `setSpaceProgram` is replace-by-delete, so re-saving cascades enrollments; switch to upsert-by-id before paid enrollment ships. The member enroll engine is ADMIN-04.
+
+## ADR-344: Event Space ticketing as free / RSVP tiers, no money (ADMIN-03)
+
+**Status:** Accepted. Migration `20260716000200_space_tickets`, applied. Code: `lib/spaces/tickets.ts`, `app/(main)/spaces/[slug]/settings/tickets/`.
+
+**Context.** An `event_space` Space had check-in (ADR-334) but no box office. The §5 money boundary keeps real paid ticketing in Held Phase 4, so v1 ships the owner surface and structured data only.
+
+**Decision.** Two additive `space_id`-scoped tables: `space_ticket_tiers` (name, `kind` CHECK free|rsvp, nullable capacity, description, sort, is_active) and `space_ticket_rsvps` (status going|cancelled, partial unique `(tier_id, member_profile_id) where status='going'`). NO price column exists, on purpose, so nothing implies a charge; a future paid kind + price column + payments table is a one-line CHECK widen, not a rebuild. RLS enabled with no client policies; all access via `lib/spaces/tickets.ts` gated on `canEditProfile` (writes) or public active tiers (member surface). RSVP enforces tier kind = rsvp, capacity, and one-going-per-member. The owner surface is a Focus page gated on `canManage || staffViewing` AND `space.type === 'event_space'`; staff preview is read-only.
+
+**Consequences.** Free, additive, reversible, no payment path; Space A never reads/writes Space B's tiers or RSVPs (every query scopes `space_id`; capacity + uniqueness are tier-scoped). The member reserve/cancel surface ships with ADMIN-04. A replace-set delete-then-insert can orphan an RSVP's `tier_id`; `listSpaceRsvps` falls back to a generic "Ticket" label (switch to upsert-by-id before paid ticketing).
