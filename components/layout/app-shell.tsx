@@ -52,6 +52,7 @@ import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
+import { ManageMegaMenu } from '@/components/layout/manage-mega-menu'
 import { MemberFooter } from '@/components/layout/member-footer'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
@@ -1368,6 +1369,17 @@ export default function AppShell({
         {/* Engraved, interactive wordmark. Leads the bar — on mobile the menu now
             lives in the bottom tab bar, so the wordmark anchors the top-left. */}
         <BrandMark name={brandName} logoUrl={brandLogoUrl} />
+
+        {/* Manage launcher (E.3, D3 = launcher only). The GLOBAL entry to entity /
+            Space management: a click-fold panel of the viewer's owned / managed
+            Spaces (each to its settings hub) + New Space + Browse directory. Anchored
+            to the wordmark and full-opacity (a primary in-app action), set apart from
+            the faded marketing nav beside it. Hidden on stripped shells (Studio). */}
+        {!hideAppNav && (
+          <div className="hidden md:flex items-stretch ml-1">
+            <ManageMegaMenu />
+          </div>
+        )}
 
         {/* Full-site browse nav (Discover + About dropdowns) beside the logo —
             the same component the splash/site uses. In the app shell we're in

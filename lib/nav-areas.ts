@@ -83,11 +83,21 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // (after 'events') — see composeNavAreas. It is intentionally NOT a literal here.
   { key: 'messageBoards', href: '/messages',  label: 'Message Boards', section: 'Community', defaultAccess: 'member', surface: 'messageBoards' },
   { key: 'people',        href: '/network',   label: 'Community',    section: 'Community', defaultAccess: 'member',  surface: 'people' },
+  // Re-homed orphan (E.1): the contacts list lives in the Network hub as My Contacts (ADR-172) —
+  // /connections redirects there. Surfaced here so members reach their connections from the rail.
+  { key: 'connections',   href: '/network/contacts', label: 'Connections', section: 'Community', defaultAccess: 'member', surface: 'people' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
   { key: 'journeys',   href: '/journeys',        label: 'Journeys',   section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },
   { key: 'practices',  href: '/practices',       label: 'Practices',  section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
+  // Re-homed orphans (E.1). Library = the community's practices/programs/journeys catalog; Journal =
+  // your own captured-moments log (the personal face of Capture). Both are member-content surfaces,
+  // so they live with the Quest engine rather than floating routeless.
+  { key: 'library',    href: '/library',         label: 'Library',    section: 'The Quest', defaultAccess: 'member', surface: 'library' },
+  // Journal is a member-only PERSONAL log (no matrix surface of its own); ride the `people` row
+  // ({ member: 'full' }, visitor hidden) so it gates exactly like the other member-only surfaces.
+  { key: 'journal',    href: '/journal',         label: 'Journal',    section: 'The Quest', defaultAccess: 'member', surface: 'people' },
   { key: 'vault',      href: '/crew/store',      label: 'The Vault',  section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
 
   // ── Admin → the operator world. Telescopes: only the items a role/staff axis can
