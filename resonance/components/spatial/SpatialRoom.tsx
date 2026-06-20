@@ -6,6 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { avatarOf } from "@/components/dj/AvatarChip";
+import { Button, Input, LiveBadge } from "@/components/ui";
 import { useSpatial } from "@/lib/spatial/useSpatial";
 import {
   BOARD_W,
@@ -126,13 +127,11 @@ export function SpatialRoom({
   ];
 
   return (
-    <section style={{ display: "grid", gap: "0.75rem" }}>
-      <div style={legendRow}>
-        <span style={{ fontWeight: 600 }}>The Room</span>
-        <span style={{ color: "#71717a", fontSize: 13 }}>
-          {count} {count === 1 ? "person" : "people"} here
-        </span>
-        <span style={{ color: "#a1a1aa", fontSize: 12 }}>
+    <section className="grid gap-3">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="font-display text-lg text-text">The Room</span>
+        <LiveBadge state={count > 0 ? "live" : "quiet"} count={count} />
+        <span className="text-xs text-mute">
           WASD or arrows to move. Click to walk. Type to talk; nearby people hear
           you clearly.
         </span>
@@ -143,18 +142,12 @@ export function SpatialRoom({
           const rect = e.currentTarget.getBoundingClientRect();
           setPos(e.clientX - rect.left, e.clientY - rect.top);
         }}
+        className="relative max-w-full select-none overflow-hidden rounded-md border bg-surface [cursor:crosshair]"
         style={{
-          position: "relative",
           width: BOARD_W,
           height: BOARD_H,
-          maxWidth: "100%",
-          border: "1px solid #e4e4e7",
-          borderRadius: 12,
-          background:
-            "repeating-linear-gradient(0deg,#fafafa,#fafafa 23px,#f4f4f5 24px)",
-          overflow: "hidden",
-          cursor: "crosshair",
-          userSelect: "none",
+          backgroundImage:
+            "repeating-linear-gradient(0deg, transparent, transparent 23px, var(--color-line) 24px)",
         }}
       >
         {everyone.map((p) => {
@@ -169,69 +162,39 @@ export function SpatialRoom({
           return (
             <div
               key={p.userId}
+              className="pointer-events-none absolute flex flex-col items-center"
               style={{
-                position: "absolute",
                 left: p.x,
                 top: p.y,
                 transform: "translate(-50%, -50%)",
                 transition: "left 90ms linear, top 90ms linear",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                pointerEvents: "none",
               }}
             >
               {bubble && (
                 <div
-                  style={{
-                    opacity,
-                    marginBottom: 4,
-                    maxWidth: 180,
-                    padding: "0.25rem 0.5rem",
-                    borderRadius: 10,
-                    background: "#111",
-                    color: "#fff",
-                    fontSize: 12,
-                    lineHeight: 1.25,
-                    textAlign: "center",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
+                  className="mb-1 max-w-[180px] whitespace-pre-wrap break-words rounded-sm bg-raised px-2 py-1 text-center text-xs leading-snug text-text shadow-[var(--shadow-soft)]"
+                  style={{ opacity }}
                 >
                   {bubble.text}
                 </div>
               )}
               <div
                 title={p.name}
+                role="img"
+                aria-label={isMe ? `${p.name}, you` : p.name}
+                className="flex items-center justify-center rounded-pill text-lg leading-none shadow-[var(--shadow-soft)]"
                 style={{
                   width: DISC,
                   height: DISC,
-                  borderRadius: "50%",
                   background: look.color,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 18,
-                  border: isMe ? "2px solid #111" : "2px solid #fff",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.18)",
+                  boxShadow: isMe
+                    ? "var(--glow-pulse)"
+                    : "0 0 0 2px var(--color-surface), var(--shadow-soft)",
                 }}
               >
                 {look.emoji}
               </div>
-              <span
-                style={{
-                  marginTop: 2,
-                  fontSize: 11,
-                  color: "#52525b",
-                  background: "rgba(255,255,255,0.7)",
-                  padding: "0 4px",
-                  borderRadius: 4,
-                  maxWidth: 90,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <span className="mt-0.5 max-w-[90px] overflow-hidden text-ellipsis whitespace-nowrap rounded-sm bg-base/70 px-1 text-2xs text-soft">
                 {isMe ? "you" : p.name}
               </span>
             </div>
@@ -246,42 +209,19 @@ export function SpatialRoom({
           setDraft("");
           inputRef.current?.focus();
         }}
-        style={{ display: "flex", gap: "0.5rem", maxWidth: BOARD_W }}
+        className="flex max-w-full gap-2"
+        style={{ width: BOARD_W }}
       >
-        <input
+        <Input
           ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Say something to people near you"
-          style={{
-            flex: 1,
-            padding: "0.45rem 0.6rem",
-            border: "1px solid #e4e4e7",
-            borderRadius: 8,
-            fontSize: 14,
-          }}
+          aria-label="Say something to people near you"
+          className="flex-1"
         />
-        <button
-          type="submit"
-          style={{
-            padding: "0.45rem 0.9rem",
-            border: "1px solid #111",
-            borderRadius: 8,
-            background: "#111",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-        >
-          Say
-        </button>
+        <Button type="submit">Say</Button>
       </form>
     </section>
   );
 }
-
-const legendRow: React.CSSProperties = {
-  display: "flex",
-  gap: "0.75rem",
-  alignItems: "baseline",
-  flexWrap: "wrap",
-};

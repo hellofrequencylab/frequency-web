@@ -13,6 +13,8 @@ import {
   type RevealPayload,
   type GameScore,
 } from "@/lib/games/types";
+import { Badge, Button, Card, EmptyState, LiveBadge } from "@/components/ui";
+import { cn } from "@/components/ui/cn";
 
 interface Props {
   venueId: string;
@@ -111,91 +113,165 @@ export function TriviaRoom({ venueId, userId, displayName }: Props) {
   const answered = picked !== null;
   const revealed = !!reveal;
 
+  // Round state for the status badge, carried in words as well as color.
+  const roundState = !question
+    ? "waiting"
+    : revealed
+      ? "reveal"
+      : "open";
+
   return (
-    <section style={{ display: "grid", gap: "1rem" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <h2 style={{ margin: 0 }}>Crowd Trivia</h2>
-        {question && <small style={{ color: "#888" }}>Round {question.roundNo}</small>}
+    <section className="space-y-6">
+      <header className="flex items-center justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="font-display text-2xl text-text">Crowd Trivia</h1>
+          {question && (
+            <p className="text-sm text-mute">Round {question.roundNo}</p>
+          )}
+        </div>
+        {roundState === "open" ? (
+          <LiveBadge state="live" />
+        ) : roundState === "reveal" ? (
+          <Badge tone="signal">Answer revealed</Badge>
+        ) : (
+          <LiveBadge state="quiet" />
+        )}
       </header>
 
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-        <button onClick={() => void host("start")}>Start</button>
-        <button onClick={() => void host("next")}>Next</button>
-        <button onClick={() => void host("reveal")}>Reveal</button>
-        <button onClick={() => void host("end")}>End</button>
-      </div>
+      <Card as="section" padding="md" className="space-y-2">
+        <h2 className="text-2xs font-medium uppercase tracking-wide text-mute">
+          Host controls
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary" size="sm" onClick={() => void host("start")}>
+            Start
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => void host("next")}>
+            Next
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => void host("reveal")}>
+            Reveal
+          </Button>
+          <Button variant="danger" size="sm" onClick={() => void host("end")}>
+            End
+          </Button>
+        </div>
+      </Card>
 
       {!question && (
-        <p style={{ color: "#888" }}>No round running. The host can start one.</p>
+        <Card padding="none">
+          <EmptyState
+            icon="?"
+            title="No round running"
+            description="The host can start one to get the crowd answering."
+          />
+        </Card>
       )}
 
       {question && (
-        <div style={card}>
-          <p style={{ fontWeight: 600, fontSize: 18, marginTop: 0 }}>{question.prompt}</p>
-          <div style={{ display: "grid", gap: "0.5rem" }}>
+        <Card as="section" padding="lg" glow={!revealed} className="space-y-4">
+          <p className="font-display text-xl text-text">{question.prompt}</p>
+          <ul className="grid gap-2" role="list">
             {question.options.map((opt, i) => {
               const isAnswer = revealed && reveal?.answerIndex === i;
               const isMine = picked === i;
-              const background = isAnswer
-                ? "#dcfce7"
-                : isMine
-                  ? "#e0e7ff"
-                  : "#fff";
-              const border = isAnswer
-                ? "2px solid #16a34a"
-                : isMine
-                  ? "2px solid #4f46e5"
-                  : "1px solid #ccc";
+              const locked = answered || revealed;
+              // State word, so meaning never rides on color alone (DESIGN.md §8).
+              const tag = isAnswer
+                ? "Correct answer"
+                : isMine && revealed
+                  ? "Your pick"
+                  : isMine
+                    ? "Your answer"
+                    : null;
+              const letter = String.fromCharCode(65 + i);
+              const label = `Option ${letter}: ${opt}${tag ? `. ${tag}` : ""}`;
               return (
-                <button
-                  key={i}
-                  onClick={() => void answer(i)}
-                  disabled={answered || revealed}
-                  style={{
-                    textAlign: "left",
-                    padding: "0.6rem 0.8rem",
-                    borderRadius: 8,
-                    border,
-                    background,
-                    cursor: answered || revealed ? "default" : "pointer",
-                  }}
-                >
-                  {opt}
-                  {isAnswer && " ✓"}
-                </button>
+                <li key={i}>
+                  <button
+                    onClick={() => void answer(i)}
+                    disabled={locked}
+                    aria-pressed={isMine}
+                    aria-label={label}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-sm border px-4 py-3 text-left",
+                      "min-h-12 transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)]",
+                      "disabled:cursor-default",
+                      isAnswer
+                        ? "border-signal bg-signal/15 text-text"
+                        : isMine
+                          ? "border-pulse bg-pulse/15 text-text"
+                          : "bg-raised text-soft hover:bg-hover hover:text-text",
+                    )}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-sm font-medium",
+                        isAnswer
+                          ? "bg-signal text-base"
+                          : isMine
+                            ? "bg-pulse text-text"
+                            : "bg-surface text-mute",
+                      )}
+                    >
+                      {letter}
+                    </span>
+                    <span className="min-w-0 flex-1 text-base">{opt}</span>
+                    {isAnswer && (
+                      <Badge tone="signal" aria-hidden="true">
+                        Correct
+                      </Badge>
+                    )}
+                    {isMine && !isAnswer && (
+                      <Badge tone="pulse" aria-hidden="true">
+                        Your pick
+                      </Badge>
+                    )}
+                  </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
           {answered && !revealed && result === null && (
-            <p style={{ color: "#888", marginBottom: 0 }}>Answer locked in. Waiting for the reveal.</p>
+            <p className="text-sm text-mute">Answer locked in. Waiting for the reveal.</p>
           )}
           {result === "correct" && (
-            <p style={{ color: "#16a34a", marginBottom: 0 }}>Correct. You earned Zaps.</p>
+            <p className="text-sm font-medium text-signal">Correct. You earned Zaps.</p>
           )}
           {result === "wrong" && (
-            <p style={{ color: "#888", marginBottom: 0 }}>Not this time. Hang on for the next round.</p>
+            <p className="text-sm text-mute">Not this time. Hang on for the next round.</p>
           )}
-        </div>
+        </Card>
       )}
 
       {revealed && scores.length > 0 && (
-        <div style={card}>
-          <h3 style={{ marginTop: 0 }}>Scoreboard</h3>
-          <ol style={{ margin: 0, paddingLeft: "1.2rem" }}>
-            {scores.map((s) => (
-              <li key={s.userId} style={{ color: s.userId === userId ? "#4f46e5" : "inherit" }}>
-                {s.userId === userId ? "You" : s.userId.slice(0, 8)} · {s.points}
-              </li>
-            ))}
+        <Card as="section" padding="lg" className="space-y-3">
+          <h2 className="font-display text-lg text-text">Scoreboard</h2>
+          <ol className="space-y-1" role="list">
+            {scores.map((s, i) => {
+              const isYou = s.userId === userId;
+              return (
+                <li
+                  key={s.userId}
+                  className={cn(
+                    "flex items-center justify-between gap-3 rounded-sm px-3 py-2 text-sm",
+                    isYou ? "bg-pulse/15 text-text" : "text-soft",
+                  )}
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <span className="w-5 shrink-0 tabular-nums text-mute">{i + 1}</span>
+                    <span className="truncate">
+                      {isYou ? "You" : s.userId.slice(0, 8)}
+                    </span>
+                  </span>
+                  <Badge tone="spark">{s.points} Zaps</Badge>
+                </li>
+              );
+            })}
           </ol>
-        </div>
+        </Card>
       )}
     </section>
   );
 }
-
-const card: React.CSSProperties = {
-  border: "1px solid #e4e4e7",
-  borderRadius: 8,
-  padding: "1rem",
-};

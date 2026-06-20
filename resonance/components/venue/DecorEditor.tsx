@@ -4,6 +4,7 @@ import { useState } from "react";
 import { authedFetch } from "@/lib/api/fetch";
 import type { DecorItem } from "@/lib/dj/types";
 import { DecorCanvas, BOARD_WIDTH, glyphFor } from "./DecorCanvas";
+import { Badge, Button, Card, EmptyState, Pill } from "@/components/ui";
 
 /** The decor palette, in unlock order. `level` gates how many entries are usable. */
 const PALETTE: Array<{ kind: string; label: string }> = [
@@ -80,97 +81,102 @@ export function DecorEditor({ venueId, initialDecor, level }: DecorEditorProps) 
   };
 
   return (
-    <div style={{ display: "grid", gap: "1rem" }}>
-      <div>
-        <h3 style={{ margin: "0 0 0.5rem" }}>Palette</h3>
-        <p style={{ margin: "0 0 0.5rem", color: "#888", fontSize: 13 }}>
-          Pick an item, then click the board to place it. Level {level} unlocks {unlocked} of{" "}
-          {PALETTE.length} items.
-        </p>
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+    <div className="space-y-6">
+      <Card as="section" padding="lg" className="space-y-3">
+        <div className="space-y-1">
+          <h2 className="font-display text-lg text-text">Palette</h2>
+          <p className="text-sm text-mute">
+            Pick an item, then click the board to place it. Level {level} unlocks{" "}
+            {unlocked} of {PALETTE.length} items.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           {PALETTE.map((p, i) => {
             const locked = i >= unlocked;
             const isSelected = selected === p.kind;
             return (
-              <button
+              <Pill
                 key={p.kind}
-                type="button"
-                disabled={locked}
-                onClick={() => setSelected(isSelected ? null : p.kind)}
-                title={locked ? `${p.label} (locked)` : p.label}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 2,
-                  padding: "0.4rem 0.6rem",
-                  border: `2px solid ${isSelected ? "#16a34a" : "#e4e4e7"}`,
-                  borderRadius: 8,
-                  background: "#fff",
-                  cursor: locked ? "not-allowed" : "pointer",
-                  opacity: locked ? 0.35 : 1,
-                  fontFamily: "system-ui",
+                clickable
+                selected={isSelected}
+                aria-disabled={locked || undefined}
+                onClick={() => {
+                  if (locked) return;
+                  setSelected(isSelected ? null : p.kind);
                 }}
+                aria-label={locked ? `${p.label}, locked` : p.label}
+                title={locked ? `${p.label} (locked)` : p.label}
+                className={locked ? "cursor-not-allowed opacity-40" : undefined}
               >
-                <span style={{ fontSize: 24, lineHeight: 1 }}>{glyphFor(p.kind)}</span>
-                <span style={{ fontSize: 11, color: "#666" }}>{p.label}</span>
-              </button>
+                <span aria-hidden className="text-base leading-none">
+                  {glyphFor(p.kind)}
+                </span>
+                {p.label}
+              </Pill>
             );
           })}
         </div>
-      </div>
+      </Card>
 
-      <div>
-        <h3 style={{ margin: "0 0 0.5rem" }}>Board</h3>
+      <Card as="section" padding="lg" className="space-y-3">
+        <h2 className="font-display text-lg text-text">Board</h2>
         <div
           onClick={place}
-          style={{ width: BOARD_WIDTH, maxWidth: "100%", cursor: selected ? "crosshair" : "default" }}
+          style={{ width: BOARD_WIDTH, maxWidth: "100%" }}
+          className={selected ? "cursor-crosshair" : "cursor-default"}
         >
           <DecorCanvas decor={decor} />
         </div>
-      </div>
+      </Card>
 
-      <div>
-        <h3 style={{ margin: "0 0 0.5rem" }}>Placed ({decor.length})</h3>
+      <Card as="section" padding="lg" className="space-y-3">
+        <h2 className="font-display text-lg text-text">Placed ({decor.length})</h2>
         {decor.length === 0 ? (
-          <p style={{ color: "#888", fontSize: 13 }}>Nothing placed yet. Pick an item above.</p>
+          <EmptyState
+            title="Nothing placed yet"
+            description="Pick an item from the palette, then click the board to place it."
+          />
         ) : (
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: "0.25rem" }}>
+          <ul className="space-y-2">
             {decor.map((item) => (
               <li
                 key={item.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  border: "1px solid #e4e4e7",
-                  borderRadius: 6,
-                  padding: "0.3rem 0.6rem",
-                  fontSize: 13,
-                }}
+                className="flex items-center justify-between gap-3 rounded-sm border bg-raised px-3 py-2"
               >
-                <span>
-                  {glyphFor(item.kind)} {item.kind}{" "}
-                  <span style={{ color: "#aaa" }}>
+                <span className="flex items-center gap-2 text-sm text-soft">
+                  <span aria-hidden className="text-base leading-none">
+                    {glyphFor(item.kind)}
+                  </span>
+                  {item.kind}
+                  <span className="text-mute">
                     ({item.x}, {item.y})
                   </span>
                 </span>
-                <button type="button" onClick={() => remove(item.id)} style={{ fontSize: 12 }}>
+                <Button
+                  variant="quiet"
+                  size="sm"
+                  onClick={() => remove(item.id)}
+                  aria-label={`Remove ${item.kind}`}
+                >
                   Remove
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </Card>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        <button type="button" onClick={() => void persist()} disabled={save === "saving"}>
-          {save === "saving" ? "Saving..." : "Save decor"}
-        </button>
-        {save === "saved" && <span style={{ color: "#16a34a", fontSize: 13 }}>Saved</span>}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          variant="primary"
+          loading={save === "saving"}
+          onClick={() => void persist()}
+        >
+          {save === "saving" ? "Saving" : "Save decor"}
+        </Button>
+        {save === "saved" && <Badge tone="signal">Saved</Badge>}
         {save === "error" && (
-          <span style={{ color: "#dc2626", fontSize: 13 }}>Save failed. Try again.</span>
+          <span className="text-sm text-alert">Save failed. Try again.</span>
         )}
       </div>
     </div>
