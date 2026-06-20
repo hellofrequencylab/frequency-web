@@ -85,14 +85,14 @@ Help is one leg of the three-home pipeline in [DOCS-PROTOCOL.md](DOCS-PROTOCOL.m
    user-facing routes change without help/docs updates.
 
 > **Becoming a living help desk.** The pipeline above (drift nudge → a human writes the doc) is the
-> baseline. The planned next level — AI/RAG search, an AI doc-writer that drafts updates + a staff
-> review checklist, and a measured coverage matrix — is specified in
-> [SUPPORT-SYSTEM.md](SUPPORT-SYSTEM.md) (decisions: [ADR-067](DECISIONS.md)).
+> baseline. The planned next level is specified in [SUPPORT-SYSTEM.md](SUPPORT-SYSTEM.md)
+> (decisions: [ADR-067](DECISIONS.md)): AI/RAG search, an AI doc-writer that drafts updates + a
+> staff review checklist, and a measured coverage matrix.
 
 ## Future expansion (designed-for, not built)
 
 - **AI search**: the chosen direction is **RAG over `content/help` in Vera's voice**, with citations
-  + a human fallback, behind the same `<HelpSearch>` props — see
+  + a human fallback, behind the same `<HelpSearch>` props. See
   [SUPPORT-SYSTEM.md](SUPPORT-SYSTEM.md). (Pagefind/Orama remain the no-AI substring upgrade if ever
   needed.)
 - **Subdomain**: serve at `help.frequencylocal.com` by rewriting it to `/help` (all content

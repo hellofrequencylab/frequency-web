@@ -4,18 +4,18 @@
 > surfaces named in [`EVENTS-REWORK.md`](EVENTS-REWORK.md): **The Catalog**
 > (`/events`, an Index of discoverable events) and **The Invite**
 > (`/events/[slug]`, a Detail page split into a wide left **Post area** and a
-> narrow sticky right **Join area**). Both **compose the existing kit** — no new
+> narrow sticky right **Join area**). Both **compose the existing kit**: no new
 > templates, no hand-rolled headers/cards/grids, DAWN tokens only.
 >
 > **The one chrome change** (the load-bearing decision): set
 > `/events/[slug]` to rail **`'none'`** so the page interior owns BOTH columns,
 > like Luma/Partiful. The exact one-line edit to `lib/layout/page-chrome.ts` is in
 > §1. Everything else reuses what is already built. **Only the page interior
-> changes — the app shell, top nav, and global navigation are untouched.**
+> changes. The app shell, top nav, and global navigation are untouched.**
 
 **Scope of this doc:** layout (sections → slots), component inventory mapped to the
 kit, gamification/badge treatment, every state, responsive rules, the chrome call,
-and a reference JSX skeleton per page. It is a *design* deliverable — no code in
+and a reference JSX skeleton per page. It is a *design* deliverable: no code in
 `app/`, `components/`, or `supabase/` is edited.
 
 **Status legend:** ✅ reuse as-is · ⏳ reuse with a small prop/slot add · ⚠️ small
@@ -23,7 +23,7 @@ and a reference JSX skeleton per page. It is a *design* deliverable — no code 
 
 ---
 
-## 1. The chrome / rail decision (resolve first — it shapes everything)
+## 1. The chrome / rail decision (resolve first, it shapes everything)
 
 | Route | Today | Recommend | Why |
 |---|---|---|---|
@@ -35,7 +35,7 @@ and a reference JSX skeleton per page. It is a *design* deliverable — no code 
 The detail page is a *read/decide* surface, not a Focus form, so it does not belong
 in `FOCUS_PREFIXES`. Add a precise pattern to `FOCUS_PATTERNS` that matches the
 detail slug **without** swallowing the index, `/events/new`, `/events/drafts`,
-`/events/scan` (already matched above it), or `/events/[slug]/event.ics`:
+`/events/scan` (already matched above it), or `/events/[slug]/event.ics`.
 
 ```ts
 // lib/layout/page-chrome.ts — inside FOCUS_PATTERNS, AFTER the existing
@@ -56,7 +56,7 @@ Lock it with a case in `page-chrome.test.ts` (assert `railFor('/events/some-slug
 
 > **Why not `'scoped'`?** `'scoped'` means "the Detail page renders its own *scope
 > rail* in-body" (the circle/channel pattern). The Invite's right column is not a
-> scope rail of stat widgets — it is the primary **Join** action surface. `'none'`
+> scope rail of stat widgets. It is the primary **Join** action surface. `'none'`
 > is the honest setting: the page draws its own grid. `DetailTemplate`'s own header
 > comment already notes the scoped rail comes from the shell slot, not the
 > template, so suppressing it is correct here.
@@ -73,7 +73,7 @@ Reference set: Partiful (expressive page, guest list, Boops, photo album, co-hos
 capacity + auto-waitlist), Luma (minimal beautiful page, registration questions,
 theme, calendar at RSVP), Eventbrite (sticky "Get tickets" aside, schema.org Event).
 
-### 2.1 Annotated layout (sections → slots)
+### 2.1 Annotated layout (sections to slots)
 
 ```
 ┌─ INTERIOR (full width; app shell + nav unchanged) ───────────────────────────┐
@@ -107,39 +107,39 @@ theme, calendar at RSVP), Eventbrite (sticky "Get tickets" aside, schema.org Eve
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-The two-column split is a **plain CSS grid inside `DetailTemplate`'s `children`** —
+The two-column split is a **plain CSS grid inside `DetailTemplate`'s `children`**,
 not a new template. `DetailTemplate` already exposes `hero`, `title`, `subtitle`,
 `badges`, `actions`; the band (A) fills those, and the grid (B+C) is the body.
 
-### 2.2 Component inventory — Invite
+### 2.2 Component inventory: Invite
 
 | Slot | Component | Status | Note |
 |---|---|---|---|
-| A1 cover | `DetailTemplate` `hero` slot + `next/image` | ⏳ | Slot exists; today it's unused. Pass a 16:9 `<Image fill>` cover (or a token placeholder `bg-surface-elevated` when none). The detail page currently sets no hero — this is the one-line win that delivers the Partiful/Luma "beautiful page." |
+| A1 cover | `DetailTemplate` `hero` slot + `next/image` | ⏳ | Slot exists; today it's unused. Pass a 16:9 `<Image fill>` cover (or a token placeholder `bg-surface-elevated` when none). The detail page currently sets no hero. This is the one-line win that delivers the Partiful/Luma "beautiful page." |
 | A2 title/meta | `DetailTemplate` `title` + `subtitle` | ✅ | Already renders title + when/where/host/scope/posted-by. **Attendance mode** (in-person / online / hybrid) becomes a `badges` chip (see §2.4). |
-| A3 rewards | **`EventRewardStrip`** | ⚠️ new | Small presentational row. Composes existing pieces — see §2.3. Lives between the band and the two-column grid. |
+| A3 rewards | **`EventRewardStrip`** | ⚠️ new | Small presentational row. Composes existing pieces (see §2.3). Lives between the band and the two-column grid. |
 | B1 description | inline prose + `PosterDetails` | ✅ | Keep open prose (not boxed), `max-w-2xl` reading column. |
 | B2 dispatches | `EventActivity` | ⏳ | Host posts already flow here; **add an event Dispatch badge** to host-authored items (ADR-255) so they read as "a Dispatch with an event badge." A small `isDispatch`/`badge` prop on each post. |
-| B3 comments + Boops + GIF | `EventActivity` | ⏳ | Comments + image attach exist. **Add: Boops** (the reaction set — a small reaction bar per post) **and a GIF picker** beside the image button. Both are leaf interactions inside the existing client component. |
+| B3 comments + Boops + GIF | `EventActivity` | ⏳ | Comments + image attach exist. **Add: Boops** (the reaction set, a small reaction bar per post) **and a GIF picker** beside the image button. Both are leaf interactions inside the existing client component. |
 | B4 recap | `RecapAlbum` | ✅ | Renders post-event; no change. |
 | C1 RSVP | `RsvpControls` + `CrewGateButton` | ✅ | Three states (Going / Interested / waitlist) + plus-ones stepper, all built. **Add: optional +1 names** and **"Request to join"** for approval-required events (Track A1) as extra `RsvpControls` props. |
 | C2 ticket | `TicketButton` / `RefundTicketButton` | ✅ | PWYC/tiers/free-claim already handled. Moves from inline body into the Join aside. |
 | C3 calendar | `AddToCalendar` | ✅ | Surface `emphasis` right after a "going" RSVP (highest-ROI lever). |
 | C4 critical info | **`EventFactPanel`** | ⚠️ new (thin) | A small aside card grouping date/time · location + a mini `EventsMap` · capacity/spots · guest-list summary. Pure composition of existing bits + `WarmProof`; see §2.5. |
 | status banners | inline token cards | ✅ | Cancelled / claimed / ticket-confirmed banners already exist. |
-| attendees | guest list in C4 | ✅ | Reuse the existing avatar+name list (Crew see names; others see a count — privacy-by-default). |
+| attendees | guest list in C4 | ✅ | Reuse the existing avatar+name list (Crew see names; others see a count, privacy-by-default). |
 | cohosts | `CohostManager` | ✅ | Stays in the band/host area or top of Post area. |
 
 **New components total: two (`EventRewardStrip`, `EventFactPanel`) plus prop adds.**
 Both are thin, presentational, server-friendly compositions of things already in the
-repo — they exist so the band and aside read uniformly, not because a primitive is
+repo. They exist so the band and aside read uniformly, not because a primitive is
 missing.
 
 🔴 **Do not** hand-roll a second `<h1>`, a bespoke card chrome, a new RSVP button
 shape, or a `text-[14px]` anywhere. 🔴 Do not add a `success`/green chrome accent for
 "going" beyond the existing `success` status tokens already in `RsvpControls`.
 
-### 2.3 Gamification + badges row (A3) — `EventRewardStrip`
+### 2.3 Gamification + badges row (A3): `EventRewardStrip`
 
 The row's job: make the rewards and the social proof legible **without** turning the
 event into a leaderboard. It honours the **gamified-stat law** — the four KPI tiles
@@ -165,7 +165,7 @@ Rules baked in (CONTENT-VOICE + EVENTS-REWORK Law 1):
   urgency. `WarmProof` already enforces the never-low floor — reuse it, don't
   reinvent.
 - Streak chip says what it *protects* ("keeps your 6-week streak"), never narrates a
-  feeling and never threatens loss ("don't break your streak" is banned).
+  feeling, and never threatens loss ("don't break your streak" is banned).
 - The whole strip collapses gracefully: each chip renders only when its value is
   genuine, so a brand-new event shows just "Be the first to RSVP" + the Zap chip.
 - The signal-teal `Circle Current` chip is the one place teal appears; it is the

@@ -1,14 +1,14 @@
 # Member Design System
 
 The standard for every member-facing surface under `app/(main)/**` (the in-app
-experience — feed, spaces, the Quest, profiles, messaging). The member sibling of
+experience: feed, spaces, the Quest, profiles, messaging). The member sibling of
 [`ADMIN-DESIGN-SYSTEM.md`](ADMIN-DESIGN-SYSTEM.md): same warm canvas-and-tiles bones,
 tuned for a member instead of an operator. With the marketing language
 ([`DESIGN-LANGUAGE.md`](DESIGN-LANGUAGE.md)) and the admin spec, this is the third leg of
 **one uniform site**. ADR-240.
 
 > The kit is already ~85% adopted (the in-app overhaul, ADR-061/090). This finishes and
-> enforces it — composition, not reinvention. Voice + naming bind every word
+> enforces it: composition, not reinvention. Voice + naming bind every word
 > (docs/NAMING.md, docs/CONTENT-VOICE.md): no em dashes in member copy.
 
 ---
@@ -32,14 +32,14 @@ The look is identical (tokens, type, tiles, charcoal ink); the *content* is what
 ## 1. Principles (ranked)
 
 1. **Design for the body, not the dashboard.** Lens words: *missed · exhale · home*. A
-   member page leads with people, places, and what to do next — never a metrics wall.
+   member page leads with people, places, and what to do next, never a metrics wall.
 2. **Content is the hero; tiles are the supporting cast.** The feed post, the circle, the
    person, the journey is the subject. White tiles carry the few numbers that matter
    (a member's standing), not the content itself.
 3. **The only stats are gamified (§2).** Streaks, zaps, gems, season rank. If a number
    isn't part of the game, it doesn't get a tile on a primary page.
 4. **Warm and legible.** Charcoal ink `#3D352A`, the type scale (§3), tabular numerals on
-   game counts, semantic tokens only — no `text-[..px]` for content, no hardcoded hex.
+   game counts, semantic tokens only: no `text-[..px]` for content, no hardcoded hex.
 5. **Compose, never author.** Every page is one of five templates (§4) filled with kit
    parts (§5). If a header, card, tab, or empty state is hand-rolled, it's wrong.
 6. **No dead ends.** Every entity cross-links to its neighbors (event↔practice,
@@ -61,7 +61,7 @@ their standing in the Quest, nothing else.
   (the flame + shields), **Season rank** (the badge). These are the *only* values that earn
   a stat tile, a `StatCard`, or a `StreakStrip` on a primary page.
 - **One source of truth for rank.** Rank tier, color, and label come from
-  `lib/season-ranks.ts` (`SEASON_RANKS`) — never a page-local `RANK_TIERS` (retire the copy
+  `lib/season-ranks.ts` (`SEASON_RANKS`), never a page-local `RANK_TIERS` (retire the copy
   in `people/[handle]`). Rank renders identically on the feed, crew home, profile, and
   leaderboard.
 - **One standing component.** Promote a single **`StandingTiles`** (the crew home's
@@ -76,7 +76,7 @@ their standing in the Quest, nothing else.
 - **Non-gamified surfaces show no stats.** Messaging, settings, capture/compose, discovery
   intentionally show zero stats. Leave them that way.
 
-Mixed surfaces to fix (audit): `crew/leaderboard` (rank/zaps table is fine — drop any
+Mixed surfaces to fix (audit): `crew/leaderboard` (rank/zaps table is fine; drop any
 non-game context stats), `partners` + `market` (partner/city/category counts → inline
 context, not a StatStrip), `practices` "Your practices" (zap reward stays; retire the
 hard-bordered row → `EntityCard`/RowCard).
@@ -85,7 +85,7 @@ hard-bordered row → `EntityCard`/RowCard).
 
 ## 3. Foundations
 
-**Tokens** — the shared layer (`app/globals.css`). Ink warm charcoal `--color-text
+**Tokens**: the shared layer (`app/globals.css`). Ink warm charcoal `--color-text
 #3D352A`; `muted`/`subtle` step down. `canvas` = page; `surface` (white) = tiles. Status +
 game accents are semantic tokens only (`primary`/amber for zaps + chrome, the rank colors
 from `season-ranks`, `success`/`warning`/`danger` for in-app status). Never hardcode hex.
@@ -108,52 +108,52 @@ few **white tiles** that carry game stats. Radius `rounded-2xl` (cards/tiles/row
 
 ## 4. Page-template taxonomy
 
-Every member surface maps to one of five shared templates (`@/components/templates`) — plus
+Every member surface maps to one of five shared templates (`@/components/templates`), plus
 a Wizard pattern for onboarding. Compose the template + `PageHeading`; never hand-roll.
 
-1. **Stream** — a flow of items (feed, broadcast). `PageHeading` + optional composer + the
+1. **Stream**: a flow of items (feed, broadcast). `PageHeading` + optional composer + the
    item flow. Game standing rides in the rail / JourneyBoard, not the stream body.
-2. **Index** — a collection to browse (circles, channels, events, practices, journeys,
+2. **Index**: a collection to browse (circles, channels, events, practices, journeys,
    people, market, partners, messages, search, library, crew lists). `PageHeading` + a
    filter toolbar (URL-as-state) + an `EntityCard`/`PersonCard` grid + `EmptyState`.
-3. **Detail** — one entity (circle, channel, event, hub, nexus, program, profile, market
+3. **Detail**: one entity (circle, channel, event, hub, nexus, program, profile, market
    listing, partner). A context band (identity, status, key facts, primary actions) +
    **underline tabs** (the one tab vocabulary) + body. Cross-link to neighbors.
-4. **Dashboard** — the member's metric-led surface = **the Quest / Crew home**. The ONLY
+4. **Dashboard**: the member's metric-led surface = **the Quest / Crew home**. The ONLY
    member dashboard, and it shows the gamified standing (§2), a next-best-action, and entry
    tiles into the game. (Operator dashboards live in admin.)
-5. **Focus** — a centered, rail-less compose/edit/settings/takeover surface (events/new,
+5. **Focus**: a centered, rail-less compose/edit/settings/takeover surface (events/new,
    edit forms, messages thread, on-air, settings, scan, claim landings).
-6. **Wizard** (onboarding) — a staged Focus surface with explicit "continue", a progress
+6. **Wizard** (onboarding): a staged Focus surface with explicit "continue", a progress
    cue, and the celebration beat. The onboarding suite (`/onboarding/*`) is the only
-   bespoke cluster left — fold it onto Focus + this wizard pattern.
+   bespoke cluster left. Fold it onto Focus + this wizard pattern.
 
-Rail is registered once per route in `lib/layout/page-chrome.ts` (`global`/`scoped`/`none`)
-— pages never toggle it.
+Rail is registered once per route in `lib/layout/page-chrome.ts` (`global`/`scoped`/`none`).
+Pages never toggle it.
 
 ---
 
 ## 5. Component grammar (compose these)
 
-- **`PageHeading`** — the one header (title · eyebrow · description · actions · back).
-- **`EntityCard` / `PersonCard` / `RowCard`** — the browse cards. `EntityCard`/`PersonCard`
+- **`PageHeading`**: the one header (title · eyebrow · description · actions · back).
+- **`EntityCard` / `PersonCard` / `RowCard`**: the browse cards. `EntityCard`/`PersonCard`
   for the grid (avatar/icon anchor · title · one-line context · description · meta);
-  **`RowCard`** for dense list rows (offers, "your practices", discover) — link-row mode
+  **`RowCard`** for dense list rows (offers, "your practices", discover) in link-row mode
   (whole row anchors, passive trailing chip) or actions mode (title links, controls sit
   right, never nested in an anchor). Every bespoke "circle/offer card" or "your-practices
   row" is retired onto these.
-- **`SectionHeader`** — titled section within a page (title · count · action).
-- **`UnderlineTabs`** — the ONE tab vocabulary for Detail (and any tabbed page: profile,
+- **`SectionHeader`**: titled section within a page (title · count · action).
+- **`UnderlineTabs`**: the ONE tab vocabulary for Detail (and any tabbed page: profile,
   search, network contacts, library, market). No pill/button tab variants anywhere.
-- **Standing kit (game tiles):** **`StandingHero`** (the dashboard centerpiece — rank crest +
+- **Standing kit (game tiles):** **`StandingHero`** (the dashboard centerpiece: rank crest +
   the four counts as feature tiles + the climb ladder, §2; the member analog of the admin
   KPI hero) · `StandingTiles` (the compact four-count render for the feed/rail) · `StreakStrip`
   (flame + shields) · `StatCard` (a single game tile) · `JourneyBoard` (the feed's graduated
   home). Rank ALWAYS from `lib/season-ranks`. These are the only "tiles with numbers" a member
   sees.
-- **`EmptyState`** — never a blank pane; teach the next step + one CTA. Fill the gaps
+- **`EmptyState`**: never a blank pane; teach the next step + one CTA. Fill the gaps
   (on-air/dispatches, library/review, support, some detail sub-pages).
-- **`RoleActions`** — the resolver-fed header action menu (primary + overflow, gate-aware);
+- **`RoleActions`**: the resolver-fed header action menu (primary + overflow, gate-aware);
   finish building it as Detail headers adopt it (replaces the ~60 inline role checks).
 - **Chips/badges:** the tokenized `Pill`/`Badge`/`StatusChip` vocabulary; rank badges from
   `season-ranks`. No inline `bg-danger`/`bg-warning` hex on the profile.
@@ -178,7 +178,7 @@ Rail is registered once per route in `lib/layout/page-chrome.ts` (`global`/`scop
 
 ## 7. The marketing boundary
 
-Marketing keeps its editorial register (Anton heroes, ink beats, photography) — it shares
+Marketing keeps its editorial register (Anton heroes, ink beats, photography); it shares
 the token layer but not the tile grammar. The seam is the splash → app transition
 (sign-in/onboarding). Onboarding belongs to the **app** register (Focus + Wizard, §4), not
 the marketing one, so the first in-app moment already feels like home. The marketing
@@ -186,7 +186,7 @@ unification backlog stays in `DESIGN-LANGUAGE.md`.
 
 ---
 
-## 8. Rollout — SHIPPED (ADR-241)
+## 8. Rollout: SHIPPED (ADR-241)
 
 What ADR-240 framed as a finishing pass became the full member visual redesign (the
 owner's admin-style treatment). Run like admin: foundation first, then parallel agents per

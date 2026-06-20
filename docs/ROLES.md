@@ -1,7 +1,7 @@
-# Roles & access — the canonical model
+# Roles & access: the canonical model
 
 > Source of truth for Frequency's role architecture. Mirrors the Notion "Roles &
-> Community Map" (training view). Status: **design — not yet built** (the current code
+> Community Map" (training view). Status: **design, not yet built** (the current code
 > still uses the old global `community_role` enum incl. admin/janitor; build plan in
 > [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §11, decision in
 > [DECISIONS.md](DECISIONS.md) ADR-163).
@@ -12,11 +12,12 @@ Access is the **union** of four orthogonal things. A person can hold a position 
 at once (e.g. a **Host** of one circle, a paid **Crew** member, a **Practitioner + Collaborator**,
 and **Support** staff). Adding a role anywhere lights up its surfaces; nothing else changes.
 
+
 | Layer | Answers | How you get it | Stored as | Stack? |
 |---|---|---|---|---|
 | **1 · Community** | how much do you steward, *where*? | community position | stewardship **edges** (role × place) | one per scope |
 | **· Entitlement** | Member (free), Crew (paid), or Supporter? | self-serve billing | tier flag | n/a |
-| **2 · Partners** | what are you here to do/sell? | **paid upgrade package** (sign up) | persona rows (multi-select) | yes — any combo |
+| **2 · Partners** | what are you here to do/sell? | **paid upgrade package** (sign up) | persona rows (multi-select) | yes, any combo |
 | **3 · Admin** | what platform tooling do you run? | granted, top-down | super-ladder + capability matrix | one |
 
 ## The place tree + overlays
@@ -24,19 +25,19 @@ and **Support** staff). Adding a role anywhere lights up its surfaces; nothing e
 **Backbone (geographic spine):** **Nexus → Hub → Circle.** Nexus is the top community
 unit; city/region grouping is `nexus_regions`. *(Outpost is no longer the top container.)*
 
-**Overlays** — cross-link members & circles, two twins:
-- **Channel** — the **online** topical overlay (links members & circles by interest).
-- **Outpost** — the **in-person** twin: a local *clubhouse / Club* that forms **inside a
+**Overlays**, cross-link members & circles, two twins:
+- **Channel**: the **online** topical overlay (links members & circles by interest).
+- **Outpost**: the **in-person** twin: a local *clubhouse / Club* that forms **inside a
   Nexus**, cross-engages its Circles, and hosts the **primary local events**. Aspirationally
   housed in a **Frequency Lab** (a for-profit venue program). An Outpost exists with or
   without a Lab and "graduates" into one when it opens.
 
-## System 1 — Community (scoped stewardship ladder)
+## System 1: Community (scoped stewardship ladder)
 
 A role is a **stewardship edge** `(person · role · scope)`; the global level is *derived*
-from the highest edge. These are the **management roles — extra work, layered on top of
+from the highest edge. These are the **management roles: extra work, layered on top of
 membership.** Platform `admin`/`janitor` are **not** here (→ System 3), and **Crew is not a
-rung here — it's the paid membership tier** (→ Entitlement).
+rung here; it's the paid membership tier** (→ Entitlement).
 
 | Role | Scope | Responsibility | Unlocks |
 |---|---|---|---|
@@ -48,24 +49,24 @@ rung here — it's the paid membership tier** (→ Entitlement).
 
 Broadcasts flow **downward by scope**: Mentor → Nexus · Guide → Hub · Host → Circle ·
 Channel/Outpost lead → its members. **Management roles get the full member site** (they need it
-to do the work) — access comes from the role, not from paying.
+to do the work). Access comes from the role, not from paying.
 
-## Entitlement — Member (free) → Crew (paid) → Supporter (billing axis)
+## Entitlement: Member (free) → Crew (paid) → Supporter (billing axis)
 
 The **membership** axis, orthogonal to every role. *"Everyone is part of the Crew on the paid
-tier — that's the membership point."*
+tier, that's the membership point."*
 
 | Tier | Cost | Access |
 |---|---|---|
-| 🌱 **Member** *(free, default)* | $0 | The community to **participate** — but with **limited ✋ access**: some areas are greyed out (the Quest cash-in / Vault, and the paid-only surfaces). |
-| 🚀 **Crew** *(paid membership)* | paid | **The full member site — no core feature is limited.** Gamification cash-in on (claim/spend/compete; rewards already accrue for all in the Vault). This is the membership. |
-| 💖 **Supporter** | pays more | Everything Crew has, **plus a special Supporter badge** — recognition for contributing beyond the membership. |
+| 🌱 **Member** *(free, default)* | $0 | The community to **participate**, but with **limited ✋ access**: some areas are greyed out (the Quest cash-in / Vault, and the paid-only surfaces). |
+| 🚀 **Crew** *(paid membership)* | paid | **The full member site: no core feature is limited.** Gamification cash-in on (claim/spend/compete; rewards already accrue for all in the Vault). This is the membership. |
+| 💖 **Supporter** | pays more | Everything Crew has, **plus a special Supporter badge**: recognition for contributing beyond the membership. |
 
-**Partner packages are separate paid upgrades** (a higher monthly rate for added services) —
+**Partner packages are separate paid upgrades** (a higher monthly rate for added services):
 Practitioner · Collaborator · Business · Organization (→ System 2). Stored as `membership_tier`
 (`free` → `crew` → `supporter`); paying for a partner package is its own persona + billing.
 
-## System 2 — Partners (self-serve account roles · multi-select hats)
+## System 2: Partners (self-serve account roles · multi-select hats)
 
 Sign up → a feature suite + own dashboard. Verified where money moves. Stack any; they sit
 on top of normal Community membership.
@@ -73,31 +74,31 @@ on top of normal Community membership.
 | Partner | Who | Unlocks | Money |
 |---|---|---|---|
 | 📣 **Collaborator** | influencers, authors, teachers, speakers **with an audience** | bring-your-audience tools; their Practices/Journeys in a **featured directory**; **influencer program** (kickbacks tied to their activity + gamification) | affiliate kickbacks |
-| 🧘 **Practitioner** | healers, breathwork, yogis **running their own client network** | **host paywalled Programs** (Practices + Journeys) + **gamify clients' progress**; private Channel + private Circles — under the Frequency brand | Stripe Connect (verified) |
+| 🧘 **Practitioner** | healers, breathwork, yogis **running their own client network** | **host paywalled Programs** (Practices + Journeys) + **gamify clients' progress**; private Channel + private Circles, under the Frequency brand | Stripe Connect (verified) |
 | 🏪 **Business** | local businesses | business **listing** + network integration; **loyalty rewards**; **CRM**, **web builder**, deep business tools | payments + loyalty |
 | 🏢 **Organization** | nonprofits / orgs | a full suite tied to whoever's tagged with the org: their own **sub-community on Hook**, CRM, gamification, promotion | tenant billing |
 
 **Verification ladder (P2.7, ADR-165).** A claim is a *request*, not an instant unlock:
 `claimed` (pending review) → staff **verify** → `active` (suspend/reinstate as needed). A
-persona's tools light up only once **verified/active** — a `profiles`-domain operator (or
+persona's tools light up only once **verified/active**: a `profiles`-domain operator (or
 janitor) runs the queue at `/admin/personas`. The per-persona **Stripe Connect** binding is
 the money gate at `active` (stubbed until Connect is configured).
 
 **Organization isolation rule.** An org runs its **own editable admin/staff roles inside its
-Hook tenant**. On the main Frequency site that admin **does not bleed over** — org people are
+Hook tenant**. On the main Frequency site that admin **does not bleed over**: org people are
 Frequency participants *tied to* the org (an organizer is usually Crew, may also be Host/Guide/
 Mentor). **Collaborator vs Practitioner** = *audience / personal-brand + affiliate* vs
 *run-your-own-network + gamify-your-clients*.
 
-## System 3 — Admin (internal platform staff)
+## System 3: Admin (internal platform staff)
 
 A small **super-ladder** at the top, then domain-scoped capability roles. The old community
 `janitor`/`admin` live here now.
 
 | Role | Access |
 |---|---|
-| 🛡️ **Janitor** | The mega role — **everything**: financials, destructive DB edits, sensitive owner features, role-granting, the permission grid. *(The joke: the highest role leads from service.)* |
-| 🗝️ **Admin** | Almost everything — runs the platform, assigns roles below — **except** financials (write), destructive DB edits, sensitive owner features. |
+| 🛡️ **Janitor** | The mega role, **everything**: financials, destructive DB edits, sensitive owner features, role-granting, the permission grid. *(The joke: the highest role leads from service.)* |
+| 🗝️ **Admin** | Almost everything: runs the platform, assigns roles below, **except** financials (write), destructive DB edits, sensitive owner features. |
 | 🛠️ **Operations** | circles · channels · events · structure · members · moderation · QR |
 | 📈 **Marketing** | marketing · CRM · outreach · segments · growth |
 | 💰 **Accounting** | billing · subscriptions · payouts *(members read-only)* |
@@ -123,11 +124,11 @@ access = union of
 
 | Layer | Store as |
 |---|---|
-| Community | **`stewardships`** — `profile_id, role(crew/host/guide/mentor/outpost_lead), scope_type(circle/hub/nexus/outpost), scope_id, state`. Member implicit via `memberships`; cache `community_level` for fast global gates. |
-| Entitlement | membership/subscription flag — `tier(free/member/supporter)` + game-claim state. |
-| Partners | **`profile_personas`** — `profile_id, persona, state, stripe_account_id?, entity_id?` (multi-row). |
-| Admin (platform) | **`team_members`** — `profile_id, staff_role` → domains via matrix; Janitor/Admin the super-tiers. |
-| Org (Hook) admin | **tenant-scoped** staff rows on the org's Hook instance — isolated; never read by the Frequency resolver. |
+| Community | **`stewardships`**: `profile_id, role(crew/host/guide/mentor/outpost_lead), scope_type(circle/hub/nexus/outpost), scope_id, state`. Member implicit via `memberships`; cache `community_level` for fast global gates. |
+| Entitlement | membership/subscription flag: `tier(free/member/supporter)` + game-claim state. |
+| Partners | **`profile_personas`**: `profile_id, persona, state, stripe_account_id?, entity_id?` (multi-row). |
+| Admin (platform) | **`team_members`**: `profile_id, staff_role` → domains via matrix; Janitor/Admin the super-tiers. |
+| Org (Hook) admin | **tenant-scoped** staff rows on the org's Hook instance, isolated; never read by the Frequency resolver. |
 | Overlays | **`outposts`** `(nexus_id, lab_id?, place)` + **`labs`** (for-profit venues) + `channels`; members affiliate via join rows; events can scope to an outpost. |
 | All | one **capability resolver** computing the union per request/context (extends ADR-017). |
 
@@ -136,7 +137,7 @@ access = union of
 Encodes the owner's **Roles & Permissions** sheet (2026-06-08). Legend: **✅ full** ·
 **✋ limited** (logged-out preview / free-tier or upgrade-gated / scoped partial) ·
 **🚫 none**. Columns are the role & persona hats; access to a surface is the **most-open**
-cell across every hat a person holds. *(The **Crew** column = the **paid membership tier** — the
+cell across every hat a person holds. *(The **Crew** column = the **paid membership tier**: the
 ✋→✅ jump is the Entitlement gate. Stewardship is the separate Host/Guide/Mentor ladder.)*
 
 | Surface | Vis | Mbr | Crew | Host | Guide | Mntr | Coll | Prac | Biz | Org | Anl | Adm | Jan |
@@ -165,36 +166,36 @@ cell across every hat a person holds. *(The **Crew** column = the **paid members
 | Finances (Financial Dashboard) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ |
 | Settings (Site Settings) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-**How to read it — the structure that drives the build:**
+**How to read it, the structure that drives the build:**
 - **One site for everyone.** All Community + Quest surfaces are ✅ for every member; Visitors get a
-  ✋ preview (Message Boards 🚫). Nobody gets a *different* site — see the principle below.
+  ✋ preview (Message Boards 🚫). Nobody gets a *different* site; see the principle below.
 - **✋ = the paid-membership gate.** The Vault, Studio Overview, Connections (Personal CRM) and QR
   Studio are ✋ for free Members and ✅ once paid → this is the **Entitlement** axis (Free → Member).
 - **Studio business block** (CRM Pipeline · Website · Hook · Growth · Finances) is the **Partners**
   surface: Business/Organization ✅, Practitioner ✋, Collaborator gets the Earnings view; Hook
   Network is Org-only.
 - **Platform management** (Hubs & Nexuses · Memberships · Pages) is **Admin/Janitor only**, and
-  **Financial Dashboard is Janitor-only** (Admin excluded) — the Admin system, with the
-  financials/owner carve-out. ⚠️ *This centralizes structure management to Admin — stricter than
+  **Financial Dashboard is Janitor-only** (Admin excluded): the Admin system, with the
+  financials/owner carve-out. ⚠️ *This centralizes structure management to Admin, stricter than
   today, where Host/Guide self-manage structure. Confirm (open decision).*
 - **Insight & Vera AI stewardship:** **Host** gets a **limited** view (basic, circle-support); **Guide
-  & Mentor get the full** deeper analytics. (Owner correction 2026-06-08 — seniors get *more*, not
+  & Mentor get the full** deeper analytics. (Owner correction 2026-06-08: seniors get *more*, not
   less; the sheet's Guide/Mentor 🚫 was an oversight.)
 - **Status + Settings** are universal.
 
 > ✅ **Synced to the owner CSV (2026-06-08)** and locked by a full-grid conformance test
-> (`lib/core/access-matrix-sheet.test.ts` — all 30 surfaces × 13 roles). The two deliberate
+> (`lib/core/access-matrix-sheet.test.ts`, all 30 surfaces × 13 roles). The two deliberate
 > deviations from the literal sheet are the Insight/Vera seniors-deeper correction above. **Outpost is
-> intentionally out of scope** (owner direction) — no Outpost column or surface yet.
+> intentionally out of scope** (owner direction): no Outpost column or surface yet.
 
 ## Unified-site principle (owner directive)
 
 > "I want the site to be **exactly the same for everyone**, with different **functions and options**
 > available for the different roles."
 
-The site is **identical for everyone** — same shell, same pages, same navigation. Roles never get
+The site is **identical for everyone**: same shell, same pages, same navigation. Roles never get
 different *destinations*; they get different **functions and options inside the shared surfaces**. A
-Host opens the same circle page a Member does — just with extra controls on it. Therefore permissions
+Host opens the same circle page a Member does, just with extra controls on it. Therefore permissions
 gate **capabilities within a surface**, not whole routes: the matrix above is read as *how much
 function* (🚫 none / ✋ limited / ✅ full) each hat gets per surface, and the resolver returns that
 **level** to the page so it can reveal the right controls. This supersedes "route gating + a separate
@@ -211,28 +212,28 @@ function* (🚫 none / ✋ limited / ✅ full) each hat gets per surface, and th
 
 ## Open decisions
 
-- **Organization** — partner persona that carries tenancy, or its own tenant tier?
+- **Organization**: partner persona that carries tenancy, or its own tenant tier?
 - Confirm the **Collaborator vs Practitioner** line.
 - Does **Crew** get cross-Circle visibility by default? (today: Circle-anchored unless promoted.)
 - Pin exactly which **"special role/partner features"** gate behind the paid Member tier.
 
 ---
 
-## Nav visibility — one menu, role-gated (2026-06, owner directive)
+## Nav visibility: one menu, role-gated (2026-06, owner directive)
 
 The whole site is ONE menu everywhere; what a viewer sees is filtered by their access
 level on each item's surface (the access matrix). The nav resolution (app-shell
-`itemAccess`) reads the matrix as **authoritative** — it already folds in role · tier ·
+`itemAccess`) reads the matrix as **authoritative**: it already folds in role · tier ·
 staff, and under a **view-as preview** those are the *impersonated* values, so a
 janitor-viewing-as-Visitor faithfully loses staff access (no `meetsStaff` union on top of
-the matrix — that was the leak).
+the matrix; that was the leak).
 
 Three render states per item:
 
 | Matrix level | Community / Quest item | Admin (telescope) section |
 |---|---|---|
 | `full` | normal link | shown |
-| `limited` | **ghost** — muted, clicks through to the gated preview page (e.g. a visitor on Practices/Library) | **hidden** (an operator tool needs full access; no ghost admin rows) |
+| `limited` | **ghost**: muted, clicks through to the gated preview page (e.g. a visitor on Practices/Library) | **hidden** (an operator tool needs full access; no ghost admin rows) |
 | `none` | disabled ghost (greyed, non-clickable) | hidden |
 
 Admin sections also **telescope**: the header is skipped entirely when nothing is `full`,
@@ -241,15 +242,15 @@ so a visitor/member never sees an "Admin" header.
 ### Per-role nav (today)
 - **Visitor (logged out):** Community previews (Feed/Circles/Channels/Events/Market = limited); Message Boards/Community(Network) = disabled; the Quest (Dashboard/Journeys/Practices/Library) = **ghost preview**; Vault = ghost. **No Admin section.** Settings via the profile card only when signed in.
 - **Member / Crew (paid):** Community + Quest full (Vault unlocks on the paid tier). **No Admin section.** Personal Settings from the profile card.
-- **Host / Guide / Mentor (volunteer leaders):** as Member today. Their network-scoped admin is NOT wired yet (see below) — they do **not** see the platform Admin section for now.
-- **Admin (web_role):** the Admin section — Home, Programs, Operations, Growth, QR. Not Financials.
+- **Host / Guide / Mentor (volunteer leaders):** as Member today. Their network-scoped admin is NOT wired yet (see below); they do **not** see the platform Admin section for now.
+- **Admin (web_role):** the Admin section: Home, Programs, Operations, Growth, QR. Not Financials.
 - **Janitor (web_role):** all of Admin + Financials.
 
 Admin Home + the operator areas are gated to **staff admin/janitor** (`platformManage`
-surface). Personal **Settings** is not an admin tool — it lives on the profile card +
+surface). Personal **Settings** is not an admin tool; it lives on the profile card +
 `/settings`, never under "Admin".
 
-### Forward notes (not built yet — owner)
+### Forward notes (not built yet, owner)
 - **Volunteer leader network admin.** Crew/Host/Guide/Mentor should get *network-scoped*
   admin within their own circles/downline: a leader posts a **dispatch DOWN** (those under
   them get it; peers beside them see it as shared content), and can **group/direct-message
@@ -272,20 +273,20 @@ floor admitted community **host+**, and some operator tools (QR Studio nav, `/pr
 were host/crew-reachable.
 
 ### Shut (done)
-- **`getStaffMember()` is now view-as aware** — returns null whenever a view-as cookie is
+- **`getStaffMember()` is now view-as aware**: returns null whenever a view-as cookie is
   present (mirrors the `webRole → 'none'` strip in `resolveCaller`). The guards faithfully
   downgrade now, so previewing a role can never retain real staff access.
-- **`requireAdminFloor` is STAFF-ONLY** — `isStaff(webRole) || staffSeesAdmin(staffRole)`.
+- **`requireAdminFloor` is STAFF-ONLY**: `isStaff(webRole) || staffSeesAdmin(staffRole)`.
   The community ladder no longer opens `/admin`. A host/guide/mentor is a community leader,
   not a platform operator. (`docs` + `lib/admin/guard.ts`.)
-- **QR re-gated to staff** — the `admin-qr` nav maps to `platformManage` (+ `staffDomain: 'qr'`);
+- **QR re-gated to staff**: the `admin-qr` nav maps to `platformManage` (+ `staffDomain: 'qr'`);
   `/print/qr` raised from `host` to staff. No QR operator tool shows to crew/host now.
 
-### Let back in (next — the design)
+### Let back in (next, the design)
 Hosts need BASIC, **network-scoped** admin, not the platform workspace. The model:
 - `/admin/*` stays the **staff platform workspace** (default deny).
 - Community leaders (host/guide/mentor) get a small, explicit re-entry to the **Community
-  admin domain only** — managing THEIR circles, members, events, and trust/safety — scoped
+  admin domain only**, managing THEIR circles, members, events, and trust/safety, scoped
   to what they lead via the per-scope capability resolver (ADR-017), never the platform-wide
   data. Everything else (Roles, Financials, Platform, AI, Marketing/CRM/Growth, Settings)
   stays staff-only.

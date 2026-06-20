@@ -18,10 +18,10 @@
 
 ---
 
-## TL;DR — the recommendation
+## TL;DR: the recommendation
 
 **Don't adopt a new mega-framework. Adopt *seams*.** The thing that makes a stack
-"un-fixable when it dates" is not the framework — it's coupling business logic,
+"un-fixable when it dates" is not the framework. It's coupling business logic,
 data, composition, and design to that framework so they can't move independently.
 Keep Next.js (it's a good bet), but split the system into **five layers that each
 change at their own pace**, separated by stable contracts:
@@ -43,7 +43,7 @@ change at their own pace**, separated by stable contracts:
 
 **Single most important decision:** the **CONTRACT seam** between
 domain/data and presentation. Get a typed, framework-agnostic view-model contract
-right and the renderer becomes a *replaceable adapter* — Next.js, a future
+right and the renderer becomes a *replaceable adapter*: Next.js, a future
 framework, or a native app all consume the same contract. Everything else
 (per-user composition, new surfaces, a sync engine, a rendering swap) becomes a
 *local* change instead of a rewrite.
@@ -57,11 +57,11 @@ correct model for *dynamic, per-user* pages is **server-driven composition**:
 
 - A page is a **template** (the durable, memorable shell) with **slots**.
 - The **server decides which modules fill each slot for *this* user**, by
-  evaluating **role + involvement** rules (the gating model in IA-STRATEGY §2) —
-  e.g. a brand-new member's circle slot shows "find your first circle," an active
+  evaluating **role + involvement** rules (the gating model in IA-STRATEGY §2).
+  E.g. a brand-new member's circle slot shows "find your first circle," an active
   host's shows "your circle's at-risk members."
 - Modules are **React Server Components that fetch their own data and render on
-  the server** — so "which modules, in which order, with which data" is computed
+  the server**, so "which modules, in which order, with which data" is computed
   per request, server-side. That *is* per-user dynamic page generation.
 
 Why this, not a JSON-schema SDUI runtime (Airbnb Ghost / Lyft): **RSC already is
@@ -72,7 +72,7 @@ high; [React 19 + SDUI](https://ameersami.com/posts/React%2019%20and%20Server%20
 medium). A custom JSON-UI protocol for a web-first app risks "building a worse
 framework / reinventing HTML" ([the SDUI dilemma](https://pankaj-rai.medium.com/the-server-driven-ui-dilemma-a-pragmatic-guide-for-the-modern-mobile-developer-b45b80d0bff3),
 high; [MNF discussion](https://github.com/MobileNativeFoundation/discussions/discussions/47), medium),
-and SDUI's headline payoff — shipping UI without an app-store release — **doesn't
+and SDUI's headline payoff, shipping UI without an app-store release, **doesn't
 exist on the web** ([what Airbnb/Netflix/Lyft learned](https://medium.com/@aubreyhaskett/server-driven-ui-what-airbnb-netflix-and-lyft-learned-building-dynamic-mobile-experiences-20e346265305),
 high).
 
@@ -80,7 +80,7 @@ high).
 > return a **typed composition descriptor** (a list of module ids + props for this
 > user/scope), resolved server-side. Today RSC renders it directly. If you ship
 > **native apps later**, that same descriptor is promotable to a real
-> cross-platform SDUI contract — *without a rewrite*. (Airbnb/Lyft built exactly
+> cross-platform SDUI contract, *without a rewrite*. (Airbnb/Lyft built exactly
 > this kind of contract; [Airbnb Ghost](https://medium.com/airbnb-engineering/a-deep-dive-into-airbnbs-server-driven-ui-system-842244c5f5),
 > [Lyft BFF+protobuf](https://eng.lyft.com/the-journey-to-server-driven-ui-at-lyft-bikes-and-scooters-c19264a0378e), high.)
 
@@ -89,8 +89,8 @@ high).
 ## 1. Personalized-but-fast rendering (RSC + PPR)
 
 - **Partial Prerendering** serves a static shell instantly and streams per-user
-  "holes" (Suspense boundaries) in the *same* HTTP response — measured TTFB
-  ~350–550ms → ~40–90ms when the shell ships from CDN and data streams after.
+  "holes" (Suspense boundaries) in the *same* HTTP response: measured TTFB
+  ~350 to 550ms → ~40 to 90ms when the shell ships from CDN and data streams after.
   ([Next PPR docs](https://nextjs.org/docs/15/app/getting-started/partial-prerendering) high;
   [SitePoint benchmark](https://www.sitepoint.com/react-server-components-streaming-performance-2026/) medium.)
 - **Next.js 16 unifies this under `cacheComponents`**; the old experimental PPR
@@ -98,11 +98,11 @@ high).
   `cacheLife`/`cacheTag` (implicit fetch caching is gone).
   ([Next 16 upgrade](https://nextjs.org/docs/app/guides/upgrading/version-16),
   [cacheComponents](https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents),
-  [use cache](https://nextjs.org/docs/app/api-reference/directives/use-cache) — high;
+  [use cache](https://nextjs.org/docs/app/api-reference/directives/use-cache), high;
   exact `revalidateTag`/`cacheLife` signatures **medium, verify against installed docs**.)
-- **Reconciled tension — PPR's limit for *us*:** PPR's static-shell win shrinks
+- **Reconciled tension, PPR's limit for *us*:** PPR's static-shell win shrinks
   when pages are fully authenticated/per-user (little universal static content),
-  and **edge gives little when compute is far from the DB** — round-trips to
+  and **edge gives little when compute is far from the DB**: round-trips to
   regional Postgres negate edge latency.
   ([wolf-tech PPR tradeoffs](https://wolf-tech.io/blog/nextjs-15-partial-prerendering-real-world-patterns-and-tradeoffs) high;
   [edge vs serverful](https://medium.com/@vyakymenko/edge-rendering-vs-static-vs-serverful-trade-offs-8f720d69dc7b) high.)
@@ -112,7 +112,7 @@ high).
   module: block above-the-fold, stream the rest, SWR-cache the slow + non-personal
   (leaderboards, topic metadata), keep truly per-user modules dynamic.
   ([Next streaming](https://nextjs.org/docs/app/guides/streaming),
-  [perf guide](https://www.digitalapplied.com/blog/nextjs-16-performance-server-components-guide) — high.)
+  [perf guide](https://www.digitalapplied.com/blog/nextjs-16-performance-server-components-guide), high.)
 
 ## 2. Data architecture at millions (Postgres/Supabase doesn't dead-end)
 
@@ -125,31 +125,31 @@ high).
   Notion ran one Postgres to **~30M users** before sharding
   ([scaling PG](https://www.velodb.io/glossary/ways-to-scale-postgresql) medium).
 - **Feeds: hybrid fan-out.** Push (precompute per-follower timeline) for normal
-  users; pull (merge at read) for high-fan-out "celebrity" accounts — the pattern
+  users; pull (merge at read) for high-fan-out "celebrity" accounts: the pattern
   Twitter/Instagram/Mastodon converge on
   ([fan-out](https://www.rutvikbhatt.com/data-distribution-patterns-fanout-on-read-vs-fanout-on-write/) high;
   [celebrity problem](https://www.techinterview.org/post/3233474168/system-design-twitter-news-feed-timeline-fanout-on-write-fanout-on-read-celebrity-problem-ranking-caching/) medium).
   A maintained denormalized timeline table **is** the practical CQRS read model
-  ([CQRS](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs) high) —
-  note Postgres native `MATERIALIZED VIEW` needs full REFRESH and is wrong for
+  ([CQRS](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs) high).
+  Note Postgres native `MATERIALIZED VIEW` needs full REFRESH and is wrong for
   per-user feeds.
 - **Realtime: prefer Broadcast over Postgres-Changes.** Supabase Realtime
   benchmarked **250k concurrent users, ~58ms**, >800k broadcast msgs/sec; but
-  Postgres-Changes is single-threaded (~10k msgs/sec) — use **Broadcast**, shard
+  Postgres-Changes is single-threaded (~10k msgs/sec): use **Broadcast**, shard
   users across **many narrow channels**, not one mega-channel.
   ([Realtime benchmarks](https://raw.githubusercontent.com/supabase/supabase/master/apps/docs/content/guides/realtime/benchmarks.mdx),
-  [architecture](https://supabase.com/docs/guides/realtime/architecture) — high.)
+  [architecture](https://supabase.com/docs/guides/realtime/architecture), high.)
 - **Add a layer only when measured:** Redis for hot timelines/counters
   (Mastodon's model, [discussion](https://github.com/mastodon/mastodon/discussions/22737) high);
   Meilisearch/Typesense→Elasticsearch when Postgres FTS breaks
   ([search stacks](https://medium.com/@simbatmotsi/postgres-full-text-search-vs-meilisearch-vs-elasticsearch-choosing-a-search-stack-that-scales-fcf17ef40a1b) high);
-  pgvector covers millions–tens-of-millions of embeddings before a dedicated
+  pgvector covers millions to tens-of-millions of embeddings before a dedicated
   vector DB ([pgvector](https://www.ingestiq.ai/resources/comparisons/pgvector-vs-redis-vector) medium).
 
 ## 3. Anti-lock-in (the core of "future-proof")
 
 - **Domain behind ports (hexagonal):** business logic "immune to infrastructure
-  churn," renderer becomes an adapter — but **don't over-apply** it to CRUD with
+  churn," renderer becomes an adapter, but **don't over-apply** it to CRUD with
   little logic ([hexagonal](https://www.javacodegeeks.com/2025/12/hexagonal-architecture-ports-and-adapters-achieving-true-domain-independence.html) high;
   [AWS](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/hexagonal-architecture.html) high).
 - **BFF / typed contract** decouples UI evolution from backend churn
@@ -162,34 +162,34 @@ high).
   micro-frontend boundaries are "expensive to change" and premature for a startup
   ([Fowler](https://martinfowler.com/articles/micro-frontends.html) high).
 - **Design system as data:** W3C **Design Tokens** reached first stable spec
-  (2025-10) — colors/spacing survive a framework swap
+  (2025-10): colors/spacing survive a framework swap
   ([W3C tokens](https://www.w3.org/community/design-tokens/2025/10/28/design-tokens-specification-reaches-first-stable-version/) high).
   **shadcn** is copied into your repo ("no shadcn package… no breaking changes
-  from library updates") — you own the components
+  from library updates"): you own the components
   ([shadcn dist model](https://blog.vibecoder.me/shadcn-ui-component-library-ai-development) high).
   *You already do this* (Tailwind v4 tokens / the DAWN system in `globals.css`).
 - **New surfaces via a narrow registry + manifest** (the VS Code model: declare
   capabilities, lazy-load, narrow versioned host API). This is how a store / job
   board / new gamification layer plugs into the host without touching the core
   ([VS Code contributions](https://code.visualstudio.com/api/references/contribution-points),
-  [activation/lazy load](https://code.visualstudio.com/api/get-started/extension-anatomy) — high).
+  [activation/lazy load](https://code.visualstudio.com/api/get-started/extension-anatomy), high).
 
-## 4. Future trends — what to bet on vs. avoid (3–5 yr)
+## 4. Future trends: what to bet on vs. avoid (3 to 5 yr)
 
 - **BET: Postgres-backed local-first / sync engines** (Zero, ElectricSQL for
   web-first instant UI; PowerSync if native later). A sync engine + local store
-  gives instant, reactive, offline-capable per-user UI — the strongest match for
-  your "personal dashboard feel" — *with Postgres as source of truth, which
+  gives instant, reactive, offline-capable per-user UI, the strongest match for
+  your "personal dashboard feel," *with Postgres as source of truth, which
   de-risks it*. Category is young → **adopt the posture now, commit per-surface
   later.** ([choosing a sync engine](https://johnny.sh/blog/choosing-a-sync-engine-in-2026/) high;
   [Electric](https://electric-sql.com/docs/reference/alternatives) high;
   [engine comparison](https://trybuildpilot.com/648-electric-sql-vs-powersync-vs-zero-2026) high.)
-- **BET: durable web-platform primitives** — View Transitions (Baseline 2025-10),
-  container queries — framework-portable, outlive any framework
+- **BET: durable web-platform primitives** like View Transitions (Baseline 2025-10)
+  and container queries: framework-portable, outlive any framework
   ([View Transitions Baseline](https://web.dev/blog/same-document-view-transitions-are-now-baseline-newly-available),
-  [Interop 2026](https://web.dev/blog/interop-2026) — high).
+  [Interop 2026](https://web.dev/blog/interop-2026), high).
 - **HEDGE: RSC as a *whole-architecture* commitment.** Real but polarized (~23%
-  production use); ecosystem fragmenting (TanStack, React Router adopting RSC) —
+  production use); ecosystem fragmenting (TanStack, React Router adopting RSC),
   which actually *de-risks* you: bet on **React + a data layer**, keep RSC behind
   seams ([State of React](https://www.theregister.com/2026/02/17/react_survey_shows_tanstack_gains/),
   [community 2025](https://blog.isquaredsoftware.com/2025/06/react-community-2025/),

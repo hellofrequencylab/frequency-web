@@ -12,6 +12,9 @@
 > the **public Puck micro-site** for later.
 
 **Status:** ⏳ Design + backlog (no app code in this doc). Prepared 2026-06-19.
+**Active execution list:** the current, ordered, one-PR-at-a-time work items live in
+[`MASTER-PLAN.md`](MASTER-PLAN.md). This doc is the design foundation; the master plan is what
+ships next. The phase status blocks below are kept for context, not as the live tracker.
 **This doc is the execution companion to:**
 [`docs/ENTITY-SPACES-SYSTEM.md`](ENTITY-SPACES-SYSTEM.md) (the build-spec spine: modes,
 roles, data model, architecture) and [`docs/ENTITY-SPACES-PLAN.md`](ENTITY-SPACES-PLAN.md)

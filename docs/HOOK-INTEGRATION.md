@@ -1,10 +1,10 @@
-# Frequency ⇄ Hook Integration — the practitioner portal as a marketplace over Hook
+# Frequency ⇄ Hook Integration: the practitioner portal as a marketplace over Hook
 
 > **Status:** 📐 Strategy locked, build not started. Decision record: **ADR-059**
 > (`docs/DECISIONS.md`). Canonical, fuller strategy doc lives in the Hook repo:
 > `hook/docs/FREQUENCY-INTEGRATION.md`. First test client: **danieltyack.com**.
 >
-> **Expanded by ADR-158 / build §8 — "Hook Networks":** generalizes this integration from a
+> **Expanded by ADR-158 / build §8, "Hook Networks":** generalizes this integration from a
 > marketplace over Hook programs to a **federated network of white-label Hook sub-communities**
 > (pro-profile types + a new **Organization** role · membership rollover · points rollup ·
 > channel/circle federation). Same principle: Frequency = federation layer, Hook = the tenant OS,
@@ -12,8 +12,8 @@
 
 ## TL;DR
 
-The **practitioner portal** we want — a shop featuring community-generated programs with
-free / premium / tips payout structures — is **"The Collective" (vertical 7)**, built as a
+The **practitioner portal** we want, a shop featuring community-generated programs with
+free / premium / tips payout structures, is **"The Collective" (vertical 7)**, built as a
 **thin marketplace over Hook-hosted programs**, not as a new course engine.
 
 Three separate web entities, integrated by **typed contracts, never merged code**:
@@ -39,7 +39,7 @@ The Collective **indexes and sells programs that Hook already hosts and fulfills
 | Creator payouts | Build Frequency Connect | **Reuse Hook Connect** (creator's connected account) |
 | Discovery + shop UI | Frequency | **Frequency** (unchanged) |
 | Gamified / in-person social layer | Frequency | **Frequency** (unchanged) |
-| Practitioner personas | Frequency | **Frequency** (the listing identity) — links to a Hook coach account |
+| Practitioner personas | Frequency | **Frequency** (the listing identity): links to a Hook coach account |
 
 This keeps The Collective small and on Frequency's strengths (discovery, the engagement
 ledger, the place-based movement) and avoids duplicating a course + payments stack that
@@ -51,14 +51,14 @@ already ships in Hook.
 |---|---|---|
 | **Catalog feed** | **Consumes** Hook's signed per-creator program catalog (id, title, pricing model, payout split, cover, deep link) and indexes it into the shop | Hook → Frequency |
 | **Provisioning** | "Become a practitioner" funnel **calls Hook** to spin up the creator's community + site | Frequency → Hook |
-| **Identity link** | Frequency practitioner persona **links to** a Hook coach account (SSO/federation — see open questions) | Shared |
+| **Identity link** | Frequency practitioner persona **links to** a Hook coach account (SSO/federation, see open questions) | Shared |
 | **Payout / Connect** | If Frequency brokers checkout, it adds an **application fee** on the creator's Hook-held connected account; v0 may be pure discovery (link-out, 0 fee) | Shared (Hook holds Connect) |
 
 ## Two-entity fit (important)
 
 Frequency is **place-based / "drive people offline."** The digital programs shop sits on
 the **Labs / for-profit** side of the two-entity partition (`PLATFORM-VISION.md`), the same
-side as paid hosting and Connect payouts — **not** the Foundation side. Confirm this binding
+side as paid hosting and Connect payouts, **not** the Foundation side. Confirm this binding
 when the money foundation (Stage C2) lands; The Collective must not mingle with Foundation
 ledgers.
 
@@ -66,18 +66,18 @@ ledgers.
 
 | Phase | Validates | Lead repo |
 |---|---|---|
-| 0 — danieltyack.com as a Hook tenant | Hook-as-website | Hook |
-| 1 — Daniel's cohort + programs as Hook courses | Courses + Connect | Hook |
-| **2 — List Daniel's programs in Frequency's shop** | **The catalog seam + Collective v0** | **Frequency** |
-| 3 — Productize the practitioner-portal bundle | The full flywheel | Both |
+| 0: danieltyack.com as a Hook tenant | Hook-as-website | Hook |
+| 1: Daniel's cohort + programs as Hook courses | Courses + Connect | Hook |
+| **2: List Daniel's programs in Frequency's shop** | **The catalog seam + Collective v0** | **Frequency** |
+| 3: Productize the practitioner-portal bundle | The full flywheel | Both |
 
 Frequency's first real work is **Phase 2**: consume the Hook catalog feed and render the
-shop + practitioner persona. Phases 0–1 are Hook-side.
+shop + practitioner persona. Phases 0 to 1 are Hook-side.
 
 ## Open questions
 
 1. **Identity / SSO** across Frequency ↔ Hook (shared Supabase auth vs. federation/OIDC).
-2. **Marketplace fee** — pure discovery (link-out, 0 fee) for v0, or brokered checkout with
+2. **Marketplace fee:** pure discovery (link-out, 0 fee) for v0, or brokered checkout with
    an application fee?
 3. Persona ↔ Hook coach **account linking** UX and verification state.
 
@@ -88,14 +88,14 @@ Hook has no coach-website builder today; Frequency already shipped one
 DAWN-constrained palette, public pages render without the builder runtime). **Hook will adopt
 that proven pattern** for coach sites (first dogfooded on danieltyack.com), extended with a
 **sandboxed custom-code block** that Frequency deliberately refused. If both products converge on
-the same block contract, a **shared block library** is a candidate for later extraction — but
+the same block contract, a **shared block library** is a candidate for later extraction, but
 that's an optimization, not a dependency: the two builders can evolve independently for now. Full
 model (privileged dev-tenant, customization ladder, graduation pipeline) lives in
 `hook/docs/FREQUENCY-INTEGRATION.md`.
 
 ## See also
 
-- `hook/docs/FREQUENCY-INTEGRATION.md` — canonical, fuller strategy + guardrails
-- `docs/DECISIONS.md` ADR-059 — the decision record
-- `docs/PLATFORM-VISION.md` — the two-entity model + practitioner personas
-- `docs/DEVELOPMENT-MAP.md` — The Collective (vertical 7) in the build plan
+- `hook/docs/FREQUENCY-INTEGRATION.md`: canonical, fuller strategy + guardrails
+- `docs/DECISIONS.md` ADR-059: the decision record
+- `docs/PLATFORM-VISION.md`: the two-entity model + practitioner personas
+- `docs/DEVELOPMENT-MAP.md`: The Collective (vertical 7) in the build plan

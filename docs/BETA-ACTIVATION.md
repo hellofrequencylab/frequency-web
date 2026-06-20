@@ -1,4 +1,4 @@
-# Beta Activation — spec (draft for review)
+# Beta Activation: spec (draft for review)
 
 Status: ⏳ **draft, pre-build.** Owner decision pending on the tasks engine (§4) and
 build order. Supersedes nothing; extends `ONBOARDING.md` (ADR-047) and rides the
@@ -7,7 +7,7 @@ existing engagement spine, Quest economy, and Vera concierge.
 ## 1. The goal (lead with the answer)
 
 Get a brand-new Beta member from "signed up" to **real connection + seeded content**
-as fast as possible, by sequencing small wins — coached by Vera, one next step at a
+as fast as possible, by sequencing small wins, coached by Vera, one next step at a
 time. The activation metric is the WAM North Star: **joined a circle + posted +
 logged a practice** within week one.
 
@@ -28,7 +28,7 @@ Principles (non-negotiable):
 
 ---
 
-## 2. Surface A — Complete Your Profile
+## 2. Surface A: Complete Your Profile
 
 A dismissible card on the feed, shown while the profile is incomplete.
 
@@ -42,7 +42,7 @@ A dismissible card on the feed, shown while the profile is incomplete.
 
 ---
 
-## 3. Surface B — "Founder's First Week" (Beta Launch Tasks)
+## 3. Surface B: "Founder's First Week" (Beta Launch Tasks)
 
 A curated, gamified mission set that **seeds content + creates real connections**. One
 task is highlighted at a time (by Vera, §C); the rest live in a "Founder tasks" view.
@@ -59,7 +59,7 @@ task is highlighted at a time (by Vera, §C); the rest live in a "Founder tasks"
 
 - **Set complete →** a **"Founding Founder" badge** (achievement) + a milestone gem drop.
 - **Rewards** use the existing zap/gem economy and the achievement/toast system. Amounts
-  TBD against the economy (keep them meaningful but not farmable — idempotent on first
+  TBD against the economy (keep them meaningful but not farmable, idempotent on first
   completion only).
 
 ---
@@ -85,9 +85,9 @@ designed for.
 
 ---
 
-## 5. Surface C — Vera as the coach
+## 5. Surface C: Vera as the coach
 
-Best practice is **not** a checklist dump — it's Vera surfacing the *single next best
+Best practice is **not** a checklist dump. It's Vera surfacing the *single next best
 action* in her voice, advancing as they finish. She appears as a small coach card on the
 feed (and can be summoned via "Ask Vera").
 
@@ -97,17 +97,17 @@ for (e.g. don't push "join a 2nd circle" before the 1st), show Vera's line + the
 
 **Copy (one line + a linked action each):**
 - No circle yet → *"This place runs on circles. Let's find yours."* → **[Browse circles]**
-- In a circle, no post → *"You're in. Now let your people meet you — say hi."* → **[Write a post]**
-- Posted, no friends → *"Nice. Put a name to a face — add someone you've met."* → **[Find friends]**
+- In a circle, no post → *"You're in. Now let your people meet you, say hi."* → **[Write a post]**
+- Posted, no friends → *"Nice. Put a name to a face: add someone you've met."* → **[Find friends]**
 - Quiet 3 days → *"Streaks beat sprints. One small thing today keeps it alive."* → **[Log a practice]**
-- All done → *"You've found your feet, Founder. I'll step back — call me anytime."*
+- All done → *"You've found your feet, Founder. I'll step back. Call me anytime."*
 
 ---
 
-## 6. Doctrine — "Vera always links"
+## 6. Doctrine: "Vera always links"
 
 **Every time Vera names a feature, action, or page, it renders as a link or button to
-that exact surface** — in the concierge, the coach tips, the welcome lightbox, and any
+that exact surface**, in the concierge, the coach tips, the welcome lightbox, and any
 Vera-voiced copy. No dead-end mentions. To be codified in `AI-VERA.md` and enforced by
 an audit of the current Vera surfaces.
 

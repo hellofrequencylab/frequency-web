@@ -1,4 +1,4 @@
-# Public Discover Layer — RPCs & security
+# Public Discover Layer: RPCs & security
 
 > **Scope: the public read layer.** Everything an *anonymous* visitor or a crawler can see
 > of community content flows through this one module (`lib/discover.ts`) and a small set of
@@ -6,7 +6,7 @@
 > for that surface. Code + `supabase/migrations/` are the source of truth.
 
 The authed app is `robots`-disallowed, so the `/discover/*` pages are the **only indexable
-community URLs** — which is exactly why the redaction below is load-bearing, not cosmetic.
+community URLs**, which is exactly why the redaction below is load-bearing, not cosmetic.
 
 ---
 
@@ -18,7 +18,7 @@ the app's `.select()` asks for. The defense is to expose reads only through **`S
 DEFINER` functions that hand-pick the returned columns**. The caller cannot widen them.
 
 This continues the principle established in `20240204000000_public_landing_reads.sql` and
-hardened in `20240211000000_public_discover_reads.sql` — the latter **dropped** an earlier
+hardened in `20240211000000_public_discover_reads.sql`. The latter **dropped** an earlier
 anon `SELECT` on `events` that had been returning the full row (including the free-text
 `location` address) straight from the REST API.
 
@@ -54,16 +54,16 @@ since `20240201000000`), queried directly with an explicit column list and `is_a
 in `getTopicalChannels` / `getTopicalChannelBySlug`. There's no sensitive column to redact,
 so an RPC would add nothing.
 
-`getPublicCirclesByChannel` does **not** add an RPC — `public_circles` doesn't filter by
+`getPublicCirclesByChannel` does **not** add an RPC. `public_circles` doesn't filter by
 channel, so it fetches the top circles (capped at 200) and narrows in JS. Fine at current
 scale; revisit if channels grow large.
 
 ---
 
-## The client (`lib/supabase/public.ts`) — cookieless anon
+## The client (`lib/supabase/public.ts`): cookieless anon
 
 `createPublicClient()` is a `@supabase/ssr` server client that authenticates as the **`anon`
-role** (so RLS is fully enforced) and is deliberately **cookieless** — its `getAll`/`setAll`
+role** (so RLS is fully enforced) and is deliberately **cookieless**: its `getAll`/`setAll`
 are no-ops. Two consequences:
 
 1. **No dynamic-rendering opt-in.** Unlike `lib/supabase/server.ts`, it never touches
@@ -79,10 +79,10 @@ are no-ops. Two consequences:
 
 ---
 
-## Adding to the Discover surface — checklist
+## Adding to the Discover surface: checklist
 
 1. Need a new field anon can see? **Add it to the RPC's `RETURNS TABLE` and the matching
-   `Public*` type** — never by widening a table policy.
+   `Public*` type**, never by widening a table policy.
 2. New entity? Prefer a new `SECURITY DEFINER` RPC over an anon `SELECT` policy. Only use a
    public-read table when **no** column is sensitive (as with `topical_channels`).
 3. Confirm no location-precise column (`location`, `neighborhood`, `latitude`, `longitude`)
@@ -94,5 +94,5 @@ are no-ops. Two consequences:
 ## Related
 
 - Migrations: `20240204000000_public_landing_reads.sql`, `20240211000000_public_discover_reads.sql`, `20240201000000…` (topical channels).
-- [DATABASE.md](DATABASE.md) — table/RLS overview.
-- `app/discover/*` — the pages that consume this layer; `app/robots*`/`sitemap` — indexability.
+- [DATABASE.md](DATABASE.md): table/RLS overview.
+- `app/discover/*`: the pages that consume this layer; `app/robots*`/`sitemap` for indexability.

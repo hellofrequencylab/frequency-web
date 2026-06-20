@@ -1,4 +1,4 @@
-# Frequency — Demographic, Content & SEO/AIO Guide
+# Frequency: Demographic, Content & SEO/AIO Guide
 
 > **Status: LOCKED (June 2026).** Companion to [`docs/NAMING.md`](NAMING.md).
 > This guide governs ALL written output: game UI copy, notifications, practice
@@ -33,7 +33,7 @@ it; the copy doesn't.
 
 ---
 
-## 2. The demographic — two people
+## 2. The demographic: two people
 
 All content serves one of these two readers. Before writing anything, decide
 which one it's for.
@@ -74,7 +74,7 @@ plain. Write plain.
 
 ---
 
-## 3. The voice — one voice, every surface
+## 3. The voice: one voice, every surface
 
 The persona: **a camp counselor you actually respect.** Takes the person
 seriously, takes the activity lightly. Equal parts Calm (the register of a good
@@ -128,7 +128,7 @@ allowed inside pages. The surface always passes the skeptic test.
 
 ---
 
-## 4. Tone map — tone flexes, voice doesn't
+## 4. Tone map: tone flexes, voice doesn't
 
 | Surface | Tone | Model |
 |---|---|---|
@@ -164,13 +164,13 @@ allowed inside pages. The surface always passes the skeptic test.
 - Sensory outcomes: "your jaw unclenches," "your shoulders drop"
 - The reader's own pain language (Section 2a/2b verbatim phrases)
 
-### 5b. Avoid — vibe-verbs and narrated feelings
+### 5b. Avoid: vibe-verbs and narrated feelings
 feel the current · tap into · drop into · sink into · tune into yourself · lean
 into · hold space · feel the pulse · ride the wave · let it flow · align with ·
 activate your · awaken your
 ("tune in" is allowed ONLY as the functional verb for Channels.)
 
-### 5c. Avoid — wellness jargon at the surface layer
+### 5c. Avoid: wellness jargon at the surface layer
 somatic · vibrational · energetic · embodied · sacred · ancient wisdom · chakra ·
 prana · meridian · nervous system regulation (surface copy says "calm down fast"
 or "stop feeling wired"; the science lives inside pages).
@@ -178,7 +178,7 @@ These words are permitted DEEP inside practice pages and articles, after the
 plain entry has done its work. Never on cards, headlines, notifications, social
 captions, or meta descriptions.
 
-### 5d. Avoid — hype economy words
+### 5d. Avoid: hype economy words
 unlock · elevate · transform your life · limited time · level up your life ·
 hack · optimize · supercharge · journey (as a verb or vague noun; "Journey" is
 exclusively the canonical game object) · revolution (see 6d) · tribe · fam ·
@@ -221,7 +221,7 @@ Tiers describe the form of the practice, never the person's skill. Never write
 - Adept: "The full practice." (default)
 - Master: "The deep end. When you're ready to give it real time."
 
-### 6d. Movement language — the ration rule
+### 6d. Movement language: the ration rule
 The mission (a movement of community connection; catching people when systems
 fail) appears ONLY in: the manifesto/about page, founder letters, and rare
 keynote moments. Maximum one movement-register sentence per piece, and it must be
@@ -243,7 +243,7 @@ also our strongest SEO/AIO asset (Section 8).
 
 ---
 
-## 7. Content strategy — two tracks, one funnel
+## 7. Content strategy: two tracks, one funnel
 
 The community exists everywhere; the first Lab does not exist yet. Therefore
 content leads with the community and the pain it solves. The funnel and the

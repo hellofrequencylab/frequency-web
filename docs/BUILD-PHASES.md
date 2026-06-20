@@ -1,23 +1,23 @@
-# Build Phases — the working tracker
+# Build Phases: the working tracker
 
 > **⚠️ SUPERSEDED (2026-05-31) by [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md).** The single
 > plan now lives there, folding this architecture tracker and the product `ROADMAP.md` into
-> one staged map. This file is kept for **history**: it records the Phase 0–7 work (much of
+> one staged map. This file is kept for **history**: it records the Phase 0 to 7 work (much of
 > it ✅) and the old→new mapping is in the Development Map's "Where we are" section. Plan
 > from the Development Map, not this file.
 
 > The executable plan. Each phase has a **goal**, **dependencies** (don't start
 > until met), a **governing doc**, **workstreams** as checkboxes, and a
 > **definition of done**. Sequenced so the web app keeps working while
-> mobile- and gamification-enabling infrastructure accretes — **no big-bang
+> mobile- and gamification-enabling infrastructure accretes: **no big-bang
 > rewrite, no mobile code until Phase 5.**
 >
 > Capstone rationale: [TECH-STRATEGY](TECH-STRATEGY.md). Update checkbox state in
-> the PR that lands the work (the repo file is source of truth — same convention
+> the PR that lands the work (the repo file is source of truth, same convention
 > as [ROADMAP](../ROADMAP.md), which tracks *product features*; this tracks
 > *architecture*).
 
-> **North Star — Weekly Active Members (WAM):** members with ≥1 *verified
+> **North Star, Weekly Active Members (WAM):** members with ≥1 *verified
 > practice* in a rolling 7 days. **Every phase optimizes for this one number**;
 > `practice.verified` is the canonical event. See
 > [COMMS-CRM-ARCHITECTURE.md](COMMS-CRM-ARCHITECTURE.md) §0 + ADR-024.
@@ -26,7 +26,7 @@
 
 ---
 
-## Readiness to rebuild — is the architecture complete?
+## Readiness to rebuild: is the architecture complete?
 
 **Decided (nothing technical blocks Phase 0):**
 - Stack: Next.js (web) + Expo/RN (mobile, later) + Supabase, shared TS monorepo.
@@ -37,17 +37,17 @@
 - Layout: one shell, 3 templates (Stream / Index / Detail), capability-driven
   inline actions.
 
-**Still product-side (do NOT block Phases 0–2; decide by Phase 3):**
+**Still product-side (do NOT block Phases 0 to 2; decide by Phase 3):**
 - Reward economy (point values, earn rules, balancing).
 - Physical rollout & safety (who places ghost nodes / partner terms).
 - Web's long-term role once mobile leads (full parity vs. lighter funnel).
 
 > Verdict: the **technical architecture is decided and self-consistent** across
-> the six strategy docs. Phases 0–2 are pure foundation and can begin now.
+> the six strategy docs. Phases 0 to 2 are pure foundation and can begin now.
 
 ---
 
-## Phase 0 — Foundations / seams  ·  *invisible to users*
+## Phase 0: Foundations / seams  ·  *invisible to users*
 **Goal:** put the lock-in-resistant seams in place so everything after is local
 change, not rewrite. **Depends on:** nothing. **Governs:** SCALE-ARCHITECTURE,
 CAPABILITIES-AND-MOBILE.
@@ -56,15 +56,15 @@ CAPABILITIES-AND-MOBILE.
       mobile, Phase 5): **`lib/core/`** (`roles`, `capabilities`, + the
       `load-capabilities` server seam), **`lib/contract/`** (presentation-neutral
       view-model types), **`lib/tokens/`** (cross-platform token plan).
-- [x] Build the **capability resolver** — `lib/core/capabilities.ts`
+- [x] Build the **capability resolver**: `lib/core/capabilities.ts`
       (`resolveCapabilities(viewer, scope)`, `can()`), pure + framework-independent;
       plus `lib/core/roles.ts` (single-source `atLeastRole`). tsc clean.
-- [x] **Enable PostGIS** — migration `20240214000000` applied to production
+- [x] **Enable PostGIS**: migration `20240214000000` applied to production
       (extension + `circles.geog` + GiST index); used by node proximity + partner geo.
-- [~] **HIERARCHY duplicates consolidated** — admin/broadcast/report actions now
+- [~] **HIERARCHY duplicates consolidated**: admin/broadcast/report actions now
       import `atLeastRole` from `lib/core/roles` (single source). Adopting **RLS +
       RPC** for data access continues in Phase 2.
-- [x] Keep raw style values out of components — already enforced (the DAWN token
+- [x] Keep raw style values out of components: already enforced (the DAWN token
       system in ARCHITECTURE.md).
 
 **Done when:** new features can be built behind the capability resolver + an RPC,
@@ -74,14 +74,14 @@ shared folders in use across the app). Full RLS adoption continues in Phase 2.
 
 ---
 
-## Phase 1 — Web IA & page framework  ·  *user-visible polish*
+## Phase 1: Web IA & page framework  ·  *user-visible polish*
 **Goal:** make the web coherent for newcomers AND exercise the contract/capability
 layers mobile will reuse. **Depends on:** Phase 0. **Governs:** IA-STRATEGY,
 PAGE-FRAMEWORK.
 
-- [x] Nav grouping — Community / Connect / Progress / Manage sections in
+- [x] Nav grouping: Community / Connect / Progress / Manage sections in
       `app-shell.tsx` (desktop sidebar + mobile drawer); item visibility unchanged.
-- [~] Rename member-facing **Channels → Interests** — done on the primary
+- [~] Rename member-facing **Channels → Interests**: done on the primary
       surfaces (nav label + `/channels` page heading/description); route +
       `topical_channels` table unchanged. **Follow-up (needs visual QA):** sweep
       any remaining "Channel" copy on cards/`[id]` page, decide the "tune in"
@@ -91,12 +91,12 @@ PAGE-FRAMEWORK.
       links already render on circle cards. Satisfied.
 - [x] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
       default) on `/circles` cards + the circle detail header. Live.
-- [x] **3 templates** — all three shells built and the main pages migrated:
+- [x] **3 templates**: all three shells built and the main pages migrated:
       **Stream** (`/feed`), **Index** (`/circles`, `/channels` Interests, `/events`,
       `/partners`, `/people` Directory), **Detail** (`detail-template.tsx`, used by
       single-entity pages). Every primary list/feed page now renders through one
       shell. *(Circle-detail page can adopt the Detail shell in a later pass.)*
-- [~] **Module + slot + inline actions** — shared module chrome
+- [~] **Module + slot + inline actions**: shared module chrome
       (`components/modules/module-card.tsx`) + capability gating
       (`components/ui/can.tsx`). **Inline admin WIRED + verified live:** the circle
       page gates Host Tools, Circle Health, edit/announce, and feed moderation by
@@ -111,20 +111,20 @@ PAGE-FRAMEWORK.
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can
-read the nav without explanation. **Status: DONE** (all live) — nav grouping,
+read the nav without explanation. **Status: DONE** (all live): nav grouping,
 Interests rename, in-person badge, 3 templates with pages migrated, inline admin by
 capability, profile edit-in-place, scope-aware rail. Only a formal module slot
 registry remains as an optional refactor.
 
 ---
 
-## Phase 2 — Authorization convergence  ·  *incremental, behind the scenes*
+## Phase 2: Authorization convergence  ·  *incremental, behind the scenes*
 **Goal:** make the security boundary client-agnostic so mobile can share it.
 **Depends on:** Phase 0 (capability resolver). **Governs:** CAPABILITIES-AND-MOBILE.
 
 - [ ] Migrate high-traffic read/write paths from admin-client → RLS + RPCs,
       surface by surface (generalize the `/discover` SECURITY DEFINER model).
-- [x] Build the core **view-models** returning **data + capabilities** —
+- [x] Build the core **view-models** returning **data + capabilities**:
       `getCircleView` + `getProfileView` + `getFeed` (cursor-paginated FeedView)
       shipped (`lib/contract/views.ts`), reusing the one capability resolver.
       Implemented as server view-builders now; expose via RPC/endpoint for mobile
@@ -137,43 +137,43 @@ identically.
 
 ---
 
-## Phase 3 — Gamification engine + physical-trigger infra  ·  *the differentiator*
+## Phase 3: Gamification engine + physical-trigger infra  ·  *the differentiator*
 **Goal:** one event/reward backbone + the physical layer's data + verification.
 **Depends on:** Phase 0 (PostGIS), Phase 2 (RPC contract). **Governs:**
 ENGAGEMENT-ARCHITECTURE.
 
-- [x] Generalized **event ledger** — `engagement_events` (migration
+- [x] Generalized **event ledger**: `engagement_events` (migration
       `20240215000000`) + `recordEngagementEvent()` (`lib/engagement/events.ts`):
       append-only, `idempotency_key` = exactly-once, `source`, `verified_at`.
       Runs the EXISTING rules engine on first insert (in front of, not replacing,
       the current gamification system).
-- [x] **Verifier** — `verifyCapture()` (`lib/engagement/verify.ts`): server-side
+- [x] **Verifier**: `verifyCapture()` (`lib/engagement/verify.ts`): server-side
       validity window + signed payload + capture rule + PostGIS proximity
       (`node_within_range` RPC). Idempotency lives in the events layer.
       *Device attestation / mutual-confirm (P2P) still to add.*
-- [~] **Reward grant** — reuses the existing idempotent path
+- [~] **Reward grant**: reuses the existing idempotent path
       (`recordEngagementEvent` → `processGamificationEvent` → `awardGems`/zaps);
       balances are already maintained columns on `profiles`. Mapping a physical
       capture → a reward event waits on the reward economy (product).
-- [~] **Physical nodes / tags** registry — `nodes` + `captures` + RLS
+- [~] **Physical nodes / tags** registry: `nodes` + `captures` + RLS
       (migration `20240216000000`); server-mediated (no client reads).
-      **`partners/businesses` module schema DONE** — `partners` + `partner_offers`
+      **`partners/businesses` module schema DONE**: `partners` + `partner_offers`
       + `partner_redemptions` + `nodes.partner_id` (migration `20240218000000`);
       directory/offers public-when-active, redemptions read-own. TS read layer +
       **UI live**: `/partners` directory + `/partners/[slug]` detail with offers,
       Partners in nav. **Claim flow live + verified** (`/n/[nodeId]` → verify →
       ledger → zaps). Redemption-on-capture (claim → log `partner_redemptions`)
       still to wire.
-- [x] **Async lane** — `notification_queue` (migration `20240219000000`) +
+- [x] **Async lane**: `notification_queue` (migration `20240219000000`) +
       `lib/queue/outbox.ts` (`enqueue` / `processQueue` with retries + exponential
       backoff) + `/api/cron/process-queue` (every 2 min; durable web-push handler
       shipped). *Follow-up: migrate inline send sites (email/push fan-out) onto
       the queue; add `SELECT … FOR UPDATE SKIP LOCKED` claim if concurrency grows.*
-- [x] **Reward feedback** — live "+N zaps" toast (`components/zap-toast.tsx`,
+- [x] **Reward feedback**: live "+N zaps" toast (`components/zap-toast.tsx`,
       `showZapToast` + container in the main layout, mirroring achievement-toast)
       fired on event check-in and node claim. *(In-tab CustomEvent; cross-device
       Supabase Broadcast can layer on later if needed.)*
-- [x] **Capture orchestration** — `captureNode()` (`lib/engagement/capture.ts`):
+- [x] **Capture orchestration**: `captureNode()` (`lib/engagement/capture.ts`):
       verify → ledger (exactly-once) → capture row → `awardZaps(node.zaps_value)`.
       Physical loop is functional end-to-end. *(Repeatable-node idempotency keying
       still TODO; node reward amounts are tunable via `nodes.zaps_value`.)*
@@ -193,11 +193,11 @@ core change). *(Point values/rules deferred.)*
 
 ---
 
-## Phase 4 — Scale hardening  ·  *as metrics demand, not before*
+## Phase 4: Scale hardening  ·  *as metrics demand, not before*
 **Goal:** remove bottlenecks once they're real. **Depends on:** measured load.
 **Governs:** SCALE-ARCHITECTURE §2, ENGAGEMENT-ARCHITECTURE §5.
 
-- [ ] Connection pooling (Supavisor — verify config).
+- [ ] Connection pooling (Supavisor, verify config).
 - [ ] Read replicas once reads ≥ ~80% of traffic.
 - [ ] Denormalized **feed read-model** + **hybrid fan-out** for high-fan-out
       accounts.
@@ -212,7 +212,7 @@ measured signal (not speculatively).
 
 ---
 
-## Phase 5 — Mobile app (Expo / RN)  ·  *the primary doorway*
+## Phase 5: Mobile app (Expo / RN)  ·  *the primary doorway*
 **Goal:** build mobile on infrastructure the web already proved. **Depends on:**
 Phases 0, 2, 3. **Governs:** TECH-STRATEGY, CAPABILITIES-AND-MOBILE.
 
@@ -220,44 +220,44 @@ Phases 0, 2, 3. **Governs:** TECH-STRATEGY, CAPABILITIES-AND-MOBILE.
       sets + design tokens.
 - [ ] Native modules: camera/**QR**, **NFC**, **geofencing**, push.
 - [ ] Pilot a Postgres-backed **sync engine (PowerSync)** on one surface (feed or
-      gamification) for offline + instant UI — Postgres stays source of truth
+      gamification) for offline + instant UI: Postgres stays source of truth
       (reversible).
 - [ ] Cross-platform push reuses the existing notification-preferences/dispatch
       system.
 
 **Done when:** mobile reaches feature-relevant parity by *assembling* the shared
-contract — not reimplementing logic — and is the primary entry point.
+contract, not reimplementing logic, and is the primary entry point.
 
 ---
 
-## Phase 6 — Communications spine, CRM "Studio" & AI agent  ·  *the growth engine*
+## Phase 6: Communications spine, CRM "Studio" & AI agent  ·  *the growth engine*
 **Goal:** one notification / CRM / agent layer riding the **one event backbone**,
-all optimizing for the WAM North Star. **Depends on:** Phase 3 (backbone — built) +
+all optimizing for the WAM North Star. **Depends on:** Phase 3 (backbone, built) +
 a **proven practice-retention loop (PMF)** before building the cathedral.
 **Governs:** [COMMS-CRM-ARCHITECTURE.md](COMMS-CRM-ARCHITECTURE.md) (ADR-024…028).
 
 > Build in this order; each step is usable alone. **Do not start the agent (6.6)
-> before the test harness exists.** Everything sends through the spine — never inline.
+> before the test harness exists.** Everything sends through the spine, never inline.
 
-- [~] **6.1 Backbone + spine** — **all email now flows through the outbox**
+- [~] **6.1 Backbone + spine**: **all email now flows through the outbox**
       (`enqueueEmail` + cron `email` handler; every `lib/email.ts` sender enqueues,
       List-Unsubscribe headers preserved); **`sendInviteEmail` wired** (invite-by-email
       from Host Tools). Remaining: notification **router/registry** (event → category
       → channels → template) + making `engagement_events` a multi-subscriber source.
-- [~] **6.2 Deliverability loop** — `email_events` + `email_suppressions` tables
+- [~] **6.2 Deliverability loop**: `email_events` + `email_suppressions` tables
       (migration `20240220000000`); `/api/webhooks/resend` (Svix-verified) logs
       delivery/engagement and **auto-suppresses hard bounces + complaints**;
       `sendRawEmail` checks suppression before every send. Remaining: subdomain
       reputation isolation (SPF/DKIM/DMARC, transactional vs marketing) + surfacing
       open/click analytics. **Owner setup:** add the webhook in the Resend dashboard
       + set `RESEND_WEBHOOK_SECRET`.
-- [~] **6.3 CRM data + Studio shell + Contacts** — DONE: `team_members` + `contacts`
+- [~] **6.3 CRM data + Studio shell + Contacts**. DONE: `team_members` + `contacts`
       (migration `20240221000000`); `lib/staff.ts requireStaff()` (separate staff
       axis); the `app/(studio)/` shell gated at `/studio`; the Contacts list module;
       **contacts auto-link on signup + backfill of existing members** (trigger +
       migration `20240222000000`). Remaining: compute `engagement_score` (projection
       off the backbone + `email_events`).
-- [~] **6.4 Marketing engine** — **Campaigns shipped** (migration `20240223000000`):
+- [~] **6.4 Marketing engine**: **Campaigns shipped** (migration `20240223000000`):
       `/studio/campaigns` compose → send to a member segment (all / subscribed)
       through the spine, consent-checked (`shouldSend` lifecycle) + suppression-aware
       + per-recipient unsubscribe. **Automations rules engine shipped** (migration
@@ -266,25 +266,25 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
       (MVP: email the actor, consent-checked). Remaining: richer Segment builder,
       Pipelines (Kanban funnels), conditions/drip sequences, React Email templates,
       lead/non-member unsubscribe.
-- [~] **6.5 Analytics** — `/studio/analytics` surfaces the North Star (WAM,
+- [~] **6.5 Analytics**: `/studio/analytics` surfaces the North Star (WAM,
       practices/week, activation, new members), CRM counts (contacts, campaigns,
       suppressed), and email performance + deliverability over 30 days
       (`lib/studio/analytics.ts`). Remaining: funnel conversion, acquisition source,
       cohort retention.
-- [~] **Test harness** — **Vitest** (`npm test`; `vitest.config.ts`, `@/` alias).
+- [~] **Test harness**: **Vitest** (`npm test`; `vitest.config.ts`, `@/` alias).
       **20 tests** covering the pure authz core (`resolveCapabilities`, `atLeastRole`),
       `currencyForSource`, the outbox **retry/backoff policy** (`nextRetry`), the Resend
       **webhook signature verification** (`verifyResendSignature`), and **suppression**
       (`isSuppressed`/`suppress`, mocked client). Still to add before agent *autonomy*:
       a `shouldSend` consent test (the copilot agent is human-gated, so it ships now).
-- [~] **6.6 Agent Console (copilot)** — shipped (migration `20240225000000`):
+- [~] **6.6 Agent Console (copilot)**: shipped (migration `20240225000000`):
       `/studio/agent` Action Queue, a deterministic winback proposer
       (`lib/studio/agent.ts`), one-click **Approve & send** / Dismiss, and approved
       actions run **through the spine** (consent + suppression + unsubscribe).
       Remaining: swap the deterministic proposer for a live Claude operator + the
       bounded tool surface; per-action-type autonomy + caps/kill-switch/audit
       (needs the spine test coverage first).
-- [ ] **6.7 Inbox** — 2-way replies (v2).
+- [ ] **6.7 Inbox**: 2-way replies (v2).
 
 **Done when:** every send flows through the spine (none inline); the CRM timeline,
 `engagement_score`, and WAM are **projections of the one backbone**; the agent runs
@@ -293,32 +293,32 @@ non-negotiables: COMMS-CRM-ARCHITECTURE §6.)*
 
 ---
 
-## Phase 7 — Public marketing site & Beta acquisition funnel  ·  *the front door*
+## Phase 7: Public marketing site & Beta acquisition funnel  ·  *the front door*
 **Goal:** a public marketing site + a double-opt-in beta funnel that feeds the CRM,
 replacing the Squarespace site. **Depends on:** the email spine (6.1) + `contacts`
 (6.3). **Governs:** [MARKETING-AND-BETA.md](MARKETING-AND-BETA.md).
 
-- [x] **Marketing site** — `app/(marketing)/` (`/the-lab`, `/how-it-works`,
+- [x] **Marketing site**: `app/(marketing)/` (`/the-lab`, `/how-it-works`,
       `/about`) + the vision splash (`app/page.tsx`), editorial chrome
       (`marketing-header` scroll-aware/no-search, `marketing-footer`, `marketing-ui`
       primitives, Anton display face). Reuses public `/discover`.
-- [x] **Beta funnel (double opt-in)** — `/beta` + `/beta/confirm`; `requestBetaAccess`
+- [x] **Beta funnel (double opt-in)**: `/beta` + `/beta/confirm`; `requestBetaAccess`
       → `contacts` lead + HMAC confirm token (`lib/beta-tokens.ts`) + queued confirm
       email; confirm flips `consent_state='subscribed'`. Admit → invite email.
-- [x] **Admin surfaces** — Studio now renders in the **standard `AppShell`**
+- [x] **Admin surfaces**: Studio now renders in the **standard `AppShell`**
       (`extraSections` "Studio" nav); `/studio/beta` (admit/resend/manual-drain),
       `/studio/contacts` (filter + un/resubscribe). Community `/admin/members`
       tabbed (Members/Subscribers/Beta). `@moderation` hidden from the directory.
-- [x] **Manual queue drain** — `drainQueueNow` + "Send queued emails now" button,
+- [x] **Manual queue drain**: `drainQueueNow` + "Send queued emails now" button,
       since `process-queue` cron is fail-closed on `CRON_SECRET` (MARKETING-AND-BETA §4).
-- [x] **Visual page editor (Puck)** — all 4 marketing pages are WYSIWYG-editable
+- [x] **Visual page editor (Puck)**: all 4 marketing pages are WYSIWYG-editable
       at `/studio/pages` → `/edit/[slug]`; public renders from `pages.published_data`
       via `@measured/puck/rsc` `<Render>` with a `Legacy*` JSX fallback. Current
       content seeded into the DB. See [PAGE-EDITOR-SPEC.md](PAGE-EDITOR-SPEC.md) §11
       and MARKETING-AND-BETA §1.1.
-- [ ] **Owner config** — set `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`,
+- [ ] **Owner config**: set `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`,
       `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod (MARKETING-AND-BETA §5).
-- [ ] **Domain setup** — point `frequencylocal.com` (GoDaddy → Vercel) at the app on the
+- [ ] **Domain setup**: point `frequencylocal.com` (GoDaddy → Vercel) at the app on the
       apex; 301 the retired `go.findafreq.com`. Deferred: Support/donations (org-status
       framework), per-Nexus subdomains.
 

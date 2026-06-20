@@ -1,4 +1,4 @@
-# Rewards Economy v3 — the canonical spec (Season 1 clean rebuild)
+# Rewards Economy v3: the canonical spec (Season 1 clean rebuild)
 
 > **The technical source of truth for Frequency's reworked rewards economy.** The code
 > rework follows this doc. Status: ✅ **locked** (2026-06-18, [ADR-305](DECISIONS.md)).
@@ -29,7 +29,7 @@
 | | **Zaps** ⚡ | **Gems** 💎 |
 | --- | --- | --- |
 | Rewards | Real-world action + durable contribution | Online interaction |
-| Lifespan | **Seasonal** — reset each season | **Continuous** — never reset |
+| Lifespan | **Seasonal** (reset each season) | **Continuous** (never reset) |
 | Role | The engagement / status metric | The spendable currency |
 | Spendable? | **No** | **Yes** (the Vault Store) |
 | Caps | **None** | Per-day caps on small acts |
@@ -68,30 +68,30 @@ the record of it, not the valuable online act. We never pay Gems for the act of 
 
 ---
 
-## 3. Earn rates — Zaps
+## 3. Earn rates: Zaps
 
 Cadence-based per the locked model ([ADR-303](DECISIONS.md)). **No caps on Zaps.**
 
 | ⚡ Act | Zaps |
 | --- | --: |
-| Log a practice — Daily / 3x-week / Weekly cadence (`practices.reward_zaps`) | **10 / 15 / 25** |
-| Log a practice — weight-class fallback light / standard / heavy (when `reward_zaps` is null) | **8 / 12 / 15** |
+| Log a practice: Daily / 3x-week / Weekly cadence (`practices.reward_zaps`) | **10 / 15 / 25** |
+| Log a practice: weight-class fallback light / standard / heavy (when `reward_zaps` is null) | **8 / 12 / 15** |
 | Outreach task (flyer / QR) | **20** |
 | Verified event check-in | **25** |
 | Expression Challenge — in person at a Circle | **50** |
 | Host an event | **60** |
 | Finish a Journey (+ a Pillar Trophy) | **75** |
 | Found / start a circle | **100** |
-| **Validated creation** — your Journey is first used by an established member | **100** |
-| **Validated creation** — your event is first used | **50** |
-| **Validated creation** — your practice is first used | **40** |
+| **Validated creation**: your Journey is first used by an established member | **100** |
+| **Validated creation**: your event is first used | **50** |
+| **Validated creation**: your practice is first used | **40** |
 
 Cadence sets the per-log Zap value; effort/length never does. A daily core practice pays
 10 each log; over a 28-day window that is 280 Zaps per Pillar, balanced across the four.
 
 ---
 
-## 4. Earn rates — Gems
+## 4. Earn rates: Gems
 
 Small, **daily-capped** so they can't be farmed.
 
@@ -108,7 +108,7 @@ Small, **daily-capped** so they can't be farmed.
 
 ### Creation token (first publish only)
 
-A small Gem token lands the moment you first publish a thing. **First publish only — never
+A small Gem token lands the moment you first publish a thing. **First publish only, never
 on edits or duplicates.** Soft cap: 3 creation-tokens / day.
 
 | First publish | Gem token |
@@ -155,11 +155,11 @@ volume.
 
 **Rules of the payout.**
 
-- ✅ **Idempotent** — paid exactly once per asset, key `creation_validated:{type}:{id}`.
-- ✅ **Never re-paid on edits** — editing a validated asset does not re-trigger it.
-- ✅ **Uncapped** — the validation gate is the throttle, so there is no daily cap on the payout.
-- ✅ **Actor + beneficiary** — member B's use (the actor) pays creator A (the beneficiary).
-- ✅ **Deferred / event-driven** — the grant fires off the use event, not the publish.
+- ✅ **Idempotent**: paid exactly once per asset, key `creation_validated:{type}:{id}`.
+- ✅ **Never re-paid on edits**: editing a validated asset does not re-trigger it.
+- ✅ **Uncapped**: the validation gate is the throttle, so there is no daily cap on the payout.
+- ✅ **Actor + beneficiary**: member B's use (the actor) pays creator A (the beneficiary).
+- ✅ **Deferred / event-driven**: the grant fires off the use event, not the publish.
 
 **UX.** At publish: "you'll earn when a member uses this." When validation fires: the payout
 arrives as a **notification**.
@@ -224,17 +224,17 @@ Two new sinks beyond the catalog:
 
 ## 9. Amplitude, streaks, achievements, the variable layer, the leaderboard
 
-- **Amplitude** (✅ kept) — lifetime XP = cumulative Zaps, hosting-class acts **2×**. Levels
+- **Amplitude** (✅ kept): lifetime XP = cumulative Zaps, hosting-class acts **2×**. Levels
   derive as `50·L·(L+1)`. Milestones mint permanent Awards. Never resets, never spent.
-- **Streaks** (✅ kept, humane) — a daily practice streak. A **streak freeze** the member can
+- **Streaks** (✅ kept, humane): a daily practice streak. A **streak freeze** the member can
   earn *and also buy with Gems*. A no-shame **Welcome Back +10 Zaps** on the first log after
   a 7+ day gap. No streak-shame copy, ever.
-- **Achievements** (lean core set only) — firsts, streak milestones, amplitude milestones,
+- **Achievements** (lean core set only): firsts, streak milestones, amplitude milestones,
   the **3 Pillar Trophies**, and the **Certificate**. Nothing else.
-- **Variable layer** — a light, low-frequency, **capped "Spark"** surprise bonus layered
+- **Variable layer**: a light, low-frequency, **capped "Spark"** surprise bonus layered
   **on top of** the deterministic base. The base payouts stay fixed and predictable; Spark
   is only ever extra.
-- **Leaderboard** — **cooperative and local only**. No global competitive board.
+- **Leaderboard**: **cooperative and local only**. No global competitive board.
 
 ---
 
@@ -242,8 +242,8 @@ Two new sinks beyond the catalog:
 
 | Piece | What it does |
 | --- | --- |
-| **One classifier** | The payout-profile function — the only place an act maps to `{ zaps, gems }` |
-| **Two ledgers** | `zap_transactions` and `gem_transactions` — append-only record of every grant |
+| **One classifier** | The payout-profile function: the only place an act maps to `{ zaps, gems }` |
+| **Two ledgers** | `zap_transactions` and `gem_transactions`: append-only record of every grant |
 | **Trigger-owned totals** | `season_zaps`, `amplitude`, `lifetime_gems` maintained by DB triggers off the ledger writes, never hand-incremented by app code |
 | **Idempotency** | Durable one-time grants claim-then-pay through `reward_grants` on a stable `rule_key` (e.g. `creation_validated:{type}:{id}`); re-runs never double-pay |
 | **Actor / beneficiary** | A grant records who acted and who is paid (validated-creation pays the creator off another member's use) |

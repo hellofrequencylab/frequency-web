@@ -1,9 +1,9 @@
-# Journeys — the canonical system spec (v2, learning-first rebuild)
+# Journeys: the canonical system spec (v2, learning-first rebuild)
 
 Status: ✅ **Authoritative (2026-06-14).** This is a **clean-slate rebuild** of the Journey
 system around a single idea: **Journeys are group-coaching programs a Circle moves through
 together.** It supersedes the prior practice-rhythm/season model entirely (the two-clock
-season engine, the 8-of-13 completion rule, and depth tiers are retired — see §9). Decision
+season engine, the 8-of-13 completion rule, and depth tiers are retired; see §9). Decision
 record: [ADR-252](DECISIONS.md). Built on a five-angle evidence review of what makes online
 learning complete (§10). Code + `supabase/migrations/` remain the ultimate source of truth.
 
@@ -12,12 +12,12 @@ learning complete (§10). Code + `supabase/migrations/` remain the ultimate sour
 ## 1. The premise (lead with the answer)
 
 Every course platform ships content and hopes people finish. They don't: self-paced
-courses complete at **5-15%**. The one thing that fixes it is **doing it together** —
+courses complete at **5-15%**. The one thing that fixes it is **doing it together**:
 cohort-based programs complete at **85-96%** because of accountability, a shared group, and a
 visible pace (§10). Frequency already has the thing every course startup tries to bolt on:
 **real Circles of real people.**
 
-So a **Journey is a guided program your Circle runs together** — bite-sized e-learning
+So a **Journey is a guided program your Circle runs together**: bite-sized e-learning
 (video, readings, exercises, reflections, knowledge checks) organized into **Phases**, where
 each person earns points for finishing parts and the **whole Circle earns trophies** for
 completing phases and the program. It's e-learning presented as a game the group plays
@@ -37,18 +37,18 @@ Journey (the program / template)
 
 - A **Journey** is authored once as a program (or from a template), then **run** many times.
 - A **Phase** is the milestone unit and the trophy moment. Phases drip **one per week** by
-  default (configurable interval) once a Run starts — soft deadlines that pace the group.
+  default (configurable interval) once a Run starts: soft deadlines that pace the group.
 - A **Module** groups lessons inside a phase (optional one-module-per-phase is fine).
 - A **Lesson** is the bite-sized leaf. Videos target **≤6 minutes** (the engagement cliff,
   §10). A `practice` lesson is the *optional* real-world act (the old "practice," demoted to
-  one block type among several — it is no longer the core of a Journey).
+  one block type among several; it is no longer the core of a Journey).
 
 The hierarchy is the existing `journey_plan_items` block tree generalized with two new
 container block types (`phase`, `module`) + `parent_id` nesting (§7).
 
 ---
 
-## 3. The Run — a Circle moving through a Journey together (the flagship)
+## 3. The Run: a Circle moving through a Journey together (the flagship)
 
 A **Run** is one Circle going through one Journey, cohort-style. This is where completion is
 won (§10: cohorts 85-96% vs solo 5-15%).
@@ -59,14 +59,14 @@ won (§10: cohorts 85-96% vs solo 5-15%).
   check-in meetup** each week, created through the existing Events system (live touchpoints
   lift completion ~68%, §10). Built-in and encouraged by default; a coach can skip them.
 - **Weekly drip:** **Phase N unlocks on (Run start + 7·(N-1) days)** by default; the interval
-  is configurable per Journey. Once a phase has dripped it **stays open** — anyone behind can
+  is configurable per Journey. Once a phase has dripped it **stays open**: anyone behind can
   catch up; no one is locked out.
 - **Shared progress:** the Run shows **one cohort progress meter** ("our Circle is 60%
   through Phase 2"), plus light social proof ("3 of your Circle finished this week"). The
-  progress is **cooperative** — a shared meter and group wins, **never a global leaderboard**
+  progress is **cooperative**: a shared meter and group wins, **never a global leaderboard**
   (those demotivate lower performers, §10).
 - **Group trophies:** when the **Circle** completes a phase / the whole Journey together, mint
-  a **Circle group trophy** + a bonus for every member — on top of each member's individual
+  a **Circle group trophy** + a bonus for every member, on top of each member's individual
   trophy. This rides the existing co-op engine.
 
 **Solo runs.** Any member can also take a Journey **alone** from the public library (the
@@ -79,11 +79,11 @@ date and skips the cohort/meetup layer. Same content, same individual trophies.
 
 A **best-practice framework** for a Journey: a strong default the **builder and Vera scaffold
 toward**, and the rubric the Vera review gate reads. It is a **recommendation, not a hard
-requirement** — every part is departable on purpose; nothing here blocks a publish. Decision
+requirement**: every part is departable on purpose; nothing here blocks a publish. Decision
 record + the authoring rubric: [ADR-307](DECISIONS.md) and
 `content/leader-training/authoring/how-to-create-a-journey.md` (the literal Vera-gate spec).
 
-**The container.** A one-month **Run**: a small group (~8–12) with a **Host**, a fixed start,
+**The container.** A one-month **Run**: a small group (~8 to 12) with a **Host**, a fixed start,
 moving on the weekly drip. **Four week-Phases** (one Phase ≈ one week) on the arc *arrive →
 deepen → apply → integrate*, wrapped by an **Onboarding** phase before week 1 and a **Close**
 phase at the end. All four **Pillars** (Mind/Body/Spirit/Expression) carry every week.
@@ -92,14 +92,14 @@ phase at the end. All four **Pillars** (Mind/Body/Spirit/Expression) carry every
 
 | Part | What it is |
 |---|---|
-| **Lesson** | A hook, **one open/essential question** for discussion, a short teaching, and a **reach-back** to the prior week. Plain lesson content — there is **no "Mission" object** (NAMING). |
-| **Anchor practice** | One practice done **daily, all month, unchanged** — the keystone-habit through-line. **Strong-suggest, warn-on-save, departable** (below). |
+| **Lesson** | A hook, **one open/essential question** for discussion, a short teaching, and a **reach-back** to the prior week. Plain lesson content; there is **no "Mission" object** (NAMING). |
+| **Anchor practice** | One practice done **daily, all month, unchanged**: the keystone-habit through-line. **Strong-suggest, warn-on-save, departable** (below). |
 | **Three weekly practices** | One each for **Mind / Body / Spirit**. **Rotate each week by default**, or hold **fixed** for the whole Journey (a scaffold-time choice). |
 | **Weekly Expression Challenge** | The Expression Pillar as the active/social *doing*, **LIGHT** (small/no Zaps). The **Close** carries the **capstone Expression Challenge**, **HEAVY** (the Journey-completion reward). |
 | **Reflection** | A weekly checkpoint. |
 
 **The two-touchpoint meeting model.** Two standing weekly touchpoints, the group's to purpose:
-a **Circle Meetup** (mid-week, in person or virtual — connect + process the week) and a
+a **Circle Meetup** (mid-week, in person or virtual: connect + process the week) and a
 **Weekend Gathering** (a weekend in-person social event). Both ride the Events system; both
 stored under a **widened `journey_plans.meeting` jsonb** (Circle Meetup + Weekend Gathering, no
 migration), alongside the per-Run `kickoff_event_id` touchpoint of §3.
@@ -110,7 +110,7 @@ practices/challenge/assets that get there.
 **Implementation (no migrations).**
 - **Anchor flag** = `journey_plan_items.settings.anchor` on the chosen practice block. The
   builder **prompts** for one and **warns on save** when none is set, but never blocks publish
-  (strong recommendation, not a gate) — Vera coaches toward it.
+  (strong recommendation, not a gate); Vera coaches toward it.
 - **Rotation vs fixed** = a **scaffold-time choice** in the builder (how the three weekly
   practices are laid into the Phases), not a schema concept; no migration.
 - **The two touchpoints** = the widened `journey_plans.meeting` jsonb (above).
@@ -118,7 +118,7 @@ practices/challenge/assets that get there.
   that doc is the canonical spec the scaffold + review align to.
 
 Because it is a baseline, a creator can drop the Anchor, hold practices fixed, run a different
-arc, or skip a touchpoint — the builder and Vera **nudge** back toward the template, they never
+arc, or skip a touchpoint; the builder and Vera **nudge** back toward the template, they never
 enforce it.
 
 ## 4. Completion, points & trophies
@@ -127,7 +127,7 @@ Completion is **phase- and program-based** (the season/8-of-13 model is gone):
 
 | Event | Reward | Notes |
 |---|---|---|
-| Finish a lesson/module | small **points** (Gems) | a gentle *progress signal*, paired with encouragement — never the reason you're doing it (§10, overjustification) |
+| Finish a lesson/module | small **points** (Gems) | a gentle *progress signal*, paired with encouragement, never the reason you're doing it (§10, overjustification) |
 | Finish a **Phase** (all required lessons) | **phase trophy** + Gems | the milestone moment; celebration surface |
 | Finish the **Journey** | **journey trophy + optional certificate** + Gems | the headline completion; shareable |
 | The **Circle** finishes a phase / the Journey together | **Circle group trophy** + bonus for each member | cooperative; co-op engine |
@@ -137,14 +137,14 @@ Completion is **phase- and program-based** (the season/8-of-13 model is gone):
 - Points **signal progress**; trophies map to **real mastery** (finishing a phase), not
   busywork. Pair every reward with praise/feedback (protects intrinsic motivation).
 - A **progress bar that's never empty** (endowed-progress effect accelerates finishing).
-- **Streaks with a freeze** (a stumble shouldn't kill momentum) — reuse the existing streak
+- **Streaks with a freeze** (a stumble shouldn't kill momentum): reuse the existing streak
   engine.
 - **Cooperative only.** Shared meters and group milestones; if any ranking, it's
   Circle-relative, never global.
 - **Variable/celebration moments** (confetti, surprise bonuses) keep it feeling like a game.
 
 All grants are idempotent via `reward_grants`. Reward plumbing reuses the existing
-Zaps/Gems/trophy/co-op systems — retuned, not rebuilt.
+Zaps/Gems/trophy/co-op systems, retuned, not rebuilt.
 
 ---
 
@@ -153,11 +153,11 @@ Zaps/Gems/trophy/co-op systems — retuned, not rebuilt.
 A Netflix-simple **lesson player**:
 - **Left:** the syllabus (Phases → Modules → Lessons) with a status dot per lesson + a
   **progress meter** at the top. Current/locked/done states.
-- **Right:** the active lesson — title, a ≤6-min video or markdown body or exercise prompt,
+- **Right:** the active lesson: title, a ≤6-min video or markdown body or exercise prompt,
   and **one clear next action** ("Mark complete & continue"). Knowledge-check lessons give
   **instant feedback + retries** (the testing effect, §10).
 - **Practice steps → On Air (ADR-304):** a practice step shows a SINGLE action keyed to the
-  practice's `uses_timer` — **"Practice"** (opens the global On Air timer overlay pre-set to this
+  practice's `uses_timer`: **"Practice"** (opens the global On Air timer overlay pre-set to this
   practice, no navigation) for a sit/breathwork, or **"Log it"** (one-tap log) for an action or
   reflection. Completion is **log-gated**: "Mark complete & continue" stays grey until the practice
   is logged today; clicking it unlogged reveals a warning + a "Continue without logging" escape
@@ -177,21 +177,21 @@ Public discovery (`/discover/journeys`) stays as the SEO/AEO surface with sign-i
 ## 6. The editor (a breeze)
 
 A **full-page course builder** at `/journeys/[slug]/edit` (both "New journey" and "Edit journey"
-land here — no popup). Best-practice course-creator layout: a sticky builder bar (title · status ·
-Preview · Done) over three tabs — **Curriculum** (the structure editor, the star), **Details**
+land here, no popup). Best-practice course-creator layout: a sticky builder bar (title · status ·
+Preview · Done) over three tabs: **Curriculum** (the structure editor, the star), **Details**
 (identity/cover/release), **Settings** (advanced + danger). Panels stay mounted across tab switches
 so unsaved input survives; every section autosaves on blur (no Save button).
 
 This is an immersive build surface, so the global community **right rail stays mounted but starts
-collapsed to a mini strip** (`railStartsCollapsed` in `lib/layout/page-chrome.ts` — `railFor` still
+collapsed to a mini strip** (`railStartsCollapsed` in `lib/layout/page-chrome.ts`; `railFor` still
 returns `'global'`, the rail is never removed): an expand toggle at the rail's foot opens it to the
 full width, a collapse toggle returns it. Default on this route is collapsed, for the build width.
 
 **Vera composes the opening week.** A new Journey opens pre-propagated with a balanced shape: **one
-practice per Pillar** — **Mind**, **Body**, **Spirit**, and **Expression** (an Expression practice is
+practice per Pillar**: **Mind**, **Body**, **Spirit**, and **Expression** (an Expression practice is
 about putting it out: make/share/connect). So a fresh Journey starts balanced across all four Pillars
 (each is a `practice` block tagged to its Pillar `domain_id`; logging it feeds the four-Pillar
-Signature like any practice). The Vera box sits at the top of the Curriculum tab — the author says
+Signature like any practice). The Vera box sits at the top of the Curriculum tab: the author says
 what they're making and Vera fills the shape, either reusing a fitting library practice
 (`searchLibraryPractices({ pillarId })` candidates, picked by id) or writing a new inline one. Falls
 back to the empty shape ("Start with the shape") when AI is off. Code: `journey-composer.tsx`,
@@ -205,7 +205,7 @@ can add more (`addExtraCreditAction`). The bonus Zaps are paid exactly once on c
 `reward_grants` lock (`lib/journeys/grants.ts` `grantExtraCreditIfAny`). The editor shows an Award chip
 + editable Zaps field; the player shows an "Extra credit · +N Zaps" badge.
 
-One adjacent layer is still planned (DECISIONS ADR-300 Part 3): **Side Quests** — reward-only missions
+One adjacent layer is still planned (DECISIONS ADR-300 Part 3): **Side Quests**, reward-only missions
 that grant a badge and do not touch the Pillar Signature, built on the `achievements` engine.
 
 **Structure-first**, template-driven, with live preview:
@@ -241,36 +241,36 @@ that grant a badge and do not touch the Pillar Signature, built on the `achievem
 
 **Reuse + generalize the existing block spine; add the cohort/Run layer.**
 
-**`journey_plans`** (the program) — kept, simplified. Drops the season fields
+**`journey_plans`** (the program): kept, simplified. Drops the season fields
 (`season_locked`, `min_practices_per_day`, `target_weeks`). Keeps `title`, `slug`, `summary`,
 `intro`, `intro_video`, `cover_image`, `emoji`, `accent`, `author_id`, `visibility`, `status`,
 `fork_of`, `adopt_count`, `forked_count`, `quest_id`/`official` (official library). **Adds:**
 `drip_interval_days int default 7`, `certificate_enabled boolean default false`,
 `completion_gems int default 30`.
 
-**`journey_plan_items`** (the block tree) — kept, generalized. `block_type` extends to include
+**`journey_plan_items`** (the block tree): kept, generalized. `block_type` extends to include
 **`phase`** and **`module`** (containers) alongside the leaf types
 (`lesson`/`video`/`reading`/`exercise`/`reflection`/`check`/`practice`/`resource`); `parent_id`
 gives the Program→Phase→Module→Lesson tree; `sort_order` orders siblings. Existing fields
 (`title`, `body`, `media`, `settings`, `required`, `est_minutes`, `practice_id` for practice
 leaves) carry over.
 
-**`journey_runs`** (NEW — the cohort) — `id`, `plan_id`, `circle_id`, `host_id`, `started_at`,
+**`journey_runs`** (NEW, the cohort): `id`, `plan_id`, `circle_id`, `host_id`, `started_at`,
 `drip_interval_days` (snapshot), `kickoff_event_id` nullable, `status` (`active`/`completed`/
 `cancelled`), timestamps.
 
-**`journey_enrollments`** (NEW — replaces `journey_plan_adoptions`) — `id`, `profile_id`,
+**`journey_enrollments`** (NEW, replaces `journey_plan_adoptions`): `id`, `profile_id`,
 `plan_id`, `run_id` nullable (null = solo), `started_at`, `completed_at` nullable. One row per
 person per take. The drip anchor is `run.started_at` (cohort) or `enrollment.started_at`
 (solo).
 
-**`journey_lesson_progress`** (kept) — `profile_id`, `plan_id`, `item_id`, `completed_at`,
+**`journey_lesson_progress`** (kept): `profile_id`, `plan_id`, `item_id`, `completed_at`,
 `last_position`. The single per-lesson progress store; **all completion derives from it** (no
 season buckets). Phase complete = every required leaf under that phase has a row; journey
 complete = every phase complete.
 
 **`journey_phase_events`** ✅ shipped (ADR-307 follow-up, migration
-`20260702000000_journey_phase_events.sql`) — `(run_id, phase_id, kind ∈ meetup|gathering) → event_id`,
+`20260702000000_journey_phase_events.sql`): `(run_id, phase_id, kind ∈ meetup|gathering) → event_id`,
 unique per `(run, phase, kind)`, RLS service-role only. A Run Host schedules each week's **Circle
 Meetup** + **Weekend Gathering** as dated Events (`setPhaseEvent`/`getPhaseEvents` in
 `lib/journeys/runs.ts`, `schedulePhaseEventAction` in `run-actions.ts`, the host panel
@@ -302,10 +302,10 @@ official. A Run: created → kickoff → weekly phase drip → completed.
 The old system was a practice-habit engine with e-learning bolted on; v2 flips it (learning
 is primary). **Removed:**
 - The **two-clock season model** (rhythm + 91-day quest clock) and the **8-of-13 qualifying-
-  weeks** completion rule — replaced by phase/program completion (§4).
-- **Depth tiers** (Initiate/Adept/Master) as a core mechanic — practices are now one optional
+  weeks** completion rule, replaced by phase/program completion (§4).
+- **Depth tiers** (Initiate/Adept/Master) as a core mechanic: practices are now one optional
   block type; per-practice tier content is out of the Journey core (may live on `practices`).
-- The broken **`/admin/quests`** page (reads dropped legacy tables) — delete.
+- The broken **`/admin/quests`** page (reads dropped legacy tables): delete.
 - Naming drift (chain/arc/track) and **duplicated widgets** (coop-strip vs coop-meter, the
   discovery-widgets monolith) — consolidate.
 - The split/season-coupled progress derivation in `lib/journey-plans.ts` — replace with one

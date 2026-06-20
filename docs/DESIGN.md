@@ -91,7 +91,7 @@ What you already have, and why it is right:
   per-Nexus, and dark mode are nearly free because nothing hardcodes a color.
 - **`next/font` self-hosted.** No layout shift, no external font request. Keep.
 - **Owned, hand-written components** (Tailwind v4 + `lucide-react` only; no component
-  library, no Radix — see ADR-011). You own the code, no library churn.
+  library, no Radix; see ADR-011). You own the code, no library churn.
 
 For future expansion specifically:
 
@@ -172,17 +172,17 @@ human" lens (local, human, not a SaaS dashboard):
 
 **Circles is the shipped exemplar** of this standard; the other nine pages roll out to match.
 
-> **Update 2026-06-03 (cohesion sweep, PR #106):** the rollout is **shipped** — Broadcasts,
+> **Update 2026-06-03 (cohesion sweep, PR #106):** the rollout is **shipped**. Broadcasts,
 > Messages, Interests, Practices, Programs, Events, Friends, Partners, Directory all run on
 > `IndexTemplate` + the kit. Two systemic fixes landed at the primitive level: `StatStrip` was
-> **de-boxed** (borderless canvas row, matching Circles — every page's stat row now reads the same),
+> **de-boxed** (borderless canvas row, matching Circles, so every page's stat row now reads the same),
 > and a shared **`PersonCard`** (`components/cards/person-card.tsx`, wrapping `EntityCard`) gives
 > Friends / Directory / any people list one identical person card. Broadcasts & Messages dropped
 > their page-level sidebars + colored KPI tiles (the global right rail carries that context).
 
 ## Page unification: one grammar for every page
 
-> **Update 2026-06-02 (in-app overhaul, PRs #81–93 — see [REDESIGN-INAPP.md](REDESIGN-INAPP.md)):**
+> **Update 2026-06-02 (in-app overhaul, PRs #81 to 93, see [REDESIGN-INAPP.md](REDESIGN-INAPP.md)):**
 > the structural fix below is **largely shipped**. `DetailTemplate` is now adopted by Circle,
 > Channel, and Event detail (0 → 3); all the browse pages are on `IndexTemplate` + `EntityCard`.
 > Remaining: Profile/Programs detail → `DetailTemplate`, and the `<RoleActions>` consolidation
@@ -233,8 +233,8 @@ checks.** Today role logic is split across `CreateMenu` (hardcoded role arrays),
 
 - [x] Programs to IndexTemplate (the reference migration)
 - [x] Practices to IndexTemplate (PR #84)
-- [x] Circle detail (`/circles/[slug]`) to DetailTemplate (PR #85) — actions via the resolver in the slot; `RoleActions` overflow-menu still pending
-- [~] Profile (`/people/[handle]`) — borderless-rail + type cohesion done (PR #88); DetailTemplate header/tabs still pending
+- [x] Circle detail (`/circles/[slug]`) to DetailTemplate (PR #85): actions via the resolver in the slot; `RoleActions` overflow-menu still pending
+- [~] Profile (`/people/[handle]`): borderless-rail + type cohesion done (PR #88); DetailTemplate header/tabs still pending
 - [x] Event detail (`/events/[slug]`) to DetailTemplate (PR #87)
 - [x] Channel detail (`/channels/[id]`) to DetailTemplate (PR #86)
 - [ ] Program detail (`/programs/[slug]`) to DetailTemplate (still hand-rolled)
@@ -243,14 +243,14 @@ checks.** Today role logic is split across `CreateMenu` (hardcoded role arrays),
 Best done on localhost, page by page with eyes on, since each detail page's tab set and
 action list is a small product decision.
 
-## In-app scale — codified (the standard)
+## In-app scale: codified (the standard)
 
 The drift the audit found (94+ `text-[9/10/11px]`, six radii, gaps 0.5→8) recurred because the
 scale was never written down. It is now. **Compose from the kit; never set these ad hoc.** New
 primitives bake these in: `EntityCard`, `StatCard`, `SectionHeader`, `EmptyState`, `ModuleCard`,
 the three templates.
 
-**Type — roles, not pixels. Never `text-[10/11px]` for content.**
+**Type: roles, not pixels. Never `text-[10/11px]` for content.**
 
 | Role | Utility | Where |
 |---|---|---|
@@ -258,32 +258,32 @@ the three templates.
 | Section title | `text-sm font-bold tracking-tight` | `SectionHeader` / `ModuleCard` (sentence case, **not** all-caps) |
 | Card title | `text-base font-bold` | `EntityCard`, list rows |
 | Body | `text-sm leading-relaxed text-muted` | descriptions, prose |
-| Meta / label | `text-xs text-subtle` | counts, timestamps, footer pills (**floor** — nothing smaller for content) |
+| Meta / label | `text-xs text-subtle` | counts, timestamps, footer pills (**floor**: nothing smaller for content) |
 | Big stat | `text-2xl font-bold tabular-nums` | `StatCard` |
 
 Anton stays the **marketing** headline face only; Nunito bold is the in-app heading face (ADR).
 
-**Spacing — three rhythms.** Section gap `space-y-8` (rail modules, page sections) · group gap
+**Spacing: three rhythms.** Section gap `space-y-8` (rail modules, page sections) · group gap
 `space-y-3` / `gap-3` (rows, card grids) · tight `space-y-1` / `gap-2` (within a row). Card grids:
 `grid gap-3 sm:grid-cols-2 lg:grid-cols-3`. Stop hand-passing one-off gap values.
 
-**Radius — by role.** `rounded-2xl` cards & tiles (EntityCard, StatCard, modals) · `rounded-lg`
+**Radius, by role.** `rounded-2xl` cards & tiles (EntityCard, StatCard, modals) · `rounded-lg`
 controls (buttons, inputs, chips) · `rounded-full` pills & avatars. Retire `rounded-xl`/`rounded-3xl`
 for in-app surfaces (keep `rounded-3xl` for marketing feature cards only).
 
 **Elevation.** Soft warm shadow tokens only (already in `globals.css`); a resting card is
-`shadow-sm`, hover lifts to `shadow-md`. A card means a *distinct object* — lists/sections group
+`shadow-sm`, hover lifts to `shadow-md`. A card means a *distinct object*. Lists/sections group
 with title + whitespace, not a box each.
 
 ## Responsive (mobile-first) rules
 
-The site is the mobile app (no native app until Stage C). Build mobile-first; verify at 320–390px.
+The site is the mobile app (no native app until Stage C). Build mobile-first; verify at 320 to 390px.
 Four rules keep it from drifting (ADR-077):
 
 1. **Tables scroll, never clip.** Every `<table>` lives in an `overflow-x-auto` wrapper.
 2. **No fixed widths wider than the phone.** Avoid `w-[..px/rem]` / `min-w-[..]` over ~300px on
    in-flow content; use fluid widths + `max-w-*`, or a smaller base that scales up at `sm:`+.
-3. **Grids start narrow.** Multi-column grids base at `grid-cols-1` (or 2) and widen at breakpoints —
+3. **Grids start narrow.** Multi-column grids base at `grid-cols-1` (or 2) and widen at breakpoints,
    never a base `grid-cols-3+`.
 4. **Anything hidden at `md:` needs a mobile equivalent** (e.g. the marketing nav → hamburger sheet).
 

@@ -1,21 +1,21 @@
-# Page Framework — uniform nested layouts + assignable widgets
+# Page Framework: uniform nested layouts + assignable widgets
 
 > How every page on Frequency is **structured, composed, and kept fast**. The
 > goal: one consistent shell, a tiny set of page templates, and features that
 > drop in as **assignable widgets** without rebuilding pages. Pairs with
-> [IA-STRATEGY.md](IA-STRATEGY.md) (what the features *are*) — this doc is *how
+> [IA-STRATEGY.md](IA-STRATEGY.md) (what the features *are*). This doc is *how
 > they're laid out*.
 >
 > **Stack note:** Next.js 16 (App Router) + React 19. This relies on stable App
-> Router primitives — nested layouts, Server Components, Suspense streaming. Any
+> Router primitives: nested layouts, Server Components, Suspense streaming. Any
 > *caching* API (`use cache` / Partial Prerendering / `cacheLife`) must be
-> verified against the installed Next 16 docs before use — Next 16 changed
+> verified against the installed Next 16 docs before use. Next 16 changed
 > caching semantics and `node_modules` isn't always present to confirm.
 >
 > ⚠️ **Terminology (read this):** this doc predates the "module" reframe and says
 > **"widget."** Treat **widget = the presentational card chrome only**. *Which*
 > module appears, for *whom*, is decided server-side per user by role +
-> involvement — that's **server-composed capability modules**, not a static
+> involvement, that's **server-composed capability modules**, not a static
 > widget board. The authoritative model is in
 > [SCALE-ARCHITECTURE.md](SCALE-ARCHITECTURE.md) ("server-composed capability
 > modules") and [CAPABILITIES-AND-MOBILE.md](CAPABILITIES-AND-MOBILE.md) (the
@@ -39,7 +39,7 @@ you never touch a page to add a function. This is what makes it scale.
 
 ---
 
-## 2. The shell (already built — keep it)
+## 2. The shell (already built, keep it)
 
 `components/layout/app-shell.tsx` is the global frame and it's the right shape:
 
@@ -53,7 +53,7 @@ you never touch a page to add a function. This is what makes it scale.
 
 It already takes the right rail as a **slot prop** (`sidebar`) and already
 toggles it off for focus pages (`showSidebar`). That slot-prop instinct is the
-seed of the whole widget system below — we generalize it.
+seed of the whole widget system below: we generalize it.
 
 The **fractal**: the *same* header / content / rail grammar repeats inside an
 entity page (a Circle, a Topic) at a smaller scale (§3, Template C). One spatial
@@ -64,29 +64,29 @@ logic, learned once, reused at every level.
 ## 3. Three page templates (the "every page fits" guarantee)
 
 Every page is one of three shapes, chosen by *what the content is*, not by
-feature. A page never invents its own layout — it picks a template and fills
+feature. A page never invents its own layout: it picks a template and fills
 slots.
 
-### Template A — **Stream** (a flow of items)
+### Template A: **Stream** (a flow of items)
 One primary column of a vertical card stream + right rail.
 - **Use:** Feed, Broadcast, a Circle's discussion, a Topic's discussion.
 - **Slots:** `streamTop` (composer / pinned), the stream itself, `rightRail`.
 
-### Template B — **Index** (a collection to browse)
+### Template B: **Index** (a collection to browse)
 Filter/sort bar + responsive grid or list of cards + right rail.
 - **Use:** Circles, Topics, Events, People/Directory.
 - **Slots:** `indexFilters`, the grid, `rightRail`.
 
-### Template C — **Detail** (a single entity — the *nested page*)
+### Template C: **Detail** (a single entity, the *nested page*)
 Context header band + context tabs + body + **scope-aware** right rail.
 - **Use:** one Circle, one Topic, one Event, one Profile, (admin) one Hub/Nexus.
 - **Slots:** `headerActions` (join/share/admin gear), `contextTabs`, the body,
   `rightRail`.
 - **Key idea:** the body of a Detail page is *itself usually a Stream or an
   Index* (a Circle's "Posts" tab = Stream; its "Events" tab = Index). Templates
-  **nest** — that's the fractal, and it means you reuse, never rebuild.
+  **nest**: that's the fractal, and it means you reuse, never rebuild.
 
-### Template D — **Header / Page / Sidebar** (`HeaderSidebarTemplate`)
+### Template D: **Header / Page / Sidebar** (`HeaderSidebarTemplate`)
 Title band over a wide main column beside a narrower **in-body sidebar** (filters,
 a summary card, related links, a table of contents).
 - **Use:** a page with one primary flow AND a persistent secondary panel that
@@ -95,13 +95,13 @@ a summary card, related links, a table of contents).
 - **Rail note:** a page with its own in-body sidebar should usually register as
   `'scoped'` in `page-chrome.ts` so the global rail is suppressed (no double-rail).
 
-### Template E — **Header / 2 Column** (`TwoColumnTemplate`)
+### Template E: **Header / 2 Column** (`TwoColumnTemplate`)
 Title band over **two equal columns** of comparable weight (e.g. "yours" vs "the
 community", a form beside a live preview, two related lists).
 - **Use:** two peer areas where neither column is subordinate (unlike Template D).
 - **Slots:** `left`, `right` (stack on mobile, split evenly from `md`).
 
-> **Update (§8, ADR-090):** Focus and Dashboard are now **real templates** too —
+> **Update (§8, ADR-090):** Focus and Dashboard are now **real templates** too:
 > `FocusTemplate` (the no-rail compose/edit/settings surface, formerly just "the
 > shell hiding the rail") and `DashboardTemplate` (the metric-led operator
 > workspace). With **`HeaderSidebarTemplate`** (Header/Page/Sidebar),
@@ -114,7 +114,7 @@ community", a form beside a live preview, two related lists).
 - A **Detail** page = a route-segment **`layout.tsx`** (e.g.
   `app/(main)/circles/[slug]/layout.tsx`) that renders the context header + tabs
   + scoped rail and slots the tab pages as `children`. Navigating between tabs
-  **preserves** the header and rail (partial rendering) — free performance.
+  **preserves** the header and rail (partial rendering): free performance.
 - Stream/Index are usually plain `page.tsx` files that compose the shared
   template components.
 
@@ -125,7 +125,7 @@ community", a form beside a live preview, two related lists).
 This is the answer to *"add different functions depending on the page… like
 widgets that show up when assigned… without rebuilding every page."*
 
-> ✅ **Shipped — the per-route module-assignment engine (ADR-270 + ADR-271 + ADR-272, 2026-06-15).**
+> ✅ **Shipped: the per-route module-assignment engine (ADR-270 + ADR-271 + ADR-272, 2026-06-15).**
 > A page's **interior** modules are assigned per route and tuned from the on-page Layout editor,
 > with a **scope cascade** (route → section → global), a **per-module role gate**, and now an
 > interior **layout/grid + slot** model: pick one of six **interior layouts** (a grid shape) and
@@ -143,7 +143,7 @@ widgets that show up when assigned… without rebuilding every page."*
 >
 > | Concern | Where | Note |
 > |---|---|---|
-> | **Module catalog** (metadata only) | [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) | `LAYOUT_MODULES` / `moduleMeta` (union of every block) + **route scoping** (ADR-294): `ROUTE_MODULE_IDS` / `moduleIdsForScope` map a scope key → the ids that page offers, so a page only shows/renders ITS OWN blocks — no React, so the editor / actions / resolver never import RSCs |
+> | **Module catalog** (metadata only) | [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) | `LAYOUT_MODULES` / `moduleMeta` (union of every block) + **route scoping** (ADR-294): `ROUTE_MODULE_IDS` / `moduleIdsForScope` map a scope key → the ids that page offers, so a page only shows/renders ITS OWN blocks, no React, so the editor / actions / resolver never import RSCs |
 > | **Interior layouts/grids** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId`: 6 interior layouts/grids (Single · Main + side · 2 columns · 3 columns · Header + sidebar · Header + 2 columns) naming their slots; no React, like the module catalog. Distinct from the OUTER page shells in `@/components/templates` (§8). Add an interior layout = one entry here + a grid case in `page-modules.tsx` |
 > | **Component binding** | [`lib/widgets/registry.tsx`](../lib/widgets/registry.tsx) | `componentFor(id)` binds each id to its self-fetching RSC ([`components/widgets/`](../components/widgets)) |
 > | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | `resolveSlots` / `moduleAssignments`: maps each module to one slot of the chosen interior layout (unplaced → default slot), back-compat reader (`parseLayout`) reads a legacy flat config as the Single layout's `main` slot |
@@ -155,11 +155,11 @@ widgets that show up when assigned… without rebuilding every page."*
 >
 > **Add a module:** one meta entry in `modules.ts` + bind its component in `registry.tsx`.
 > **Add a page's own blocks (ADR-294):** declare its set in `ROUTE_MODULE_IDS` and list the route
-> in [`module-routes.ts`](../lib/widgets/module-routes.ts) so the Layout editor appears there — the
+> in [`module-routes.ts`](../lib/widgets/module-routes.ts) so the Layout editor appears there: the
 > page becomes a header + `<PageModules route="…" />`, each block a self-fetching RSC (the
 > migration target: no hand-built sections). **Slot-aware blocks (ADR-295):** each slot is a
 > Tailwind v4 `@container`, so a block sizes to the slot it lands in via `@`-variants
-> (`@lg:`/`@2xl:`), not the viewport — prefer those over `sm:`/`md:` for a block's internal grid
+> (`@lg:`/`@2xl:`), not the viewport. Prefer those over `sm:`/`md:` for a block's internal grid
 > so it stays portable across main/side/column slots. **Assign per route:** open the page's on-page
 > **Layout** settings (pick an interior layout/grid, drop each module into a slot, set order +
 > visibility, stored per route); or render `<PageModules route="…" />` on a page (live on `/lead`,
@@ -187,12 +187,12 @@ type Widget = {
 Rules that make widgets cheap and safe:
 - **Fetches its own data on the server** (it's an async Server Component). No
   client fetch, no waterfall.
-- **Returns `null` when it has nothing** — so "assigned but not relevant" costs
+- **Returns `null` when it has nothing**: so "assigned but not relevant" costs
   one query and renders nothing. (The current right-rail widgets already do this.)
-- **Declares its scopes + gate as metadata** — the renderer, not the page,
+- **Declares its scopes + gate as metadata**: the renderer, not the page,
   decides whether to show/lock it.
 
-### 4.2 Scope — the cascade
+### 4.2 Scope: the cascade
 The thing that lets *one* widget work at every level is a typed **scope** passed
 down from the (Detail) layout:
 
@@ -206,11 +206,11 @@ type Scope =
 ```
 
 The same `UpcomingEvents` widget renders community-wide events at `global` and
-*this circle's* events at `circle` — because it reads `scope`. That's the
+*this circle's* events at `circle`, because it reads `scope`. That's the
 "cascading features" you described: behavior cascades from context, definition
 stays single.
 
-### 4.3 Assignment — one declarative config
+### 4.3 Assignment: one declarative config
 Which widgets appear where lives in **one map**, not in pages:
 
 ```ts
@@ -232,13 +232,13 @@ property.
 <WidgetSlot name="rightRail" scope={scope} role={role} milestones={ms} />
 ```
 `WidgetSlot` looks up the assigned ids for `(name, scope.kind)`, filters by
-`gate` (role + milestone — locked widgets render a lock card, see IA-STRATEGY
+`gate` (role + milestone: locked widgets render a lock card, see IA-STRATEGY
 §2), and renders each widget **inside its own `<Suspense>`** with a
 dimension-matched skeleton.
 
 ### 4.5 Uniform chrome
 Every widget is wrapped in the shared **`WidgetCard`** shell (already exists in
-`right-sidebar.tsx` — promote it to `components/widgets/widget-card.tsx`). Same
+`right-sidebar.tsx`, promote it to `components/widgets/widget-card.tsx`). Same
 border, header, padding everywhere → uniformity is structural, not a thing
 authors have to remember.
 
@@ -250,7 +250,7 @@ authors have to remember.
 
 ---
 
-## 5. Performance — how this stays fast (the explicit requirement)
+## 5. Performance: how this stays fast (the explicit requirement)
 
 Widget dashboards get slow when every widget fetches on the client and they
 waterfall. This architecture avoids that by construction. Best practices, in
@@ -263,14 +263,14 @@ priority order:
    Components start their fetches simultaneously, so total wait = the *slowest*
    widget, not the sum. The shell paints instantly and widgets stream in.
 3. **Never block the shell on slow work.** Don't `await` slow data in the
-   layout/page *before* returning JSX — push it into a Suspense child, or
+   layout/page *before* returning JSX: push it into a Suspense child, or
    streaming can't begin (the #1 RSC pitfall).
 4. **Dimension-matched skeletons** (`fallbackHeight`) so streamed widgets don't
    cause layout shift (CLS).
 5. **Hoist shared scope data once** in the Detail layout (e.g. "my membership in
-   this circle", the circle row) and pass it down — don't let N widgets each
+   this circle", the circle row) and pass it down: don't let N widgets each
    re-query it. (Right rail already fetches memberships once and passes
-   `circleIds` down — keep that pattern.)
+   `circleIds` down, keep that pattern.)
 6. **Nested layouts = partial rendering.** Tab/sub-page navigation inside an
    entity reuses the header + rail without re-rendering or re-fetching them.
 7. **Cache the slow + shared + non-personalized** widgets (leaderboard, topic
@@ -300,19 +300,19 @@ Sources: [RSC streaming performance (SitePoint)](https://www.sitepoint.com/react
 | `/people/[handle]` → Profile | **Detail** | header · tabs · rail: achievements, streaks, circles |
 | `/messages`, `/settings`, compose | Focus | (no rail) |
 | `/crew/*` | Stream/Index | gamification widgets |
-| `/admin/*` | Index/Detail | admin sub-nav (own pattern) — *being absorbed into the per-page **admin dock** (ADR-128, Phase 1) → capability-driven modules + in-place editing (ADR-133 / EMBEDDED-ADMIN.md, Phase 2)* |
+| `/admin/*` | Index/Detail | admin sub-nav (own pattern): *being absorbed into the per-page **admin dock** (ADR-128, Phase 1) → capability-driven modules + in-place editing (ADR-133 / EMBEDDED-ADMIN.md, Phase 2)* |
 
 Every page lands in a template; every feature lands in a widget. Nothing needs a
 bespoke layout.
 
 ---
 
-## 7. Migration path (incremental, low-risk — Phase 0–1 shipped)
+## 7. Migration path (incremental, low-risk, Phase 0 to 1 shipped)
 
-> **Update 2026-06-02:** the template migration shipped (PRs #81–93, see
+> **Update 2026-06-02:** the template migration shipped (PRs #81 to 93, see
 > [REDESIGN-INAPP.md](REDESIGN-INAPP.md)). `Index`/`Stream`/`Detail` templates are live;
-> `DetailTemplate` is adopted by Circle/Channel/Event (step 4–5, in progress — Profile/Programs
-> remain). The capability-module/`WidgetSlot` system (steps 1–2) is still a future seam, not yet
+> `DetailTemplate` is adopted by Circle/Channel/Event (step 4 to 5, in progress, Profile/Programs
+> remain). The capability-module/`WidgetSlot` system (steps 1 to 2) is still a future seam, not yet
 > built; the right rail remains hand-wired.
 
 1. **Extract** the shared shell pieces that exist informally:
@@ -325,7 +325,7 @@ bespoke layout.
 4. **Introduce the Detail layout** at `circles/[slug]/layout.tsx` (header + tabs +
    scoped rail); make the rail scope-aware (`global` → `circle`).
 5. **Roll** the Detail pattern to Topics, Events, Profiles.
-6. Thereafter, **new features are widgets + a config line** — never a new page
+6. Thereafter, **new features are widgets + a config line**: never a new page
    layout.
 
 Order is deliberately additive: each step is shippable on its own and nothing
@@ -337,7 +337,7 @@ forces a big-bang rewrite.
 
 > **Update 2026-06-05 (ADR-090):** the template kit is now complete and the
 > shell's rail treatment is **declarative**. "Focus" and "Dashboard" are no longer
-> informal — they're real templates next to Stream / Index / Detail. A page is now
+> informal: they're real templates next to Stream / Index / Detail. A page is now
 > *two lines of decision*: pick a template, register a rail.
 >
 > **Reconciliation (Phase 0.5.11):** earlier prose in this doc said "three", then
@@ -376,27 +376,27 @@ cards), `StatCard` (KPI tile with delta/drill-down), `SectionHeader`, `EmptyStat
 **Form + control primitives (2026-06-06, ADR-147):** `Input`/`Textarea`/`Label` (+
 `fieldClasses`/`labelClasses` for a native `<select>`), `Button` (variant × size),
 `Dialog` (the shared backdrop · ESC · scroll-lock overlay shell), and `cn()`
-(`lib/utils`). Type: use the named scale incl. `text-2xs` (11px) / `text-3xs` (10px)
-— **never** `text-[Npx]`; colors are DAWN tokens only (**no** raw palette like
+(`lib/utils`). Type: use the named scale incl. `text-2xs` (11px) / `text-3xs` (10px).
+**Never** `text-[Npx]`; colors are DAWN tokens only (**no** raw palette like
 `indigo-600`).
 
-### 8.2 The chrome map — `lib/layout/page-chrome.ts`
+### 8.2 The chrome map: `lib/layout/page-chrome.ts`
 
 Which rail frames a page is **one pure function**, `railFor(pathname)`, returning:
 
-- `'global'` — the community right rail (browse / stream / dashboard default).
-- `'scoped'` — global rail suppressed; the **Detail** page renders its own scope
+- `'global'`: the community right rail (browse / stream / dashboard default).
+- `'scoped'`: global rail suppressed; the **Detail** page renders its own scope
   rail in-body (no double-rail trap). Sections: `/circles/*`, `/channels/*`.
-- `'none'` — **Focus**: no rail. Compose/edit (`/events/new`,
+- `'none'`: **Focus**: no rail. Compose/edit (`/events/new`,
   `/practices/*/edit`, `/connections/*`), settings, message threads, and the
   operator/steward workspaces (`/marketing`, `/crm`, `/outreach`, `/codes`,
   `/upgrade`, `/g/*`, `/n/*`).
 
 `app-shell.tsx` shows the global rail iff `railFor(pathname) === 'global'`. **To
-reframe a route, edit `page-chrome.ts` — never the shell.** Locked by
+reframe a route, edit `page-chrome.ts`, never the shell.** Locked by
 `page-chrome.test.ts`.
 
-### 8.3 Build a page — the decision tree
+### 8.3 Build a page: the decision tree
 
 1. **What is the content?** → pick the template from the table above.
 2. **Does it read best full-width (a form, a workspace, a single decision)?** →
@@ -413,14 +413,14 @@ a new layout.
 
 ---
 
-## 9. The Studio — the shared *creation* surface (ADR-142)
+## 9. The Studio: the shared *creation* surface (ADR-142)
 
 Pages are for *reading*; the **Studio** is the one window for *making*. Anywhere
 there's something to create or edit (a journey today; circles, practices, events
-next), the same launchable window opens — so authoring feels identical everywhere,
+next), the same launchable window opens, so authoring feels identical everywhere,
 the way the five templates make reading feel identical.
 
-- **Shell:** `components/studio/studio-window.tsx` — an overlay panel (full-screen on
+- **Shell:** `components/studio/studio-window.tsx`, an overlay panel (full-screen on
   mobile) with shared chrome (eyebrow, Esc/backdrop close, scroll-lock), a body the
   entity fills with its tools, and a sticky footer action bar. Launchable in place
   **and** deep-linkable (the full builder also lives at the entity's route).
@@ -429,7 +429,7 @@ the way the five templates make reading feel identical.
   **capability gating** for that instance. First instance:
   `components/studio/journey/*` (emoji/accent identity, markdown intro, drag-reorder
   path, per-step cadence/note, live Pillar balance, autosave, share-to-library).
-- **Build the next entity** by mounting `<StudioWindow>` with that entity's tools —
+- **Build the next entity** by mounting `<StudioWindow>` with that entity's tools:
   don't author a new editor. Accents come from `lib/studio/accents.ts` (token-based,
   never hex).
 
@@ -444,7 +444,7 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
 | What it builds | The **public, brandable micro-site** block tree (per-Space landing / marketing pages) | **Authenticated in-app pages** (a template shell + assignable widgets) |
 | Surface | Public marketing routes (`app/(marketing)/*`), and later a Space's own custom-domain micro-site | App routes behind auth (`app/(main)/*`) |
 | Store / render | `public.pages` (`data` draft / `published_data` live) → `getPublishedData(slug)`; editor at `app/edit/[slug]` + `components/page-editor/*` | `public.page_settings` (layout / SEO / status) → a template + `<PageModules route>` (`lib/page-settings/*`) |
-| Composes | The Puck block library (`components/page-editor/blocks/*`) | The five templates + `components/ui/*` / `cards/*` + widgets (this doc, §3–§4) |
+| Composes | The Puck block library (`components/page-editor/blocks/*`) | The five templates + `components/ui/*` / `cards/*` + widgets (this doc, §3 to §4) |
 
 **The rule:**
 
@@ -474,5 +474,5 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
 - **Assignment is one declarative config**; pages only render `<WidgetSlot>`.
 - **Speed is structural**: RSC + per-widget Suspense + parallel fetch + nested
   layouts + dimension-matched skeletons; client JS only at interactive leaves.
-- **Gating (role + milestone, IA-STRATEGY §2) is widget metadata** — the same
+- **Gating (role + milestone, IA-STRATEGY §2) is widget metadata**: the same
   mechanism powers the "wake up" progressive reveal.

@@ -1,4 +1,4 @@
-# Gamification audit — categorization, the points log, and program gaps
+# Gamification audit: categorization, the points log, and program gaps
 
 **Date:** 2026-06-06 · **Decision:** [ADR-139](DECISIONS.md) · **Model:**
 [GLOSSARY.md](GLOSSARY.md) → "Gamification" · [ECONOMY-AND-JOURNEYS.md](ECONOMY-AND-JOURNEYS.md)
@@ -13,19 +13,19 @@ impossible to build. All three are now fixed, the log is shipped, and the four
 seasonal Pillar Journeys are seeded. Remaining gaps are listed at the bottom.
 
 **The rule, now canonical and enforced everywhere:** anything **online → Gems**;
-anything **real life → Zaps** — base actions *and* the meta-layer.
+anything **real life → Zaps**, base actions *and* the meta-layer.
 
 ## What was wrong (and is now fixed)
 
 | # | Finding | Status |
 |---|---|---|
-| 1 | A single post paid gems (correct) **plus** zaps from the "First Post" achievement **plus** zaps from the "Content Creator" quest step — one online act, three reward paths, two of them the wrong currency | ✅ fixed |
+| 1 | A single post paid gems (correct) **plus** zaps from the "First Post" achievement **plus** zaps from the "Content Creator" quest step: one online act, three reward paths, two of them the wrong currency | ✅ fixed |
 | 2 | Achievements **double-awarded**: app code paid the reward as gems while `after_achievement_unlocked` paid the same number as zaps | ✅ fixed (trigger no longer pays zaps) |
 | 3 | Challenges/quests always paid **zaps** regardless of whether the milestone was online or in-person | ✅ fixed (`currencyForCriteria` routes every grant) |
-| 4 | **Zaps had no ledger** — grants wrote `profiles.current_season_zaps` directly from ~6 sites; no history, rank could drift | ✅ fixed (`zap_transactions` + one trigger owns totals + rank) |
+| 4 | **Zaps had no ledger**: grants wrote `profiles.current_season_zaps` directly from ~6 sites; no history, rank could drift | ✅ fixed (`zap_transactions` + one trigger owns totals + rank) |
 | 5 | No member-facing record of *how* points were earned | ✅ shipped (`/crew/store/ledger`) |
 | 6 | `gem_config` row for `achievement` described the old (wrong) behavior | ✅ fixed (migration updates the description) |
-| 7 | Economy spec calls for one Journey **per Pillar per season**; only 3 generic chains existed | ✅ seeded 4 Pillar Journeys (Mind/Body/Spirit/Expression) — **superseded by ADR-284**: now 3 Journeys (Mind/Body/Spirit); Expression is the Challenge capstone on each |
+| 7 | Economy spec calls for one Journey **per Pillar per season**; only 3 generic chains existed | ✅ seeded 4 Pillar Journeys (Mind/Body/Spirit/Expression). **Superseded by ADR-284**: now 3 Journeys (Mind/Body/Spirit); Expression is the Challenge capstone on each |
 
 ## How currency is decided now
 
@@ -54,7 +54,7 @@ chain in the currency of its real-world steps.
   friendly label, the currency, the amount, and the time.
 - **How:** `lib/economy/ledger.ts` merges `gem_transactions` + `zap_transactions`.
   Both ledgers are append-only; an `AFTER INSERT` trigger on each is the only place
-  profile totals (and, for zaps, rank) move — so the log and the counters can never
+  profile totals (and, for zaps, rank) move, so the log and the counters can never
   disagree.
 
 ## Closed since the audit (ADR-140 / ADR-141 / ADR-142)
@@ -63,26 +63,26 @@ chain in the currency of its real-world steps.
 |---|---|---|
 | Journey **join-gating** | `quest_progress` = joined; `advanceQuests` only advances started chains; new `startQuest` action + a real `/crew/quests` browse/join page | ✅ done |
 | **Pillar column** on the legacy action-chain engine (dropped, ADR-152) | Pillar foreign key, backfilled on the 4 seasonal Journeys; page groups by Pillar | ✅ done |
-| Member **zap-rate multiplier** | ~~`MEMBER_ZAP_RATE` (0.5)~~ 🔴 **Deleted by Rewards Economy v2 (ADR-219)** — everyone earns Zaps at full rate; visibility gating (ADR-141) is the membership value | superseded |
+| Member **zap-rate multiplier** | ~~`MEMBER_ZAP_RATE` (0.5)~~ 🔴 **Deleted by Rewards Economy v2 (ADR-219)**: everyone earns Zaps at full rate; visibility gating (ADR-141) is the membership value | superseded |
 | Store **gems balance** | Spendable = `lifetime_gems − Σ gems_spent`, enforced in `getStoreData` + `redeemItem` | ✅ done |
 | Starter **content** | 2 bonus micro-journeys + 7 system-curated library practices across the Pillars | ✅ seeded |
 | **Endorsement layer** (rank) | `isEndorsed(role)` Crew-gates the public rank on profile + people cards + post flair; free profiles show earned stats but no rank (ADR-141). Inert in Beta. | ✅ done (rank) |
-| **DIY journey builder** | The **Studio** window — a reusable creation surface; members compose practices into a shareable life-development track (emoji/accent, intro, drag-reorder, per-step cadence, Pillar balance, share-to-library). First instance of a cross-site builder (ADR-142). | ✅ done |
+| **DIY journey builder** | The **Studio** window, a reusable creation surface; members compose practices into a shareable life-development track (emoji/accent, intro, drag-reorder, per-step cadence, Pillar balance, share-to-library). First instance of a cross-site builder (ADR-142). | ✅ done |
 
 ## Closed by Rewards Economy v2 (ADR-219, June 2026)
 
 | Item | Resolution | Status |
 |---|---|---|
-| Provisional **Zap→Gem rank ladder** | Flat **5:1** + one-time final-rank Gem bonus (10/25/50/100/250), claim-then-pay in `reset_season()` | ✅ done — **superseded by ADR-283**: final-rank bonus retired; per-Journey Trophy rewards replace it |
+| Provisional **Zap→Gem rank ladder** | Flat **5:1** + one-time final-rank Gem bonus (10/25/50/100/250), claim-then-pay in `reset_season()` | ✅ done. **Superseded by ADR-283**: final-rank bonus retired; per-Journey Trophy rewards replace it |
 | **Lifetime layer** | **Amplitude** = lifetime Zaps (hosting 2×), levels `50·L·(L+1)`, milestones 1k/5k seeded; supersedes the lifetime-rank display (column stays for retro rules) | ✅ done |
-| **Gem tiers** (New→Legend) | Retired — gems are purely spendable; Amplitude is the progression layer | ✅ done |
+| **Gem tiers** (New→Legend) | Retired: gems are purely spendable; Amplitude is the progression layer | ✅ done |
 | Flat practice-log Zap | Per-log VALUE = `reward_zaps` when set (Quest library values by CADENCE: Daily 10 / 3x-wk 15 / Weekly 25, ADR-303), else **weight class** light 8 / standard 12 / heavy 15 (`practices.weight_class`) | ✅ done |
 | S1 challenge sprawl (39) | Re-seeded to the **15-template**; purse of the 14 non-Completionist = **1,000⚡**; the 24 extras archived (`is_active=false`), never deleted | ✅ done |
 | New bonus mechanics | Co-op Pulse +3⚡ (nightly), Welcome Back +10⚡, freeze second path (5 Full Days = +1), per-practice streaks + **Practice Shelf**, Full Cycle +50⚡ | ✅ done |
 | S1 award set | Quiet Ones (5 secret), Witnessed peer grants, rank/journey cosmetics (granted-only store items), circle banner + Co-op Synchrony, Vault S1 SKUs (rank/stock/season gates) | ✅ done |
-| Crew-task ledger **regression** | `20260613000030` had restored the pre-ADR-139 `after_crew_completion()` (direct profile writes, ledger bypass) — re-fixed in `20260614000000` | ✅ fixed |
+| Crew-task ledger **regression** | `20260613000030` had restored the pre-ADR-139 `after_crew_completion()` (direct profile writes, ledger bypass); re-fixed in `20260614000000` | ✅ fixed |
 
-## Quest completion-model migration (June 2026, ADR-283–286)
+## Quest completion-model migration (June 2026, ADR-283 to ADR-286)
 
 **Shipped:** 2026-06-28. Migrations: `20260628000000_retire_practice_intensity_tiers.sql` + `20260628010000_quest_completion_model.sql`.
 
@@ -102,8 +102,8 @@ chain in the currency of its real-world steps.
 
 | Gap | Why it matters | Effort |
 |---|---|---|
-| ⏳ **Studio: more entities** (ADR-142) | Mount circle / practice / event onto the Studio shell as their own specs — the cross-site "create anywhere" vision | M each |
-| ⏳ **Endorsement set — cosmetics/titles/journey badges** | Granted + owned now (ADR-219 sweeps); public rendering still rides the `isEndorsed` gate when it lands | S (rides existing gate) |
+| ⏳ **Studio: more entities** (ADR-142) | Mount circle / practice / event onto the Studio shell as their own specs: the cross-site "create anywhere" vision | M each |
+| ⏳ **Endorsement set: cosmetics/titles/journey badges** | Granted + owned now (ADR-219 sweeps); public rendering still rides the `isEndorsed` gate when it lands | S (rides existing gate) |
 | ⏳ **Beta zap supply** | Most beta activity is online (gems). Drive zaps with seeded ghost nodes / QR drops + event check-ins so practice logs flow before S1 proper. | content |
 | ⏳ **Celebration art** | Amplitude level-up (mid-tier) + milestone / Full Spectrum (full-screen) are minted but visually stubbed; only 1k/5k art ships in S1 | design |
 | ⏳ **Forge Claim** | `forge_claim` metadata on Trophy tokens; the physical claim flow is unbuilt | M |

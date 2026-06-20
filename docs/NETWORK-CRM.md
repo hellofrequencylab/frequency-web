@@ -1,11 +1,11 @@
-# Profile Creator — Network Profiles
+# Profile Creator: Network Profiles
 
-> **Status:** ✅ Built · ✅ migration applied to prod (`Frequency Community`) · ✅ AI harvest live (`platform_flags.ai_enabled = true`; toggle at `/admin/ai` — see [AI-CONTROLS.md](AI-CONTROLS.md)) · ✅ mobile quick-add (`+` → `/connections/new`, stewards/staff) · ⏳ full type regen deferred to merge-time (store uses the untyped admin handle) · gated to stewards (host+) / Studio staff.
+> **Status:** ✅ Built · ✅ migration applied to prod (`Frequency Community`) · ✅ AI harvest live (`platform_flags.ai_enabled = true`; toggle at `/admin/ai`, see [AI-CONTROLS.md](AI-CONTROLS.md)) · ✅ mobile quick-add (`+` → `/connections/new`, stewards/staff) · ⏳ full type regen deferred to merge-time (store uses the untyped admin handle) · gated to stewards (host+) / Studio staff.
 > Source of truth: `supabase/migrations/20260606000000_network_contacts.sql`, `lib/connections/*`, `lib/ai/connections-ai.ts`, `app/(main)/connections/*`. Decision: [ADR-098](DECISIONS.md).
 
-The Profile Creator lets a steward capture the people they meet — snap a business
+The Profile Creator lets a steward capture the people they meet: snap a business
 card or poster, harvest the details, cut out a profile photo, and get a drafted
-connection note + tags — or enter it by hand with Vera's help. Captures are
+connection note + tags, or enter it by hand with Vera's help. Captures are
 **owner-scoped and private by default**, with a deliberate path to promote them
 into the wider network.
 
@@ -19,21 +19,21 @@ into the wider network.
 
 ## Data model
 
-`network_contacts` — the record:
-- `owner_id` → `profiles(id)` — **the privacy primitive**. Every read/write is filtered on it.
-- `visibility` — `private` (owner only) · `shared` (future: owner's team) · `network` (signed-in stewards). Gates promotion so personal captures don't bleed into public data.
-- `source` — `card_scan` · `poster` · `manual` · `import` (the "many inputs").
-- `status` — `new` · `active` · `archived` (routing/sorting).
+`network_contacts`, the record:
+- `owner_id` → `profiles(id)`: **the privacy primitive**. Every read/write is filtered on it.
+- `visibility`: `private` (owner only) · `shared` (future: owner's team) · `network` (signed-in stewards). Gates promotion so personal captures don't bleed into public data.
+- `source`: `card_scan` · `poster` · `manual` · `import` (the "many inputs").
+- `status`: `new` · `active` · `archived` (routing/sorting).
 - Harvested fields: `display_name, email, phone, title, company, city, website, socials(jsonb)`.
-- `details(jsonb)` — the rich, flexible harvest of everything printed on the card: phones, emails, addresses, services, certifications, hours, links, other (all optional, validated by `coerceContactDetails`; mirrors `events.details`). Added by `20260614000000_contact_card_media.sql` (ADR-215).
-- `avatar_path` — a key in the **private** `network-contacts` bucket (never a public URL; rendered via signed URL).
-- `card_front_path` / `card_back_path` — the **deskewed card itself**, kept on file (private bucket, signed URLs). The client perspective-warps each side from the model's per-image corners (`lib/connections/deskew.ts`) before uploading the keepers to `{auth_uid}/{uuid}-front.jpg` / `-back.jpg`.
-- `logo_path` — the cropped company logo (avatar fallback when there is no face; shown beside the company on the detail page).
-- `extraction(jsonb)` — the raw AI harvest (audit / re-derive).
-- `linked_profile_id` / `linked_contact_id` — the promotion hooks (scaffolded; own review).
+- `details(jsonb)`: the rich, flexible harvest of everything printed on the card: phones, emails, addresses, services, certifications, hours, links, other (all optional, validated by `coerceContactDetails`; mirrors `events.details`). Added by `20260614000000_contact_card_media.sql` (ADR-215).
+- `avatar_path`: a key in the **private** `network-contacts` bucket (never a public URL; rendered via signed URL).
+- `card_front_path` / `card_back_path`: the **deskewed card itself**, kept on file (private bucket, signed URLs). The client perspective-warps each side from the model's per-image corners (`lib/connections/deskew.ts`) before uploading the keepers to `{auth_uid}/{uuid}-front.jpg` / `-back.jpg`.
+- `logo_path`: the cropped company logo (avatar fallback when there is no face; shown beside the company on the detail page).
+- `extraction(jsonb)`: the raw AI harvest (audit / re-derive).
+- `linked_profile_id` / `linked_contact_id`: the promotion hooks (scaffolded; own review).
 
-`network_contact_notes` — the "space for notes" + the AI connection note (`kind`: `note` · `connection` · `ai`).
-`network_contact_tags` — freeform owner-scoped tags (`source`: `manual` · `ai`), distinct from the governed `member_tags` registry.
+`network_contact_notes`: the "space for notes" + the AI connection note (`kind`: `note` · `connection` · `ai`).
+`network_contact_tags`: freeform owner-scoped tags (`source`: `manual` · `ai`), distinct from the governed `member_tags` registry.
 
 ## Gating & privacy
 
@@ -62,9 +62,9 @@ Both AI paths **degrade to plain manual entry** when AI is off, over budget, or 
 ## AI
 
 - Goes through the kernel: `getAnthropic()` + the operator kill switch (`aiAvailable()`), per-feature daily caps (`featureOverBudget`), and the usage ledger (`recordAiUsage`).
-- **Model tiering** (`lib/ai/models.ts`, [AI-STRATEGY](AI-STRATEGY.md)): vision OCR → **Sonnet** (`connection-scan`, cap $3/day); text assist → **Haiku** (`connection-assist`, cap $1/day). Not Opus per scan — that would blow the budget doctrine.
-- Structured output via a **forced tool call** (`save_contact`), including a normalized face bounding-box. All output is re-validated by `coerceExtraction()` (`lib/connections/normalize.ts`) before it reaches the form — never trusted raw.
-- Photo crop is pure client-side `<canvas>` geometry (`squareCropRect`) — no server image library, no new dependency.
+- **Model tiering** (`lib/ai/models.ts`, [AI-STRATEGY](AI-STRATEGY.md)): vision OCR → **Sonnet** (`connection-scan`, cap $3/day); text assist → **Haiku** (`connection-assist`, cap $1/day). Not Opus per scan: that would blow the budget doctrine.
+- Structured output via a **forced tool call** (`save_contact`), including a normalized face bounding-box. All output is re-validated by `coerceExtraction()` (`lib/connections/normalize.ts`) before it reaches the form, never trusted raw.
+- Photo crop is pure client-side `<canvas>` geometry (`squareCropRect`): no server image library, no new dependency.
 
 ## Files
 
@@ -86,9 +86,9 @@ Both AI paths **degrade to plain manual entry** when AI is off, over budget, or 
 
 ## Operations
 
-1. ✅ **Migration applied** (`20260606000000_network_contacts.sql`) to the `Frequency Community` project — 3 tables, RLS (owner-scoped), and the private `network-contacts` bucket. Verified: RLS on all 3, 6 table policies + 4 storage policies, bucket `public=false`. Security advisors: no new issues (only the project-wide `auth_allow_anonymous_sign_ins` WARN that every `auth.uid()` policy carries).
-2. **Regenerate `lib/database.types.ts`** — *deferred to integration/merge-time* to avoid pulling other in-flight branches' prod schema into this feature branch. The store works today via the untyped admin handle (repo convention).
-3. ✅ **AI harvest enabled** — `platform_flags.ai_enabled = true` (flipped + logged in `platform_flag_events`). Janitors can toggle it from **Admin → Platform → AI controls** (`/admin/ai`); the env still also needs `ANTHROPIC_API_KEY`. See [AI-CONTROLS.md](AI-CONTROLS.md).
+1. ✅ **Migration applied** (`20260606000000_network_contacts.sql`) to the `Frequency Community` project: 3 tables, RLS (owner-scoped), and the private `network-contacts` bucket. Verified: RLS on all 3, 6 table policies + 4 storage policies, bucket `public=false`. Security advisors: no new issues (only the project-wide `auth_allow_anonymous_sign_ins` WARN that every `auth.uid()` policy carries).
+2. **Regenerate `lib/database.types.ts`**: *deferred to integration/merge-time* to avoid pulling other in-flight branches' prod schema into this feature branch. The store works today via the untyped admin handle (repo convention).
+3. ✅ **AI harvest enabled**: `platform_flags.ai_enabled = true` (flipped + logged in `platform_flag_events`). Janitors can toggle it from **Admin → Platform → AI controls** (`/admin/ai`); the env still also needs `ANTHROPIC_API_KEY`. See [AI-CONTROLS.md](AI-CONTROLS.md).
 4. ⏳ **Apply `20260614000000_contact_card_media.sql`** (additive, idempotent: `details` jsonb + `card_front_path` / `card_back_path` / `logo_path` on `network_contacts`). The detail/list reads select the new columns, so deploy the migration with (or before) the code.
 
 > **Rollback** (additive, clean): `drop table public.network_contact_tags, public.network_contact_notes, public.network_contacts cascade;` then `delete from storage.buckets where id='network-contacts';` and drop the four `network-contacts: owner *` policies on `storage.objects`.
@@ -96,13 +96,13 @@ Both AI paths **degrade to plain manual entry** when AI is off, over budget, or 
 ## Scan → shared CRM → invite → credit (ADR-099)
 
 When a scanned contact has an email, on save it **also** lands in the shared Studio
-CRM (`contacts`) as `source='scan_invite'`, `consent_state='unknown'` — added but
-**never auto-subscribed** — and is linked via `linked_contact_id`. Optionally (a
+CRM (`contacts`) as `source='scan_invite'`, `consent_state='unknown'` (added but
+**never auto-subscribed**) and is linked via `linked_contact_id`. Optionally (a
 per-scan checkbox) the steward sends **one** transactional intro.
 
 | Piece | How |
 |---|---|
-| Shared-CRM lead | `lib/connections/crm-sync.ts` — upsert by `lower(email)`, never downgrades an existing member/subscriber |
+| Shared-CRM lead | `lib/connections/crm-sync.ts`: upsert by `lower(email)`, never downgrades an existing member/subscriber |
 | One-time intro | `lib/connections/invite.ts` → `sendScanIntroEmail` (`lib/email.ts`). Gated by `scan_invite_email_enabled` (**default off**) + the per-scan checkbox + `invited_at` guard |
 | Points on join | The intro's CTA is the steward's **referral** link (`/q/<slug>`, ADR-091). Signup → `applyReferralAttribution` → `invite_accepted` zaps. Automatic |
 | Legal unsubscribe | `/u/scan` (`lib/connections/lead-unsub.ts`, HMAC over `contacts.id`) → `consent_state='unsubscribed'`, RFC 8058 one-click. Non-member footer; set `COMPANY_POSTAL_ADDRESS` for CAN-SPAM |
@@ -111,7 +111,7 @@ per-scan checkbox) the steward sends **one** transactional intro.
 **Posture:** a single, person-initiated introduction (the steward met them), not bulk
 marketing. No marketing email until the lead opts in (`consent_state='subscribed'`).
 
-## Unified person — the "User Stats" page (ADR-130)
+## Unified person: the "User Stats" page (ADR-130)
 
 One human can exist as up to three rows joined by **lowercased email**: `profiles` (member),
 `contacts` (the CRM hub), and `network_contacts` (0..n private captures). They are now pulled
@@ -119,34 +119,34 @@ together into a single operator view, and the people you have a real connection 
 
 | Piece | How |
 |---|---|
-| Resolve a person | `lib/crm/person.ts#resolvePerson(contactId)` — gathers the `contacts` anchor + member `profile` + every capture with that email + the trail (`qr_scans`, `engagement_events`) + pipeline (`crm_deals`, `crm_activities`). Groups **by email at read time**, so it works before the backfill. |
+| Resolve a person | `lib/crm/person.ts#resolvePerson(contactId)`: gathers the `contacts` anchor + member `profile` + every capture with that email + the trail (`qr_scans`, `engagement_events`) + pipeline (`crm_deals`, `crm_activities`). Groups **by email at read time**, so it works before the backfill. |
 | Auto-group (backfill) | `supabase/migrations/20260606170000_person_identity_stitch.sql` fills `contacts.profile_id`, `network_contacts.linked_contact_id`, `network_contacts.linked_profile_id` by email (idempotent; **✅ applied to `Frequency Community` 2026-06-05**, recorded `person_identity_stitch`). |
-| User Stats page | `app/(main)/marketing/contacts/[id]` (DetailTemplate): stats + a **Grouped records** panel + **the path through the system** — one timeline grouped into funnel phases (Arrival → Outreach → In the app → CRM), built by the pure, tested `lib/crm/journey.ts`. The contacts list is searchable (`searchContacts`) and every row links here. |
-| Invite to join | `app/(main)/marketing/contacts/[id]/actions.ts#inviteContactToJoin` — reuses the gated one-time scan-intro (ADR-099). No capturing steward ⇒ no intro to send, by design. |
+| User Stats page | `app/(main)/marketing/contacts/[id]` (DetailTemplate): stats + a **Grouped records** panel + **the path through the system**: one timeline grouped into funnel phases (Arrival → Outreach → In the app → CRM), built by the pure, tested `lib/crm/journey.ts`. The contacts list is searchable (`searchContacts`) and every row links here. |
+| Invite to join | `app/(main)/marketing/contacts/[id]/actions.ts#inviteContactToJoin`: reuses the gated one-time scan-intro (ADR-099). No capturing steward ⇒ no intro to send, by design. |
 
 ### Searchable by connection + locality (not blanket exposure)
 
 Members are searchable community-wide as before. A non-member **capture** surfaces in another
-viewer's app-wide search **only** via one rule — `lib/crm/visibility.ts#canViewLead` (unit-tested):
+viewer's app-wide search **only** via one rule, `lib/crm/visibility.ts#canViewLead` (unit-tested):
 
-- **`owner`** — the viewer captured them (scanned the card). The unambiguous valid connection.
-- **`network_local`** — a steward set `visibility='network'` **and** the viewer shares the
+- **`owner`**: the viewer captured them (scanned the card). The unambiguous valid connection.
+- **`network_local`**: a steward set `visibility='network'` **and** the viewer shares the
   capture's locality (`city`). Locality + a deliberate share = connection.
 - Captures already linked to a member are skipped (found via the member directory, never twice).
 
-Wired surfaces — the header search overlay (`/api/search`) and the `/people` directory ("People
+Wired surfaces: the header search overlay (`/api/search`) and the `/people` directory ("People
 you've met"). **Owner** hits link to the steward's own `/connections/[id]`; **`network_local`**
 hits link to a read-only shared view (`/connections/shared/[id]`).
 
-**Cross-steward tier (ADR-132) — now live, narrowly gated.** A `network_local` capture surfaces
+**Cross-steward tier (ADR-132), now live, narrowly gated.** A `network_local` capture surfaces
 only when *all* hold:
-- the **viewer is a steward** (host+) or staff — leads aren't searched for regular members
+- the **viewer is a steward** (host+) or staff: leads aren't searched for regular members
   (`connectionsOwnerId()` gates `searchVisibleLeads(..., { includeNetwork: true })`);
 - the owner **deliberately shared** the capture (`visibility='network'`, the Network/Private
   toggle on the connection); and
 - the viewer is in the **same locality** (`city`).
 
-What's exposed is **business-card only** — name, title, company, city, website, socials, and *who
+What's exposed is **business-card only**: name, title, company, city, website, socials, and *who
 shared it*. Email, phone, notes, tags and the photo stay owner-private, so the intro routes through
 the capturing steward. The shared page re-checks all three gates server-side (it never trusts the
 search filter): steward (`connectionsOwnerId`), `visibility='network'` (`getSharedContact`), and
@@ -154,39 +154,39 @@ locality (`canViewLead`). A capture that's become a member is skipped (you find 
 
 ### Operations
 
-- ✅ **Migration applied** — `person_identity_stitch` (recorded version `20260605205151`) to
+- ✅ **Migration applied**: `person_identity_stitch` (recorded version `20260605205151`) to
   `Frequency Community` on 2026-06-05. The idempotent backfill changed **0 rows** on current data
   (the scan and signup flows already set these links), and created the three lookup indexes
   (`network_contacts_linked_contact_idx`, `…_linked_profile_idx`, `…_network_city_idx`). Re-running
   is safe. Security advisors: **no new issues** (only the pre-existing project-wide warnings, e.g.
   `auth_allow_anonymous_sign_ins`).
-- **Types:** no regen needed — additive indexes + a data backfill, no new columns. The crm/network
+- **Types:** no regen needed, additive indexes + a data backfill, no new columns. The crm/network
   tables still go through the untyped admin handle (repo convention).
 
 ## Not yet (deliberate follow-ups)
 
-- **Promotion into public/network** (`→ contacts`, link to a member `profile`) — schema hooks exist; the action is gated behind its own review since that's where leak risk concentrates.
-- `shared` (team) visibility — modelled, not yet surfaced.
-- More sources (email/calendar import) — `source` is open for it.
+- **Promotion into public/network** (`→ contacts`, link to a member `profile`): schema hooks exist; the action is gated behind its own review since that's where leak risk concentrates.
+- `shared` (team) visibility: modelled, not yet surfaced.
+- More sources (email/calendar import): `source` is open for it.
 
 ---
 
-# The Network rework (planned) — member-facing IA + the event-capture loop
+# The Network rework (planned): member-facing IA + the event-capture loop
 
 > **Decision: [ADR-154](DECISIONS.md).** Status: 📋 designed, not built. Reworks the
-> Profile Creator from a host-only steward tool into a **member-facing "Network"** product —
-> *manage the real-life people you meet* — and adds the missing **event-invite capture loop**.
+> Profile Creator from a host-only steward tool into a **member-facing "Network"** product
+> (*manage the real-life people you meet*) and adds the missing **event-invite capture loop**.
 > The data model (the three entities above) is unchanged; this is IA, an access-tier change,
 > and one new public capture surface. Build items in
 > [`ONBOARDING-BUILD-LIST.md`](ONBOARDING-BUILD-LIST.md) §5.
 
 ## In one line
 
-People should make **real-life contacts** — and keep them. Rename **Directory → Network**,
+People should make **real-life contacts**, and keep them. Rename **Directory → Network**,
 fold *your personal contacts* into it as a **member** feature (today it's host-gated), and let
 a member grow that library by **inviting people to events**: their custom QR opens an RSVP
 contact form, and the new contact lands in the member's personal library, the event's guest
-list, and the marketing DB — *with permission observed at every hop*.
+list, and the marketing DB, *with permission observed at every hop*.
 
 ## The three entities (unchanged) and the one privacy rule
 
@@ -202,30 +202,30 @@ mailable (`subscribed`) **only when the person confirms an email or signs up for
 Frequency**. Promotion `network_contacts → contacts` is the deliberate, consent-gated act
 (ADR-099); it never happens silently.
 
-## IA — the Network tab (two faces, member-tier)
+## IA: the Network tab (two faces, member-tier)
 
 `Directory` (`/people`) and `Profiles`/`Connections` (`/connections`) **merge under one rail
 item: `Network`** (`lib/nav-areas.ts`, section **Community**, `defaultAccess: 'member'`).
 
 | Face | What | Source | Who |
 |---|---|---|---|
-| **Directory** | the full searchable directory — members **+ people you've met** | `profiles` + your `network_contacts` + `canViewLead` | all members |
-| **Contacts** (your library) | your personal CRM — scanned cards, posters, manual+Vera, event RSVPs | `network_contacts` (owner = you) | all members |
+| **Directory** | the full searchable directory: members **+ people you've met** | `profiles` + your `network_contacts` + `canViewLead` | all members |
+| **Contacts** (your library) | your personal CRM: scanned cards, posters, manual+Vera, event RSVPs | `network_contacts` (owner = you) | all members |
 
-- **Tier change:** personal **Contacts** drop from host+/staff (ADR-098) to **member**. Safe —
+- **Tier change:** personal **Contacts** drop from host+/staff (ADR-098) to **member**. Safe:
   `network_contacts` is already owner-scoped by RLS; only the gate in `lib/connections/access.ts`
   moves. Every member gets a private contact library; the data boundary is untouched.
-- **Stays steward-gated:** the **cross-steward `network_local` sharing** (ADR-132 — surfacing a
+- **Stays steward-gated:** the **cross-steward `network_local` sharing** (ADR-132, surfacing a
   *shared* capture to other local stewards) remains host+. Members get their *own* contacts; they
   do **not** get to browse other people's captures.
 - **Stays distinct:** the steward **`/crm`** (deals pipeline over `contacts`) and **Marketing →
-  Contacts** (the marketing list) are unchanged — Network is the *personal* layer beneath them.
+  Contacts** (the marketing list) are unchanged. Network is the *personal* layer beneath them.
 
-## The headline build — the event-invite capture loop
+## The headline build: the event-invite capture loop
 
 **The missing piece.** Today RSVP is members-only (`toggleRSVP`), and QR codes point at browse
-pages. The loop the product is built around — *meet someone, invite them to your event, keep them
-as a contact* — has no surface. Build it:
+pages. The loop the product is built around (*meet someone, invite them to your event, keep them
+as a contact*) has no surface. Build it:
 
 ```
 Member promotes an event → shares their attributed code  /q/<slug>  (owner + event stamped, ADR-091/099)
@@ -242,7 +242,7 @@ Member promotes an event → shares their attributed code  /q/<slug>  (owner + e
   `network_contacts` write + `crm-sync.ts` upsert-by-email + the consent ladder (ADR-099), the
   `event_guest` acquisition-channel hint already scaffolded in `lib/qr/acquisition.ts`, and the
   AI harvest for the "how we met" note (`connections-ai.ts`).
-- **New:** the **public RSVP capture form** (non-member, no auth — like `/onboarding/beta`'s
+- **New:** the **public RSVP capture form** (non-member, no auth, like `/onboarding/beta`'s
   deferred flow, exempted in `proxy.ts`, noindexed); a per-event **`event_guests`** list (a
   non-member can RSVP to one event without an account); the **triple-write** action carrying the
   owner attribution from the code.
@@ -250,18 +250,18 @@ Member promotes an event → shares their attributed code  /q/<slug>  (owner + e
   give; the personal-library copy is the *inviter's*; the marketing copy is consent-`unknown`
   until they opt in. CAN-SPAM/RFC-8058 footer + `/u/scan`-style unsubscribe already exist.
 
-## Vera — the contact-completion assist (mostly built)
+## Vera: the contact-completion assist (mostly built)
 
-The product promise — *snap a card / poster / the person, drop a note, Vera finishes the card* —
+The product promise (*snap a card / poster / the person, drop a note, Vera finishes the card*)
 is **already live** (`lib/ai/connections-ai.ts`: Sonnet vision OCR + Haiku text assist → a
 fully-structured contact + drafted connection note + tags, all re-validated). The rework just
 **surfaces it to members** (quick-add `+` → capture) and points the same harvest at the event-RSVP
 "how we met" note. Degrades to manual entry when AI is off.
 
-## Gamification — reward the *real* connection, never the row
+## Gamification: reward the *real* connection, never the row
 
 Ride the existing **zaps = real-life/outreach** currency (`lib/zaps.ts`, `lib/engagement/currency.ts`).
-Guardrail (engine doctrine): pay for **real outcomes**, idempotent, daily-capped — *adding a row is
+Guardrail (engine doctrine): pay for **real outcomes**, idempotent, daily-capped. *Adding a row is
 not an outcome*.
 
 | Moment | Reward | Anti-farm |
