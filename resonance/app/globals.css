@@ -22,9 +22,10 @@
   --color-soft: oklch(0.8 0.012 285);
   --color-text: oklch(0.96 0.008 285);
 
-  /* Accents — semantic intent */
-  --color-pulse: oklch(0.66 0.2 300);
-  --color-pulse-strong: oklch(0.72 0.2 300);
+  /* Accents — semantic intent. Pulse derives from --venue-h (default 300) so a
+     room can re-hue its whole accent by setting one variable on its container. */
+  --color-pulse: oklch(0.66 0.2 var(--venue-h, 300));
+  --color-pulse-strong: oklch(0.72 0.2 var(--venue-h, 300));
   --color-signal: oklch(0.8 0.17 150);
   --color-spark: oklch(0.83 0.14 85);
   --color-alert: oklch(0.64 0.2 25);
@@ -64,7 +65,8 @@
   --venue-accent: oklch(0.66 0.2 var(--venue-h));
 
   --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.4), 0 8px 24px oklch(0 0 0 / 0.35);
-  --glow-pulse: 0 0 0 1px oklch(0.66 0.2 300 / 0.5), 0 0 24px oklch(0.66 0.2 300 / 0.35);
+  --glow-pulse: 0 0 0 1px oklch(0.66 0.2 var(--venue-h, 300) / 0.5),
+    0 0 24px oklch(0.66 0.2 var(--venue-h, 300) / 0.35);
   --glow-signal: 0 0 16px oklch(0.8 0.17 150 / 0.3);
 
   --dur-instant: 80ms;
@@ -118,9 +120,9 @@
 @keyframes rs-pulse-ring {
   0%,
   100% {
-    box-shadow: 0 0 0 1px var(--color-pulse), 0 0 0 0 oklch(0.66 0.2 300 / 0.45);
+    box-shadow: 0 0 0 1px var(--color-pulse), 0 0 0 0 oklch(0.66 0.2 var(--venue-h, 300) / 0.45);
   }
   50% {
-    box-shadow: 0 0 0 1px var(--color-pulse), 0 0 22px 2px oklch(0.66 0.2 300 / 0.45);
+    box-shadow: 0 0 0 1px var(--color-pulse), 0 0 22px 2px oklch(0.66 0.2 var(--venue-h, 300) / 0.45);
   }
 }

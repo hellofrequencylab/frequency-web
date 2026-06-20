@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useVenue } from "@/components/dj/useVenue";
 import { SyncedPlayer } from "@/components/sync/SyncedPlayer";
 import { computePosition } from "@/lib/sync/clock";
+import { venueHue } from "@/lib/theme/venue-hue";
 import { DecorCanvas } from "@/components/venue/DecorCanvas";
 import {
   AvatarStack,
@@ -36,9 +37,16 @@ type Venue = ReturnType<typeof useVenue>;
  */
 export function Room(props: RoomProps) {
   const v = useVenue(props.venueId, props.userId, props.name, props.avatar, props.onGameEvent);
-  if (v.venue?.mediaType === "watch") return <WatchLayout v={v} {...props} />;
-  if (v.venue?.mediaType === "lounge") return <LoungeLayout v={v} {...props} />;
-  return <DjLayout v={v} {...props} />;
+  const body =
+    v.venue?.mediaType === "watch" ? (
+      <WatchLayout v={v} {...props} />
+    ) : v.venue?.mediaType === "lounge" ? (
+      <LoungeLayout v={v} {...props} />
+    ) : (
+      <DjLayout v={v} {...props} />
+    );
+  // Re-hue the whole room's Pulse accent from the venue's theme (DESIGN.md §3.4).
+  return <div style={{ "--venue-h": venueHue(v.venue?.theme) } as React.CSSProperties}>{body}</div>;
 }
 
 /** Two-column room body: the main column and the chat rail (rail drops below on

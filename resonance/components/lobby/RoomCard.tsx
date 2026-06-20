@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { VenueSummary } from "@/lib/dj/types";
+import { venueHue } from "@/lib/theme/venue-hue";
 import { Card, Badge, LiveBadge, Pill } from "@/components/ui";
 
 /**
@@ -22,7 +23,11 @@ export function RoomCard({ venue: v }: { venue: VenueSummary }) {
   const isLive = v.here > 0 || live;
 
   return (
-    <Card glow={isLive} className="flex flex-col gap-3">
+    <Card
+      glow={isLive}
+      className="flex flex-col gap-3"
+      style={{ "--venue-h": venueHue(v.theme) } as React.CSSProperties}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link

@@ -107,15 +107,18 @@ this repo) uses it, so tokens compile straight through with no preprocessing.
 On-accent text is `--ink-base` (dark) for `--signal`/`--spark` (light accents) and
 `--text` (light) on `--pulse`. All pairings are validated in §8.
 
-### 3.4 Per-venue and per-tenant theming
+### 3.4 Per-venue and per-tenant theming ✅
 
-A venue or host tenant supplies **one hue** (`--venue-h`, default 300). Derived accents
-recompute from it in OKLCH, so a Synthwave room glows magenta and a Forest room glows green
-with identical contrast. This reuses the existing `venues.theme` field and the avatar color
-palette from §9.
+A venue or host tenant supplies **one hue** (`--venue-h`, default 300). `--pulse`,
+`--pulse-strong`, and `--glow-pulse` all derive from it in OKLCH, so a Synthwave room glows
+magenta and a Forest room glows green with identical contrast. `lib/theme/venue-hue.ts` maps
+the existing `venues.theme` string to a hue (named themes get hand-picked hues; anything else
+hashes deterministically), and the Room (and each lobby `RoomCard`) set `--venue-h` on their
+container. Because the token's `var()` resolves at the point of use, one variable re-hues the
+whole subtree with no per-component work.
 
 ```css
---venue-accent: oklch(0.66 0.20 var(--venue-h));
+--color-pulse: oklch(0.66 0.20 var(--venue-h, 300)); /* re-hues by container */
 ```
 
 ### 3.5 Light mode (⬜ later)
@@ -309,7 +312,7 @@ by screen, behind the same routes, so nothing breaks.
 | **C. Shell** ✅ | App Shell, top bar, `NowBar`, mobile tab bar | Navigation |
 | **D. Core screens** ✅ | Home · Lobby (+`RoomCard`) · Room (DJ/Watch/Lounge on the kit: Stage glow + roster + ChatRail) | The product's spine |
 | **E. Breadth** 🔨 | Discover ✅ · Events ✅ · Market ✅ · Earnings ✅ · Account ✅ · Moderation ✅ · Spatial + Profile ⬜ | Most coverage |
-| **F. Polish** ⬜ | Motion pass, APCA audit, responsive QA, per-venue theming, optional light mode | Ship-quality |
+| **F. Polish** 🔨 | Per-venue theming ✅ (`lib/theme/venue-hue` -> `--venue-h`) · motion/APCA/responsive QA + light mode ⬜ (need live QA) | Ship-quality |
 
 Each step is shippable, verified (tsc/eslint/test/build), and gated like every other section
 in `BUILD-PLAN.md`. `/dev/style` renders every token; `/dev/kit` renders every component live.
