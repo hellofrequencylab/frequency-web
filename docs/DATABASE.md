@@ -285,8 +285,12 @@ as today**.
 > SELECT policy `can_view_space_content(space_id)` that ANDs onto its existing permissive policy. The
 > `can_view_space_content` SECURITY DEFINER helper is true for unpartitioned rows, network/unset spaces,
 > or the owner/active-member of a Private space, so **a Private space's content is hidden from
-> non-members at the DB layer** while network/root content reads exactly as before. WRITE isolation,
-> the layout infra (`pages`/`page_settings`), and child tables are deferred follow-ups.
+> non-members at the DB layer** while network/root content reads exactly as before. A companion
+> **write-isolation** guard (ADR-329, migration `20260711100000`) adds `AS RESTRICTIVE`
+> INSERT/UPDATE/DELETE policies via `can_write_space_content(space_id)` (null / root / owner /
+> active editor+), so a writer can only create, alter, or move content in a Space they control;
+> community (root) authoring is unchanged. The layout infra (`pages`/`page_settings`) and child
+> tables (rsvps/blocks) are deferred follow-ups.
 
 > **Profile copy columns** (ADR-324, migration `20260711030000_spaces_about_tagline.sql`): `about text`
 > (the long profile bio rendered by the `entity-about` module) and `tagline text` (the one-line hero
