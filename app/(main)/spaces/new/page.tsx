@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
-import { blueprintForType } from '@/lib/spaces/blueprints'
-import { DIRECTORY_TYPES } from '@/components/spaces/space-type'
+import { provisionableTypes } from '@/lib/spaces/blueprints'
 import { CreateSpaceForm, type SpaceTypeChoice } from './create-space-form'
 
 // CREATE A SPACE — the Focus compose surface (ENTITY-SPACES-BUILD Wave B, Epic 1.6). A centered,
@@ -10,9 +9,11 @@ import { CreateSpaceForm, type SpaceTypeChoice } from './create-space-form'
 // authenticated member fills type / name / handle / brand name / visibility; the createSpace action
 // stands up the Space and redirects here to the owner settings surface.
 //
-// The TYPE choices are the role types that have a registered blueprint — derived at render from the
-// canonical type map filtered through blueprintForType, so the wizard auto-includes every wired
-// role (no hardcoded type list) and never offers a type the profile shell can't render.
+// The TYPE choices are the role types that have a registered blueprint, derived at render straight
+// from the blueprint registry (provisionableTypes), so the wizard auto-includes every wired role
+// (no hardcoded type list here) and never offers a type the profile shell can't render. This is the
+// single source of truth for "provisionable" (ADR-339), so Lab + Partner appear the moment their
+// blueprints register (ADMIN-05 / ADR-341), even though the public directory does not list them.
 
 export const metadata = {
   title: 'Create a space',
@@ -22,13 +23,10 @@ export const metadata = {
   robots: { index: false, follow: false },
 }
 
-/** The types a blueprint is registered for, in the canonical directory order. Auto-expands as more
- *  role blueprints are wired (lib/spaces/blueprints.ts), with no edit here. */
+/** The types a blueprint is registered for, in the canonical role order. Auto-expands as more role
+ *  blueprints are wired (lib/spaces/blueprints.ts), with no edit here. */
 function blueprintedTypes(): SpaceTypeChoice[] {
-  return DIRECTORY_TYPES.filter((t) => blueprintForType(t.value) !== null).map((t) => ({
-    value: t.value,
-    label: t.label,
-  }))
+  return provisionableTypes()
 }
 
 export default async function NewSpacePage() {

@@ -9,7 +9,9 @@ import {
   roleBadgeStyle,
 } from '@/lib/community-roles'
 import { ROLE_HIERARCHY, atLeastRole, roleRank } from '@/lib/core/roles'
-import { setViewAsRole } from '@/app/(main)/view-as-actions'
+import { setViewAsRole, previewAsEntity } from '@/app/(main)/view-as-actions'
+import { previewableEntityRoles } from '@/lib/spaces/entity-roles'
+import type { SpaceType } from '@/lib/spaces/types'
 
 // "View as a role under you" control — for every steward HOST and above. It lives at
 // the TOP of the left profile dock's slide-up menu; picking a role below your own
@@ -34,8 +36,16 @@ export function ViewAsControl({
   const [open, setOpen] = useState(false)
   const [anchor, setAnchor] = useState<{ left: number; bottom: number; width: number } | null>(null)
   const [isPending, startTransition] = useTransition()
+  // The on-voice line shown in-menu when an entity preview has no Space to land in yet (lab /
+  // partner today, or a type no networked Space has provisioned). Cleared when the menu reopens.
+  const [note, setNote] = useState<string | null>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // The provisionable entity roles, derived from the blueprint registry (never a hardcoded list),
+  // so this group stays in lockstep with the create wizard and auto-grows when ADMIN-05 wires the
+  // lab / partner blueprints. Computed once on mount (the registry is static).
+  const entityRoles = previewableEntityRoles()
 
   // Position the portal menu just above the trigger; keep it there on resize.
   function place() {
@@ -81,11 +91,30 @@ export function ViewAsControl({
     })
   }
 
+  // "Preview as entity" — an entity role only has meaning inside a Space, so the action sets the
+  // entity-preview cookie and resolves a representative networked Space of that type to route into.
+  // On success we navigate there; when no such Space exists yet, we keep the menu open and surface
+  // the on-voice note rather than erroring.
+  function chooseEntity(type: SpaceType) {
+    setNote(null)
+    startTransition(async () => {
+      const result = await previewAsEntity(type)
+      if (result.href) {
+        window.location.assign(result.href)
+        return
+      }
+      setNote(result.note ?? 'That role has no space to preview yet.')
+    })
+  }
+
   return (
     <>
       <button
         ref={triggerRef}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setNote(null)
+          setOpen((v) => !v)
+        }}
         disabled={isPending}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -147,6 +176,38 @@ export function ViewAsControl({
             <span className="text-xs text-subtle">logged out</span>
             {asVisitor && <Check className="w-3.5 h-3.5 ml-auto text-primary-strong" />}
           </button>
+
+          {/* Preview as entity — the separate SpaceType axis. An entity role only has meaning inside
+              a Space, so picking one routes into a representative space of that type (or shows a note
+              when none is on the network yet). Driven by the provisionable blueprint set, so any role
+              added to the registry shows up here automatically. */}
+          {entityRoles.length > 0 && (
+            <div className="border-t border-border mt-1 pt-1">
+              <p className="px-3 py-1.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+                Preview as entity
+              </p>
+              {entityRoles.map((role) => (
+                <button
+                  key={role.type}
+                  role="menuitem"
+                  onClick={() => chooseEntity(role.type)}
+                  disabled={isPending}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text hover:bg-surface transition-colors disabled:opacity-60"
+                >
+                  <span className="rounded-full bg-surface px-2 py-0.5 text-3xs font-semibold leading-tight text-muted">
+                    {role.label}
+                  </span>
+                  <span className="text-xs text-subtle">space</span>
+                </button>
+              ))}
+              {note && (
+                <p className="px-3 py-1.5 text-xs text-muted" role="status">
+                  {note}
+                </p>
+              )}
+            </div>
+          )}
+
           {impersonating && (
             <div className="border-t border-border mt-1 pt-1">
               <button

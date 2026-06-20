@@ -33,19 +33,29 @@ Status legend: ✅ built · ⏳ partial · 🔴 not built yet · 🅿️ parked.
   public-vs-walled axis is now the first-class `spaces.visibility` column (`network` vs `private`,
   ADR-322), distinct from the `network_connected` gamification switch in §3.
 
-> **Canonical role-type set (2026-06-20, ADR-339).** Two sources of truth had drifted: the
-> `SpaceType` union in `lib/spaces/types.ts` listed `lab`/`partner` but not `event_space`, while the
-> blueprint registry in `lib/spaces/blueprints.ts` had `event_space` but no `lab`/`partner`. They are
-> now reconciled to one contract. The **full role-type set** (every value a `spaces.type` row may
-> hold) is: `root`, `practitioner`, `business`, `organization`, `coaching`, `event_space`, `lab`,
-> `partner`. All eight are members of `SpaceType`. The **provisionable set** (a member can stand one
-> up in the create wizard, which derives its choices from the blueprint registry via
-> `blueprintForType`) is the subset with a registered blueprint: `practitioner`, `business`,
-> `organization`, `coaching`, `event_space` (plus `root`, the platform host, which is never
-> wizard-provisioned and has no member-facing blueprint). **`lab` and `partner` stay in the union but
-> their blueprints are intentionally DEFERRED to item ADMIN-05**, so they are not yet provisionable
-> and `blueprintForType` fails closed for them. Adding a Lab or Partner blueprint is a descriptor in
-> `blueprints.ts` (the §2.10 extension point), never a removal from `SpaceType`.
+> **Canonical role-type set (2026-06-20, ADR-339; Lab + Partner provisionable 2026-06-20, ADR-341).**
+> Two sources of truth had drifted: the `SpaceType` union in `lib/spaces/types.ts` listed
+> `lab`/`partner` but not `event_space`, while the blueprint registry in `lib/spaces/blueprints.ts`
+> had `event_space` but no `lab`/`partner`. They are now reconciled to one contract. The **full
+> role-type set** (every value a `spaces.type` row may hold) is: `root`, `practitioner`, `business`,
+> `organization`, `coaching`, `event_space`, `lab`, `partner`. All eight are members of `SpaceType`.
+> The **provisionable set** (a member can stand one up in the create wizard, which derives its choices
+> from the blueprint registry via `provisionableTypes` / `blueprintForType`) is the subset with a
+> registered blueprint. As of **ADMIN-05 (ADR-341)** that subset is the full **seven** member-facing
+> roles: `practitioner`, `business`, `organization`, `coaching`, `event_space`, **`lab`**, and
+> **`partner`**. `root` is the platform host (never wizard-provisioned, no member-facing blueprint).
+> Adding any future role is a descriptor in `blueprints.ts` (the §2.10 extension point), never a
+> removal from `SpaceType`.
+>
+> **Lab + Partner blueprints (ADR-341).** A **Lab** is a physical Frequency place (entity partition
+> `labs`): it leads with what's on, invites people to **Visit**, and reads on a green accent
+> (`--color-success`). A **Partner** is a brand running a Frequency loyalty program (entity partition
+> `partner`): it leads with its brand story, surfaces **Perks**, invites members to **Join**, and
+> shares the Business brand accent (`--color-broadcast`). Both compose the **universal owner four**
+> (Members / QR / CRM / Email) the settings hub already gives every Space; neither adds a
+> role-specific deep owner control in v1 (a Lab runs on the shared event / circle / QR door tools; a
+> Partner's loyalty-program engine is a later, money-adjacent phase like memberships v1). The
+> `spaces.type` CHECK already allows both values, so making them provisionable needed no migration.
 
 ---
 
