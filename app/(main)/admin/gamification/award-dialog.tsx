@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Award, Search, X, Loader2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
 import { awardAchievement, revokeAchievement } from '@/app/(main)/crew/gamification-actions'
 
 interface Achievement {
@@ -80,12 +81,14 @@ export function AwardDialog({
     )
   }
 
+  const close = () => { setOpen(false); reset() }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-surface shadow-2xl">
+    <Dialog open={open} onClose={close} ariaLabel="Award Achievement" className="max-w-md">
+      <div className="w-full rounded-2xl border border-border bg-surface shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h2 className="text-sm font-semibold text-text">Award Achievement</h2>
-          <button onClick={() => { setOpen(false); reset() }} className="p-1 rounded text-subtle hover:text-muted dark:hover:text-subtle">
+          <button onClick={close} className="p-1 rounded text-subtle hover:text-muted dark:hover:text-subtle">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -191,6 +194,6 @@ export function AwardDialog({
           )}
         </div>
       </div>
-    </div>
+    </Dialog>
   )
 }

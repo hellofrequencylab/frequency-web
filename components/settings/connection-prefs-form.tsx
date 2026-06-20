@@ -257,11 +257,11 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
         {isPending || state === 'saving' ? (
           <span className="text-muted">Saving…</span>
         ) : state === 'saved' ? (
-          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+          <span className="flex items-center gap-1.5 text-success">
             <Check className="w-3 h-3" /> Saved
           </span>
         ) : state === 'error' ? (
-          <span className="text-red-600 dark:text-red-400">
+          <span className="text-danger">
             Couldn&apos;t save{errorMsg ? ` (${errorMsg})` : ''}.
           </span>
         ) : (

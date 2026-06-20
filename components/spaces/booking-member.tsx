@@ -1,0 +1,88 @@
+import { CalendarDays } from 'lucide-react'
+import { listOpenSlots, getSpaceBookingTimezone, type OpenSlot } from '@/lib/spaces/booking'
+import { EmptyState } from '@/components/ui/empty-state'
+import { BookingPicker } from '@/components/spaces/booking-picker'
+
+// MEMBER BOOKING SURFACE (ENTITY-SPACES-SYSTEM section 2.4, booking v1). The self-fetching server
+// half of the Practitioner's Book tab: it loads the next ~14 days of OPEN slots for this Space
+// (listOpenSlots returns only open instants, never who booked), groups them by day in the Space's
+// configured timezone, and hands them to the client BookingPicker so a member can pick a time and
+// confirm. When the practitioner has not published any availability, an EmptyState names the
+// situation and the next step (follow to hear when times open). Server-first; the slot fetch sits
+// behind a <Suspense> in the caller (entity-cta) so the tab paints instantly.
+//
+// COPY: plain camp-counselor voice, no narrated feelings, no em/en dashes (CONTENT-VOICE section 10).
+// TIMEZONE: v1 displays every slot in the Space's configured IANA timezone, LABELED. Per-member tz
+// conversion is deferred.
+
+/** A day group of open slots (the local calendar date label + its slots). */
+export interface SlotDay {
+  /** A stable key (the local YYYY-MM-DD in the Space timezone). */
+  key: string
+  /** The day label, e.g. "Tuesday, June 23". */
+  label: string
+  slots: OpenSlot[]
+}
+
+/** Group open slots by their local calendar day in `timezone`, preserving ascending order. */
+export function groupSlotsByDay(slots: OpenSlot[], timezone: string): SlotDay[] {
+  const dayLabel = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
+  const dayKey = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+  const groups = new Map<string, SlotDay>()
+  for (const slot of slots) {
+    const d = new Date(slot.startsAt)
+    const key = dayKey.format(d)
+    let group = groups.get(key)
+    if (!group) {
+      group = { key, label: dayLabel.format(d), slots: [] }
+      groups.set(key, group)
+    }
+    group.slots.push(slot)
+  }
+  return [...groups.values()]
+}
+
+/** A short, friendly timezone label for the header, e.g. "EDT" or the IANA name if no short form. */
+function timezoneLabel(timezone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'short',
+    }).formatToParts(new Date())
+    return parts.find((p) => p.type === 'timeZoneName')?.value ?? timezone
+  } catch {
+    return timezone
+  }
+}
+
+export async function BookingMember({ spaceId }: { spaceId: string }) {
+  const slots = await listOpenSlots(spaceId)
+
+  if (slots.length === 0) {
+    return (
+      <EmptyState
+        icon={CalendarDays}
+        title="No open times yet."
+        description="This practitioner has not posted availability. Follow this space to hear the moment new times open."
+      />
+    )
+  }
+
+  // v1 is one timezone per Space: every slot's window shares it, so we resolve it once for the whole
+  // surface and label it. listOpenSlots returns instants (no tz), so the tz comes from the lib.
+  const timezone = await getSpaceBookingTimezone(spaceId)
+  const days = groupSlotsByDay(slots, timezone)
+  const tzLabel = timezoneLabel(timezone)
+
+  return <BookingPicker spaceId={spaceId} days={days} timezone={timezone} tzLabel={tzLabel} />
+}

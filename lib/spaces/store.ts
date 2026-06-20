@@ -4,6 +4,7 @@
 // settings) live behind app-code authz like the rest of the admin surface — added with the
 // Space management UI, not here.
 
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Space, SpaceStatus, SpaceType } from './types'
 
@@ -60,14 +61,65 @@ export async function getSpaceByDomain(domain: string): Promise<Space | null> {
   return data ? mapSpace(data) : null
 }
 
-/** The Space with this slug, or null. */
-export async function getSpaceBySlug(slug: string): Promise<Space | null> {
-  const { data } = await createAdminClient()
+/** The Space with this slug, or null. REQUEST-CACHED (React.cache) keyed on the normalized slug so
+ *  the profile layout + each tab page resolve it at most once per request. The brand/visibility
+ *  columns the profile needs ride the typed COLS plus the untyped `visibility` field below. */
+export const getSpaceBySlug = cache(async (slug: string): Promise<Space | null> => {
+  const norm = slug.trim().toLowerCase()
+  if (!norm) return null
+  // `visibility` isn't in the generated DB types yet (ADR-246) — reach it via an untyped select so
+  // the profile can fail closed on Private spaces. brand_*/type ride the typed COLS.
+  const { data } = (await createAdminClient()
     .from('spaces')
-    .select(COLS)
-    .eq('slug', slug.trim().toLowerCase())
-    .maybeSingle()
-  return data ? mapSpace(data) : null
+    .select(`${COLS}, visibility`)
+    .eq('slug', norm)
+    .maybeSingle()) as { data: (SpaceRow & { visibility?: string | null }) | null }
+  if (!data) return null
+  return mapSpace(data)
+})
+
+/** A Space's `visibility` ('network' | 'private'), defaulting to 'network' when the column is
+ *  absent (pre-migration) or unset. Read alongside getSpaceBySlug so the profile can fail closed on
+ *  Private spaces a viewer may not see. */
+export async function getSpaceVisibility(slug: string): Promise<'network' | 'private'> {
+  const norm = slug.trim().toLowerCase()
+  if (!norm) return 'private'
+  try {
+    const { data } = (await createAdminClient()
+      .from('spaces')
+      .select('visibility')
+      .eq('slug', norm)
+      .maybeSingle()) as { data: { visibility?: string | null } | null }
+    return data?.visibility === 'private' ? 'private' : 'network'
+  } catch {
+    // Fail CLOSED on a read error: treat the Space as private so the gate 404s for non-members
+    // rather than briefly exposing a Private Space (matches the empty-slug branch above).
+    return 'private'
+  }
+}
+
+/**
+ * The Space with this slug, but ONLY if the viewer may see it (ENTITY-SPACES-BUILD §1 / item 1).
+ * A `network` (or unset) Space is visible to any viewer; a `private` Space resolves only for its
+ * OWNER or an active member (server-authoritative visibility, P5). Returns null when the Space is
+ * missing OR walled off from this viewer, so the route 404s identically in both cases (no
+ * existence leak). REQUEST-CACHED transitively via getSpaceBySlug.
+ */
+export async function getVisibleSpaceBySlug(
+  slug: string,
+  viewerProfileId: string | null,
+): Promise<Space | null> {
+  const space = await getSpaceBySlug(slug)
+  if (!space || space.status !== 'active') return null
+  const visibility = await getSpaceVisibility(slug)
+  if (visibility !== 'private') return space
+  // Private: only the owner or an active member sees it. Resolve membership without importing the
+  // entitlements seam (kept dependency-light): owner check + an active-member lookup.
+  if (!viewerProfileId) return null
+  if (space.ownerProfileId && space.ownerProfileId === viewerProfileId) return space
+  const { getSpaceMembership } = await import('./membership')
+  const membership = await getSpaceMembership(space.id, viewerProfileId)
+  return membership && membership.status === 'active' ? space : null
 }
 
 /** A single Space by id, or null. Used by the operator admin surface (it reads through the
@@ -100,6 +152,21 @@ export async function getRootSpace(): Promise<Space | null> {
     .maybeSingle()
   return data ? mapSpace(data) : null
 }
+
+/**
+ * The root Space's id, request-cached. The DEFAULT tenant for any space-scoped read whose
+ * caller hasn't resolved its own space yet — so single-tenant callers keep reading the root
+ * space's rows (the canary: root behaves exactly as today). FAIL-SAFE: null if the root row
+ * is missing, in which case the page-settings readers degrade to their code defaults.
+ */
+export const loadRootSpaceId = cache(async (): Promise<string | null> => {
+  try {
+    const root = await getRootSpace()
+    return root?.id ?? null
+  } catch {
+    return null
+  }
+})
 
 /**
  * Resolve the active Space for a request host: a custom-domain match wins, otherwise the

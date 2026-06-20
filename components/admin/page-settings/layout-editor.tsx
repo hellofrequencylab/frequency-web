@@ -22,7 +22,7 @@ const ROLE_LABEL: Record<ModuleRole, string> = {
 
 type ScopeChoice = 'page' | 'section' | 'global'
 
-export function LayoutEditor() {
+export function LayoutEditor({ spaceId }: { spaceId?: string }) {
   const pathname = usePathname()
   const [choice, setChoice] = useState<ScopeChoice>('page')
   const [template, setTemplate] = useState<TemplateId>('single')
@@ -55,7 +55,7 @@ export function LayoutEditor() {
 
   useEffect(() => {
     let live = true
-    getPageLayoutForEditor(scopeKey)
+    getPageLayoutForEditor(scopeKey, spaceId)
       .then((d) => {
         if (!live) return
         setTemplate(d.template)
@@ -66,7 +66,7 @@ export function LayoutEditor() {
     return () => {
       live = false
     }
-  }, [scopeKey])
+  }, [scopeKey, spaceId])
 
   function chooseScope(c: ScopeChoice) {
     if (c === choice) return
@@ -121,7 +121,7 @@ export function LayoutEditor() {
       const r = await savePageLayout(scopeKey, {
         template,
         items: items.map(({ id, enabled, role, slot }) => ({ id, enabled, role, slot })),
-      })
+      }, spaceId)
       if (isError(r)) setError(r.error)
       else {
         setSaved(true)

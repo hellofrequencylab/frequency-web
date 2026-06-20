@@ -53,13 +53,13 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
   return (
     <div className="space-y-3">
       {/* Channel header */}
-      <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
-          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Category</span>
+      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 px-4 py-3 border-b border-border bg-surface-elevated">
+          <span className="text-xs font-semibold text-muted uppercase tracking-wide">Category</span>
           {CHANNELS.map(({ key, label, Icon, disabled }) => (
             <div key={key} className="flex items-center gap-1.5 w-16 justify-center">
-              <Icon className={`w-3.5 h-3.5 ${disabled ? 'text-gray-300 dark:text-gray-700' : 'text-gray-500 dark:text-gray-400'}`} />
-              <span className={`text-xs font-semibold uppercase tracking-wide ${disabled ? 'text-gray-300 dark:text-gray-700' : 'text-gray-500 dark:text-gray-400'}`}>
+              <Icon className={`w-3.5 h-3.5 ${disabled ? 'text-subtle' : 'text-muted'}`} />
+              <span className={`text-xs font-semibold uppercase tracking-wide ${disabled ? 'text-subtle' : 'text-muted'}`}>
                 {label}
               </span>
             </div>
@@ -67,12 +67,12 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
         </div>
 
         {/* Rows */}
-        <div className="divide-y divide-gray-100/80 dark:divide-gray-800/50">
+        <div className="divide-y divide-border">
           {CATEGORIES.map(({ key, label, description }) => (
             <div key={key} className="grid grid-cols-[1fr_auto_auto_auto] gap-3 items-center px-4 py-3.5">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-50">{label}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
+                <p className="text-sm font-medium text-text">{label}</p>
+                <p className="text-xs text-muted mt-0.5">{description}</p>
               </div>
               {CHANNELS.map(({ key: channel, disabled }) => {
                 const prefKey = `${channel}_${key}` as keyof NotificationPreferences
@@ -111,11 +111,11 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
       </div>
 
       {/* Footer status */}
-      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 px-1">
+      <div className="flex items-center gap-2 text-xs text-muted px-1">
         {isPending ? (
           <span>Saving…</span>
         ) : savedAt ? (
-          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+          <span className="flex items-center gap-1.5 text-success">
             <Check className="w-3 h-3" /> Saved
           </span>
         ) : (

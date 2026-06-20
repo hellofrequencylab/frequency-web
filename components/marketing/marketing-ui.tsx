@@ -1,3 +1,23 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// INTENTIONAL marketing-only variant set (DECISION, not drift; Phase 0.5.12).
+//
+// The `Card` and `Button` exported here are a DELIBERATE parallel to the in-app
+// kit (`components/cards/entity-card.tsx` `EntityCard` + `components/ui/button.tsx`
+// `Button`). They are NOT a duplicate to consolidate away. They serve the public
+// marketing surface only, whose visual language is distinct by design:
+//
+//   · Editorial scale + the Anton display face, `shadow-pop` "pop" elevation, the
+//     warm `bg-marketing-canvas` / `bg-slat` ink bands: the splash/discover look,
+//     NOT the calm in-app community canvas.
+//   · The marketing `Button` is always a navigation (renders a `<Link>`/`<a>`),
+//     never an action button with the in-app variants/states; the marketing `Card`
+//     carries marketing tones (`soft`/`feature`/`elevated`), not entity-browse chrome.
+//
+// All colors are DAWN semantic tokens (no raw hex/palette), so a branded space still
+// re-themes these. Keep the two kits SEPARATE: in-app pages compose the kit per
+// docs/PAGE-FRAMEWORK.md; only the public marketing pages import from here.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, ChevronDown } from 'lucide-react'

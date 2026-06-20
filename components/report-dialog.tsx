@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { reportContent } from '@/app/(main)/feed/report-actions'
 import { isError } from '@/lib/action-result'
+import { Dialog } from '@/components/ui/dialog'
 
 type ReportDialogProps = {
   targetType: 'post' | 'dispatch' | 'comment' | 'member' | 'event'
@@ -21,14 +22,15 @@ const REASONS = [
 
 type ReportReason = (typeof REASONS)[number]['value']
 
-export function ReportDialog({ targetType, targetId, open, onClose }: ReportDialogProps) {
+// The content-moderation report dialog (distinct from the support `ReportDialog` in
+// components/support/report-dialog.tsx, which files support tickets). This one flags
+// a post/comment/member/event for moderator review.
+export function ContentReportDialog({ targetType, targetId, open, onClose }: ReportDialogProps) {
   const [reason, setReason] = useState<ReportReason | null>(null)
   const [details, setDetails] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-
-  if (!open) return null
 
   function handleClose() {
     setReason(null)
@@ -52,14 +54,13 @@ export function ReportDialog({ targetType, targetId, open, onClose }: ReportDial
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={handleClose}
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      ariaLabel={`Report ${targetType}`}
+      className="max-w-sm"
     >
-      <div
-        className="bg-surface rounded-2xl shadow-xl border border-border p-6 max-w-sm mx-4 w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="bg-surface rounded-2xl shadow-xl border border-border p-6 w-full">
         {submitted ? (
           <>
             <h3 className="text-sm font-semibold text-text mb-2">
@@ -143,6 +144,6 @@ export function ReportDialog({ targetType, targetId, open, onClose }: ReportDial
           </>
         )}
       </div>
-    </div>
+    </Dialog>
   )
 }

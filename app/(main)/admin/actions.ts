@@ -15,6 +15,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
 import { atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
+import { stampCircleSpaceId } from '@/lib/circles/store'
 import { assignTraining } from '@/lib/onboarding/training'
 import { markWalkthroughPending } from '@/lib/walkthroughs/progress'
 import { promotionStepsCrossed, ROLE_PROMOTION_SLUG } from '@/lib/walkthroughs/role-promotion'
@@ -234,11 +235,16 @@ export async function createCircle(fd: FormData) {
   const { data: existing } = await admin.from('circles').select('id').eq('slug', slug).maybeSingle()
   if (existing) slug = slug + '-' + Math.random().toString(36).slice(2, 5)
 
+  // Stamp the owning Space (defaults to the root space, so this single-tenant flow keeps
+  // behaving exactly as today). space_id is newer than the generated DB types — cast the
+  // payload to reach the column (ADR-246); omit the field when the root row is missing.
+  const spaceId = await stampCircleSpaceId()
   const { data: circle, error } = await admin.from('circles').insert({
     name, about, type, member_cap: cap, hub_id, status, slug,
     host_id, member_count: 0,
     ...(topical_channel_id ? { topical_channel_id } : {}),
-  }).select('id').single()
+    ...(spaceId ? { space_id: spaceId } : {}),
+  } as never).select('id').single()
   if (error) throw new Error(error.message)
 
   // The host is a member of their own circle (so they can post, log practice,

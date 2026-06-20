@@ -4,7 +4,8 @@
 // or a live model. The agent stays COPILOT-GATED: these only produce a *proposed*
 // draft; a human approves before anything sends (see executeAction in agent.ts).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { completeRaw } from '@/lib/ai/complete'
+import { aiEnabled } from '@/lib/ai/client'
 
 export const LAPSE_DAYS = 14
 
@@ -81,27 +82,29 @@ function isValidDraft(v: unknown): v is WinbackDraft {
 }
 
 // Bounded Claude drafter. Returns null (→ caller uses the deterministic fallback)
-// when there's no API key, the call errors, or the output doesn't parse to a
-// valid {subject, body}. The model only DRAFTS copy; it never sends.
+// when AI is off, the call errors, or the output doesn't parse to a valid
+// {subject, body}. The model only DRAFTS copy; it never sends. Routes through the
+// shared AI chokepoint (lib/ai/complete) so the provider/model tier is governed in
+// one place — no per-call SDK instance, no hardcoded model id (the opus tier here
+// is the same 'claude-opus-4-8' as before).
 export async function draftWinbackWithClaude(
   name: string,
-  opts: { lapseDays?: number; apiKey?: string } = {},
+  opts: { lapseDays?: number } = {},
 ): Promise<WinbackDraft | null> {
-  const apiKey = opts.apiKey ?? process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return null
+  if (!aiEnabled()) return null
 
   const lead = name?.trim() || 'there'
   const lapseDays = opts.lapseDays ?? LAPSE_DAYS
-  const client = new Anthropic({ apiKey })
 
   try {
-    const res = await client.messages.create({
-      model: 'claude-opus-4-8',
-      max_tokens: 400,
+    const res = await completeRaw({
+      tier: 'opus',
+      maxTokens: 400,
+      cacheSystem: true,
       // Simple, single-shot generation — no thinking needed. Respond with the
       // final JSON only (the prompt constrains the shape; we still parse defensively).
       thinking: { type: 'disabled' },
-      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      system: SYSTEM_PROMPT,
       messages: [
         {
           role: 'user',
@@ -109,15 +112,14 @@ export async function draftWinbackWithClaude(
         },
       ],
     })
-    const text = res.content
-      .map((b) => (b.type === 'text' ? b.text : ''))
-      .join('')
-    const parsed = extractJson(text)
+    const parsed = extractJson(res.text)
     if (isValidDraft(parsed)) {
       return { subject: parsed.subject.trim().slice(0, 120), body: parsed.body.trim() }
     }
     return null
   } catch {
+    // AI off (AiUnavailableError) or a transient failure: caller uses the
+    // deterministic fallback. The model only ever drafts; it never sends.
     return null
   }
 }

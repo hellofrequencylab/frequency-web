@@ -2,9 +2,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Users, MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { SidebarCard } from '@/components/ui/sidebar-card'
 
 // Right-rail building blocks for the Community page. Presentational +
 // server-friendly (no hooks). The page fetches the data; these only render.
+// The shared `SidebarCard` (from the kit) owns the box + header chrome; these
+// add the padded body.
 
 type OnlineMember = {
   id: string
@@ -13,33 +16,11 @@ type OnlineMember = {
   avatarUrl?: string | null
 }
 
-/** Soft bordered rail card — the shared shell for a sidebar section. */
-export function SidebarCard({
-  title,
-  count,
-  children,
-}: {
-  title: string
-  count?: number
-  children: React.ReactNode
-}) {
-  return (
-    <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-      <h2 className="mb-3 flex items-baseline gap-2 text-sm font-bold tracking-tight text-text">
-        {title}
-        {count != null && (
-          <span className="text-xs font-medium tabular-nums text-subtle">{count}</span>
-        )}
-      </h2>
-      {children}
-    </section>
-  )
-}
-
 /** "Online now" — a compact list of members currently online. */
 export function OnlineMembersCard({ members }: { members: OnlineMember[] }) {
   return (
     <SidebarCard title="Online now" count={members.length}>
+      <div className="p-4">
       {members.length === 0 ? (
         <p className="text-xs leading-relaxed text-subtle">
           No one’s online right now. Check back soon, or be the one who says hi first.
@@ -80,6 +61,7 @@ export function OnlineMembersCard({ members }: { members: OnlineMember[] }) {
           ))}
         </ul>
       )}
+      </div>
     </SidebarCard>
   )
 }
@@ -96,7 +78,7 @@ export function CommunityStatsCard({
 }) {
   return (
     <SidebarCard title="At a glance">
-      <dl className="flex flex-col gap-3">
+      <dl className="flex flex-col gap-3 p-4">
         <div className="flex items-center gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
             <Users className="h-4 w-4" />

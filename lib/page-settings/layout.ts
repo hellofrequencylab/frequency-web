@@ -152,6 +152,21 @@ export function layoutScopeChain(route: string): string[] {
   return [...new Set(chain)]
 }
 
+// ─── Space layer (Phase 0.5a, ENTITY-SPACES-BUILD §B.4) ─────────────────────────
+// page_settings is re-keyed from `route` to `(space_id, route)`, so the cascade gains a
+// top layer: `space -> route -> section -> global`. The SPACE dimension is the query
+// filter (rows belong to one space_id); within a space, the existing route/section/global
+// chain (layoutScopeChain) decides most-specific-wins. A space's own rows are read before
+// any fallback, so one space's layout can never leak into another's resolution. The root
+// space's rows ARE its own (root_id, route) rows, so the root resolves exactly as today.
+
+/** The request-cache key for a space-scoped page-settings read. Both reader caches
+ *  (loadPageSettings, loadLayoutForRoute) key on this so a layout saved for space A can
+ *  never be served from space B's cache entry (the §4.1 invisible-leak guard). */
+export function spaceCacheKey(spaceId: string, route: string): string {
+  return `${spaceId}::${route}`
+}
+
 /** True when a config carries any assignment at all (a non-default template, or any slot with
  *  order / hidden / roles set) — vs. an empty/inherited level. */
 export function hasLayoutConfig(c: LayoutConfig): boolean {

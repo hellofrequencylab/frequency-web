@@ -19,13 +19,17 @@ export async function PageModules({
   route,
   role,
   moduleIds,
+  spaceId,
 }: {
   route: string
   role?: CommunityRole
   /** Override the route's module set; defaults to moduleIdsForScope(route). */
   moduleIds?: readonly string[]
+  /** Resolve the layout for THIS space (the per-entity layer, ENTITY-SPACES-BUILD §B.4). Defaults
+   *  to the root space, so single-tenant callers (every existing surface) are unchanged. */
+  spaceId?: string | null
 }) {
-  const config = await loadLayoutForRoute(route)
+  const config = await loadLayoutForRoute(route, spaceId)
   const viewerRole = role ?? (await getViewerCommunityRole())
   const bySlot = resolveSlots(config, moduleIds ?? moduleIdsForScope(route), viewerRole)
 

@@ -217,6 +217,77 @@ ledger every dollar flow writes to (`revenue_type ∈ dues|donation|commerce|pay
 points (gems/zaps) stay separate and entity-blind. `profile_personas.entity_id` is now FK'd to
 `entities`. Full rationale: [PLATFORM-VISION](PLATFORM-VISION.md) §1, [BASELINE-ASSESSMENT](BASELINE-ASSESSMENT.md) Phase 2.
 
+**Entity Spaces (tenancy + booking; ADR-320/321/322/325; applied Phase 0-1)**
+The `spaces` row is the **tenant**. Entity-spaces Phase 0 adds the tenancy spine: a per-space
+membership table, ownership FKs on the core objects, and mode/feature-gating columns on `spaces`.
+Full design: [ENTITY-SPACES-SYSTEM.md](ENTITY-SPACES-SYSTEM.md) §4 · build/backlog:
+[ENTITY-SPACES-BUILD.md](ENTITY-SPACES-BUILD.md) Phase 0. These migrations are **applied**
+(Phase 0-1); the rollout was **expand → dual-write → backfill → contract**
+(ENTITY-SPACES-SYSTEM §4.12) so the **root space owns all pre-existing data and behaves exactly
+as today**.
+
+| Table | Status | Key columns | Tenancy |
+|---|---|---|---|
+| `space_members` | applied (ADR-320; `20260711010000`) | `space_id, profile_id, role text CHECK (viewer\|editor\|moderator\|admin), status, invited_by, created_at`; unique `(space_id, profile_id)`; `space_id`-leading index | `space_id` |
+| `space_invites` | planned (ADR-320) | `space_id, email, role, token, expires_at, accepted_at` (grant a space role by email/link without making someone network staff) | `space_id` |
+| `space_availability` | applied (ADR-325; `20260711050000`) | `space_id, weekday 0-6, start_minute/end_minute (local-midnight minutes), slot_minutes, timezone (one IANA tz per Space), created_at` (Practitioner 1:1 booking v1 weekly windows) | `space_id` |
+| `space_bookings` | applied (ADR-325; `20260711050000`) | `space_id, member_profile_id, starts_at/ends_at (UTC), status CHECK (confirmed\|cancelled), note`; partial unique `(space_id, starts_at) WHERE status=confirmed` (double-book guard); service-role RLS | `space_id` |
+| `space_membership_tiers` | applied (ADR-327; `20260711070000`) | `space_id, name, price_cents, interval CHECK (month\|year\|once), benefits jsonb, sort, is_active`; price/interval DISPLAY-ONLY in v1 (no billing); service-role RLS | `space_id` |
+| `space_memberships` | applied (ADR-327; `20260711070000`) | `space_id, member_profile_id, tier_id, status CHECK (active\|cancelled), started_at`; partial unique `(space_id, member_profile_id) WHERE status=active` (one-active guard); service-role RLS | `space_id` |
+
+> **`space_members`** (ADR-320) is the **per-space membership + authorization** primitive: a
+> **third, orthogonal authority axis**, distinct from the **community trust ladder**
+> (`profiles.community_role`, network-wide reputation) and the **staff axis**
+> (`profiles.web_role`, global platform power). `role ∈ (viewer, editor, moderator, admin)` is the
+> per-space ladder; a person's role in space A is independent of space B (unique `(space_id,
+> profile_id)`). The space owner (`spaces.owner_profile_id`) is the implicit super-admin. The
+> capability resolver (`lib/core/access-matrix.ts`) gains "admin/editor of the owning space,"
+> mirroring the existing `host → their circles` edge; it grants **no** `web_role` power. RLS is
+> `TO authenticated` with auth functions wrapped in `(select …)`. The admin-read policy resolves
+> through the `is_space_admin(space_id)` **SECURITY DEFINER** helper (migration `20260711060000`,
+> ADR-056) so it never re-enters `space_members` RLS, eliminating the policy-recursion footgun (a
+> self-referencing subquery would otherwise raise "infinite recursion"); the helper also folds in the
+> owner, and writes stay service-role only.
+
+> **`spaces` row visibility (ADR-326, security fix):** the `spaces_read_active` SELECT policy is
+> visibility-aware: `status = 'active' and (visibility is distinct from 'private' or
+> is_space_member(id))`. Network (and unset) Spaces stay publicly readable; **Private Spaces resolve
+> at the DB layer only for the owner or an active member**, via the `is_space_member(space_id)`
+> SECURITY DEFINER helper (migration `20260711080000`, ADR-056, the same recursion-safe pattern as
+> `is_space_admin`). App reads use the service-role admin client (bypasses RLS) plus the
+> `getVisibleSpaceBySlug` gate; this policy closes the direct anon/session-client read of a Private
+> Space's metadata (the prior policy was visibility-blind).
+
+> **New `spaces` columns** (ADR-322): `visibility text CHECK (network|private)` default `'network'`,
+> the first-class public-vs-walled axis (`network` spaces appear in cross-network discovery /
+> feed / people-search; `private` = Private and White-Label modes are excluded), orthogonal to the
+> existing `network_connected` (gamification) flag; `plan text` default `'free'` (the plan label,
+> ridden on the JWT for cheap RLS reads); `entitlements jsonb NOT NULL DEFAULT '{}'`, the
+> per-space feature-gate bag (`crm`, `email`, `gamification`, `white_label`, …) so a new capability
+> is **one key, never a migration**. Defaults make every existing row a Networked, free,
+> no-add-ons space; a **mode** is a named bundle of these flags, and mode changes are flag edits,
+> not data migrations (ENTITY-SPACES-SYSTEM §1.3 to §1.5).
+
+> **`space_id` ownership FKs** (ADR-321): a nullable `space_id uuid REFERENCES spaces(id)` is added
+> to `circles`, `events`, `practices`, `journeys`/`journey_plans` (and `programs`) as the
+> **tenancy** axis. The existing `host_id` / `created_by` FKs are **kept** for authorship/audit:
+> `space_id` answers "which space owns this," they answer "who authored it." Rollout is
+> expand/contract: column nullable → app dual-writes (default = resolved space, root for legacy
+> flows) → backfill existing rows to the **root space** in batches (verify `GROUP BY space_id`) →
+> add `space_id` RLS (`TO authenticated`, `(select …)`-wrapped) + composite indexes with `space_id`
+> as the **leading column** → `NOT NULL`. Per-table contract tests assert space A cannot read/write
+> space B's rows. CRM / QR / commerce tables gain `space_id` in later phases (ENTITY-SPACES-SYSTEM
+> §4.4 to §4.9). Note: money stays **`entity_id`**-partitioned (ADR-246); `space_id` is the tenancy
+> axis, `entity_id` is the legal-money axis.
+
+> **Profile copy columns** (ADR-324, migration `20260711030000_spaces_about_tagline.sql`): `about text`
+> (the long profile bio rendered by the `entity-about` module) and `tagline text` (the one-line hero
+> subtitle + directory-card description). Both nullable; member/operator-facing copy (obey
+> CONTENT-VOICE) and the persistence target for the per-space Vera co-host drafts (`draftSpaceBio` /
+> `suggestTagline`, `lib/ai/space-copilot.ts`). The owner edits them on the `/spaces/<slug>/settings`
+> Focus surface (`updateSpaceProfile`); a Space is created via the `/spaces/new` wizard (`createSpace`,
+> which also seats the owner as a `space_members` admin). See ENTITY-SPACES-BUILD §B.6.
+
 ## The `profiles` table — universal entity record
 
 `profiles` is the single identity row for **every** entity, not just logged-in
@@ -252,6 +323,9 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
 | `community_role` | `member`, `crew`, `host`, `guide`, `mentor` (+ `admin`, `janitor` — **deprecated no-ops**, kept for enum-order stability; staff authority moved to `web_role`) |
 | `season_rank_enum` | `ghost`, `echo`, `signal`, `beacon`, `conduit`, `luminary` (renamed 2026 — see docs/NAMING.md; migration `20260613000030`; declaration order is load-bearing for `lifetime_rank`) |
 | `web_role` | `none`, `admin`, `janitor` (`text` + CHECK, not a PG enum — migration `20260613000050`) |
+| `space_members.role` | `viewer`, `editor`, `moderator`, `admin` (`text` + CHECK; per-space role ladder, ADR-320; migration `20260711010000_space_members.sql`) |
+| `spaces.visibility` | `network`, `private` (`text` + CHECK, default `network`; public-vs-walled axis, ADR-322; migration `20260711000000_spaces_visibility_plan_entitlements.sql`) |
+| `spaces.type` | `root`, `practitioner`, `business`, `organization`, `coaching`, `event_space`, `lab`, `partner` (`text` + CHECK; the role axis that selects a profile blueprint, ADR-323; `event_space` added in migration `20260711040000_spaces_type_event_space.sql`, ADR-325) |
 | `practice_tiers.tier` | `initiate`, `adept`, `master` (`text` + CHECK; renamed 2026 — see docs/NAMING.md; migration `20260613000020`) |
 | `circle_type` | `in-person`, `online` |
 | `group_status` | `forming`, `active`, `inactive`, `archived` |

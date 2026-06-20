@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -34,8 +33,9 @@ import { getMemberSignature } from '@/lib/frequency-signature-data'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
 import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
-import { connectUrl } from '@/lib/qr/links'
-import { ProfileShareDisclosure } from './profile-share-disclosure'
+import { DetailTemplate } from '@/components/templates'
+import { ProfileCover } from '@/components/profile/profile-cover'
+import { ProfileAvatar } from '@/components/profile/profile-avatar'
 
 export default async function ProfilePage({
   params,
@@ -217,29 +217,13 @@ export default async function ProfilePage({
     .sort((a, b) => Number(b.earned) - Number(a.earned) || b.ratio - a.ratio)
   const rewardsEarned = rewards.filter((r) => r.earned).length
 
-  // The absolute profile URL the QR encodes + the page route, for the owner's
-  // "QR & Links" disclosure (PageShareKit) and the vCard download.
-  const profileUrl = connectUrl(profile.handle as string)
+  // The page route (used for the vCard "Save contact" download when the member enabled
+  // a contact card). The profile QR + share link is supplied by the DetailTemplate's
+  // own PageAdminBar (the framework "Share" panel for /people/<handle>), so the page no
+  // longer builds its own QR/links disclosure.
   const profilePath = `/people/${profile.handle as string}`
-  const vcardHref = vcardEnabled ? `${profilePath}/vcard` : null
 
-  // The large overlapping hero avatar (social-profile convention): pulled up over
-  // the cover with a negative margin, ring-4 so it reads as a cut-out.
-  const avatarNode = profile.avatar_url ? (
-    <Image
-      src={profile.avatar_url}
-      alt={profile.display_name}
-      width={128}
-      height={128}
-      className={`h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover ring-4 ring-surface ${isDemo ? 'grayscale-[0.5]' : ''}`}
-    />
-  ) : (
-    <span className="flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full bg-primary-bg text-primary-strong text-4xl font-semibold ring-4 ring-surface">
-      {initials}
-    </span>
-  )
-
-  // Badges — shared by the hero identity block.
+  // Badges — shared by the Detail identity band.
   const badges = (
     <span className="flex items-center gap-2 flex-wrap">
       {/* The system voice (Vera, ADR-231) shows "Moderator" — never the web role. */}
@@ -252,17 +236,29 @@ export default async function ProfilePage({
     </span>
   )
 
-  // The relocated action row — same controls + gating as before, just moved into
-  // the hero. Owner gets Edit Profile + the QR & Links disclosure; a signed-in
-  // non-owner gets the full friend/contact/message/tip/award/block/moderate set.
+  // The Detail band's action slot — same controls + gating as before. The owner gets
+  // Edit Profile (and a contact-card download when they enabled one); the profile QR +
+  // share link now live in the band's own "Share" panel (PageAdminBar). A signed-in
+  // non-owner gets the full friend/contact/message/tip/block/moderate set.
   const ownerActions = (
-    <Link
-      href="/settings/profile"
-      className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-    >
-      <Pencil className="h-3 w-3" />
-      Edit Profile
-    </Link>
+    <>
+      <Link
+        href="/settings/profile"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        Edit profile
+      </Link>
+      {vcardEnabled && (
+        <a
+          href={`${profilePath}/vcard`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <Contact className="h-3.5 w-3.5" />
+          Save contact
+        </a>
+      )}
+    </>
   )
 
   const viewerActions = user ? (
@@ -302,11 +298,14 @@ export default async function ProfilePage({
     </>
   ) : null
 
-  // The page renders its own hero (cover + identity + actions) and its own
-  // UnderlineTabs, so it does NOT use DetailTemplate's empty header — that stacked a
-  // redundant "Directory" back link + the operator "Settings" bar on top of the app
-  // shell's breadcrumb and beside the new Edit Profile / QR & Links. Bare fragment;
-  // the shell's content column provides the width + the "Directory > handle" crumb.
+  // ── The profile IS the Detail template (PAGE-FRAMEWORK §3, Template C; the
+  // reference entity-profile composition, ENTITY-SPACES-BUILD §A.4). The context band
+  // carries identity (avatar + name) · meta · badges · actions; its own PageAdminBar
+  // draws the closing rule and the framework "Share" panel (profile QR + link). The
+  // body below is a 2/3 content column beside a 1/3 info column, all composed from kit
+  // primitives — no hand-rolled header, no raw <h1>. The global community rail stays
+  // put beyond the body (page-chrome keeps profiles 'global'); the body splits at xl so
+  // it never cramps against that rail, stacking the info column up top below xl.
   return (
     <>
       {tippedCents !== null && (
@@ -316,66 +315,37 @@ export default async function ProfilePage({
         </div>
       )}
 
-      {/* ── HERO — cover + overlapping avatar + identity + actions (ADR-173, moved
-          into the body so the top profile information rides under the header image). ── */}
-      <section className="mb-6">
-        {/* Cover — the member's header image when set, else the default gradient. */}
-        <div className="relative h-28 sm:h-52 overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-signal to-signal-strong">
-          {headerImageUrl ? (
-            <Image fill sizes="100vw" src={headerImageUrl} alt="" className={`object-cover ${isDemo ? 'grayscale-[0.5]' : ''}`} />
-          ) : (
-            <div className="absolute inset-0 bg-[url('/images/hero.jpg')] bg-cover bg-center opacity-30 mix-blend-overlay" />
-          )}
-        </div>
-
-        {/* Identity + actions. The avatar overlaps the cover by ~50%. */}
-        <div className="flex flex-col gap-4 px-1 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <div className="relative z-10 -mt-12 sm:-mt-14">{avatarNode}</div>
-            <div className="mt-3 flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-bold text-text break-words">{profile.display_name}</h1>
-              {badges}
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-              <span className="font-medium">@{profile.handle as string}</span>
-              {regionName && (
-                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
-              )}
-              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
-              {circles.length > 0 && (
-                <Link
-                  href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
-                  className="flex items-center gap-1 transition-colors hover:text-text"
-                >
-                  <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
-                </Link>
-              )}
-            </div>
+      <DetailTemplate
+        hero={<ProfileCover imageUrl={headerImageUrl} dimmed={isDemo} />}
+        title={
+          <span className="inline-flex items-center gap-3 align-middle">
+            <ProfileAvatar src={profile.avatar_url} name={profile.display_name} initials={initials} dimmed={isDemo} />
+            <span className="min-w-0 break-words">{profile.display_name}</span>
+          </span>
+        }
+        badges={badges}
+        subtitle={
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span className="font-medium">@{profile.handle as string}</span>
+            {regionName && (
+              <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
+            )}
+            <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
+            {circles.length > 0 && (
+              <Link
+                href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
+                className="flex items-center gap-1 transition-colors hover:text-text"
+              >
+                <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
+              </Link>
+            )}
           </div>
-
-          {/* Actions — right-aligned on sm+, below identity on mobile. */}
-          <div className="flex items-center gap-2 flex-wrap sm:shrink-0 sm:justify-end">
-            {isOwner ? ownerActions : viewerActions}
-          </div>
-        </div>
-
-        {/* The rule that closes the hero. For the owner the "QR & Links" disclosure
-            rides ON this rule as a single text link (its panel opens into the body
-            below); everyone else just gets the plain divider. */}
-        {isOwner ? (
-          <div className="mt-5 px-1">
-            <ProfileShareDisclosure url={profileUrl} pathname={profilePath} vcardHref={vcardHref} />
-          </div>
-        ) : (
-          <hr className="mt-5 border-border" />
-        )}
-      </section>
-
-      {/* ── BODY — a 2/3 content area beside a 1/3 tiled info sidebar; the site's
-          global right rail stays put beyond it (page-chrome keeps profiles 'global').
-          The sidebar tiles list Standing, Frequency Signature, then Achievements; the
-          content carries bio + composer + timeline. Splits at xl so the interior never
-          cramps against the global rail; below xl the sidebar stacks up top. ── */}
+        }
+        actions={isOwner ? ownerActions : viewerActions}
+      >
+      {/* ── BODY — a 2/3 content area beside a 1/3 tiled info column. The content
+          carries bio + the relationship panels + composer + timeline; the info column
+          lists Standing, Frequency Signature, then Achievements. ── */}
       <div className="grid gap-6 xl:grid-cols-3">
         {/* CONTENT (2/3) — bio, practice, the relationship panels, composer, timeline. */}
         <div className="order-2 min-w-0 space-y-6 xl:order-1 xl:col-span-2">
@@ -493,6 +463,7 @@ export default async function ProfilePage({
           </div>
         </aside>
       </div>
+      </DetailTemplate>
     </>
   )
 }

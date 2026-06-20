@@ -3,16 +3,18 @@
 // a staff checklist. Propose-only — never commits or merges (ADR-041/028).
 // Runs in .github/workflows/help-autodoc.yml.
 //
-// Reuses only dependency-free lib modules (so Node type-stripping resolves them)
-// and calls Anthropic directly rather than importing lib/ai/complete (which has
-// extensionless internal imports).
+// Reuses only dependency-free lib modules (so Node type-stripping resolves them).
+// Routes the model call through the shared client (lib/ai/client) so there is no
+// per-call `new Anthropic` and the gateway seam applies here too. It does NOT import
+// lib/ai/complete (whose internal `@/` imports are extensionless and don't resolve
+// under --experimental-strip-types); client.ts only imports the SDK, so it's safe.
 
 import { readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
-import Anthropic from '@anthropic-ai/sdk'
 import { getAllCategories } from '../lib/help/content.ts'
 import { FEATURE_KEYS } from '../lib/help/feature-keys.ts'
 import { affectedArticles } from '../lib/help/drift.ts'
+import { getAnthropic, aiEnabled } from '../lib/ai/client.ts'
 import { MODELS } from '../lib/ai/models.ts'
 import {
   buildAutodocMessages,
@@ -102,10 +104,9 @@ async function main() {
   const articles: AutodocArticle[] = affected.map((a) => ({ category: a.category, slug: a.slug, title: a.title, body: a.body }))
 
   let items
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (apiKey) {
+  const client = aiEnabled() ? getAnthropic() : null
+  if (client) {
     try {
-      const client = new Anthropic({ apiKey })
       const { system, messages } = buildAutodocMessages(files, articles)
       const res = await client.messages.create({ model: MODELS.haiku, max_tokens: 800, system, messages })
       const text = res.content.map((b) => (b.type === 'text' ? b.text : '')).join('')

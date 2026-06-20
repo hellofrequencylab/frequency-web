@@ -54,7 +54,12 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onDismiss()
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
   }, [onDismiss])
 
   const isJourney = milestone.kind === 'journey'

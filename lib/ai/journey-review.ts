@@ -17,8 +17,9 @@
 
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import Anthropic from '@anthropic-ai/sdk'
-import { getAnthropic } from './client'
+import type Anthropic from '@anthropic-ai/sdk'
+import { completeRaw } from './complete'
+import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage, aiAvailable, featureOverBudget } from './usage'
@@ -228,8 +229,7 @@ export async function reviewJourneyForLibrary(planId: string): Promise<JourneyRe
     ])
   }
 
-  const client = getAnthropic()
-  if (!client) {
+  if (!aiEnabled()) {
     return pendingReview(["Vera's review isn't available right now. Your Journey is still live. Try again later."])
   }
 
@@ -261,23 +261,23 @@ export async function reviewJourneyForLibrary(planId: string): Promise<JourneyRe
   //    coaching on-voice, and the system prompt is cached (it's large + stable across reviews).
   const system = withVoice(SYSTEM_TEMPLATE.replace('{{RUBRIC}}', await getRubricText()))
   try {
-    const res = await client.messages.create({
-      model: MODELS.opus,
-      max_tokens: 1200,
+    const res = await completeRaw({
+      tier: 'opus',
+      maxTokens: 1200,
       thinking: { type: 'disabled' },
-      system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+      cacheSystem: true,
+      system,
       tools: [TOOL],
-      tool_choice: { type: 'tool', name: TOOL_NAME },
+      toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [
         { role: 'user', content: `Review this member-built Journey and call ${TOOL_NAME}:\n\n${content}` },
       ],
     })
-    const usage = { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
     void recordAiUsage({
       feature: REVIEW_FEATURE,
       model: MODELS.opus,
-      usage,
-      costUsd: estimateCostUsd('opus', usage),
+      usage: res.usage,
+      costUsd: estimateCostUsd('opus', res.usage),
     })
 
     const block = res.content.find(
@@ -291,6 +291,7 @@ export async function reviewJourneyForLibrary(planId: string): Promise<JourneyRe
     }
     return verdict
   } catch {
+    // AiUnavailableError or any transient failure: fail closed to a pending verdict.
     return pendingReview([
       "Vera's review hit a snag. Your Journey is live in the library. Submit it for review again to count toward rank.",
     ])
