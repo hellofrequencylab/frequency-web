@@ -4,24 +4,18 @@
 // Runs in .github/workflows/help-autodoc.yml.
 //
 // Reuses only dependency-free lib modules (so Node type-stripping resolves them).
-// Routes the model call through the shared chokepoint (lib/ai/complete) — the single
-// seam every other call goes through — so there is no per-call `new Anthropic`, the
-// gateway/tiering doctrine applies here too, and spend is measured in one place.
-// complete.ts and its whole chain (client.ts, models.ts, budget.ts) import only the
-// SDK and relative `./` modules, so they resolve cleanly under --experimental-strip-types.
-// We deliberately do NOT call recordAiUsage here: it pulls in lib/supabase/admin via
-// extensionless `@/` imports that the type-stripping runner can't resolve, and the DB
-// usage ledger isn't reachable from CI anyway. Instead we log the per-run cost to the
-// CI console (the CI-appropriate ledger). completeText returns the cost from the same
-// budget math the ledger uses, so the number is consistent with the in-app ledger.
+// Routes the model call through the shared client (lib/ai/client) so there is no
+// per-call `new Anthropic` and the gateway seam applies here too. It does NOT import
+// lib/ai/complete (whose internal `@/` imports are extensionless and don't resolve
+// under --experimental-strip-types); client.ts only imports the SDK, so it's safe.
 
 import { readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { getAllCategories } from '../lib/help/content.ts'
 import { FEATURE_KEYS } from '../lib/help/feature-keys.ts'
 import { affectedArticles } from '../lib/help/drift.ts'
-import { aiEnabled } from '../lib/ai/client.ts'
-import { completeText, AiUnavailableError } from '../lib/ai/complete.ts'
+import { getAnthropic, aiEnabled } from '../lib/ai/client.ts'
+import { MODELS } from '../lib/ai/models.ts'
 import {
   buildAutodocMessages,
   parseAutodocResponse,
@@ -110,19 +104,16 @@ async function main() {
   const articles: AutodocArticle[] = affected.map((a) => ({ category: a.category, slug: a.slug, title: a.title, body: a.body }))
 
   let items
-  if (aiEnabled()) {
+  const client = aiEnabled() ? getAnthropic() : null
+  if (client) {
     try {
       const { system, messages } = buildAutodocMessages(files, articles)
-      // Haiku is plenty for a drift advisory, and tiering is the biggest cost lever.
-      const res = await completeText({ system, messages, tier: 'haiku', maxTokens: 800 })
-      // CI-side ledger: the chokepoint hands back the same budget-math cost the in-app
-      // usage ledger records, so spend is visible even though CI can't write to the DB.
-      console.log(`help-autodoc: $${res.costUsd.toFixed(4)} (${res.tier}, ${res.usage.inputTokens}+${res.usage.outputTokens} tok)`)
-      const parsed = parseAutodocResponse(res.text, articles)
+      const res = await client.messages.create({ model: MODELS.haiku, max_tokens: 800, system, messages })
+      const text = res.content.map((b) => (b.type === 'text' ? b.text : '')).join('')
+      const parsed = parseAutodocResponse(text, articles)
       items = parsed.length > 0 ? parsed : fallbackItems(articles)
     } catch (e) {
-      // AI off (AiUnavailableError) or any transient failure: fall back deterministically.
-      if (!(e instanceof AiUnavailableError)) console.error('Model review failed, falling back:', e)
+      console.error('Model review failed, falling back:', e)
       items = fallbackItems(articles)
     }
   } else {
