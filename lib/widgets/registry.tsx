@@ -21,6 +21,9 @@ import { JourneysStart } from '@/components/widgets/journeys/journeys-start'
 import { JourneysMine } from '@/components/widgets/journeys/journeys-mine'
 import { JourneysLibrary } from '@/components/widgets/journeys/journeys-library'
 import { FriendsImpact } from '@/components/widgets/friends/friends-impact'
+import { LeaderboardConsistency } from '@/components/widgets/leaderboard/leaderboard-consistency'
+import { JournalEntries } from '@/components/widgets/journal/journal-entries'
+import { LibraryReviewQueue } from '@/components/widgets/library/library-review-queue'
 import { PracticesStats } from '@/components/widgets/practices/practices-stats'
 import { PracticesActivity } from '@/components/widgets/practices/practices-activity'
 import { PracticesBalance } from '@/components/widgets/practices/practices-balance'
@@ -79,6 +82,12 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'journeys-library': JourneysLibrary,
   // Friends page (/friends) — the assignable "Your impact" section.
   'friends-impact': FriendsImpact,
+  // Leaderboard page (/crew/leaderboard) — the consistency layer.
+  'leaderboard-consistency': LeaderboardConsistency,
+  // Journal page (/journal) — the captured-moments log.
+  'journal-entries': JournalEntries,
+  // Library review queue (/library/review) — the leadership approval queue.
+  'library-review-queue': LibraryReviewQueue,
   // Practices page (/practices) — the upper personal blocks + the faceted library.
   'practices-stats': PracticesStats,
   'practices-activity': PracticesActivity,

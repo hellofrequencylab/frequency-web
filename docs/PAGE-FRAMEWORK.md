@@ -467,6 +467,24 @@ every section that is a self-contained, self-fetching block. For each one:
    `module-routes.ts`), and the page renders it via `<PageModules route="/friends" />`. The
    `mode`-dependent request/orbit/intro lists stay hand-composed.
 
+**Long-tail progress (the converted pages, newest first):**
+
+- ✅ **Batch 2 (2026-06-20):** three more member surfaces converted.
+  - `/crew/leaderboard` → the **Consistency** layer (daily practice streak + weekly rhythms) is now
+    the `leaderboard-consistency` module (`components/widgets/leaderboard/leaderboard-consistency.tsx`).
+    The collective goal, the viewer's standing band, and the individual board **stay hand-composed**:
+    each reads the `scope`/`track` `searchParams` a nested module never receives (the `/friends`
+    `mode` pattern).
+  - `/journal` → the whole interior (captured moments grouped by day, including the first-capture
+    empty) is the `journal-entries` module (`components/widgets/journal/journal-entries.tsx`).
+  - `/library/review` → the Host-gated approval queue is the `library-review-queue` module
+    (`components/widgets/library/library-review-queue.tsx`); returns `null` below Host, so the page's
+    redirect stays the real gate. **`/library` (the index) stays hand-composed:** its interior is one
+    faceted, `type`/`pillar` `searchParams`-driven grid (no `x-search` seam), not a stack of standalone
+    sections.
+- ✅ **Batch 1 (2026-06-19):** `connections/[id]`, `admin/events/[id]` (shell only); `/friends`
+  (`friends-impact`, the exemplar above).
+
 **Gate:** `pnpm tsc --noEmit && pnpm lint && pnpm test`. `lib/widgets/modules.test.ts` locks
 that every id in every route set has metadata and that sets don't leak across routes, so a
 half-wired module fails there.
