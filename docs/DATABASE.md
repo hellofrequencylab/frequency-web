@@ -279,6 +279,14 @@ as today**.
 > space B's rows. CRM / QR / commerce tables gain `space_id` in later phases (ENTITY-SPACES-SYSTEM
 > §4.4 to §4.9). Note: money stays **`entity_id`**-partitioned (ADR-246); `space_id` is the tenancy
 > axis, `entity_id` is the legal-money axis.
+>
+> **Read-isolation contract (ADR-328, migration `20260711090000`):** each of the five `space_id`-bearing
+> content tables (`circles`/`events`/`practices`/`journey_plans`/`programs`) gains an `AS RESTRICTIVE`
+> SELECT policy `can_view_space_content(space_id)` that ANDs onto its existing permissive policy. The
+> `can_view_space_content` SECURITY DEFINER helper is true for unpartitioned rows, network/unset spaces,
+> or the owner/active-member of a Private space, so **a Private space's content is hidden from
+> non-members at the DB layer** while network/root content reads exactly as before. WRITE isolation,
+> the layout infra (`pages`/`page_settings`), and child tables are deferred follow-ups.
 
 > **Profile copy columns** (ADR-324, migration `20260711030000_spaces_about_tagline.sql`): `about text`
 > (the long profile bio rendered by the `entity-about` module) and `tagline text` (the one-line hero
