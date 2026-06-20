@@ -61,6 +61,7 @@ import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, type ChromeOver
 import type { WebRole } from '@/lib/core/roles'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
+import { SettingsDrawer } from '@/components/layout/settings-drawer'
 import { MindlessProvider, useMindless } from '@/components/on-air/mindless'
 import { MovementProvider } from '@/components/on-air/movement'
 import { LotusIcon } from '@/components/on-air/icons'
@@ -1236,6 +1237,13 @@ export default function AppShell({
   // by path so it auto-resets on navigation — see the railCollapsed derivation below.
   const [railOverride, setRailOverride] = useState<{ path: string; collapsed: boolean } | null>(null)
 
+  // The shell-level settings drawer (ADR-128, rebuilt). When OPEN it takes the right
+  // slot, so the global right rail hides (D.3); when WIDENED past the threshold the
+  // left rail collapses to its mini icon column (D.4). Both flags are pushed up from
+  // SettingsDrawer (which owns open/width + persistence + the `open-settings` event).
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsWidened, setSettingsWidened] = useState(false)
+
   // Mobile right drawer (The Quest stats) — opened only from the tab bar's gem
   // control. The left side is the nav DRAWER (drawerOpen, also bottom-bar
   // triggered); the shell keeps the two mutually exclusive.
@@ -1507,6 +1515,37 @@ export default function AppShell({
                 column scrolls past. A menu taller than the window scrolls
                 INTERNALLY instead of riding the page. */}
             {showLeftRail && (
+              settingsWidened ? (
+                // Mini left rail (D.4) — when the settings drawer is WIDENED past the
+                // threshold, the left nav collapses to its icon-only column (the same
+                // `compact` render the rail already ships) so the page keeps its width.
+                // The profile footer drops to a single avatar tap-target at the bottom.
+                <aside className="hidden md:flex w-14 shrink-0 flex-col items-center">
+                  <nav className="flex-1 py-3">
+                    <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={navSections} compact />
+                  </nav>
+                  <Link
+                    href={profileHref}
+                    aria-label="Profile"
+                    title={profile.display_name}
+                    className="sticky bottom-3 mb-3 shrink-0"
+                  >
+                    {profile.avatar_url ? (
+                      <Image
+                        src={profile.avatar_url}
+                        alt={profile.display_name}
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-9 w-9 select-none items-center justify-center rounded-full bg-primary text-2xs font-bold text-on-primary">
+                        {getInitials(profile.display_name)}
+                      </span>
+                    )}
+                  </Link>
+                </aside>
+              ) : (
               <aside className="hidden md:flex w-48 shrink-0 flex-col">
                 {/* The menu + profile footer live in NORMAL FLOW and scroll WITH the page
                     (no sticky pin, no inner scrollbar): the menu rides up as you scroll and
@@ -1528,6 +1567,7 @@ export default function AppShell({
                   <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
                 </div>
               </aside>
+              )
             )}
 
             {/* Center column — an ambient dispatch ticker pinned on top, then the
@@ -1544,6 +1584,12 @@ export default function AppShell({
                 <Breadcrumbs />
                 <PageAdminProvider value={{ role: gateRole, staffRole, webRole }}>
                   {children}
+                  {/* The shell-level settings drawer (ADR-128, rebuilt). Fixed to the
+                      right edge, opens leftward on the `open-settings` event; it pushes
+                      its open/widened state up so the shell hides the right rail (D.3)
+                      and collapses the left rail to mini (D.4). Inside the provider so it
+                      reads the viewer's role / staffRole / webRole gates. */}
+                  <SettingsDrawer onOpenChange={setSettingsOpen} onWidenChange={setSettingsWidened} />
                 </PageAdminProvider>
                 {showFooter && (
                   <MemberFooter role={gateRole} staffRole={staffRole} navAccess={navAccess} />
@@ -1556,7 +1602,7 @@ export default function AppShell({
                 rail's top widgets scroll up and out, bringing the stats dock up
                 into view as you near the end; its left border is a full-height
                 divider. */}
-            {showSidebar && (
+            {showSidebar && !settingsOpen && (
               railCollapsed ? (
                 // Mini rail — the global community rail collapsed to a thin strip. It shows ICONS
                 // for the rail's items (the Quest stats); clicking any reopens the rail. The
