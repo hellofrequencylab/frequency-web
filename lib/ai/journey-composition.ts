@@ -14,9 +14,11 @@ import { completeRaw } from './complete'
 import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
-import { recordAiUsage } from './usage'
+import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
 import { withJourneyShape } from './journey-shape'
+
+const FEATURE = 'journey-composition'
 
 export type ComposePillar = 'mind' | 'body' | 'spirit' | 'expression'
 export const COMPOSE_PILLARS: ComposePillar[] = ['mind', 'body', 'spirit', 'expression']
@@ -119,6 +121,9 @@ export async function draftJourneyComposition(input: {
   anchorTitle?: string
 }): Promise<JourneyComposition | null> {
   if (!aiEnabled()) return null
+  // Per-feature daily cap (lib/ai/budget.ts): this is an Opus path, so a hard ceiling matters most
+  // here. Over budget => fall back to the empty shape, never bill on.
+  if (await featureOverBudget(FEATURE)) return null
   // Roomy cap: the description can carry the author's uploaded course outline (ADR-302), which we
   // want Vera to read in full rather than truncate to a couple of sentences.
   const description = input.description.trim().slice(0, 8000)
@@ -180,7 +185,7 @@ export async function draftJourneyComposition(input: {
       messages: [{ role: 'user', content: userText }],
     })
     void recordAiUsage({
-      feature: 'journey-composition',
+      feature: FEATURE,
       model: MODELS.opus,
       usage: res.usage,
       costUsd: estimateCostUsd('opus', res.usage),

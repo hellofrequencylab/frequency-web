@@ -22,16 +22,38 @@ export function withinBudget(spentUsd: number, projectedUsd: number, capUsd: num
 }
 
 // Per-feature daily spend caps (USD). A hard ceiling per surface so a runaway
-// loop halts itself; tuned conservatively until real usage data exists.
+// loop halts itself; tuned conservatively until real usage data exists. EVERY
+// feature key that calls recordAiUsage MUST appear here — an unregistered key
+// silently inherits the $1 dailyCapFor fallback, which is too loose for an Opus
+// path and too tight for a high-volume one. Caps scale with the surface's tier
+// (Haiku cheapest, Sonnet mid, Opus priciest) and its expected volume.
 export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'help-search': 5,
   'feature-posts': 2,
-  'connection-scan': 3,   // vision OCR of cards/posters (Sonnet) — the costlier surface
-  'connection-assist': 1, // text-only Vera assist on manual entry (Haiku)
-  'room-search': 1,       // semantic search over room history (free embeddings; cap is a safety net)
-  'vera-chat': 5,         // Vera's live companion loop (Haiku, high-volume member-facing)
-  'journey-review': 3,    // Vera's rank quality gate on member-built Journeys (Opus; low-volume, fail-closed)
-  'space-copilot': 2,     // per-Space owner profile drafting (bio/tagline/offering blurb, Haiku)
+  'connection-scan': 3,        // vision OCR of cards/posters (Sonnet) — the costlier surface
+  'connection-assist': 1,      // text-only Vera assist on manual entry (Haiku)
+  'room-search': 1,            // semantic search over room history (free embeddings; cap is a safety net)
+  'vera-chat': 5,              // Vera's live companion loop (Haiku, high-volume member-facing)
+  'journey-review': 3,         // Vera's rank quality gate on member-built Journeys (Opus; low-volume, fail-closed)
+  'space-copilot': 2,          // per-Space owner profile drafting (bio/tagline/offering blurb, Haiku)
+  // ── Journey builder (member-facing, low-volume authoring) ─────────────────────────────────────
+  'journey-spark': 3,          // draft a Journey's identity + weekly arc (Sonnet; structured, on-demand)
+  'journey-composition': 4,    // compose a balanced four-Pillar week (Opus; richer reasoning, low-volume)
+  'journey-edit': 4,           // apply plain-language edits to a built Journey (Opus; low-volume, fail-safe)
+  'journey-slot-coaching': 1,  // one short coaching line per practice slot (Haiku; tiny, on-demand)
+  // ── Circle / practice wizards (member-facing, one-shot drafts) ────────────────────────────────
+  'circle-create': 1,          // suggest a circle name + about blurb (Haiku; one short draft per start)
+  'practice-claim': 1,         // personalize a claimed practice template (Haiku; one short draft)
+  // ── Events (poster scan is Sonnet vision — the costliest of this group) ───────────────────────
+  'event-poster-scan': 4,      // vision OCR of an event poster, plus the text assist (Sonnet vision)
+  'event-blurb': 2,            // one "why you'd vibe" line per browse (Haiku; cached per day per pairing)
+  // ── Operator / admin + cron surfaces (Haiku, internal) ────────────────────────────────────────
+  'poster-observer': 2,        // admin moderation read on flagged poster events (Haiku; low-volume)
+  'creator-tips': 2,           // admin creator-coaching analysis (Haiku; low-volume)
+  'vera-memory': 3,            // cron memory compression across many members (Haiku; batched volume)
+  'vera-dispatch': 2,          // Journey/prompt dispatch copy (Haiku; per-send, budget-gated)
+  'studio': 2,                 // Studio recommendation drafting (Haiku; operator-facing)
+  'studio-winback': 1,         // lapsed-member win-back draft (Haiku; low-volume, human-approved)
 }
 
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {

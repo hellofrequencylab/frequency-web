@@ -9,9 +9,11 @@ import { completeRaw } from './complete'
 import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
-import { recordAiUsage } from './usage'
+import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
 import { COMPOSE_PILLARS, type ComposePillar } from './journey-composition'
+
+const FEATURE = 'journey-edit'
 
 /** The Journey as Vera sees it for editing. */
 export interface JourneyForEdit {
@@ -79,6 +81,9 @@ export async function planJourneyEdits(input: {
   profileId?: string | null
 }): Promise<JourneyEditOp[] | null> {
   if (!aiEnabled()) return null
+  // Per-feature daily cap (lib/ai/budget.ts): another Opus path. Over budget => return null, so the
+  // action leaves the Journey untouched (no edits applied), never bill on.
+  if (await featureOverBudget(FEATURE)) return null
   const request = input.request.trim().slice(0, 1000)
   if (!request) return null
 
@@ -107,7 +112,7 @@ export async function planJourneyEdits(input: {
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
     })
-    void recordAiUsage({ feature: 'journey-edit', model: MODELS.opus, usage: res.usage, costUsd: estimateCostUsd('opus', res.usage), profileId: input.profileId ?? null })
+    void recordAiUsage({ feature: FEATURE, model: MODELS.opus, usage: res.usage, costUsd: estimateCostUsd('opus', res.usage), profileId: input.profileId ?? null })
     const block = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME)
     return block ? coerce(block.input) : null
   } catch {

@@ -39,6 +39,11 @@ export const DAILY_SEND_CAP = 500
  *  attempt an unbounded batch (the daily cap still applies across calls). */
 const MAX_RECIPIENTS_PER_CALL = 1000
 
+/** How often (in accepted sends) the loop re-reads the live daily count, so concurrent sends can't
+ *  each blow the cap. A small window bounds the worst-case overshoot to ~RECHECK_EVERY per racing call
+ *  while keeping the extra count reads cheap. */
+const RECHECK_EVERY = 25
+
 /** The token a caller puts in the email body where the PER-RECIPIENT unsubscribe link belongs. The
  *  send loop replaces every occurrence with that recipient's own space-scoped unsubscribe URL before
  *  sending, so a single rendered `html` yields a correct one-click link for each person (the RFC 8058
@@ -289,10 +294,11 @@ export async function sendSpaceCampaign(
     return fail('Add at least one valid recipient before sending.')
   }
 
-  // (c) DAILY CAP: how many more may this Space send today?
-  const sentToday = await countTodaySends(spaceId)
-  const remaining = DAILY_SEND_CAP - sentToday
-  if (remaining <= 0) {
+  // (c) DAILY CAP: how many more may this Space send today? countTodaySends reflects EVERY non-
+  // suppressed outreach_sends row for today (including ones this call writes and any CONCURRENT call's),
+  // so it is the single live source of truth for the cap. We read it once up front to bail early.
+  let liveSentToday = await countTodaySends(spaceId)
+  if (DAILY_SEND_CAP - liveSentToday <= 0) {
     return fail(`This space hit its daily send limit of ${DAILY_SEND_CAP}. Try again tomorrow.`)
   }
 
@@ -306,8 +312,16 @@ export async function sendSpaceCampaign(
   let failed = 0
 
   for (const rec of recipients) {
-    // Stop once the day's remaining budget is exhausted (suppressed skips do not consume budget).
-    if (sent >= remaining) break
+    // (c continued) RACE-SAFE CAP: re-read the live count every RECHECK_EVERY accepted sends, so two
+    // concurrent sends can't both blow past the cap (the up-front read alone would let each send its
+    // own full budget). Each accepted send writes a row that countTodaySends sees, so a fresh read
+    // already includes this call's rows AND the other call's. Fail-closed: a read error returns the
+    // cap, which stops the loop. We re-read keyed on `sent` (suppressed skips don't write a budget row).
+    if (sent > 0 && sent % RECHECK_EVERY === 0) {
+      liveSentToday = await countTodaySends(spaceId)
+    }
+    // Stop once the day's live total reaches the cap (counts concurrent senders too).
+    if (liveSentToday >= DAILY_SEND_CAP) break
 
     // (d) SUPPRESSION: skip a recipient suppressed globally OR for this Space; log it, do not send.
     if (await isSuppressed(rec.email, spaceId)) {
@@ -343,6 +357,9 @@ export async function sendSpaceCampaign(
       // (treat as failed so the tally is honest) unless the address slipped a global-only race.
       if (id) {
         sent++
+        // Track our own accepted send against the live count so the cap holds between re-reads (a
+        // fresh countTodaySends would also count this row; this keeps the in-window check honest).
+        liveSentToday++
         await recordSend({
           spaceId,
           campaignId: input.campaignId,

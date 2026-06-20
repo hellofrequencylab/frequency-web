@@ -272,6 +272,60 @@ export function localBusinessSchema(p: {
   }
 }
 
+// ── Person ────────────────────────────────────────────────────────────────────
+// A public profile of a real person (an event organizer/host, a practitioner). schema.org/Person
+// gives an answer engine an identity node for "who hosts X" / "who runs Y". Name + canonical url +
+// optional avatar image only, no email, no member data.
+
+export function personSchema(p: { name: string; path: string; image?: string | null }) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: p.name,
+    url: abs(p.path),
+    ...(p.image ? { image: p.image } : {}),
+  }
+}
+
+// ── Space (entity profile) ──────────────────────────────────────────────────────
+// A networked entity Space (/spaces/<slug>) is a PUBLIC profile by design (visibility = 'network'),
+// so it is a real schema.org node, not a city-redacted one: a Person for a practitioner, a
+// LocalBusiness for a place-based business / event space / coaching academy, and a plain Organization
+// for an organization (non-profit). The per-type @type maps off the Space's role so an answer engine
+// knows what kind of thing it is. NETWORK spaces only: a Private space never reaches this builder
+// (the page emits noindex and omits the schema). Brand name + tagline only; no member data.
+
+/** The @type a Space's role maps to. Practitioner is a Person; business / event space / coaching are
+ *  place-based LocalBusinesses; organization is a plain Organization. Unknown/internal roots fall
+ *  back to Organization so the node is never blank. */
+function spaceSchemaType(type: string): 'Person' | 'LocalBusiness' | 'Organization' {
+  if (type === 'practitioner') return 'Person'
+  if (type === 'business' || type === 'event_space' || type === 'coaching') return 'LocalBusiness'
+  return 'Organization'
+}
+
+export function spaceSchema(space: {
+  slug: string
+  type: string
+  name: string
+  tagline?: string | null
+  logoUrl?: string | null
+}) {
+  const url = abs(`/spaces/${space.slug}`)
+  const ogImage = abs(`/spaces/${space.slug}/opengraph-image`)
+  // The operator's own logo (an arbitrary URL) is the primary image when set, then the per-Space OG
+  // card, then the site image as a final fallback, so the node always has an image (rich-result bar).
+  const image = [...(space.logoUrl ? [space.logoUrl] : []), ogImage, abs('/opengraph-image')]
+  return {
+    '@context': 'https://schema.org',
+    '@type': spaceSchemaType(space.type),
+    name: space.name,
+    url,
+    image,
+    ...(space.tagline ? { description: space.tagline } : {}),
+  }
+}
+
 export function partnerListSchema(
   partners: { slug: string; name: string }[],
   listName: string,

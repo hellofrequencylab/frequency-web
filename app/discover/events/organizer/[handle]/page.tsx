@@ -10,7 +10,7 @@ import { FrequencyArcs } from '@/components/marketing/vector-art'
 import { SectionHeading } from '@/components/marketing/marketing-ui'
 import { DetailTemplate } from '@/components/templates'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema, eventListSchema } from '@/lib/jsonld'
+import { breadcrumbSchema, eventListSchema, personSchema } from '@/lib/jsonld'
 import { SITE_NAME } from '@/lib/site'
 import { getInitials } from '@/lib/utils'
 
@@ -144,6 +144,11 @@ export default async function OrganizerPage({
 
       <JsonLd
         data={[
+          personSchema({
+            name: displayName,
+            path: `/discover/events/organizer/${hostHandle}`,
+            image: avatarUrl,
+          }),
           breadcrumbSchema([
             { name: 'Discover', path: '/discover' },
             { name: 'Events', path: '/discover/events' },

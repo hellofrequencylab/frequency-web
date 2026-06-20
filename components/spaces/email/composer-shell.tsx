@@ -23,9 +23,9 @@ import { AudiencePicker } from '@/components/spaces/email/audience-picker'
 //
 // FLOW: the composer first CREATES a draft (createSpaceCampaign) so the campaign has an id, then SENDS
 // or SCHEDULES that id. The send action resolves the audience over the Space's own contacts and hands
-// it to the send seam (a placeholder until the integrator wires it, so "Send" reports the connect
-// message today). Sending stays disabled until email is enabled for the Space (the enable gate lives
-// on the page; this composer is only rendered once email is on, or with sending disabled in preview).
+// it to the send backbone (which owns the kill-switch, daily cap, suppression, and per-recipient
+// unsubscribe). Sending stays disabled until email is enabled for the Space (the enable gate lives on
+// the page; this composer is only rendered once email is on, or with sending disabled in preview).
 //
 // Copy passes CONTENT-VOICE: plain labels, concrete, no narrated feelings, no em/en dashes.
 
@@ -193,12 +193,13 @@ export function ComposerShell({
 
             <label className="flex flex-col gap-1">
               <span className="text-xs font-medium text-muted">Schedule for</span>
-              <input
+              {/* Kit Input carries type="datetime-local" (it forwards all input attrs), so the picker
+                  reuses the one focus/border token set instead of re-declaring it. */}
+              <Input
                 type="datetime-local"
                 value={when}
                 min={minWhen}
                 onChange={(e) => setWhen(e.target.value)}
-                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50"
               />
             </label>
 

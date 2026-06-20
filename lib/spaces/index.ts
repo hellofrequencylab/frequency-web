@@ -17,9 +17,3 @@ export function activeVerticalsForSpace(space: Space): Vertical[] {
   const on = new Set(space.enabledVerticals)
   return VERTICALS.filter((v) => on.has(v.id))
 }
-
-/** Whether a Space exposes a given registered vertical. */
-export function spaceEnablesVertical(space: Space, verticalId: string): boolean {
-  if (space.type === 'root') return VERTICALS.some((v) => v.id === verticalId)
-  return space.enabledVerticals.includes(verticalId)
-}

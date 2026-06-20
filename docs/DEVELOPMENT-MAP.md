@@ -312,6 +312,17 @@
 > the generation axis is latent (CSS+registry+resolver present, but no member switch / `fxtheme` cookie
 > writer and no `spaces.generation` column), `structureFor` has zero template consumers, and occasion
 > seeding + multi-Space membership + cross-axis visual-regression + W3C-token native export are open.
+>
+> **2026-06-20:** **Entity Spaces Phases 0-3 shipped**: tenancy spine, `/spaces` profiles, QR/CRM/check-in/email
+> per space; see [ENTITY-SPACES-BUILD.md](ENTITY-SPACES-BUILD.md) §C + ADR-320-337. Phase 0 (the isolation
+> spine: `space_members`/`space_invites`, `space_id` ownership FKs + read/write isolation, `spaces.visibility`/
+> `plan`/`entitlements`) + Phase 0.5 (the streamline: `page_settings` re-keyed to the space layer, the AI
+> gateway consolidation, the kit/`ui/Dialog` consolidation) + Phase 1 (the five-role profile = Detail template
+> + registered entity modules at `/spaces/<slug>`, the create wizard + owner Focus settings, Practitioner
+> booking + Business memberships v1, the per-space Vera draft seam) + Phase 2 (per-Space QR + splash, CRM +
+> `client_notes`, Event Space check-in) + Phase 3 (the fail-closed per-Space email send backbone + composer +
+> deliverability). Still deferred: Phase 4 earnings/payouts, Phase 5 white-label Puck micro-sites, SMS/A2P,
+> per-Space `sender_domains`/DKIM, the AUP/DPA legal copy, and the per-space `space_embeddings`/RAG index.
 
 ---
 

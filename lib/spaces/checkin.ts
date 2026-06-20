@@ -160,6 +160,28 @@ function randomSecret(): string {
   return globalThis.crypto.randomUUID().replace(/-/g, '')
 }
 
+/** Count THIS node's captures (optionally since `since`) with a head/count query: no rows returned,
+ *  no name join, just the number. FAIL-SAFE to 0 on any error. The node id is the caller's already
+ *  space-scoped node, so this never reaches past the tenant. */
+async function countCaptures(nodeId: string, since: string | null): Promise<number> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string, opts: { count: 'exact'; head: true }) => {
+          eq: (col: string, val: string) => {
+            gte: (col: string, val: string) => Promise<{ count: number | null }>
+          } & Promise<{ count: number | null }>
+        }
+      }
+    }
+    const base = db.from('captures').select('id', { count: 'exact', head: true }).eq('node_id', nodeId)
+    const { count } = await (since ? base.gte('captured_at', since) : base)
+    return typeof count === 'number' ? count : 0
+  } catch {
+    return 0
+  }
+}
+
 /** Batch-read display name + handle + avatar for a set of profile ids (service-role; FAIL-SAFE to an
  *  empty map). Mirrors lib/spaces/memberships.ts readMemberNames, with the extra roster fields. */
 async function readCheckers(
@@ -285,8 +307,16 @@ export async function listCheckins(spaceId: string, sinceTs?: string): Promise<C
  * the OWNER read gate. FAIL-SAFE to 0. Counts DISTINCT checkers is intentionally NOT done here (a
  * repeatable node can record more than one capture per person); this is the raw check-in count, which
  * is what a door roster shows. A distinct-people metric is an additive later read, never a refactor.
+ *
+ * PERF: a head/count query (no rows, no name join), not listCheckins(...).length, so the StatCard never
+ * pulls up to 500 capture rows + a profiles batch just to read a number. Same isolation: the node is
+ * resolved scoped to space_id, so Space A can never count Space B's captures even with a leaked node id.
  */
 export async function countCheckins(spaceId: string, sinceTs?: string): Promise<number> {
-  const rows = await listCheckins(spaceId, sinceTs)
-  return rows.length
+  if (!(await ownerGate(spaceId))) return 0
+  const since = normalizeSince(sinceTs)
+
+  const node = await readCheckinNode(spaceId)
+  if (!node) return 0 // no check-in node yet -> zero check-ins
+  return countCaptures(node.id, since)
 }

@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { Suspense } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
@@ -7,9 +6,9 @@ import { listEventsForSpace } from '@/lib/events/store'
 import { ModuleCard } from '@/components/modules/module-card'
 import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { buttonClasses } from '@/components/ui/button'
 import { BookingMember } from '@/components/spaces/booking-member'
 import { MembershipJoin } from '@/components/spaces/membership-join'
+import { EntityCtaLink } from '@/components/widgets/entity/entity-cta-link'
 
 // ENTITY MODULE - Action / Book (ENTITY-SPACES-BUILD section B.2, row `entity-booking`). A
 // self-fetching RSC for a blueprint's action tab. It reads the active Space and branches by role:
@@ -26,8 +25,9 @@ import { MembershipJoin } from '@/components/spaces/membership-join'
 //   sits behind <Suspense> so the tab paints instantly (PAGE-FRAMEWORK section 5).
 //
 //   OTHER ROLES (Organization "Donate", Coaching "Enroll", Event Space "Get tickets"): the deep
-//   conversion engines are a LATER phase, so these keep the current PLACEHOLDER - the Space's own
-//   upcoming sessions, each routing to the session page to RSVP. Out of scope here.
+//   conversion engines are a LATER phase, so these show the Space's own upcoming sessions, each
+//   routing to the session page to RSVP. The primary CTA there records a `space.cta_click` event
+//   (Epic 1.11) via EntityCtaLink, so operators see CTA performance even before the deep engines ship.
 //
 // NULL only when there is no active Space.
 //
@@ -93,9 +93,9 @@ export async function EntityCta() {
                     </span>
                   }
                   footer={
-                    <Link href={`/events/${e.slug}`} className={buttonClasses('primary', 'sm', 'w-full justify-center')}>
-                      {ctaLabel}
-                    </Link>
+                    // The primary CTA. A click fires a `space.cta_click` event (Epic 1.11) fire-and-forget
+                    // before navigating to the session page; the wrapper never blocks or fails navigation.
+                    <EntityCtaLink spaceId={space.id} href={`/events/${e.slug}`} label={ctaLabel} />
                   }
                 />
               )

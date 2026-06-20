@@ -436,9 +436,15 @@ export async function listOpenSlots(spaceId: string): Promise<OpenSlot[]> {
   if (!profileId) return []
   try {
     const now = new Date()
-    const windows = await readWindows(spaceId)
+    // The windows + bookings reads are independent, so start them TOGETHER (Promise.all) instead of
+    // waterfalling one after the other. Both readers are fail-safe to [], so Promise.all never rejects.
+    // The early-return short-circuit is preserved: with no published windows there are no slots, so we
+    // return [] without running the (already-overlapped, cheap) generator.
+    const [windows, booked] = await Promise.all([
+      readWindows(spaceId),
+      readConfirmedBookings(spaceId, now.toISOString()),
+    ])
     if (windows.length === 0) return []
-    const booked = await readConfirmedBookings(spaceId, now.toISOString())
     const bookedMs = new Set(booked.map((b) => new Date(b.starts_at).getTime()))
     return generateOpenSlots(windows, bookedMs, now)
   } catch {

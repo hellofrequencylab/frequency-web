@@ -1,7 +1,8 @@
-// AI "why you'd vibe" blurb (docs/EVENTS-SYSTEM.md §3.2). ONE warm, specific
-// sentence telling a viewer why this event might resonate — built ONLY from REAL
-// overlap we've already computed: shared circles, how many people they KNOW are
-// going, and the event's energy_tag/category vs the viewer's own words.
+// AI "why this might be your thing" blurb (docs/EVENTS-SYSTEM.md §3.2). ONE warm,
+// specific sentence telling a viewer why this event might be their kind of thing —
+// built ONLY from REAL overlap we've already computed: shared circles, how many
+// people they KNOW are going, and the event's energy_tag/category vs the viewer's
+// own words.
 //
 // Haiku (cheap) via completeText; cached per (profile, event, UTC day) in
 // event_blurb_cache so we never re-spend on the same pairing twice in a day.
@@ -15,6 +16,7 @@ import { completeText } from './complete'
 import { MODELS } from './models'
 import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
 import { withVoice } from './voice'
+import { stripEmDashes } from './space-copilot'
 
 const FEATURE = 'event-blurb'
 
@@ -44,7 +46,7 @@ const ENERGY_PHRASE: Record<string, string> = {
 }
 
 /**
- * One warm sentence on why `profileId` would vibe with `eventId`, or null when
+ * One warm sentence on why `eventId` might be `profileId`'s kind of thing, or null when
  * AI is unavailable / over budget / there's nothing genuine to say. Cached per
  * (profile, event, UTC day). Read-only — never mutates events or RSVPs.
  */
@@ -159,12 +161,15 @@ export async function eventBlurb(profileId: string, eventId: string): Promise<st
         messages: [
           {
             role: 'user',
-            content: `Facts about this event and member:\n${facts.join('\n')}\n\nWrite the one-sentence "why you'd vibe" line.`,
+            content: `Facts about this event and member:\n${facts.join('\n')}\n\nWrite the one-sentence "why this might be your kind of thing" line.`,
           },
         ],
       })
       void recordAiUsage({ feature: FEATURE, model: MODELS.haiku, usage: res.usage, costUsd: res.costUsd, profileId })
-      blurb = res.text.trim().replace(/^["']|["']$/g, '') || null
+      // Belt-and-braces with the system prompt: strip any em/en dash the model slipped in before we
+      // cache it (the voice canon forbids the long dash; matches lib/ai/space-copilot.ts).
+      const cleaned = stripEmDashes(res.text)
+      blurb = cleaned || null
     }
   } catch {
     // AI off mid-call / transient failure: return null, don't poison the cache.

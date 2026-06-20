@@ -10,7 +10,7 @@ export const revalidate = 3600
 
 const TITLE = 'Practices'
 const DESCRIPTION =
-  'The Frequency practice library — small, repeatable real-world acts that build a life and a community. Browse practices by what you want to grow, then do them with people near you.'
+  'The Frequency practice library, small, repeatable real-world acts that build a life and a community. Browse practices by what you want to grow, then do them with people near you.'
 
 export const metadata: Metadata = {
   title: TITLE,

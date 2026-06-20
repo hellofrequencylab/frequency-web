@@ -11,8 +11,10 @@ import { completeRaw } from './complete'
 import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
-import { recordAiUsage } from './usage'
+import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
+
+const FEATURE = 'circle-create'
 
 export interface CircleSuggestion {
   name: string
@@ -54,6 +56,9 @@ export async function suggestCircleDraft(input: {
   profileId?: string | null
 }): Promise<CircleSuggestion | null> {
   if (!aiEnabled()) return null
+  // Per-feature daily cap (lib/ai/budget.ts): over budget => fall back to fallbackCircleSuggestion,
+  // never bill on.
+  if (await featureOverBudget(FEATURE)) return null
   const interest = input.interest.trim().slice(0, 120)
   if (!interest) return null
 
@@ -75,7 +80,7 @@ export async function suggestCircleDraft(input: {
       messages: [{ role: 'user', content: userText }],
     })
     void recordAiUsage({
-      feature: 'circle-create',
+      feature: FEATURE,
       model: MODELS.haiku,
       usage: res.usage,
       costUsd: estimateCostUsd('haiku', res.usage),

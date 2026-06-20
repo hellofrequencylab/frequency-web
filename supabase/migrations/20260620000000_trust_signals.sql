@@ -4,9 +4,10 @@
 -- Modeled exactly like the engagement ledger: a vertical emits a trust signal the way it
 -- emits an engagement event. Points (gems/zaps) stay separate — trust is reputation, not money.
 --
--- ⚠️ NOT yet applied. Apply via the Supabase SQL Editor (the repo's migration-history
--- baseline predates `db push` being safe here — see docs/WORKFLOW.md), then regenerate
--- lib/database.types.ts against the live schema. Additive + idempotent, so safe to re-run.
+-- ✅ Applied (live; trust_signals/trust_scores exist in the schema). Was applied via the
+-- Supabase SQL Editor (the repo's migration-history baseline predates `db push` being safe
+-- here, see docs/WORKFLOW.md), then lib/database.types.ts regenerated against the live
+-- schema. Additive + idempotent, so safe to re-run.
 
 -- ── The signal ledger (append-only source of truth) ───────────────────────────────────
 create table if not exists public.trust_signals (

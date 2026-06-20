@@ -11,8 +11,10 @@ import { completeRaw } from './complete'
 import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
-import { recordAiUsage } from './usage'
+import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
+
+const FEATURE = 'practice-claim'
 
 export interface PracticeSuggestion {
   title: string
@@ -65,6 +67,9 @@ export async function personalizePractice(input: {
   profileId?: string | null
 }): Promise<PracticeSuggestion | null> {
   if (!aiEnabled()) return null
+  // Per-feature daily cap (lib/ai/budget.ts): over budget => return null, so the wizard falls back
+  // to the template's own content, never bill on.
+  if (await featureOverBudget(FEATURE)) return null
   const goal = input.goal.trim().slice(0, 1000)
   if (!goal) return null
 
@@ -96,7 +101,7 @@ export async function personalizePractice(input: {
       messages: [{ role: 'user', content: userText }],
     })
     void recordAiUsage({
-      feature: 'practice-claim',
+      feature: FEATURE,
       model: MODELS.haiku,
       usage: res.usage,
       costUsd: estimateCostUsd('haiku', res.usage),

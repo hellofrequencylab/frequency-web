@@ -237,7 +237,8 @@ export function VeraLightbox({
               </span>
               <div className="min-w-0">
                 <p id="vera-lightbox-title" className="text-sm font-bold text-text">Vera</p>
-                <p className="text-xs text-subtle">Your companion here. She meets you where you are, then points you toward your people.</p>
+                {/* AI disclosure (EU AI Act Art. 50): members must know they're talking to AI. */}
+                <p className="text-xs text-subtle">Vera is AI. She meets you where you are, then points you toward your people.</p>
               </div>
             </div>
 

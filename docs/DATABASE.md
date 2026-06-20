@@ -243,6 +243,8 @@ as today**.
 
 > **Phase 3 per-Space email additions (ADR-335/336/337).** `campaigns` gained nullable `space_id` (backfilled to root) + `scheduled_for`; `email_suppressions` gained nullable `space_id` (NULL = a GLOBAL suppression honored by every Space; set = one Space) and its email-only PK was replaced by a synthetic `id` + a unique `(coalesce(space_id, zero-uuid), lower(email))` index; `spaces.email_enabled boolean default false` is the per-Space email KILL-SWITCH (fail-closed). The global Studio campaigns + global unsubscribe + Resend webhook are unchanged; per-Space sending (`lib/spaces/email.ts`) is gated on the kill-switch, a 500/day cap, and suppression, on the existing Resend integration.
 
+> **`ai_usage.space_id` (per-Space AI attribution; `20260712020000`).** The AI cost ledger `ai_usage` gained a NULLABLE `space_id uuid REFERENCES spaces(id) ON DELETE SET NULL` plus an `(space_id, created_at)` index. NULL is **correct and intended**: it means platform-level / non-space AI usage (help-search, vera-chat, and every pre-existing row), so it stays nullable. A space-scoped feature (the Vera co-host, `lib/ai/space-copilot.ts`) sets it to attribute its cost to the Space it ran for, which gives per-Space spend visibility AND lets the daily cap be enforced per Space (see ADR-330: the cap was per-feature-global at write time; this column is the seam that makes it per-Space). `ON DELETE SET NULL` keeps the COGS record even if the Space is later deleted.
+
 > **`space_members`** (ADR-320) is the **per-space membership + authorization** primitive: a
 > **third, orthogonal authority axis**, distinct from the **community trust ladder**
 > (`profiles.community_role`, network-wide reputation) and the **staff axis**
