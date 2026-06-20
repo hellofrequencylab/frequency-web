@@ -5,6 +5,7 @@ import { useVenue } from "@/components/dj/useVenue";
 import { SyncedPlayer } from "@/components/sync/SyncedPlayer";
 import { computePosition } from "@/lib/sync/clock";
 import { AvatarChip, avatarOf } from "./AvatarChip";
+import { DecorCanvas } from "@/components/venue/DecorCanvas";
 
 type RoomProps = {
   venueId: string;
@@ -49,6 +50,11 @@ function Header({ v, onLeaveVenue }: { v: Venue; onLeaveVenue?: () => void }) {
         })}
         {v.roster.length === 0 && <small style={{ color: "#bbb" }}>…</small>}
       </div>
+      {v.venue && v.venue.decor.length > 0 ? (
+        <div style={{ marginTop: "0.6rem" }}>
+          <DecorCanvas decor={v.venue.decor} />
+        </div>
+      ) : null}
     </div>
   );
 }

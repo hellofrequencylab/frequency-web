@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
-import type { Venue, VenueSummary, SeatRow, QueueItem, MediaType } from "./types";
+import type { Venue, VenueSummary, SeatRow, QueueItem, MediaType, DecorItem } from "./types";
 
 /**
  * Server-side data access for the DJ loop. Service-role only; never import into
@@ -44,6 +44,13 @@ export async function addToPlaylist(venueId: string, mediaId: string): Promise<s
   const { error } = await supabase.from("venues").update({ playlist: next }).eq("id", venueId);
   if (error) throw error;
   return next;
+}
+
+/** Persist a venue's decor layout (build plan §13). */
+export async function updateVenueDecor(venueId: string, decor: DecorItem[]): Promise<void> {
+  const supabase = createServerClient();
+  const { error } = await supabase.from("venues").update({ decor }).eq("id", venueId);
+  if (error) throw error;
 }
 
 /** All venues in a world with lightweight activity signals, for the lobby. */
@@ -271,6 +278,9 @@ function toVenue(r: Record<string, unknown>): Venue {
     mediaType: r.media_type as Venue["mediaType"],
     seatCount: r.seat_count as number,
     playlist: (r.playlist as string[] | null) ?? [],
+    decor: (r.decor as DecorItem[] | null) ?? [],
+    level: (r.level as number | null) ?? 1,
+    createdBy: (r.created_by as string | null) ?? null,
   };
 }
 

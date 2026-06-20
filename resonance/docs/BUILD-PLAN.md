@@ -160,10 +160,31 @@ The room UI now branches by media type off one `useVenue` (DJ vs Watch).
 - [ ] 🚪 GO (manual): sit in a room in one window, watch the lobby headcount in another
 
 ## Phase 2 — The Little World (spatial + UGC decor)
-Rung-1 spatial layer (walk the map, proximity audio/chat via Phaser/tilemap) ·
-venue decoration toolkit; host-owned, level-up venues · cosmetics marketplace
-(Stripe + Zaps) · embed SDK hardened; first external/white-label tenant.
 **Metric:** users invest in identity/space; first creator venues thrive.
+
+### Section 12 — Rung-1 spatial layer  🔨
+- [x] Walk a 2D board (WASD / arrows / click-to-move); positions broadcast live, ephemeral
+- [x] Proximity-scoped text chat (bubbles fade by distance); `/dev/space/[venueId]`
+- [ ] Proximity VOICE (WebRTC) is a deliberate follow-up beyond rung-1
+- [ ] 🚪 GO (manual): two windows walk the same board, chat fades with distance
+
+### Section 13 — Venue decoration toolkit  🔨
+- [x] `decor` + `level` + `created_by` on venues (migration `0010`); host-gated decor edits
+- [x] Click-to-place editor with a level-gated palette; `DecorCanvas` renders the backdrop in-room
+- [x] `PUT /api/venues/[venueId]/decor`; `/dev/decorate/[venueId]`
+- [ ] 🚪 GO (manual): decorate a room, see the backdrop when you enter it
+
+### Section 14 — Cosmetics marketplace  🔨
+- [x] `market_items` + `user_inventory` (migration `0011`); buy cosmetics with Zaps
+- [x] `spendZaps` appends a negative `purchase` row to the existing ledger (balance = sum stays truth)
+- [x] `GET /api/market`, `POST /api/market/[itemId]/purchase` (capacity of funds, idempotent); `/dev/market`
+- [x] Premium items scaffold a Stripe path (real charge deferred; 402 "payments coming soon" without keys)
+- [ ] 🚪 GO (manual): earn Zaps by DJing, buy a frame, see it owned
+
+### Section 15 — Embed hardening + federated identity  🔨
+- [x] `verifyHostToken` (RS256 via `jose`, host signs / we verify); anonymous fallback intact
+- [x] postMessage origin allowlist; `public/embed.js` host snippet; `docs/EMBED.md` contract
+- [ ] 🚪 GO (manual): embed in a host page, federate identity, confirm standalone still works
 
 ## Phase 3 — The Platform (build-on-it + scale)
 UGC venues/experiences + mini-games + creator economy/revenue share · realtime

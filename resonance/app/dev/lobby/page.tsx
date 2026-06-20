@@ -67,9 +67,8 @@ export default function LobbyPage() {
         {venues.map((v) => {
           const live = v.isPlaying || v.djs > 0;
           return (
-            <Link
+            <div
               key={v.id}
-              href={`/dev/room/${v.id}`}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -77,14 +76,19 @@ export default function LobbyPage() {
                 border: "1px solid #e4e4e7",
                 borderRadius: 8,
                 padding: "0.75rem 1rem",
-                textDecoration: "none",
-                color: "inherit",
               }}
             >
-              <span>
-                <b>{v.name}</b>{" "}
-                <span style={{ color: "#888", fontSize: 12 }}>
-                  {v.theme ? `· ${v.theme} ` : ""}· {v.mediaType}
+              <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                <Link href={`/dev/room/${v.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <b>{v.name}</b>{" "}
+                  <span style={{ color: "#888", fontSize: 12 }}>
+                    {v.theme ? `· ${v.theme} ` : ""}· {v.mediaType}
+                  </span>
+                </Link>
+                <span style={{ fontSize: 12, color: "#888" }}>
+                  <Link href={`/dev/room/${v.id}`}>enter</Link> ·{" "}
+                  <Link href={`/dev/space/${v.id}`}>walk</Link> ·{" "}
+                  <Link href={`/dev/decorate/${v.id}`}>decorate</Link>
                 </span>
               </span>
               <span style={{ fontSize: 13, color: v.here > 0 || live ? "#16a34a" : "#999" }}>
@@ -94,7 +98,7 @@ export default function LobbyPage() {
                     ? `● live · ${v.djs} on deck`
                     : "○ quiet"}
               </span>
-            </Link>
+            </div>
           );
         })}
         {venues.length === 0 && <p style={{ color: "#888" }}>No venues yet. Create one below.</p>}

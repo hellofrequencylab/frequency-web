@@ -6,6 +6,7 @@ import {
   getOrCreateCurrentSeason,
   awardZaps,
   addDjPoints,
+  getBalance,
 } from "./repo";
 
 /**
@@ -58,4 +59,35 @@ export async function awardForPlay(
   await mirrorToHost(zapsEvent);
   await mirrorToHost(rankEvent);
   return awesome;
+}
+
+/**
+ * Spend Zaps (e.g. a marketplace purchase). Reads balance the same way standing
+ * does (sum of the `zaps_ledger` deltas via `getBalance`), then debits by
+ * appending a NEGATIVE `purchase` row through the existing `awardZaps` path. The
+ * ledger stays append-only and balance = sum(delta) remains the source of truth.
+ *
+ * - If the balance can't cover `amount`, returns { ok: false } WITHOUT debiting.
+ * - Idempotent on (reason, refId): the ledger's unique key means a retried spend
+ *   for the same refId debits at most once. Pass a stable refId (e.g. the item
+ *   id) to make a purchase safe to retry.
+ *
+ * Returns the resulting balance either way.
+ */
+export async function spendZaps(
+  worldId: string,
+  userId: string,
+  amount: number,
+  reason: "purchase" | "reward",
+  refId: string,
+): Promise<{ ok: boolean; balance: number }> {
+  const balance = await getBalance(worldId, userId);
+  if (balance < amount) return { ok: false, balance };
+
+  const newlyRecorded = await awardZaps(worldId, userId, -amount, reason, refId);
+  if (!newlyRecorded) {
+    // Already debited for this refId — report current balance, don't double-charge.
+    return { ok: true, balance: await getBalance(worldId, userId) };
+  }
+  return { ok: true, balance: balance - amount };
 }
