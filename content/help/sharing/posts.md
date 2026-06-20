@@ -28,8 +28,8 @@ Whatever you capture is shared with your circle and shows up in their feed.
 
 ## Reacting & commenting
 
-- **React** to show you saw something and appreciated it: quick and low-effort.
-- **Comment** to actually talk. The best circles are the ones where people reply to each other.
+- **React** to show you saw something and appreciated it: quick and low-effort. Your reaction lands the moment you tap, no waiting.
+- **Comment** to actually talk. **Add a comment** sits right under every post, so you can reply without an extra tap. The best circles are the ones where people reply to each other.
 
 ## Tips
 

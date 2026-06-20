@@ -15,11 +15,13 @@ on the spot.
 
 ## Tuning out
 
-Open it from the **Mindless button in the header** (it opens right over whatever
-you are doing, anywhere on the site), from the **Practice** button on a timer
-practice in a Journey, from the Zap button (the **Mindless** row), from your home screen
-(the little lotus next to any practice), or from a practice page. Pick three
-things, and it remembers them for next time:
+Open it from the **Mindless button in the header** (it opens fullscreen, taking
+over the screen wherever you are on the site), from the **Practice** button on a
+timer practice in a Journey, from the Zap button (the **Mindless** row), from your
+home screen (the little lotus next to any practice), or from a practice page. If
+you've adopted any practices, the button reads **Select a practice**: pick the one
+you're doing and the timer opens already set to its length. Pick three things, and
+it remembers them for next time:
 
 - **A practice.** Always there is a **Free sit**, so you can tune out any time
   even before you adopt anything. Once you join a Journey, the practices for the

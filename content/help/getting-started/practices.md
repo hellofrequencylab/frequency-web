@@ -21,11 +21,16 @@ your practice is the heart of Frequency, it is how showing up turns into progres
 
 ## Log it
 
-Each day you do your practice, hit **Log practice**. Logging **any** practice, your
+Each practice you've adopted sits in your **practices** row, one tight line each
+with a **Log practice** button and a **View practice** link to open its page. Each
+day you do your practice, hit **Log practice**. Logging **any** practice, your
 own or your Circle's, earns **Zaps** (the in-person, real-world currency). It also:
 
 - keeps your **streak** alive, and
 - counts you as active for the week.
+
+Once you log, the row reads **Logged today**. Tapped it by mistake? Hit **Undo** to
+un-log it, same day only. After today the log is locked in.
 
 You can log a practice once per day. Do it for a few days in a row and the streak
 starts to pull you back, which is exactly the point.
