@@ -220,10 +220,16 @@ The room UI now branches by media type off one `useVenue` (DJ vs Watch).
 ---
 
 ## Cross-cutting (seeded early, never retrofit)
-- **Moderation & safety from Phase 0:** reporting, blocking, room mods, content
-  filters, rate limits, audit logging, age-appropriate tenancy.
-- **Data governance:** per-world RLS, region pinning, versioned consent,
-  retention/deletion (controller/processor model).
+- **Moderation & safety:** ✅ reporting + blocking (`reports`/`blocks`, migration `0015`),
+  rate-limit guardrail, `useBlocks` primitive, `/dev/moderation`. ⬜ still: room mods,
+  content filters, audit logging, age-appropriate tenancy.
+- **Data governance:** ✅ retention/deletion + export (`/api/account/*`, `DATA-GOVERNANCE.md`,
+  controller/processor model). ⬜ still: per-world RLS convergence, region pinning,
+  versioned consent.
+- **Authz:** ✅ mini-game host actions gated to the venue host (`isVenueHost`). Decor edits
+  already host-gated.
+- **Test coverage:** ✅ 56 unit tests over the pure logic (sync clock, rotation, trivia,
+  `seededRefId`, embed origins, avatars, creator share).
 - **Health guardrails:** decay + seasonal reset + anti-accumulation; design for
-  meaningful return, not compulsion.
+  meaningful return, not compulsion. ⬜ next.
 - **Isolation contract:** every migration passes the ISOLATION.md self-check.
