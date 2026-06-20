@@ -47,10 +47,16 @@ export function SpaceSettingsForm({
   spaceId,
   slug,
   initial,
+  readOnly = false,
 }: {
   spaceId: string
   slug: string
   initial: SpaceSettingsValues
+  /** Read-only mode for a STAFF PREVIEW (a janitor viewing a Space they don't manage). The whole
+   *  form is rendered inside a disabled fieldset and the submit is a no-op, so nothing can be edited
+   *  or saved here. The write action (updateSpaceProfile) ALSO re-checks canEditProfile server-side,
+   *  so this is a UI convenience over an unchanged server gate, never the gate itself. */
+  readOnly?: boolean
 }) {
   const router = useRouter()
   const [brandName, setBrandName] = useState(initial.brandName)
@@ -129,9 +135,14 @@ export function SpaceSettingsForm({
       className="space-y-6 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
       onSubmit={(e) => {
         e.preventDefault()
-        if (!pending) save()
+        if (!pending && !readOnly) save()
       }}
     >
+      {/* A disabled fieldset natively disables every nested control (the inputs, the accent +
+          visibility buttons, and the Vera affordances), so a STAFF PREVIEW reads the form but can
+          edit nothing. Save lives outside it and is gated on `readOnly` directly. `display: contents`
+          keeps the fieldset out of the layout box model. */}
+      <fieldset disabled={readOnly} className="contents">
       <TextField
         id="brand-name"
         label="Brand name"
@@ -202,18 +213,25 @@ export function SpaceSettingsForm({
       )}
       {error && <FormError message={error} />}
 
+      </fieldset>
+
+      {/* The action row lives OUTSIDE the disabled fieldset: Save is gated on `readOnly` directly (so
+          a staff viewer can't submit), while "View profile" stays available so staff can still open
+          the live profile. */}
       <div className="flex items-center gap-3 pt-1">
-        <Button type="submit" disabled={pending}>
-          {pending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Saving…
-            </>
-          ) : (
-            <>
-              <Check className="h-4 w-4" aria-hidden /> Save changes
-            </>
-          )}
-        </Button>
+        {!readOnly && (
+          <Button type="submit" disabled={pending}>
+            {pending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Saving…
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" aria-hidden /> Save changes
+              </>
+            )}
+          </Button>
+        )}
         {saved && !pending && (
           <span className="inline-flex items-center gap-1 text-sm font-medium text-success" role="status">
             <Check className="h-4 w-4" aria-hidden /> Saved

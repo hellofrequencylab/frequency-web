@@ -9,6 +9,7 @@ import {
   spaceHasEntitlement,
   spaceCapabilitiesFor,
   isSpaceAdmin,
+  resolveSpaceManageAccess,
   type SpaceLike,
 } from './entitlements'
 
@@ -107,5 +108,47 @@ describe('isSpaceAdmin (owner-or-admin)', () => {
   it('anonymous is never admin', () => {
     expect(isSpaceAdmin(space, null)).toBe(false)
     expect(isSpaceAdmin(space, undefined)).toBe(false)
+  })
+})
+
+describe('resolveSpaceManageAccess (canManage vs staffViewing)', () => {
+  // A Space with no `id` skips the membership lookup, so these cases exercise the resolver without
+  // touching the IO seam: the owner branch (canEditProfile) and the non-member branches (the web_role
+  // staff-preview gate) are all decidable from owner-ness + the web_role alone.
+  const space: SpaceLike = { ownerProfileId: 'owner-1' }
+
+  it('the OWNER can manage (never a staff preview)', async () => {
+    const access = await resolveSpaceManageAccess(space, 'owner-1', 'janitor')
+    expect(access).toEqual({ canManage: true, staffViewing: false })
+  })
+
+  it('a JANITOR who is NOT a member gets a read-only staff preview', async () => {
+    const access = await resolveSpaceManageAccess(space, 'stranger-1', 'janitor')
+    expect(access).toEqual({ canManage: false, staffViewing: true })
+  })
+
+  it('a SITE ADMIN (web_role admin, not janitor) gets NO access to a Space they do not manage', async () => {
+    // Only the Executive Admin (janitor) previews another operator's owner back-end.
+    const access = await resolveSpaceManageAccess(space, 'stranger-1', 'admin')
+    expect(access).toEqual({ canManage: false, staffViewing: false })
+  })
+
+  it('a non-staff non-member gets nothing', async () => {
+    const access = await resolveSpaceManageAccess(space, 'stranger-1', 'none')
+    expect(access).toEqual({ canManage: false, staffViewing: false })
+  })
+
+  it('an anonymous caller who is a janitor still gets the staff preview (read-only)', async () => {
+    // web_role is the staff axis; a janitor with no profile id is degenerate, but the gate is the
+    // web_role, so the preview is granted while every write stays gated on canEditProfile.
+    const access = await resolveSpaceManageAccess(space, null, 'janitor')
+    expect(access).toEqual({ canManage: false, staffViewing: true })
+  })
+
+  it('a missing Space yields no access', async () => {
+    expect(await resolveSpaceManageAccess(null, 'owner-1', 'janitor')).toEqual({
+      canManage: false,
+      staffViewing: false,
+    })
   })
 })
