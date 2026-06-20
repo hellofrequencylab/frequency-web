@@ -57,6 +57,25 @@ export async function grantItem(
   if (error) throw error;
 }
 
+/**
+ * The items a given creator has listed in a world (their sellable catalog). Used
+ * by the creator-earnings surface to tie sales back to what a creator made.
+ */
+export async function listCreatedBy(
+  worldId: string,
+  creatorUserId: string,
+): Promise<MarketItem[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("market_items")
+    .select("*")
+    .eq("world_id", worldId)
+    .eq("created_by", creatorUserId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(toItem);
+}
+
 function toItem(r: Record<string, unknown>): MarketItem {
   return {
     id: r.id as string,
@@ -66,6 +85,7 @@ function toItem(r: Record<string, unknown>): MarketItem {
     priceZaps: (r.price_zaps as number) ?? 0,
     priceCents: (r.price_cents as number | null) ?? null,
     active: (r.active as boolean) ?? true,
+    createdBy: (r.created_by as string | null) ?? null,
     createdAt: r.created_at as string,
   };
 }

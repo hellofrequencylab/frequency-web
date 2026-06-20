@@ -14,6 +14,8 @@ export interface MarketItem {
   /** Premium/Stripe-only items set this; null for zaps items. */
   priceCents: number | null;
   active: boolean;
+  /** The creator who earns a revenue share on each sale; null for house items. */
+  createdBy: string | null;
   createdAt: string;
 }
 

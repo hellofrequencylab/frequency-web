@@ -1,5 +1,23 @@
+import { createHash } from "node:crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { rankForPoints, type RankName } from "./ranks";
+
+/**
+ * The zaps_ledger ref_id column is a uuid, so callers that key idempotency off a
+ * human-readable string (e.g. `trivia:<venue>:<round>`, `revshare:<item>:<buyer>`)
+ * hash it into a stable v5-style uuid. Same seed -> same uuid, so the ledger's
+ * unique (world,user,reason,ref) key dedupes retries.
+ */
+export function seededRefId(seed: string): string {
+  const h = createHash("sha1").update(seed).digest("hex").slice(0, 32);
+  return [
+    h.slice(0, 8),
+    h.slice(8, 12),
+    "5" + h.slice(13, 16),
+    ((parseInt(h.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + h.slice(17, 20),
+    h.slice(20, 32),
+  ].join("-");
+}
 
 export interface Season {
   id: string;

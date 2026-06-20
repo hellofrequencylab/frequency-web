@@ -187,11 +187,35 @@ The room UI now branches by media type off one `useVenue` (DJ vs Watch).
 - [ ] 🚪 GO (manual): embed in a host page, federate identity, confirm standalone still works
 
 ## Phase 3 — The Platform (build-on-it + scale)
-UGC venues/experiences + mini-games + creator economy/revenue share · realtime
-swapped to dedicated infra (PartyKit/Colyseus/Liveblocks) · cross-world events +
-shared economy + marketplace · optional BYO-subscription (Apple MusicKit) /
-licensed catalog *only if funded*. **Metric:** third-party adoption; defensible
-network effects.
+**Metric:** third-party adoption; defensible network effects.
+
+### Section 16 — Mini-game framework + Crowd Trivia  🔨
+- [x] Server-authoritative trivia (answer key stays in code, never on the wire); migration `0012`
+- [x] Host runs rounds over the venue channel; correct answers earn Zaps (once per round)
+- [x] `/dev/games/[venueId]`; lobby "play" link
+- [ ] 🚪 GO (manual): host a round in one window, answer from another, see Zaps + scoreboard
+
+### Section 17 — Creator economy / revenue share  🔨
+- [x] Items carry a `created_by`; a 70% Zaps cut routes to the creator on each sale (migration `0013`)
+- [x] `creator_earnings` ledger; credit reuses the Zaps `reward` path (best-effort, idempotent)
+- [x] `GET /api/creator/earnings`; `/dev/earnings`
+- [ ] Fiat cash-out via Stripe Connect is deferred (earnings accrue in Zaps)
+- [ ] 🚪 GO (manual): own an item, have another user buy it, see your earnings rise
+
+### Section 18 — Cross-world discovery  🔨
+- [x] `worlds` table + a second seeded world; "happening now across worlds" feed (migration `0014`)
+- [x] `GET /api/discover` + `/dev/discover` (additive read; per-world surfaces unchanged)
+- [ ] 🚪 GO (manual): open Discover, see both worlds with live signals and upcoming events
+
+### Section 19 — Realtime infra seam  ✅
+- [x] `createTransport()` driver selects an adapter by env (supabase default / partykit stub)
+- [x] Dependency-free PartyKit skeleton implementing the exact transport contract; `docs/REALTIME.md`
+- [x] Actually swapping to dedicated infra (PartyKit/Liveblocks) is deferred ops work; the seam makes it a one-line change
+
+### Deferred (honest scope)
+- Real realtime-infra migration (we keep Supabase realtime; the §19 seam makes it swap-ready).
+- Fiat creator payouts (Stripe Connect) — earnings accrue in Zaps for now.
+- Apple MusicKit / licensed catalog — spec says "only if funded".
 
 ---
 

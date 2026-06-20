@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { DEMO_WORLD_ID } from "@/lib/constants";
 import { getAuthedUserId } from "@/lib/auth/server";
 import { spendZaps } from "@/lib/gamification/service";
+import { awardZaps } from "@/lib/gamification/repo";
 import { getItem, grantItem, listOwned } from "@/lib/market/repo";
+import { recordEarning, revshareRefId } from "@/lib/creator/repo";
+import { CREATOR_SHARE } from "@/lib/creator/types";
 
 export const dynamic = "force-dynamic";
 
@@ -52,5 +55,36 @@ export async function POST(req: Request, ctx: Ctx) {
   }
 
   await grantItem(DEMO_WORLD_ID, userId, item.id);
+
+  // Revenue share (spec §17): credit the item's creator a cut of the spend.
+  // Additive and best-effort — a failure here must never fail the buyer's
+  // purchase. Skip house items (no creator) and self-buys (no self-dealing).
+  if (item.createdBy && item.createdBy !== userId) {
+    const share = Math.floor(item.priceZaps * CREATOR_SHARE);
+    if (share > 0) {
+      try {
+        // Same award path used elsewhere. reason 'reward', stable refId
+        // (a uuid derived from `revshare:${itemId}:${buyer}`) so a retried
+        // purchase credits the creator at most once.
+        await awardZaps(
+          DEMO_WORLD_ID,
+          item.createdBy,
+          share,
+          "reward",
+          revshareRefId(item.id, userId),
+        );
+        await recordEarning({
+          worldId: DEMO_WORLD_ID,
+          creatorUserId: item.createdBy,
+          itemId: item.id,
+          buyerUserId: userId,
+          amountZaps: share,
+        });
+      } catch (err) {
+        console.error("creator revshare failed", err);
+      }
+    }
+  }
+
   return NextResponse.json({ ok: true, balance: result.balance });
 }

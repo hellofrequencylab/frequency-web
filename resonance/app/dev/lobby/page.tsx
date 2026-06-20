@@ -88,6 +88,7 @@ export default function LobbyPage() {
                 <span style={{ fontSize: 12, color: "#888" }}>
                   <Link href={`/dev/room/${v.id}`}>enter</Link> ·{" "}
                   <Link href={`/dev/space/${v.id}`}>walk</Link> ·{" "}
+                  <Link href={`/dev/games/${v.id}`}>play</Link> ·{" "}
                   <Link href={`/dev/decorate/${v.id}`}>decorate</Link>
                 </span>
               </span>
