@@ -20,6 +20,7 @@ import { AdminJourneysLibrary } from '@/components/widgets/admin/admin-journeys-
 import { JourneysStart } from '@/components/widgets/journeys/journeys-start'
 import { JourneysMine } from '@/components/widgets/journeys/journeys-mine'
 import { JourneysLibrary } from '@/components/widgets/journeys/journeys-library'
+import { FriendsImpact } from '@/components/widgets/friends/friends-impact'
 import { PracticesStats } from '@/components/widgets/practices/practices-stats'
 import { PracticesActivity } from '@/components/widgets/practices/practices-activity'
 import { PracticesBalance } from '@/components/widgets/practices/practices-balance'
@@ -76,6 +77,8 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'journeys-start': JourneysStart,
   'journeys-mine': JourneysMine,
   'journeys-library': JourneysLibrary,
+  // Friends page (/friends) — the assignable "Your impact" section.
+  'friends-impact': FriendsImpact,
   // Practices page (/practices) — the upper personal blocks + the faceted library.
   'practices-stats': PracticesStats,
   'practices-activity': PracticesActivity,

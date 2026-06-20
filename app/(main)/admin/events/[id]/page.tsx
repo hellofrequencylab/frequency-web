@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { StatusChip } from '@/components/admin/status'
+import { PageHeading } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 import { EventEditClient, type TierEditRow } from './event-edit-client'
@@ -56,27 +57,35 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
   const host  = (Array.isArray(event.host)  ? event.host[0]  : event.host)  as unknown as { id: string; display_name: string; handle: string } | null | undefined
   const scope = (Array.isArray(event.scope) ? event.scope[0] : event.scope) as unknown as { id: string; name: string } | null | undefined
 
+  // Who/where, as the kit-standard header description (one line, plain prose).
+  const context = [scope?.name, host && `Hosted by ${host.display_name}`].filter(Boolean).join(' · ')
+
   return (
     <EventEditorWindow backHref="/admin/events">
-      {/* Context band: who/where + a link out to the live event, then the editor. */}
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="truncate text-lg font-bold text-text">{event.title}</h1>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
-            {scope && <span>{scope.name}</span>}
-            {host && <span>· Hosted by {host.display_name}</span>}
+      {/* Context band on the shared PageHeading grammar (PAGE-FRAMEWORK §8): one page <h1>,
+          the live-event link in the actions slot, the Cancelled status as the eyebrow chip.
+          adminBar={false} — this Studio window owns its chrome, so no operator Settings rule. */}
+      <PageHeading
+        title={
+          <span className="inline-flex items-center gap-2 align-middle">
+            <span className="truncate">{event.title}</span>
             {event.is_cancelled && <StatusChip tone="danger" size="sm">Cancelled</StatusChip>}
-          </p>
-        </div>
-        <Link
-          href={`/events/${event.slug}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={buttonClasses('secondary', 'sm')}
-        >
-          View <ExternalLink className="h-3 w-3" />
-        </Link>
-      </div>
+          </span>
+        }
+        description={context || undefined}
+        actions={
+          <Link
+            href={`/events/${event.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonClasses('secondary', 'sm')}
+          >
+            View <ExternalLink className="h-3 w-3" />
+          </Link>
+        }
+        inlineActions
+        adminBar={false}
+      />
 
       {/* Edit form + cancel/reinstate + ticket tiers */}
       <EventEditClient

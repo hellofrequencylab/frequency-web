@@ -57,6 +57,9 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'practices-mine', label: 'Your practices', description: 'The member’s adopted and built practices, each with its log and edit controls.' },
   { id: 'practices-library', label: 'Practice library', description: 'The full, faceted community library — filterable by Pillar, tag, and search, paginated.' },
 
+  // ── Friends blocks (/friends) — the assignable section of the people surface ──
+  { id: 'friends-impact', label: 'Your impact', description: 'The member’s own private lead-funnel view: the people on Frequency because of them. Shows nothing until they’ve brought someone in.' },
+
   // ── The Vault blocks (/crew/store) — the member's earnings + the Gem Store ──
   { id: 'vault-standing', label: 'Standing hero', description: 'The four counts — Zaps · Rank · Streak · Gems — the one way a member’s standing renders.' },
   { id: 'vault-leaderboard', label: 'Standing link', description: 'A card linking to the cooperative leaderboard and streaks.' },
@@ -124,6 +127,12 @@ const ADMIN_JOURNEYS_MODULE_IDS = [
 // The Journeys member page (/journeys), in default render order.
 const JOURNEYS_MODULE_IDS = ['journeys-start', 'journeys-mine', 'journeys-library'] as const
 
+// The Friends page (/friends) blocks, in default render order. The bucket lists (incoming/outgoing
+// requests, orbit, introductions) stay hand-composed in the page because they depend on the `mode`
+// search param a nested module never receives; the trailing "Your impact" section is the assignable
+// block, so the page renders it through <PageModules> like every other module-driven surface.
+const FRIENDS_MODULE_IDS = ['friends-impact'] as const
+
 // The Practices page (/practices) blocks, in default render order. The faceted Practice Library is
 // a module too (practices-library): it's URL-driven, so it reads the page's facets from the
 // `x-search` request header (proxy.ts) rather than searchParams, which a nested module never gets.
@@ -176,6 +185,7 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/crew': CREW_MODULE_IDS,
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
+  '/friends': FRIENDS_MODULE_IDS,
   '/practices': PRACTICES_MODULE_IDS,
   // Section scope: applies to every /practices/<id> detail page (shared layout).
   '/practices/*': PRACTICE_DETAIL_MODULE_IDS,
