@@ -3,7 +3,7 @@ import { getActiveSpace } from '@/lib/spaces/active-space'
 import { listEventsForSpace } from '@/lib/events/store'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EntityCard } from '@/components/cards/entity-card'
-import { EmptyState } from '@/components/ui/empty-state'
+import { EntitySectionEmpty } from '@/components/widgets/entity/entity-empty'
 
 // ENTITY MODULE — Offerings (ENTITY-SPACES-BUILD §B.2, row `entity-offerings`). A self-fetching
 // RSC: reads the active Space, lists its OWN upcoming events (listEventsForSpace is space_id-
@@ -27,10 +27,12 @@ export async function EntityOfferings() {
     <div>
       <SectionHeader title="Upcoming sessions" count={live.length || undefined} />
       {live.length === 0 ? (
-        <EmptyState
+        <EntitySectionEmpty
           icon={CalendarDays}
           title="Nothing on the calendar yet."
           description="New sessions show up here the moment they're scheduled."
+          ownerTitle="No sessions on the calendar yet."
+          ownerActionLabel="Add your first session"
         />
       ) : (
         <div className="grid gap-4 @lg:grid-cols-2">

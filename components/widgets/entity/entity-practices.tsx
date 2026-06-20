@@ -4,7 +4,7 @@ import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EntityCard } from '@/components/cards/entity-card'
-import { EmptyState } from '@/components/ui/empty-state'
+import { EntitySectionEmpty } from '@/components/widgets/entity/entity-empty'
 
 // ENTITY MODULE — Practices & Journeys (ENTITY-SPACES-BUILD §B.2, rows `entity-practices` +
 // `entity-journeys`, folded into one tab module for Practitioner §B.3). A self-fetching RSC: reads
@@ -28,10 +28,12 @@ export async function EntityPractices() {
       <div>
         <SectionHeader title="Practices to start" count={practices.length || undefined} />
         {practices.length === 0 ? (
-          <EmptyState
+          <EntitySectionEmpty
             icon={Sparkles}
             title="No practices shared yet."
             description="Practices this space publishes show up here to try."
+            ownerTitle="No practices shared yet."
+            ownerActionLabel="Share your first practice"
           />
         ) : (
           <div className="grid gap-4 @lg:grid-cols-2">
@@ -55,10 +57,12 @@ export async function EntityPractices() {
       <div>
         <SectionHeader title="Journeys to begin" count={journeys.length || undefined} />
         {journeys.length === 0 ? (
-          <EmptyState
+          <EntitySectionEmpty
             icon={Route}
             title="No journeys shared yet."
             description="Multi-week Journeys this space builds show up here to adopt."
+            ownerTitle="No journeys built yet."
+            ownerActionLabel="Build your first Journey"
           />
         ) : (
           <div className="grid gap-4 @lg:grid-cols-2">

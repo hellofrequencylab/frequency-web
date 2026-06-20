@@ -47,6 +47,11 @@ export interface RoleBlueprint {
   heroStats: readonly HeroStat[]
   /** The default skin token applied when this type provisions (a curated DAWN skin). */
   defaultSkin: string
+  /** The per-role DEFAULT brand accent: a DAWN token NAME (in lib/theme/validate.ts
+   *  TOKEN_ALLOWLIST and lib/spaces/accent.ts SUPPORTED_ACCENT_TOKENS) the shell paints when the
+   *  Space hasn't picked its own `brand_accent`. So even an un-customized profile reads distinct by
+   *  role (D4 "the accent is a guest"): a Space's own pick always overrides this. */
+  defaultAccent: string
 }
 
 // ── Practitioner (the recommended first role, §B.3) ──────────────────────────────────────────
@@ -56,20 +61,30 @@ const PRACTITIONER: RoleBlueprint = {
   type: 'practitioner',
   typeLabel: 'Practitioner',
   tabs: [
-    { id: 'about', label: 'About', modules: ['entity-about', 'entity-stats', 'entity-offerings'] },
-    { id: 'offerings', label: 'Offerings', modules: ['entity-offerings'] },
-    { id: 'practices', label: 'Practices & Journeys', modules: ['entity-practices'] },
-    { id: 'community', label: 'Community', modules: ['entity-community'] },
+    // A practitioner's job is "who I am, then what I offer": lead the About tab with the bio, then
+    // offerings. entity-stats is dropped here — the hero already shows the same live numbers (no
+    // double-counting; §3 dedupe). The hero carries the numbers band; About carries the story.
+    // entity-getting-started leads every BROWSE tab: it renders the single composite empty only when
+    // the whole profile has no content yet (else null), so a brand-new Space reads as intentional (§3).
+    { id: 'about', label: 'About', modules: ['entity-getting-started', 'entity-about', 'entity-offerings'] },
+    { id: 'offerings', label: 'Offerings', modules: ['entity-getting-started', 'entity-offerings'] },
+    { id: 'practices', label: 'Practices & Journeys', modules: ['entity-getting-started', 'entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-getting-started', 'entity-community'] },
     { id: 'book', label: 'Book', modules: ['entity-cta'] },
   ],
   primaryCta: { label: 'Book', tab: 'book' },
+  // Lead with offerings (all live events), not sessions (upcoming-only) — a profile mid-week can
+  // have offerings but no upcoming session, so leading with sessions risks an always-zero first
+  // stat the hero would just drop (coordinated with lib/spaces/profile-stats.ts).
   heroStats: [
-    { metric: 'sessions', label: 'Sessions' },
     { metric: 'offerings', label: 'Offerings' },
+    { metric: 'sessions', label: 'Sessions' },
     { metric: 'practices', label: 'Practices' },
     { metric: 'circles', label: 'Circles' },
   ],
   defaultSkin: 'dawn',
+  // Warm amber — the practitioner reads as the DAWN baseline (the human, personal end of the network).
+  defaultAccent: '--color-primary',
 }
 
 // ── Business: studio / gym / brand (§2.5) ────────────────────────────────────────────────────
@@ -85,20 +100,27 @@ const BUSINESS: RoleBlueprint = {
   type: 'business',
   typeLabel: 'Business',
   tabs: [
-    { id: 'about', label: 'About', modules: ['entity-about', 'entity-stats', 'entity-offerings', 'entity-team'] },
-    { id: 'offerings', label: 'Classes', modules: ['entity-offerings'] },
-    { id: 'practices', label: 'Practices', modules: ['entity-practices'] },
-    { id: 'community', label: 'Community', modules: ['entity-community'] },
+    // A studio sells the schedule first: lead About with the class list, then the bio, then the team
+    // (the staff who teach). entity-stats dropped (the hero shows the same counts, §3 dedupe).
+    // entity-getting-started leads every browse tab (the composite empty for a brand-new Space, §3).
+    { id: 'about', label: 'About', modules: ['entity-getting-started', 'entity-offerings', 'entity-about', 'entity-team'] },
+    { id: 'offerings', label: 'Classes', modules: ['entity-getting-started', 'entity-offerings'] },
+    { id: 'practices', label: 'Practices', modules: ['entity-getting-started', 'entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-getting-started', 'entity-community'] },
     { id: 'book', label: 'Join', modules: ['entity-cta'] },
   ],
   primaryCta: { label: 'Become a member', tab: 'book' },
+  // Lead with classes (live offerings) — a studio always has a schedule; members may be zero before
+  // anyone has joined, so members rides second to avoid an always-zero first stat.
   heroStats: [
-    { metric: 'members', label: 'Members' },
     { metric: 'offerings', label: 'Classes' },
+    { metric: 'members', label: 'Members' },
     { metric: 'circles', label: 'Circles' },
   ],
   // SAME curated DAWN skin as Practitioner for Wave B. Bespoke per-role skins are a LATER step.
   defaultSkin: 'dawn',
+  // Cyan-teal — a studio/brand reads cooler and more "product" than the warm practitioner.
+  defaultAccent: '--color-broadcast',
 }
 
 // ── Organization: non-profit (§2.6) ──────────────────────────────────────────────────────────
@@ -111,20 +133,27 @@ const ORGANIZATION: RoleBlueprint = {
   type: 'organization',
   typeLabel: 'Organization',
   tabs: [
-    { id: 'about', label: 'About', modules: ['entity-about', 'entity-stats', 'entity-offerings', 'entity-team'] },
-    { id: 'offerings', label: 'Programs', modules: ['entity-offerings'] },
-    { id: 'practices', label: 'Practices', modules: ['entity-practices'] },
-    { id: 'community', label: 'Community', modules: ['entity-community'] },
+    // A non-profit leads with its mission + programs (its impact), then the team behind it. About
+    // opens with the prose (the cause), then the programs list. entity-stats dropped (§3 dedupe).
+    // entity-getting-started leads every browse tab (the composite empty for a brand-new Space, §3).
+    { id: 'about', label: 'About', modules: ['entity-getting-started', 'entity-about', 'entity-offerings', 'entity-team'] },
+    { id: 'offerings', label: 'Programs', modules: ['entity-getting-started', 'entity-offerings'] },
+    { id: 'practices', label: 'Practices', modules: ['entity-getting-started', 'entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-getting-started', 'entity-community'] },
     { id: 'book', label: 'Donate', modules: ['entity-cta'] },
   ],
   primaryCta: { label: 'Donate', tab: 'book' },
+  // Lead with programs (live offerings) — a non-profit publishes programs from day one; supporters
+  // accrue over time, so it rides second rather than leading as a likely zero.
   heroStats: [
-    { metric: 'members', label: 'Supporters' },
     { metric: 'offerings', label: 'Programs' },
+    { metric: 'members', label: 'Supporters' },
     { metric: 'circles', label: 'Circles' },
   ],
   // SAME curated DAWN skin as Practitioner for Wave B. Bespoke per-role skins are a LATER step.
   defaultSkin: 'dawn',
+  // Green-teal — the "growth / cause" hue, distinct from the practitioner amber and the business cyan.
+  defaultAccent: '--color-signal',
 }
 
 // ── Coaching: academy (§2.7) ─────────────────────────────────────────────────────────────────
@@ -137,20 +166,28 @@ const COACHING: RoleBlueprint = {
   type: 'coaching',
   typeLabel: 'Coaching',
   tabs: [
-    { id: 'about', label: 'About', modules: ['entity-about', 'entity-stats', 'entity-offerings', 'entity-team'] },
-    { id: 'offerings', label: 'Programs', modules: ['entity-offerings'] },
-    { id: 'practices', label: 'Curriculum', modules: ['entity-practices'] },
-    { id: 'community', label: 'Community', modules: ['entity-community'] },
+    // A coaching academy sells the curriculum (the method): lead About with the practices/curriculum,
+    // then the bio, then the team (the coaches). entity-stats dropped (§3 dedupe).
+    // entity-getting-started leads every browse tab (the composite empty for a brand-new Space, §3).
+    { id: 'about', label: 'About', modules: ['entity-getting-started', 'entity-practices', 'entity-about', 'entity-team'] },
+    { id: 'offerings', label: 'Programs', modules: ['entity-getting-started', 'entity-offerings'] },
+    { id: 'practices', label: 'Curriculum', modules: ['entity-getting-started', 'entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-getting-started', 'entity-community'] },
     { id: 'book', label: 'Enroll', modules: ['entity-cta'] },
   ],
   primaryCta: { label: 'Enroll', tab: 'book' },
+  // Lead with the curriculum (practices + journeys) — the method exists before any cohort enrolls,
+  // so leading with the cohort count risks an always-zero first stat.
   heroStats: [
-    { metric: 'members', label: 'Cohort' },
     { metric: 'practices', label: 'Curriculum' },
+    { metric: 'members', label: 'Cohort' },
     { metric: 'circles', label: 'Cohorts' },
   ],
   // SAME curated DAWN skin as Practitioner for Wave B. Bespoke per-role skins are a LATER step.
   defaultSkin: 'dawn',
+  // Blue — the "academy / structured" hue (reads as the indigo end of the curated set), distinct
+  // from the green organization and cyan business.
+  defaultAccent: '--color-info',
 }
 
 // ── Event Space: venue / retreat (§2.8) ──────────────────────────────────────────────────────
@@ -164,20 +201,28 @@ const EVENT_SPACE: RoleBlueprint = {
   type: 'event_space',
   typeLabel: 'Event Space',
   tabs: [
-    { id: 'about', label: 'About', modules: ['entity-about', 'entity-stats', 'entity-offerings'] },
-    { id: 'offerings', label: 'Events', modules: ['entity-offerings'] },
-    { id: 'practices', label: 'Practices', modules: ['entity-practices'] },
-    { id: 'community', label: 'Community', modules: ['entity-community'] },
+    // A venue leads with what's on (the upcoming events), then a short about. entity-stats dropped
+    // (§3 dedupe — the hero already shows the event count). No team module: a venue is its calendar.
+    // entity-getting-started leads every browse tab (the composite empty for a brand-new Space, §3).
+    { id: 'about', label: 'About', modules: ['entity-getting-started', 'entity-offerings', 'entity-about'] },
+    { id: 'offerings', label: 'Events', modules: ['entity-getting-started', 'entity-offerings'] },
+    { id: 'practices', label: 'Practices', modules: ['entity-getting-started', 'entity-practices'] },
+    { id: 'community', label: 'Community', modules: ['entity-getting-started', 'entity-community'] },
     { id: 'book', label: 'Tickets', modules: ['entity-cta'] },
   ],
   primaryCta: { label: 'Get tickets', tab: 'book' },
+  // Lead with events (live offerings) — a venue is defined by its calendar; attendees accrue per
+  // event, so attendees rides second to avoid an always-zero first stat.
   heroStats: [
-    { metric: 'members', label: 'Attendees' },
     { metric: 'offerings', label: 'Events' },
+    { metric: 'members', label: 'Attendees' },
     { metric: 'circles', label: 'Circles' },
   ],
   // SAME curated DAWN skin as Practitioner for Wave B. Bespoke per-role skins are a LATER step.
   defaultSkin: 'dawn',
+  // Warning-gold — a warm, festive "box office" hue, distinct from the practitioner amber (a deeper,
+  // earthier gold) so a venue still reads apart at a glance.
+  defaultAccent: '--color-warning',
 }
 
 /** Every registered role blueprint, keyed by `spaces.type`. Practitioner is the Wave A first

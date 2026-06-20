@@ -76,6 +76,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // (ENTITY-SPACES-BUILD §B.2). Each is a self-fetching RSC scoped to the ACTIVE Space
   // (lib/spaces/active-space.ts); it reads only that Space's own rows and renders kit primitives,
   // returning null when the Space has nothing.
+  { id: 'entity-getting-started', label: 'Getting started', description: 'A single composite empty shown only while a brand-new profile has no content yet.' },
   { id: 'entity-about', label: 'About', description: 'The entity’s story, in plain prose.' },
   { id: 'entity-stats', label: 'Highlights', description: 'Live counts — sessions, offerings, practices, circles.' },
   { id: 'entity-offerings', label: 'Offerings', description: 'Upcoming sessions and events the entity hosts.' },
@@ -156,6 +157,7 @@ const VAULT_MODULE_IDS = [
 // operator may arrange. New role blueprints reuse the same registry bindings (one change updates
 // every profile of every type — the C3 guarantee).
 const SPACE_MODULE_IDS = [
+  'entity-getting-started',
   'entity-about',
   'entity-stats',
   'entity-offerings',

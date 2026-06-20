@@ -36,6 +36,7 @@ import { PracticeDetailAbout } from '@/components/widgets/practice-detail/practi
 import { PracticeDetailGuide } from '@/components/widgets/practice-detail/practice-detail-guide'
 import { PracticeDetailTags } from '@/components/widgets/practice-detail/practice-detail-tags'
 import { PracticeDetailUsedIn } from '@/components/widgets/practice-detail/practice-detail-usedin'
+import { EntityGettingStarted } from '@/components/widgets/entity/entity-getting-started'
 import { EntityAbout } from '@/components/widgets/entity/entity-about'
 import { EntityStats } from '@/components/widgets/entity/entity-stats'
 import { EntityOfferings } from '@/components/widgets/entity/entity-offerings'
@@ -95,6 +96,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'practice-detail-tags': PracticeDetailTags,
   'practice-detail-usedin': PracticeDetailUsedIn,
   // Entity profile (/spaces/<slug>/*) — the networked profile module set (ENTITY-SPACES-BUILD §B.2).
+  'entity-getting-started': EntityGettingStarted,
   'entity-about': EntityAbout,
   'entity-stats': EntityStats,
   'entity-offerings': EntityOfferings,
