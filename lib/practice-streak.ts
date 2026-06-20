@@ -410,6 +410,78 @@ export async function recordPracticeStreak(profileId: string): Promise<void> {
     .eq('id', profileId)
 }
 
+// --- un-log recompute (today-only; WEBSITE-CHANGES-PLAN §3 B.1 / D4) --------
+
+/**
+ * Re-derive the daily practice streak AFTER today's log has been deleted (the
+ * today-only un-log path, lib/practices.unlogPractice). This is the safe, dedicated
+ * counterpart to `recordPracticeStreak`: it NEVER re-runs the monotonic forward
+ * writer (which spends freezes + pays milestones permanently). It only recomputes
+ * the DISPLAYED count from the remaining logs and mirrors it to
+ * `profiles.current_streak`.
+ *
+ * Today-only scope keeps this trivial and lossless:
+ *   • The reserve (`freezeTokens`) and the bridged days (`frozenDates`) are LEFT
+ *     UNTOUCHED. A freeze spent to bridge a PAST slip reflects real history (the
+ *     member did miss that day); removing today's log never un-bridges it. So a
+ *     re-log later finds the same reserve + bridges it found before — no drift.
+ *   • Paid milestones (`milestonesPaid`) are LEFT UNTOUCHED. They are exactly-once
+ *     reward records; we never refund or re-pay them, so re-logging today can never
+ *     double-pay a milestone it already paid.
+ *   • `longest` is preserved as a high-water mark (a banked record never lowers),
+ *     consistent with the forward writer's GREATEST semantics.
+ *
+ * The result: after un-logging today, the streak shows exactly what it would have
+ * shown had today never been logged, with no economy side effects to reverse.
+ * Idempotent — calling it again (today already absent) is a no-op for the count.
+ */
+export async function recomputePracticeStreakAfterUnlog(profileId: string): Promise<void> {
+  const admin = createAdminClient()
+  const today = todayUTC()
+
+  const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
+  const meta = (prof?.meta ?? {}) as Record<string, unknown>
+  const stored = readStored(meta)
+
+  const { data: rows } = await admin
+    .from('practice_logs')
+    .select('logged_for')
+    .eq('profile_id', profileId)
+    .gte('logged_for', shiftDay(today, -WINDOW_DAYS))
+  // The just-deleted today row may still be visible to a racing read — drop it
+  // explicitly so the recompute reflects the post-un-log world.
+  const logged = new Set((rows ?? []).map((r) => String((r as { logged_for: string }).logged_for)))
+  logged.delete(today)
+
+  // Bridge with the SAME frozen set the read path uses (banked reserve days + any
+  // active rest window's covered days). We do not add to or spend from it here.
+  const frozen = new Set(stored.frozenDates)
+  for (const d of pauseCoveredDays(stored.rest, today)) frozen.add(d)
+
+  const { current } = derivePracticeStreak(logged, frozen, today)
+  const longest = Math.max(stored.longest, current) // never lower a banked record
+
+  const nextMeta = {
+    ...meta,
+    practiceStreak: {
+      freezeTokens: stored.freezeTokens,
+      frozenDates: stored.frozenDates,
+      milestonesPaid: stored.milestonesPaid,
+      longest,
+      fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
+      rest: stored.rest ?? null,
+      current,
+      lastDay: today,
+      updatedAt: new Date().toISOString(),
+    } satisfies StoredStreak,
+  }
+
+  await admin
+    .from('profiles')
+    .update({ meta: nextMeta as unknown as Json, current_streak: current, longest_streak: longest })
+    .eq('id', profileId)
+}
+
 // --- buy-a-freeze sink (Rewards Economy v3, ADR-305) -----------------------
 
 export interface GrantFreezeResult {

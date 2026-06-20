@@ -14,6 +14,7 @@ import { Check, Minus, Plus, X, ChevronDown, Info } from 'lucide-react'
 import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
+import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import {
   BELL_INTERVALS,
   BELL_TONES,
@@ -220,6 +221,10 @@ export function OnAirSession({
   const [cuesOpen, setCuesOpen] = useState(false)
   // The pattern how-to popup (setup + live): the full instructions for the current pattern.
   const [showInstructions, setShowInstructions] = useState(false)
+  // The practice chooser sheet (C.5): with more than one adopted practice the primary
+  // button reads "Select a practice" and opens this; picking one seeds its preset and
+  // begins the sit. With one/zero practices there's nothing to choose, so it never shows.
+  const [showChooser, setShowChooser] = useState(false)
   const router = useRouter()
   const [startedAt, setStartedAt] = useState(0)
   const [remaining, setRemaining] = useState(0)
@@ -232,12 +237,6 @@ export function OnAirSession({
   const [preroll, setPreroll] = useState<number | null>(null)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
-  // True only when the SETUP-screen effect (task #1) requested fullscreen, so its
-  // cleanup releases only what it took — never a fullscreen the live sit owns.
-  const setupFullscreen = useRef(false)
-  // Set the instant a sit goes live so the setup-fullscreen cleanup HANDS the
-  // fullscreen to the live sit instead of exiting it (no flicker on start).
-  const handingToLive = useRef(false)
   const finishing = useRef(false)
   const audio = useRef<AudioContext | null>(null)
   const lastPhase = useRef<BreathPhase | null>(null)
@@ -274,13 +273,11 @@ export function OnAirSession({
     } catch {
       // wake lock is progressive enhancement
     }
-    try {
-      if (window.matchMedia('(max-width: 768px)').matches) {
-        await document.documentElement.requestFullscreen?.()
-      }
-    } catch {
-      // fullscreen is progressive enhancement
-    }
+    // True fullscreen on every device now, not just mobile (C.1-3): the live sit
+    // owns the whole screen. Best-effort — iOS Safari no-ops and the dvh takeover
+    // is the fallback. Gesture-gated, so this only lands when acquireQuiet runs
+    // from the Start tap; the visibility re-acquire path just no-ops if denied.
+    await requestAppFullscreen()
   }
 
   async function releaseQuiet() {
@@ -290,11 +287,7 @@ export function OnAirSession({
       /* released already */
     }
     wakeLock.current = null
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen()
-    } catch {
-      /* fine */
-    }
+    await exitAppFullscreen()
   }
 
   // Re-acquire the wake lock when the tab comes back (the OS drops it on blur).
@@ -308,48 +301,11 @@ export function OnAirSession({
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [stage])
 
-  // The setup screen is already a full-viewport (100dvh) takeover, but on
-  // Android / an installed PWA we can also ask for true fullscreen so the
-  // browser chrome steps back the moment Mindless opens — not only once a sit
-  // goes live (task #1). Best-effort and mobile-only: iOS Safari has no
-  // Element.requestFullscreen, so the optional call simply no-ops, and the whole
-  // thing is guarded so it can never throw. We release on unmount only if this
-  // effect was the one that entered fullscreen (the live sit owns its own).
-  useEffect(() => {
-    if (stage !== 'setup') return
-    try {
-      if (
-        typeof document.fullscreenElement !== 'undefined' &&
-        !document.fullscreenElement &&
-        window.matchMedia('(max-width: 768px)').matches
-      ) {
-        const req = document.documentElement.requestFullscreen?.()
-        // requestFullscreen returns a Promise on success; swallow a rejection
-        // (denied without a gesture) and only mark ownership when it resolves.
-        if (req && typeof req.then === 'function') {
-          req.then(() => {
-            setupFullscreen.current = true
-          }).catch(() => {
-            // denied (no user gesture) — fine, the dvh takeover still covers it
-          })
-        }
-      }
-    } catch {
-      // fullscreen is progressive enhancement
-    }
-    return () => {
-      const owned = setupFullscreen.current
-      setupFullscreen.current = false
-      // Going live? Leave fullscreen in place — the live sit (acquireQuiet) wants
-      // it and will release it at the end. Only tear it down when truly leaving.
-      if (!owned || handingToLive.current) return
-      try {
-        if (document.fullscreenElement) void document.exitFullscreen()
-      } catch {
-        // already out
-      }
-    }
-  }, [stage])
+  // Fullscreen is requested from the click that OPENS this surface — the launcher's
+  // open gesture (Mindless overlay / Capture) and, once a sit goes live, acquireQuiet
+  // from the Start tap (C.1-3). It is gesture-gated, so a passive setup-stage effect
+  // could never enter it reliably; the dvh takeover above covers any device that
+  // denies (iOS Safari). On leave, exitAppFullscreen drops it.
 
   // Remember the member's setup choices for next time (localStorage). Best-effort:
   // a write is the only side effect here, so it never trips set-state-in-effect.
@@ -435,10 +391,17 @@ export function OnAirSession({
 
   // --- transitions -------------------------------------------------------------
 
-  async function start() {
-    if (!practiceId) return
-    if (mode === 'log') {
-      void finishWith(0, null)
+  // Begin a sit. The chooser (C.5) passes an override so a freshly picked practice
+  // starts on ITS preset (mode + duration_min) the same tick it's selected, without
+  // waiting for selectPractice's state writes to land. No override = the current
+  // setup state (the footer button's path).
+  async function start(override?: { practiceId: string; mode: SessionMode; minutes: number }) {
+    const activeId = override?.practiceId ?? practiceId
+    const activeMode = override?.mode ?? mode
+    const activeMinutes = override?.minutes ?? minutes
+    if (!activeId) return
+    if (activeMode === 'log') {
+      void finishWith(0, null, override?.practiceId)
       return
     }
     if (bell) {
@@ -460,11 +423,23 @@ export function OnAirSession({
     const now = Date.now()
     setStartedAt(now)
     setPausedAt(now)
-    setRemaining(minutes * 60)
+    setRemaining(activeMinutes * 60)
     setPreroll(5)
-    handingToLive.current = true // setup-fullscreen cleanup hands off, never exits
     setStage('live')
     void acquireQuiet()
+  }
+
+  // The chooser pick (C.5): seed the picked practice's preset (mode + duration) and
+  // begin its sit on the same tap. A timeless practice opens log-only (selectPractice's
+  // rule), so the override mode follows suit.
+  function chooseAndStart(id: string) {
+    const picked = practices.find((p) => p.id === id)
+    const hasTime = (picked?.durationMin ?? 0) > 0
+    const nextMode: SessionMode = hasTime ? (mode === 'log' ? 'timer' : mode) : 'log'
+    const nextMinutes = hasTime ? durationFor(id) : minutes
+    selectPractice(id)
+    setShowChooser(false)
+    void start({ practiceId: id, mode: nextMode, minutes: nextMinutes })
   }
 
   // Begin the sit now: end the pre-roll and unpause from the armed state (shift startedAt by the
@@ -495,12 +470,18 @@ export function OnAirSession({
     await finishWith(seconds, new Date(startedAt).toISOString())
   }
 
-  async function finishWith(seconds: number, startedIso: string | null) {
+  async function finishWith(seconds: number, startedIso: string | null, practiceIdOverride?: string) {
     setStage('saving')
     await releaseQuiet()
+    // The chooser can finish a freshly picked log-only practice the same tick it's
+    // selected, before practiceId state lands — resolve the override against the list
+    // so its Free-sit mapping (logsAs) still holds.
+    const resolved = practiceIdOverride
+      ? practices.find((p) => p.id === practiceIdOverride) ?? practice
+      : practice
     const result = await completeSession({
       // A Free sit logs the default sit practice (chip.logsAs); every real practice logs itself.
-      practiceId: practice?.logsAs ?? practiceId,
+      practiceId: resolved?.logsAs ?? practiceIdOverride ?? practiceId,
       mode,
       pattern: patternSlug,
       seconds,
@@ -532,6 +513,9 @@ export function OnAirSession({
   // Zap button or the board's radio); direct entries (PWA shortcut, typed URL)
   // have no app history, so they land on the feed instead of exiting the app.
   function leave() {
+    // Drop true fullscreen if the launcher's open gesture entered it (C.1-3); the
+    // dvh takeover that remains is torn down by the unmount below.
+    void exitAppFullscreen()
     if (onExit) {
       onExit()
       return
@@ -560,7 +544,7 @@ export function OnAirSession({
   // reveal and "back to feed" are the same exit.
   function closeReveal() {
     setPayload(null)
-    handingToLive.current = false
+    void exitAppFullscreen()
     setStage('setup')
     leaveToFeed()
   }
@@ -972,32 +956,21 @@ export function OnAirSession({
         </div>
       </div>
 
-      {/* Practice — moved below the modes + cues (owner ask). One scrollable chip row;
-          hidden entirely when there's only one adopted practice (auto-selected). */}
-      {practices.length > 1 && (
+      {/* Practice — the current pick (C.5). With more than one adopted practice the
+          chip row is promoted to the chooser sheet behind the "Select a practice"
+          button below, so this is just a quiet read-out of what's selected. One/zero
+          practices auto-select, so nothing renders. */}
+      {practices.length > 1 && practice && (
         <div className="mt-5 lg:mt-6">
           <Label>Practice</Label>
-          <div className="-mx-8 mt-2 flex gap-1.5 overflow-x-auto px-8 pb-0.5 lg:-mx-0 lg:flex-wrap lg:px-0">
-            {practices.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => selectPractice(p.id)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                  p.id === practiceId
-                    ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                    : 'border-border text-muted hover:bg-surface-elevated'
-                }`}
-              >
-                <span className="max-w-[12rem] truncate">{p.title}</span>
-                {p.loggedToday && <Check className="h-3 w-3 shrink-0 text-success" />}
-              </button>
-            ))}
-          </div>
+          <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold text-text">
+            <span className="truncate">{practice.title}</span>
+            {practice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
+          </p>
         </div>
       )}
 
-      {/* Pinned: Tune out never sinks below the fold, even with Custom open. */}
+      {/* Pinned: the primary action never sinks below the fold, even with Custom open. */}
       <div className="sticky bottom-0 -mx-8 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-8 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6 lg:-mx-10 lg:px-10">
         {practice?.loggedToday && mode !== 'log' && (
           <p className="pb-1.5 text-center text-2xs text-subtle">
@@ -1009,20 +982,110 @@ export function OnAirSession({
             {practicedToday} members practiced today.
           </p>
         )}
-        <button
-          type="button"
-          onClick={() => void start()}
-          disabled={!practiceId}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
-        >
-          <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Tune out'}
-        </button>
+        {/* With several practices the primary action is "Select a practice" → the
+            chooser sheet (C.5); picking one opens its timer preset and begins. With
+            one/zero practices there's nothing to choose, so it starts directly. */}
+        {practices.length > 1 ? (
+          <button
+            type="button"
+            onClick={() => setShowChooser(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover lg:mx-auto lg:max-w-sm"
+          >
+            <OnAirIcon className="h-4 w-4" /> Select a practice
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void start()}
+            disabled={!practiceId}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
+          >
+            <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Tune out'}
+          </button>
+        )}
       </div>
       </div>
       </div>
       {showInstructions && (
         <InstructionsPopup pattern={pattern} onClose={() => setShowInstructions(false)} />
       )}
+      {showChooser && (
+        <PracticeChooser
+          practices={practices}
+          selectedId={practiceId}
+          onPick={chooseAndStart}
+          onClose={() => setShowChooser(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+/** The practice chooser sheet (C.5): the promoted chip row. Picking a practice opens
+ *  its timer preset and begins the sit (chooseAndStart). A calm centered overlay above
+ *  the setup takeover (z-[60] > z-50), dismissible by the Close button, the scrim, or Esc. */
+function PracticeChooser({
+  practices,
+  selectedId,
+  onPick,
+  onClose,
+}: {
+  practices: OnAirPractice[]
+  selectedId: string
+  onPick: (id: string) => void
+  onClose: () => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Select a practice"
+      className="fixed inset-0 z-[60] flex items-end justify-center px-4 pb-4 sm:items-center sm:px-6"
+    >
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
+      />
+      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface px-5 py-5 shadow-lg">
+        <div className="flex items-center justify-between pb-3">
+          <h2 className="text-base font-semibold text-text">Select a practice</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="-mx-1 max-h-[60vh] space-y-1.5 overflow-y-auto px-1">
+          {practices.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onPick(p.id)}
+              className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3.5 py-3 text-left text-sm transition-colors ${
+                p.id === selectedId
+                  ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                  : 'border-border text-muted hover:bg-surface-elevated'
+              }`}
+            >
+              <span className="min-w-0 flex-1 truncate">{p.title}</span>
+              {p.loggedToday && <Check className="h-4 w-4 shrink-0 text-success" aria-label="Logged today" />}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

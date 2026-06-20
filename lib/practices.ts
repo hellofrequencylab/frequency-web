@@ -12,9 +12,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { track } from '@/lib/analytics/track'
-import { awardZaps, awardZapsForAction } from '@/lib/zaps'
+import { awardZaps, awardZapsForAction, reverseZaps } from '@/lib/zaps'
 import { recordStreakActivity, processGamificationEvent } from '@/lib/achievements'
-import { recordPracticeStreak } from '@/lib/practice-streak'
+import { recordPracticeStreak, recomputePracticeStreakAfterUnlog } from '@/lib/practice-streak'
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
@@ -1017,9 +1017,22 @@ export interface LogBonusResult {
   gems: number
 }
 
+/**
+ * Anti-cheat: the most distinct practices a member may log in one UTC day, across
+ * ALL their practices (WEBSITE-CHANGES-PLAN §3 B.2 / D5). A genuine daily program is
+ * a handful of practices; this ceiling only ever bites a farming loop, and is well
+ * above any real day. Counted against `practice_logs WHERE logged_for = today` before
+ * the award (each practice is already once-per-day via the idempotency key, so this
+ * caps the BREADTH of distinct practices, not re-logs of the same one).
+ */
+export const MAX_PRACTICE_LOGS_PER_DAY = 25
+
 export interface LogPracticeResult {
-  /** false = already logged this practice today (idempotent). */
+  /** false = already logged this practice today (idempotent), OR the daily cap was hit. */
   logged: boolean
+  /** true = refused by the per-day total-logs anti-cheat cap (B.2), distinct from a
+   *  plain idempotent no-op. The caller can show a calm "that's plenty for today" line. */
+  cappedDaily?: boolean
   zapsAwarded: number
   /** Daily-loop bonus this log unlocked (Spark, the v3 variable layer), for the toast. */
   journey?: LogBonusResult
@@ -1041,6 +1054,30 @@ export async function logPractice(input: {
 }): Promise<LogPracticeResult> {
   const { profileId, practiceId, circleId = null } = input
   const day = new Date().toISOString().slice(0, 10) // yyyy-mm-dd
+
+  // Anti-cheat (B.2 / D5): a per-day TOTAL-logs cap across all practices. Counted
+  // BEFORE the idempotency row is written, so refusing here never strands an
+  // engagement_events row that would silently block a later real log. A practice the
+  // member has ALREADY logged today is exempt (re-running its idempotent log must
+  // still no-op cleanly, not trip the cap), so the count only blocks NEW distinct
+  // practices once the ceiling is reached. Fail-open on a read error — the cap must
+  // never break a legitimate log.
+  try {
+    const { data: todays } = await db()
+      .from('practice_logs')
+      .select('practice_id')
+      .eq('profile_id', profileId)
+      .eq('logged_for', day)
+    const loggedIds = ((todays as { practice_id: string }[] | null) ?? []).map((r) => r.practice_id)
+    if (
+      loggedIds.length >= MAX_PRACTICE_LOGS_PER_DAY &&
+      !loggedIds.includes(practiceId)
+    ) {
+      return { logged: false, cappedDaily: true, zapsAwarded: 0 }
+    }
+  } catch {
+    // the cap read is best-effort; a genuine log is never blocked by it
+  }
 
   const { recorded } = await recordEngagementEvent({
     idempotencyKey: `practice_log:${profileId}:${practiceId}:${day}`,
@@ -1145,6 +1182,22 @@ export async function logPractice(input: {
     // never let a reward read break the log
   }
 
+  // Record the awarded amount on the log row so the today-only un-log (B.1) can debit
+  // it EXACTLY — the live zap_config / weight_class / reward_zaps can all drift between
+  // log and un-log, so the row carries the true grant. Best-effort + reached through the
+  // untyped handle (the `zaps_awarded` column is newer than the generated types; ADR-246):
+  // a failed write just leaves NULL, which the un-log treats as 0 (never over-debits).
+  try {
+    await db()
+      .from('practice_logs')
+      .update({ zaps_awarded: zapsAwarded })
+      .eq('profile_id', profileId)
+      .eq('practice_id', practiceId)
+      .eq('logged_for', day)
+  } catch {
+    // never let the un-log bookkeeping write break the log
+  }
+
   await recordStreakActivity(profileId, 'attendance').catch(() => {})
   // The daily practice streak (the headline streak members feel) — advances the
   // consecutive-day count, spends a freeze to bridge a slip, and pays milestone
@@ -1214,4 +1267,134 @@ export async function logPractice(input: {
   }
 
   return { logged: true, zapsAwarded, journey, welcomeBack }
+}
+
+// --- Un-log (today-only; WEBSITE-CHANGES-PLAN §3 B.1 / D4) -----------------
+
+export interface UnlogPracticeResult {
+  /** A log existed for today and was reversed. false = nothing to un-log. */
+  unlogged: boolean
+  /** The Zaps debited (a positive number for display), 0 when none were awarded. */
+  zapsReversed: number
+}
+
+/**
+ * Reverse TODAY's log of a practice (the "I logged that by mistake" undo, D4 =
+ * today-only). Scoped to the caller's OWN log for the current UTC day; the action
+ * layer resolves `profileId` from the session, so this lib fn never trusts a
+ * client-supplied member id. A past day's log is intentionally NOT reversible here
+ * (full historical reversal is out of scope — it would have to un-bridge freezes and
+ * un-pay milestones).
+ *
+ * The exact reversal, in order:
+ *   1. Delete the durable `practice_logs` row for (profile, practice, today).
+ *   2. Delete the `engagement_events` idempotency row keyed
+ *      `practice_log:{profile}:{practice}:{day}` — CRITICAL: leaving it silently
+ *      blocks re-logging the same practice today (recordEngagementEvent would treat
+ *      the next log as a duplicate no-op).
+ *   3. Debit the EXACT Zaps the log granted: the amount stored on the row at log time
+ *      (`zaps_awarded`) drives a single compensating zap_transactions row via
+ *      `reverseZaps` (the trigger subtracts it from totals; awardZaps can't debit).
+ *   4. Re-derive the streak with the dedicated recompute (NEVER the monotonic forward
+ *      writer): rebuilds current/longest from the remaining logs, leaving freezes +
+ *      paid milestones intact (today-only never has to un-bridge / un-pay).
+ *   5. Best-effort: reverse the welcome.back / spark reward_grants THIS log created
+ *      (so a re-log can re-roll them). The weekly attendance `streaks` tick and the
+ *      creator validation payout are left alone by design.
+ *
+ * Idempotent: if there is no log for today, it returns `{ unlogged: false }` and
+ * touches nothing (so a double-tap of the undo control can't double-debit).
+ */
+export async function unlogPractice(input: {
+  profileId: string
+  practiceId: string
+}): Promise<UnlogPracticeResult> {
+  const { profileId, practiceId } = input
+  const day = new Date().toISOString().slice(0, 10) // yyyy-mm-dd
+
+  // Resolve the log row (and its stored grant) first. No row → nothing to un-log;
+  // returning early here is what makes the whole path idempotent.
+  const { data: logRow } = await db()
+    .from('practice_logs')
+    .select('id, zaps_awarded')
+    .eq('profile_id', profileId)
+    .eq('practice_id', practiceId)
+    .eq('logged_for', day)
+    .maybeSingle()
+  const row = logRow as { id: string; zaps_awarded: number | null } | null
+  if (!row) return { unlogged: false, zapsReversed: 0 }
+
+  // 1. Delete the durable log row (scoped to the caller + today).
+  await db()
+    .from('practice_logs')
+    .delete()
+    .eq('profile_id', profileId)
+    .eq('practice_id', practiceId)
+    .eq('logged_for', day)
+
+  // 2. Delete the idempotency row — without this, re-logging today is silently a
+  //    no-op (recordEngagementEvent sees the key and returns recorded=false).
+  await db()
+    .from('engagement_events')
+    .delete()
+    .eq('idempotency_key', `practice_log:${profileId}:${practiceId}:${day}`)
+
+  // 3. Reverse the Zap grant EXACTLY. The row's stored amount is the true grant; a
+  //    null (pre-feature row) reverses nothing rather than guessing. reverseZaps is a
+  //    no-op for <= 0, so a zero-Zap practice debits nothing.
+  let zapsReversed = 0
+  try {
+    const awarded = row.zaps_awarded ?? 0
+    const r = await reverseZaps(profileId, awarded, {
+      actionType: 'practice_log_reversed',
+      metadata: { practiceId, day },
+    })
+    if (r.reversed) zapsReversed = -r.amount // r.amount is negative; show the magnitude
+  } catch {
+    // a reversal-write failure must never leave the log un-deletable; the row is
+    // already gone, so re-logging works — the debit just didn't land
+  }
+
+  // 4. Re-derive the streak from the remaining logs (dedicated recompute, never the
+  //    monotonic forward writer). Today-only scope keeps freezes + milestones intact.
+  await recomputePracticeStreakAfterUnlog(profileId).catch(() => {})
+
+  // 5. Best-effort: undo the one-shot bonus grants THIS log unlocked, so a re-log can
+  //    re-roll them. Welcome Back is keyed by the return DAY; Spark by member+day. We
+  //    only ever reverse the matching Zap grants (Spark Gems are rank-safe + tiny, and
+  //    awardGems has no debit primitive, so we leave the Gem ledger untouched — the
+  //    reward_grants claim row is removed so the day re-opens for a fresh roll/grant).
+  try {
+    const admin = db()
+    // Reverse the Welcome Back Zaps if this log paid them today.
+    const { data: wb } = await admin
+      .from('reward_grants')
+      .select('reward_kind')
+      .eq('profile_id', profileId)
+      .eq('rule_key', `welcome.back:${day}`)
+      .maybeSingle()
+    if (wb) {
+      const { ZAP_AMOUNTS } = await import('@/lib/zaps')
+      await reverseZaps(profileId, ZAP_AMOUNTS.welcome_back, {
+        actionType: 'welcome_back_reversed',
+        metadata: { day },
+      })
+      await admin
+        .from('reward_grants')
+        .delete()
+        .eq('profile_id', profileId)
+        .eq('rule_key', `welcome.back:${day}`)
+    }
+    // Re-open today's Spark by removing the claim row (so a re-log can roll again). The
+    // tiny Gem payout is rank-safe and left in the ledger; only the cap claim is cleared.
+    await admin
+      .from('reward_grants')
+      .delete()
+      .eq('profile_id', profileId)
+      .eq('rule_key', `spark:${profileId}:${day}`)
+  } catch {
+    // a best-effort bonus reversal must never break the un-log
+  }
+
+  return { unlogged: true, zapsReversed }
 }

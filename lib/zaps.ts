@@ -140,6 +140,54 @@ export async function awardZaps(
   return { awarded: true, amount: finalAmount }
 }
 
+export interface ReverseZapsResult {
+  reversed: boolean
+  /** The (negative) amount written to the ledger, or 0 when nothing to reverse. */
+  amount: number
+}
+
+/**
+ * Reverse a prior Zap grant by appending a COMPENSATING negative row to the ledger
+ * (`zap_transactions`). The `after_zap_transaction` trigger is still the single place
+ * totals move, so it subtracts the debit from season + lifetime zaps the same way a
+ * grant adds (rank is monotonic by design and never demotes — a small today-only
+ * un-log is well inside that contract; WEBSITE-CHANGES-PLAN §3 B.1).
+ *
+ * This is the negative-aware sibling of `awardZaps` (which REJECTS amount <= 0, so it
+ * cannot debit). Pass the POSITIVE amount that was originally granted; this inserts
+ * `-amount`. A zero / non-finite amount is a safe no-op (nothing to reverse).
+ *
+ * Idempotency is the caller's responsibility: `unlogPractice` only ever calls this
+ * once per log (the engagement_events idempotency row + practice_logs row are deleted
+ * in the same un-log, so the log can't be un-logged twice). The `actionType` defaults
+ * to a debit-marked label so the Vault "how you earned" log reads it as a reversal.
+ */
+export async function reverseZaps(
+  profileId: string,
+  amount: number,
+  opts: AwardZapsOpts = {},
+): Promise<ReverseZapsResult> {
+  if (!Number.isFinite(amount) || amount <= 0) return { reversed: false, amount: 0 }
+
+  const admin = createAdminClient()
+  const debit = -Math.floor(amount)
+  const { error } = await admin
+    .from('zap_transactions')
+    .insert({
+      profile_id: profileId,
+      action_type: opts.actionType ?? 'practice_log_reversed',
+      amount: debit,
+      metadata: (opts.metadata ?? {}) as Database['public']['Tables']['zap_transactions']['Insert']['metadata'],
+    })
+
+  if (error) {
+    console.error('[reverseZaps]', error.message)
+    return { reversed: false, amount: 0 }
+  }
+
+  return { reversed: true, amount: debit }
+}
+
 /**
  * Award zaps for a named action, reading the amount from the tunable `zap_config`
  * table (falls back to ZAP_AMOUNTS if the row is missing). Use this for fixed-value
