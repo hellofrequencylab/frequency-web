@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { CalendarClock, ChevronRight, Eye, BadgeCheck, Settings, Users } from 'lucide-react'
+import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, DoorOpen, Eye, GraduationCap, HeartHandshake, Mail, QrCode, Settings, Ticket, Users } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminSection } from '@/components/templates'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -14,8 +14,11 @@ export const dynamic = 'force-dynamic'
 // themes registry — and hands them to the client editor. If the Space is missing, 404.
 //
 // It ALSO renders a "Preview owner back-end" section: a janitor (Executive Admin) can open any
-// Space's owner surfaces (Manage hub, Availability for a practitioner, Memberships for a business,
-// and Members) read-only, to see exactly what the owner sees. Those surfaces gate their render on
+// Space's owner surfaces read-only, to see exactly what the owner sees. This MIRRORS the live owner
+// settings hub (app/(main)/spaces/[slug]/settings/page.tsx) one-for-one so the preview never drifts
+// from it: the same per-type surfaces (practitioner -> Availability; business -> Memberships;
+// organization -> Donations; coaching -> Enrollment; event_space -> Check in AND Tickets) plus the
+// universal four every type gets (Members, QR codes, CRM, Email). Those surfaces gate their render on
 // canManage || staffViewing and keep every write on canEditProfile, so the preview is view-only.
 
 /** One preview link into a Space's owner back-end (icon tile + label + one-line note). */
@@ -76,6 +79,9 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
           title="Preview owner back-end"
           description="Open this Space's owner surfaces read-only, exactly as the owner sees them. Changes are disabled in preview."
         >
+          {/* The per-type link set MIRRORS the live owner settings hub one-for-one (read its page.tsx
+              for the source-of-truth gating + routes): the same type-gated surfaces, then the four
+              universal owner tools every type shares. Keep these in lockstep so the two never drift. */}
           <div className="space-y-3">
             <PreviewLink
               href={`/spaces/${space.slug}/settings`}
@@ -99,11 +105,62 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
                 description="The membership tiers and who has joined."
               />
             )}
+            {space.type === 'organization' && (
+              <PreviewLink
+                href={`/spaces/${space.slug}/settings/donations`}
+                icon={HeartHandshake}
+                title="Donations"
+                description="The fund, its description, and the suggested amounts members can pick."
+              />
+            )}
+            {space.type === 'coaching' && (
+              <PreviewLink
+                href={`/spaces/${space.slug}/settings/enroll`}
+                icon={GraduationCap}
+                title="Enrollment"
+                description="The program definition and who has enrolled."
+              />
+            )}
+            {space.type === 'event_space' && (
+              <PreviewLink
+                href={`/spaces/${space.slug}/settings/checkin`}
+                icon={DoorOpen}
+                title="Check in"
+                description="The door code and the live roster of who checked in."
+              />
+            )}
+            {space.type === 'event_space' && (
+              <PreviewLink
+                href={`/spaces/${space.slug}/settings/tickets`}
+                icon={Ticket}
+                title="Tickets"
+                description="The free or RSVP ticket tiers and who has reserved a spot."
+              />
+            )}
+            {/* The universal four every Space type composes (Members, QR, CRM, Email). */}
             <PreviewLink
               href={`/spaces/${space.slug}/settings/members`}
               icon={Users}
               title="Members"
               description="Who is on the team and the role each one holds."
+            />
+            <PreviewLink
+              href={`/spaces/${space.slug}/settings/qr`}
+              icon={QrCode}
+              title="QR codes"
+              description="The codes for this space and the landing pages they open to."
+            />
+            <PreviewLink
+              href={`/spaces/${space.slug}/settings/crm`}
+              icon={Briefcase}
+              title="CRM"
+              description="The pipeline, contacts, and private notes the owner keeps."
+            />
+            <PreviewLink
+              href={`/spaces/${space.slug}/settings/email`}
+              icon={Mail}
+              title="Email"
+              description="The campaigns the owner writes, schedules, and sends."
             />
             <PreviewLink
               href={`/spaces/${space.slug}`}

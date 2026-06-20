@@ -8,6 +8,9 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { BookingMember } from '@/components/spaces/booking-member'
 import { MembershipJoin } from '@/components/spaces/membership-join'
+import { DonateMember } from '@/components/spaces/donations/donate-member'
+import { EnrollMember } from '@/components/spaces/enroll/enroll-member'
+import { TicketsMember } from '@/components/spaces/tickets/tickets-member'
 import { EntityCtaLink } from '@/components/widgets/entity/entity-cta-link'
 
 // ENTITY MODULE - Action / Book (ENTITY-SPACES-BUILD section B.2, row `entity-booking`). A
@@ -24,10 +27,29 @@ import { EntityCtaLink } from '@/components/widgets/entity/entity-cta-link'
 //   registers the member, and the copy says so plainly (CONTENT-VOICE skeptic test). The tier fetch
 //   sits behind <Suspense> so the tab paints instantly (PAGE-FRAMEWORK section 5).
 //
-//   OTHER ROLES (Organization "Donate", Coaching "Enroll", Event Space "Get tickets"): the deep
-//   conversion engines are a LATER phase, so these show the Space's own upcoming sessions, each
-//   routing to the session page to RSVP. The primary CTA there records a `space.cta_click` event
-//   (Epic 1.11) via EntityCtaLink, so operators see CTA performance even before the deep engines ship.
+//   ORGANIZATION ("Donate"-type CTA): renders the real DONATE surface (MASTER-PLAN ADMIN-04, fed by
+//   the owner's donation ask from ADMIN-01). The member sees the fund label, description, and the
+//   owner's suggested amounts. v1 takes NO money: giving is not wired up yet and the copy says so
+//   plainly (CONTENT-VOICE skeptic test). DonateMember fires the `space.cta_click` event on mount.
+//
+//   COACHING ("Enroll"-type CTA): renders the real ENROLL surface (MASTER-PLAN ADMIN-04, fed by the
+//   owner's published program from ADMIN-02). The member sees the program details + seats left and
+//   enrolls (or, if already enrolled, sees their status + a Cancel). v1 takes NO payment: enrolling
+//   reserves a seat, and the copy says so plainly. The Enroll button fires `space.cta_click`.
+//
+//   EVENT SPACE ("Get tickets"-type CTA): renders the real TICKETS surface (MASTER-PLAN ADMIN-04, fed
+//   by the owner's tiers from ADMIN-03). The member sees the free / RSVP tiers and reserves a spot (or,
+//   if already reserved, sees their spot + a Cancel). v1 takes NO money: a tier is free entry or a
+//   no-charge RSVP, and the copy says so plainly. The Reserve button fires `space.cta_click`.
+//
+//   Each deep surface fetch sits behind <Suspense> so the tab paints instantly (PAGE-FRAMEWORK §5),
+//   and each names its empty state with EmptyState. So that operators keep seeing CTA performance just
+//   as the placeholder session list recorded it, every one of these surfaces fires a `space.cta_click`
+//   event (Epic 1.11) on the member's primary interaction.
+//
+//   REMAINING ROLES (anything without a deep engine, e.g. hub / lab / partner): fall through to the
+//   Space's own upcoming sessions, each routing to the session page to RSVP. The primary CTA there
+//   records a `space.cta_click` event (Epic 1.11) via EntityCtaLink.
 //
 // NULL only when there is no active Space.
 //
@@ -58,6 +80,42 @@ export async function EntityCta() {
       <ModuleCard title="Become a member" tile>
         <Suspense fallback={<MembershipSkeleton />}>
           <MembershipJoin spaceId={space.id} />
+        </Suspense>
+      </ModuleCard>
+    )
+  }
+
+  // Organization is the role whose deep feature is donations (the "Donate" CTA). Render the live
+  // Donate surface (owner-configured ask). v1 takes no money; giving is not wired up yet.
+  if (space.type === 'organization') {
+    return (
+      <ModuleCard title={ctaLabel} tile>
+        <Suspense fallback={<MembershipSkeleton />}>
+          <DonateMember spaceId={space.id} />
+        </Suspense>
+      </ModuleCard>
+    )
+  }
+
+  // Coaching is the role whose deep feature is enrollment (the "Enroll" CTA). Render the live Enroll
+  // surface (owner-published program + seats). v1 takes no payment; enrolling reserves a seat.
+  if (space.type === 'coaching') {
+    return (
+      <ModuleCard title="Enroll in the program" tile>
+        <Suspense fallback={<MembershipSkeleton />}>
+          <EnrollMember spaceId={space.id} />
+        </Suspense>
+      </ModuleCard>
+    )
+  }
+
+  // Event Space is the role whose deep feature is ticketing (the "Get tickets" CTA). Render the live
+  // Tickets surface (owner tiers, free / RSVP). v1 takes no money; reserving records a spot.
+  if (space.type === 'event_space') {
+    return (
+      <ModuleCard title="Get tickets" tile>
+        <Suspense fallback={<MembershipSkeleton />}>
+          <TicketsMember spaceId={space.id} />
         </Suspense>
       </ModuleCard>
     )
