@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, DoorOpen, Mail, QrCode, Users } from 'lucide-react'
+import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, DoorOpen, GraduationCap, HeartHandshake, Mail, QrCode, Ticket, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
@@ -153,6 +153,28 @@ export default async function SpaceSettingsPage({
           />
         )}
 
+        {space.type === 'organization' && (
+          // An Organization configures its hosted donation asks (a fund label, a short description, and
+          // suggested amounts). No money in v1 (ADMIN-01); the member Donate CTA reads this config.
+          <HubCard
+            href={`/spaces/${space.slug}/settings/donations`}
+            icon={HeartHandshake}
+            title="Donations"
+            description="Set up your fund, a short description, and the amounts members can pick."
+          />
+        )}
+
+        {space.type === 'coaching' && (
+          // The Coaching academy's enrollment lives on its own Focus surface (the program editor + the
+          // enrollee list). No money in v1 (ADMIN-02).
+          <HubCard
+            href={`/spaces/${space.slug}/settings/enroll`}
+            icon={GraduationCap}
+            title="Enrollment"
+            description="Define your program and see who has enrolled."
+          />
+        )}
+
         {/* `event_space` is a first-class member of `SpaceType` (HARD-01 / ADR-339), so this branch is a
             plain, exhaustively-checked comparison: no `as string` cast. */}
         {space.type === 'event_space' && (
@@ -163,6 +185,17 @@ export default async function SpaceSettingsPage({
             icon={DoorOpen}
             title="Check in"
             description="Show your door code and see who checked in."
+          />
+        )}
+
+        {space.type === 'event_space' && (
+          // An Event Space runs free / RSVP ticketing (no money in v1; real paid ticketing is Phase 4):
+          // the owner tier editor + the RSVP roster (ADMIN-03).
+          <HubCard
+            href={`/spaces/${space.slug}/settings/tickets`}
+            icon={Ticket}
+            title="Tickets"
+            description="Set up free or RSVP ticket tiers, and see who has reserved a spot."
           />
         )}
 
