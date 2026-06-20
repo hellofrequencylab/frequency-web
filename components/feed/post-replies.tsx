@@ -64,6 +64,10 @@ export function PostReplies({
     if (!body.trim()) return
     const text = body
     setBody('')
+    // The composer is always visible, so a comment can be sent while the thread is
+    // collapsed — open it on submit (and mark loaded) so the new reply is seen.
+    setOpen(true)
+    setLoaded(true)
     startTransition(async () => {
       await createReply(postId, text)
       const data = await fetchReplies(postId)
@@ -76,8 +80,9 @@ export function PostReplies({
   return (
     <div>
       {/* One balanced action line under the post content: reactions, the comment
-          toggle, and the reward chip — all on the right. */}
-      <div className="mt-3 flex items-center justify-end gap-0.5 border-t border-border pt-2">
+          toggle, and the reward chip — all on the right. No divider rule; spacing
+          alone separates it from the content (density over lines). */}
+      <div className="mt-3 flex items-center justify-end gap-0.5">
         {reactions}
         <button
           onClick={() => setOpen((o) => !o)}
@@ -93,13 +98,13 @@ export function PostReplies({
               <path d="M14 8.5c0 3.04-2.686 5.5-6 5.5a6.6 6.6 0 01-2.4-.45L2 15l.95-3.05A5.23 5.23 0 012 8.5C2 5.46 4.686 3 8 3s6 2.46 6 5.5z" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           )}
-          {count > 0 ? count : 'Reply'}
+          {count > 0 && count}
         </button>
         {reward}
       </div>
 
       {open && (
-        <div className="mt-3 border-t border-border pt-3 space-y-3">
+        <div className="mt-3 space-y-3">
           {/* Existing replies */}
           {!loaded && isPending ? (
             <div className="flex justify-center py-2">
@@ -141,35 +146,37 @@ export function PostReplies({
             ))}
             </div>
           )}
-
-          {/* Reply composer — a single growing line; ⌘/Ctrl+Enter or the button sends. */}
-          <form onSubmit={handleSubmit} className="flex items-end gap-2 pl-2">
-            <textarea
-              value={body}
-              onChange={(e) => {
-                setBody(e.target.value)
-                e.target.style.height = 'auto'
-                e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`
-              }}
-              placeholder="Add a comment…"
-              rows={1}
-              disabled={isPending}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) handleSubmit(e)
-              }}
-              className="flex-1 resize-none rounded-xl border border-border bg-surface px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={!body.trim() || isPending}
-              aria-label="Send comment"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40 sm:h-auto sm:w-auto sm:p-2.5"
-            >
-              {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            </button>
-          </form>
         </div>
       )}
+
+      {/* Reply composer — ALWAYS under every post, not gated behind the toggle, so
+          "Add a comment" is a one-step action (A.2). A single growing line;
+          ⌘/Ctrl+Enter or the button sends. Submitting opens the thread. */}
+      <form onSubmit={handleSubmit} className="mt-3 flex items-end gap-2 pl-2">
+        <textarea
+          value={body}
+          onChange={(e) => {
+            setBody(e.target.value)
+            e.target.style.height = 'auto'
+            e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`
+          }}
+          placeholder="Add a comment…"
+          rows={1}
+          disabled={isPending}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) handleSubmit(e)
+          }}
+          className="flex-1 resize-none rounded-xl border border-border bg-surface px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50"
+        />
+        <button
+          type="submit"
+          disabled={!body.trim() || isPending}
+          aria-label="Send comment"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40 sm:h-auto sm:w-auto sm:p-2.5"
+        >
+          {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+        </button>
+      </form>
     </div>
   )
 }

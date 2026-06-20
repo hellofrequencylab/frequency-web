@@ -8,6 +8,7 @@ import type { Database } from '@/lib/database.types'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
 
@@ -206,9 +207,10 @@ export async function createReply(parentId: string, body: string) {
   awardGems(profileId, 'comment_reply').catch((e) => console.error('[feed gamification]', e))
   processGamificationEvent({ type: 'post_create', profileId }).catch((e) => console.error('[feed gamification]', e))
 
-  revalidatePath('/feed')
-  revalidatePath('/circles', 'layout')
-  revalidatePath('/people', 'layout')
+  // No revalidation: PostReplies re-fetches the thread (and re-derives the count)
+  // optimistically right after this resolves, so revalidating the feed here would
+  // only refetch the whole feed RPC for nothing (the same wasted work as the old
+  // reaction lag).
 }
 
 export async function fetchReplies(parentId: string) {
@@ -245,39 +247,58 @@ export async function fetchReplies(parentId: string) {
   }>
 }
 
+// Toggle the caller's heart / plus on a post. This is the site's highest-frequency
+// interaction, so it is deliberately lean: the client (ReactionButton) owns the
+// optimistic UI and tells us the DIRECTION it just applied (`activate`), so we do
+// exactly ONE idempotent write and NO revalidation (the client already reflects the
+// change; revalidating would refetch the whole feed and reintroduce the old lag).
+// Returns the new {active, count} so the client can reconcile its base state.
 export async function toggleReaction(
   postId: string,
-  reactionType: 'heart' | 'plus_one'
-) {
+  reactionType: 'heart' | 'plus_one',
+  activate: boolean,
+): Promise<ActionResult<{ active: boolean; count: number }>> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
+  if (!profileId) return fail('Not signed in')
 
-  // Use admin to check existence. User client handles the write so RLS applies
-  const admin = createAdminClient()
-  const { data: existing } = await admin
-    .from('post_reactions')
-    .select('id')
-    .eq('post_id', postId)
-    .eq('profile_id', profileId)
-    .eq('reaction_type', reactionType)
-    .maybeSingle()
-
+  // The user client so RLS applies (a member may only react as themselves).
   const supabase = await createClient()
 
-  if (existing) {
-    await supabase.from('post_reactions').delete().eq('id', existing.id)
-  } else {
-    await supabase.from('post_reactions').insert({
-      post_id: postId,
-      profile_id: profileId,
-      reaction_type: reactionType,
-    })
+  if (activate) {
+    // Idempotent insert against the unique (post_id, profile_id, reaction_type)
+    // constraint: a double-tap that races just no-ops instead of erroring.
+    const { error } = await supabase
+      .from('post_reactions')
+      .upsert(
+        { post_id: postId, profile_id: profileId, reaction_type: reactionType },
+        { onConflict: 'post_id,profile_id,reaction_type', ignoreDuplicates: true },
+      )
+    if (error) {
+      console.error('[toggleReaction]', error.message)
+      return fail('Could not save your reaction')
+    }
     awardGems(profileId, 'reaction').catch((e) => console.error('[feed gamification]', e))
+  } else {
+    // Idempotent un-react: delete by the natural key, no pre-existence check.
+    const { error } = await supabase
+      .from('post_reactions')
+      .delete()
+      .match({ post_id: postId, profile_id: profileId, reaction_type: reactionType })
+    if (error) {
+      console.error('[toggleReaction]', error.message)
+      return fail('Could not remove your reaction')
+    }
   }
 
-  revalidatePath('/feed')
-  revalidatePath('/circles', 'layout')
-  revalidatePath('/people', 'layout')
+  // Re-read this reaction's count so the client's base state stays exact even if a
+  // concurrent reaction landed; cheap (a single indexed count on one post).
+  const { count } = await supabase
+    .from('post_reactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('post_id', postId)
+    .eq('reaction_type', reactionType)
+
+  return ok({ active: activate, count: count ?? 0 })
 }
 
 export async function pinPost(postId: string) {

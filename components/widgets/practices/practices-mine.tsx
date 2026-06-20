@@ -1,10 +1,8 @@
-import Link from 'next/link'
-import { Pencil, Zap } from 'lucide-react'
+import { Zap } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
-import { getMemberPractices, type Practice } from '@/lib/practices'
+import { getMemberPractices, getPracticesToLogToday, type Practice } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
-import { LogPracticeButton } from '@/components/practice/log-practice-button'
-import { RemovePracticeButton } from '@/components/practice/remove-practice-button'
+import { PracticeRowActions } from '@/components/practice/practice-row-actions'
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { RowCard } from '@/components/cards/row-card'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -31,8 +29,21 @@ function PracticeMeta({ p }: { p: { category: string | null; cadence: string | n
 }
 
 // "Your practices" rows fold onto the kit's RowCard (actions mode: the title is the
-// link; the Log/Adopt/Edit controls sit right and never nest inside an anchor).
-function MineRow({ p, byId, profileId }: { p: Practice; byId: Map<string, Pillar>; profileId: string }) {
+// link; the action row sits right and never nests inside an anchor). The row is kept
+// tight (one button + one link, B.3): a "Log practice" button and an explicit "View
+// practice" link, with Edit/Remove tucked into the row's overflow menu. After a
+// successful log the action row collapses (B.4), which lives in the client wrapper.
+function MineRow({
+  p,
+  byId,
+  profileId,
+  loggedToday,
+}: {
+  p: Practice
+  byId: Map<string, Pillar>
+  profileId: string
+  loggedToday: boolean
+}) {
   return (
     <li>
       <RowCard
@@ -42,18 +53,13 @@ function MineRow({ p, byId, profileId }: { p: Practice; byId: Map<string, Pillar
         description={p.summary ?? p.description ?? undefined}
         meta={<PracticeMeta p={p} />}
         actions={
-          <>
-            {p.created_by === profileId && (
-              <Link
-                href={`/practices/${p.id}/edit`}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
-              >
-                <Pencil className="h-3.5 w-3.5" /> Edit
-              </Link>
-            )}
-            <LogPracticeButton practiceId={p.id} />
-            <RemovePracticeButton practiceId={p.id} title={p.title} />
-          </>
+          <PracticeRowActions
+            practiceId={p.id}
+            title={p.title}
+            href={`/practices/${p.id}`}
+            loggedToday={loggedToday}
+            isOwner={p.created_by === profileId}
+          />
         }
       />
     </li>
@@ -67,16 +73,24 @@ export async function PracticesMine() {
   const profileId = await getMyProfileId()
   if (!profileId) return null
 
-  const [mine, pillars] = await Promise.all([getMemberPractices(profileId), getPillars()])
+  // Seed the per-practice "logged today" state from the server (B.4) so a practice
+  // already logged today paints in the collapsed state, never flashing a live button.
+  // getPracticesToLogToday returns the NOT-yet-logged set; the complement is logged.
+  const [mine, pillars, toLog] = await Promise.all([
+    getMemberPractices(profileId),
+    getPillars(),
+    getPracticesToLogToday(profileId),
+  ])
   if (mine.length === 0) return null
   const byId = pillarsById(pillars)
+  const toLogIds = new Set(toLog.map((p) => p.id))
 
   return (
     <section id="practices-mine" className="scroll-mt-20">
       <SectionHeader title="Your practices" count={mine.length} />
       <ul className="space-y-3">
         {mine.map((p) => (
-          <MineRow key={p.id} p={p} byId={byId} profileId={profileId} />
+          <MineRow key={p.id} p={p} byId={byId} profileId={profileId} loggedToday={!toLogIds.has(p.id)} />
         ))}
       </ul>
     </section>

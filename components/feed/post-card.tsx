@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Heart, ThumbsUp, Megaphone, ArrowRight, Zap, NotebookPen } from 'lucide-react'
-import { toggleReaction } from '@/app/(main)/feed/actions'
+import { Megaphone, ArrowRight, Zap, NotebookPen } from 'lucide-react'
 import { PostReplies } from './post-replies'
+import { ReactionButton } from './reaction-button'
 import { ContextActions } from '@/components/context-actions'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { getInitials, relativeTime } from '@/lib/utils'
@@ -246,28 +246,18 @@ export function PostCard({
             initialCount={replyCount}
             reactions={
               <>
-                <form action={toggleReaction.bind(null, post.id, 'heart')}>
-                  <button
-                    type="submit"
-                    className={`flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
-                      myHeart ? 'text-danger' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                    }`}
-                  >
-                    <Heart className={`w-3.5 h-3.5 ${myHeart ? 'fill-current' : ''}`} />
-                    {heartCount > 0 && <span>{heartCount}</span>}
-                  </button>
-                </form>
-                <form action={toggleReaction.bind(null, post.id, 'plus_one')}>
-                  <button
-                    type="submit"
-                    className={`flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
-                      myPlus ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                    }`}
-                  >
-                    <ThumbsUp className={`w-3.5 h-3.5 ${myPlus ? 'fill-current' : ''}`} />
-                    {plusCount > 0 && <span>{plusCount}</span>}
-                  </button>
-                </form>
+                <ReactionButton
+                  postId={post.id}
+                  reactionType="heart"
+                  initialActive={myHeart}
+                  initialCount={heartCount}
+                />
+                <ReactionButton
+                  postId={post.id}
+                  reactionType="plus_one"
+                  initialActive={myPlus}
+                  initialCount={plusCount}
+                />
               </>
             }
             reward={
