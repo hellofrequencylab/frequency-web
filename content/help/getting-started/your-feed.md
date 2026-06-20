@@ -22,7 +22,7 @@ Switch to the **Story** view for the day-by-day record of what the community act
 ## Making it yours
 
 - Join more [circles](/help/getting-started/join-a-circle) to bring more life into your feed.
-- React and comment; a feed gets good when people actually talk to each other.
+- React and comment; reactions land the instant you tap, and the comment box is always there under a post. A feed gets good when people actually talk to each other.
 - Quiet feed? That usually means it's time to join another circle or show up to an event in person. Haven't joined one yet? The feed shows a **Find your first circle** prompt, or ask Vera to suggest one.
 
 If you want to start something yourself, see [Posting & sharing](/help/sharing/posts).
