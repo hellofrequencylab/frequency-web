@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BadgeCheck, CalendarClock, ChevronRight, Users } from 'lucide-react'
+import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, DoorOpen, QrCode, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
@@ -153,12 +153,40 @@ export default async function SpaceSettingsPage({
           />
         )}
 
+        {/* `SpaceType` does not yet list 'event_space' (the role is live in the DB CHECK + blueprints +
+            picker, but widening the hand-written union is a deferred solo task that risks exhaustiveness
+            cascades), so compare as a string the way event_space is resolved elsewhere. */}
+        {(space.type as string) === 'event_space' && (
+          // An Event Space runs door check-in: a reusable QR by the door, and the live roster of who
+          // scanned in. Reuses the existing scan path; this card links to the owner roster surface.
+          <HubCard
+            href={`/spaces/${space.slug}/settings/checkin`}
+            icon={DoorOpen}
+            title="Check in"
+            description="Show your door code and see who checked in."
+          />
+        )}
+
         {/* Members is available for every Space type: who is on the team, and their roles. */}
         <HubCard
           href={`/spaces/${space.slug}/settings/members`}
           icon={Users}
           title="Members"
           description="See who is on your team and the role each one holds."
+        />
+
+        {/* QR codes + CRM are owner tools every Space type can use. */}
+        <HubCard
+          href={`/spaces/${space.slug}/settings/qr`}
+          icon={QrCode}
+          title="QR codes"
+          description="Create codes for your space and the landing page they open to."
+        />
+        <HubCard
+          href={`/spaces/${space.slug}/settings/crm`}
+          icon={Briefcase}
+          title="CRM"
+          description="Track your pipeline and contacts, and keep private notes on the people you work with."
         />
       </div>
     </FocusTemplate>

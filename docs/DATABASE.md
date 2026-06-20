@@ -229,11 +229,15 @@ as today**.
 | Table | Status | Key columns | Tenancy |
 |---|---|---|---|
 | `space_members` | applied (ADR-320; `20260711010000`) | `space_id, profile_id, role text CHECK (viewer\|editor\|moderator\|admin), status, invited_by, created_at`; unique `(space_id, profile_id)`; `space_id`-leading index | `space_id` |
-| `space_invites` | planned (ADR-320) | `space_id, email, role, token, expires_at, accepted_at` (grant a space role by email/link without making someone network staff) | `space_id` |
+| `space_invites` | applied (ADR-320; `20260712000000`) | `space_id, email, role CHECK (viewer\|editor\|moderator\|admin), token (single-use), invited_by, status CHECK (pending\|accepted\|revoked), expires_at, accepted_at`; partial unique `(space_id, lower(email)) WHERE status=pending` (one live invite); service-role RLS. Accepting seats the invitee in `space_members` | `space_id` |
+| `space_follows` | applied (`20260712010000`) | `space_id, follower_profile_id, created_at`; unique `(space_id, follower_profile_id)`; service-role RLS. The network-follow ledger behind FollowSpaceButton + the "Following" directory filter | `space_id` |
 | `space_availability` | applied (ADR-325; `20260711050000`) | `space_id, weekday 0-6, start_minute/end_minute (local-midnight minutes), slot_minutes, timezone (one IANA tz per Space), created_at` (Practitioner 1:1 booking v1 weekly windows) | `space_id` |
 | `space_bookings` | applied (ADR-325; `20260711050000`) | `space_id, member_profile_id, starts_at/ends_at (UTC), status CHECK (confirmed\|cancelled), note`; partial unique `(space_id, starts_at) WHERE status=confirmed` (double-book guard); service-role RLS | `space_id` |
 | `space_membership_tiers` | applied (ADR-327; `20260711070000`) | `space_id, name, price_cents, interval CHECK (month\|year\|once), benefits jsonb, sort, is_active`; price/interval DISPLAY-ONLY in v1 (no billing); service-role RLS | `space_id` |
 | `space_memberships` | applied (ADR-327; `20260711070000`) | `space_id, member_profile_id, tier_id, status CHECK (active\|cancelled), started_at`; partial unique `(space_id, member_profile_id) WHERE status=active` (one-active guard); service-role RLS | `space_id` |
+| `client_notes` | applied (ADR-333; `20260713010000`) | `space_id (NOT NULL), contact_id, author_profile_id, body, created_at, updated_at`; GDPR/CCPA PERSONAL DATA; RLS enabled with NO policies (service-role only via `lib/crm/client-notes.ts`, owner-gated, never cross-space) | `space_id` |
+
+> **Phase 2 per-Space column additions (ADR-332/333/334).** Existing shared tables gained a NULLABLE `space_id` (backfilled to root, interim per ADR-321/331) so a Space owns its own slice without breaking the global tools: `qr_codes` (+ `splash jsonb`, ADR-332), `crm_deals`/`crm_activities`/`crm_stages`/`contacts` (ADR-333, the global `/admin/crm` reads unscoped and is unchanged), and `nodes` (+ `kind` marker: 'standard' or 'checkin') / `captures` (ADR-334, Event Space check-in reuses the existing scan pipeline).
 
 > **`space_members`** (ADR-320) is the **per-space membership + authorization** primitive: a
 > **third, orthogonal authority axis**, distinct from the **community trust ladder**
