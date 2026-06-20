@@ -235,8 +235,8 @@ semantic    --pulse, --ink-surface, --text, --r-md     (intent; what components 
 component   --btn-bg, --card-bg, --chip-fg             (only when a component needs an override)
 ```
 
-**Implementation:** authored as a **Tailwind v4 `@theme` layer** (OKLCH native) in a single
-`app/theme.css`, exposed as CSS custom properties. One source of truth, no Style Dictionary
+**Implementation:** authored as a **Tailwind v4 `@theme` layer** (OKLCH native) in
+`app/globals.css`, exposed as CSS custom properties. One source of truth, no Style Dictionary
 build step needed at this size. Components read semantic tokens only. A future export to the
 W3C DTCG JSON format stays open if we want Figma sync.
 
@@ -304,7 +304,7 @@ by screen, behind the same routes, so nothing breaks.
 
 | Step | Scope | Output |
 |---|---|---|
-| **A. Foundation** 🔨 | `app/theme.css` (OKLCH `@theme`), fonts, reset, focus, reduced-motion, a `<DesignProvider>` | Tokens live |
+| **A. Foundation** ✅ | `app/globals.css` (OKLCH `@theme`), fonts, reset, focus, reduced-motion, `/dev/style` gallery | Tokens live |
 | **B. Primitives** ⬜ | The §10 foundations + `Avatar`, `PresenceChip`, `Button`, `Card`, `Field`, `EmptyState`, `Skeleton` | Component kit |
 | **C. Shell** ⬜ | App Shell, top bar, `NowBar`, mobile tab bar | Navigation |
 | **D. Core screens** ⬜ | Home → Lobby → Room (StagePlayer + DeckStrip + ChatRail + EmoteLayer) | The product's spine |

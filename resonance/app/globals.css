@@ -1,1 +1,126 @@
 @import "tailwindcss";
+
+/*
+ * Resonance design tokens (docs/DESIGN.md). Dark-first, OKLCH, three-tier.
+ * The @theme layer feeds Tailwind utilities AND exposes every token as a CSS
+ * custom property (var(--color-pulse), var(--text-base), ...). Components read
+ * these semantic tokens; never hardcode a hex.
+ */
+@theme {
+  /* Fonts (families loaded in app/layout.tsx) */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", monospace;
+
+  /* Neutrals — violet-tinted gray, dark-first (hue 285) */
+  --color-base: oklch(0.15 0.01 285);
+  --color-surface: oklch(0.19 0.012 285);
+  --color-raised: oklch(0.23 0.014 285);
+  --color-hover: oklch(0.28 0.016 285);
+  --color-line: oklch(0.34 0.016 285);
+  --color-mute: oklch(0.64 0.015 285);
+  --color-soft: oklch(0.8 0.012 285);
+  --color-text: oklch(0.96 0.008 285);
+
+  /* Accents — semantic intent */
+  --color-pulse: oklch(0.66 0.2 300);
+  --color-pulse-strong: oklch(0.72 0.2 300);
+  --color-signal: oklch(0.8 0.17 150);
+  --color-spark: oklch(0.83 0.14 85);
+  --color-alert: oklch(0.64 0.2 25);
+  --color-cool: oklch(0.75 0.13 220);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Type scale (1.20 ratio) */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.625rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.125rem;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 2.625rem;
+}
+
+/*
+ * Tokens that are not part of a Tailwind namespace (shadows, glows, motion,
+ * the per-venue hue). Plain custom properties, consumed via var().
+ */
+:root {
+  --venue-h: 300;
+  --venue-accent: oklch(0.66 0.2 var(--venue-h));
+
+  --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.4), 0 8px 24px oklch(0 0 0 / 0.35);
+  --glow-pulse: 0 0 0 1px oklch(0.66 0.2 300 / 0.5), 0 0 24px oklch(0.66 0.2 300 / 0.35);
+  --glow-signal: 0 0 16px oklch(0.8 0.17 150 / 0.3);
+
+  --dur-instant: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 360ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    background: var(--color-base);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Default border color = the line token (so `border` alone reads right). */
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-line);
+  }
+
+  /* One focus treatment everywhere: the Pulse ring. */
+  :focus-visible {
+    outline: 2px solid var(--color-pulse);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Honour reduced motion globally (DESIGN.md §6/§8). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* The live "now" breathing ring (DESIGN.md §6). */
+@keyframes rs-pulse-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px var(--color-pulse), 0 0 0 0 oklch(0.66 0.2 300 / 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 1px var(--color-pulse), 0 0 22px 2px oklch(0.66 0.2 300 / 0.45);
+  }
+}
