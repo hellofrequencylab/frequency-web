@@ -171,14 +171,20 @@ export async function loadOnAirSessionData(
     haptics: stored.haptics,
   }
 
-  // Pre-select the requested practice; else the first leg/adopted practice not yet logged; else any
-  // real practice; else Free sit. Free sit never auto-wins when a real practice is available.
+  // A SPECIFIC entry pre-selects THAT practice so the setup opens already in its mode: a practice
+  // page, the streak box's button, a Journey step, or a /on-air?practice link (requestedPracticeId).
+  // A GENERIC entry passes no request (the header Mindless/Movement button, the Zap menu), and there
+  // the setup opens NEUTRAL on the Free sit, never a random adopted practice: the member logs
+  // anything from here, or selects a practice and the timer jumps to that practice's mode (owner
+  // directive 2026-06-21). The first-real-practice fallback only applies when there is no Free sit.
   const defaultPracticeId =
     requestedPracticeId && practices.some((p) => p.id === requestedPracticeId)
       ? requestedPracticeId
-      : practices.find((p) => p.id !== FREE_SIT_ID && !p.loggedToday)?.id ??
-        practices.find((p) => p.id !== FREE_SIT_ID)?.id ??
-        (sit ? FREE_SIT_ID : null)
+      : sit
+        ? FREE_SIT_ID
+        : practices.find((p) => p.id !== FREE_SIT_ID && !p.loggedToday)?.id ??
+          practices.find((p) => p.id !== FREE_SIT_ID)?.id ??
+          null
 
   return { practices, defaultPracticeId, prefs, practicedToday }
 }
