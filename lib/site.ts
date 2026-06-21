@@ -84,13 +84,31 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
   },
   {
     label: "Explore Frequency",
+    // Each sub-category is now its OWN column (one MegaSection = one column in
+    // mega-menu.tsx). Each column starts with its own landing link and will be
+    // built out with more sub-links later.
     sections: [
       {
-        heading: "What this is",
+        heading: "The Lab",
         items: [
           { label: "The Lab", href: "/the-lab", desc: "The ideas and research behind Frequency" },
+        ],
+      },
+      {
+        heading: "The Community",
+        items: [
           { label: "The Community", href: "/the-community", desc: "Who's here and how it all works" },
-          { label: "The Quest", href: "/the-quest", desc: "The practice game: streaks, zaps, and rewards" },
+        ],
+      },
+      {
+        heading: "The Quest",
+        items: [
+          { label: "The Quest", href: "/the-quest", desc: "The practice game: streaks, Zaps, and rewards" },
+        ],
+      },
+      {
+        heading: "About",
+        items: [
           { label: "About", href: "/about", desc: "The mission and the people building it" },
         ],
       },

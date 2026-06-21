@@ -51,6 +51,8 @@ import type { AccessLevel } from '@/lib/core/access-matrix'
 import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
+import { MegaBar, type MegaEntry } from '@/components/layout/mega-menu'
+import { ADMIN_NAV, canSeeAdminSection } from '@/lib/admin/nav'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { MemberFooter } from '@/components/layout/member-footer'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
@@ -1336,6 +1338,21 @@ export default function AppShell({
   // the same page-chrome map the rails use — pages never toggle it.
   const showFooter = !hideAppNav && showLeftRail && effectiveRail !== 'none'
 
+  // Admin secondary nav (mirrors the prior in-content admin mega bar, now promoted to a
+  // FULL-WIDTH sub-header below the main header). Built client-side from the SAME source of
+  // truth + gate as the server admin layout (ADMIN_NAV + canSeeAdminSection over the viewer's
+  // role / web_role / staff role), so it never drifts; the pages themselves re-gate server-side.
+  // Only on /admin* and never in stripped shells.
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
+  const adminEntries: MegaEntry[] =
+    !hideAppNav && isAdminRoute
+      ? ADMIN_NAV.filter((s) => canSeeAdminSection(s, role, webRole, staffRole)).map((s) => ({
+          label: s.label,
+          href: s.href,
+          sections: s.groups ?? [],
+        }))
+      : []
+
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
     else if (theme === 'dark') setTheme('light')
@@ -1370,14 +1387,20 @@ export default function AppShell({
             lives in the bottom tab bar, so the wordmark anchors the top-left. */}
         <BrandMark name={brandName} logoUrl={brandLogoUrl} />
 
-        {/* Full-site browse nav (Discover + About dropdowns) beside the logo —
-            the same component the splash/site uses. In the app shell we're in
-            "community mode", so it fades back to keep attention on the community
-            sub-menu below; hovering or focusing it brings it fully forward so
-            members can still browse the wider site with ease. Desktop only. */}
+        {/* Full-site browse nav ("Explore Frequency") beside the logo — the same
+            component the splash/site uses. Vertically centered on the header line
+            (items-center, not stretch) and at the rail link's color (no dimming), so
+            it reads as a peer of the other header items. Its panel aligns to the page
+            CONTENT COLUMN (panelAlign='content'), reserving the right rail width only
+            when that rail is actually shown. Desktop only. */}
         {!hideAppNav && (
-          <div className="hidden md:flex items-stretch ml-1 opacity-40 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
-            <PrimaryNav variant="light" showDiscover={false} />
+          <div className="ml-1 hidden items-center md:flex">
+            <PrimaryNav
+              variant="light"
+              showDiscover={false}
+              panelAlign="content"
+              rightRail={showSidebar}
+            />
           </div>
         )}
 
@@ -1494,6 +1517,23 @@ export default function AppShell({
           </div>
         </div>
       </header>
+
+      {/* ── Admin sub-header ───────────────────────────────── */}
+      {/* In admin, a SECOND full-width bar opens below the main header. It is in normal
+          flow (so it PUSHES the body down) and sticky under the main header (top-14). Its
+          triggers align to the content column (a left rail-width spacer), and the MegaBar
+          panel slides out from under it with panelAlign='content' (no rightRail — admin has
+          no member right rail), so the slide-out stays in the page content column. */}
+      {adminEntries.length > 0 && (
+        <div className="sticky top-14 z-20 hidden border-b border-border bg-surface/95 backdrop-blur-sm md:block">
+          <div className="mx-auto flex h-12 max-w-[105rem] items-center gap-8 px-4 sm:px-6 lg:px-8">
+            <div className="hidden w-48 shrink-0 md:block" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <MegaBar entries={adminEntries} variant="light" ariaLabel="Admin" panelAlign="content" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Body ──────────────────────────────────────────── */}
       {/* DockRevealProvider runs the single shared scroll listener that rises
