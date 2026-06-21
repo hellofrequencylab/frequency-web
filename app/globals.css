@@ -812,6 +812,21 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-border-strong) 60%, transparent);
 }
 
+/* Two surfaces opt OUT of the global focus ring (owner directives, 2026-06-21).
+   These live UNLAYERED with higher specificity than the generic rules above, so they
+   win the cascade — a Tailwind `focus-visible:shadow-none` utility sits in @layer and
+   would lose to the unlayered ring above, so the opt-out has to live here too.
+   - The Composer text field: the box itself lifts on focus-within, so a hard ring on
+     the textarea doubled up. Typing now reads clean, with no boxed outline.
+   - The header wordmark: a home link with its own press/hover affordance; it no longer
+     paints a focus ring when clicked. */
+:where([data-tour-anchor="composer"]) textarea:focus-visible {
+  box-shadow: none;
+}
+.brandmark-link:focus-visible {
+  box-shadow: none;
+}
+
 /* ── Rank badge primitive. Drives off three CSS vars set inline.
    Usage:
      <span class="rank-badge" style={{

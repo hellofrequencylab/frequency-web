@@ -44,7 +44,17 @@ export function LogPracticeButton({
       disabled={pending}
       onClick={() =>
         start(async () => {
-          const res = await logPracticeAction(practiceId, circleId)
+          // Pass the browser's IANA tz as a FALLBACK so a member with no stored
+          // home_timezone still logs against THEIR local day, not UTC. The server
+          // prefers home_timezone, so this can't be used to backdate.
+          const tz = (() => {
+            try {
+              return Intl.DateTimeFormat().resolvedOptions().timeZone || null
+            } catch {
+              return null
+            }
+          })()
+          const res = await logPracticeAction(practiceId, circleId, tz)
           if (!isError(res)) {
             setDone(true)
             onLogged?.()

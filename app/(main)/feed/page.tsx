@@ -113,8 +113,12 @@ export default async function FeedPage({
     }
   }
 
-  const composerScopeId = primaryCircleId ?? myProfileId
-  const composerVisibility: 'public' | 'group' = primaryCircleId ? 'group' : 'public'
+  // A post written from the HOME feed lands on the member's own wall + the public feed,
+  // never their circle (owner directive 2026-06-21). The circle composer lives on the
+  // circle page itself; the home box is always scoped to the member's profile (their wall)
+  // and public-visible, so it also surfaces in the feed.
+  const composerScopeId = myProfileId
+  const composerVisibility = 'public' as const
   const hasCircle = !!primaryCircleId
   const hasHome = homeLat != null && homeLng != null
 
@@ -247,17 +251,9 @@ export default async function FeedPage({
           <CaptureBar
             scopeId={composerScopeId}
             visibility={composerVisibility}
-            placeholder={primaryCircleId ? 'What’s on your mind? Your circle’s listening.' : 'What’s on your mind?'}
+            placeholder="What’s on your mind?"
             canAnnounce={canAnnounce}
           />
-          {!primaryCircleId && (
-            <p className="text-xs text-subtle -mt-2 px-1">
-              <Link href="/circles" className="text-primary-strong hover:underline">
-                Join a circle
-              </Link>{' '}
-              to post to your group instead.
-            </p>
-          )}
         </div>
       )}
 

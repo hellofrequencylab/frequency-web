@@ -2,16 +2,15 @@
 
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
-import { getRealCallerRole } from '@/lib/auth'
+import { getCallerProfile, getRealCallerRole } from '@/lib/auth'
 import {
   VIEW_AS_COOKIE,
   canViewAs,
   serializeViewAsTarget,
   type ViewAsTarget,
 } from '@/lib/view-as'
-import { ROLE_HIERARCHY, roleRank, type CommunityRole } from '@/lib/core/roles'
-import { isPreviewableEntityRole, representativeSpaceOfType } from '@/lib/spaces/representative'
-import type { SpaceType } from '@/lib/spaces/types'
+import { ROLE_HIERARCHY, isJanitor, roleRank, type CommunityRole } from '@/lib/core/roles'
+import { getSpaceById } from '@/lib/spaces/store'
 
 // "View as a role under you" — Host and above. Sets (or clears) the view-as cookie.
 // The effective-role resolution in lib/view-as.ts only honours a target ranked BELOW
@@ -48,58 +47,66 @@ const ENTITY_PREVIEW_COOKIE_OPTS = {
   httpOnly: true,
   sameSite: 'lax' as const,
   path: '/',
-  // Same 8-hour auto-expiry as the ladder preview, so a steward is never silently stuck.
+  // Same 8-hour auto-expiry as the ladder preview, so a staffer is never silently stuck.
   maxAge: 60 * 60 * 8,
 }
 
-/** What the entity-preview action tells the client to do next. `href` is set when a representative
- *  Space was found (navigate there); when none exists yet, `href` is null and `note` carries the
- *  on-voice line the selector shows instead of erroring. */
-export interface EntityPreviewResult {
+/** What the Space-preview action tells the client to do next. `href` is set when the Space resolved
+ *  and the staffer may preview it (navigate there); otherwise `href` is null and `note` carries the
+ *  on-voice line the caller shows instead of erroring. */
+export interface SpacePreviewResult {
   href: string | null
   note?: string
 }
 
 /**
- * "Preview as entity role" — Host and above. Validates the requested `SpaceType` against the
- * PROVISIONABLE set (a forged or stale value is rejected, so it can never route anywhere it
- * shouldn't), sets the entity-preview cookie, and resolves a representative networked Space of that
- * type to route into. An entity role only has meaning inside a Space, so the preview IS that
- * navigation; it never alters the community ladder or escalates any privilege (applyViewAs returns
- * the real role unchanged for an entity target). Returns the href to navigate to, or a graceful
- * on-voice note when no networked Space of that type exists yet (a role no one has provisioned).
+ * "View as <this Space>" — preview ONE specific Space's owner experience. STAFF-ONLY: gated on the
+ * Executive Admin axis (web_role janitor), the exact viewer `resolveSpaceManageAccess` grants a
+ * read-only `staffViewing` preview on the owner surface — so the action's gate and the surface's
+ * gate are one and the same. Resolves the Space by id; a missing Space, the root Space (no owner
+ * surface), or a non-janitor caller all return `{ href: null }` and never set the cookie.
+ *
+ * DOWNGRADE-SAFE: the cookie names the Space, not a role. `applyViewAs` returns the real community
+ * role UNCHANGED for an entity target (no downgrade, and crucially no escalation), and the owner
+ * surface keeps gating every WRITE on `canEditProfile` independently, so the staffer sees exactly
+ * what that Space sees but can never write through it. The preview IS the routing into that Space's
+ * owner surface; it confers no new authority anywhere.
  */
-export async function previewAsEntity(type: SpaceType): Promise<EntityPreviewResult> {
-  const realRole = await getRealCallerRole()
-  // Same gate as the ladder preview: Host and above only. A non-staff caller gets nothing.
-  if (!realRole || !canViewAs(realRole)) return { href: null }
+export async function previewAsSpace(spaceId: string): Promise<SpacePreviewResult> {
+  const caller = await getCallerProfile()
+  // STAFF gate: only an Executive Admin (janitor) may preview a Space they do not own — the same
+  // axis `resolveSpaceManageAccess` reads to grant the read-only owner-surface preview. A
+  // non-janitor (incl. a community steward who can use the ladder view-as) gets nothing here.
+  if (!caller || !isJanitor(caller.webRole)) return { href: null }
 
-  // DOWNGRADE-SAFE validation: only a provisionable entity role (one with a registered blueprint)
-  // is ever accepted. root and the not-yet-provisionable roles fail this by construction, so the
-  // cookie can only ever hold a real, member-facing entity type.
-  if (!isPreviewableEntityRole(type)) return { href: null }
+  const id = (spaceId ?? '').trim()
+  if (!id) return { href: null }
+
+  // Resolve the Space the staffer asked to preview. A missing Space, or the root Space (which serves
+  // the app itself and has no /spaces/<slug> owner surface), is not previewable.
+  const space = await getSpaceById(id)
+  if (!space || space.type === 'root') {
+    return {
+      href: null,
+      note: 'That space is no longer available to preview.',
+    }
+  }
 
   const jar = await cookies()
-  const target: ViewAsTarget = { kind: 'entity', type }
+  const target: ViewAsTarget = { kind: 'entity', spaceId: space.id }
   jar.set(VIEW_AS_COOKIE, serializeViewAsTarget(target), ENTITY_PREVIEW_COOKIE_OPTS)
   // The preview sets the staff-strip cookie + (potentially) chrome, so refresh the shell.
   revalidatePath('/', 'layout')
 
-  // Resolve a representative Space of this type (networked, active, root excluded). Fail-safe: the
-  // reader returns null on any error or when no such Space exists yet.
-  const space = await representativeSpaceOfType(type)
-  if (!space) {
-    return {
-      href: null,
-      note: 'No space of that role is on the network yet, so there is nothing to preview.',
-    }
-  }
-  return { href: `/spaces/${space.slug}` }
+  // Route into THIS Space's owner experience. The settings hub renders for a janitor as a read-only
+  // staff preview (resolveSpaceManageAccess.staffViewing), so the staffer lands exactly where the
+  // owner works and sees precisely what that Space sees.
+  return { href: `/spaces/${space.slug}/settings` }
 }
 
-/** Clear any entity-role preview (back to the staffer's own view). Mirrors selecting your real role
- *  on the ladder. Idempotent: deleting the cookie when none is set is a no-op. */
-export async function exitEntityPreview(): Promise<void> {
+/** Clear any Space preview (back to the staffer's own view). Mirrors selecting your real role on
+ *  the ladder. Idempotent: deleting the cookie when none is set is a no-op. */
+export async function exitSpacePreview(): Promise<void> {
   const realRole = await getRealCallerRole()
   if (!realRole || !canViewAs(realRole)) return
   const jar = await cookies()

@@ -85,7 +85,7 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'people',        href: '/network',   label: 'Community',    section: 'Community', defaultAccess: 'member',  surface: 'people' },
   // Re-homed orphan (E.1): the contacts list lives in the Network hub as My Contacts (ADR-172) —
   // /connections redirects there. Surfaced here so members reach their connections from the rail.
-  { key: 'connections',   href: '/network/contacts', label: 'Connections', section: 'Community', defaultAccess: 'member', surface: 'people' },
+  { key: 'connections',   href: '/network/contacts', label: 'My Contacts', section: 'Community', defaultAccess: 'member', surface: 'people' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
@@ -113,6 +113,11 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'admin-vera-ai',    href: '/admin/vera-ai',    label: 'Vera AI',    section: 'Admin', defaultAccess: 'janitor', staffDomain: 'insights',  surface: 'platformManage' },
   { key: 'admin-operations', href: '/admin/operations', label: 'Operations', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'platform',  surface: 'platformManage' },
   { key: 'admin-qr',         href: '/admin/qr',         label: 'QR Studio',  section: 'Admin', defaultAccess: 'admin',   staffDomain: 'qr',        surface: 'platformManage' },
+  // Spaces — the operator directory of entity Spaces. Gated EXACTLY like QR Studio above:
+  // community admin/janitor (defaultAccess 'admin' = the top of the ladder) OR platform-capable
+  // staff (staffDomain 'platform'), so only Admin + Janitor see it. Telescopes like the rest of
+  // the Admin section (hidden, not ghosted, for everyone below).
+  { key: 'admin-spaces',     href: '/admin/spaces',     label: 'Spaces',     section: 'Admin', defaultAccess: 'admin',   staffDomain: 'platform',  surface: 'platformManage' },
   // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
   // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".
 ] as const

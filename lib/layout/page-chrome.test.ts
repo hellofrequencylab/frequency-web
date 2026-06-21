@@ -48,17 +48,20 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/channels')).toBe('global')
   })
 
-  it('uses Focus (no rail) for compose / edit / settings / operator surfaces', () => {
+  it('keeps the global rail on compose / edit / settings / thread surfaces (owner directive: every page has the right rail)', () => {
+    // The right rail now shows site-wide (owner directive, 2026-06-20): the old "Focus
+    // surfaces drop the rail" model is retired. Settings, codes, upgrade, compose/edit
+    // forms, the event Invite, message threads and the contact book all keep the GLOBAL
+    // community rail beside their (still centered) body. Only the genuine full-viewport
+    // takeovers and the /admin/* workspace drop it (asserted below).
     for (const p of [
       '/settings',
-      '/settings/account', // other settings stay Focus
+      '/settings/account',
       '/codes',
       '/upgrade',
       '/g/abc123',
       '/n/node-7',
       '/events/new',
-      // The event Invite (/events/[slug]) owns its own two-column interior, so the
-      // global rail is suppressed (EVENTS-DESIGN §1 — avoids the double-rail trap).
       '/events/sunrise-sit',
       '/events/some-slug',
       '/practices/42/edit',
@@ -67,32 +70,50 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/messages/r_9', // a thread
       '/messages/r/room-1', // a room thread
     ]) {
+      expect(railFor(p), p).toBe('global')
+    }
+  })
+
+  it('drops the rail ONLY on the full-viewport takeovers (zero app chrome)', () => {
+    // The four genuine takeovers read with no app chrome at all: the practice timer, the
+    // camera scanner, the auth gate, and the print sheet. These are the only member-side
+    // routes without the right rail (the /admin/* workspace is the separate exception,
+    // tested below — it mounts its own info rail).
+    for (const p of [
+      '/on-air',
+      '/on-air/breathe',
+      '/scan',
+      '/sign-in',
+      '/print',
+      '/print/qr',
+    ]) {
       expect(railFor(p), p).toBe('none')
     }
   })
 
-  it('frames entity-space profiles + the directory GLOBAL, and the wizard/settings FOCUS', () => {
+  it('frames every entity-space route — directory, profiles, wizard AND owner settings — with the GLOBAL rail', () => {
     // The directory (/spaces) is an Index page — it keeps the global community rail.
     expect(railFor('/spaces')).toBe('global')
-    // A profile (/spaces/<slug>) and its tabs now ride the GLOBAL community rail like the rest of
-    // the app (operator request): the context band is an in-body hero card, not a shell rail, so
-    // there is no double-rail trap. Nothing is 'scoped' anymore.
+    // A profile (/spaces/<slug>) and its tabs ride the GLOBAL community rail like the rest of the
+    // app (operator request): the context band is an in-body hero card, not a shell rail, so there
+    // is no double-rail trap. Nothing is 'scoped' anymore.
     expect(railFor('/spaces/demo-practitioner')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/offerings')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/practices')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/community')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/book')).toBe('global')
-    // The provisioning wizard + the owner settings surfaces stay centered Focus pages (no rail),
-    // unaffected by the profile's switch to the global rail.
-    expect(railFor('/spaces/new')).toBe('none')
-    expect(railFor('/spaces/demo-practitioner/settings')).toBe('none')
-    expect(railFor('/spaces/demo-practitioner/settings/availability')).toBe('none')
-    expect(railFor('/spaces/demo-practitioner/settings/memberships')).toBe('none')
-    expect(railFor('/spaces/demo-practitioner/settings/members')).toBe('none')
-    expect(railFor('/spaces/demo-practitioner/settings/qr')).toBe('none')
-    expect(railFor('/spaces/demo-practitioner/settings/crm')).toBe('none')
-    expect(railFor('/spaces/demo-event-space/settings/checkin')).toBe('none')
-    expect(railFor('/spaces/demo-business/settings/email')).toBe('none')
+    // The provisioning wizard + the owner settings surfaces ALSO keep the global rail now (owner
+    // directive, 2026-06-20: the right rail shows on every page). They still compose a centered
+    // FocusTemplate body — the rail simply sits beside it.
+    expect(railFor('/spaces/new')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/settings')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/settings/availability')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/settings/memberships')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/settings/members')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/settings/qr')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/settings/crm')).toBe('global')
+    expect(railFor('/spaces/demo-event-space/settings/checkin')).toBe('global')
+    expect(railFor('/spaces/demo-business/settings/email')).toBe('global')
   })
 
   it('keeps the global rail on the events index and the slug ICS sub-route (only the bare Invite slug is no-rail)', () => {

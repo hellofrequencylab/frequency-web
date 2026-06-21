@@ -76,6 +76,11 @@ export async function PracticesMine() {
   // Seed the per-practice "logged today" state from the server (B.4) so a practice
   // already logged today paints in the collapsed state, never flashing a live button.
   // getPracticesToLogToday returns the NOT-yet-logged set; the complement is logged.
+  // "Today" is the member's LOCAL day: getPracticesToLogToday resolves it from
+  // profiles.home_timezone server-side, so an already-logged practice stays collapsed
+  // until the member's OWN midnight (not UTC's). A member with no home_timezone falls
+  // back to UTC for this first paint; the client row still collapses optimistically on
+  // a fresh log, and a revalidate re-seeds it after.
   const [mine, pillars, toLog] = await Promise.all([
     getMemberPractices(profileId),
     getPillars(),

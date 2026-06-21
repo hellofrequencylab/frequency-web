@@ -52,7 +52,6 @@ import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
-import { ManageMegaMenu } from '@/components/layout/manage-mega-menu'
 import { MemberFooter } from '@/components/layout/member-footer'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
@@ -1238,12 +1237,12 @@ export default function AppShell({
   // by path so it auto-resets on navigation — see the railCollapsed derivation below.
   const [railOverride, setRailOverride] = useState<{ path: string; collapsed: boolean } | null>(null)
 
-  // The shell-level settings drawer (ADR-128, rebuilt). When OPEN it takes the right
-  // slot, so the global right rail hides (D.3); when WIDENED past the threshold the
-  // left rail collapses to its mini icon column (D.4). Both flags are pushed up from
-  // SettingsDrawer (which owns open/width + persistence + the `open-settings` event).
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsWidened, setSettingsWidened] = useState(false)
+  // The shell-level settings drawer (ADR-128, rebuilt; owner revision 2026-06-20). It is
+  // CONFINED to the right-rail column: it overlays the right-rail slot at exactly the rail
+  // width and is bounded by the content's right edge. The LEFT and RIGHT rails BOTH stay put
+  // while it is open (the old hide-the-rail + collapse-left-rail behaviors are gone). The
+  // SettingsDrawer owns open/persistence + the `open-settings` event and renders itself inside
+  // the rail slot; the shell no longer reacts to its open state.
 
   // Mobile right drawer (The Quest stats) — opened only from the tab bar's gem
   // control. The left side is the nav DRAWER (drawerOpen, also bottom-bar
@@ -1369,17 +1368,6 @@ export default function AppShell({
         {/* Engraved, interactive wordmark. Leads the bar — on mobile the menu now
             lives in the bottom tab bar, so the wordmark anchors the top-left. */}
         <BrandMark name={brandName} logoUrl={brandLogoUrl} />
-
-        {/* Manage launcher (E.3, D3 = launcher only). The GLOBAL entry to entity /
-            Space management: a click-fold panel of the viewer's owned / managed
-            Spaces (each to its settings hub) + New Space + Browse directory. Anchored
-            to the wordmark and full-opacity (a primary in-app action), set apart from
-            the faded marketing nav beside it. Hidden on stripped shells (Studio). */}
-        {!hideAppNav && (
-          <div className="hidden md:flex items-stretch ml-1">
-            <ManageMegaMenu />
-          </div>
-        )}
 
         {/* Full-site browse nav (Discover + About dropdowns) beside the logo —
             the same component the splash/site uses. In the app shell we're in
@@ -1518,6 +1506,10 @@ export default function AppShell({
           data-feed-scroll
           className="min-w-0 flex-1 pb-[calc(3.5rem_+_env(safe-area-inset-bottom))] md:pb-0"
         >
+          {/* The page-admin context wraps the whole content row (not just <main>) so the
+              settings drawer — mounted in the right-rail slot — can read the viewer's
+              role / staffRole / webRole gates alongside the page body. */}
+          <PageAdminProvider value={{ role: gateRole, staffRole, webRole }}>
           <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-3.5rem)]">
 
             {/* Left nav — NEVER scrolls out of view. Pinned under the header
@@ -1527,37 +1519,6 @@ export default function AppShell({
                 column scrolls past. A menu taller than the window scrolls
                 INTERNALLY instead of riding the page. */}
             {showLeftRail && (
-              settingsWidened ? (
-                // Mini left rail (D.4) — when the settings drawer is WIDENED past the
-                // threshold, the left nav collapses to its icon-only column (the same
-                // `compact` render the rail already ships) so the page keeps its width.
-                // The profile footer drops to a single avatar tap-target at the bottom.
-                <aside className="hidden md:flex w-14 shrink-0 flex-col items-center">
-                  <nav className="flex-1 py-3">
-                    <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={navSections} compact />
-                  </nav>
-                  <Link
-                    href={profileHref}
-                    aria-label="Profile"
-                    title={profile.display_name}
-                    className="sticky bottom-3 mb-3 shrink-0"
-                  >
-                    {profile.avatar_url ? (
-                      <Image
-                        src={profile.avatar_url}
-                        alt={profile.display_name}
-                        width={36}
-                        height={36}
-                        className="h-9 w-9 rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-9 w-9 select-none items-center justify-center rounded-full bg-primary text-2xs font-bold text-on-primary">
-                        {getInitials(profile.display_name)}
-                      </span>
-                    )}
-                  </Link>
-                </aside>
-              ) : (
               <aside className="hidden md:flex w-48 shrink-0 flex-col">
                 {/* The menu + profile footer live in NORMAL FLOW and scroll WITH the page
                     (no sticky pin, no inner scrollbar): the menu rides up as you scroll and
@@ -1579,7 +1540,6 @@ export default function AppShell({
                   <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
                 </div>
               </aside>
-              )
             )}
 
             {/* Center column — an ambient dispatch ticker pinned on top, then the
@@ -1594,27 +1554,20 @@ export default function AppShell({
                   provider — not floating above the page. */}
               <main className="flex-1 min-w-0 py-6" data-tour-anchor="content">
                 <Breadcrumbs />
-                <PageAdminProvider value={{ role: gateRole, staffRole, webRole }}>
-                  {children}
-                  {/* The shell-level settings drawer (ADR-128, rebuilt). Fixed to the
-                      right edge, opens leftward on the `open-settings` event; it pushes
-                      its open/widened state up so the shell hides the right rail (D.3)
-                      and collapses the left rail to mini (D.4). Inside the provider so it
-                      reads the viewer's role / staffRole / webRole gates. */}
-                  <SettingsDrawer onOpenChange={setSettingsOpen} onWidenChange={setSettingsWidened} />
-                </PageAdminProvider>
+                {children}
                 {showFooter && (
                   <MemberFooter role={gateRole} staffRole={staffRole} navAccess={navAccess} />
                 )}
               </main>
             </div>
 
-            {/* Right sidebar. Only on lg+, hidden on admin/settings.
-                The <aside> spans the full content height (flex column) so the
-                rail's top widgets scroll up and out, bringing the stats dock up
-                into view as you near the end; its left border is a full-height
-                divider. */}
-            {showSidebar && !settingsOpen && (
+            {/* Right sidebar. Only on lg+, dropped on admin / takeover surfaces (railFor
+                'none'). The <aside> spans the full content height (flex column) so the
+                rail's top widgets scroll up and out, bringing the stats dock up into view
+                as you near the end; its left border is a full-height divider. The rail STAYS
+                mounted when the settings drawer opens — the drawer overlays this same column
+                (mounted inside the expanded aside below), bounded by the content's right edge. */}
+            {showSidebar && (
               railCollapsed ? (
                 // Mini rail — the global community rail collapsed to a thin strip. It shows ICONS
                 // for the rail's items (the Quest stats); clicking any reopens the rail. The
@@ -1646,8 +1599,13 @@ export default function AppShell({
                   </button>
                 </aside>
               ) : (
-                <aside className="hidden lg:flex flex-col w-72 shrink-0 py-6">
+                <aside className="relative hidden lg:flex flex-col w-72 shrink-0 py-6">
                   {sidebar}
+                  {/* The settings drawer overlays THIS rail slot (absolute inset-0, rail
+                      width) on the `open-settings` event, bounded by the content's right
+                      edge. The rail content sits underneath; nothing else moves. It is
+                      self-contained — the shell does not react to its open state. */}
+                  <SettingsDrawer />
                   {railCollapsible && (
                     // The collapse TOGGLE at the BOTTOM, sticky so it stays visible as the rail
                     // scrolls. A chevron toggle (not a hamburger), mirroring the collapsed state.
@@ -1667,6 +1625,7 @@ export default function AppShell({
               )
             )}
           </div>
+          </PageAdminProvider>
         </div>
 
       </div>
