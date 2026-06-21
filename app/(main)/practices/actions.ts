@@ -43,6 +43,11 @@ export async function logPracticeAction(
   practiceId: string,
   circleId?: string | null,
   clientTimezone?: string | null,
+  // Completion economy (practice-timer redesign): optional timed-log seconds. Omitted by
+  // the one-tap "Log it" callers, which keep the unchanged FULL behavior (no target → full
+  // reward, streak tick). A timed caller (e.g. a "Finish Practice" top-up from the practices
+  // page) passes both, and logPractice routes partial / full / finish off the ratio.
+  timed?: { secondsDone?: number | null; secondsTarget?: number | null } | null,
 ): Promise<ActionResult<LogPracticeResult>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
@@ -57,6 +62,8 @@ export async function logPracticeAction(
     practiceId,
     circleId: circleId ?? null,
     clientTimezone: clientTimezone ?? null,
+    secondsDone: timed?.secondsDone ?? null,
+    secondsTarget: timed?.secondsTarget ?? null,
   })
   // Re-seed the "your practices" tight rows so an already-logged practice paints in
   // its collapsed state on the next server render (B.4). The client wrapper collapses

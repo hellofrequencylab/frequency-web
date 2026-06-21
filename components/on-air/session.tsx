@@ -9,8 +9,21 @@
 // so On Air is never a tax on logging.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Check, Minus, Plus, X, ChevronDown, Info } from 'lucide-react'
+import {
+  Check,
+  Minus,
+  Plus,
+  X,
+  ChevronDown,
+  ChevronRight,
+  Info,
+  BookOpen,
+  Sparkles,
+  Moon,
+  Library,
+} from 'lucide-react'
 import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
@@ -24,11 +37,17 @@ import {
   CUSTOM_PHASE_MAX,
   CUSTOM_PHASE_MIN,
   DURATION_PRESETS,
+  SESSION_MODE_META,
+  SESSION_MODE_ORDER,
   bellToneBySlug,
   bellVolumeScale,
   breathPositionAt,
   buildCustomPattern,
   clampMinutes,
+  engineForMode,
+  isBreathMode,
+  modeForMindless,
+  modeHasNote,
   patternBySlug,
   type BellVolume,
   type BreathPattern,
@@ -39,6 +58,8 @@ import {
 } from '@/lib/on-air'
 import { BreathVisualizer } from './visualizer'
 import { Reveal } from './reveal'
+import type { TimerKind, MindlessMode } from '@/lib/practices'
+import type { MovementConfig } from '@/lib/movement'
 
 export interface OnAirPractice {
   id: string
@@ -50,6 +71,17 @@ export interface OnAirPractice {
   /** When set, completing a session with this chip selected logs THIS practice id instead of the
    *  chip's own id — the "Free sit" chip maps to the default sit practice (lib/on-air/session-data). */
   logsAs?: string
+  /** Which timer this practice routes to (lib/practices `timer_kind`): 'mindless' | 'movement' | 'none'.
+   *  Drives `chooseAndStart`: mindless → the sit at `mindlessMode`; none → Just Log; movement → hand off
+   *  to the Movement timer; a Free sit (open length) → an open timer. */
+  timerKind?: TimerKind
+  /** The Mindless sub-mode to open to when timerKind='mindless'
+   *  (meditate | breathe | journal | stillness | ritual | log). Null → fall back to the prefs/default. */
+  mindlessMode?: MindlessMode | null
+  /** The Movement config (mode + tuning) when timerKind='movement'. */
+  movementConfig?: MovementConfig | null
+  /** Author locked the duration: members cannot change the minutes for this practice. */
+  durationLocked?: boolean
 }
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
@@ -113,11 +145,23 @@ function buzz(pulse: number | number[] = 15) {
   }
 }
 
+/** The mode-button icons: the On Air kit marks for the sit modes, lucide for the rest. */
+const MODE_ICON: Record<SessionMode, React.ElementType> = {
+  timer: LotusIcon,
+  breath: BreatheIcon,
+  journal: BookOpen,
+  stillness: Moon,
+  ritual: Sparkles,
+  log: BoltIcon,
+}
+
 export function OnAirSession({
   practices,
   defaultPracticeId,
   prefs,
   practicedToday = 0,
+  resumeFromSec,
+  secondsTarget,
   onExit,
 }: {
   practices: OnAirPractice[]
@@ -125,11 +169,28 @@ export function OnAirSession({
   prefs: OnAirPrefs
   /** Distinct members with a practice log today (presence line, shown at ≥3). */
   practicedToday?: number
+  /** "Finish Practice" resume: seconds already banked on today's partial log. With
+   *  `secondsTarget`, the timer runs only the REMAINING time and reports the TOTAL on
+   *  completion so the server tops the log up to complete. */
+  resumeFromSec?: number
+  /** "Finish Practice" resume: the full target length in seconds (the practice's duration). */
+  secondsTarget?: number
   /** Overlay mode (the global Mindless launcher): when set, leaving the session
    *  CLOSES the overlay via this callback instead of navigating the router. The
    *  route page (/on-air) omits it, keeping its back/replace exit unchanged. */
   onExit?: () => void
 }) {
+  // A valid resume needs both halves and real remaining time; otherwise it's a normal sit.
+  const resuming =
+    typeof resumeFromSec === 'number' &&
+    typeof secondsTarget === 'number' &&
+    secondsTarget > 0 &&
+    resumeFromSec >= 0 &&
+    secondsTarget - resumeFromSec > 0
+  const resumeBankedSec = resuming ? Math.round(resumeFromSec as number) : 0
+  const resumeRemainingMin = resuming
+    ? clampMinutes(Math.ceil(((secondsTarget as number) - (resumeFromSec as number)) / 60))
+    : 0
   const [stage, setStage] = useState<Stage>('setup')
   const initialId =
     defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
@@ -139,22 +200,46 @@ export function OnAirSession({
     const d = practices.find((p) => p.id === id)?.durationMin
     return d && d > 0 ? clampMinutes(d) : prefs.minutes
   }
+  // The mode a practice OPENS to, routed by its timer_kind (not by whether it has a length):
+  //   none     → Just Log (no countdown)
+  //   movement → handed off to the Movement timer (handled in chooseAndStart; here it falls
+  //              back to the saved/prefs mode for the rare in-place select)
+  //   mindless → the sit at the practice's mindless_mode (or the saved/prefs mode, then Meditate)
+  // A Free sit (mindless + open length) opens the plain timer, never Just Log.
+  const modeForPractice = (id: string): SessionMode => {
+    const p = practices.find((x) => x.id === id)
+    if (!p) return saved?.mode ?? prefs.mode
+    if (p.timerKind === 'none') return 'log'
+    // The practice's authored flavour wins; null falls back to the member's saved/prefs mode,
+    // then Meditate. A Free sit (mindlessMode null, no length) lands on the plain timer.
+    const fallback = (saved?.mode ?? prefs.mode) as SessionMode
+    const resolved = modeForMindless(p.mindlessMode, fallback)
+    // Just Log is only the opening mode for a 'none' practice; a mindless practice that stored
+    // 'log' as its flavour still gets a real timer here (the sit is the point).
+    return resolved === 'log' ? 'timer' : resolved
+  }
   const [practiceId, setPracticeId] = useState(initialId)
   // Last-saved setup (localStorage) seeds the initial choices, falling back to the prefs prop.
   // Read once on mount (lazy initializer); the WRITE happens in an effect below.
   const [saved] = useState(readSavedSetup)
-  // A timeless initial practice opens in Just Log — the timer modes don't apply to it.
-  const initialHasTime = (practices.find((p) => p.id === initialId)?.durationMin ?? 0) > 0
-  // Saved mode still yields to the timeless rule: a no-length initial practice opens log-only.
+  // The opening mode is routed by the initial practice's timer_kind (item #2). A resume always
+  // opens the silent timer to run the remaining time.
   const [mode, setMode] = useState<SessionMode>(
-    initialHasTime ? saved?.mode ?? prefs.mode : 'log',
+    resuming ? 'timer' : modeForPractice(initialId),
   )
-  // A practice's own length wins; otherwise the saved minutes, then the remembered open length.
+  // A resume runs the REMAINING time; otherwise a practice's own length wins, then the saved
+  // minutes, then the remembered open length. A locked practice always uses its length.
   const [minutes, setMinutes] = useState(() => {
+    if (resuming) return resumeRemainingMin
     const d = practices.find((p) => p.id === initialId)?.durationMin
     if (d && d > 0) return clampMinutes(d)
     return saved?.minutes != null ? clampMinutes(saved.minutes) : prefs.minutes
   })
+  // The optional free-text note: Journal shows it on the live screen (write while you sit), Just
+  // Log on the setup screen (capture the interaction before logging). Captured client-side and
+  // kept across the session; persistence rides a later completeSession field (the action is owned
+  // elsewhere). Never required.
+  const [note, setNote] = useState('')
   const [patternSlug, setPatternSlug] = useState(saved?.patternSlug ?? prefs.pattern)
   const [customIn, setCustomIn] = useState(saved?.customIn ?? prefs.customIn ?? 4)
   const [customHold, setCustomHold] = useState(saved?.customHold ?? prefs.customHold ?? 4)
@@ -191,6 +276,9 @@ export function OnAirSession({
   const lastPhase = useRef<BreathPhase | null>(null)
   const lastMinute = useRef(0)
   const endCued = useRef(false)
+  // Seconds already banked on a resumed partial sit. The clock runs the remaining time, then
+  // finishWith reports resumeBanked + this session's elapsed so the server tops the log up to full.
+  const resumeBanked = useRef(resumeBankedSec)
 
   const pattern = useMemo(
     () =>
@@ -200,16 +288,25 @@ export function OnAirSession({
     [patternSlug, customIn, customHold, customOut],
   )
   const practice = practices.find((p) => p.id === practiceId)
-  // A practice with no set length is log-only — the timer modes don't apply to it.
-  const practiceHasTime = (practice?.durationMin ?? 0) > 0
+  // Which timer the selected practice routes to. A 'none' practice is log-only; everything else
+  // ('mindless', including the Free sit's open length) can run the timed modes. This is the
+  // timer_kind gate (item #2), NOT "does it have a duration_min" — a Free sit has no length but
+  // still opens a real timer.
+  const practiceKind = practice?.timerKind ?? 'mindless'
+  const practiceCanTime = practiceKind !== 'none'
+  // The author pinned the length: the minutes editor is hidden + locked to the practice's length.
+  const durationLocked = !!practice?.durationLocked && (practice?.durationMin ?? 0) > 0
 
-  // Pick a practice + seed the timer to its length (no duration → the remembered open length).
+  // Pick a practice + seed its opening mode + length, routed by timer_kind (item #2). A 'none'
+  // practice opens Just Log; a mindless practice (Free sit included) opens its sit mode. Movement
+  // is handed off in chooseAndStart before this runs, so it never lands here.
   function selectPractice(id: string) {
     setPracticeId(id)
     setMinutes(durationFor(id))
-    // Timeless practice → Just Log (owner ask): the timer/breathe modes aren't offered.
-    const picked = practices.find((p) => p.id === id)
-    if (!((picked?.durationMin ?? 0) > 0)) setMode('log')
+    setMode(modeForPractice(id))
+    // Switching practices abandons any in-flight resume top-up so it can never apply to the
+    // wrong practice (a fresh sit reports only its own seconds).
+    resumeBanked.current = 0
   }
 
   // --- takeover plumbing ----------------------------------------------------
@@ -340,6 +437,11 @@ export function OnAirSession({
 
   // --- transitions -------------------------------------------------------------
 
+  // The mode the running sit was started with — kept in a ref so finishWith reports the right
+  // mode + pattern even when start() ran from an override (the chooser's same-tick pick), before
+  // the mode state write has landed.
+  const activeModeRef = useRef<SessionMode>(mode)
+
   // Begin a sit. The chooser (C.5) passes an override so a freshly picked practice
   // starts on ITS preset (mode + duration_min) the same tick it's selected, without
   // waiting for selectPractice's state writes to land. No override = the current
@@ -349,8 +451,9 @@ export function OnAirSession({
     const activeMode = override?.mode ?? mode
     const activeMinutes = override?.minutes ?? minutes
     if (!activeId) return
+    activeModeRef.current = activeMode
     if (activeMode === 'log') {
-      void finishWith(0, null, override?.practiceId)
+      void finishWith(0, null, override?.practiceId, activeMode)
       return
     }
     if (bell) {
@@ -378,17 +481,54 @@ export function OnAirSession({
     void acquireQuiet()
   }
 
-  // The chooser pick (C.5): seed the picked practice's preset (mode + duration) and
-  // begin its sit on the same tap. A timeless practice opens log-only (selectPractice's
-  // rule), so the override mode follows suit.
+  // Hand a Movement practice off to the Movement timer. OnAirSession is rendered under
+  // MindlessProvider, which sits OUTSIDE MovementProvider, so useMovement() is unreachable
+  // from here — the handoff goes through the same window-event channel the app uses for its
+  // other cross-overlay opens (open-capture, open-settings). MovementProvider listens for
+  // 'open-movement' and opens pre-set to this practice + mode; we then leave Mindless so the
+  // two takeovers swap cleanly. logsAs maps a Free-sit-style chip to its real practice.
+  function handOffToMovement(id: string) {
+    const picked = practices.find((p) => p.id === id)
+    try {
+      window.dispatchEvent(
+        new CustomEvent('open-movement', {
+          detail: {
+            practiceId: picked?.logsAs ?? id,
+            mode: picked?.movementConfig?.mode,
+          },
+        }),
+      )
+    } catch {
+      // if the channel isn't wired, fall through to leaving Mindless — no half-open state
+    }
+    setShowChooser(false)
+    leave()
+  }
+
+  // The chooser pick (C.5) + the THE BUG fix (item #2): route by the practice's timer_kind, not
+  // by whether it has a duration_min.
+  //   movement → close Mindless + hand off to the Movement timer
+  //   none     → open Just Log (no countdown), logged on the next tick
+  //   mindless → open the sit at the practice's mindless_mode (Breathe if that's its mode),
+  //              minutes = duration_min ?? prefs.minutes. A Free sit (open length) opens the
+  //              plain timer at prefs.minutes — never an instant log (the reported Free-sit bug).
   function chooseAndStart(id: string) {
     const picked = practices.find((p) => p.id === id)
-    const hasTime = (picked?.durationMin ?? 0) > 0
-    const nextMode: SessionMode = hasTime ? (mode === 'log' ? 'timer' : mode) : 'log'
-    const nextMinutes = hasTime ? durationFor(id) : minutes
+    const kind = picked?.timerKind ?? 'mindless'
+    if (kind === 'movement') {
+      handOffToMovement(id)
+      return
+    }
     selectPractice(id)
     setShowChooser(false)
-    void start({ practiceId: id, mode: nextMode, minutes: nextMinutes })
+    if (kind === 'none') {
+      // Log-only practice: open Just Log, which logs on the next tick (no countdown).
+      void start({ practiceId: id, mode: 'log', minutes: durationFor(id) })
+      return
+    }
+    // Mindless: the sit at the practice's flavour. modeForPractice resolves the mode (and never
+    // returns 'log' for a mindless practice, so a Free sit opens the timer, not an instant log).
+    void start({ practiceId: id, mode: modeForPractice(id), minutes: durationFor(id) })
   }
 
   // Begin the sit now: end the pre-roll and unpause from the armed state (shift startedAt by the
@@ -414,12 +554,20 @@ export function OnAirSession({
     // The end bell already rang when the clock hit zero; an early Close Session
     // gets a small ack tap only. Paused time never counts as airtime.
     const elapsedMs = (pausedAt ?? Date.now()) - startedAt
-    const seconds = early ? Math.max(0, Math.round(elapsedMs / 1000)) : minutes * 60
+    const thisSession = early ? Math.max(0, Math.round(elapsedMs / 1000)) : minutes * 60
+    // A resume runs the REMAINING time; report the TOTAL (banked + this session) so the server
+    // tops the partial log up to its full target. A fresh sit has resumeBanked = 0.
+    const seconds = resumeBanked.current + thisSession
     if (haptics && early) buzz(10)
-    await finishWith(seconds, new Date(startedAt).toISOString())
+    await finishWith(seconds, new Date(startedAt).toISOString(), undefined, activeModeRef.current)
   }
 
-  async function finishWith(seconds: number, startedIso: string | null, practiceIdOverride?: string) {
+  async function finishWith(
+    seconds: number,
+    startedIso: string | null,
+    practiceIdOverride?: string,
+    modeOverride?: SessionMode,
+  ) {
     setStage('saving')
     await releaseQuiet()
     // The chooser can finish a freshly picked log-only practice the same tick it's
@@ -428,12 +576,17 @@ export function OnAirSession({
     const resolved = practiceIdOverride
       ? practices.find((p) => p.id === practiceIdOverride) ?? practice
       : practice
+    // The mode the sit actually ran (override wins over possibly-stale state). The server gates
+    // the economy on mode !== 'log' and only stamps pattern for breath, so reporting the real
+    // mode keeps the timed/breath/log paths correct.
+    const sentMode = modeOverride ?? mode
     const result = await completeSession({
       // A Free sit logs the default sit practice (chip.logsAs); every real practice logs itself.
       practiceId: resolved?.logsAs ?? practiceIdOverride ?? practiceId,
-      mode,
+      mode: sentMode,
       pattern: patternSlug,
       seconds,
+      resumeFromSec: resumeBanked.current,
       startedAt: startedIso,
       customIn,
       customHold,
@@ -498,9 +651,61 @@ export function OnAirSession({
     leaveToFeed()
   }
 
+  // From the reveal of a PARTIAL sit, "Finish the sit" re-arms the timer in place to run the
+  // remaining time. The just-done seconds (payload.stats.sessionSeconds) become the banked total
+  // and the target is the practice's authored length; on completion finishWith reports the TOTAL
+  // so the server tops the log up to complete. Same component, no second overlay open.
+  function finishTheRest() {
+    if (!payload) return
+    const banked = Math.max(0, Math.round(payload.stats.sessionSeconds))
+    const targetSec = Math.max(0, Math.round((practice?.durationMin ?? 0) * 60))
+    const remainingSec = targetSec - banked
+    if (remainingSec <= 0) {
+      // Nothing left to run — just close out.
+      closeReveal()
+      return
+    }
+    const remainingMin = clampMinutes(Math.ceil(remainingSec / 60))
+    resumeBanked.current = banked
+    setPayload(null)
+    setNote('')
+    activeModeRef.current = 'timer'
+    setMode('timer')
+    // Seed the clock STATE too: the live clock + finish() both read `minutes`, not the start
+    // override, so the resumed sit must run the remaining minutes, not the original target.
+    setMinutes(remainingMin)
+    void start({ practiceId, mode: 'timer', minutes: remainingMin })
+  }
+
   if (stage === 'reveal' && payload) {
     return (
       <Overlay>
+        {/* Completion economy messaging (item #4), above the reveal cards. PARTIAL: paid 1 Zap,
+            no shame, a gentle "finish for the rest". FINISHED: celebrate the top-up. Plain copy,
+            no em or en dashes. */}
+        {payload.partial && (
+          <div className="mx-auto mb-4 w-full max-w-sm rounded-2xl border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
+            <p className="text-sm font-semibold text-text">You banked the day and earned 1 Zap.</p>
+            <p className="mt-1 text-xs text-muted">
+              Finish the sit any time today and the rest of the Zaps are yours.
+            </p>
+            {(practice?.durationMin ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={finishTheRest}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+              >
+                Finish the sit <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            )}
+          </div>
+        )}
+        {payload.finished && (
+          <div className="mx-auto mb-4 w-full max-w-sm rounded-2xl border border-success/50 bg-success-bg/40 px-4 py-3 text-center">
+            <p className="text-sm font-semibold text-text">You finished it. The rest of the Zaps are in.</p>
+            <p className="mt-1 text-xs text-muted">Full sit, full reward. Nice work.</p>
+          </div>
+        )}
         <Reveal payload={payload} onClose={closeReveal} onAction={onExit} />
       </Overlay>
     )
@@ -539,27 +744,31 @@ export function OnAirSession({
     const ss = Math.floor(remaining % 60)
     const ended = remaining <= 0
     const paused = pausedAt !== null
+    const liveMode = activeModeRef.current
+    const showBreath = isBreathMode(liveMode)
     return (
       <Overlay>
-        <div className="flex flex-1 flex-col items-center justify-between pt-[max(3rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+        {/* The content scrolls if it has to; the controls below DOCK to the bottom and stay
+            tappable on a short screen (owner layout directive, item #5). */}
+        <div className="flex flex-1 flex-col items-center justify-center gap-5 pt-[max(3rem,env(safe-area-inset-top))] pb-6">
           <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
             <LotusIcon className="h-[18px] w-[18px]" /> Mindless
           </p>
 
           <div className="flex flex-col items-center gap-5">
-            {mode === 'breath' ? (
+            {showBreath ? (
               <BreathVisualizer pattern={pattern} startedAt={startedAt} paused={paused || ended} />
             ) : (
               <p className="text-8xl font-semibold tabular-nums text-text/60">
                 {mm}:{String(ss).padStart(2, '0')}
               </p>
             )}
-            {mode === 'breath' && (
+            {showBreath && (
               <p className="text-base tabular-nums text-subtle">
                 {ended ? 'Done' : `${mm}:${String(ss).padStart(2, '0')} left`}
               </p>
             )}
-            {mode === 'breath' && (
+            {showBreath && (
               <div className="flex max-w-xs flex-col items-center gap-1.5 text-center">
                 <p className="text-xs text-subtle">{pattern.blurb}</p>
                 <button
@@ -572,36 +781,48 @@ export function OnAirSession({
                 </button>
               </div>
             )}
+            {/* Journal: the note field lives here so the member writes while they sit. Optional. */}
+            {modeHasNote(liveMode) && (
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                placeholder="Jot a line or two. Or do not. Up to you."
+                aria-label="Session note"
+                className="w-full max-w-xs resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              />
+            )}
             {preroll !== null && (
               <p className="animate-pulse text-sm font-bold uppercase tracking-[0.3em] text-primary-strong">
                 Starting in {preroll}
               </p>
             )}
           </div>
+        </div>
 
-          {/* The dynamic control (P10): Pause ⇄ Start while running, Finish once
-              the clock lands. Finish and Close Session BOTH log and move on —
-              ending early is never punished. */}
-          <div className="flex flex-col items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (preroll !== null) { begin(); return } // override the countdown, begin now
-                if (ended) { void finish(false); return }
-                togglePause()
-              }}
-              className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-            >
-              {ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
-            </button>
-            <button
-              type="button"
-              onClick={() => void finish(!ended)}
-              className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
-            >
-              Close &amp; Log Session
-            </button>
-          </div>
+        {/* Docked controls (P10 + item #5): Pause ⇄ Resume while running, Finish once the
+            clock lands. Finish and Close BOTH log and move on — ending early is never punished.
+            Pinned to the bottom and always visible even when the content above scrolls. */}
+        <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6">
+          <button
+            type="button"
+            onClick={() => {
+              if (preroll !== null) { begin(); return } // override the countdown, begin now
+              if (ended) { void finish(false); return }
+              togglePause()
+            }}
+            className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+          >
+            {ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void finish(!ended)}
+            className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+          >
+            Close &amp; Log Session
+          </button>
         </div>
         {showInstructions && (
           <InstructionsPopup pattern={pattern} onClose={() => setShowInstructions(false)} />
@@ -638,22 +859,67 @@ export function OnAirSession({
       </div>
       <p className="pb-6 text-center text-xs text-subtle lg:pb-7">The world can wait a few minutes.</p>
 
+      {/* The settings content CENTERS vertically in the leftover space (item #5): on a tall
+          screen it sits in the middle; on a short one it scrolls. The primary action below is a
+          docked sticky bar that stays visible either way. */}
+      <div className="flex flex-1 flex-col justify-center">
       {/* Two columns on desktop: chooser (practice, mode, pattern, minutes) on
           the left; cues + the Dispatches link on the right. One column on mobile. */}
       <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-6 lg:space-y-0">
         <div className="space-y-5 lg:space-y-6">
         <div>
           <Label>Mode</Label>
-          {/* Meditate = the plain silent countdown; Breathe = the guided rings. */}
+          {/* Six modes (item #1). Meditate / Stillness / Ritual / Journal all run the same silent
+              countdown, differing by label, icon, default length, and subline; Breathe is the
+              guided rings; Just Log is the instant log. A log-only practice (timer_kind 'none')
+              can only Just Log; everything else (Free sit included) can run the timed modes. */}
           <div className="mt-2 grid grid-cols-3 gap-2">
-            <ModeButton active={mode === 'timer'} disabled={!practiceHasTime} onClick={() => setMode('timer')} icon={LotusIcon} label="Meditate" />
-            <ModeButton active={mode === 'breath'} disabled={!practiceHasTime} onClick={() => setMode('breath')} icon={BreatheIcon} label="Breathe" />
-            <ModeButton active={mode === 'log'} onClick={() => setMode('log')} icon={BoltIcon} label="Just Log" />
+            {SESSION_MODE_ORDER.map((m) => {
+              const meta = SESSION_MODE_META[m]
+              // The timed modes need a practice that routes to the sit; Just Log is always offered.
+              const disabled = m !== 'log' && !practiceCanTime
+              return (
+                <ModeButton
+                  key={m}
+                  active={mode === m}
+                  disabled={disabled}
+                  onClick={() => {
+                    setMode(m)
+                    // Seed a sensible default length when the practice has no fixed length and we
+                    // are not on Just Log. A locked or duration-set practice keeps its own minutes.
+                    if (m !== 'log' && !durationLocked && (practice?.durationMin ?? 0) <= 0) {
+                      setMinutes(meta.defaultMin)
+                    }
+                  }}
+                  icon={MODE_ICON[m]}
+                  label={meta.label}
+                />
+              )
+            })}
           </div>
-          {!practiceHasTime && (
-            <p className="mt-2 text-2xs text-subtle">This practice has no set length, so it’s log-only.</p>
+          {/* A plain one-line subline for the chosen mode (no narrated feelings, no em dashes). */}
+          <p className="mt-2 text-2xs text-subtle">{SESSION_MODE_META[mode].subline}</p>
+          {!practiceCanTime && (
+            <p className="mt-1 text-2xs text-subtle">This practice is log-only.</p>
           )}
         </div>
+
+        {/* Just Log: an optional note captured before logging (the One Small Reach entry point).
+            Journal's note lives on the live screen instead, so it isn't shown here. */}
+        {mode === 'log' && (
+          <div>
+            <Label>Note</Label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              maxLength={2000}
+              placeholder="What happened? A line is plenty. Optional."
+              aria-label="Note"
+              className="mt-2 w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+            />
+          </div>
+        )}
 
         {mode === 'breath' && (
           <div>
@@ -708,7 +974,18 @@ export function OnAirSession({
           </div>
         )}
 
-        {mode !== 'log' && (
+        {mode !== 'log' && durationLocked && (
+          // The author pinned the length: lock the minutes to the practice's duration; no editor.
+          <div>
+            <Label>Minutes</Label>
+            <div className="mt-2 flex items-center justify-between rounded-xl border border-border bg-surface-elevated/40 px-3.5 py-2.5">
+              <span className="text-sm font-semibold tabular-nums text-text">{minutes}m</span>
+              <span className="text-2xs text-subtle">Set by the practice</span>
+            </div>
+          </div>
+        )}
+
+        {mode !== 'log' && !durationLocked && (
           <div>
             <Label>Minutes</Label>
             {/* Breathe gets the shorter, one-clean-row preset set; Meditate keeps the fuller grid. */}
@@ -857,8 +1134,9 @@ export function OnAirSession({
                   </div>
                 </div>
 
-                {/* Interval bell — Meditate only (breath cues on phase change). */}
-                {mode === 'timer' && (
+                {/* Interval bell — the silent-timer modes (Meditate / Stillness / Ritual /
+                    Journal). Breath uses phase-change cues, so it's hidden there. */}
+                {engineForMode(mode) === 'timer' && (
                   <div>
                     <SubLabel>Interval bell</SubLabel>
                     <div className="mt-1.5 grid grid-cols-4 gap-2">
@@ -918,8 +1196,10 @@ export function OnAirSession({
           </p>
         </div>
       )}
+      </div>
 
-      {/* Pinned: the primary action never sinks below the fold, even with Custom open. */}
+      {/* Docked: the primary action is pinned to the bottom and ALWAYS visible, even when the
+          centered content above scrolls on a short screen (item #5). */}
       <div className="sticky bottom-0 -mx-8 mt-auto bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-8 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6 lg:-mx-10 lg:px-10">
         {practice?.loggedToday && mode !== 'log' && (
           <p className="pb-1.5 text-center text-2xs text-subtle">
@@ -945,7 +1225,13 @@ export function OnAirSession({
         ) : (
           <button
             type="button"
-            onClick={() => void start()}
+            onClick={() => {
+              if (!practiceId) return
+              // A lone Movement practice still hands off to the Movement timer (item #2); every
+              // other kind runs the sit on the member's chosen mode + minutes.
+              if (practiceKind === 'movement') { handOffToMovement(practiceId); return }
+              void start({ practiceId, mode, minutes })
+            }}
             disabled={!practiceId}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
           >
@@ -964,6 +1250,7 @@ export function OnAirSession({
           selectedId={practiceId}
           onPick={chooseAndStart}
           onClose={() => setShowChooser(false)}
+          onBrowse={() => { setShowChooser(false); leave() }}
         />
       )}
     </div>
@@ -978,11 +1265,14 @@ function PracticeChooser({
   selectedId,
   onPick,
   onClose,
+  onBrowse,
 }: {
   practices: OnAirPractice[]
   selectedId: string
   onPick: (id: string) => void
   onClose: () => void
+  /** Tapping "Browse the library" navigates to /practices; this drops the takeover first. */
+  onBrowse: () => void
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1017,6 +1307,8 @@ function PracticeChooser({
             <X className="h-4 w-4" />
           </button>
         </div>
+        {/* Adopted (and current-leg) practices + the Free sit come FIRST (item #6); each routes
+            per its timer_kind on pick. */}
         <div className="-mx-1 max-h-[60vh] space-y-1.5 overflow-y-auto px-1">
           {practices.map((p) => (
             <button
@@ -1034,6 +1326,15 @@ function PracticeChooser({
             </button>
           ))}
         </div>
+        {/* A quiet door to the full library for anything not on the member's list yet
+            ("adopted first, browse for more"). Closes the takeover on the way out. */}
+        <Link
+          href="/practices"
+          onClick={onBrowse}
+          className="mt-3 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <Library className="h-3.5 w-3.5" aria-hidden /> Browse the library
+        </Link>
       </div>
     </div>
   )

@@ -5,14 +5,21 @@
 // wake lock + true fullscreen, the same Web Audio cue voice, the same 250ms
 // wall-clock tick + pause/resume math, and the SAME completeSession -> logPractice
 // log path. The difference is the engine: instead of a single countdown it walks
-// a movement plan (Walk / Yoga / Play / Workout) built by lib/movement.ts.
+// a movement plan (Walk / Run / Yoga / Strength / Stretch / Play) built by
+// lib/movement.ts.
 //
-// The shape: setup (pick mode + preset, or tune a Workout) -> live (a big M:SS, a
-// round counter, the next-phase line, color-coded phases) -> the shared Reveal /
-// log. Color reads the phase kind: work = success, rest = warning, the lead-in is
-// neutral, and the final 3 seconds of any timed phase ring danger so the change
-// is felt before it lands. Audio: a 3-2-1 countdown into each work phase, a bell
-// on every phase change, the closing double-strike at the end.
+// The shape: setup (pick one of six modes + its preset, or tune Strength) -> live
+// (a big M:SS, a round counter, the next-phase line, color-coded phases) -> the
+// shared Reveal / log. Color reads the phase kind: work = success, rest = warning,
+// the lead-in is neutral, and the final 3 seconds of any timed phase ring danger so
+// the change is felt before it lands. Audio: a 3-2-1 countdown into each work phase,
+// a bell on every phase change, the closing double-strike at the end.
+//
+// Completion economy: the live screen reports the ACTUAL elapsed seconds to
+// completeSession, which measures them against the practice's authored target and
+// pays a partial (>= 50%, 1 Zap) or a full reward. A "Finish Practice" resume opens
+// mid-way (resumeFromSec already banked, secondsTarget the whole length): the clock
+// runs the REMAINING time, and the total banked is resumeFromSec + this session.
 //
 // VOICE (docs/CONTENT-VOICE.md): plain, warm labels. No em or en dashes. Proper
 // nouns (Tabata, EMOM) carry the magic. Tokens only, never hex (docs/THEME.md).
@@ -31,10 +38,14 @@ import { bellToneBySlug } from '@/lib/on-air'
 import type { OnAirPractice } from './session'
 import {
   MOVEMENT_MODES,
-  WORKOUT_PRESETS,
+  STRENGTH_PRESETS,
   YOGA_PRESETS,
   WALK_DURATION_PRESETS,
   WALK_INTERVAL_PRESETS,
+  RUN_DURATION_PRESETS,
+  RUN_INTERVAL_PRESETS,
+  STRETCH_DURATION_PRESETS,
+  STRETCH_INTERVAL_PRESETS,
   buildPlan,
   phaseAt,
   totalSeconds,
@@ -44,7 +55,7 @@ import {
   type MovementConfig,
   type MovementPlan,
   type PhaseKind,
-  type WorkoutPresetKind,
+  type StrengthPresetKind,
   type YogaPresetKind,
 } from '@/lib/movement'
 import type { RevealPayload } from '@/lib/on-air'
@@ -98,6 +109,8 @@ export function MovementSession({
   practices,
   defaultPracticeId,
   defaultMode,
+  resumeFromSec = 0,
+  secondsTarget,
   practicedToday = 0,
   onExit,
 }: {
@@ -105,6 +118,13 @@ export function MovementSession({
   defaultPracticeId: string | null
   /** The Movement mode this session opens on (from a practice's movement_config, or Walk). */
   defaultMode?: MovementMode | null
+  /** "Finish Practice" resume: seconds already banked from an earlier partial sit. The
+   *  live clock runs the REMAINING time and reports resumeFromSec + this session's
+   *  elapsed as the total to completeSession. 0 = a fresh sit. */
+  resumeFromSec?: number
+  /** "Finish Practice" resume: the practice's full target length in seconds. Bounds the
+   *  remaining run so the resume stops at the target, and feeds the completion messaging. */
+  secondsTarget?: number
   /** Distinct members with a practice log today (presence line, shown at >=3). */
   practicedToday?: number
   /** Overlay mode: leaving CLOSES the overlay via this callback instead of navigating. */
@@ -121,10 +141,16 @@ export function MovementSession({
   // Walk
   const [walkMinutes, setWalkMinutes] = useState(20)
   const [walkIntervalMin, setWalkIntervalMin] = useState(0)
+  // Run
+  const [runMinutes, setRunMinutes] = useState(20)
+  const [runIntervalMin, setRunIntervalMin] = useState(0)
   // Yoga
   const [yogaKind, setYogaKind] = useState<YogaPresetKind>('vinyasa')
-  // Workout (a preset, plus tunable steppers that override it)
-  const [workoutKind, setWorkoutKind] = useState<WorkoutPresetKind>('tabata')
+  // Stretch
+  const [stretchMinutes, setStretchMinutes] = useState(10)
+  const [stretchIntervalMin, setStretchIntervalMin] = useState(0)
+  // Strength (a preset, plus tunable steppers that override it)
+  const [strengthKind, setStrengthKind] = useState<StrengthPresetKind>('tabata')
   const [workSec, setWorkSec] = useState(20)
   const [restSec, setRestSec] = useState(10)
   const [rounds, setRounds] = useState(8)
@@ -136,24 +162,61 @@ export function MovementSession({
     switch (mode) {
       case 'walk':
         return { mode, walkMinutes, walkIntervalMin }
+      case 'run':
+        return { mode, runMinutes, runIntervalMin }
       case 'yoga':
         return { mode, yogaKind }
+      case 'stretch':
+        return { mode, stretchMinutes, stretchIntervalMin }
       case 'play':
         return { mode }
-      case 'workout':
-        return { mode, workoutKind, workSec, restSec, rounds }
+      case 'strength':
+        return { mode, strengthKind, workSec, restSec, rounds }
       default:
         return { mode }
     }
-  }, [mode, walkMinutes, walkIntervalMin, yogaKind, workoutKind, workSec, restSec, rounds])
+  }, [
+    mode,
+    walkMinutes,
+    walkIntervalMin,
+    runMinutes,
+    runIntervalMin,
+    yogaKind,
+    stretchMinutes,
+    stretchIntervalMin,
+    strengthKind,
+    workSec,
+    restSec,
+    rounds,
+  ])
 
   const plan = useMemo<MovementPlan>(() => buildPlan(config), [config])
 
-  // Seed the Workout steppers from the chosen preset (so picking Tabata fills
+  // "Finish Practice" resume: the seconds already banked from an earlier partial sit.
+  // The live screen reads the plan from this offset (so the member picks up where the
+  // plan left off), and the only time we COUNT is this session's own elapsed. Clamped
+  // to the plan total so a resume never reads past the end. A fresh sit has offset 0.
+  const resumeOffset = useMemo(() => {
+    if (resumeFromSec <= 0) return 0
+    const total = totalSeconds(plan)
+    return total === null ? Math.round(resumeFromSec) : Math.min(Math.round(resumeFromSec), total)
+  }, [resumeFromSec, plan])
+
+  // The cap on what a finish can bank: the authored target on a "Finish Practice" resume
+  // (secondsTarget), else the plan's own run length, else null for open-ended Play. The
+  // server still owns the partial-vs-full economy decision; this only stops an overshoot.
+  const finishCap = useMemo<number | null>(() => {
+    if (resumeFromSec > 0 && typeof secondsTarget === 'number' && secondsTarget > 0) {
+      return Math.round(secondsTarget)
+    }
+    return totalSeconds(plan)
+  }, [resumeFromSec, secondsTarget, plan])
+
+  // Seed the Strength steppers from the chosen preset (so picking Tabata fills
   // 20/10/8, then the member can tune from there).
-  function pickWorkout(kind: WorkoutPresetKind) {
-    const preset = WORKOUT_PRESETS.find((p) => p.kind === kind) ?? WORKOUT_PRESETS[0]
-    setWorkoutKind(kind)
+  function pickStrength(kind: StrengthPresetKind) {
+    const preset = STRENGTH_PRESETS.find((p) => p.kind === kind) ?? STRENGTH_PRESETS[0]
+    setStrengthKind(kind)
     setWorkSec(preset.workSec)
     setRestSec(preset.restSec)
     setRounds(preset.rounds)
@@ -227,10 +290,13 @@ export function MovementSession({
     if (stage !== 'live') return
     const id = setInterval(() => {
       if (pausedAt !== null) return
+      // This session's own elapsed. The plan is read from resumeOffset + elapsed so a
+      // "Finish Practice" resume picks up where the earlier partial left off, while the
+      // counter we bank (in finish) stays this session's elapsed plus what was banked.
       const e = (Date.now() - startedAt) / 1000
       setElapsed(e)
 
-      const pos = phaseAt(plan, e)
+      const pos = phaseAt(plan, resumeOffset + e)
 
       // Phase change -> a bell + a small buzz. Lead-in into work, work into rest,
       // round to round all read here off the label changing.
@@ -254,13 +320,22 @@ export function MovementSession({
         lastBeep.current = -1
       }
 
-      // Walk interval reminder: a gentle chime on each chosen-minute mark (not a
-      // phase, so the block stays one clean countdown).
-      if (plan.mode === 'walk' && walkIntervalMin > 0 && pos.phase.kind === 'work') {
+      // Interval reminder: a gentle chime on each chosen-minute mark, not a phase, so
+      // the block stays one clean countdown. Walk = a nudge, Run = a split cue, Stretch
+      // = a soft "switch sides." All three fire on the minute of the work block.
+      const intervalMin =
+        plan.mode === 'walk'
+          ? walkIntervalMin
+          : plan.mode === 'run'
+            ? runIntervalMin
+            : plan.mode === 'stretch'
+              ? stretchIntervalMin
+              : 0
+      if (intervalMin > 0 && pos.phase.kind === 'work') {
         const minute = Math.floor(pos.phaseElapsed / 60)
         if (minute > lastWalkMinute.current) {
           lastWalkMinute.current = minute
-          if (minute > 0 && minute % walkIntervalMin === 0) chime(audio.current, TONE)
+          if (minute > 0 && minute % intervalMin === 0) chime(audio.current, TONE)
         }
       }
 
@@ -273,7 +348,7 @@ export function MovementSession({
       }
     }, 250)
     return () => clearInterval(id)
-  }, [stage, startedAt, pausedAt, plan, walkIntervalMin])
+  }, [stage, startedAt, pausedAt, plan, resumeOffset, walkIntervalMin, runIntervalMin, stretchIntervalMin])
 
   // --- transitions ----------------------------------------------------------
   async function start() {
@@ -310,10 +385,13 @@ export function MovementSession({
     if (finishing.current) return
     finishing.current = true
     const e = pausedAt !== null ? (pausedAt - startedAt) / 1000 : (Date.now() - startedAt) / 1000
-    // Open-ended Play has no plan total; a timed plan caps at its run length so an
-    // overshoot past the end never logs more than the session actually was.
-    const total = totalSeconds(plan)
-    const seconds = total === null ? Math.round(e) : Math.min(Math.round(e), total)
+    // The total banked = what an earlier partial already banked (resumeOffset, 0 for a
+    // fresh sit) + this session's own elapsed. Capped so we never log more than the
+    // whole practice: on a "Finish Practice" resume the cap is the authored target
+    // (secondsTarget); otherwise the plan's own run length. Open-ended Play has neither,
+    // so it banks the raw elapsed.
+    const done = resumeOffset + Math.round(e)
+    const seconds = finishCap === null ? done : Math.min(done, finishCap)
     buzz(10)
     await finishWith(Math.max(0, seconds))
   }
@@ -328,6 +406,7 @@ export function MovementSession({
       mode: 'timer',
       pattern: null,
       seconds,
+      resumeFromSec: resumeOffset,
       startedAt: new Date(startedAt).toISOString(),
       movementMode: plan.mode,
     })
@@ -362,6 +441,19 @@ export function MovementSession({
   if (stage === 'reveal' && payload) {
     return (
       <Overlay>
+        {/* Completion economy line: a partial sit banks 1 Zap and clears the day; come
+            back to finish for the rest. A top-up (finished) celebrates the rest landing.
+            Plain, no shame, no em or en dashes (docs/CONTENT-VOICE.md). */}
+        {payload.partial && (
+          <div className="shrink-0 rounded-xl border border-success/40 bg-success-bg/30 px-4 py-2.5 text-center text-sm text-text">
+            1 Zap now, and the day is logged. Finish the rest of it later for the full reward.
+          </div>
+        )}
+        {payload.finished && (
+          <div className="shrink-0 rounded-xl border border-success/40 bg-success-bg/30 px-4 py-2.5 text-center text-sm text-text">
+            You finished it. The rest of the Zaps just landed.
+          </div>
+        )}
         <Reveal payload={payload} onClose={closeReveal} onAction={onExit} />
       </Overlay>
     )
@@ -385,7 +477,10 @@ export function MovementSession({
           <p className="text-sm font-medium text-text">That did not save. Your movement still happened.</p>
           <button
             type="button"
-            onClick={() => void finishWith(Math.round((Date.now() - startedAt) / 1000))}
+            onClick={() => {
+              const done = resumeOffset + Math.round((Date.now() - startedAt) / 1000)
+              void finishWith(Math.max(0, finishCap === null ? done : Math.min(done, finishCap)))
+            }}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
           >
             Try again
@@ -396,7 +491,9 @@ export function MovementSession({
   }
 
   if (stage === 'live') {
-    const pos = phaseAt(plan, elapsed)
+    // Read the plan from the resume offset: a "Finish Practice" resume picks the plan
+    // up where the earlier partial left off; a fresh sit reads from 0.
+    const pos = phaseAt(plan, resumeOffset + elapsed)
     const tone = phaseTone(pos.phase.kind)
     const paused = pausedAt !== null
     const ended = pos.done
@@ -407,64 +504,68 @@ export function MovementSession({
 
     return (
       <Overlay>
-        <div className="flex flex-1 flex-col items-center justify-between pt-[max(3rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+        {/* The clock block centers vertically; the action bar docks at the bottom and
+            stays visible (LAYOUT directive). */}
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 pt-[max(3rem,env(safe-area-inset-top))]">
           <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-success [animation-duration:3s]">
             <MovementArt className="block h-5" /> Movement
           </p>
 
-          <div className="flex flex-col items-center gap-4">
-            {/* The phase chip — color-coded, with the round counter for a Workout. */}
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${tone.bg} ${tone.text}`}
-            >
-              {pos.phase.label}
-              {plan.rounds > 1 && pos.phase.kind !== 'prepare' && (
-                <span className="ml-2 tabular-nums opacity-80">
-                  Round {pos.round} of {plan.rounds}
-                </span>
-              )}
-            </span>
+          {/* The phase chip — color-coded, with the round counter for Strength. */}
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${tone.bg} ${tone.text}`}
+          >
+            {pos.phase.label}
+            {plan.rounds > 1 && pos.phase.kind !== 'prepare' && (
+              <span className="ml-2 tabular-nums opacity-80">
+                Round {pos.round} of {plan.rounds}
+              </span>
+            )}
+          </span>
 
-            {/* The big clock. A timed phase rings its ringed wash; the final 3s flips
-                the ring to danger. Play counts up with no ring. */}
-            <div
-              className={`flex h-56 w-56 items-center justify-center rounded-full ring-4 transition-colors ${
-                closing ? 'ring-danger/60' : tone.ring
-              } ${ended ? 'opacity-60' : ''}`}
-            >
-              <p className={`text-7xl font-semibold tabular-nums ${closing ? 'text-danger' : tone.text}`}>
-                {clockText}
-              </p>
-            </div>
-
-            {/* Next up — the line that lets the member anticipate the change. */}
-            <p className="h-5 text-sm text-subtle">
-              {ended ? 'Done' : pos.nextLabel ? `Next: ${pos.nextLabel}` : plan.openEnded ? 'Stop when you are done' : ' '}
+          {/* The big clock. A timed phase rings its ringed wash; the final 3s flips
+              the ring to danger. Play counts up with no ring. */}
+          <div
+            className={`flex h-56 w-56 items-center justify-center rounded-full ring-4 transition-colors ${
+              closing ? 'ring-danger/60' : tone.ring
+            } ${ended ? 'opacity-60' : ''}`}
+          >
+            <p className={`text-7xl font-semibold tabular-nums ${closing ? 'text-danger' : tone.text}`}>
+              {clockText}
             </p>
           </div>
 
-          <div className="flex flex-col items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (ended) {
-                  void finish()
-                  return
-                }
-                togglePause()
-              }}
-              className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-            >
-              {ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
-            </button>
-            <button
-              type="button"
-              onClick={() => void finish()}
-              className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
-            >
-              Stop &amp; Log
-            </button>
-          </div>
+          {/* Next up — the line that lets the member anticipate the change. */}
+          <p className="h-5 text-sm text-subtle">
+            {ended ? 'Done' : pos.nextLabel ? `Next: ${pos.nextLabel}` : plan.openEnded ? 'Stop when you are done' : ' '}
+          </p>
+          {resumeOffset > 0 && (
+            <p className="text-2xs text-subtle">Picking up where you left off.</p>
+          )}
+        </div>
+
+        {/* Docked action bar — always visible, even as the screen scrolls. */}
+        <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6">
+          <button
+            type="button"
+            onClick={() => {
+              if (ended) {
+                void finish()
+                return
+              }
+              togglePause()
+            }}
+            className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+          >
+            {ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void finish()}
+            className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+          >
+            Stop &amp; Log
+          </button>
         </div>
       </Overlay>
     )
@@ -487,8 +588,11 @@ export function MovementSession({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <p className="pb-6 text-center text-xs text-subtle">Move on a timer. Walk, flow, play, or train.</p>
+        <p className="pb-6 text-center text-xs text-subtle">Move on a timer. Walk, run, flow, train, stretch, or play.</p>
 
+        {/* The setup body centers vertically in the viewport and scrolls when it
+            overflows; the Start bar below stays docked and visible (LAYOUT directive). */}
+        <div className="flex flex-1 flex-col justify-center gap-5 py-2">
         {/* Mode */}
         <div>
           <Label>Mode</Label>
@@ -516,7 +620,7 @@ export function MovementSession({
 
         {/* Per-mode preset / tuning */}
         {mode === 'walk' && (
-          <div className="mt-5 space-y-4">
+          <div className="space-y-4">
             <div>
               <Label>Minutes</Label>
               <div className="mt-2 grid grid-cols-5 gap-2">
@@ -547,8 +651,40 @@ export function MovementSession({
           </div>
         )}
 
+        {mode === 'run' && (
+          <div className="space-y-4">
+            <div>
+              <Label>Minutes</Label>
+              <div className="mt-2 grid grid-cols-4 gap-2">
+                {RUN_DURATION_PRESETS.map((m) => (
+                  <Chip key={m} active={m === runMinutes} onClick={() => setRunMinutes(m)}>
+                    {m}
+                  </Chip>
+                ))}
+              </div>
+              <Stepper
+                className="mt-2"
+                label={`${runMinutes}m`}
+                onLess={() => setRunMinutes((m) => Math.max(1, m - 1))}
+                onMore={() => setRunMinutes((m) => Math.min(240, m + 1))}
+              />
+            </div>
+            <div>
+              <Label>Split cues</Label>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {RUN_INTERVAL_PRESETS.map((iv) => (
+                  <Chip key={iv.value} active={iv.value === runIntervalMin} onClick={() => setRunIntervalMin(iv.value)}>
+                    {iv.label}
+                  </Chip>
+                ))}
+              </div>
+              <p className="mt-1.5 text-2xs text-subtle">A chime on the minute to mark your splits, if you want them.</p>
+            </div>
+          </div>
+        )}
+
         {mode === 'yoga' && (
-          <div className="mt-5">
+          <div>
             <Label>Flow</Label>
             <div className="mt-2 grid grid-cols-3 gap-2">
               {YOGA_PRESETS.map((y) => (
@@ -563,25 +699,61 @@ export function MovementSession({
           </div>
         )}
 
+        {mode === 'stretch' && (
+          <div className="space-y-4">
+            <div>
+              <Label>Minutes</Label>
+              <div className="mt-2 grid grid-cols-4 gap-2">
+                {STRETCH_DURATION_PRESETS.map((m) => (
+                  <Chip key={m} active={m === stretchMinutes} onClick={() => setStretchMinutes(m)}>
+                    {m}
+                  </Chip>
+                ))}
+              </div>
+              <Stepper
+                className="mt-2"
+                label={`${stretchMinutes}m`}
+                onLess={() => setStretchMinutes((m) => Math.max(1, m - 1))}
+                onMore={() => setStretchMinutes((m) => Math.min(240, m + 1))}
+              />
+            </div>
+            <div>
+              <Label>Switch sides</Label>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {STRETCH_INTERVAL_PRESETS.map((iv) => (
+                  <Chip
+                    key={iv.value}
+                    active={iv.value === stretchIntervalMin}
+                    onClick={() => setStretchIntervalMin(iv.value)}
+                  >
+                    {iv.label}
+                  </Chip>
+                ))}
+              </div>
+              <p className="mt-1.5 text-2xs text-subtle">A soft chime to switch sides, if you want one.</p>
+            </div>
+          </div>
+        )}
+
         {mode === 'play' && (
-          <div className="mt-5 rounded-xl border border-border px-4 py-3 text-sm text-muted">
+          <div className="rounded-xl border border-border px-4 py-3 text-sm text-muted">
             An open count-up. Start, move, and Stop when you are done.
           </div>
         )}
 
-        {mode === 'workout' && (
-          <div className="mt-5 space-y-4">
+        {mode === 'strength' && (
+          <div className="space-y-4">
             <div>
               <Label>Shape</Label>
               <div className="mt-2 grid grid-cols-4 gap-2">
-                {WORKOUT_PRESETS.map((w) => (
-                  <Chip key={w.kind} active={w.kind === workoutKind} onClick={() => pickWorkout(w.kind)} title={w.blurb}>
+                {STRENGTH_PRESETS.map((w) => (
+                  <Chip key={w.kind} active={w.kind === strengthKind} onClick={() => pickStrength(w.kind)} title={w.blurb}>
                     {w.label}
                   </Chip>
                 ))}
               </div>
               <p className="mt-1.5 text-2xs text-subtle">
-                {WORKOUT_PRESETS.find((w) => w.kind === workoutKind)?.blurb}
+                {STRENGTH_PRESETS.find((w) => w.kind === strengthKind)?.blurb}
               </p>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -593,14 +765,14 @@ export function MovementSession({
         )}
 
         {/* The plan read-out + total. */}
-        <p className="mt-5 text-center text-xs text-subtle">
+        <p className="text-center text-xs text-subtle">
           {plan.label}
           {totalSeconds(plan) !== null && <span className="tabular-nums"> · {fmt(totalSeconds(plan)!)}</span>}
         </p>
 
         {/* Practice read-out (which log this banks). */}
         {practices.length > 1 && practice && (
-          <div className="mt-4">
+          <div>
             <Label>Logs as</Label>
             <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold text-text">
               <span className="truncate">{practice.title}</span>
@@ -611,7 +783,7 @@ export function MovementSession({
 
         {/* Practice chooser — a simple select when several practices are adopted. */}
         {practices.length > 1 && (
-          <div className="mt-3">
+          <div>
             <select
               value={practiceId}
               onChange={(e) => setPracticeId(e.target.value)}
@@ -627,7 +799,10 @@ export function MovementSession({
           </div>
         )}
 
-        <div className="mt-auto sticky bottom-0 -mx-6 bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6">
+        </div>
+
+        {/* Docked Start bar — always visible, even as the setup body scrolls. */}
+        <div className="sticky bottom-0 -mx-6 bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6">
           {practicedToday >= 3 && (
             <p className="pb-1.5 text-center text-2xs text-subtle">{practicedToday} members practiced today.</p>
           )}

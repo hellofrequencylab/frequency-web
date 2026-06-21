@@ -19,9 +19,23 @@ import type { OnAirSessionData } from '@/lib/on-air/session-data'
 import { OnAirSession } from '@/components/on-air/session'
 import { LotusIcon } from '@/components/on-air/icons'
 
+/** What `open` accepts. `practiceId` pre-selects an adopted practice (and the timer opens
+ *  at that practice's mindless_mode). A "Finish Practice" resume passes BOTH `resumeFromSec`
+ *  (how far the partial sit already got) and `secondsTarget` (the practice's full length): the
+ *  timer then runs only the REMAINING time and, on completion, reports the TOTAL seconds so the
+ *  server tops the partial log up to complete. */
+export interface MindlessOpenOpts {
+  practiceId?: string
+  /** Seconds already banked on a partial log today (the "Finish Practice" resume). */
+  resumeFromSec?: number
+  /** The full target length in seconds (the practice's authored duration). */
+  secondsTarget?: number
+}
+
 interface MindlessApi {
-  /** Open the overlay; `practiceId` pre-selects an adopted practice. */
-  open: (opts?: { practiceId?: string }) => void
+  /** Open the overlay. See MindlessOpenOpts: pre-select a practice + its mode, or resume a
+   *  partial sit (`resumeFromSec` + `secondsTarget`) to finish the remaining time. */
+  open: (opts?: MindlessOpenOpts) => void
   close: () => void
 }
 
@@ -37,10 +51,17 @@ export function useMindless(): MindlessApi {
   return ctx
 }
 
+// A resume carries the partial sit's progress + full target so the live timer runs the
+// REMAINING time and reports the TOTAL on completion (the server tops the log up to full).
+interface ResumeInfo {
+  resumeFromSec: number
+  secondsTarget: number
+}
+
 type OverlayState =
   | { phase: 'closed' }
-  | { phase: 'loading'; practiceId?: string }
-  | { phase: 'ready'; data: OnAirSessionData }
+  | { phase: 'loading'; practiceId?: string; resume?: ResumeInfo }
+  | { phase: 'ready'; data: OnAirSessionData; resume?: ResumeInfo }
   | { phase: 'error' }
 
 export function MindlessProvider({ children }: { children: React.ReactNode }) {
@@ -58,12 +79,21 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     router.refresh()
   }, [router])
 
-  const open = useCallback((opts?: { practiceId?: string }) => {
+  const open = useCallback((opts?: MindlessOpenOpts) => {
     // Go fullscreen straight from the click that opened the overlay — fullscreen is
     // gesture-gated, so it has to ride the same tap, not a later effect (C.1-3).
     // Best-effort: iOS Safari no-ops and the dvh takeover is the fallback.
     void requestAppFullscreen()
-    setState({ phase: 'loading', practiceId: opts?.practiceId })
+    // A resume needs BOTH the progress + the full target to compute the remaining time;
+    // anything partial is ignored so a malformed call just opens a normal sit.
+    const resume =
+      typeof opts?.resumeFromSec === 'number' &&
+      typeof opts?.secondsTarget === 'number' &&
+      opts.secondsTarget > 0 &&
+      opts.resumeFromSec >= 0
+        ? { resumeFromSec: Math.round(opts.resumeFromSec), secondsTarget: Math.round(opts.secondsTarget) }
+        : undefined
+    setState({ phase: 'loading', practiceId: opts?.practiceId, resume })
   }, [])
 
   // Load the member's setup state on open. The request is tied to a token so a
@@ -73,6 +103,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     if (state.phase !== 'loading') return
     let live = true
     const requestedPracticeId = state.practiceId
+    const requestedResume = state.resume
     void (async () => {
       const result = await loadOnAirSession(requestedPracticeId)
       if (!live) return
@@ -80,7 +111,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         setState({ phase: 'error' })
         return
       }
-      setState({ phase: 'ready', data: result.data })
+      setState({ phase: 'ready', data: result.data, resume: requestedResume })
     })()
     return () => {
       live = false
@@ -161,6 +192,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             defaultPracticeId={state.data.defaultPracticeId}
             prefs={state.data.prefs}
             practicedToday={state.data.practicedToday}
+            resumeFromSec={state.resume?.resumeFromSec}
+            secondsTarget={state.resume?.secondsTarget}
             onExit={close}
           />
         ))}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Sparkles, Flame, Check, ChevronDown } from 'lucide-react'
 import { LogPracticeButton } from './log-practice-button'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
@@ -158,8 +159,20 @@ export function PracticePrompt({
           <ul className="space-y-2">
             {practices.map((practice) => (
               <li key={practice.id} className="flex items-center justify-between gap-3">
-                <span className="min-w-0 truncate text-sm text-text">{practice.title}</span>
-                <LogPracticeButton practiceId={practice.id} />
+                <Link
+                  href={`/practices/${practice.id}`}
+                  className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
+                >
+                  {practice.title}
+                </Link>
+                <span className="shrink-0">
+                  <LogPracticeButton
+                    practiceId={practice.id}
+                    timerKind={practice.timer_kind}
+                    mindlessMode={practice.mindless_mode}
+                    movementConfig={practice.movement_config}
+                  />
+                </span>
               </li>
             ))}
           </ul>

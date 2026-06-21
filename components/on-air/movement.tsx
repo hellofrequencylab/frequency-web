@@ -7,8 +7,10 @@
 // member's practice list through the shared loadOnAirSession action, and hands
 // it `onExit` so leaving closes the overlay in place rather than navigating.
 //
-// open({ practiceId, mode }) pre-selects a practice to log against and the
-// Movement mode to open on (a practice's movement_config.mode routes here).
+// open({ practiceId, mode, resumeFromSec, secondsTarget }) pre-selects a practice
+// to log against and the Movement mode to open on (a practice's movement_config.mode
+// routes here). resumeFromSec + secondsTarget drive a "Finish Practice" resume: the
+// live timer runs the REMAINING time and banks resumeFromSec + this session's elapsed.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -23,9 +25,17 @@ import { MovementArt } from '@/components/feed/zap-menu-art'
 import type { MovementMode } from '@/lib/movement'
 
 interface MovementApi {
-  /** Open the overlay; `practiceId` pre-selects an adopted practice, `mode` the
-   *  Movement mode to open on (defaults to Walk). */
-  open: (opts?: { practiceId?: string; mode?: MovementMode }) => void
+  /** Open the overlay. `practiceId` pre-selects an adopted practice; `mode` the
+   *  Movement mode to open on (else the practice's movement_config.mode, else Walk).
+   *  `resumeFromSec` + `secondsTarget` open a "Finish Practice" resume: the live timer
+   *  runs the REMAINING time and banks `resumeFromSec` + this session's elapsed as the
+   *  total reported to completeSession. */
+  open: (opts?: {
+    practiceId?: string
+    mode?: MovementMode
+    resumeFromSec?: number
+    secondsTarget?: number
+  }) => void
   close: () => void
 }
 
@@ -42,8 +52,8 @@ export function useMovement(): MovementApi {
 
 type OverlayState =
   | { phase: 'closed' }
-  | { phase: 'loading'; practiceId?: string; mode?: MovementMode }
-  | { phase: 'ready'; data: OnAirSessionData; mode?: MovementMode }
+  | { phase: 'loading'; practiceId?: string; mode?: MovementMode; resumeFromSec?: number; secondsTarget?: number }
+  | { phase: 'ready'; data: OnAirSessionData; mode?: MovementMode; resumeFromSec?: number; secondsTarget?: number }
   | { phase: 'error' }
 
 export function MovementProvider({ children }: { children: React.ReactNode }) {
@@ -56,11 +66,20 @@ export function MovementProvider({ children }: { children: React.ReactNode }) {
     router.refresh()
   }, [router])
 
-  const open = useCallback((opts?: { practiceId?: string; mode?: MovementMode }) => {
-    // Fullscreen rides the same tap that opened the overlay (gesture-gated).
-    void requestAppFullscreen()
-    setState({ phase: 'loading', practiceId: opts?.practiceId, mode: opts?.mode })
-  }, [])
+  const open = useCallback(
+    (opts?: { practiceId?: string; mode?: MovementMode; resumeFromSec?: number; secondsTarget?: number }) => {
+      // Fullscreen rides the same tap that opened the overlay (gesture-gated).
+      void requestAppFullscreen()
+      setState({
+        phase: 'loading',
+        practiceId: opts?.practiceId,
+        mode: opts?.mode,
+        resumeFromSec: opts?.resumeFromSec,
+        secondsTarget: opts?.secondsTarget,
+      })
+    },
+    [],
+  )
 
   // Load the member's practice list on open. Tied to a token so a close (or a
   // second open) before the load lands is ignored.
@@ -69,6 +88,8 @@ export function MovementProvider({ children }: { children: React.ReactNode }) {
     let live = true
     const requestedPracticeId = state.practiceId
     const requestedMode = state.mode
+    const requestedResumeFromSec = state.resumeFromSec
+    const requestedSecondsTarget = state.secondsTarget
     void (async () => {
       const result = await loadOnAirSession(requestedPracticeId)
       if (!live) return
@@ -76,7 +97,13 @@ export function MovementProvider({ children }: { children: React.ReactNode }) {
         setState({ phase: 'error' })
         return
       }
-      setState({ phase: 'ready', data: result.data, mode: requestedMode })
+      setState({
+        phase: 'ready',
+        data: result.data,
+        mode: requestedMode,
+        resumeFromSec: requestedResumeFromSec,
+        secondsTarget: requestedSecondsTarget,
+      })
     })()
     return () => {
       live = false
@@ -102,6 +129,20 @@ export function MovementProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [state.phase, close])
+
+  // Cross-provider handoff: the Mindless overlay (a sibling provider it can't call
+  // through this hook) routes a movement practice here by dispatching an `open-movement`
+  // window event carrying the same open() args. Mirror them into open().
+  useEffect(() => {
+    function onOpen(e: Event) {
+      const detail = (e as CustomEvent).detail as
+        | { practiceId?: string; mode?: MovementMode; resumeFromSec?: number; secondsTarget?: number }
+        | undefined
+      open(detail ?? undefined)
+    }
+    window.addEventListener('open-movement', onOpen as EventListener)
+    return () => window.removeEventListener('open-movement', onOpen as EventListener)
+  }, [open])
 
   const api = useMemo<MovementApi>(() => ({ open, close }), [open, close])
 
@@ -151,13 +192,29 @@ export function MovementProvider({ children }: { children: React.ReactNode }) {
           <MovementSession
             practices={state.data.practices}
             defaultPracticeId={state.data.defaultPracticeId}
-            defaultMode={state.mode}
+            // The mode given to open() wins; otherwise read it off the pre-selected
+            // practice's movement_config (else MovementSession falls back to Walk).
+            defaultMode={state.mode ?? resolveDefaultMode(state.data)}
+            resumeFromSec={state.resumeFromSec}
+            secondsTarget={state.secondsTarget}
             practicedToday={state.data.practicedToday}
             onExit={close}
           />
         ))}
     </MovementContext.Provider>
   )
+}
+
+/** The mode to open on when open() wasn't given one: read it off the pre-selected
+ *  practice's movement_config. A stored config may still carry the legacy `'workout'`
+ *  string, so map that to `'strength'` to match the six-mode engine. Undefined lets
+ *  MovementSession fall back to its own default (Walk). */
+function resolveDefaultMode(data: OnAirSessionData): MovementMode | undefined {
+  const id = data.defaultPracticeId
+  const practice = id ? data.practices.find((p) => p.id === id) : undefined
+  const stored = practice?.movementConfig?.mode as string | undefined
+  if (!stored) return undefined
+  return stored === 'workout' ? 'strength' : (stored as MovementMode)
 }
 
 /** The takeover frame for the overlay's NON-session states (loading, error, empty)

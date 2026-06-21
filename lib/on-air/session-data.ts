@@ -15,7 +15,8 @@
 // reuse it without importing route code.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMemberPractices } from '@/lib/practices'
+import { getMemberPractices, type TimerKind, type MindlessMode } from '@/lib/practices'
+import type { MovementConfig } from '@/lib/movement'
 import { getCurrentLegPracticeIds } from '@/lib/journeys/current-leg'
 import { DEFAULT_PREFS, type OnAirPrefs } from '@/lib/on-air'
 import type { OnAirPractice } from '@/components/on-air/session'
@@ -37,7 +38,20 @@ export interface OnAirSessionData {
   practicedToday: number
 }
 
-type PracticeRow = { id: string; title: string; duration_min: number | null }
+type PracticeRow = {
+  id: string
+  title: string
+  duration_min: number | null
+  timer_kind: string | null
+  mindless_mode: string | null
+  movement_config: unknown
+  duration_locked: boolean | null
+}
+
+// The columns every practice row needs so the timer can ROUTE it (timer_kind), open to the right
+// Mindless sub-mode / Movement config, and respect a locked duration. Untyped admin handle reads the
+// freshly-added columns (ADR-246) until lib/database.types.ts regenerates.
+const PRACTICE_TIMER_COLS = 'id, title, duration_min, timer_kind, mindless_mode, movement_config, duration_locked'
 
 /** Load a member's On Air setup state. `requestedPracticeId` pins + pre-selects a practice (the
  *  Journey "Practice" button, or a /on-air?practice link). The list is never empty — Free sit is
@@ -75,10 +89,18 @@ export async function loadOnAirSessionData(
   // the member's adopted practices. Free sit rides on top of either.
   let base: PracticeRow[]
   if (legIds.length) {
-    const { data: legRows } = await admin.from('practices').select('id, title, duration_min').in('id', legIds)
-    base = (legRows ?? []) as PracticeRow[]
+    const { data: legRows } = await admin.from('practices').select(PRACTICE_TIMER_COLS).in('id', legIds)
+    base = (legRows ?? []) as unknown as PracticeRow[]
   } else {
-    base = mine.map((p) => ({ id: p.id, title: p.title, duration_min: p.duration_min }))
+    base = mine.map((p) => ({
+      id: p.id,
+      title: p.title,
+      duration_min: p.duration_min,
+      timer_kind: p.timer_kind,
+      mindless_mode: p.mindless_mode,
+      movement_config: p.movement_config,
+      duration_locked: p.duration_locked,
+    }))
   }
 
   // A practice opened from a Journey step (or a /on-air?practice link) is pinned + selected even if
@@ -90,10 +112,10 @@ export async function loadOnAirSessionData(
   ) {
     const { data: reqRow } = await admin
       .from('practices')
-      .select('id, title, duration_min')
+      .select(PRACTICE_TIMER_COLS)
       .eq('id', requestedPracticeId)
       .maybeSingle()
-    const r = reqRow as PracticeRow | null
+    const r = reqRow as unknown as PracticeRow | null
     if (r) base = [r, ...base]
   }
 
@@ -102,13 +124,28 @@ export async function loadOnAirSessionData(
     title: p.title,
     loggedToday: loggedToday.has(p.id),
     durationMin: p.duration_min ?? null,
+    timerKind: (p.timer_kind ?? 'mindless') as TimerKind,
+    mindlessMode: (p.mindless_mode ?? null) as MindlessMode | null,
+    movementConfig: (p.movement_config ?? null) as MovementConfig | null,
+    durationLocked: p.duration_locked ?? false,
   }))
 
   // Free sit — always available so the timer is never blocked; it logs the default sit practice.
-  // Open length (no durationMin). Appended last so a real Journey practice leads the default.
+  // An OPEN-LENGTH Mindless sit (no durationMin, no locked length). Appended last so a real Journey
+  // practice leads the default. timerKind 'mindless' so chooseAndStart runs the timer (never Just Log).
   const sit = sitRow as { id: string; title: string } | null
   if (sit) {
-    practices.push({ id: FREE_SIT_ID, title: 'Free sit', loggedToday: false, durationMin: null, logsAs: sit.id })
+    practices.push({
+      id: FREE_SIT_ID,
+      title: 'Free sit',
+      loggedToday: false,
+      durationMin: null,
+      logsAs: sit.id,
+      timerKind: 'mindless',
+      mindlessMode: null,
+      movementConfig: null,
+      durationLocked: false,
+    })
   }
 
   const practicedToday = new Set(

@@ -1,6 +1,7 @@
 // Movement — the timed-movement engine (WEBSITE-CHANGES-PLAN §4 C.6). A sibling of
-// the breath/sit timer in lib/on-air.ts, but for moving: a Walk, a Yoga flow, open
-// Play, or a Workout. Pure timer math + presets only — no economy, no DOM, no audio.
+// the breath/sit timer in lib/on-air.ts, but for moving: a Walk, a Run, a Yoga flow,
+// Strength intervals, a Stretch, or open Play. Pure timer math + presets only — no
+// economy, no DOM, no audio.
 // A Movement session ends through the SAME completeSession -> logPractice path the
 // sit uses (the timer is a stage, not a second economy), so nothing in here writes.
 //
@@ -11,15 +12,19 @@
 // VOICE (docs/CONTENT-VOICE.md): every member-facing label is plain, warm, and
 // instruction-light. No em or en dashes. Proper nouns (Tabata, EMOM) carry the magic.
 
-/** The four ways a member moves. Walk = one block + optional reminders; Yoga = a
- *  hold/transition loop; Play = an open count-up; Workout = the interval engine. */
-export type MovementMode = 'walk' | 'yoga' | 'play' | 'workout'
+/** The six ways a member moves. Walk = one block + optional reminders; Run = a brisk
+ *  block + optional reminders; Yoga = a hold/transition loop; Strength = the interval
+ *  work/rest engine; Stretch = a steady mobility timer with gentle side cues; Play =
+ *  an open count-up. */
+export type MovementMode = 'walk' | 'run' | 'yoga' | 'strength' | 'stretch' | 'play'
 
 export const MOVEMENT_MODES: { mode: MovementMode; label: string; blurb: string }[] = [
   { mode: 'walk', label: 'Walk', blurb: 'One timed block, with gentle reminders if you want them.' },
+  { mode: 'run', label: 'Run', blurb: 'A steady run for one timed block, with split cues if you want them.' },
   { mode: 'yoga', label: 'Yoga', blurb: 'Hold and move through a flow, one pose at a time.' },
+  { mode: 'strength', label: 'Strength', blurb: 'Rounds of work and rest. Tabata, EMOM, AMRAP, or a circuit.' },
+  { mode: 'stretch', label: 'Stretch', blurb: 'An easy mobility timer with soft cues to switch sides.' },
   { mode: 'play', label: 'Play', blurb: 'An open count-up. Start, move, stop when you are done.' },
-  { mode: 'workout', label: 'Workout', blurb: 'Rounds of work and rest. Tabata, EMOM, AMRAP, or a circuit.' },
 ]
 
 /** One stretch of the timeline. `kind` colors the live screen (prepare neutral,
@@ -35,8 +40,8 @@ export interface MovementPhase {
 }
 
 /** A built session: the flat per-round phase list plus how many times it loops.
- *  `rounds` already folds into a single pass for Walk/Yoga/Play (they pre-expand),
- *  so only Workout uses rounds > 1 against a small repeating block. */
+ *  `rounds` already folds into a single pass for Walk/Run/Yoga/Stretch/Play (they
+ *  pre-expand), so only Strength uses rounds > 1 against a small repeating block. */
 export interface MovementPlan {
   mode: MovementMode
   /** The repeating block. Walked `rounds` times by phaseAt. */
@@ -69,17 +74,17 @@ export function clampRounds(r: number): number {
 }
 
 /** The standard 3s lead-in every guided plan opens with, so a 3-2-1 lands before
- *  the first work phase. Walk/Yoga/Workout share it; Play has no countdown. */
+ *  the first work phase. Walk/Run/Yoga/Strength/Stretch share it; Play has no countdown. */
 const PREPARE_SECONDS = 3
 
-// --- Workout presets (the interval engine) ----------------------------------
+// --- Strength presets (the interval engine) ---------------------------------
 
-/** A Workout shape the member picks (or customizes). `kind` drives how it compiles
+/** A Strength shape the member picks (or customizes). `kind` drives how it compiles
  *  to phases; the numbers are the defaults the setup screen seeds + lets them tune. */
-export type WorkoutPresetKind = 'tabata' | 'emom' | 'amrap' | 'circuit'
+export type StrengthPresetKind = 'tabata' | 'emom' | 'amrap' | 'circuit'
 
-export interface WorkoutPreset {
-  kind: WorkoutPresetKind
+export interface StrengthPreset {
+  kind: StrengthPresetKind
   label: string
   blurb: string
   /** Seconds of work per round (AMRAP uses it as the whole-session block). */
@@ -89,16 +94,23 @@ export interface WorkoutPreset {
   rounds: number
 }
 
-export const WORKOUT_PRESETS: WorkoutPreset[] = [
+export const STRENGTH_PRESETS: StrengthPreset[] = [
   { kind: 'tabata', label: 'Tabata', blurb: '20 seconds on, 10 off, eight rounds.', workSec: 20, restSec: 10, rounds: 8 },
   { kind: 'emom', label: 'EMOM', blurb: 'Every minute on the minute. Work, then wait for the next.', workSec: 60, restSec: 0, rounds: 10 },
   { kind: 'amrap', label: 'AMRAP', blurb: 'As many rounds as possible in one timed block.', workSec: 10 * 60, restSec: 0, rounds: 1 },
   { kind: 'circuit', label: 'Circuit', blurb: 'Classic stations: 45 on, 15 off, six rounds.', workSec: 45, restSec: 15, rounds: 6 },
 ]
 
-export function workoutPresetByKind(kind: string | null | undefined): WorkoutPreset {
-  return WORKOUT_PRESETS.find((p) => p.kind === kind) ?? WORKOUT_PRESETS[0]
+export function strengthPresetByKind(kind: string | null | undefined): StrengthPreset {
+  return STRENGTH_PRESETS.find((p) => p.kind === kind) ?? STRENGTH_PRESETS[0]
 }
+
+/** Back-compat aliases. The old engine called these Workout; stored configs +
+ *  existing imports still use the Workout names, so keep them pointing at Strength. */
+export type WorkoutPresetKind = StrengthPresetKind
+export type WorkoutPreset = StrengthPreset
+export const WORKOUT_PRESETS = STRENGTH_PRESETS
+export const workoutPresetByKind = strengthPresetByKind
 
 // --- Yoga presets (hold + transition flow) ----------------------------------
 
@@ -127,6 +139,20 @@ export function yogaPresetByKind(kind: string | null | undefined): YogaPreset {
   return YOGA_PRESETS.find((p) => p.kind === kind) ?? YOGA_PRESETS[0]
 }
 
+// --- Stretch presets (a steady mobility timer with gentle side cues) ---------
+
+/** Common stretch lengths in minutes (the setup chips). The stepper covers any length. */
+export const STRETCH_DURATION_PRESETS = [5, 10, 15, 20] as const
+
+/** Side-switch cue choices for a Stretch (minutes between soft "switch sides"
+ *  chimes). 0 = none. The cue fires on the minute like a Walk reminder, not as an
+ *  extra phase, so the block stays one steady countdown. */
+export const STRETCH_INTERVAL_PRESETS = [
+  { value: 0, label: 'None' },
+  { value: 1, label: '1 min' },
+  { value: 2, label: '2 min' },
+] as const
+
 // --- Walk presets (one block + optional interval reminders) -----------------
 
 /** Common walk lengths in minutes (the setup chips). The stepper covers any length. */
@@ -134,6 +160,18 @@ export const WALK_DURATION_PRESETS = [10, 20, 30, 45, 60] as const
 
 /** Interval-reminder choices for a Walk (minutes between gentle chimes). 0 = none. */
 export const WALK_INTERVAL_PRESETS = [
+  { value: 0, label: 'None' },
+  { value: 5, label: '5 min' },
+  { value: 10, label: '10 min' },
+] as const
+
+// --- Run presets (one brisk block + optional split cues) --------------------
+
+/** Common run lengths in minutes (the setup chips). The stepper covers any length. */
+export const RUN_DURATION_PRESETS = [10, 20, 30, 45] as const
+
+/** Split-cue choices for a Run (minutes between gentle chimes). 0 = none. */
+export const RUN_INTERVAL_PRESETS = [
   { value: 0, label: 'None' },
   { value: 5, label: '5 min' },
   { value: 10, label: '10 min' },
@@ -151,6 +189,20 @@ export function buildWalk(opts: { minutes: number; intervalMin?: number }): Move
     phases: [PREPARE(PREPARE_SECONDS, 'Get going'), WORK(seconds, 'Walk')],
     rounds: 1,
     label: `${Math.round(seconds / 60)} min walk`,
+    openEnded: false,
+  }
+}
+
+/** Run = a single brisk timed block (one work phase) plus the 3s lead-in. Same
+ *  shape as Walk; split cues fire on the minute (intervalMin) as a live-screen cue,
+ *  not extra phases, so the block stays one clean countdown. */
+export function buildRun(opts: { minutes: number; intervalMin?: number }): MovementPlan {
+  const seconds = clampSeconds(opts.minutes * 60)
+  return {
+    mode: 'run',
+    phases: [PREPARE(PREPARE_SECONDS, 'Get going'), WORK(seconds, 'Run')],
+    rounds: 1,
+    label: `${Math.round(seconds / 60)} min run`,
     openEnded: false,
   }
 }
@@ -176,6 +228,20 @@ export function buildYoga(preset: YogaPreset): MovementPlan {
   }
 }
 
+/** Stretch = a steady, gentle mobility block: one timed work phase plus the 3s
+ *  lead-in. Soft "switch sides" cues fire on the minute (intervalMin) as a
+ *  live-screen cue, not extra phases, so the block stays one calm countdown. */
+export function buildStretch(opts: { minutes: number; intervalMin?: number }): MovementPlan {
+  const seconds = clampSeconds(opts.minutes * 60)
+  return {
+    mode: 'stretch',
+    phases: [PREPARE(PREPARE_SECONDS, 'Settle in'), WORK(seconds, 'Stretch')],
+    rounds: 1,
+    label: `${Math.round(seconds / 60)} min stretch`,
+    openEnded: false,
+  }
+}
+
 /** Play = a single open-ended count-up. One work phase with seconds 0 (phaseAt
  *  reports it as never-ending), no countdown, no rounds. */
 export function buildPlay(): MovementPlan {
@@ -188,17 +254,17 @@ export function buildPlay(): MovementPlan {
   }
 }
 
-/** Workout = the prepare -> (work -> rest) x rounds engine. The block is ONE
- *  work (+ rest when restSec > 0) repeated `rounds` times by phaseAt; the lead-in
+/** Strength = the prepare -> (work -> rest) x rounds interval engine. The block is
+ *  ONE work (+ rest when restSec > 0) repeated `rounds` times by phaseAt; the lead-in
  *  is its own one-shot phase outside the loop, so it never repeats. */
-export function buildWorkout(preset: WorkoutPreset): MovementPlan {
+export function buildStrength(preset: StrengthPreset): MovementPlan {
   const work = clampSeconds(preset.workSec)
   const rest = Math.max(0, Math.round(preset.restSec))
   const rounds = clampRounds(preset.rounds)
   const block: MovementPhase[] = [WORK(work, 'Work')]
   if (rest > 0) block.push(REST(clampSeconds(rest), 'Rest'))
   return {
-    mode: 'workout',
+    mode: 'strength',
     // The lead-in rides as round 0's prepare; the repeating block is work(+rest).
     // phaseAt below treats index 0 as the one-shot prepare and loops the rest.
     phases: [PREPARE(PREPARE_SECONDS, 'Get ready'), ...block],
@@ -211,42 +277,64 @@ export function buildWorkout(preset: WorkoutPreset): MovementPlan {
   }
 }
 
+/** Back-compat alias for the old `buildWorkout` name (now Strength). */
+export const buildWorkout = buildStrength
+
 /** Build the plan for any mode from a small, serializable config (mirrors the
  *  movement_config JSON stored on a practice). The single front door the setup
  *  screen + the practice route both call. */
 export interface MovementConfig {
+  /** The current mode. A stored config may still carry the legacy `'workout'`
+   *  string at runtime; buildPlan maps that to `'strength'` (see below) so old
+   *  practice rows resolve without a DB migration. The public type stays the clean
+   *  six-mode union so UI props reading `config.mode` don't have to widen. */
   mode: MovementMode
   /** Walk. */
   walkMinutes?: number
   walkIntervalMin?: number
+  /** Run. */
+  runMinutes?: number
+  runIntervalMin?: number
   /** Yoga. */
   yogaKind?: YogaPresetKind
-  /** Workout. */
+  /** Stretch. */
+  stretchMinutes?: number
+  stretchIntervalMin?: number
+  /** Strength preset. `workoutKind` is the legacy key, still read for back-compat. */
+  strengthKind?: StrengthPresetKind
   workoutKind?: WorkoutPresetKind
-  /** Workout custom overrides (when the member tunes a preset). */
+  /** Strength custom overrides (when the member tunes a preset). */
   workSec?: number
   restSec?: number
   rounds?: number
 }
 
 export function buildPlan(config: MovementConfig): MovementPlan {
-  switch (config.mode) {
+  // Legacy back-compat: a stored `'workout'` mode (the engine's old name for
+  // Strength) is read off the JSON as that literal string even though the type no
+  // longer admits it, so map it here before routing. No DB migration needed.
+  const mode: MovementMode = (config.mode as string) === 'workout' ? 'strength' : config.mode
+  switch (mode) {
     case 'walk':
       return buildWalk({ minutes: config.walkMinutes ?? 20, intervalMin: config.walkIntervalMin })
+    case 'run':
+      return buildRun({ minutes: config.runMinutes ?? 20, intervalMin: config.runIntervalMin })
     case 'yoga':
       return buildYoga(yogaPresetByKind(config.yogaKind))
+    case 'stretch':
+      return buildStretch({ minutes: config.stretchMinutes ?? 10, intervalMin: config.stretchIntervalMin })
     case 'play':
       return buildPlay()
-    case 'workout': {
-      const base = workoutPresetByKind(config.workoutKind)
+    case 'strength': {
+      const base = strengthPresetByKind(config.strengthKind ?? config.workoutKind)
       // A custom override (the setup screen's steppers) replaces the preset numbers.
-      const preset: WorkoutPreset = {
+      const preset: StrengthPreset = {
         ...base,
         workSec: config.workSec ?? base.workSec,
         restSec: config.restSec ?? base.restSec,
         rounds: config.rounds ?? base.rounds,
       }
-      return buildWorkout(preset)
+      return buildStrength(preset)
     }
     default:
       return buildPlay()

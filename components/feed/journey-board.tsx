@@ -3,12 +3,11 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users, Route, ArrowRight, Snowflake } from 'lucide-react'
-import { LotusIcon } from '@/components/on-air/icons'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { StandingTiles } from '@/components/gamification/standing-tiles'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
-import type { Practice } from '@/lib/practices'
+import type { Practice, PartialPracticeToday } from '@/lib/practices'
 import type { PillarCount } from '@/lib/pillars'
 
 // The graduated home surface. Once a member finishes activation, the streak box
@@ -38,6 +37,7 @@ const RESOURCES = [
 
 export function JourneyBoard({
   practices,
+  partials = [],
   streak = 0,
   zaps = 0,
   gems = 0,
@@ -51,6 +51,9 @@ export function JourneyBoard({
   activeJourney,
 }: {
   practices: Practice[]
+  /** Practices started but not finished today (a partial timed log). Each renders a
+   *  "Finish Practice" row that resumes the right timer where the member left off. */
+  partials?: PartialPracticeToday[]
   streak?: number
   /** Season zaps — the standing scoreboard count (gamified-stat law, §2). */
   zaps?: number
@@ -98,7 +101,7 @@ export function JourneyBoard({
   }
 
   const p = streakProgress(streak)
-  const hasReminders = practices.length > 0
+  const hasReminders = practices.length > 0 || partials.length > 0
 
   // Closed position: one slim row (about a third of the open board) — the flame,
   // the count, a thin progress bar, and the expand control. Everything else waits
@@ -253,19 +256,44 @@ export function JourneyBoard({
       <div className="mx-4 mt-3 border-t border-primary-bg pt-3">
         {hasReminders ? (
           <ul className="space-y-2">
+            {/* Partials first — a started-but-unfinished sit reads "Finish Practice" and
+                resumes the right timer where the member left off. */}
+            {partials.map(({ practice, secondsDone, secondsTarget }) => (
+              <li key={`partial-${practice.id}`} className="flex items-center justify-between gap-3">
+                <Link
+                  href={`/practices/${practice.id}`}
+                  className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
+                >
+                  {practice.title}
+                </Link>
+                <span className="shrink-0">
+                  <LogPracticeButton
+                    practiceId={practice.id}
+                    timerKind={practice.timer_kind}
+                    mindlessMode={practice.mindless_mode}
+                    movementConfig={practice.movement_config}
+                    resumeFromSec={secondsDone}
+                    secondsTarget={secondsTarget}
+                  />
+                </span>
+              </li>
+            ))}
+            {/* To-log practices — one smart button per row, routed by the practice's timer kind. */}
             {practices.map((practice) => (
               <li key={practice.id} className="flex items-center justify-between gap-3">
-                <span className="min-w-0 truncate text-sm text-text">{practice.title}</span>
-                <span className="flex shrink-0 items-center gap-1.5">
-                  {/* Mindless (the On Air timer, ADR-229): time the sit instead of just tapping it logged. */}
-                  <Link
-                    href={`/on-air?practice=${practice.id}`}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-sm font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-                    title="Tune out: timer + breathing"
-                  >
-                    <LotusIcon className="h-3.5 w-3.5" />
-                  </Link>
-                  <LogPracticeButton practiceId={practice.id} />
+                <Link
+                  href={`/practices/${practice.id}`}
+                  className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
+                >
+                  {practice.title}
+                </Link>
+                <span className="shrink-0">
+                  <LogPracticeButton
+                    practiceId={practice.id}
+                    timerKind={practice.timer_kind}
+                    mindlessMode={practice.mindless_mode}
+                    movementConfig={practice.movement_config}
+                  />
                 </span>
               </li>
             ))}

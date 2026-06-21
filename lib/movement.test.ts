@@ -17,8 +17,8 @@ import {
 } from './movement'
 
 describe('modes + presets', () => {
-  it('exposes the four movement modes', () => {
-    expect(MOVEMENT_MODES.map((m) => m.mode)).toEqual(['walk', 'yoga', 'play', 'workout'])
+  it('exposes the six movement modes', () => {
+    expect(MOVEMENT_MODES.map((m) => m.mode)).toEqual(['walk', 'run', 'yoga', 'strength', 'stretch', 'play'])
   })
 
   it('ships Tabata 20/10x8, EMOM, AMRAP and Circuit workout presets', () => {
@@ -101,10 +101,10 @@ describe('buildPlay', () => {
   })
 })
 
-describe('buildWorkout', () => {
+describe('buildStrength (aliased as buildWorkout for back-compat)', () => {
   it('is prepare then a repeating work+rest block over rounds', () => {
     const plan = buildWorkout({ kind: 'tabata', label: 'Tabata', blurb: '', workSec: 20, restSec: 10, rounds: 8 })
-    expect(plan.mode).toBe('workout')
+    expect(plan.mode).toBe('strength')
     expect(plan.rounds).toBe(8)
     // The stored block is the one-shot prepare + the single work/rest pair.
     expect(plan.phases.map((p) => p.kind)).toEqual(['prepare', 'work', 'rest'])
@@ -120,13 +120,26 @@ describe('buildWorkout', () => {
 })
 
 describe('buildPlan front door', () => {
-  it('routes each mode and honours custom workout overrides', () => {
+  it('routes each mode and honours custom strength overrides', () => {
     expect(buildPlan({ mode: 'walk', walkMinutes: 30 }).phases[1].seconds).toBe(30 * 60)
+    expect(buildPlan({ mode: 'run', runMinutes: 25 }).phases[1].seconds).toBe(25 * 60)
+    expect(buildPlan({ mode: 'run' }).mode).toBe('run')
     expect(buildPlan({ mode: 'yoga', yogaKind: 'yin' }).mode).toBe('yoga')
+    expect(buildPlan({ mode: 'stretch', stretchMinutes: 12 }).phases[1].seconds).toBe(12 * 60)
+    expect(buildPlan({ mode: 'stretch' }).mode).toBe('stretch')
     expect(buildPlan({ mode: 'play' }).openEnded).toBe(true)
-    const custom = buildPlan({ mode: 'workout', workoutKind: 'tabata', workSec: 30, restSec: 15, rounds: 5 })
+    const custom = buildPlan({ mode: 'strength', strengthKind: 'tabata', workSec: 30, restSec: 15, rounds: 5 })
+    expect(custom.mode).toBe('strength')
     expect(custom.rounds).toBe(5)
     expect(totalSeconds(custom)).toBe(3 + (30 + 15) * 5)
+  })
+
+  it('maps a legacy stored "workout" mode to strength (no DB migration)', () => {
+    // A practice row written before the rename serializes { mode: 'workout', ... };
+    // the type no longer admits that literal, so cast as a stored row would arrive.
+    const legacy = buildPlan({ mode: 'workout', workoutKind: 'tabata' } as unknown as Parameters<typeof buildPlan>[0])
+    expect(legacy.mode).toBe('strength')
+    expect(legacy.phases.map((p) => p.kind)).toEqual(['prepare', 'work', 'rest'])
   })
 })
 
