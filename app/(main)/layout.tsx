@@ -40,6 +40,7 @@ import { autoPopupsEnabled } from '@/lib/onboarding/flags'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
+import { TimezoneSync } from '@/components/layout/timezone-sync'
 import { SupportLauncher } from '@/components/support/support-launcher'
 import { InviteLauncher } from '@/components/invite/invite-launcher'
 import { DailyCheckIn } from '@/components/daily-check-in'
@@ -362,6 +363,9 @@ export default async function MainLayout({
       <ZapToastContainer />
       <PresenceHeartbeat />
       <PushRegistration />
+      {/* One-time browser→home_timezone sync so the practice "day" resolves in the
+          member's own tz server-side (their Log Practice buttons reset at THEIR midnight). */}
+      <TimezoneSync />
       <VeraLauncher index={helpIndex} />
       {/* Capture — the app-wide primary action (§6 Phase 2). Posts default to the
           member's wall; reachable from any page in the shell. */}

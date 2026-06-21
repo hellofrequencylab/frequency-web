@@ -34,9 +34,15 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 
 // Log that you did a practice → practice.verified (WAM) + zaps + streak.
+//
+// `clientTimezone` is the member's IANA tz from the browser
+// (Intl.DateTimeFormat().resolvedOptions().timeZone). It is a FALLBACK only: the
+// server prefers the durable, un-spoofable profiles.home_timezone, so the log "day"
+// that keys the idempotency row stays server-resolved and can't be backdated.
 export async function logPracticeAction(
   practiceId: string,
   circleId?: string | null,
+  clientTimezone?: string | null,
 ): Promise<ActionResult<LogPracticeResult>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
@@ -46,7 +52,12 @@ export async function logPracticeAction(
   if (!(await rateLimitOk('practice_log', profileId, 10, '1 m'))) {
     return fail('Slow down a moment, then log again.')
   }
-  const res = await logPractice({ profileId, practiceId, circleId: circleId ?? null })
+  const res = await logPractice({
+    profileId,
+    practiceId,
+    circleId: circleId ?? null,
+    clientTimezone: clientTimezone ?? null,
+  })
   // Re-seed the "your practices" tight rows so an already-logged practice paints in
   // its collapsed state on the next server render (B.4). The client wrapper collapses
   // optimistically too, so this is the durable, refresh-safe path, not the live one.
@@ -59,6 +70,7 @@ export async function logPracticeAction(
 // log only — profileId comes from the session, never the client.
 export async function unlogPracticeAction(
   practiceId: string,
+  clientTimezone?: string | null,
 ): Promise<ActionResult<UnlogPracticeResult>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
@@ -66,7 +78,9 @@ export async function unlogPracticeAction(
   if (!(await rateLimitOk('practice_log', profileId, 10, '1 m'))) {
     return fail('Slow down a moment, then try again.')
   }
-  const res = await unlogPractice({ profileId, practiceId })
+  // Same fallback tz as logging, so the un-log resolves the SAME local day the log
+  // was written under (home_timezone still wins; the client tz is a fallback only).
+  const res = await unlogPractice({ profileId, practiceId, clientTimezone: clientTimezone ?? null })
   revalidatePath('/practices')
   return ok(res)
 }

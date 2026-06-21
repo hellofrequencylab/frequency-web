@@ -6,6 +6,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { Button } from '@/components/ui/button'
+import { ViewAsSpaceButton } from '@/components/spaces/view-as-space-button'
 import { listSpaces } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
@@ -16,8 +17,11 @@ export const dynamic = 'force-dynamic'
 // Per-Space tenancy admin (docs/SPACES.md, ADR-249/250; ENTITY-SPACES-BUILD). Janitor-gated. Lists
 // every Space with its assigned theme (spaces.skin) and brand fields; each row links to the branding
 // editor AND, for tenant Spaces, straight to the live profile (/spaces/<slug>) and the owner settings
-// surface (/spaces/<slug>/settings) the entity-spaces system shipped. Best-effort read: if the
-// spaces table or its columns aren't migrated yet the list degrades to empty rather than erroring.
+// surface (/spaces/<slug>/settings) the entity-spaces system shipped. Each tenant row also carries a
+// "View as <space>" affordance: it starts a preview of THAT specific Space and routes into its owner
+// experience, which renders read-only for a janitor, so an operator sees exactly what that Space
+// sees (the previewAsSpace action is the gate). Best-effort read: if the spaces table or its columns
+// aren't migrated yet the list degrades to empty rather than erroring.
 
 const STATUS_TONE: Record<SpaceStatus, StatusTone> = {
   active: 'success',
@@ -73,6 +77,7 @@ function SpaceRow({ s, meta }: { s: Space; meta?: SpaceAdminMeta }) {
   const accent = accentSwatch(s.brandAccent)
   // The root Space serves the app itself; it has no public /spaces/<slug> profile or owner settings.
   const hasProfile = s.type !== 'root'
+  const brandName = s.brandName || s.name
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
@@ -81,7 +86,7 @@ function SpaceRow({ s, meta }: { s: Space; meta?: SpaceAdminMeta }) {
             href={`/admin/spaces/${s.id}`}
             className="truncate text-base font-bold text-text hover:text-primary-strong"
           >
-            {s.brandName || s.name}
+            {brandName}
           </Link>
           <StatusChip tone={STATUS_TONE[s.status]} size="sm">
             {s.status}
@@ -132,6 +137,10 @@ function SpaceRow({ s, meta }: { s: Space; meta?: SpaceAdminMeta }) {
                 <Settings className="h-3.5 w-3.5" aria-hidden /> Edit profile
               </Link>
             </Button>
+            {/* Preview THIS Space's owner experience as platform staff. The action gates on the
+                Executive Admin axis and routes into the Space's owner settings, which render
+                read-only for a janitor, so you see exactly what that Space sees. */}
+            <ViewAsSpaceButton spaceId={s.id} spaceName={brandName} />
           </>
         )}
       </div>

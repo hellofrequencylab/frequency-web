@@ -13,7 +13,6 @@ import { CircleCard, type CircleCardData } from '@/components/circles/circle-car
 import { CircleLocationSearch } from '@/components/circles/circle-location-search'
 import { DirectorySearch } from '@/components/ui/directory-search'
 import { SectionHeader } from '@/components/ui/section-header'
-import { CommunityTabs } from '@/components/network/community-tabs'
 import { ContactCard } from '@/components/people/contact-card'
 import { DirectoryFacets } from '@/components/people/directory-facets'
 import { PeopleSuggestions } from '@/components/people/people-suggestions'
@@ -378,10 +377,8 @@ export default async function CommunityPage({
         }
       />
 
-      {/* Hub tabs + community size on one line: tabs left, member counts pinned
-          right against the same baseline rule. */}
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-border">
-        <CommunityTabs />
+      {/* Community size, pinned right against a baseline rule under the header. */}
+      <div className="flex flex-wrap items-end justify-end gap-x-4 gap-y-1 border-b border-border">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2.5 text-sm text-muted">
           <span>
             <span className="font-bold text-text">{typedProfiles.length}</span> Members Worldwide

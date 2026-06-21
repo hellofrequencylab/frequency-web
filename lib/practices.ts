@@ -17,6 +17,7 @@ import { recordStreakActivity, processGamificationEvent } from '@/lib/achievemen
 import { recordPracticeStreak, recomputePracticeStreakAfterUnlog } from '@/lib/practice-streak'
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { resolveMemberDay } from '@/lib/member-day'
 import type { MovementConfig } from '@/lib/movement'
 
 /** Which timer a practice routes to (WEBSITE-CHANGES-PLAN §4 C.8): 'none' = a one-tap
@@ -553,12 +554,16 @@ export async function getPracticeBacklinks(
   return { journeys, circles }
 }
 
-/** Whether a member has adopted a practice + already logged it today (detail CTAs). */
+/** Whether a member has adopted a practice + already logged it today (detail CTAs).
+ *  "Today" is the member's LOCAL day (profiles.home_timezone), with an optional
+ *  client tz fallback, so an already-logged practice stays "logged today" until the
+ *  member's own midnight rather than UTC's. */
 export async function getPracticeMemberState(
   profileId: string,
   practiceId: string,
+  clientTimezone?: string | null,
 ): Promise<{ adopted: boolean; loggedToday: boolean }> {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = await resolveMemberDay(profileId, clientTimezone)
   const client = db()
   const [adopt, log] = await Promise.all([
     client.from('member_practices').select('id').eq('profile_id', profileId)
@@ -1023,11 +1028,16 @@ export async function getRecentPracticeLogs(
 }
 
 /** A member's adopted practices that they have NOT yet logged today. Powers the
- *  "log today's practice" prompt on the feed. Empty if none adopted or all logged. */
-export async function getPracticesToLogToday(profileId: string): Promise<Practice[]> {
+ *  "log today's practice" prompt on the feed. Empty if none adopted or all logged.
+ *  "Today" is the member's LOCAL day (profiles.home_timezone, then an optional client
+ *  tz, then UTC), so a practice stays collapsed until the member's own midnight. */
+export async function getPracticesToLogToday(
+  profileId: string,
+  clientTimezone?: string | null,
+): Promise<Practice[]> {
   const mine = await getMemberPractices(profileId)
   if (mine.length === 0) return []
-  const today = new Date().toISOString().slice(0, 10)
+  const today = await resolveMemberDay(profileId, clientTimezone)
   const { data } = await db()
     .from('practice_logs')
     .select('practice_id')
@@ -1050,7 +1060,7 @@ export interface LogBonusResult {
 }
 
 /**
- * Anti-cheat: the most distinct practices a member may log in one UTC day, across
+ * Anti-cheat: the most distinct practices a member may log in one LOCAL day, across
  * ALL their practices (WEBSITE-CHANGES-PLAN §3 B.2 / D5). A genuine daily program is
  * a handful of practices; this ceiling only ever bites a farming loop, and is well
  * above any real day. Counted against `practice_logs WHERE logged_for = today` before
@@ -1083,9 +1093,17 @@ export async function logPractice(input: {
   profileId: string
   practiceId: string
   circleId?: string | null
+  /** The member's IANA timezone from the client (Intl…resolvedOptions().timeZone),
+   *  used ONLY when the profile has no home_timezone on file. The durable, un-spoofable
+   *  home_timezone always wins, so the idempotency-key day is server-resolved. */
+  clientTimezone?: string | null
 }): Promise<LogPracticeResult> {
-  const { profileId, practiceId, circleId = null } = input
-  const day = new Date().toISOString().slice(0, 10) // yyyy-mm-dd
+  const { profileId, practiceId, circleId = null, clientTimezone = null } = input
+  // The log "day" is the member's LOCAL calendar day, resolved from their durable
+  // home_timezone (then the client tz, then UTC). Server-resolved so the day that
+  // keys the idempotency row + the practice_logs unique constraint can't be spoofed
+  // to backdate; a member can only shift their OWN local day. yyyy-mm-dd.
+  const day = await resolveMemberDay(profileId, clientTimezone)
 
   // Anti-cheat (B.2 / D5): a per-day TOTAL-logs cap across all practices. Counted
   // BEFORE the idempotency row is written, so refusing here never strands an
@@ -1312,8 +1330,10 @@ export interface UnlogPracticeResult {
 
 /**
  * Reverse TODAY's log of a practice (the "I logged that by mistake" undo, D4 =
- * today-only). Scoped to the caller's OWN log for the current UTC day; the action
- * layer resolves `profileId` from the session, so this lib fn never trusts a
+ * today-only). Scoped to the caller's OWN log for the current LOCAL day (resolved
+ * from the member's home_timezone, then an optional client tz, then UTC — the same
+ * day the log was written under, so the right row is found); the action layer
+ * resolves `profileId` from the session, so this lib fn never trusts a
  * client-supplied member id. A past day's log is intentionally NOT reversible here
  * (full historical reversal is out of scope — it would have to un-bridge freezes and
  * un-pay milestones).
@@ -1340,9 +1360,14 @@ export interface UnlogPracticeResult {
 export async function unlogPractice(input: {
   profileId: string
   practiceId: string
+  /** The member's IANA timezone from the client, used only when the profile has no
+   *  home_timezone — must resolve to the SAME local day logPractice wrote under. */
+  clientTimezone?: string | null
 }): Promise<UnlogPracticeResult> {
-  const { profileId, practiceId } = input
-  const day = new Date().toISOString().slice(0, 10) // yyyy-mm-dd
+  const { profileId, practiceId, clientTimezone = null } = input
+  // The member's LOCAL day (home_timezone, then client tz, then UTC) — matches the
+  // day logPractice keyed the row + idempotency under, so today's row is found.
+  const day = await resolveMemberDay(profileId, clientTimezone)
 
   // Resolve the log row (and its stored grant) first. No row → nothing to un-log;
   // returning early here is what makes the whole path idempotent.

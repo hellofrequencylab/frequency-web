@@ -3,81 +3,39 @@
 // never reach into the shell to toggle the rail. To reframe a route, edit the
 // lists here — that is the entire API.
 //
-//   'global'  → the community right rail. The default for browse / stream /
-//               dashboard pages.
+//   'global'  → the community right rail. The DEFAULT for every member page now
+//               (owner directive, 2026-06-20: the right rail shows site-wide) —
+//               browse / stream / dashboard AND compose / edit / settings surfaces.
 //   'scoped'  → the global rail is suppressed because the entity DETAIL page
 //               renders its OWN scope rail in-body (avoids the double-rail trap).
-//   'none'    → FOCUS: a centered, full-width work surface with no rail —
-//               compose / edit forms, settings, single-conversion + scan-confirm
-//               utilities, and the operator / steward workspaces.
+//   'none'    → no right rail. Reserved for just two cases: the /admin/* operator
+//               workspace (it mounts its OWN info rail — no double-railing) and the
+//               full-viewport takeovers (the practice timer, scanner, auth gate,
+//               print sheet) that read with zero app chrome.
 //
-// Pairs with the page templates: a 'none' route renders <FocusTemplate>, a
-// 'global'/'scoped' page renders <IndexTemplate>/<StreamTemplate>/<DetailTemplate>/
-// <DashboardTemplate>. Keep the two in sync — the chrome here and the template
-// there are two halves of the same decision (see docs/PAGE-FRAMEWORK.md §3).
+// Pairs with the page templates: a Focus compose/edit page still renders
+// <FocusTemplate> (a centered, no-side-content body) — it just keeps the global rail
+// beside it now; a 'global'/'scoped' browse page renders <IndexTemplate>/
+// <StreamTemplate>/<DetailTemplate>/<DashboardTemplate> (see docs/PAGE-FRAMEWORK.md §3).
 
 import { cache } from 'react'
 
 export type Rail = 'global' | 'scoped' | 'none'
 
-// FOCUS — no right rail. Prefix match (covers the route and everything under it).
-// Kept deliberately small: only genuine single-task surfaces (narrow forms, single
-// conversion / claim cards) go full-width. Operator/steward DASHBOARDS (Marketing,
-// CRM, Entry points, Outreach…) keep the uniform slim stats rail like the rest of
-// the app — the rail is now a thin strip, so there's no double-rail/clutter cost,
-// and members asked for a consistent right column site-wide.
-const FOCUS_PREFIXES = [
-  '/settings', // narrow account forms
+// FULL-VIEWPORT TAKEOVERS — the ONLY member-side routes that drop the right rail
+// (owner directive, 2026-06-20: "the right rail shows on every page"). These are
+// genuine zero-chrome takeovers, not merely narrow forms: the practice timer, the
+// camera scanner, the auth gate, and the print sheet. EVERYTHING else a member, host,
+// or owner touches — settings, compose/edit forms, message threads, the Space
+// directory + Space settings, codes/journal/upgrade and the rest — now keeps the
+// GLOBAL community rail. (The /admin/* operator workspace is handled separately below:
+// it mounts its OWN info rail, so the member rail is suppressed there to avoid double-
+// railing.) Prefix match covers the route and everything beneath it.
+const FULL_TAKEOVER_PREFIXES = [
   '/on-air', // the practice timer takeover (ADR-229) — breathe with zero chrome
-  '/codes', // personal codes / QR hub (a single centered card)
-  '/founder', // Founder's First Week checklist (build item 1.4)
-  '/journal', // your Capture daily-log (build item §6 Phase 3)
-  '/training', // role-advancement training (ADR-157 §7)
-  '/upgrade', // single conversion card
-  '/g/', // gift-a-zap confirm
-  '/n/', // scan-landing claim
   '/scan', // the in-app QR scanner (ADR-235) — full camera takeover
-]
-
-// FOCUS by pattern — compose / edit surfaces that live one segment deep, plus the
-// message threads. The section INDEX (e.g. /messages, /connections) keeps the
-// rail; only the nested work surface goes full-width.
-const FOCUS_PATTERNS: RegExp[] = [
-  /^\/messages\/.+/, // a DM or room thread (the /messages inbox keeps the rail)
-  /^\/events\/new$/, // create an event
-  /^\/events\/scan$/, // capture an event poster (scan-confirm flow)
-  /^\/events\/drafts(\/.+)?$/, // captured-event drafts + the draft editor
-  // The event Invite page (/events/[slug]) owns its own two-column interior (wide
-  // Post area + sticky Join aside); the global rail is suppressed to avoid the
-  // double-rail trap (EVENTS-DESIGN §1). NOT a Focus form — a Detail page that
-  // simply needs the full width. [^/]+ keeps it to the single slug segment, so
-  // /events/[slug]/event.ics and /events/[slug]/manage are NOT matched here
-  // and keep their own treatment; the negative lookahead re-excludes the sibling
-  // Focus routes above it belt-and-suspenders.
-  /^\/events\/(?!new$|scan$|drafts(\/|$))[^/]+$/,
-  // The host Manage Dashboard (EVENTS-REWORK A2) is a metric-led operator surface
-  // rendered with <DashboardTemplate> — Focus chrome (no rail), the operator
-  // sibling of /admin. One segment deep under the slug.
-  /^\/events\/[^/]+\/manage$/,
-  /^\/practices\/[^/]+\/edit$/, // edit a practice
-  /^\/connections\/.+/, // a contact editor / new contact (the index keeps the rail)
-  // Entity-space Focus surfaces (ENTITY-SPACES-BUILD §B.5): the provisioning wizard and the owner
-  // profile-settings surface are centered, no-rail FOCUS pages (FocusTemplate). The PROFILE itself
-  // (/spaces/<slug> + tabs) now keeps the GLOBAL community rail (operator request — see SCOPED_PREFIXES
-  // below, now empty); the directory (/spaces) keeps the global rail too.
-  /^\/spaces\/new$/, // the provisioning wizard (Epic 1.6)
-  /^\/spaces\/invite\/[^/]+$/, // the tokened invite-accept landing (space_invites) — a Focus card
-  /^\/spaces\/[^/]+\/settings$/, // the owner profile-settings surface (Epic 1.7)
-  /^\/spaces\/[^/]+\/settings\/availability$/, // the owner 1:1 availability editor (booking v1)
-  /^\/spaces\/[^/]+\/settings\/memberships$/, // the owner membership tier editor (memberships v1)
-  /^\/spaces\/[^/]+\/settings\/members$/, // the owner team / members surface (owner hub)
-  /^\/spaces\/[^/]+\/settings\/qr$/, // the owner QR studio (codes + splash, Phase 2)
-  /^\/spaces\/[^/]+\/settings\/crm$/, // the owner per-space CRM (pipeline + contacts + client notes, Phase 2)
-  /^\/spaces\/[^/]+\/settings\/checkin$/, // the owner check-in roster (Event Space check-in, Phase 2)
-  /^\/spaces\/[^/]+\/settings\/email$/, // the owner email / campaign composer (Phase 3)
-  /^\/spaces\/[^/]+\/settings\/donations$/, // the owner donation-ask editor (Organization donations v1, ADMIN-01)
-  /^\/spaces\/[^/]+\/settings\/enroll$/, // the owner program editor + enrollees (Coaching enroll v1, ADMIN-02)
-  /^\/spaces\/[^/]+\/settings\/tickets$/, // the owner ticket tier editor + RSVP roster (Event Space ticketing v1, ADMIN-03)
+  '/sign-in', // the auth gate — a centered card, no app chrome
+  '/print', // print sheets (e.g. /print/qr) — a paper surface, no rail
 ]
 
 // SCOPED — entity-detail sections that render their OWN in-body scope rail
@@ -87,14 +45,15 @@ const FOCUS_PATTERNS: RegExp[] = [
 // Frequency Signature live in its interior content column, not a rail. Re-add a
 // prefix here only if a section grows a genuine in-body rail.
 const SCOPED_PREFIXES: string[] = [
-  // The entity-space PROFILE (/spaces/<slug> + tabs) now keeps the GLOBAL community rail like the
-  // rest of the app (operator request): a profile reads as a normal Detail page beside the site's
-  // Quest rail, not a suppressed-rail island. Its context band lives in the interior content column
-  // (a hero CARD, not a shell rail), so there is no double-rail trap to avoid. The profile therefore
-  // falls through to 'global' below; the wizard (/spaces/new) and the owner settings sub-surfaces
-  // (/spaces/<slug>/settings*) stay Focus ('none', matched in FOCUS_PATTERNS above), and the
-  // directory (/spaces) was always global. Re-add '/spaces/' here only if the profile ever grows a
-  // genuine in-body scope rail of its own.
+  // The entity-space PROFILE (/spaces/<slug> + tabs) keeps the GLOBAL community rail like the rest
+  // of the app (operator request): a profile reads as a normal Detail page beside the site's Quest
+  // rail, not a suppressed-rail island. Its context band lives in the interior content column (a
+  // hero CARD, not a shell rail), so there is no double-rail trap to avoid. EVERY /spaces route now
+  // falls through to 'global' below — the directory (/spaces), the provisioning wizard (/spaces/new),
+  // the invite landing, AND the owner settings sub-surfaces (/spaces/<slug>/settings*): the right
+  // rail shows site-wide (owner directive, 2026-06-20). The settings sub-pages still compose
+  // <FocusTemplate> for a centered body; they just keep the rail beside it. Re-add '/spaces/' here
+  // only if the profile ever grows a genuine in-body scope rail of its own.
   // (Empty otherwise.) Journeys used to be SCOPED: the old course-player detail page rendered its
   // own left syllabus as a scope rail, so the global rail was suppressed. After the v2
   // rebuild (ADR-252) that player is retired — /journeys/<slug> redirects to the learner
@@ -133,8 +92,8 @@ export function isSafeRoute(pathname: string): boolean {
 export function railFor(pathname: string): Rail {
   // The Leader surface (/lead/*) is a member-side CONSOLIDATED dashboard (not the
   // /admin operator workspace), so it rides the standard GLOBAL community right rail
-  // — it is intentionally absent from FOCUS/SCOPED below and falls through to
-  // 'global' at the end. Registered here so the decision is explicit (PAGE-FRAMEWORK
+  // — it is intentionally absent from the takeover/SCOPED lists below and falls through
+  // to 'global' at the end. Registered here so the decision is explicit (PAGE-FRAMEWORK
   // §3): a leader keeps the member chrome, unlike /admin which drops both rails.
 
   // The admin workspace keeps the global LEFT menu (the one site nav) but drops the
@@ -142,15 +101,12 @@ export function railFor(pathname: string): Rail {
   // its own operator info rail on the right, so the member right rail is suppressed.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return 'none'
 
-  // The profile editor keeps the standard community rail even though it lives under
-  // /settings (otherwise Focus): editing your profile is a "me" surface, so the
-  // identity/standings rail belongs beside it (ADR-117). Overrides the prefix below.
-  if (pathname === '/settings/profile') return 'global'
-
-  const isFocus =
-    FOCUS_PREFIXES.some((p) => pathname.startsWith(p)) ||
-    FOCUS_PATTERNS.some((re) => re.test(pathname))
-  if (isFocus) return 'none'
+  // Full-viewport takeovers (the practice timer, the scanner, the auth gate, print) are
+  // the ONLY other routes without the right rail — they read with zero app chrome.
+  const isTakeover = FULL_TAKEOVER_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  )
+  if (isTakeover) return 'none'
 
   const isScopedDetail = SCOPED_PREFIXES.some(
     (s) => pathname.startsWith(s) && pathname.length > s.length,
@@ -224,15 +180,17 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/outreach', label: 'Outreach', area: 'Member' },
   { route: '/lead', label: 'Leadership', area: 'Member' },
   { route: '/lead/training-library', label: 'Leader Training', area: 'Member' },
-  // ── Focus surfaces (default NONE — full-width, no rail) ──
-  { route: '/settings', label: 'Settings', area: 'Focus surfaces' },
-  { route: '/settings/profile', label: 'Profile editor', area: 'Focus surfaces' },
+  // Settings + the centered single-task surfaces now keep the GLOBAL community rail too
+  // (owner directive, 2026-06-20: the right rail shows on every member page).
+  { route: '/settings', label: 'Settings', area: 'Member' },
+  { route: '/settings/profile', label: 'Profile editor', area: 'Member' },
+  { route: '/codes', label: 'Personal codes / QR hub', area: 'Member' },
+  { route: '/journal', label: 'Journal (Capture)', area: 'Member' },
+  { route: '/training', label: 'Role training', area: 'Member' },
+  { route: '/upgrade', label: 'Upgrade', area: 'Member' },
+  // ── Full-viewport takeovers (default NONE — zero app chrome, no rail) ──
   { route: '/on-air', label: 'On Air (practice timer)', area: 'Focus surfaces' },
   { route: '/scan', label: 'QR scanner', area: 'Focus surfaces' },
-  { route: '/codes', label: 'Personal codes / QR hub', area: 'Focus surfaces' },
-  { route: '/journal', label: 'Journal (Capture)', area: 'Focus surfaces' },
-  { route: '/training', label: 'Role training', area: 'Focus surfaces' },
-  { route: '/upgrade', label: 'Upgrade', area: 'Focus surfaces' },
   // ── Operator workspace (default NONE — full-width admin) ──
   { route: '/admin', label: 'Admin workspace', area: 'Operator' },
 ] as const

@@ -146,6 +146,10 @@ vi.mock('@/lib/quest/complete', () => ({ tryCompleteJourney: async () => {} }))
 // The streak recompute is exercised through the real module so the test proves the
 // derived count is written; its admin client is the same fake.
 import { logPractice, unlogPractice, MAX_PRACTICE_LOGS_PER_DAY } from './practices'
+// The tz-aware "today" helper (the day-boundary fix). resolveMemberDay reads
+// profiles.home_timezone off the SAME in-memory fake admin client, so the tests below
+// prove logPractice keys its row by the member's LOCAL day, not the UTC day.
+import { memberDay, resolveMemberDay } from './member-day'
 
 function reset() {
   for (const k of Object.keys(store)) store[k] = []
@@ -352,5 +356,84 @@ describe('logPractice — per-day total-logs cap (D5)', () => {
     const res = await logPractice({ profileId: PROFILE, practiceId: 'fresh' })
     expect(res.cappedDaily).toBeUndefined()
     expect(res.logged).toBe(true)
+  })
+})
+
+// --- Day boundary: the log "day" is the member's LOCAL day, not UTC -----------
+//
+// The owner-reported bug: at ~5:50pm PST the "Log practice" buttons reset because the
+// server's UTC day had already rolled over (UTC midnight = ~4-5pm PST), so the
+// idempotency key + logged_for used TOMORROW's date relative to the member. These lock
+// the fix: the day STRING is computed in the member's IANA timezone (home_timezone,
+// then a client-tz fallback, then UTC). The anti-cheat is unchanged — only the string.
+
+describe('memberDay — tz-aware calendar day', () => {
+  // 2026-06-21 06:30 UTC. In Pacific (UTC-7 in June) it is still 2026-06-20 23:30 —
+  // a DIFFERENT calendar day than UTC. This is exactly the owner's "evening Pacific,
+  // already-tomorrow in UTC" window the bug lived in.
+  const now = new Date('2026-06-21T06:30:00Z')
+
+  it('returns the UTC day for UTC / null / invalid timezones', () => {
+    expect(memberDay('UTC', now)).toBe('2026-06-21')
+    expect(memberDay(null, now)).toBe('2026-06-21')
+    expect(memberDay('Not/AZone', now)).toBe('2026-06-21') // invalid → UTC fallback
+  })
+
+  it('returns the member-LOCAL day for a tz where now is a different calendar date', () => {
+    // Pacific is still the previous calendar day at this instant.
+    expect(memberDay('America/Los_Angeles', now)).toBe('2026-06-20')
+    // Tokyo (UTC+9) has already rolled past midnight into the same UTC date here.
+    expect(memberDay('Asia/Tokyo', now)).toBe('2026-06-21')
+  })
+})
+
+describe('resolveMemberDay — home_timezone wins over the client tz, then UTC', () => {
+  const now = new Date('2026-06-21T06:30:00Z')
+
+  it('prefers the durable home_timezone (un-spoofable) over a client tz', async () => {
+    store.profiles = [{ id: PROFILE, home_timezone: 'America/Los_Angeles' }]
+    // Even if a client claims Tokyo, the stored Pacific tz wins → previous day.
+    expect(await resolveMemberDay(PROFILE, 'Asia/Tokyo', now)).toBe('2026-06-20')
+  })
+
+  it('falls back to the client tz when home_timezone is null', async () => {
+    store.profiles = [{ id: PROFILE, home_timezone: null }]
+    expect(await resolveMemberDay(PROFILE, 'America/Los_Angeles', now)).toBe('2026-06-20')
+  })
+
+  it('falls back to UTC when neither is present', async () => {
+    store.profiles = [{ id: PROFILE, home_timezone: null }]
+    expect(await resolveMemberDay(PROFILE, null, now)).toBe('2026-06-21')
+  })
+})
+
+describe('logPractice — keys the row + idempotency by the member LOCAL day', () => {
+  it('writes logged_for in the member home timezone, not UTC', async () => {
+    // The fake admin client cannot freeze the clock, so we assert RELATIVELY: the day
+    // the row is keyed under must equal memberDay(home_timezone) for the SAME instant.
+    // This proves the column flows from the tz-aware helper (logPractice computes its
+    // own `new Date()`, so we compare against memberDay at call time — stable to the day).
+    store.profiles = [{ id: PROFILE, home_timezone: 'America/Los_Angeles', current_streak: 0, longest_streak: 0 }]
+    const expectedDay = memberDay('America/Los_Angeles')
+
+    const res = await logPractice({ profileId: PROFILE, practiceId: PRACTICE })
+    expect(res.logged).toBe(true)
+
+    const row = store.practice_logs.find((r) => r.practice_id === PRACTICE)
+    expect(row?.logged_for).toBe(expectedDay)
+    // The idempotency row carries the SAME local day, so a same-local-day re-log no-ops.
+    expect(
+      store.engagement_events.some(
+        (r) => r.idempotency_key === `practice_log:${PROFILE}:${PRACTICE}:${expectedDay}`,
+      ),
+    ).toBe(true)
+  })
+
+  it('un-log targets the same local day the log was written under', async () => {
+    store.profiles = [{ id: PROFILE, home_timezone: 'America/Los_Angeles', current_streak: 0, longest_streak: 0 }]
+    await logPractice({ profileId: PROFILE, practiceId: PRACTICE })
+    const res = await unlogPractice({ profileId: PROFILE, practiceId: PRACTICE })
+    expect(res.unlogged).toBe(true)
+    expect(store.practice_logs.find((r) => r.practice_id === PRACTICE)).toBeUndefined()
   })
 })

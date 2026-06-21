@@ -54,9 +54,8 @@ export default async function ConnectionsPage({
 
   return (
     <div className="mx-auto max-w-5xl">
-      {/* Mobile header is COMPACT: the sticky hub tab directly above already reads
-          "My Contacts" with the icon, so the H1 drops the icon and the description
-          shrinks to one line. sm+ keeps the full header. */}
+      {/* Mobile header is COMPACT: the H1 drops the icon and the description
+          shrinks to one line to save vertical space. sm+ keeps the full header. */}
       <IndexTemplate
         title={
           <span className="flex items-center gap-2">

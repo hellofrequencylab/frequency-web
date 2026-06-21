@@ -3,13 +3,13 @@ title: Posts, reactions & comments
 description: Share with your circle and join the conversation.
 category: sharing
 order: 1
-updated: 2026-06-10
+updated: 2026-06-21
 audience: member
 featureKeys: [posts]
 status: published
 ---
 
-Posts are how you share with your circle: a thought, a photo, a question, a heads-up. They show up in the [feed](/help/getting-started/your-feed) of the people in that circle.
+Posts are how you share a moment: a thought, a photo, a question, a heads-up. A post you write from your home [feed](/help/getting-started/your-feed) lands on your own wall and the community feed. Post from inside a circle and it goes to that circle instead.
 
 ## Posting
 
@@ -24,7 +24,7 @@ Tap the **Zap button** to capture a moment, then pick a style:
 Want bold, lists, or links? Tap the little **Format** arrow under the text box
 and the writing tools unfold.
 
-Whatever you capture is shared with your circle and shows up in their feed.
+From home, whatever you capture lands on your wall and the community feed. From inside a circle, it shares with that circle.
 
 ## Reacting & commenting
 
@@ -34,4 +34,4 @@ Whatever you capture is shared with your circle and shows up in their feed.
 ## Tips
 
 - New to a circle? A short intro post is a great first move.
-- Posts are scoped to the circle they're shared in, so you can be yourself with your group without broadcasting to the whole platform. (Hosts can broadcast wider; see [Broadcasts](/help/sharing/broadcasts).)
+- Where a post lands depends on where you wrote it: home posts go to your wall and the community feed, circle posts stay scoped to that circle, so you can be yourself with your group. (Hosts can broadcast wider; see [Broadcasts](/help/sharing/broadcasts).)

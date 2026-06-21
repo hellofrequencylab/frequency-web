@@ -31,7 +31,15 @@ export function UnlogPracticeButton({
       aria-label="Undo today's log"
       onClick={() =>
         start(async () => {
-          const res = await unlogPracticeAction(practiceId)
+          // Same fallback tz as logging, so the un-log targets the SAME local day.
+          const tz = (() => {
+            try {
+              return Intl.DateTimeFormat().resolvedOptions().timeZone || null
+            } catch {
+              return null
+            }
+          })()
+          const res = await unlogPracticeAction(practiceId, tz)
           if (!isError(res) && res.data.unlogged) onUnlogged?.()
         })
       }
