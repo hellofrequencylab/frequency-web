@@ -39,6 +39,10 @@ Want to actually do the practice right there, with a timer and guided breathing?
 Tap the little lotus to **[tune out with Mindless](/help/the-quest/on-air)**. Same
 log, same rewards, plus the sit itself.
 
+Practice timers: there are two. Mindless times a sit;
+**[Movement](/help/the-quest/movement)** times a walk, yoga, play or a workout.
+Same log, same rewards.
+
 ## Adopt or change anytime
 
 Adopt as many practices as you like from the library, and remove any that no longer

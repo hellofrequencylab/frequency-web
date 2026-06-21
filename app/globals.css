@@ -577,6 +577,13 @@
     --motion-base: 0ms;
     --motion-slow: 0ms;
   }
+  /* Tailwind's stock looping utilities aren't covered by the per-keyframe guards
+     below (those only neutralize our bespoke @keyframes). Stop them here too so the
+     Movement timer pulse, the feed spinners, and the mega-menu skeleton all halt. */
+  .animate-pulse,
+  .animate-spin {
+    animation: none !important;
+  }
 }
 
 /* ── Tailwind wiring ────────────────────────────────────────────────────────

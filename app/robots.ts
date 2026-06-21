@@ -22,6 +22,7 @@ export default function robots(): MetadataRoute.Robots {
         "/people",
         "/search",
         "/crew",
+        "/groups",
         "/hubs",
         "/nexuses",
         "/profile",

@@ -156,6 +156,13 @@ ADR-201)
 > bookkeeping live in `profiles.meta.practiceStreak` (no new table, ADR-145,
 > `lib/practice-streak.ts`).
 
+> **Practice column additions (Movement timer + un-log; ADR-345/346).** Three additive columns:
+> - `practices.timer_kind` (`practice_timer_kind` enum `none | mindless | movement`, default `mindless`, NOT NULL; migration `20260718000000`): the authoritative discriminator for which timer a practice opens (none = one-tap Log it, mindless = the On Air sit/breathe, movement = the Movement timer). It **supersedes** the binary `uses_timer`, which is now a GENERATED STORED mirror `= (timer_kind <> 'none')`, kept so existing readers (`lib/practices.ts`, the `completeSession` timer-proof, the `practices_ranked` view) are untouched and the two can never drift. Seeded `true -> mindless` / `false -> none`. `duration_min` seeds the timer.
+> - `practices.movement_config` (jsonb, nullable; migration `20260718000000`): the Movement mode + tuning when `timer_kind = 'movement'` (`{ mode: walk|yoga|play|workout, plus walkMinutes / walkIntervalMin / yogaKind / workoutKind / workSec / restSec / rounds }`, mirroring `lib/movement.ts` `MovementConfig`); NULL otherwise.
+> - `practice_logs.zaps_awarded` (integer, nullable; migration `20260717000000`): the exact base Zaps a log awarded at log time, stored by `logPractice` so the today-only un-log (`unlogPractice`) can debit the grant EXACTLY via a compensating `zap_transactions` row, since the live amount can drift between log and un-log. NULL on pre-feature rows (treated as 0, never over-debits).
+>
+> `practices_ranked` was recreated (migration `20260718000000`) to read the GENERATED `uses_timer` transparently; it does NOT expose `timer_kind` / `movement_config` (the library does not need them; the editor + timer routing read those from the `practices` table). All three columns are reached through the untyped admin handle until `lib/database.types.ts` is regenerated (ADR-246).
+
 **RPCs / views (public read layer)**
 `get_my_role`, `public_circles`, `public_circle_by_id`, `public_events`,
 `public_event_by_slug`, `public_posts`, `search_handles_public`

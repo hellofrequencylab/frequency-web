@@ -1,15 +1,16 @@
 # Master plan: one consolidated, ordered work list
 
-> **The answer, first.** Entity Spaces Phases 0 to 3 plus the tenancy hardening sweep are
-> shipped and live (ADR-320 to ADR-338). What remains, excluding the Held money / white-label /
-> native phases, is a finite, orderable set of **48 independently-shippable work items** across
-> seven streams: Hardening, UX/UI Polish, Entity-role Admin and Controls, Janitor / Staff,
-> SEO/AIO, Security, and Docs. Every item below is small enough to land as ONE PR, is workable
-> one at a time, names its files, and flags which other items it shares files with so disjoint
-> ones can run in parallel. This doc is the single execution list; it links to the deep specs
-> rather than repeating them.
+> **The answer, first.** ✅ **DONE.** Entity Spaces Phases 0 to 3 plus the tenancy hardening sweep
+> are shipped and live (ADR-320 to ADR-338), and the **48 independently-shippable work items** in
+> this plan have now all landed across the seven streams: Hardening, UX/UI Polish, Entity-role
+> Admin and Controls, Janitor / Staff, SEO/AIO, Security, and Docs. The entity-role Admin work is
+> ADR-339 to ADR-344; the website-changes program that ran on top is ADR-345 to ADR-349 (see
+> [`WEBSITE-CHANGES-PLAN.md`](WEBSITE-CHANGES-PLAN.md) §8a). Only the **Held** money / white-label /
+> native phases remain (§11). Every item below was small enough to land as ONE PR, workable one at a
+> time, named its files, and flagged its file overlaps so disjoint ones ran in parallel. This doc is
+> the single execution list; it links to the deep specs rather than repeating them.
 
-**Status:** ⏳ Plan of record. Prepared 2026-06-20. No code in this doc.
+**Status:** ✅ SHIPPED. Prepared 2026-06-20; executed 2026-06-20 to 2026-06-21. All 48 items across the seven streams landed (the entity-role Admin stream is ADR-339 to ADR-344; the website-changes program that followed is ADR-345 to ADR-349, tracked in [`WEBSITE-CHANGES-PLAN.md`](WEBSITE-CHANGES-PLAN.md) §8a). The only carried items are the Held money / white-label / native phases (§11). No code in this doc.
 **Canon obeyed:** [`AGENTS.md`](../AGENTS.md) · [`docs/NAMING.md`](NAMING.md) ·
 [`docs/CONTENT-VOICE.md`](CONTENT-VOICE.md) (no em or en dashes) ·
 [`docs/PAGE-FRAMEWORK.md`](PAGE-FRAMEWORK.md) (compose, never author) ·
@@ -28,10 +29,12 @@
 | Per-space QR + CRM + check-in (Phase 2) | ✅ shipped | `qr_codes`+`splash`, additive `space_id` CRM, `client_notes`, Event Space check-in (ADR-332/333/334) |
 | Per-space email (Phase 3) | ✅ shipped | Fail-closed send backbone + composer + deliverability on Resend (ADR-335/336/337) |
 | Tenancy hardening sweep | ✅ shipped | Default-to-root extension, FK covering indexes, merged `space_members` SELECT policy (ADR-338) |
+| Entity-role Admin + Controls (this plan's streams) | ✅ shipped | One canonical role-type set, entity-role preview, Lab + Partner blueprints, Organization donations / Coaching enrollment / Event Space ticketing owner controls (ADR-339 to ADR-344); the full 48-item list landed |
+| Website-changes program (post boxes · practice un-log · Movement timer · settings drawer · mega-menu · template coverage) | ✅ shipped | ADR-345 to ADR-349; PRs #953 to #961 ([`WEBSITE-CHANGES-PLAN.md`](WEBSITE-CHANGES-PLAN.md) §8a) |
 | Money / commerce (Phase 4) | 🔴 Held | Not planned for execution here (see §11) |
 | White-label TLS / Puck micro-site (Phase 5) | 🔴 Held | Not planned for execution here (see §11) |
 | Native apps / premium AI infra (Phase 6) | 🔴 Held | Not planned for execution here (see §11) |
-| `app/(main)/error.tsx` token | 🔴 bug | Uses undefined `text-fg-secondary`; the catch-all member error screen renders a broken color (item UX-01) |
+| `app/(main)/error.tsx` token | ✅ fixed | The catch-all member error screen's undefined `text-fg-secondary` token was corrected (item UX-01, shipped) |
 
 **What is genuinely strong already (do not rework):** the central rail registry
 (`lib/layout/page-chrome.ts`) with zero path-sniffing in the shell; full template adoption and
@@ -56,6 +59,15 @@ Every item is one row in its stream table plus a detail block with:
 The recommended global order is **Hardening first** (it is mostly small and de-risks the rest),
 then **Entity-role Admin** and **UX Polish** in parallel tracks (they touch different trees),
 with **SEO**, **Security**, **Janitor**, and **Docs** woven in as their deps clear.
+
+> ✅ **All streams shipped (2026-06-20 to 2026-06-21).** Every item in the stream tables below
+> (Streams A to G, all 48) has landed; the rows are kept as the execution record, not a backlog.
+> The Entity-role Admin stream (HARD-01/02, ADMIN-01 to ADMIN-05, JAN-01) is captured in ADR-339
+> to ADR-344. The website-changes program that ran on top (post boxes, practice un-log + anti-cheat,
+> the Movement timer, the settings drawer + QR & Share split, the Manage mega-menu, and the broad
+> template / `<PageModules>` coverage standard) is ADR-345 to ADR-349, logged in
+> [`WEBSITE-CHANGES-PLAN.md`](WEBSITE-CHANGES-PLAN.md) §8a. Only the Held money / white-label /
+> native phases (§11) remain.
 
 ---
 

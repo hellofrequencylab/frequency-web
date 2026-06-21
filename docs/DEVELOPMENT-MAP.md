@@ -328,6 +328,25 @@
 > deliverability). Still deferred: Phase 4 earnings/payouts, Phase 5 white-label Puck micro-sites, SMS/A2P,
 > per-Space `sender_domains`/DKIM, the AUP/DPA legal copy, and the per-space `space_embeddings`/RAG index.
 
+> **2026-06-21:** **Entity-role Admin + the website-changes program shipped** (the two plans of record:
+> [MASTER-PLAN.md](MASTER-PLAN.md) and [WEBSITE-CHANGES-PLAN.md](WEBSITE-CHANGES-PLAN.md)). Three tracks
+> landed on top of the tenancy work. (1) **Tenancy hardening** (ADR-338): the default-to-root trigger
+> extended to the Phase 2/3 tables, FK covering indexes, and a merged `space_members` SELECT policy
+> (migration `20260714010000`). (2) **Entity-role Admin** (ADR-339 to ADR-344): one canonical role-type
+> set split into the full `SpaceType` union + the provisionable blueprint subset; entity-role preview as a
+> second view-as axis routing into a representative Space; Lab + Partner blueprints made provisionable; and
+> three owner controls with structured data but NO money in v1 (Organization donations, Coaching enrollment,
+> Event Space free/RSVP ticketing). (3) The **website-changes program** (ADR-345 to ADR-349, PRs #953 to
+> #961): instant optimistic post reactions; the today-only practice un-log with the `practice_logs.zaps_awarded`
+> exact-debit column, the negative-aware `reverseZaps` primitive, the dedicated streak re-derive, and the
+> three anti-cheat layers (rate-limit + 25/day cap + timer-completion proof); the Movement timer as a second
+> timer kind with the `practice_timer_kind` enum (`none|mindless|movement`) superseding `uses_timer` as a
+> GENERATED mirror plus `movement_config` jsonb (migrations `20260717000000`, `20260718000000`); the settings
+> drawer rebuilt at the shell level (the ADR-128 dock) with QR & Share split into an all-roles dropdown; the
+> launcher-only Manage mega-menu (no persistent active-Space); and the broad standard that every page composes
+> a kit template AND renders its interior via `<PageModules>` (the long tail tracked in PAGE-FRAMEWORK §8.4).
+> The owed operator how-tos route to Notion per DOCS-PROTOCOL; the git side is complete.
+
 ---
 
 ## Mission (locked)

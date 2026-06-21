@@ -1398,13 +1398,29 @@ export async function unlogPractice(input: {
   //    reward_grants claim row is removed so the day re-opens for a fresh roll/grant).
   try {
     const admin = db()
-    // Reverse the Welcome Back Zaps if this log paid them today.
-    const { data: wb } = await admin
-      .from('reward_grants')
-      .select('reward_kind')
+    // The Welcome Back grant is keyed by the RETURN DAY, not the practice: it is the member's
+    // "you're back today" bonus, and ANY of today's logs legitimately keeps it earned. So only
+    // reverse it when THIS un-log left the member with NO logs at all for `day` (re-count after
+    // the delete above). If another practice still logs today, the grant stays + is NOT debited,
+    // even though this practice's row created it; otherwise un-logging B after logging A would
+    // wrongly debit the 10 Zaps that A keeps "back". Bounded (head count) + idempotent (the claim
+    // row is what gates a re-grant; we only touch it when today is truly empty).
+    const { count: remainingToday } = await admin
+      .from('practice_logs')
+      .select('id', { count: 'exact', head: true })
       .eq('profile_id', profileId)
-      .eq('rule_key', `welcome.back:${day}`)
-      .maybeSingle()
+      .eq('logged_for', day)
+    const todayIsNowEmpty = (remainingToday ?? 0) === 0
+
+    // Reverse the Welcome Back Zaps if this log paid them today AND no log for today remains.
+    const { data: wb } = todayIsNowEmpty
+      ? await admin
+          .from('reward_grants')
+          .select('reward_kind')
+          .eq('profile_id', profileId)
+          .eq('rule_key', `welcome.back:${day}`)
+          .maybeSingle()
+      : { data: null }
     if (wb) {
       const { ZAP_AMOUNTS } = await import('@/lib/zaps')
       await reverseZaps(profileId, ZAP_AMOUNTS.welcome_back, {
