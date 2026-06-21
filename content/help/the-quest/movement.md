@@ -1,6 +1,6 @@
 ---
 title: Movement, the timer for moving practices
-description: Time a walk, yoga flow, open play or a workout, with audio cues, then log it like any practice.
+description: Time a walk, run, yoga flow, strength set, stretch or open play, with audio cues, then log it like any practice.
 category: the-quest
 order: 4
 updated: 2026-06-21
@@ -15,25 +15,27 @@ walk, a yoga flow, a game of something, a workout. Same idea, same fullscreen
 quiet, same payout at the end. It just keeps time while you move instead of while
 you sit.
 
-## The four modes
+## The six modes
 
 Pick the one that fits what you're doing:
 
-- **Walk.** A timed block for a walk, a run, or any steady-distance thing. Set the
-  minutes and go. Turn on interval reminders if you want a nudge every few
-  minutes (a lap, a turnaround, a pace check); leave them off for one quiet block.
+- **Walk.** A timed block for a walk. Set the minutes and go. Turn on interval
+  reminders if you want a nudge every few minutes (a lap, a turnaround, a pace
+  check); leave them off for one quiet block.
+- **Run.** The same timed block, tuned for a run, with optional split cues.
 - **Yoga.** A hold-and-transition flow. You set how long each hold lasts, and a
   cue tells you when to move to the next one, so you can keep your eyes closed and
   follow the sound instead of the screen.
-- **Play.** An open count-up. No target, no buzzer. Start it, do the thing, stop
-  when you're done. Good for anything that runs as long as it runs: a pickup game,
-  a dance, a kick-about in the yard.
-- **Workout.** Interval rounds with work and rest. Set how long you work, how long
+- **Strength.** Interval rounds with work and rest. Set how long you work, how long
   you rest, and how many rounds, and it counts you through each one out loud.
   Three common shapes are built in so you don't have to do the math:
   - **Tabata**: twenty seconds on, ten off, eight rounds.
   - **EMOM**: one round at the top of every minute.
   - **AMRAP**: one timed block, as many rounds as you can fit.
+- **Stretch.** An easy mobility timer with soft cues to switch sides.
+- **Play.** An open count-up. No target, no buzzer. Start it, do the thing, stop
+  when you're done. Good for anything that runs as long as it runs: a pickup game,
+  a dance, a kick-about in the yard.
 
 ## Opening it
 
@@ -54,6 +56,8 @@ the end. Pause if life interrupts (paused time doesn't count), and finish to
 collect.
 
 A Movement session **logs like any practice**: it counts toward your day, keeps
-your streak alive, and pays your Zaps when you finish. Already logged that
-practice today? The extra session still banks the time and your streak holds.
-Nothing pays twice, and nothing is lost.
+your streak alive, and pays your Zaps when you finish. Stop early and it still
+counts once you are at least **halfway**: the day is logged, your streak holds, and
+you bank **one Zap**, with the rest waiting under **Finish Practice** for when you
+pick it back up. Already logged that practice today? The extra session still banks
+the time and your streak holds. Nothing pays twice, and nothing is lost.

@@ -3,7 +3,7 @@ title: Mindless, the practice timer
 description: Time your practice with guided breathing, then collect your rewards, streak and next assignment.
 category: the-quest
 order: 4
-updated: 2026-06-17
+updated: 2026-06-21
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -14,7 +14,7 @@ goes quiet, and it walks you through the sit. When you finish, the Quest pays yo
 on the spot.
 
 Practice timers: Mindless and **[Movement](/help/the-quest/movement)** are the two.
-Mindless times the sit; Movement times a walk, yoga, play or a workout.
+Mindless times the sit; Movement times a walk, run, yoga, strength, stretch or play.
 
 ## Tuning out
 
@@ -29,9 +29,12 @@ it remembers them for next time:
 - **A practice.** Always there is a **Free sit**, so you can tune out any time
   even before you adopt anything. Once you join a Journey, the practices for the
   part you're on show up here too. Pick the one you're doing, or Free sit.
-- **A mode.** *Meditate* is a plain countdown for a silent sit. *Breathe* gives
-  you a guided breathing pattern with a visual to follow. *Just Log* skips
-  straight to the rewards; the timer is never required.
+- **A mode.** Six ways in. *Meditate*, *Stillness*, and *Ritual* are quiet
+  countdowns that frame the sit a little differently. *Breathe* gives you a guided
+  breathing pattern with a visual to follow. *Journal* runs the same quiet timer
+  with a note field, so you can write while you sit. *Just Log* skips straight to
+  the rewards; the timer is never required. A practice opens to the mode that fits
+  it, and you can switch.
 - **Minutes.** The timer starts at the practice's own length when it has one, and
   you can change it. Two is enough. Five is plenty. Use the stepper for anything
   up to a hundred and twenty.
@@ -40,8 +43,13 @@ Then hit **Tune out**. The world goes quiet and a short **five-second countdown*
 starts you off (tap **Start** to begin right away). While you're tuned out the
 screen stays awake and everything else gets out of the way. **Pause** if life
 interrupts (paused time doesn't count), and when the timer runs out, hit
-**Finish** to collect. Need to stop early? **Close Session** still counts; the
-practice is the point, not the clock.
+**Finish** to collect.
+
+Stop early and it still counts, as long as you got at least **halfway**: the day
+is logged, your streak holds, and you bank **one Zap** right then. The practice
+then reads **Finish Practice** back on your home screen, so you can pick up where
+you left off and collect the rest of the Zaps. Stop before halfway and nothing
+logs yet, so come back to it when you can. The practice is the point, not the clock.
 
 ## Breathing patterns
 
