@@ -5706,27 +5706,39 @@ export type Database = {
       practice_logs: {
         Row: {
           circle_id: string | null
+          completed: boolean
           created_at: string
           id: string
           logged_for: string
           practice_id: string | null
           profile_id: string
+          seconds_done: number | null
+          seconds_target: number | null
+          zaps_awarded: number | null
         }
         Insert: {
           circle_id?: string | null
+          completed?: boolean
           created_at?: string
           id?: string
           logged_for?: string
           practice_id?: string | null
           profile_id: string
+          seconds_done?: number | null
+          seconds_target?: number | null
+          zaps_awarded?: number | null
         }
         Update: {
           circle_id?: string | null
+          completed?: boolean
           created_at?: string
           id?: string
           logged_for?: string
           practice_id?: string | null
           profile_id?: string
+          seconds_done?: number | null
+          seconds_target?: number | null
+          zaps_awarded?: number | null
         }
         Relationships: [
           {
@@ -5962,6 +5974,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           domain_id: string | null
+          duration_locked: boolean
           duration_min: number | null
           embedding: string | null
           featured_at: string | null
@@ -5972,6 +5985,10 @@ export type Database = {
           is_demo: boolean
           is_public: boolean
           is_template: boolean
+          mindless_mode:
+            | Database["public"]["Enums"]["practice_mindless_mode"]
+            | null
+          movement_config: Json | null
           reviewed_at: string | null
           reviewed_by: string | null
           reward_note: string | null
@@ -5981,8 +5998,9 @@ export type Database = {
           status: string
           subcategory_id: string | null
           summary: string | null
+          timer_kind: Database["public"]["Enums"]["practice_timer_kind"]
           title: string
-          uses_timer: boolean
+          uses_timer: boolean | null
           weight_class: string
         }
         Insert: {
@@ -5993,6 +6011,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           domain_id?: string | null
+          duration_locked?: boolean
           duration_min?: number | null
           embedding?: string | null
           featured_at?: string | null
@@ -6003,6 +6022,10 @@ export type Database = {
           is_demo?: boolean
           is_public?: boolean
           is_template?: boolean
+          mindless_mode?:
+            | Database["public"]["Enums"]["practice_mindless_mode"]
+            | null
+          movement_config?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           reward_note?: string | null
@@ -6012,8 +6035,9 @@ export type Database = {
           status?: string
           subcategory_id?: string | null
           summary?: string | null
+          timer_kind?: Database["public"]["Enums"]["practice_timer_kind"]
           title: string
-          uses_timer?: boolean
+          uses_timer?: boolean | null
           weight_class?: string
         }
         Update: {
@@ -6024,6 +6048,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           domain_id?: string | null
+          duration_locked?: boolean
           duration_min?: number | null
           embedding?: string | null
           featured_at?: string | null
@@ -6034,6 +6059,10 @@ export type Database = {
           is_demo?: boolean
           is_public?: boolean
           is_template?: boolean
+          mindless_mode?:
+            | Database["public"]["Enums"]["practice_mindless_mode"]
+            | null
+          movement_config?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           reward_note?: string | null
@@ -6043,8 +6072,9 @@ export type Database = {
           status?: string
           subcategory_id?: string | null
           summary?: string | null
+          timer_kind?: Database["public"]["Enums"]["practice_timer_kind"]
           title?: string
-          uses_timer?: boolean
+          uses_timer?: boolean | null
           weight_class?: string
         }
         Relationships: [
@@ -7326,6 +7356,99 @@ export type Database = {
           },
         ]
       }
+      space_donation_asks: {
+        Row: {
+          created_at: string
+          description: string | null
+          fund_label: string
+          id: string
+          is_active: boolean
+          space_id: string
+          suggested_amounts_cents: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          fund_label: string
+          id?: string
+          is_active?: boolean
+          space_id: string
+          suggested_amounts_cents?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          fund_label?: string
+          id?: string
+          is_active?: boolean
+          space_id?: string
+          suggested_amounts_cents?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_donation_asks_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_enrollments: {
+        Row: {
+          created_at: string
+          enrolled_at: string
+          id: string
+          member_profile_id: string
+          program_id: string
+          space_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          enrolled_at?: string
+          id?: string
+          member_profile_id: string
+          program_id: string
+          space_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          enrolled_at?: string
+          id?: string
+          member_profile_id?: string
+          program_id?: string
+          space_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_enrollments_member_profile_id_fkey"
+            columns: ["member_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_enrollments_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "space_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_enrollments_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_follows: {
         Row: {
           created_at: string
@@ -7563,6 +7686,152 @@ export type Database = {
             columns: ["tier_id"]
             isOneToOne: false
             referencedRelation: "space_membership_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_programs: {
+        Row: {
+          capacity: number
+          created_at: string
+          description: string | null
+          ends_on: string | null
+          id: string
+          is_published: boolean
+          name: string
+          schedule: string | null
+          space_id: string
+          starts_on: string | null
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          description?: string | null
+          ends_on?: string | null
+          id?: string
+          is_published?: boolean
+          name: string
+          schedule?: string | null
+          space_id: string
+          starts_on?: string | null
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          description?: string | null
+          ends_on?: string | null
+          id?: string
+          is_published?: boolean
+          name?: string
+          schedule?: string | null
+          space_id?: string
+          starts_on?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_programs_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_ticket_rsvps: {
+        Row: {
+          created_at: string
+          id: string
+          member_profile_id: string
+          reserved_at: string
+          space_id: string
+          status: string
+          tier_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_profile_id: string
+          reserved_at?: string
+          space_id: string
+          status?: string
+          tier_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_profile_id?: string
+          reserved_at?: string
+          space_id?: string
+          status?: string
+          tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_ticket_rsvps_member_profile_id_fkey"
+            columns: ["member_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_ticket_rsvps_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_ticket_rsvps_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "space_ticket_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_ticket_tiers: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          sort: number
+          space_id: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name: string
+          sort?: number
+          space_id: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          sort?: number
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_ticket_tiers_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -10317,6 +10586,14 @@ export type Database = {
       membership_status: "active" | "pending" | "inactive"
       post_type: "feed" | "blog" | "announcement" | "recap" | "note" | "system"
       post_visibility: "public" | "region" | "cluster" | "group"
+      practice_mindless_mode:
+        | "meditate"
+        | "breathe"
+        | "journal"
+        | "stillness"
+        | "ritual"
+        | "log"
+      practice_timer_kind: "none" | "mindless" | "movement"
       season_rank_enum: "ghost" | "initiate" | "adept" | "master"
       store_category:
         | "cosmetic"
@@ -10487,6 +10764,15 @@ export const Constants = {
       membership_status: ["active", "pending", "inactive"],
       post_type: ["feed", "blog", "announcement", "recap", "note", "system"],
       post_visibility: ["public", "region", "cluster", "group"],
+      practice_mindless_mode: [
+        "meditate",
+        "breathe",
+        "journal",
+        "stillness",
+        "ritual",
+        "log",
+      ],
+      practice_timer_kind: ["none", "mindless", "movement"],
       season_rank_enum: ["ghost", "initiate", "adept", "master"],
       store_category: [
         "cosmetic",

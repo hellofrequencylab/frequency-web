@@ -26,6 +26,13 @@ import type { MovementConfig } from '@/lib/movement'
 export const TIMER_KINDS = ['none', 'mindless', 'movement'] as const
 export type TimerKind = (typeof TIMER_KINDS)[number]
 
+/** The flavour a timer_kind = 'mindless' practice wears (the completion-economy redesign):
+ *  'meditate' | 'breathe' | 'journal' | 'stillness' | 'ritual' | 'log'. Stored on
+ *  practices.mindless_mode (nullable; a null is DERIVED from the Pillar at read time via
+ *  pillarTimerDefault). The stored timer_kind stays authoritative for routing. */
+export const MINDLESS_MODES = ['meditate', 'breathe', 'journal', 'stillness', 'ritual', 'log'] as const
+export type MindlessMode = (typeof MINDLESS_MODES)[number]
+
 function db(): SupabaseClient {
   return createAdminClient()
 }
@@ -68,6 +75,12 @@ export interface Practice {
   timer_kind: TimerKind
   /** Movement timer config when timer_kind = 'movement' (mode + tuning); null otherwise. */
   movement_config: MovementConfig | null
+  /** The Mindless flavour when timer_kind = 'mindless': meditate | breathe | journal |
+   *  stillness | ritual | log. NULL = derive from the Pillar at read time (pillarTimerDefault). */
+  mindless_mode: MindlessMode | null
+  /** When true, the author has pinned a fixed session length the member cannot adjust;
+   *  false (default) = the member may adjust the length. The length itself is duration_min. */
+  duration_locked: boolean
   /** The explicit per-log Zap VALUE. When set, it OVERRIDES weight_class (the Quest library
    *  values practices by cadence: Daily 10 / 3x-week 15 / Weekly 25). Null → weight-class default. */
   reward_zaps: number | null
@@ -116,17 +129,53 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, timer_kind, movement_config, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
+  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, timer_kind, movement_config, mindless_mode, duration_locked, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
 
 // The same columns MINUS the table-only ones, for reads against the `practices_ranked`
 // VIEW. The view predates `slug` and does not expose it (selecting it errors and returns
 // zero rows, which silently emptied the library + 404'd the detail page); it also does NOT
-// expose `timer_kind` / `movement_config` (the Movement timer columns the library never
-// needs — the editor + timer routing read those from the table via getPractice). The
-// library + detail navigate by id, so dropping all three here is safe.
+// expose `timer_kind` / `movement_config` / `mindless_mode` / `duration_locked` (the timer
+// columns the library never needs — the editor + timer routing read those from the table via
+// getPractice). The library + detail navigate by id, so dropping all of them here is safe.
 const RANKED_COLS = PRACTICE_COLS
   .replace(/,\s*slug$/, '')
-  .replace(/,\s*timer_kind,\s*movement_config/, '')
+  .replace(/,\s*timer_kind,\s*movement_config,\s*mindless_mode,\s*duration_locked/, '')
+
+/**
+ * The authoring DEFAULT timer + Mindless mode for a Pillar (mind | body | spirit |
+ * expression). The completion-economy redesign uses this in two places: the data-fix
+ * backfill mirrors it in SQL, and a read of a Mindless practice with a null `mindless_mode`
+ * derives the flavour from here. The stored `timer_kind` stays AUTHORITATIVE for routing —
+ * this is only the author's default + the null-mode fallback, never an override.
+ */
+export function pillarTimerDefault(
+  pillar: string | null,
+): { timerKind: TimerKind; mindlessMode: MindlessMode | null } {
+  switch (pillar) {
+    case 'mind':
+      return { timerKind: 'mindless', mindlessMode: 'meditate' }
+    case 'spirit':
+      return { timerKind: 'mindless', mindlessMode: 'stillness' }
+    case 'body':
+      return { timerKind: 'movement', mindlessMode: null }
+    case 'expression':
+      return { timerKind: 'none', mindlessMode: 'log' }
+    default:
+      return { timerKind: 'mindless', mindlessMode: 'meditate' }
+  }
+}
+
+/** Coerce a raw practices row into a Practice with the new completion-economy columns
+ *  reliably typed: duration_locked defaults to false (a pre-migration row reads null/undefined),
+ *  and mindless_mode stays null when absent (the read-time pillarTimerDefault fallback fills it).
+ *  Reached through the untyped admin handle (ADR-246) — the cast just types the shape. */
+function normalizePractice<T extends Practice>(row: T): T {
+  return {
+    ...row,
+    mindless_mode: (row.mindless_mode ?? null) as MindlessMode | null,
+    duration_locked: row.duration_locked === true,
+  }
+}
 
 // --- Library + reads ------------------------------------------------------
 
@@ -162,7 +211,7 @@ export async function listPublicPractices(sort: PracticeSort = 'trending'): Prom
   return base.map((p) => {
     const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
     return {
-      ...p,
+      ...normalizePractice(p),
       subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
       tags: tagsByPractice.get(p.id) ?? [],
     }
@@ -191,7 +240,7 @@ export async function getPublicPractice(slugOrId: string): Promise<PublicPractic
   const [subById, tagsByPractice] = await Promise.all([subcategoryMap(), tagsForPractices([p.id])])
   const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
   return {
-    ...p,
+    ...normalizePractice(p),
     subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
     tags: tagsByPractice.get(p.id) ?? [],
   }
@@ -288,7 +337,7 @@ export async function searchLibraryPractices(opts: LibrarySearchOpts = {}): Prom
   const rows = base.map((p) => {
     const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
     return {
-      ...p,
+      ...normalizePractice(p),
       subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
       tags: tagsByPractice.get(p.id) ?? [],
     }
@@ -436,7 +485,7 @@ export async function getCircleActivePractice(circleId: string): Promise<Practic
     .eq('active', true)
     .maybeSingle()
   const row = data as { practice: Practice | null } | null
-  return row?.practice ?? null
+  return row?.practice ? normalizePractice(row.practice) : null
 }
 
 export async function getMemberPractices(profileId: string): Promise<Practice[]> {
@@ -447,7 +496,7 @@ export async function getMemberPractices(profileId: string): Promise<Practice[]>
     .eq('active', true)
     .order('created_at', { ascending: false })
   const rows = (data as { practice: Practice | null }[] | null) ?? []
-  return rows.map((r) => r.practice).filter((p): p is Practice => !!p)
+  return rows.map((r) => r.practice).filter((p): p is Practice => !!p).map(normalizePractice)
 }
 
 /** A single practice with its popularity stats + display taxonomy, for the detail
@@ -465,7 +514,7 @@ export async function getRankedPractice(id: string): Promise<RankedPractice | nu
   const [subById, tagsByPractice] = await Promise.all([subcategoryMap(), tagsForPractices([p.id])])
   const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
   return {
-    ...p,
+    ...normalizePractice(p),
     subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
     tags: tagsByPractice.get(p.id) ?? [],
   }
@@ -722,7 +771,8 @@ export async function notifyStaffOfPendingPractice(input: {
 /** A single practice by id (for the editor + ownership checks). */
 export async function getPractice(id: string): Promise<Practice | null> {
   const { data } = await db().from('practices').select(PRACTICE_COLS).eq('id', id).maybeSingle()
-  return (data as Practice | null) ?? null
+  const p = (data as Practice | null) ?? null
+  return p ? normalizePractice(p) : null
 }
 
 /** The member-editable content fields of a practice. Rewards (reward_zaps /
@@ -1047,6 +1097,59 @@ export async function getPracticesToLogToday(
   return mine.filter((p) => !logged.has(p.id))
 }
 
+/** A practice the member started today but did NOT finish (a partial timed log,
+ *  completed=false), with how far they got. Powers the "Finish Practice" prompt: the UI
+ *  shows the remaining time = max(0, secondsTarget - secondsDone). */
+export interface PartialPracticeToday {
+  practice: Practice
+  secondsDone: number
+  secondsTarget: number
+}
+
+/**
+ * A member's practices that today carry a PARTIAL log (completed=false) — they sat at least
+ * half the target and cleared the day, but have not finished. Returns each practice plus its
+ * { secondsDone, secondsTarget } so the UI can offer "Finish Practice" and compute the time
+ * left. "Today" is the member's LOCAL day (home_timezone, then client tz, then UTC), the same
+ * day resolveMemberDay keys the log under. Scoped to the caller's own logs (profileId is
+ * server-resolved by the caller). Reads the new completion columns through the untyped handle.
+ */
+export async function getPartialPracticesToday(
+  profileId: string,
+  clientTimezone?: string | null,
+): Promise<PartialPracticeToday[]> {
+  const today = await resolveMemberDay(profileId, clientTimezone)
+  const { data } = await db()
+    .from('practice_logs')
+    .select('practice_id, seconds_done, seconds_target, completed')
+    .eq('profile_id', profileId)
+    .eq('logged_for', today)
+    .eq('completed', false)
+  const rows =
+    (data as
+      | { practice_id: string | null; seconds_done: number | null; seconds_target: number | null }[]
+      | null) ?? []
+  const ids = [...new Set(rows.map((r) => r.practice_id).filter((id): id is string => !!id))]
+  if (ids.length === 0) return []
+
+  const { data: pracRows } = await db().from('practices').select(PRACTICE_COLS).in('id', ids)
+  const byId = new Map(
+    ((pracRows as Practice[] | null) ?? []).map((p) => [p.id, normalizePractice(p)] as const),
+  )
+
+  const out: PartialPracticeToday[] = []
+  for (const r of rows) {
+    const practice = r.practice_id ? byId.get(r.practice_id) : null
+    if (!practice) continue
+    out.push({
+      practice,
+      secondsDone: Math.max(0, Math.round(r.seconds_done ?? 0)),
+      secondsTarget: Math.max(0, Math.round(r.seconds_target ?? 0)),
+    })
+  }
+  return out
+}
+
 // --- The North-Star emitter ----------------------------------------------
 
 /** Generic bonus container plumbed into the practice-log toast. Journey/season rewards
@@ -1081,6 +1184,33 @@ export interface LogPracticeResult {
   /** First log after a 7+ day gap: render the warm re-entry state (one line —
    *  good to see you + one small next step). NEVER broken-streak shame UI. */
   welcomeBack?: boolean
+  /** true = this log was a PARTIAL timed log (>= 50% but < 95% of target): the day is
+   *  cleared + the streak ticked, but only 1 Zap paid. The UI offers "Finish Practice"
+   *  to top up to the full reward. */
+  partial?: boolean
+  /** true = a partial log was just topped up to complete (the "Finish Practice" path):
+   *  the remaining Zaps were paid; streak + bonuses were NOT re-run (they ran on the
+   *  first partial log). */
+  finished?: boolean
+}
+
+/** The FULL per-log Zap value a practice pays (reward_zaps override else weight-class
+ *  default), via the one source of truth lib/zaps.practiceZapValue. Used by the finish
+ *  top-up to size the remaining delta, and mirrored by the first-log full path below.
+ *  Reads the practice's reward fields through the untyped handle; 0 on any error. */
+async function practiceFullReward(practiceId: string): Promise<number> {
+  try {
+    const { data } = await db()
+      .from('practices')
+      .select('weight_class, reward_zaps')
+      .eq('id', practiceId)
+      .maybeSingle()
+    const row = data as { weight_class: string | null; reward_zaps: number | null } | null
+    const { practiceZapValue } = await import('@/lib/zaps')
+    return practiceZapValue({ reward_zaps: row?.reward_zaps ?? null, weight_class: row?.weight_class ?? null })
+  } catch {
+    return 0
+  }
 }
 
 /**
@@ -1088,6 +1218,12 @@ export interface LogPracticeResult {
  * emits `practice.verified` (WAM), writes a durable log row, and awards zaps +
  * an attendance streak tick. `circleId` records the circle context when the
  * practice came from a circle assignment.
+ *
+ * Completion economy: a ONE-TAP / full timed log is `completed=true` and pays the full
+ * reward + ticks the streak (the unchanged default path). A PARTIAL timed log (>= 50% but
+ * < 95% of target) is `completed=false`, STILL clears the day + ticks the streak, but pays
+ * exactly 1 Zap; the "Finish Practice" top-up later flips it complete + pays the rest (handled
+ * up top, before the idempotency gate). `secondsDone`/`secondsTarget` carry the timed state.
  */
 export async function logPractice(input: {
   profileId: string
@@ -1097,13 +1233,105 @@ export async function logPractice(input: {
    *  used ONLY when the profile has no home_timezone on file. The durable, un-spoofable
    *  home_timezone always wins, so the idempotency-key day is server-resolved. */
   clientTimezone?: string | null
+  /** Timed-log completion (the partial/finish economy). The actual elapsed seconds the
+   *  member sat. Paired with secondsTarget; both null/0 = the unchanged one-tap full log. */
+  secondsDone?: number | null
+  /** The length the timed log is measured against (duration_min*60, or the open-sit
+   *  minutes*60). null/0 = a one-tap log (no target) → the full reward, exactly as today. */
+  secondsTarget?: number | null
 }): Promise<LogPracticeResult> {
-  const { profileId, practiceId, circleId = null, clientTimezone = null } = input
+  const {
+    profileId,
+    practiceId,
+    circleId = null,
+    clientTimezone = null,
+    secondsDone = null,
+    secondsTarget = null,
+  } = input
   // The log "day" is the member's LOCAL calendar day, resolved from their durable
   // home_timezone (then the client tz, then UTC). Server-resolved so the day that
   // keys the idempotency row + the practice_logs unique constraint can't be spoofed
   // to backdate; a member can only shift their OWN local day. yyyy-mm-dd.
   const day = await resolveMemberDay(profileId, clientTimezone)
+
+  // Completion economy. A TIMED log carries a positive target; the ratio of done/target
+  // decides full vs partial. A one-tap log (no target) is always FULL — the unchanged
+  // default path. Thresholds: >= 95% counts as a full sit (absorbs the 5s pre-roll +
+  // rounding); 50%..95% is a partial (clears the day, 1 Zap, "Finish Practice" tops up).
+  // A ratio < 50% never reaches here (completeSession's timer-proof gate blocks it).
+  const tgt = Math.max(0, Math.round(secondsTarget ?? 0))
+  const done = Math.max(0, Math.round(secondsDone ?? 0))
+  const isTimed = tgt > 0
+  const ratio = isTimed ? done / tgt : 1
+  const isFullSit = !isTimed || ratio >= 0.95
+  const PARTIAL_ZAPS = 1
+
+  // The "finish a partial" top-up (and the "already logged today" no-op) must be decided
+  // BEFORE the engagement-event idempotency gate: that key is recorded on the FIRST log of
+  // the day, so a finish would otherwise be swallowed as a duplicate no-op. Read today's
+  // existing row for this practice (completion + the Zaps already paid) up front.
+  const { data: existingRow } = await db()
+    .from('practice_logs')
+    .select('id, completed, zaps_awarded, seconds_done, seconds_target')
+    .eq('profile_id', profileId)
+    .eq('practice_id', practiceId)
+    .eq('logged_for', day)
+    .maybeSingle()
+  const existing = existingRow as {
+    id: string
+    completed: boolean | null
+    zaps_awarded: number | null
+    seconds_done: number | null
+    seconds_target: number | null
+  } | null
+
+  // Existing FULL log → no-op, exactly as today (logged=false).
+  if (existing && existing.completed !== false) {
+    return { logged: false, zapsAwarded: 0 }
+  }
+
+  // Existing PARTIAL log → the "Finish Practice" top-up. Handled entirely here: no new
+  // engagement event, no streak re-tick, no re-paid bonuses (all ran on the first partial).
+  if (existing && existing.completed === false) {
+    const fullReward = await practiceFullReward(practiceId)
+    const newDone = Math.max(existing.seconds_done ?? 0, done)
+    const newTarget = Math.max(existing.seconds_target ?? 0, tgt)
+    if (isFullSit) {
+      // Top up to complete: flip completed=true, raise seconds_done, and pay the REST of
+      // the reward (the delta the partial held back), so partial + finish totals the full.
+      const alreadyPaid = Math.max(0, existing.zaps_awarded ?? 0)
+      const delta = Math.max(0, fullReward - alreadyPaid)
+      let paid = 0
+      if (delta > 0) {
+        try {
+          paid = (await awardZaps(profileId, delta, { actionType: 'practice_logged' })).amount
+        } catch {
+          // never let a reward write break the finish; the row still flips to complete
+        }
+      }
+      try {
+        await db()
+          .from('practice_logs')
+          .update({ completed: true, seconds_done: newDone, seconds_target: newTarget, zaps_awarded: alreadyPaid + paid })
+          .eq('id', existing.id)
+      } catch {
+        // bookkeeping only; the award already landed
+      }
+      return { logged: true, zapsAwarded: paid, finished: true }
+    }
+    // Still partial: only nudge seconds_done upward, pay nothing more.
+    if (newDone > (existing.seconds_done ?? 0) || newTarget > (existing.seconds_target ?? 0)) {
+      try {
+        await db()
+          .from('practice_logs')
+          .update({ seconds_done: newDone, seconds_target: newTarget })
+          .eq('id', existing.id)
+      } catch {
+        // best-effort progress bump
+      }
+    }
+    return { logged: true, zapsAwarded: 0, partial: true }
+  }
 
   // Anti-cheat (B.2 / D5): a per-day TOTAL-logs cap across all practices. Counted
   // BEFORE the idempotency row is written, so refusing here never strands an
@@ -1173,11 +1401,23 @@ export async function logPractice(input: {
     // a missed welcome-back must never block the log
   }
 
-  // Durable log row (unique on profile+practice+day mirrors the idempotency key).
+  // Durable log row (unique on profile+practice+day mirrors the idempotency key). The
+  // completion columns ride along: a full sit is completed=true; a partial is completed=false
+  // (it still cleared the day above + ticks the streak below). seconds_done/seconds_target are
+  // null on a one-tap log (no timer), so that path writes exactly as before. Reached through
+  // the untyped handle (the columns are newer than the generated types; ADR-246).
   await db()
     .from('practice_logs')
     .upsert(
-      { profile_id: profileId, practice_id: practiceId, circle_id: circleId, logged_for: day },
+      {
+        profile_id: profileId,
+        practice_id: practiceId,
+        circle_id: circleId,
+        logged_for: day,
+        completed: isFullSit,
+        seconds_done: isTimed ? done : null,
+        seconds_target: isTimed ? tgt : null,
+      },
       { onConflict: 'profile_id,practice_id,logged_for', ignoreDuplicates: true },
     )
 
@@ -1219,9 +1459,14 @@ export async function logPractice(input: {
     }
   }
 
+  // The member's Zap payout. A PARTIAL first-log pays exactly 1 Zap (the rest is held back
+  // until "Finish Practice" tops it up to the full reward); a FULL sit / one-tap log pays the
+  // full value, scaled by reward_zaps override else weight class, exactly as today.
   let zapsAwarded = 0
   try {
-    if (typeof rewardZaps === 'number' && rewardZaps > 0) {
+    if (!isFullSit) {
+      zapsAwarded = (await awardZaps(profileId, PARTIAL_ZAPS, { actionType: 'practice_logged' })).amount
+    } else if (typeof rewardZaps === 'number' && rewardZaps > 0) {
       // Explicit per-practice value (cadence-based): pay it exactly, ledgered as a practice log.
       zapsAwarded = (await awardZaps(profileId, rewardZaps, { actionType: 'practice_logged' })).amount
     } else {
@@ -1316,7 +1561,7 @@ export async function logPractice(input: {
     // a Quest completion check must never break the log
   }
 
-  return { logged: true, zapsAwarded, journey, welcomeBack }
+  return { logged: true, zapsAwarded, journey, welcomeBack, partial: !isFullSit }
 }
 
 // --- Un-log (today-only; WEBSITE-CHANGES-PLAN §3 B.1 / D4) -----------------

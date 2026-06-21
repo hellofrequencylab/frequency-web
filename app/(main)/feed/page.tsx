@@ -16,7 +16,7 @@ import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { autoPopupsEnabled } from '@/lib/onboarding/flags'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
-import { getPracticesToLogToday } from '@/lib/practices'
+import { getPracticesToLogToday, getPartialPracticesToday } from '@/lib/practices'
 import { getMemberProgress } from '@/lib/member-progress'
 import { getMemberPillarBalance } from '@/lib/pillars'
 import { StageCelebration } from '@/components/progress/stage-celebration'
@@ -127,8 +127,9 @@ export default async function FeedPage({
   // member-progress spine (one read folding activation, the daily practice streak, Journeys and
   // rank into a stage — it drives the hero and is read once for all of them, ADR-146); the
   // exactly-once Amplitude level-up banner (Rewards v2); and the two operator switches (default off).
-  const [practicesToLog, progress, amplitudeMoment, nextSteps, autoPopups] = await Promise.all([
+  const [practicesToLog, partialPractices, progress, amplitudeMoment, nextSteps, autoPopups] = await Promise.all([
     myProfileId ? getPracticesToLogToday(myProfileId) : Promise.resolve([]),
+    myProfileId ? getPartialPracticesToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getMemberProgress(myProfileId) : Promise.resolve(null),
     myProfileId ? getAmplitudeCelebration(myProfileId) : Promise.resolve(null),
     nextStepsEnabled(),
@@ -225,6 +226,7 @@ export default async function FeedPage({
       {onboarding?.complete
         ? <JourneyBoard
             practices={practicesToLog}
+            partials={partialPractices}
             streak={practiceStreak?.current ?? streak}
             zaps={progress?.standing.seasonZaps ?? 0}
             gems={progress?.standing.lifetimeGems ?? 0}

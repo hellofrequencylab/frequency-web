@@ -174,7 +174,131 @@ export const DURATION_PRESETS = [2, 5, 10, 15, 20, 30] as const
  *  free-form stepper still lets a member pick any length under them. */
 export const BREATH_DURATION_PRESETS = [5, 10, 20] as const
 
-export type SessionMode = 'timer' | 'breath' | 'log'
+// The six setup modes (completion-economy redesign). Per the owner decision these are
+// "framing + small extras", NOT six engines: Meditate / Stillness / Ritual are the SAME
+// silent timed sit ('timer' path), differing only by label, icon, default minutes, and
+// subline; Breathe is the guided breath path; Journal is a timed sit that ALSO shows a
+// small free-text note; Just Log is the instant log (no countdown) with an optional note.
+//
+// IMPORTANT (server contract, app/(main)/on-air/actions.ts): completeSession gates the
+// economy on `mode !== 'log'` (a timed claim) and only stamps `pattern` when `mode === 'breath'`.
+// So every value below except 'log' reads back as a timed sit, and only 'breath' carries a
+// pattern. The free-text `mode` column on practice_sessions records the exact value for history.
+export type SessionMode = 'timer' | 'stillness' | 'ritual' | 'breath' | 'journal' | 'log'
+
+/** Which underlying path a mode runs on. 'timer' = the silent countdown (Meditate / Stillness /
+ *  Ritual / Journal share it); 'breath' = the guided rings; 'log' = the instant log, no countdown. */
+export type SessionEngine = 'timer' | 'breath' | 'log'
+
+/** A mode that runs a countdown (everything but Just Log). The breath path and the
+ *  silent-timer path are both "timed"; only Just Log skips the clock. */
+export function isTimedMode(mode: SessionMode): boolean {
+  return mode !== 'log'
+}
+
+/** Whether a mode shows the breath visualizer (vs. the plain countdown). */
+export function isBreathMode(mode: SessionMode): boolean {
+  return mode === 'breath'
+}
+
+/** Whether a mode offers the small free-text note field: Journal (during a sit) and
+ *  Just Log (capture the interaction). The note is always optional. */
+export function modeHasNote(mode: SessionMode): boolean {
+  return mode === 'journal' || mode === 'log'
+}
+
+/** The engine a mode runs on, for the live screen + the economy gate. */
+export function engineForMode(mode: SessionMode): SessionEngine {
+  if (mode === 'breath') return 'breath'
+  if (mode === 'log') return 'log'
+  return 'timer'
+}
+
+/** Per-mode framing: the button label, the setup subline, and the default minutes a fresh
+ *  pick seeds. Meditate / Stillness / Ritual / Journal are timer variants with their own
+ *  copy + default length; the engine they run is the same silent countdown. */
+export interface SessionModeMeta {
+  mode: SessionMode
+  label: string
+  /** A short, plain subline shown under the mode row (no narrated feelings, no em dashes). */
+  subline: string
+  /** Default minutes seeded when a member switches to this mode with no practice length set. */
+  defaultMin: number
+}
+
+export const SESSION_MODE_META: Record<SessionMode, SessionModeMeta> = {
+  timer: {
+    mode: 'timer',
+    label: 'Meditate',
+    subline: 'A quiet timed sit. The clock counts down and you breathe.',
+    defaultMin: 10,
+  },
+  breath: {
+    mode: 'breath',
+    label: 'Breathe',
+    subline: 'Follow the rings. Breathe in as they grow, out as they settle.',
+    defaultMin: 5,
+  },
+  journal: {
+    mode: 'journal',
+    label: 'Journal',
+    subline: 'A timed sit with a notes field. Write a line or two while you sit.',
+    defaultMin: 10,
+  },
+  stillness: {
+    mode: 'stillness',
+    label: 'Stillness',
+    subline: 'A longer, quieter sit. No cues unless you want them.',
+    defaultMin: 15,
+  },
+  ritual: {
+    mode: 'ritual',
+    label: 'Ritual',
+    subline: 'Your set practice, same length each time. Light the candle, then sit.',
+    defaultMin: 10,
+  },
+  log: {
+    mode: 'log',
+    label: 'Just Log',
+    subline: 'Mark it done now. Add a note if you want to remember the moment.',
+    defaultMin: 5,
+  },
+}
+
+/** The mode order the setup row shows: Meditate, Breathe, Journal, Stillness, Ritual, Just Log. */
+export const SESSION_MODE_ORDER: SessionMode[] = [
+  'timer',
+  'breath',
+  'journal',
+  'stillness',
+  'ritual',
+  'log',
+]
+
+/** Map a practice's stored mindless_mode (lib/practices MindlessMode) to a SessionMode.
+ *  'meditate' → the plain timer; the rest map one-to-one. A null falls back to the caller's
+ *  default (typically the member's prefs, else Meditate). */
+export function modeForMindless(
+  mindlessMode: 'meditate' | 'breathe' | 'journal' | 'stillness' | 'ritual' | 'log' | null | undefined,
+  fallback: SessionMode = 'timer',
+): SessionMode {
+  switch (mindlessMode) {
+    case 'meditate':
+      return 'timer'
+    case 'breathe':
+      return 'breath'
+    case 'journal':
+      return 'journal'
+    case 'stillness':
+      return 'stillness'
+    case 'ritual':
+      return 'ritual'
+    case 'log':
+      return 'log'
+    default:
+      return fallback
+  }
+}
 
 // Bell tones (P5): one soft synthesized strike per cue, three voices. `freqs` is the
 // partial stack — a fundamental plus a few overtones that give each voice its bell/bowl
@@ -271,6 +395,14 @@ export interface RevealPayload {
   zapsAwarded: number
   bonuses: RevealBonus[]
   welcomeBack: boolean
+  /** Completion economy (practice-timer redesign): this log was a PARTIAL timed sit
+   *  (>= 50% but < 95% of target) — the day cleared + the streak ticked, but only 1 Zap
+   *  paid. The reveal can offer "Finish for the rest." Optional + additive; absent on the
+   *  unchanged full / one-tap path, so existing reveal UI is untouched. */
+  partial?: boolean
+  /** Completion economy: a partial sit was just topped up to complete via "Finish Practice"
+   *  (the remaining Zaps were paid). Optional + additive. */
+  finished?: boolean
   practiceTitle: string
   /** Daily streak after this log. */
   streak: {

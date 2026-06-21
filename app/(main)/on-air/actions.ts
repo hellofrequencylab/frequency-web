@@ -42,6 +42,11 @@ export interface CompleteSessionInput {
   pattern: string | null
   seconds: number
   startedAt: string | null
+  /** "Finish Practice" resume: seconds already banked on today's partial log (and already
+   *  proven in the first session). The reported `seconds` is the TOTAL (banked + this
+   *  session), so the timer-proof validates only THIS session's slice (`seconds -
+   *  resumeFromSec`) and a legitimate resume is never rejected. 0/omitted = a fresh sit. */
+  resumeFromSec?: number
   /** Movement timer (WEBSITE-CHANGES-PLAN §4 C.6): the chosen mode (walk/yoga/play/workout).
    *  Tags the practice_sessions row so a Movement sit is distinguishable from a Mindless one
    *  in history; the economy + timer-proof path is unchanged (Movement still claims a timed sit
@@ -67,6 +72,10 @@ export async function completeSession(
 
   const admin = db()
   const seconds = Math.max(0, Math.min(4 * 60 * 60, Math.round(input.seconds)))
+  // The banked portion of a "Finish Practice" resume (already proven first time round). The
+  // proof below validates only this session's slice (seconds - resumeFromSec); logPractice
+  // still gets the TOTAL `seconds` so it can top the partial up to its full target.
+  const resumeFromSec = Math.max(0, Math.min(seconds, Math.round(input.resumeFromSec ?? 0)))
 
   // 1. The sit itself (history + minutes stats). Errors never block the log. A
   // Movement sit tags its mode (movement:<walk|yoga|play|workout>) into the free-text
@@ -138,13 +147,18 @@ export async function completeSession(
   // sanctioned no-sit path and is never gated here.
   const timedClaim = input.mode !== 'log' && seconds > 0
   let timerProofFailed = false
+  // The practice's authored length (seconds), the target a timed log is measured against.
+  // Read alongside the timer-proof flag so we only round-trip once.
+  let durationTargetSec = 0
   if (timedClaim) {
     const { data: pRow } = await admin
       .from('practices')
-      .select('uses_timer')
+      .select('uses_timer, duration_min')
       .eq('id', input.practiceId)
       .maybeSingle()
-    const usesTimer = (pRow as { uses_timer: boolean | null } | null)?.uses_timer ?? false
+    const row = pRow as { uses_timer: boolean | null; duration_min: number | null } | null
+    const usesTimer = row?.uses_timer ?? false
+    durationTargetSec = Math.max(0, Math.round((row?.duration_min ?? 0) * 60))
     if (usesTimer) {
       const startedMs = input.startedAt ? Date.parse(input.startedAt) : NaN
       // Real wall-clock elapsed since the sit was armed. A generous half-of-claimed
@@ -155,10 +169,18 @@ export async function completeSession(
       const plausible =
         Number.isFinite(serverElapsed) &&
         serverElapsed >= 5 &&
-        serverElapsed >= seconds * 0.5
+        serverElapsed >= (seconds - resumeFromSec) * 0.5
       if (!plausible) timerProofFailed = true
     }
   }
+
+  // Completion economy (partial / full / finish). A timed sit measures the actual elapsed
+  // seconds against a target: the practice's authored length (duration_min*60) when set, else
+  // the claimed seconds for an open / Free sit (target = done → a full, complete sit). Just Log
+  // (mode 'log') stays the one-tap FULL path — no target, so logPractice pays the full reward.
+  // The same treatment applies to a Movement sit (it claims a timed sit via mode 'timer').
+  const secondsTarget = input.mode === 'log' ? null : durationTargetSec > 0 ? durationTargetSec : seconds
+  const secondsDone = input.mode === 'log' ? null : seconds
 
   const log: LogPracticeResult = timerProofFailed
     ? { logged: false, zapsAwarded: 0 }
@@ -166,6 +188,8 @@ export async function completeSession(
         profileId,
         practiceId: input.practiceId,
         circleId: input.circleId ?? null,
+        secondsDone,
+        secondsTarget,
       })
 
   // 3. Post-log state for the reveal. Today's airtime is a handful of rows;
@@ -241,6 +265,10 @@ export async function completeSession(
       amount: b.amount,
     })),
     welcomeBack: !!log.welcomeBack,
+    // Completion economy: surface partial / finish so the reveal can message "1 Zap now,
+    // finish for the rest." Absent (undefined) on the unchanged full / one-tap path.
+    partial: !!log.partial,
+    finished: !!log.finished,
     practiceTitle: (practiceRow.data as { title: string } | null)?.title ?? 'Practice',
     streak: {
       current: streak.current,
