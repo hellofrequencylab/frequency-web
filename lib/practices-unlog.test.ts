@@ -37,6 +37,9 @@ function from(table: string) {
   let updatePayload: Row | null = null
   let op: 'select' | 'insert' | 'update' | 'delete' = 'select'
   let insertPayload: Row | Row[] | null = null
+  // A head/count select (`.select('id', { count: 'exact', head: true })`) returns the matching
+  // ROW COUNT, not the rows; mirrors the WB-scoping re-count of today's remaining logs.
+  let headCount = false
 
   const match = (r: Row) => filters.every(([c, v]) => r[c] === v)
 
@@ -56,11 +59,16 @@ function from(table: string) {
       for (const r of rows) store[table].push({ ...r })
       return { data: rows.map((r, i) => ({ id: `${table}-${i}`, ...r })), error: null }
     }
-    return { data: store[table].filter(match), error: null }
+    const matched = store[table].filter(match)
+    if (headCount) return { data: null, count: matched.length, error: null }
+    return { data: matched, error: null }
   }
 
   const api: Record<string, unknown> = {
-    select: () => api,
+    select: (_cols?: unknown, opts?: { count?: string; head?: boolean }) => {
+      if (opts?.head) headCount = true
+      return api
+    },
     insert: (payload: Row | Row[]) => {
       op = 'insert'
       insertPayload = payload
@@ -210,13 +218,87 @@ describe('unlogPractice — today-only reversal', () => {
     expect(prof?.current_streak).toBe(1) // yesterday survives; today is gone
   })
 
-  it('reverses a Welcome Back Zap grant this log created', async () => {
+  it('reverses a Welcome Back Zap grant this log created (it was the LAST log today)', async () => {
     seedLog(12)
     store.reward_grants.push({
       profile_id: PROFILE,
       rule_key: `welcome.back:${TODAY}`,
       reward_kind: 'zaps',
     })
+    await unlogPractice({ profileId: PROFILE, practiceId: PRACTICE })
+    expect(
+      store.reward_grants.find((r) => r.rule_key === `welcome.back:${TODAY}`),
+    ).toBeUndefined()
+    expect(
+      store.zap_transactions.find((r) => r.action_type === 'welcome_back_reversed')?.amount,
+    ).toBe(-10) // ZAP_AMOUNTS.welcome_back
+  })
+
+  // WB-SCOPING REGRESSION (over-debit on a multi-practice same-day un-log): the Welcome Back grant
+  // is keyed by the RETURN DAY, not the practice. When the member logged TWO practices today (A + B),
+  // un-logging B must NOT reverse Welcome Back (A keeps the member legitimately "back" today), so the
+  // 10 Zaps stay earned. The grant + its Zap credit survive; only when the LAST remaining log for the
+  // day is un-logged does WB reverse.
+  it('does NOT reverse Welcome Back while another practice is still logged today', async () => {
+    // Two practices logged today: A (kept) and B (PRACTICE, about to be un-logged).
+    store.practice_logs.push({
+      id: 'log-A',
+      profile_id: PROFILE,
+      practice_id: 'pA',
+      logged_for: TODAY,
+      zaps_awarded: 12,
+    })
+    seedLog(12) // B = PRACTICE
+    store.reward_grants.push({
+      profile_id: PROFILE,
+      rule_key: `welcome.back:${TODAY}`,
+      reward_kind: 'zaps',
+    })
+
+    await unlogPractice({ profileId: PROFILE, practiceId: PRACTICE })
+
+    // B's log row is gone, but A's remains, so the day is NOT empty.
+    expect(store.practice_logs.find((r) => r.practice_id === PRACTICE)).toBeUndefined()
+    expect(store.practice_logs.find((r) => r.practice_id === 'pA')).toBeDefined()
+    // Welcome Back grant is KEPT (A keeps the member "back"); no WB debit landed.
+    expect(
+      store.reward_grants.find((r) => r.rule_key === `welcome.back:${TODAY}`),
+    ).toBeDefined()
+    expect(
+      store.zap_transactions.find((r) => r.action_type === 'welcome_back_reversed'),
+    ).toBeUndefined()
+  })
+
+  it('DOES reverse Welcome Back when un-logging the LAST remaining practice today', async () => {
+    // Two practices today; un-log A first (B remains, WB kept), then un-log B (now empty, WB reversed).
+    store.practice_logs.push({
+      id: 'log-A',
+      profile_id: PROFILE,
+      practice_id: 'pA',
+      logged_for: TODAY,
+      zaps_awarded: 12,
+    })
+    store.engagement_events.push({
+      idempotency_key: `practice_log:${PROFILE}:pA:${TODAY}`,
+      actor_profile_id: PROFILE,
+    })
+    seedLog(12) // B = PRACTICE
+    store.reward_grants.push({
+      profile_id: PROFILE,
+      rule_key: `welcome.back:${TODAY}`,
+      reward_kind: 'zaps',
+    })
+
+    // Un-log A: B still logged today, so WB must NOT reverse yet.
+    await unlogPractice({ profileId: PROFILE, practiceId: 'pA' })
+    expect(
+      store.reward_grants.find((r) => r.rule_key === `welcome.back:${TODAY}`),
+    ).toBeDefined()
+    expect(
+      store.zap_transactions.find((r) => r.action_type === 'welcome_back_reversed'),
+    ).toBeUndefined()
+
+    // Un-log B: today is now empty, so WB reverses (grant cleared + the 10-Zap debit lands).
     await unlogPractice({ profileId: PROFILE, practiceId: PRACTICE })
     expect(
       store.reward_grants.find((r) => r.rule_key === `welcome.back:${TODAY}`),

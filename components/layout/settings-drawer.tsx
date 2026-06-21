@@ -36,6 +36,9 @@ const STORAGE_WIDTH = 'freq-settings-width'
 const MIN_WIDTH = 288
 const MAX_WIDTH = 560
 const DEFAULT_WIDTH = 360
+// Keyboard step for the resize separator: one Arrow press nudges the panel by this
+// many px (Shift is not special-cased; Home/End jump to the bounds).
+const WIDTH_STEP = 16
 export const SETTINGS_WIDEN_THRESHOLD = 420
 
 function clampWidth(w: number): number {
@@ -91,6 +94,11 @@ export function SettingsDrawer({
   const [width, setWidth] = useState(DEFAULT_WIDTH)
   const [hydrated, setHydrated] = useState(false)
 
+  // Focus management (WCAG 2.4.3): the close button receives focus when the drawer
+  // opens; on close we drop focus back to the body (no trigger lives here, per the
+  // header note, so there is nothing else to restore to).
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
   // Hydrate persisted open + width once on mount. The drawer renders closed on the
   // server (no localStorage), so this client-only sync can't mismatch the markup.
   useEffect(() => {
@@ -137,6 +145,19 @@ export function SettingsDrawer({
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
+  // Move focus into the panel on open (the close button), and restore it to the body
+  // on close. Guarded on `hydrated` so the open-on-mount restore from localStorage
+  // doesn't steal focus on first paint; the trigger lives in another component, so
+  // body is the sensible fallback and the optional chaining never crashes.
+  useEffect(() => {
+    if (!hydrated) return
+    if (open) {
+      closeButtonRef.current?.focus()
+    } else {
+      document.body?.focus?.()
+    }
+  }, [open, hydrated])
+
   // ── Left-edge drag-resize (pointer events) ───────────────────────────────
   // A `dragging` state drives a single effect that attaches the window listeners only
   // while a drag is in flight; the effect's cleanup detaches them. The drag origin
@@ -177,6 +198,31 @@ export function SettingsDrawer({
       window.removeEventListener('pointerup', onUp)
     }
   }, [dragging])
+
+  // Keyboard resize (WCAG 2.1.1): the separator is focusable, so Arrow keys step the
+  // width within the same MIN/MAX clamp the pointer drag uses (Left widens, mirroring
+  // the drag direction; Right narrows). Home/End jump to the bounds. Reuses setWidth,
+  // so the persistence + widen-report effects fire exactly as they do for a drag.
+  const onSeparatorKeyDown = useCallback((e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault()
+        setWidth((w) => clampWidth(w + WIDTH_STEP))
+        break
+      case 'ArrowRight':
+        e.preventDefault()
+        setWidth((w) => clampWidth(w - WIDTH_STEP))
+        break
+      case 'Home':
+        e.preventDefault()
+        setWidth(MIN_WIDTH)
+        break
+      case 'End':
+        e.preventDefault()
+        setWidth(MAX_WIDTH)
+        break
+    }
+  }, [])
 
   // ── What this viewer can administer (the non-share half of PageAdminBar) ──
   const manager = meetsAccess('host', role) || staffRole != null
@@ -238,8 +284,13 @@ export function SettingsDrawer({
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize settings"
+          tabIndex={0}
+          aria-valuemin={MIN_WIDTH}
+          aria-valuemax={MAX_WIDTH}
+          aria-valuenow={width}
           onPointerDown={startDrag}
-          className="group absolute inset-y-0 left-0 z-10 flex w-2 cursor-col-resize touch-none items-center justify-center"
+          onKeyDown={onSeparatorKeyDown}
+          className="group absolute inset-y-0 left-0 z-10 flex w-2 cursor-col-resize touch-none items-center justify-center rounded-r outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <span className="h-10 w-1 rounded-full bg-border transition-colors group-hover:bg-border-strong" aria-hidden />
         </div>
@@ -248,6 +299,7 @@ export function SettingsDrawer({
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-border pl-4 pr-3">
           <p className="text-sm font-bold text-text">Settings</p>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Close settings"

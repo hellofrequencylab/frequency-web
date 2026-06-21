@@ -2,7 +2,7 @@
 
 > **The answer, first.** Your request is six workstreams. Two are fast, high-impact, low-risk and should ship first (Post boxes, Practice logging). One is a new feature on existing rails (Timers + Movement). Three are a single coordinated, shell-level IA overhaul that must be designed together and ships last (Settings drawer + QR & Share, Navigation + Mega-menu, Template/block coverage). The research below grounds every item in the real code, and **§1 lists the decisions I need from you before I write any implementation code.**
 
-**Status:** ⏳ Plan of record for review. Prepared 2026-06-20. No code in this doc. Nothing is implemented until you approve.
+**Status:** ✅ SHIPPED. Prepared 2026-06-20; built and merged 2026-06-20 to 2026-06-21 across PRs #953 to #961 (ADR-345 to ADR-349). Waves 1, 2, 3, 5a, 5b are live; Wave 4 batches 1 to 3 are done and the broad `<PageModules>` long tail is tracked in [`PAGE-FRAMEWORK.md`](PAGE-FRAMEWORK.md) §8.4. See the shipped block below (after §8).
 **Grounded in:** a 6-agent read-only survey of the codebase + UX research (post-box, mega-menu, workout-timer best practices). Key files cited inline.
 **Canon:** [`AGENTS.md`](../AGENTS.md), [`PAGE-FRAMEWORK.md`](PAGE-FRAMEWORK.md), [`CONTENT-VOICE.md`](CONTENT-VOICE.md) (no em or en dashes), [`THEME.md`](THEME.md) (tokens, no hex), [`PRESENTATION.md`](PRESENTATION.md).
 
@@ -132,6 +132,22 @@ Ship in waves, smallest-risk-highest-value first; each wave is one reviewed PR, 
 | **later** | F(b) broad `<PageModules>` coverage; D1(c) Puck un-gate | Tracked, phased; not blocking. |
 
 **Process guardrails:** each item keeps the canon (kit composition, tokens, no em/en dashes, server-side authz, `space_id` tenancy); new DB columns get a migration + `DATABASE.md` + an ADR; new copy passes the CONTENT-VOICE §10 check; the cross-tenant contract suite (SEC-02) gates any Space-scoped change; every wave runs the full gate before merge.
+
+### 8a. Shipped log (✅ what actually landed)
+
+Built and merged 2026-06-20 to 2026-06-21, full-gated (tsc / lint / test / build) and merged green, the proven one-wave-per-PR cadence. Decisions D1 to D6 were locked at review (§1). PR numbers + ADRs below.
+
+| Wave | What shipped | PR | ADR / refs |
+|---|---|---|---|
+| **1** | ✅ Workstream A (instant optimistic reactions, always-visible composer, divider removal) + B.3/B.4 (tight-row log UX, disappear-after-log) | #953, #954 | A.1 to A.4, B.3/B.4 |
+| **2** | ✅ B.1 today-only un-log + B.2 anti-cheat (rate-limit, 25/day cap, timer-completion proof) + C.1 to C.5 (timer fullscreen, preset, select-practice) | #955, #956 | **ADR-345**; `20260717000000` |
+| **3** | ✅ C.6 to C.8 The Movement timer (Walk / Yoga / Play / Workout + interval engine) + the `practice_timer_kind` enum and `movement_config` | #957 | **ADR-346**; `20260718000000` |
+| **4** | ✅ F(a) the broad standard + Batches 1 to 3 (the ~3 hand-rolled pages onto shells; `/programs`, `/crew/challenges`, `connections/[id]`, `admin/events/[id]`, `/friends` interiors converted). The remaining interiors are the tracked long tail in PAGE-FRAMEWORK §8.4. | #958, #959 | **ADR-349**; PAGE-FRAMEWORK §8.4 |
+| **5a** | ✅ D the settings drawer (the ADR-128 dock rebuilt at the shell level: opens left, drag-to-widen, hides the right rail, collapses the left rail to mini, opens via the `open-settings` event) + D.1 the QR & Share split into an all-roles dropdown | #960 | **ADR-347** (ref ADR-128) |
+| **5b** | ✅ E the Manage mega-menu (a launcher-only header surface, no persistent active-Space; admin stays in the rail; the managed-Spaces reader) | #961 | **ADR-348** |
+| **later** | ⏳ F(b) the broad `<PageModules>` coverage long tail (tracked in PAGE-FRAMEWORK §8.4) · 🔴 D1(c) Puck un-gate (Phase 5, Held) | n/a | ADR-349 |
+
+Movement decision D6 shipped its now-scope (4 modes + interval engine); steps / distance stay deferred. Five owed operator how-tos (the member-facing un-log + Movement timer + the settings drawer + the mega-menu) route to Notion per [`DOCS-PROTOCOL.md`](DOCS-PROTOCOL.md); the git side (this doc, DATABASE.md, DECISIONS.md, the map) is complete.
 
 ---
 

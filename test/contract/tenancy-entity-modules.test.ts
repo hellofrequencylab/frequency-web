@@ -283,6 +283,137 @@ describe('memberships: tiers + memberships reads bind space_id', () => {
   })
 })
 
+// ── lib/spaces/donations.ts - the single per-space donation ask (Organization donations module) ──
+describe('donations: the donation ask read/write binds space_id', () => {
+  it('setDonationAsk clears the existing ask scoped by space_id, then stamps space_id on the insert', async () => {
+    const { setDonationAsk } = await import('@/lib/spaces/donations')
+    await setDonationAsk(SPACE_A, {
+      fundLabel: 'General fund',
+      description: null,
+      suggestedAmountsCents: [500],
+      isActive: true,
+    })
+    // The replace deletes THIS Space's ask (never another's) and re-inserts stamping the Space.
+    expectScopedMutation(rec(), 'delete', SPACE_A)
+    const insert = rec().calls.find((c) => c.method === 'insert')
+    const rows = insert?.args[0] as Array<Record<string, unknown>> | undefined
+    expect(
+      rows?.[0]?.space_id,
+      `CROSS-TENANT LEAK: the donation-ask insert did not stamp space_id. Recorded: ${JSON.stringify(rec().calls)}`,
+    ).toBe(SPACE_A)
+  })
+
+  it('getOwnerDonationAsk reads the ask by space_id', async () => {
+    const { getOwnerDonationAsk } = await import('@/lib/spaces/donations')
+    await getOwnerDonationAsk(SPACE_A)
+    expectSpaceScoped(rec(), SPACE_A)
+  })
+
+  it('LEAK ORACLE: getOwnerDonationAsk over a two-space table returns ONLY Space A\'s ask', async () => {
+    h.client = makeTwoSpaceDb({
+      space_donation_asks: [
+        { id: 'askA', space_id: SPACE_A, fund_label: 'A fund', description: null, suggested_amounts_cents: [500], is_active: true },
+        { id: 'askB', space_id: SPACE_B, fund_label: 'B fund', description: null, suggested_amounts_cents: [900], is_active: true },
+      ],
+    })
+    const { getOwnerDonationAsk } = await import('@/lib/spaces/donations')
+    const ask = await getOwnerDonationAsk(SPACE_A)
+    expect(ask?.fundLabel).toBe('A fund') // never 'B fund'
+  })
+})
+
+// ── lib/spaces/enroll.ts - programs + enrollments (Coaching enroll module) ───────────────────────
+describe('enroll: program + enrollment reads/writes bind space_id', () => {
+  it('setSpaceProgram clears the existing program scoped by space_id, then stamps space_id on the insert', async () => {
+    const { setSpaceProgram } = await import('@/lib/spaces/enroll')
+    await setSpaceProgram(SPACE_A, { name: 'Cohort 1' })
+    expectScopedMutation(rec(), 'delete', SPACE_A)
+    const insert = rec().calls.find((c) => c.method === 'insert')
+    const rows = insert?.args[0] as Array<Record<string, unknown>> | undefined
+    expect(
+      rows?.[0]?.space_id,
+      `CROSS-TENANT LEAK: the program insert did not stamp space_id. Recorded: ${JSON.stringify(rec().calls)}`,
+    ).toBe(SPACE_A)
+  })
+
+  it('listSpaceEnrollments reads the active enrollments by space_id', async () => {
+    const { listSpaceEnrollments } = await import('@/lib/spaces/enroll')
+    await listSpaceEnrollments(SPACE_A)
+    expectSpaceScoped(rec(), SPACE_A)
+  })
+
+  it('enrollInProgram resolves THIS Space\'s program by space_id (the cross-space enroll gate)', async () => {
+    // The enrollable program is resolved by space_id BEFORE the insert; that read is the tenancy gate
+    // that prevents enrolling into another Space's program. Assert it binds the Space.
+    const { enrollInProgram } = await import('@/lib/spaces/enroll')
+    await enrollInProgram(SPACE_A)
+    expectSpaceScoped(rec(), SPACE_A)
+  })
+
+  it('LEAK ORACLE: listSpaceEnrollments over a two-space table returns ONLY Space A enrollments', async () => {
+    h.client = makeTwoSpaceDb({
+      space_enrollments: [
+        { id: 'eA', space_id: SPACE_A, program_id: 'progA', member_profile_id: 'a1', status: 'active', enrolled_at: '2026-01-02T00:00:00Z' },
+        { id: 'eB', space_id: SPACE_B, program_id: 'progB', member_profile_id: 'b1', status: 'active', enrolled_at: '2026-01-01T00:00:00Z' },
+      ],
+      // member-name lookup (.in('id', ids)); the profile rows carry a space_id only to satisfy the fake.
+      profiles: [{ id: 'a1', space_id: SPACE_A, display_name: 'A member' }],
+    })
+    const { listSpaceEnrollments } = await import('@/lib/spaces/enroll')
+    const rows = await listSpaceEnrollments(SPACE_A)
+    expect(rows.map((r) => r.spaceId)).toEqual([SPACE_A]) // never Space B's enrollment
+  })
+})
+
+// ── lib/spaces/tickets.ts - ticket tiers + RSVPs (Event Space ticketing module) ──────────────────
+describe('tickets: tier + RSVP reads/writes bind space_id', () => {
+  it('setTicketTiers clears the existing tiers scoped by space_id, then stamps space_id on the insert', async () => {
+    const { setTicketTiers } = await import('@/lib/spaces/tickets')
+    await setTicketTiers(SPACE_A, [
+      { name: 'GA', kind: 'rsvp', capacity: 10, description: null, sort: 0, isActive: true },
+    ])
+    expectScopedMutation(rec(), 'delete', SPACE_A)
+    const insert = rec().calls.find((c) => c.method === 'insert')
+    const rows = insert?.args[0] as Array<Record<string, unknown>> | undefined
+    expect(
+      rows?.[0]?.space_id,
+      `CROSS-TENANT LEAK: the ticket-tier insert did not stamp space_id. Recorded: ${JSON.stringify(rec().calls)}`,
+    ).toBe(SPACE_A)
+  })
+
+  it('listSpaceRsvps reads the going RSVPs by space_id', async () => {
+    const { listSpaceRsvps } = await import('@/lib/spaces/tickets')
+    await listSpaceRsvps(SPACE_A)
+    expectSpaceScoped(rec(), SPACE_A)
+  })
+
+  it('rsvpToTier resolves THIS Space\'s tiers by space_id (the cross-space RSVP gate)', async () => {
+    // The RSVP-able tier is resolved from THIS Space's tiers (by space_id) BEFORE the insert; that read
+    // is the tenancy gate that prevents reserving a spot on another Space's tier. Assert it binds.
+    const { rsvpToTier } = await import('@/lib/spaces/tickets')
+    await rsvpToTier(SPACE_A, 'tier-x')
+    expectSpaceScoped(rec(), SPACE_A)
+  })
+
+  it('LEAK ORACLE: listSpaceRsvps over a two-space table returns ONLY Space A RSVPs', async () => {
+    h.client = makeTwoSpaceDb({
+      space_ticket_rsvps: [
+        { id: 'rA', space_id: SPACE_A, tier_id: 'tA', member_profile_id: 'a1', status: 'going', reserved_at: '2026-01-02T00:00:00Z' },
+        { id: 'rB', space_id: SPACE_B, tier_id: 'tB', member_profile_id: 'b1', status: 'going', reserved_at: '2026-01-01T00:00:00Z' },
+      ],
+      // readTiers (.eq('space_id')) for the tier-name join; only Space A's tier is reachable.
+      space_ticket_tiers: [
+        { id: 'tA', space_id: SPACE_A, name: 'GA', kind: 'rsvp', capacity: null, description: null, sort: 0, is_active: true },
+        { id: 'tB', space_id: SPACE_B, name: 'VIP', kind: 'rsvp', capacity: null, description: null, sort: 0, is_active: true },
+      ],
+      profiles: [{ id: 'a1', space_id: SPACE_A, display_name: 'A member' }],
+    })
+    const { listSpaceRsvps } = await import('@/lib/spaces/tickets')
+    const rows = await listSpaceRsvps(SPACE_A)
+    expect(rows.map((r) => r.spaceId)).toEqual([SPACE_A]) // never Space B's RSVP
+  })
+})
+
 // ── lib/qr/space-codes.ts - per-space managed QR codes (QR module) ───────────────────────────────
 describe('qr space-codes: code + scan reads bind the Space', () => {
   it('listSpaceCodes reads codes by space_id', async () => {

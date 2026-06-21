@@ -13,6 +13,9 @@ status: published
 goes quiet, and it walks you through the sit. When you finish, the Quest pays you
 on the spot.
 
+Practice timers: Mindless and **[Movement](/help/the-quest/movement)** are the two.
+Mindless times the sit; Movement times a walk, yoga, play or a workout.
+
 ## Tuning out
 
 Open it from the **Mindless button in the header** (it opens fullscreen, taking
