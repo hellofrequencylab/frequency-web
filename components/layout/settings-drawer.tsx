@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type ComponentType } from 'react'
+import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react'
 import { usePathname } from 'next/navigation'
 import { X } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
@@ -15,25 +15,40 @@ import { isStaff } from '@/lib/core/roles'
 import { PageSettingsModule } from '@/components/admin/page-settings/page-settings-module'
 
 // ── The settings drawer (ADR-128 PageAdminDock, rebuilt at the shell level) ────
-// A panel CONFINED to the right-rail column: it overlays the right-rail slot at
-// exactly the rail's width and never extends past the content's right edge. It holds
-// the NON-share settings — the manager/operator registry modules (Page settings,
-// Circle Quest, page content) plus the operator "Page" group (Layout / SEO / Status).
-// QR & Share is NOT here any more — it split out into the QrShareDropdown (D.1).
-// Open/close is persisted in localStorage (`freq-settings-open`). The drawer opens on
-// the `open-settings` window event (D.6, mirroring `open-capture`).
+// A RESIZABLE panel that slides out over the right-rail column on the `open-settings`
+// event. By default it sits at exactly the right-rail width, so it COVERS the rail and
+// nothing reflows. A grab handle on its LEFT edge widens it; the shell reads the live
+// width (reported up via `onStateChange`) and sizes the rail column to match, so the
+// MAIN CONTENT COMPRESSES as the drawer grows. It can never spill past the content's
+// right column (it is its own pushing column, never an overlay over the body), and it
+// is bounded so the body stays usable.
 //
-// Owner revision (2026-06-20): the drawer is FIXED to the right-rail width — no
-// drag-to-widen, no past-the-rail growth — and the LEFT and RIGHT rails BOTH stay put
-// while it is open (the old hide-the-rail / collapse-left-rail behavior is gone). The
-// component reports only its open state up via onOpenChange so the shell can render the
-// drawer in the right-rail slot over the rail. Tokens only; copy carries no em or en dashes.
+// It holds the NON-share settings: the manager/operator registry modules (Page settings,
+// Circle Quest, page content) plus the operator "Page" group (Layout / SEO / Status). QR
+// & Share is NOT here (it split out into the QrShareDropdown, D.1). Open + width persist
+// in localStorage. Tokens only; copy carries no em or en dashes.
 
 const STORAGE_OPEN = 'freq-settings-open'
+const STORAGE_WIDTH = 'freq-settings-width'
 
-// The drawer is exactly the global right rail's width (w-72 = 18rem = 288px) so it sits
-// cleanly in that column. Fixed — there is no resize.
+// The rail-width floor (w-72 = 18rem = 288px): at rest the drawer is exactly this, so it
+// covers the rail and nothing moves. The cap keeps the body readable when widened; ARROW
+// steps the keyboard resize.
 const RAIL_WIDTH = 288
+const MIN_WIDTH = RAIL_WIDTH
+const MAX_WIDTH = 600
+const WIDTH_STEP = 24
+
+const clampWidth = (w: number) => Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.round(w)))
+
+/** What the drawer reports up so the shell can size the rail column to match (and so the
+ *  center content compresses while it is open + widened). `resizing` lets the shell drop
+ *  its width transition during an active drag so the column tracks the pointer 1:1. */
+export interface SettingsDrawerState {
+  open: boolean
+  width: number
+  resizing: boolean
+}
 
 // Which scope kind an entity-detail path represents — the bridge from a URL to the
 // admin-module registry. Mirrors PageAdminBar's resolver (the share half moved to
@@ -67,33 +82,57 @@ function questModuleFor(pathname: string) {
   return null
 }
 
-export function SettingsDrawer() {
+export function SettingsDrawer({
+  onStateChange,
+}: {
+  /** Reported up so the shell can size the rail column to the live drawer width (the
+   *  center content compresses as it grows). The right rail itself STAYS — the drawer
+   *  slides over its column. */
+  onStateChange?: (state: SettingsDrawerState) => void
+}) {
   const { role, staffRole, webRole } = usePageAdmin()
   const pathname = usePathname()
 
   const [open, setOpen] = useState(false)
+  const [width, setWidth] = useState(RAIL_WIDTH)
+  const [resizing, setResizing] = useState(false)
   const [hydrated, setHydrated] = useState(false)
+  // Drives the slide-in: the panel mounts translated off to the right, then settles to 0
+  // on the next frame so opening reads as a slide from the side.
+  const [shown, setShown] = useState(false)
 
-  // Focus management (WCAG 2.4.3): the close button receives focus when the drawer
-  // opens; on close we drop focus back to the body (no trigger lives here, per the
-  // header note, so there is nothing else to restore to).
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Hydrate persisted open once on mount. The drawer renders closed on the server (no
-  // localStorage), so this client-only sync can't mismatch the markup.
+  // Hydrate persisted open + width once on mount. The drawer renders closed on the server
+  // (no localStorage), so this client-only sync can't mismatch the markup.
   useEffect(() => {
     const savedOpen = localStorage.getItem(STORAGE_OPEN) === '1'
+    const savedWidth = Number(localStorage.getItem(STORAGE_WIDTH))
     /* eslint-disable react-hooks/set-state-in-effect */
     if (savedOpen) setOpen(true)
+    if (Number.isFinite(savedWidth) && savedWidth > 0) setWidth(clampWidth(savedWidth))
     setHydrated(true)
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
 
-  // Persist open.
+  // Persist + report state up (open / width / resizing) once hydrated.
   useEffect(() => {
     if (!hydrated) return
     localStorage.setItem(STORAGE_OPEN, open ? '1' : '0')
-  }, [open, hydrated])
+    localStorage.setItem(STORAGE_WIDTH, String(width))
+    onStateChange?.({ open, width, resizing })
+  }, [open, width, resizing, hydrated, onStateChange])
+
+  // Slide-in choreography: show on open (next frame), reset on close.
+  useEffect(() => {
+    if (!open) {
+      /* eslint-disable-next-line react-hooks/set-state-in-effect */
+      setShown(false)
+      return
+    }
+    const id = requestAnimationFrame(() => setShown(true))
+    return () => cancelAnimationFrame(id)
+  }, [open])
 
   // Trigger seam (D.6): open on the `open-settings` window event, mirroring
   // `open-capture`. A second dispatch toggles it (matches the inline trigger).
@@ -115,10 +154,8 @@ export function SettingsDrawer() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
-  // Move focus into the panel on open (the close button), and restore it to the body
-  // on close. Guarded on `hydrated` so the open-on-mount restore from localStorage
-  // doesn't steal focus on first paint; the trigger lives in another component, so
-  // body is the sensible fallback and the optional chaining never crashes.
+  // Move focus into the panel on open (the close button); restore to body on close.
+  // Guarded on `hydrated` so the open-on-mount restore doesn't steal focus on first paint.
   useEffect(() => {
     if (!hydrated) return
     if (open) {
@@ -127,6 +164,44 @@ export function SettingsDrawer() {
       document.body?.focus?.()
     }
   }, [open, hydrated])
+
+  // ── Resize handle (pointer): drag the LEFT edge. Dragging LEFT widens (the panel grows
+  // toward the body, the shell compresses the center to match). ──
+  const onHandlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault()
+      const startX = e.clientX
+      const startW = width
+      setResizing(true)
+      const onMove = (ev: PointerEvent) => setWidth(clampWidth(startW + (startX - ev.clientX)))
+      const onUp = () => {
+        setResizing(false)
+        window.removeEventListener('pointermove', onMove)
+        window.removeEventListener('pointerup', onUp)
+      }
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+    },
+    [width],
+  )
+
+  // ── Resize handle (keyboard): a focusable separator. Left/Right step the width;
+  // Home/End jump to the bounds (WCAG 2.1.1). ──
+  const onHandleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      setWidth((w) => clampWidth(w + WIDTH_STEP))
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      setWidth((w) => clampWidth(w - WIDTH_STEP))
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      setWidth(MIN_WIDTH)
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      setWidth(MAX_WIDTH)
+    }
+  }, [])
 
   // ── What this viewer can administer (the non-share half of PageAdminBar) ──
   const manager = meetsAccess('host', role) || staffRole != null
@@ -148,14 +223,13 @@ export function SettingsDrawer() {
   const hasContent = hasSettings || !!questModule || !!contentModule || isOperator
 
   // Nothing to manage here: render nothing (no trigger lives in this component —
-  // PageAdminBar dispatches `open-settings`; with no content the drawer stays
-  // empty/closed). Reporting closed keeps the shell's right rail visible.
+  // PageAdminBar dispatches `open-settings`; with no content the drawer stays closed,
+  // and the shell keeps the rail at its normal width).
   if (!hasContent) {
     return null
   }
 
-  // The page-settings column — the registry-selected sidebar modules for this
-  // scope, stacked under the shared "Page settings" label.
+  // The page-settings column — the registry-selected sidebar modules for this scope.
   const settingsBlock = hasSettings ? (
     <div className="min-w-0">
       <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
@@ -167,41 +241,55 @@ export function SettingsDrawer() {
     </div>
   ) : null
 
-  // When there's content but the drawer is closed, render nothing — the right rail
-  // shows normally underneath. The shell mounts this inside the right-rail slot, so an
-  // open drawer overlays exactly that column (the left + right rails BOTH stay put).
+  // Closed: render nothing — the rail shows normally underneath. The shell mounts this
+  // inside the rail-column wrapper, so an open drawer slides over that column.
   if (!open) return null
 
   return (
-    <>
-      {/* The panel — confined to the right-rail column. It fills the rail slot it is
-          mounted in (absolute inset-0), so it is EXACTLY the rail's width (w-72 = 18rem)
-          and can never extend past the content's right edge. No resize, no widen: a
-          fixed-width settings column overlaying the rail. Desktop only (lg+); the rail
-          itself is lg-only. */}
-      <aside
-        role="dialog"
-        aria-label="Page settings"
-        style={{ width: RAIL_WIDTH }}
-        className="absolute inset-y-0 right-0 z-30 hidden max-w-full flex-col border-l border-border bg-surface shadow-pop lg:flex"
+    <aside
+      role="dialog"
+      aria-label="Page settings"
+      style={{ width, transform: shown ? 'translateX(0)' : 'translateX(100%)' }}
+      className={`absolute inset-y-0 right-0 z-30 hidden max-w-full flex-col border-l border-border bg-surface shadow-pop lg:flex ${
+        resizing ? '' : 'transition-transform duration-200 ease-out motion-reduce:transition-none'
+      }`}
+    >
+      {/* Grab handle — the LEFT edge resize affordance. Drag (or Arrow/Home/End) to widen;
+          the shell compresses the center to match. A thin rail with a centered grip. */}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize settings"
+        aria-valuemin={MIN_WIDTH}
+        aria-valuemax={MAX_WIDTH}
+        aria-valuenow={width}
+        tabIndex={0}
+        onPointerDown={onHandlePointerDown}
+        onKeyDown={onHandleKeyDown}
+        className="group absolute inset-y-0 left-0 z-10 flex w-3 -translate-x-1/2 cursor-ew-resize touch-none items-center justify-center focus:outline-none"
       >
+        <span className="h-10 w-1 rounded-full bg-border-strong transition-colors group-hover:bg-primary group-focus-visible:bg-primary motion-reduce:transition-none" />
+      </div>
+
+      {/* The panel cover is full column height (covers the whole rail), but its CONTENT
+          sticks to the viewport so it stays in reach on a long page. */}
+      <div className="sticky top-14 flex max-h-[calc(100vh-3.5rem)] flex-col">
         {/* Header — title + close. */}
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border pl-4 pr-3">
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border pl-5 pr-3">
           <p className="text-sm font-bold text-text">Settings</p>
           <button
             ref={closeButtonRef}
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Close settings"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
         </div>
 
-        {/* Body — scrolls. Holds the page/entity settings, grouped (D.5): the
-            registry modules first (Page settings, Circle Quest / rail, page
-            content), then the operator "Page" group (Layout / SEO / Status). */}
+        {/* Body — scrolls. The registry modules first (Page settings, Circle Quest / rail,
+            page content), then the operator "Page" group (Layout / SEO / Status). */}
         <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
           <div className="space-y-5">
             {isCircle && (
@@ -229,7 +317,7 @@ export function SettingsDrawer() {
             {isOperator && <PageSettingsModule />}
           </div>
         </div>
-      </aside>
-    </>
+      </div>
+    </aside>
   )
 }

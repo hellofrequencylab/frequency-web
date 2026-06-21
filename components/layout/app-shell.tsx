@@ -61,7 +61,7 @@ import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, type ChromeOver
 import type { WebRole } from '@/lib/core/roles'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
-import { SettingsDrawer } from '@/components/layout/settings-drawer'
+import { SettingsDrawer, type SettingsDrawerState } from '@/components/layout/settings-drawer'
 import { MindlessProvider, useMindless } from '@/components/on-air/mindless'
 import { MovementProvider } from '@/components/on-air/movement'
 import { LotusIcon } from '@/components/on-air/icons'
@@ -1237,12 +1237,13 @@ export default function AppShell({
   // by path so it auto-resets on navigation — see the railCollapsed derivation below.
   const [railOverride, setRailOverride] = useState<{ path: string; collapsed: boolean } | null>(null)
 
-  // The shell-level settings drawer (ADR-128, rebuilt; owner revision 2026-06-20). It is
-  // CONFINED to the right-rail column: it overlays the right-rail slot at exactly the rail
-  // width and is bounded by the content's right edge. The LEFT and RIGHT rails BOTH stay put
-  // while it is open (the old hide-the-rail + collapse-left-rail behaviors are gone). The
-  // SettingsDrawer owns open/persistence + the `open-settings` event and renders itself inside
-  // the rail slot; the shell no longer reacts to its open state.
+  // The shell-level settings drawer (ADR-128, rebuilt; owner revision 2026-06-21). The
+  // SettingsDrawer owns open/persistence + the grab-handle resize + the `open-settings` event,
+  // and reports its live { open, width, resizing } up here. The shell sizes the RAIL COLUMN to
+  // that width, so the drawer slides over the rail at rest (covering it, nothing reflows) and,
+  // as the grab handle widens it, the rail column grows and the CENTER CONTENT COMPRESSES to
+  // match. It never spills past the content's right column (it is its own pushing column).
+  const [settings, setSettings] = useState<SettingsDrawerState>({ open: false, width: 288, resizing: false })
 
   // Mobile right drawer (The Quest stats) — opened only from the tab bar's gem
   // control. The left side is the nav DRAWER (drawerOpen, also bottom-bar
@@ -1376,7 +1377,7 @@ export default function AppShell({
             members can still browse the wider site with ease. Desktop only. */}
         {!hideAppNav && (
           <div className="hidden md:flex items-stretch ml-1 opacity-40 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
-            <PrimaryNav audience="member" variant="light" showDiscover={false} />
+            <PrimaryNav variant="light" showDiscover={false} />
           </div>
         )}
 
@@ -1568,61 +1569,72 @@ export default function AppShell({
                 mounted when the settings drawer opens — the drawer overlays this same column
                 (mounted inside the expanded aside below), bounded by the content's right edge. */}
             {showSidebar && (
-              railCollapsed ? (
-                // Mini rail — the global community rail collapsed to a thin strip. It shows ICONS
-                // for the rail's items (the Quest stats); clicking any reopens the rail. The
-                // collapse/expand TOGGLE sits at the BOTTOM. The rail is never removed.
-                <aside className="hidden lg:flex w-14 shrink-0 flex-col items-center border-l border-border/60 py-6">
-                  <div className="flex flex-col items-center gap-1.5">
-                    {([['Quest', Zap], ['Gems', Gem], ['Streak', Flame]] as const).map(([label, Icon]) => (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={toggleRail}
-                        title={`${label} — open the rail`}
-                        aria-label={`${label} — open the rail`}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-                      >
-                        <Icon className="h-5 w-5" aria-hidden />
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex-1" />
-                  <button
-                    type="button"
-                    onClick={toggleRail}
-                    title="Show the rail"
-                    aria-label="Show the rail"
-                    className="sticky bottom-6 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
-                  >
-                    <ChevronsLeft className="h-5 w-5" aria-hidden />
-                  </button>
-                </aside>
-              ) : (
-                <aside className="relative hidden lg:flex flex-col w-72 shrink-0 py-6">
-                  {sidebar}
-                  {/* The settings drawer overlays THIS rail slot (absolute inset-0, rail
-                      width) on the `open-settings` event, bounded by the content's right
-                      edge. The rail content sits underneath; nothing else moves. It is
-                      self-contained — the shell does not react to its open state. */}
-                  <SettingsDrawer />
-                  {railCollapsible && (
-                    // The collapse TOGGLE at the BOTTOM, sticky so it stays visible as the rail
-                    // scrolls. A chevron toggle (not a hamburger), mirroring the collapsed state.
-                    <div className="sticky bottom-4 mt-2 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={toggleRail}
-                        title="Hide the rail"
-                        aria-label="Hide the rail"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/95 text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border-strong hover:text-text"
-                      >
-                        <ChevronsRight className="h-5 w-5" aria-hidden />
-                      </button>
+              // Rail COLUMN wrapper. Its width is the rail at rest, or the live settings-drawer
+              // width while the drawer is open — so the drawer slides over the rail (covering it)
+              // and, as its grab handle widens it, THIS column grows and the center `flex-1`
+              // compresses to match. `justify-end` keeps the rail content pinned right; the drawer
+              // (absolute, full column) overlays it. The width transition is dropped mid-drag so
+              // the column tracks the pointer 1:1.
+              <div
+                className={`relative hidden shrink-0 justify-end lg:flex ${
+                  settings.resizing ? '' : 'transition-[width] duration-200 ease-out motion-reduce:transition-none'
+                }`}
+                style={{ width: settings.open ? settings.width : railCollapsed ? 56 : 288 }}
+              >
+                {railCollapsed ? (
+                  // Mini rail — the global community rail collapsed to a thin strip. It shows ICONS
+                  // for the rail's items (the Quest stats); clicking any reopens the rail. The
+                  // collapse/expand TOGGLE sits at the BOTTOM. The rail is never removed.
+                  <aside className="flex w-14 shrink-0 flex-col items-center border-l border-border/60 py-6">
+                    <div className="flex flex-col items-center gap-1.5">
+                      {([['Quest', Zap], ['Gems', Gem], ['Streak', Flame]] as const).map(([label, Icon]) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={toggleRail}
+                          title={`${label} — open the rail`}
+                          aria-label={`${label} — open the rail`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                        >
+                          <Icon className="h-5 w-5" aria-hidden />
+                        </button>
+                      ))}
                     </div>
-                  )}
-                </aside>
-              )
+                    <div className="flex-1" />
+                    <button
+                      type="button"
+                      onClick={toggleRail}
+                      title="Show the rail"
+                      aria-label="Show the rail"
+                      className="sticky bottom-6 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-sm transition-colors hover:border-border-strong hover:text-text"
+                    >
+                      <ChevronsLeft className="h-5 w-5" aria-hidden />
+                    </button>
+                  </aside>
+                ) : (
+                  <aside className="flex w-72 shrink-0 flex-col py-6">
+                    {sidebar}
+                    {railCollapsible && (
+                      // The collapse TOGGLE at the BOTTOM, sticky so it stays visible as the rail
+                      // scrolls. A chevron toggle (not a hamburger), mirroring the collapsed state.
+                      <div className="sticky bottom-4 mt-2 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={toggleRail}
+                          title="Hide the rail"
+                          aria-label="Hide the rail"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/95 text-muted shadow-sm backdrop-blur-sm transition-colors hover:border-border-strong hover:text-text"
+                        >
+                          <ChevronsRight className="h-5 w-5" aria-hidden />
+                        </button>
+                      </div>
+                    )}
+                  </aside>
+                )}
+                {/* The settings drawer slides over THIS column (absolute, full height) on the
+                    `open-settings` event, reporting its width up so the column sizes to match. */}
+                <SettingsDrawer onStateChange={setSettings} />
+              </div>
             )}
           </div>
           </PageAdminProvider>

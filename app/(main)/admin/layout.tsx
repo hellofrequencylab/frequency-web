@@ -1,12 +1,11 @@
 import { Suspense } from 'react'
 import { requireAdminFloor } from '@/lib/admin/guard'
 import { AdminSearchBar } from '@/components/admin/admin-search-bar'
-import { AdminTopMenu } from '@/components/admin/admin-top-menu'
+import { AdminMegaNav } from '@/components/admin/admin-mega-nav'
 import { AdminInfoRail } from '@/components/admin/admin-info-rail'
 import { AdminPageDock } from '@/components/admin/admin-page-dock'
 import { AdminFooter } from '@/components/admin/admin-footer'
-import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
-import { staffCan, type StaffRole, type StaffDomain } from '@/lib/core/staff-roles'
+import { ADMIN_NAV, canSeeAdminSection } from '@/lib/admin/nav'
 
 // Admin route group. The guard is the single entry gate (host+); a viewer without
 // access is redirected home rather than shown a dead-end 404. Pages re-assert their
@@ -20,37 +19,14 @@ import { staffCan, type StaffRole, type StaffDomain } from '@/lib/core/staff-rol
 // is the shell's own ProfileCard (one card everywhere). The app-shell's member RIGHT
 // rail stays suppressed (railFor → 'none'). The info rail streams behind Suspense.
 
-// The simple admin menu (owner directive): the admin sections as a sticky horizontal
-// row above the search bar, mirroring the left-nav Admin section + its gates. Each item
-// shows when the viewer meets its role floor OR holds its staff domain.
-type AdminMenuItem = { href: string; label: string; min: CommunityRole; staffDomain?: StaffDomain }
-const ADMIN_MENU: readonly AdminMenuItem[] = [
-  { href: '/admin', label: 'Dashboard', min: 'admin' },
-  { href: '/admin/community', label: 'Community', min: 'host', staffDomain: 'community' },
-  { href: '/lead', label: 'Leadership', min: 'host' },
-  { href: '/admin/programs', label: 'Programs', min: 'host', staffDomain: 'community' },
-  { href: '/admin/growth', label: 'Growth', min: 'host', staffDomain: 'marketing' },
-  { href: '/admin/vera-ai', label: 'Vera AI', min: 'janitor', staffDomain: 'insights' },
-  { href: '/admin/operations', label: 'Operations', min: 'janitor', staffDomain: 'platform' },
-  { href: '/admin/qr', label: 'QR Studio', min: 'admin', staffDomain: 'qr' },
-]
-function canSeeAdminMenuItem(
-  it: AdminMenuItem,
-  role: CommunityRole,
-  webRole: WebRole,
-  staffRole: StaffRole | null,
-): boolean {
-  const meetsMin =
-    it.min === 'janitor' ? isJanitor(webRole) : it.min === 'admin' ? isStaff(webRole) : atLeastRole(role, it.min)
-  return meetsMin || (!!it.staffDomain && staffCan(staffRole, it.staffDomain, 'write'))
-}
+// The admin menu (owner directive): the operator sections + their sub-pages as a sticky
+// MEGA nav above the search bar, mirroring the left-nav Admin section + its gates. Source of
+// truth is lib/admin/nav (ADMIN_NAV + canSeeAdminSection), shared with the client menu.
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { role, webRole, staffRole } = await requireAdminFloor()
 
-  const adminMenu = ADMIN_MENU.filter((it) => canSeeAdminMenuItem(it, role, webRole, staffRole)).map(
-    ({ href, label }) => ({ href, label }),
-  )
+  const adminSections = ADMIN_NAV.filter((s) => canSeeAdminSection(s, role, webRole, staffRole))
 
   // The page-admin dock shares the canvas-tab skin: flush to the bottom edge, rounded
   // on top, hairline outline, canvas-colored with a soft blur over content.
@@ -64,7 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             content (both stay visible on scroll). */}
         <main className="min-w-0 flex-1">
           <div className="sticky top-14 z-20 mb-6 space-y-2.5 bg-[var(--color-canvas)] py-2.5">
-            <AdminTopMenu items={adminMenu} />
+            <AdminMegaNav sections={adminSections} />
             <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
           </div>
 
