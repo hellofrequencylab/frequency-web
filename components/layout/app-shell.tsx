@@ -1377,7 +1377,7 @@ export default function AppShell({
             members can still browse the wider site with ease. Desktop only. */}
         {!hideAppNav && (
           <div className="hidden md:flex items-stretch ml-1 opacity-40 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
-            <PrimaryNav audience="member" variant="light" showDiscover={false} />
+            <PrimaryNav variant="light" showDiscover={false} />
           </div>
         )}
 

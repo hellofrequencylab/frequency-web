@@ -51,6 +51,53 @@ export const SITE_NAV_MEMBER: NavLink[] = [
   { label: "About", href: "/about" },
 ];
 
+// ── The public mega menu (the best-practice header nav) ───────────────────────
+// The header's flat tabs + thin Discover dropdown collapse into a couple of grouped
+// MEGA panels: fewer triggers (no overflow), each opening a multi-column panel with a
+// one-line description per item. Data-driven so the growing set of public pages is a
+// data edit, never a header edit. The shapes mirror MegaMenu's props structurally, so
+// this stays a plain (no-React) data module. Copy carries no em or en dashes.
+export type MegaNavItem = { label: string; href: string; desc?: string };
+export type MegaNavGroup = { heading?: string; items: MegaNavItem[] };
+export type MegaNavFeatured = { title: string; desc: string; href: string; cta?: string };
+export type PublicMegaMenu = {
+  label: string;
+  sections: MegaNavGroup[];
+  featured?: MegaNavFeatured;
+};
+
+export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
+  {
+    label: "Discover",
+    sections: [
+      {
+        heading: "Explore the community",
+        items: DISCOVER_NAV,
+      },
+    ],
+    featured: {
+      title: "Find your first circle",
+      desc: "Tell us what you're into and we'll point you at your people.",
+      href: "/discover/circles",
+      cta: "Start exploring",
+    },
+  },
+  {
+    label: "Explore Frequency",
+    sections: [
+      {
+        heading: "What this is",
+        items: [
+          { label: "The Lab", href: "/the-lab", desc: "The ideas and research behind Frequency" },
+          { label: "The Community", href: "/the-community", desc: "Who's here and how it all works" },
+          { label: "The Quest", href: "/the-quest", desc: "The practice game: streaks, zaps, and rewards" },
+          { label: "About", href: "/about", desc: "The mission and the people building it" },
+        ],
+      },
+    ],
+  },
+];
+
 // Flat list for the marketing footer (every public page, no grouping).
 export const MARKETING_NAV: NavLink[] = [
   { label: "The Lab", href: "/the-lab" },

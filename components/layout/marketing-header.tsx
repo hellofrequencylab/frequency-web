@@ -41,7 +41,7 @@ export function MarketingHeader({ overHero = false }: { overHero?: boolean }) {
       </Link>
 
       {/* Unified primary nav (Discover + About dropdowns) */}
-      <PrimaryNav variant={light ? 'light' : 'dark'} audience="visitor" className="ml-3" />
+      <PrimaryNav variant={light ? 'light' : 'dark'} className="ml-3" />
 
       <div className="flex-1" />
 

@@ -64,7 +64,7 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
           get the mission-focused About menu. */}
       <PrimaryNav
         variant={isDark ? 'dark' : 'light'}
-        audience={isAuth ? 'member' : 'visitor'}
+        showDiscover={!isAuth}
         className="ml-2"
       />
 
