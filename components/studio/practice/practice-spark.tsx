@@ -41,7 +41,7 @@ export function PracticeSpark() {
   const [summary, setSummary] = useState('')
   const [description, setDescription] = useState('')
   const [body, setBody] = useState('')
-  const [pillar, setPillar] = useState<'mind' | 'body' | 'spirit' | 'expression' | null>(null)
+  const [pillars, setPillars] = useState<Array<'mind' | 'body' | 'spirit' | 'expression'>>([])
   const [draftCadence, setDraftCadence] = useState('')
   const [durationMin, setDurationMin] = useState<number | null>(null)
 
@@ -60,7 +60,7 @@ export function PracticeSpark() {
         setSummary(res.data.summary)
         setDescription(res.data.description)
         setBody(res.data.body)
-        setPillar(res.data.pillar)
+        setPillars(res.data.pillar ? [res.data.pillar] : [])
         setDraftCadence(res.data.cadence)
         setDurationMin(res.data.durationMin)
       }
@@ -77,7 +77,7 @@ export function PracticeSpark() {
         summary,
         description,
         body,
-        pillar,
+        pillars,
         cadence: draftCadence || null,
         durationMin,
       }),
@@ -195,21 +195,21 @@ export function PracticeSpark() {
                     <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} maxLength={8000} className={FIELD} placeholder="The steps, in plain words" />
                   </label>
                   <div>
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Pillar</span>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-subtle">Pillars</span>
                     <div className="flex flex-wrap gap-1.5">
                       {PILLARS.map((p) => (
                         <button
                           key={p.key}
                           type="button"
-                          onClick={() => setPillar(pillar === p.key ? null : p.key)}
-                          aria-pressed={pillar === p.key}
-                          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${pillar === p.key ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
+                          onClick={() => setPillars((prev) => (prev.includes(p.key) ? prev.filter((x) => x !== p.key) : [...prev, p.key]))}
+                          aria-pressed={pillars.includes(p.key)}
+                          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${pillars.includes(p.key) ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:text-text'}`}
                         >
                           {p.label}
                         </button>
                       ))}
                     </div>
-                    <p className="mt-1.5 text-2xs text-subtle">You can change the Pillar, cadence, and everything else in the next step.</p>
+                    <p className="mt-1.5 text-2xs text-subtle">Pick one or more Pillars. You can change them, the cadence, and everything else in the next step.</p>
                   </div>
                 </>
               )}

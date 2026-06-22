@@ -67,8 +67,8 @@ export async function createPracticeFromSparkAction(input: {
   summary?: string | null
   description?: string | null
   body?: string | null
-  /** A Pillar slug Vera suggested ('mind' | 'body' | 'spirit' | 'expression'), or null. */
-  pillar?: 'mind' | 'body' | 'spirit' | 'expression' | null
+  /** The Pillar slugs the author chose (a Practice can span more than one Focus). */
+  pillars?: Array<'mind' | 'body' | 'spirit' | 'expression'>
   cadence?: string | null
   durationMin?: number | null
 }): Promise<void> {
@@ -90,17 +90,21 @@ export async function createPracticeFromSparkAction(input: {
   })
   if (!practice) redirect('/practices')
 
-  // Map Vera's suggested Pillar slug to a real domain_id (multi-Focus: write it as the one selected
-  // Focus). updatePractice mirrors domain_id to the first focus_details key.
+  // Map the chosen Pillar slugs to real Focus ids (a Practice can span multiple Focuses).
+  // updatePractice mirrors domain_id to the FIRST focus_details key for back-compat.
   const patch: PracticeEdit = {}
   if (input.summary?.trim()) patch.summary = input.summary.trim()
   if (input.body?.trim()) patch.body = input.body.trim()
   if (input.cadence?.trim()) patch.cadence = input.cadence.trim()
   if (input.durationMin != null) patch.duration_min = input.durationMin
-  if (input.pillar) {
+  if (input.pillars?.length) {
     const ids = await pillarIdsBySlug()
-    const pid = ids[input.pillar]
-    if (pid) patch.focus_details = { [pid]: { instructions: '', timing: '' } }
+    const fd: Record<string, { instructions: string; timing: string }> = {}
+    for (const slug of input.pillars) {
+      const pid = ids[slug]
+      if (pid) fd[pid] = { instructions: '', timing: '' }
+    }
+    if (Object.keys(fd).length) patch.focus_details = fd
   }
   if (Object.keys(patch).length) await updatePractice(practice.id, patch)
 

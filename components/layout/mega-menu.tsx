@@ -45,27 +45,23 @@ import { GhostLink } from '@/components/layout/ghost-link'
 //     the in-app member header and the admin sub-header. `rightRail` adds the right
 //     spacer (member shell, lg+); omit it where there is no right rail (admin).
 //
-// MOTION — opens with a slide-out-from-under (translateY reveal from behind the bar,
-// which sits opaque + above it). On DISENGAGE the panel LINGERS briefly then FADES out
-// (it is not yanked away): pointer-leave starts a grace timer, then the fade; re-entering
-// the bar OR the panel cancels it. Escape / outside-click also trigger the fade, not an
-// instant unmount. Honors prefers-reduced-motion.
+// MOTION — opens with a slide-out-from-under (translateY reveal from behind the bar, which
+// sits opaque + above it). Opens on CLICK only (owner directive: never on hover/rollover).
+// Closes by FADING out (not an instant unmount) on a second click of the trigger, an
+// outside-click, Escape, scroll, or navigation. Honors prefers-reduced-motion.
 //
-// Accessible: real button/link triggers, opens on hover AND keyboard focus, closes on
-// Escape / outside-click / focus-out / navigation (WCAG 1.4.13 + 2.1.1). Tokens only; no
-// em or en dashes.
+// Accessible: real button/link triggers; the panel toggles on click (Enter/Space on the
+// button), closes on Escape / outside-click / focus-out / navigation (WCAG 1.4.13 + 2.1.1).
+// Tokens only; no em or en dashes.
 
 type Variant = 'light' | 'dark'
 
-// Default motion timings (ms). The global Menu Manager "open + dwell speed" settings
-// override these via the `timings` prop; the constants are the fallback when none is passed.
-//   - OPEN_DELAY: hover-intent grace before the panel opens (0 = open immediately).
-//   - DWELL: how long the panel LINGERS after the pointer leaves before the fade starts. A
-//     longer dwell reads as "it waits for you," so a brief overshoot never snaps it shut.
+// Default motion timings (ms). The global Menu Manager speed settings override these via the
+// `timings` prop; the constants are the fallback when none is passed.
+//   - OPEN_DELAY: grace after the trigger is clicked before the panel opens (0 = immediate).
 //   - FADE: the fade-out duration; it matches the CSS transition so the panel unmounts the
 //     moment it finishes animating out.
 const DEFAULT_OPEN_DELAY_MS = 0
-const DEFAULT_DWELL_MS = 1500
 const DEFAULT_FADE_MS = 240
 
 // ── Resolved-menu adapter ─────────────────────────────────────────────────────
@@ -86,21 +82,25 @@ type Trigger = {
 
 function buildTriggers(menus: ResolvedMenu[], triggerLevel: 'menu' | 'category'): Trigger[] {
   if (triggerLevel === 'category') {
-    // Admin: the single menu's top-level categories are the triggers. A category's
-    // landing href is its first item's href (the section root link in the defaults).
+    // Admin: the single menu's top-level categories are the triggers. CLICK-TO-OPEN model:
+    // a category WITH a panel (child columns or more than one item) is a disclosure BUTTON
+    // (no trigger href), and ALL its items — including the section landing — ride inside the
+    // panel, so nothing is unreachable without a hover. A single-link section stays a plain
+    // nav link (its one item's href, no panel).
     const menu = menus[0]
     if (!menu) return []
-    return menu.categories.map((cat) => ({
-      key: cat.id,
-      label: cat.label ?? menu.label,
-      href: cat.items[0]?.href,
-      columns: menu.columns,
-      categories: cat.children,
-      // The section's own root link is its first item; the rest (if any) ride along as
-      // loose items beside the child columns.
-      rootItems: cat.items.slice(1),
-      railCards: menu.railCards,
-    }))
+    return menu.categories.map((cat) => {
+      const hasPanel = cat.children.length > 0 || cat.items.length > 1
+      return {
+        key: cat.id,
+        label: cat.label ?? menu.label,
+        href: hasPanel ? undefined : cat.items[0]?.href,
+        columns: menu.columns,
+        categories: cat.children,
+        rootItems: hasPanel ? cat.items : [],
+        railCards: menu.railCards,
+      }
+    })
   }
   // Public: each menu is one trigger; its categories are the panel columns.
   return menus.map((menu) => ({
@@ -202,7 +202,6 @@ export function MegaBar({
   // so a close first flips `shown` false (fade out) and only THEN clears `active` (unmount).
   const [shown, setShown] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const lingerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const panelId = useId()
@@ -210,14 +209,9 @@ export function MegaBar({
   const triggers = useMemo(() => buildTriggers(menus, triggerLevel), [menus, triggerLevel])
 
   const openDelayMs = timings?.openDelayMs ?? DEFAULT_OPEN_DELAY_MS
-  const dwellMs = timings?.dwellMs ?? DEFAULT_DWELL_MS
   const fadeMs = timings?.fadeMs ?? DEFAULT_FADE_MS
 
   const clearTimers = useCallback(() => {
-    if (lingerTimer.current) {
-      clearTimeout(lingerTimer.current)
-      lingerTimer.current = null
-    }
     if (fadeTimer.current) {
       clearTimeout(fadeTimer.current)
       fadeTimer.current = null
@@ -241,25 +235,12 @@ export function MegaBar({
   )
 
   // Begin the FADE-OUT: drop `shown` (the panel animates back under the bar + to
-  // transparent), then unmount after the transition. Re-engaging before it lands cancels it.
+  // transparent), then unmount after the transition.
   const beginClose = useCallback(() => {
     clearTimers()
     setShown(false)
     fadeTimer.current = setTimeout(() => setActive(null), fadeMs)
   }, [clearTimers, fadeMs])
-
-  // Disengage: linger briefly, THEN fade. A re-enter (cancelClose) aborts before the fade.
-  const scheduleClose = useCallback(() => {
-    clearTimers()
-    lingerTimer.current = setTimeout(beginClose, dwellMs)
-  }, [clearTimers, beginClose, dwellMs])
-
-  // Re-engaged (pointer back over the bar or panel): cancel a pending linger/fade and, if a
-  // fade had already started, settle the panel open again so it never half-vanishes.
-  const cancelClose = useCallback(() => {
-    clearTimers()
-    setShown((s) => (active ? true : s))
-  }, [clearTimers, active])
 
   // Slide-in on open: `shown` starts false, then settles true next frame so the entrance
   // animates. Switching between open triggers keeps it true (the panel persists).
@@ -458,8 +439,6 @@ export function MegaBar({
     <div
       ref={ref}
       className={className}
-      onMouseEnter={cancelClose}
-      onMouseLeave={scheduleClose}
       onBlur={(e) => {
         if (ref.current && !ref.current.contains(e.relatedTarget as Node)) beginClose()
       }}
@@ -506,8 +485,11 @@ export function MegaBar({
               aria-expanded={active === t.key}
               aria-controls={panelId}
               className={triggerClass(variant, highlighted)}
-              onMouseEnter={() => open(t.key)}
-              onFocus={() => open(t.key)}
+              onClick={(e) => {
+                e.preventDefault()
+                if (active === t.key) beginClose()
+                else open(t.key)
+              }}
             >
               {inner}
             </Link>
@@ -519,8 +501,6 @@ export function MegaBar({
               aria-expanded={active === t.key}
               aria-controls={panelId}
               className={triggerClass(variant, highlighted)}
-              onMouseEnter={() => open(t.key)}
-              onFocus={() => open(t.key)}
               onClick={() => (active === t.key ? beginClose() : open(t.key))}
             >
               {inner}
