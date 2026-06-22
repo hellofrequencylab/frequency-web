@@ -2,15 +2,15 @@
 
 import { useState, useTransition } from 'react'
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react'
-import type { MenuMode, ResolvedRailCard } from '@/lib/menus/types'
+import type { ResolvedRailCard } from '@/lib/menus/types'
 import { updateRailCard, deleteRailCard, type UpdateRailCardPatch } from '@/lib/menus/actions'
 import { LinkTargetField } from './link-target-field'
 import { RoleModeMatrix } from './role-mode-matrix'
-import { MODE_LABEL, MODE_ORDER } from './known-routes'
+import { OnOffToggle } from './on-off-toggle'
 
-// One featured rail card editor (requirement 10): title, body, href, cta, side, mode,
-// and the per-role matrix. Like the "Find your first circle" card. Optimistic save +
-// rollback, reports through onStatus.
+// One featured rail card editor: title, body, href, cta, side, an on/off visibility
+// toggle (the global show/hide, point 6), and the per-role matrix. Like the "Find your
+// first circle" card. Optimistic save + rollback, reports through onStatus.
 export function RailCardEditor({
   card,
   onChanged,
@@ -87,6 +87,12 @@ export function RailCardEditor({
         <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold capitalize text-muted">
           {card.side}
         </span>
+        <OnOffToggle
+          mode={card.mode}
+          disabled={isPending}
+          label={`Show ${card.title || 'this card'}`}
+          onChange={(mode) => save({ mode }, { mode })}
+        />
         <button
           type="button"
           onClick={remove}
@@ -183,25 +189,6 @@ export function RailCardEditor({
               Save link target
             </button>
           )}
-
-          <div className="min-w-0 sm:max-w-xs">
-            <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`cm-${card.id}`}>
-              Default mode
-            </label>
-            <select
-              id={`cm-${card.id}`}
-              value={card.mode}
-              disabled={isPending}
-              onChange={(e) => save({ mode: e.target.value as MenuMode }, { mode: e.target.value as MenuMode })}
-              className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-            >
-              {MODE_ORDER.map((m) => (
-                <option key={m} value={m}>
-                  {MODE_LABEL[m]}
-                </option>
-              ))}
-            </select>
-          </div>
 
           <RoleModeMatrix
             roleModes={card.roleModes}

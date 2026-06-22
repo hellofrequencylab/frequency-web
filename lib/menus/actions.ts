@@ -4,13 +4,16 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { isJanitor } from '@/lib/core/roles'
 import { menuDb } from './db'
-import { defaultMenu, DEFAULT_MENU_SETTINGS } from './defaults'
+import { defaultMenu, DEFAULT_MENU_SETTINGS, isPinnedRailItem } from './defaults'
+import { getMenuConfig } from '@/lib/menu-config'
 import type {
   MenuAccess,
   MenuMode,
   MenuSettings,
   MenuSurfaceKey,
   ResolvedCategory,
+  ResolvedItem,
+  ResolvedMenu,
 } from './types'
 
 // Janitor-gated CRUD for the DB-backed menu system. Mirrors
@@ -137,9 +140,46 @@ export async function ensureMenu(surfaceKey: MenuSurfaceKey): Promise<EnsureResu
   }
 }
 
+/** Bridge the operator's existing GLOBAL menu_config into a freshly built left_rail
+ *  default, so seeding reproduces the rail the operator currently sees:
+ *    • each seeded item carries `icon = area.key` (see leftRailMenu), so we look the
+ *      area key up in the saved config;
+ *    • a key with a saved position takes that position (relative order within its bucket
+ *      is what the reader sorts by), unpositioned keys keep the code order;
+ *    • a key the config marks `hidden` is seeded with the OFF base mode (mode='hidden')
+ *      — the per-role matrix can still override it per role.
+ *  Best-effort and total: any miss (empty config, read failure, unknown key) just leaves
+ *  the plain default in place. Never throws. */
+function bridgeLeftRailDefaults(
+  def: ResolvedMenu,
+  config: { order: Map<string, number>; hidden: Set<string> },
+): ResolvedMenu {
+  const apply = (it: ResolvedItem): ResolvedItem => {
+    const key = it.icon // leftRailMenu stamps the NAV_AREAS key into `icon`
+    if (!key) return it
+    const next: ResolvedItem = { ...it }
+    const pos = config.order.get(key)
+    if (typeof pos === 'number') next.position = pos
+    if (config.hidden.has(key)) next.mode = 'hidden'
+    return next
+  }
+  const applyCat = (cat: ResolvedCategory): ResolvedCategory => ({
+    ...cat,
+    items: cat.items.map(apply).sort((a, b) => a.position - b.position),
+    children: cat.children.map(applyCat),
+  })
+  return {
+    ...def,
+    rootItems: def.rootItems.map(apply).sort((a, b) => a.position - b.position),
+    categories: def.categories.map(applyCat),
+  }
+}
+
 /** Reset a surface to its code defaults IN THE DB: ensure the menu row, delete its
  *  existing categories / items / rail cards, then insert rows translated from
- *  defaultMenu(surfaceKey). Idempotent, running it again reproduces the same shape. */
+ *  defaultMenu(surfaceKey). For `left_rail`, the default is first bridged with the
+ *  operator's saved menu_config (order + hidden) so seeding reproduces today's rail.
+ *  Idempotent, running it again reproduces the same shape. */
 export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<Result> {
   try {
     await requireJanitor()
@@ -161,7 +201,21 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
     const delCards = await db.from('menu_rail_cards').delete().eq('menu_id', menuId)
     if (delCards.error) return { ok: false, error: delCards.error.message }
 
-    const def = defaultMenu(surfaceKey)
+    let def = defaultMenu(surfaceKey)
+
+    // Left rail: bridge the operator's saved menu_config (order + hidden) onto the
+    // default so seeding reproduces the rail they currently see. Best-effort: any read
+    // failure or empty config falls through to the plain default.
+    if (surfaceKey === 'left_rail') {
+      try {
+        const config = await getMenuConfig()
+        if (config.order.size > 0 || config.hidden.size > 0) {
+          def = bridgeLeftRailDefaults(def, config)
+        }
+      } catch {
+        // Keep the plain default; never block seeding on the config read.
+      }
+    }
 
     // Sync the menu's columns to the default.
     const colUpd = await db.from('menus').update({ columns: clampColumns(def.columns) }).eq('id', menuId)
@@ -240,6 +294,10 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
       }
     }
     for (const it of def.rootItems) {
+      // Skip the fixed pinned Profile pin: it has no real DB row — the shell injects
+      // Profile (with its per-viewer href) at runtime via withHomeProfile, so persisting
+      // it here would duplicate it in the rail.
+      if (isPinnedRailItem(it.id)) continue
       itemRows.push({
         menu_id: menuId,
         category_id: null,

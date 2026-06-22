@@ -2,7 +2,21 @@
 // component files so they import cleanly into any of the editor pieces, and so the
 // curated route list lives in one place. NO server imports here.
 
-import type { MenuAccess, MenuMode } from '@/lib/menus/types'
+import type { MenuAccess, MenuMode, MenuSurfaceKey } from '@/lib/menus/types'
+
+// Which surfaces render as a true grid (so column / row / span placement is meaningful)
+// vs. a linear list. The left rail and the marketing footer are linear lists, so their
+// grid-placement controls are hidden (point 4); the three mega-menu surfaces are grids.
+const GRID_SURFACES: readonly MenuSurfaceKey[] = [
+  'public_discover',
+  'public_explore',
+  'admin_subheader',
+]
+
+/** Does this surface lay items out on a grid (vs. a linear list)? */
+export function isGridSurface(surfaceKey: MenuSurfaceKey): boolean {
+  return (GRID_SURFACES as readonly string[]).includes(surfaceKey)
+}
 
 // A curated set of known in-app routes offered as a <datalist> in the link-target
 // field. Free-typed custom URLs (external links, anchors) are still allowed; this is
