@@ -90,7 +90,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
   return (
     <div className="flex items-center gap-2">
       <div ref={boxRef} className="relative flex-1">
-        <div className="flex items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-2.5 focus-within:border-border-strong">
+        <div className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5">
           <Search className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
           <input
             value={q}
@@ -104,7 +104,7 @@ export function AdminSearchBar({ role, webRole = 'none', staffRole = null }: Pro
             placeholder="Search the admin workspace…"
             aria-label="Search the admin workspace"
             autoComplete="off"
-            className="min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-subtle"
+            className="admin-search-field min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-subtle"
           />
         </div>
 

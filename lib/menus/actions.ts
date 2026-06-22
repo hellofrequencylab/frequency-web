@@ -5,6 +5,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { isJanitor } from '@/lib/core/roles'
 import { menuDb } from './db'
 import { defaultMenu, DEFAULT_MENU_SETTINGS, isPinnedRailItem } from './defaults'
+import { getAdminMenu } from './read'
 import { getMenuConfig } from '@/lib/menu-config'
 import type {
   MenuAccess,
@@ -341,6 +342,20 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'seedMenuFromDefaults failed' }
   }
+}
+
+/** Materialize a surface's code defaults into real DB rows and return the freshly assembled
+ *  menu. The editor calls this when it opens a surface that is still the code default (synthetic
+ *  ids) or whose row is empty, so per-item edits land on REAL rows instead of synthetic default
+ *  ids. Seeds via seedMenuFromDefaults (which bridges the left rail's saved order), then re-reads
+ *  through getAdminMenu so the editor adopts the real, editable menu. */
+export async function materializeMenu(
+  surfaceKey: MenuSurfaceKey,
+): Promise<{ ok: true; menu: ResolvedMenu } | { ok: false; error: string }> {
+  const seeded = await seedMenuFromDefaults(surfaceKey)
+  if (!seeded.ok) return seeded
+  const menu = await getAdminMenu(surfaceKey)
+  return { ok: true, menu }
 }
 
 /** Set a menu's column count (clamped 1..12). */
