@@ -73,7 +73,12 @@ function pinnedProfileItem(position: number): ResolvedItem {
     mode: 'active',
     roleModes: {},
     minAccess: 'visitor',
-    icon: 'profile',
+    // The live rail draws Profile with a person glyph (UserRound). The icon registry
+    // (components/layout/nav-icons.ts → railIconFor) has no 'profile'/'User' key, so a
+    // 'profile' hint would fall back to the globe. 'ContactRound' DOES resolve there
+    // (person-in-a-circle), so the editor row + any DB-driven rail match the live rail
+    // instead of showing a stray globe.
+    icon: 'ContactRound',
   }
 }
 
@@ -263,10 +268,12 @@ function leftRailMenu(surfaceKey: MenuSurfaceKey): ResolvedMenu {
     )
   })
 
-  // Pin Profile into the headerless home-anchor group right after Feed. Feed is the
-  // first (and today only) null-section area, so Profile lands at index 1. Renumber the
-  // trailing root items so positions stay contiguous.
-  rootItems.splice(1, 0, pinnedProfileItem(1))
+  // Pin Profile into the headerless home-anchor group, mirroring the shell's
+  // withHomeProfile EXACTLY: it appends Profile to the END of the leading null-section
+  // group (Feed et al.), so the rail opens with Feed · Profile. Today Feed is the only
+  // home-anchor area, so this lands Profile at index 1 — but appending (not a hardcoded
+  // splice index) keeps the default faithful if another null-section area is ever added.
+  rootItems.push(pinnedProfileItem(rootItems.length))
   rootItems.forEach((it, i) => {
     it.position = i
   })
