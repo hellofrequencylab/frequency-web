@@ -41,6 +41,8 @@ import {
 import { OnAirIcon } from './icons'
 import { MovementArt } from '@/components/feed/zap-menu-art'
 import { Reveal } from './reveal'
+import { MindlessMasthead } from './mode-toggle'
+import type { TimerMode } from './mindless'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
@@ -148,6 +150,8 @@ export function MovementSession({
   secondsTarget,
   practicedToday = 0,
   onExit,
+  mode: doorMode,
+  onModeChange,
 }: {
   practices: OnAirPractice[]
   defaultPracticeId: string | null
@@ -164,6 +168,12 @@ export function MovementSession({
   practicedToday?: number
   /** Overlay mode: leaving CLOSES the overlay via this callback instead of navigating. */
   onExit?: () => void
+  /** The unified-door mode this session is showing ('move'). Only meaningful with onModeChange. */
+  mode?: TimerMode
+  /** When provided (the unified Mindless door), the setup masthead renders the Be Still | Get
+   *  Moving toggle wired to this. Always set today (the door is the only mounter of this engine),
+   *  but kept optional so the component stays standalone-renderable. */
+  onModeChange?: (mode: TimerMode) => void
 }) {
   const router = useRouter()
   const [stage, setStage] = useState<Stage>('setup')
@@ -762,21 +772,30 @@ export function MovementSession({
   // setup — pick the mode, then its preset, then Start.
   return (
     <Overlay>
-      <div className="flex flex-1 flex-col px-2 pt-10">
-        <div className="relative flex items-center justify-center pb-2">
-          <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-success">
-            <MovementArt className="block h-6" /> Movement
-          </p>
-          <button
-            type="button"
-            onClick={leave}
-            aria-label="Close"
-            className="absolute -right-2 -top-1 rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="pb-6 text-center text-xs text-subtle">Move on a timer. Walk, run, flow, train, stretch, or play.</p>
+      <div className={`flex flex-1 flex-col px-2 ${onModeChange ? '' : 'pt-10'}`}>
+        {onModeChange ? (
+          // The unified door: ONE masthead ("Mindless" + the locked tagline) and the Be Still | Get
+          // Moving toggle directly under it. Get Moving is the active segment here (this is movement).
+          <MindlessMasthead mode={doorMode ?? 'move'} onModeChange={onModeChange} onClose={leave} />
+        ) : (
+          // Standalone fallback (no door): the engine's own masthead, unchanged.
+          <>
+            <div className="relative flex items-center justify-center pb-2">
+              <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-success">
+                <MovementArt className="block h-6" /> Movement
+              </p>
+              <button
+                type="button"
+                onClick={leave}
+                aria-label="Close"
+                className="absolute -right-2 -top-1 rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="pb-6 text-center text-xs text-subtle">Move on a timer. Walk, run, flow, train, stretch, or play.</p>
+          </>
+        )}
 
         {/* The setup body centers vertically in the viewport and scrolls when it
             overflows; the Start bar below stays docked and visible (LAYOUT directive). */}
