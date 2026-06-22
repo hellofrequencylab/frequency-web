@@ -40,6 +40,9 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'quest-explore', label: 'Explore links', description: 'Quick links to Journeys, Practices, Challenges, and The Vault.' },
   { id: 'quest-leaderboard', label: 'Circle leaderboard', description: "The member's circle ranked by season Zaps." },
 
+  // ── Menu Manager blocks (/admin/menu) — the DB-backed navigation editor ──
+  { id: 'menu-manager', label: 'Menu manager', description: 'The full navigation editor: surface picker, groups and links, drag-and-drop, the role matrix, on/off modes, rail cards, columns, speed, and seed.' },
+
   // ── Admin Journeys blocks (/admin/content/journeys) — the curation surface ──
   { id: 'admin-journeys-stats', label: 'Journey stats', description: 'Headline counts: library size, awaiting review, official, and active adoptions.' },
   { id: 'admin-journeys-review', label: 'Review queue', description: 'Member-submitted Journeys waiting for an approve or reject decision.' },
@@ -132,6 +135,11 @@ const CREW_MODULE_IDS = [
   'quest-leaderboard',
 ] as const
 
+// The Menu Manager page (/admin/menu). The whole DB-backed navigation editor is one coupled,
+// self-fetching block: its surface picker, per-surface editor, and speed panel share live client
+// state, so it converts wholesale to one module rather than a set that would fragment that state.
+const MENU_MODULE_IDS = ['menu-manager'] as const
+
 // The admin Journeys curation surface, in default render order.
 const ADMIN_JOURNEYS_MODULE_IDS = [
   'admin-journeys-stats',
@@ -222,6 +230,7 @@ const SPACE_MODULE_IDS = [
  *  `<PageModules>` (and list it in lib/widgets/module-routes.ts). */
 export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '*': COMMUNITY_MODULE_IDS,
+  '/admin/menu': MENU_MODULE_IDS,
   '/lead': LEAD_MODULE_IDS,
   '/crew': CREW_MODULE_IDS,
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
