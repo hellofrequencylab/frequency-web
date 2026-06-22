@@ -251,13 +251,25 @@ export async function getMenu(
       return defaultMenu(surfaceKey)
     }
 
-    return assemble(
+    const resolved = assemble(
       menu,
       surfaceKey,
       categoriesRes.data ?? [],
       itemsRes.data ?? [],
       railCardsRes.data ?? [],
     )
+    // A row that exists but has NO groups, links, or rail cards (a half-seeded surface, or one
+    // whose groups were all deleted) is treated as "use the code defaults": the editor shows the
+    // default structure to manage (materialized on open) instead of a dead, unmanageable blank,
+    // and the live nav keeps rendering from the defaults. A real customization always has rows.
+    if (
+      resolved.categories.length === 0 &&
+      resolved.rootItems.length === 0 &&
+      resolved.railCards.length === 0
+    ) {
+      return defaultMenu(surfaceKey)
+    }
+    return resolved
   } catch (err) {
     console.error('[menus] getMenu threw, falling back to defaults', surfaceKey, err)
     return defaultMenu(surfaceKey)

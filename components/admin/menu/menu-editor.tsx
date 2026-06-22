@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { Columns3, FolderPlus, Plus, RotateCcw, Trash2 } from 'lucide-react'
 import type { ResolvedItem, ResolvedMenu, ResolvedRailCard } from '@/lib/menus/types'
 import {
   ensureMenu,
+  materializeMenu,
   seedMenuFromDefaults,
   setMenuColumns,
   createCategory,
@@ -90,6 +91,31 @@ export function MenuEditor({
     setMenu((m) => ({ ...m, id: res.id, isDefault: false }))
     return res.id
   }
+
+  // The menu can be the code DEFAULT (synthetic ids): a surface never customized, or one whose
+  // DB row is empty so the reader falls back to defaults. Per-item edits need REAL rows, so on
+  // open we materialize the defaults into the DB once and adopt the real menu. This is what makes
+  // a never-touched surface (e.g. the left rail) actually manageable instead of a dead default.
+  const materializedRef = useRef(false)
+  useEffect(() => {
+    if (!menu.isDefault || materializedRef.current) return
+    materializedRef.current = true
+    setError(null)
+    onStatus('Loading the current menu…')
+    startTransition(async () => {
+      const res = await materializeMenu(surfaceKey)
+      if (res.ok) {
+        setMenu(res.menu)
+        onStatus('Loaded. Edit anything below.')
+      } else {
+        materializedRef.current = false
+        setError(res.error)
+        onStatus('Could not load this menu')
+      }
+    })
+    // Runs once per surface mount (the parent keys MenuEditor by surface).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [surfaceKey])
 
   // ── Flatten the nested category tree to a render list (depth for indentation) ──
   const flatCategories = useMemo(() => flatten(menu.categories), [menu.categories])
