@@ -85,12 +85,18 @@ function clampGrid(v: number | null | undefined): number | null | undefined {
   return Math.trunc(v)
 }
 
-/** Filter a role_modes blob down to valid { role: MenuMode } entries. */
+/** Filter a role_modes blob down to valid { role: MenuMode } entries.
+ *
+ *  The role KEY is whitelisted against the fixed MenuAccess set (isAccess), not just
+ *  checked for being a string: the blob is user-supplied, so writing an arbitrary key
+ *  into an object is a property-injection / prototype-pollution vector (a key like
+ *  "__proto__" or "constructor"). Constraining keys to the known role set closes that
+ *  and also keeps only roles the renderer can resolve. */
 function sanitizeRoleModes(v: unknown): Record<string, MenuMode> {
   if (!v || typeof v !== 'object') return {}
   const out: Record<string, MenuMode> = {}
   for (const [role, mode] of Object.entries(v as Record<string, unknown>)) {
-    if (typeof role === 'string' && isMode(mode)) out[role] = mode
+    if (isAccess(role) && isMode(mode)) out[role] = mode
   }
   return out
 }
