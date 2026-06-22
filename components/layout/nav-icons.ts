@@ -97,3 +97,58 @@ export const AREA_ICONS: Record<string, ElementType> = {
 
 // Fallback for any key without an explicit icon above.
 export const FALLBACK_AREA_ICON: ElementType = Globe
+
+// Lucide icons by their PascalCase NAME — the vocabulary a CUSTOM DB menu row can
+// store in `icon` (the code defaults store a NAV_AREAS KEY instead, resolved via
+// AREA_ICONS above). Seeded from the icons this module already imports, so a custom
+// row can pick any of them with ZERO extra bundle cost; an unknown name falls back.
+// To widen the vocabulary, import another lucide icon above and add it here.
+const LUCIDE_BY_NAME: Record<string, ElementType> = {
+  Radio,
+  Home,
+  Users,
+  CalendarDays,
+  Globe,
+  Shield,
+  MessageSquare,
+  Megaphone,
+  UserPlus,
+  Zap,
+  Gem,
+  Store,
+  Briefcase,
+  FileText,
+  Sparkles,
+  BookOpen,
+  Send,
+  Contact,
+  ContactRound,
+  LayoutDashboard,
+  LayoutGrid,
+  Building2,
+  Activity,
+  Bot,
+  Compass,
+  Route,
+  QrCode,
+  Library,
+  LifeBuoy,
+  NotebookPen,
+  Network,
+  Coins,
+  Banknote,
+  Settings,
+  Gamepad2,
+  SlidersHorizontal,
+  TrendingUp,
+  Flag,
+}
+
+// Resolve a menu item's stored `icon` string to an icon component, for the DB-backed
+// rail (lib/menus). The defaults store a NAV_AREAS KEY (e.g. 'feed'), so try AREA_ICONS
+// first; a custom DB row may store a lucide NAME (e.g. 'Sparkles'), so try LUCIDE_BY_NAME
+// next; anything unknown (or absent) gets the safe fallback so a row never renders icon-less.
+export function railIconFor(icon: string | undefined): ElementType {
+  if (!icon) return FALLBACK_AREA_ICON
+  return AREA_ICONS[icon] ?? LUCIDE_BY_NAME[icon] ?? FALLBACK_AREA_ICON
+}

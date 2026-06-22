@@ -1,11 +1,28 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { MARKETING_NAV, ORG_LEGAL_NAME, CONTACT_EMAIL } from '@/lib/site'
+import { effectiveMode } from '@/components/layout/menu-role'
+import type { ResolvedMenu } from '@/lib/menus/types'
+
+// The footer's nav links, resolved for the PUBLIC visitor. Source of truth is the
+// DB-backed `marketing_footer` menu (lib/menus) when provided: a flat list of rootItems,
+// each resolved by effectiveMode at viewerRole 'visitor' (active shown, ghost / hidden
+// dropped — a public footer never surfaces an upsell gate). Falls back to the code
+// MARKETING_NAV when no menu is passed (pre-migration / unseeded), so the footer is safe.
+function footerLinks(menu?: ResolvedMenu): { href: string; label: string }[] {
+  if (menu && menu.rootItems.length > 0) {
+    return menu.rootItems
+      .filter((it) => effectiveMode(it, 'visitor') === 'active')
+      .map((it) => ({ href: it.href, label: it.label }))
+  }
+  return MARKETING_NAV.map((it) => ({ href: it.href, label: it.label }))
+}
 
 // Shared footer for the public marketing site. Includes the nav, contact, and
 // legal links. A mailing address slot is left ready for when one exists (it's
 // also a CAN-SPAM requirement once marketing email goes out at scale).
-export function MarketingFooter() {
+export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
+  const links = footerLinks(menu)
   return (
     <footer className="bg-marketing-canvas border-t border-border/60 px-6 py-12">
       <div className="max-w-5xl mx-auto">
@@ -21,7 +38,7 @@ export function MarketingFooter() {
 
           {/* Nav */}
           <nav className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-            {MARKETING_NAV.map((item) => (
+            {links.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

@@ -148,6 +148,7 @@ export default async function MainLayout({
     staffMember,
     exploreMenu,
     adminMenu,
+    leftRailMenu,
     menuTimings,
   ] = await Promise.all([
     applyViewAs(realRole),
@@ -170,6 +171,10 @@ export default async function MainLayout({
     // in-app shell uses Explore (the "Explore Frequency" header mega) + the admin sub-header.
     getMenu('public_explore'),
     getMenu('admin_subheader'),
+    // The DB-backed in-app LEFT RAIL (lib/menus). Drives the rail's link list, order,
+    // grouping, icons, and per-item mode; falls back to the code defaults on any miss, so
+    // safe pre-migration and the rail never breaks.
+    getMenu('left_rail'),
     getMenuSettings(),
   ])
   const menuAreaKeys = orderedVisibleAreas(menuConfig).map((a) => a.key)
@@ -374,6 +379,7 @@ export default async function MainLayout({
       unreadCount={unreadCount}
       permissions={permissions}
       menuAreaKeys={menuAreaKeys}
+      leftRailMenu={leftRailMenu}
       navAccess={navAccess}
       staffRole={staffRole}
       demoMode={demoMode}

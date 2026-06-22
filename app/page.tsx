@@ -134,9 +134,10 @@ export default async function RootPage({
   const referrer = await getReferrer()
   // DB-backed nav megas for the splash header (lib/menus); fall back to code defaults on any
   // miss, so safe pre-migration. The splash is always a logged-out 'visitor' surface.
-  const [discoverMenu, exploreMenu, menuTimings] = await Promise.all([
+  const [discoverMenu, exploreMenu, footerMenu, menuTimings] = await Promise.all([
     getMenu('public_discover'),
     getMenu('public_explore'),
+    getMenu('marketing_footer'),
     getMenuSettings(),
   ])
   // The live-proof band (counts, events, posts) streams in its own <Suspense> inside Splash,
@@ -146,6 +147,7 @@ export default async function RootPage({
       referrer={referrer}
       discoverMenu={discoverMenu}
       exploreMenu={exploreMenu}
+      footerMenu={footerMenu}
       menuTimings={menuTimings}
     />
   )
@@ -158,11 +160,13 @@ function Splash({
   referrer,
   discoverMenu,
   exploreMenu,
+  footerMenu,
   menuTimings,
 }: {
   referrer: { displayName: string; handle: string; avatarUrl: string | null } | null
   discoverMenu?: ResolvedMenu
   exploreMenu?: ResolvedMenu
+  footerMenu?: ResolvedMenu
   menuTimings?: MenuSettings
 }) {
   return (
@@ -612,7 +616,7 @@ function Splash({
         body="A Circle to call yours, a standing time, and a real room to walk into. Add your name and we'll reach out when a spot opens."
       />
 
-      <MarketingFooter />
+      <MarketingFooter menu={footerMenu} />
     </>
   )
 }
