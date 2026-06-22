@@ -221,8 +221,13 @@ export function SettingsDrawer({
   const hasSettings = settingsModules.length > 0
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
   const questModule = manager ? questModuleFor(pathname) : null
+  // The full page-content editor (title / description / hero / CTA). ADMIN routes are
+  // excluded: their Settings is trimmed to Subtitle + Layout (ADR-359), and the subtitle is
+  // edited by the SubtitleEditor inside PageSettingsModule. /admin/menu is in
+  // CONTENT_EDIT_ROUTES only so that subtitle save resolves — it must NOT pull in this module.
   const contentModule =
     manager &&
+    !pathname.startsWith('/admin') &&
     (CONTENT_EDIT_ROUTES as readonly string[]).includes(pathname) &&
     meetsAccess('admin', role) ? (
       <PageContentModule />

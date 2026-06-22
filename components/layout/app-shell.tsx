@@ -1885,11 +1885,13 @@ export default function AppShell({
                 <SettingsDrawer onStateChange={setSettings} />
               </div>
             )}
-            {/* No member rail here (admin / Focus surfaces, railFor 'none'): STILL mount the
+            {/* No member rail here (Focus surfaces, railFor 'none'): STILL mount the
                 SettingsDrawer in a zero-width relative column so the page Settings button works
-                everywhere (e.g. the Menu Manager's Layout panel). The column grows to the drawer
-                width and the panel slides in over it when opened. */}
-            {!showSidebar && (
+                everywhere. The column grows to the drawer width and the panel slides in over it
+                when opened. ADMIN routes are EXCLUDED: they render their own info-rail column
+                (AdminRailDrawerColumn) which mounts the drawer over that rail, so mounting it
+                here too would be a second, conflicting drawer. */}
+            {!showSidebar && !isAdminRoute && (
               <div
                 className={`relative hidden shrink-0 justify-end lg:flex ${
                   settings.resizing ? '' : 'transition-[width] duration-200 ease-out motion-reduce:transition-none'
