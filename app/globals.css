@@ -672,6 +672,9 @@
      frame. Use `shadow-pop` / `shadow-pop-lg`. The in-app UI keeps the soft set. */
   --shadow-pop:    0 4px 12px -2px rgb(20 16 10 / 0.16), 0 16px 40px -10px rgb(20 16 10 / 0.22);
   --shadow-pop-lg: 0 10px 24px -6px rgb(20 16 10 / 0.20), 0 36px 70px -16px rgb(20 16 10 / 0.30);
+  /* Mega-menu panel — downward-only depth (no upward bleed), so the panel reads as sliding
+     out from UNDER the opaque bar above it instead of floating on top of the header. */
+  --shadow-menu:   0 14px 24px -10px rgb(20 16 10 / 0.18), 0 28px 50px -20px rgb(20 16 10 / 0.20);
 
   /* Feel axis → utilities. Tailwind v4 generates `rounded-control`, `rounded-card`,
      and `rounded-pill` from these --radius-* keys; because they reference the :root

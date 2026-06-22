@@ -112,6 +112,12 @@ type NavSectionGroup = { label: string | null; items: MainNavItem[] }
 // Group a list of areas into ordered sections, preserving declaration order.
 function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   const sections: NavSectionGroup[] = []
+  // Group by section LABEL, not by consecutive run: an item whose section already has a
+  // group joins THAT group instead of forking a new one. Without this, a saved menu order
+  // that scatters a section's items (a late-added "orphan" key appended past the end of its
+  // section's run — My Contacts, Journal, Spaces) renders a second, near-empty duplicate
+  // header. Order follows each section's FIRST appearance, so the default rail is unchanged.
+  const byLabel = new Map<string | null, NavSectionGroup>()
   for (const area of areas) {
     const item: MainNavItem = {
       key: area.key,
@@ -122,9 +128,13 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
       preview: area.previewBelowAccess,
       staffDomain: area.staffDomain,
     }
-    const last = sections[sections.length - 1]
-    if (last && last.label === area.section) last.items.push(item)
-    else sections.push({ label: area.section, items: [item] })
+    const existing = byLabel.get(area.section)
+    if (existing) existing.items.push(item)
+    else {
+      const group: NavSectionGroup = { label: area.section, items: [item] }
+      byLabel.set(area.section, group)
+      sections.push(group)
+    }
   }
   return sections
 }

@@ -29,6 +29,9 @@ import {
 } from '@/lib/practices'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { personalizePractice, type PracticeSuggestion } from '@/lib/ai/practice-wizard'
+import { draftPracticeSpark } from '@/lib/ai/practice-spark'
+import { planPracticeEdits } from '@/lib/ai/practice-edit'
+import { pillarIdsBySlug } from '@/lib/journeys/compose'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
@@ -204,6 +207,116 @@ export async function updatePracticeAction(id: string, patch: PracticeEdit): Pro
   revalidatePath('/practices')
   revalidatePath(`/practices/${id}/edit`)
   return ok()
+}
+
+// ── Vera Practice composer (ADR-358) ──────────────────────────────────────────────────────────
+//
+// The Practice builder's "Build with Vera" / "Edit with Vera" box, the atom-level twin of the
+// Journey composer. A Practice is one act (no block tree), so Vera drafts (or rewrites) its FIELDS
+// in place: name, hook, one-line description, full guide, cadence, and the Pillar it fits. Both
+// actions are owner-gated like every edit, route through the shared Vera infra (voice primer +
+// usage ledger + budget cap), and degrade cleanly when Vera is off so the author can type by hand.
+
+/** Guard: the caller owns this practice (or is an operator). Returns the practice + the caller's id,
+ *  or an error string. Mirrors the gate in updatePracticeAction. */
+async function authorPractice(
+  id: string,
+): Promise<{ practice: Awaited<ReturnType<typeof getPractice>>; profileId: string } | { error: string }> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return { error: 'Not signed in' }
+  const practice = await getPractice(id)
+  if (!practice) return { error: 'Practice not found' }
+  if (practice.created_by !== profileId && !(await getGlobalCapabilities()).has('admin.access'))
+    return { error: 'You can only edit practices you created' }
+  return { practice, profileId }
+}
+
+/** Build with Vera (empty practice): from a one-line description, Vera drafts the whole Practice
+ *  (name, hook, description, full guide, Pillar, cadence, time) and writes it in place. Returns
+ *  whether AI was used so the UI can say "Vera is offline" when it falls back. */
+export async function buildPracticeWithVeraAction(
+  id: string,
+  description: string,
+): Promise<ActionResult<{ aiUsed: boolean }>> {
+  const gate = await authorPractice(id)
+  if ('error' in gate) return fail(gate.error)
+  const { practice, profileId } = gate
+  const desc = description.trim().slice(0, 1000)
+  if (!desc) return fail('Tell Vera what you want to build first.')
+
+  const spark = await draftPracticeSpark({
+    who: '',
+    act: desc,
+    outcome: '',
+    cadence: 'daily',
+    pace: 'light',
+    profileId,
+  })
+  if (!spark) return ok({ aiUsed: false })
+
+  const patch: PracticeEdit = {
+    summary: spark.summary || undefined,
+    description: spark.description || undefined,
+    body: spark.body || undefined,
+    cadence: spark.cadence || undefined,
+  }
+  if (spark.durationMin != null) patch.duration_min = spark.durationMin
+  // Only rename an untitled practice from Vera's suggestion; never clobber a name the author chose.
+  const current = (practice?.title ?? '').trim().toLowerCase()
+  if (spark.title && (!current || current === 'untitled practice')) patch.title = spark.title
+  if (spark.pillar) {
+    const ids = await pillarIdsBySlug()
+    const pid = ids[spark.pillar]
+    if (pid) patch.focus_details = { [pid]: { instructions: '', timing: '' } }
+  }
+  const saved = await updatePractice(id, patch)
+  if (!saved) return fail('Could not save what Vera drafted.')
+  revalidatePath('/practices')
+  revalidatePath(`/practices/${id}/edit`)
+  return ok({ aiUsed: true })
+}
+
+/** Apply with Vera (built practice): the author types a plain-language change; Vera reads the whole
+ *  Practice and returns the changed fields, which we bound + write in place. Mirrors the Journey
+ *  builder's applyVeraChangeAction. */
+export async function applyVeraPracticeChangeAction(
+  id: string,
+  request: string,
+): Promise<ActionResult<{ applied: number }>> {
+  const gate = await authorPractice(id)
+  if ('error' in gate) return fail(gate.error)
+  const { practice, profileId } = gate
+  const req = request.trim().slice(0, 1000)
+  if (!req) return fail('Tell Vera what to change first.')
+  if (!practice) return fail('Practice not found')
+
+  const edits = await planPracticeEdits({
+    request: req,
+    practice: {
+      title: practice.title ?? '',
+      summary: practice.summary ?? '',
+      description: practice.description ?? '',
+      body: practice.body ?? '',
+      cadence: practice.cadence ?? '',
+    },
+    profileId,
+  })
+  if (!edits) return fail('Vera is offline right now. Try again in a moment, or edit by hand.')
+
+  const patch: PracticeEdit = {}
+  if (edits.title !== undefined) patch.title = edits.title
+  if (edits.summary !== undefined) patch.summary = edits.summary
+  if (edits.description !== undefined) patch.description = edits.description
+  if (edits.body !== undefined) patch.body = edits.body
+  if (edits.cadence !== undefined) patch.cadence = edits.cadence
+  const applied = Object.keys(patch).length
+  if (applied === 0) return fail('Vera could not make that change. Try rephrasing it.')
+
+  const saved = await updatePractice(id, patch)
+  if (!saved) return fail('Could not save the change.')
+  revalidatePath('/practices')
+  revalidatePath(`/practices/${id}/edit`)
+  return ok({ applied })
 }
 
 // Set the author tags on a practice you created (hybrid model: new labels become

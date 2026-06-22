@@ -5,6 +5,7 @@ import { getPractice, listSubcategories, getPracticeTagLabels } from '@/lib/prac
 import { getPillars } from '@/lib/pillars'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { PracticeBuilder } from '@/components/studio/practice/practice-builder'
+import { PracticeComposer } from '@/components/studio/practice/practice-composer'
 
 export const metadata: Metadata = { title: 'Edit practice' }
 export const dynamic = 'force-dynamic'
@@ -55,6 +56,9 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
       isAdmin={isAdmin}
       rewardZaps={practice.reward_zaps}
       rewardNote={practice.reward_note}
+      // Vera composer (ADR-358): "Build with Vera" until the practice has a guide, then "Edit with
+      // Vera". Empty = no body yet, so a freshly-created draft opens ready to build.
+      veraComposer={<PracticeComposer id={practice.id} isEmpty={!practice.body?.trim()} />}
     />
   )
 }

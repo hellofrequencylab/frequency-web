@@ -43,8 +43,9 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
             <h2 className="text-lg font-bold text-text">Remix this practice?</h2>
           </div>
           <p className="text-sm text-muted">
-            Remix makes a new practice you own, starting from this one. You can change it however you
-            like and publish it when it&apos;s ready. The original stays exactly as it is.
+            Remix makes a new practice you own, starting from this one. Don&apos;t just rework it.
+            Make it yours: a new angle, a different setting, your own niche. Publish your version so
+            the community gets a practice only you would make. The original stays exactly as it is.
           </p>
           <div className="mt-5 flex items-center justify-end gap-2">
             <button

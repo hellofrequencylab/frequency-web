@@ -538,7 +538,7 @@ export function MegaBar({
           // slides out from behind its bottom edge. `top-full` pins it to the bar's base. The
           // translate distance is deliberately large so the slide-from-under reads clearly.
           style={{ transitionDuration: `${fadeMs}ms` }}
-          className={`absolute inset-x-0 top-full z-20 border-b border-border bg-surface shadow-pop transition-all ease-out motion-reduce:transition-none ${
+          className={`absolute inset-x-0 top-full z-20 border-b border-border bg-surface shadow-menu transition-all ease-out motion-reduce:transition-none ${
             shown ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-8 opacity-0'
           }`}
         >
