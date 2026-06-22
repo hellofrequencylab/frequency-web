@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { requireAdminFloor } from '@/lib/admin/guard'
 import { AdminSearchBar } from '@/components/admin/admin-search-bar'
 import { AdminInfoRail } from '@/components/admin/admin-info-rail'
+import { AdminRailDrawerColumn } from '@/components/admin/admin-rail-drawer-column'
 import { AdminPageDock } from '@/components/admin/admin-page-dock'
 import { AdminFooter } from '@/components/admin/admin-footer'
 
@@ -29,7 +30,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div>
-      <div className="flex w-full gap-8">
+      {/* No row gap: the rail column carries its own left gap at xl (w-72 = rail + gap), and a
+          gap on a zero-width column would push the center in at lg. */}
+      <div className="flex w-full">
         {/* Center — the Ask-Vera/search command bar in its own sticky band, sitting
             just below the shell's full-width admin sub-header (stays visible on scroll). */}
         <main className="min-w-0 flex-1">
@@ -44,14 +47,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {children}
         </main>
 
-        {/* Right — the live operator info rail, rising to the header (xl+). */}
-        <aside className="hidden w-64 shrink-0 xl:block">
-          <div className="sticky top-14 max-h-[calc(100vh-4.5rem)] overflow-y-auto pb-6 pt-2.5">
-            <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl border border-border bg-surface" />}>
-              <AdminInfoRail role={role} webRole={webRole} staffRole={staffRole} />
-            </Suspense>
-          </div>
-        </aside>
+        {/* Right — the live operator info rail (xl+), in the column the shell-level Settings
+            drawer slides OVER. The drawer mounts inside this column (not the shell's) so it
+            covers the rail and compresses the center as its grab handle widens it. */}
+        <AdminRailDrawerColumn>
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl border border-border bg-surface" />}>
+            <AdminInfoRail role={role} webRole={webRole} staffRole={staffRole} />
+          </Suspense>
+        </AdminRailDrawerColumn>
       </div>
 
       {/* The page-admin dock (bottom-right canvas tab, lg+). The operator profile card
