@@ -395,6 +395,39 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
 - **Notification preferences:** a missing `notification_preferences` row means
   canonical defaults (email + inapp on, push off). No backfill needed.
 
+## Menu system (DB-backed nav)
+
+Migration `20260721000000_menu_system.sql` (ADR-357). The editable source of truth
+for every nav surface; read by `lib/menus/read.ts`, written by the janitor-gated
+`lib/menus/actions.ts`, edited at `/admin/menu`. Reads are PUBLIC (anon +
+authenticated) since the public header serves logged-out visitors; writes go only
+through the service role (no client write policy).
+
+- **`menus`** — one editable menu per `(space_id, surface_key)`. `space_id` NULL =
+  the GLOBAL menu (the only scope seeded/edited now; per-space is a later phase, no
+  migration needed). `surface_key` in `public_discover` / `public_explore` /
+  `admin_subheader` / `left_rail` / `marketing_footer`. `columns` (1..12, default 6)
+  is the free-grid column count.
+- **`menu_categories`** — groups within a menu, nested via `parent_id`. `position` +
+  free-grid placement (`grid_col` / `grid_row` / `col_span`).
+- **`menu_items`** — the links. `mode` in `active` / `ghost` / `hidden` (default
+  active); `role_modes` jsonb = per-role overrides `{ "<role>": mode }` (keys
+  whitelisted to the known role set on write); `min_access` is the hard floor;
+  `ghost_tier` + `ghost_message` drive the upgrade lightbox; `subheading`, `icon`
+  (a NAV_AREAS key or a lucide name), and free-grid placement.
+- **`menu_rail_cards`** — left/right featured cards per menu (the "Find your first
+  circle" shape): `side`, `title`, `body`, `href`, `cta`, plus `mode` / `role_modes`.
+- **`menu_settings`** — singleton (`id = 1`): global `open_delay_ms` / `dwell_ms` /
+  `fade_ms` for the mega-menu motion.
+
+Fallback: when a surface has no DB rows (pre-migration or unseeded), the reader
+returns the code-default menu (`lib/menus/defaults.ts`, adapted from `PUBLIC_MEGA_NAV`
+/ `ADMIN_NAV` / `NAV_AREAS` / `MARKETING_NAV`), flagged `isDefault`. The left rail
+stays on its legacy `menu_config` / `area_permissions` gating until `left_rail` is
+seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
+`lib/database.types.ts` until regenerated after the migration is applied (ADR-246);
+`lib/menus/db.ts` is the untyped handle in the meantime.
+
 ## Working with migrations
 
 ```
