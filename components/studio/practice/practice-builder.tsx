@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useCallback, useState, useTransition, createElement } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -78,6 +79,10 @@ export interface PracticeBuilderProps {
   isAdmin?: boolean
   rewardZaps?: number | null
   rewardNote?: string | null
+  /** Vera's composer (ADR-358), rendered full-width above the fields — the atom-level twin of the
+   *  Journey builder's Vera composer. Build the whole Practice from a line, or edit it in plain
+   *  words. Optional so the builder still composes standalone (e.g. the Studio popup). */
+  veraComposer?: ReactNode
 }
 
 export function PracticeBuilder(props: PracticeBuilderProps) {
@@ -254,6 +259,10 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           <p className="mt-1 text-2xs text-subtle">Click the icon, name, and hook to edit.</p>
         </div>
       </div>
+
+      {/* Vera composer (ADR-358) — full-width, under the identity row, like the Journey builder.
+          Build the whole Practice from a line, or tell Vera what to change. */}
+      {props.veraComposer && <div className="mt-6">{props.veraComposer}</div>}
 
       {/* Focus — a practice can belong to MULTIPLE Focuses (Pillars). Toggle each on/off;
           the first selected is the primary (drives the card + Pillar filtering). */}
