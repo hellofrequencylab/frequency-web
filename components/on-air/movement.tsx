@@ -23,6 +23,7 @@ import type { OnAirSessionData } from '@/lib/on-air/session-data'
 import { MovementSession } from '@/components/on-air/movement-session'
 import { MovementArt } from '@/components/feed/zap-menu-art'
 import type { MovementMode } from '@/lib/movement'
+import { loadLiveSession } from '@/lib/on-air/live-session'
 
 interface MovementApi {
   /** Open the overlay. `practiceId` pre-selects an adopted practice; `mode` the
@@ -137,6 +138,14 @@ export function MovementProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [state.phase, close])
+
+  // Crash recovery: a tab discard drops a running Movement run (its React state is gone), but the
+  // record survives in localStorage. On the next app load, re-open the overlay so MovementSession
+  // can surface its Resume prompt. Runs once on mount; the overlay then owns the recovery UX.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (loadLiveSession('movement')) open()
+  }, [open])
 
   // Cross-provider handoff: the Mindless overlay (a sibling provider it can't call
   // through this hook) routes a movement practice here by dispatching an `open-movement`

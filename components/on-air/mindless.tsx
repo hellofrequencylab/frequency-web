@@ -18,6 +18,7 @@ import { loadOnAirSession } from '@/app/(main)/on-air/actions'
 import type { OnAirSessionData } from '@/lib/on-air/session-data'
 import { OnAirSession } from '@/components/on-air/session'
 import { LotusIcon } from '@/components/on-air/icons'
+import { loadLiveSession } from '@/lib/on-air/live-session'
 
 /** What `open` accepts. `practiceId` pre-selects an adopted practice (and the timer opens
  *  at that practice's mindless_mode). A "Finish Practice" resume passes BOTH `resumeFromSec`
@@ -117,6 +118,14 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
       live = false
     }
   }, [state])
+
+  // Crash recovery: a tab discard drops a running sit (its React state is gone), but the record
+  // survives in localStorage. On the next app load, re-open the overlay so OnAirSession can surface
+  // its Resume prompt. Runs once on mount; the session then owns the recovery UX.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (loadLiveSession('mindless')) open()
+  }, [open])
 
   // Lock body scroll while the overlay owns the viewport — the page behind
   // shouldn't scroll under the takeover. Restores whatever was there before.
