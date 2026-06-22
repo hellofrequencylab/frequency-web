@@ -241,6 +241,7 @@ export default async function FeedPage({
           />
         : <PracticePrompt
             practices={practicesToLog}
+            partials={partialPractices}
             streak={practiceStreak?.current ?? streak}
             atRisk={practiceStreak?.atRisk ?? false}
             loggedToday={practiceStreak?.loggedToday ?? false}

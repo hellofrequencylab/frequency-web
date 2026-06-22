@@ -603,24 +603,58 @@ export async function getPracticeBacklinks(
   return { journeys, circles }
 }
 
-/** Whether a member has adopted a practice + already logged it today (detail CTAs).
- *  "Today" is the member's LOCAL day (profiles.home_timezone), with an optional
- *  client tz fallback, so an already-logged practice stays "logged today" until the
- *  member's own midnight rather than UTC's. */
+/** A practice's PARTIAL-today state for a single practice (the completion-economy partial):
+ *  a today log that banked time but isn't complete, with how far the member got. Threaded to a
+ *  "Continue Practice" button so it resumes the timer for the REMAINING time. */
+export interface PartialToday {
+  /** Seconds already banked on today's partial log (the resume point). */
+  bankedSec: number
+  /** The full target length in seconds (the practice's authored duration). */
+  targetSec: number
+}
+
+/** Whether a member has adopted a practice + already logged it today (detail CTAs), plus the
+ *  PARTIAL-today state when today's log is a banked-but-unfinished sit (completed=false with a
+ *  target ahead of where they got) — powers the "Continue Practice" affordance. "Today" is the
+ *  member's LOCAL day (profiles.home_timezone), with an optional client tz fallback, so an
+ *  already-logged practice stays "logged today" until the member's own midnight rather than UTC's. */
 export async function getPracticeMemberState(
   profileId: string,
   practiceId: string,
   clientTimezone?: string | null,
-): Promise<{ adopted: boolean; loggedToday: boolean }> {
+): Promise<{ adopted: boolean; loggedToday: boolean; partialToday: PartialToday | null }> {
   const today = await resolveMemberDay(profileId, clientTimezone)
   const client = db()
   const [adopt, log] = await Promise.all([
     client.from('member_practices').select('id').eq('profile_id', profileId)
       .eq('practice_id', practiceId).eq('active', true).maybeSingle(),
-    client.from('practice_logs').select('id').eq('profile_id', profileId)
+    // Read the completion columns through the untyped handle (newer than the generated types,
+    // ADR-246) so a banked-but-unfinished log surfaces as a partial, not just "logged today".
+    client.from('practice_logs').select('id, completed, seconds_done, seconds_target')
+      .eq('profile_id', profileId)
       .eq('practice_id', practiceId).eq('logged_for', today).maybeSingle(),
   ])
-  return { adopted: !!adopt.data, loggedToday: !!log.data }
+  const row = log.data as
+    | { id: string; completed: boolean | null; seconds_done: number | null; seconds_target: number | null }
+    | null
+  return {
+    adopted: !!adopt.data,
+    loggedToday: !!row,
+    partialToday: partialFromLogRow(row),
+  }
+}
+
+/** Coerce a practice_logs row into a PartialToday when it's a real, resumable partial: not
+ *  complete, with banked seconds and a larger target ahead. Anything else (a full log, a
+ *  zero/equal target) is not a partial → null. Shared by the detail + index loaders. */
+function partialFromLogRow(
+  row: { completed?: boolean | null; seconds_done?: number | null; seconds_target?: number | null } | null,
+): PartialToday | null {
+  if (!row || row.completed === true) return null
+  const bankedSec = Math.max(0, Math.round(row.seconds_done ?? 0))
+  const targetSec = Math.max(0, Math.round(row.seconds_target ?? 0))
+  if (targetSec <= 0 || targetSec - bankedSec <= 0) return null
+  return { bankedSec, targetSec }
 }
 
 // --- Mutations (callers enforce authz: host for circle, self for personal) -
@@ -1148,6 +1182,38 @@ export async function getPartialPracticesToday(
     })
   }
   return out
+}
+
+/**
+ * A lookup of the member's PARTIAL-today logs keyed by practice id ({ bankedSec, targetSec }) —
+ * the index-surface companion to getPartialPracticesToday (which fetches the full practice rows
+ * for a standalone list). Index surfaces (the "Your practices" rows) already hold the practice,
+ * so they only need the resume numbers per id. One read of today's incomplete logs, no N+1.
+ * "Today" is the member's LOCAL day (home_timezone, then client tz, then UTC). Reads the
+ * completion columns through the untyped handle (newer than the generated types, ADR-246).
+ */
+export async function getPartialMapToday(
+  profileId: string,
+  clientTimezone?: string | null,
+): Promise<Map<string, PartialToday>> {
+  const today = await resolveMemberDay(profileId, clientTimezone)
+  const { data } = await db()
+    .from('practice_logs')
+    .select('practice_id, seconds_done, seconds_target, completed')
+    .eq('profile_id', profileId)
+    .eq('logged_for', today)
+    .eq('completed', false)
+  const rows =
+    (data as
+      | { practice_id: string | null; seconds_done: number | null; seconds_target: number | null }[]
+      | null) ?? []
+  const map = new Map<string, PartialToday>()
+  for (const r of rows) {
+    if (!r.practice_id) continue
+    const partial = partialFromLogRow(r)
+    if (partial) map.set(r.practice_id, partial)
+  }
+  return map
 }
 
 // --- The North-Star emitter ----------------------------------------------

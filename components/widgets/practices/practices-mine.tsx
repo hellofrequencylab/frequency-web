@@ -1,6 +1,6 @@
 import { Zap } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
-import { getMemberPractices, getPracticesToLogToday, type Practice } from '@/lib/practices'
+import { getMemberPractices, getPracticesToLogToday, getPartialMapToday, type Practice, type PartialToday } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
 import { PracticeRowActions } from '@/components/practice/practice-row-actions'
 import { PillarBadge } from '@/components/practice/pillar-badge'
@@ -38,11 +38,14 @@ function MineRow({
   byId,
   profileId,
   loggedToday,
+  partialToday,
 }: {
   p: Practice
   byId: Map<string, Pillar>
   profileId: string
   loggedToday: boolean
+  /** A banked-but-unfinished log today → the row offers "Continue Practice". */
+  partialToday: PartialToday | null
 }) {
   return (
     <li>
@@ -58,6 +61,10 @@ function MineRow({
             title={p.title}
             href={`/practices/${p.id}`}
             loggedToday={loggedToday}
+            timerKind={p.timer_kind}
+            mindlessMode={p.mindless_mode}
+            movementConfig={p.movement_config}
+            partialToday={partialToday}
             isOwner={p.created_by === profileId}
           />
         }
@@ -81,10 +88,14 @@ export async function PracticesMine() {
   // until the member's OWN midnight (not UTC's). A member with no home_timezone falls
   // back to UTC for this first paint; the client row still collapses optimistically on
   // a fresh log, and a revalidate re-seeds it after.
-  const [mine, pillars, toLog] = await Promise.all([
+  // partialMap: practices started but not finished today (a banked partial). A partial reads as
+  // "logged" in toLog (it cleared the day), so we re-surface it as a "Continue Practice" row that
+  // resumes the right timer. One extra read, no per-row query.
+  const [mine, pillars, toLog, partialMap] = await Promise.all([
     getMemberPractices(profileId),
     getPillars(),
     getPracticesToLogToday(profileId),
+    getPartialMapToday(profileId),
   ])
   if (mine.length === 0) return null
   const byId = pillarsById(pillars)
@@ -95,7 +106,14 @@ export async function PracticesMine() {
       <SectionHeader title="Your practices" count={mine.length} />
       <ul className="space-y-3">
         {mine.map((p) => (
-          <MineRow key={p.id} p={p} byId={byId} profileId={profileId} loggedToday={!toLogIds.has(p.id)} />
+          <MineRow
+            key={p.id}
+            p={p}
+            byId={byId}
+            profileId={profileId}
+            loggedToday={!toLogIds.has(p.id)}
+            partialToday={partialMap.get(p.id) ?? null}
+          />
         ))}
       </ul>
     </section>
