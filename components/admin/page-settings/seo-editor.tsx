@@ -7,12 +7,20 @@ import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { isError } from '@/lib/action-result'
 import { getPageSeoForEditor, savePageSeo } from '@/lib/page-settings/actions'
+import type { SeoPane } from '@/lib/page-settings/seo'
 
-// The live SEO editor for the on-page "Page" settings panel (ADR-268). Loads the current
-// route's saved SEO on open (staff-gated server action) and saves title / description /
-// share-image back to the per-route store. The save re-checks staff + validates server-side;
-// applied by the (main) layout's generateMetadata on the next request.
-export function SeoEditor({ spaceId }: { spaceId?: string }) {
+// The live SEO editor for the on-page Settings panel (ADR-268). It backs TWO sections of the
+// settings spine, selected by `pane`:
+//   - 'basics' → the page's IDENTITY: title, subtitle, header image (the top of the hierarchy).
+//   - 'meta'   → SEO & META: the search description and the social share image (lower down).
+// Both load the same per-route row; each SAVES only the fields its pane owns (the action merges
+// over the shared row, so one pane never clobbers the other). The save re-checks staff +
+// validates server-side; applied by the (main) layout's generateMetadata on the next request.
+//
+// NOTE on Subtitle: there is no stored per-page subtitle field yet (it would need its own
+// column + downstream consumption). The Basics pane reserves its place in the hierarchy; until
+// the field exists the page's own data (e.g. an entity's tagline) carries the subtitle.
+export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?: SeoPane }) {
   const pathname = usePathname()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -44,7 +52,8 @@ export function SeoEditor({ spaceId }: { spaceId?: string }) {
     setError(null)
     setSaved(false)
     startTransition(async () => {
-      const r = await savePageSeo(pathname, { title, description, ogImage, headerImage }, spaceId)
+      // Each pane saves only the fields it owns; the action merges them over the shared row.
+      const r = await savePageSeo(pathname, { title, description, ogImage, headerImage }, spaceId, pane)
       if (isError(r)) setError(r.error)
       else {
         setSaved(true)
@@ -57,48 +66,57 @@ export function SeoEditor({ spaceId }: { spaceId?: string }) {
     return <div className="h-44 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
   }
 
+  const isBasics = pane === 'basics'
+
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="space-y-3">
-        <label className="block space-y-1">
-          <span className={labelClasses}>Title</span>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={pending}
-            className={fieldClasses}
-            placeholder="Browser tab + search title"
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className={labelClasses}>Description</span>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            disabled={pending}
-            className={`${fieldClasses} resize-none`}
-            placeholder="Search and link-preview description"
-          />
-        </label>
-        {/* Two images per page: the WIDE banner shown on the page, and the COMPACT social-share
-            image used for link previews. Either can be left empty. */}
-        <ImageUpload
-          label="Header image"
-          hint="Wide banner shown on the page. Use 1600×500 (16:5). The whole image scales to the screen and is never cropped, so keep important text/faces inside a wide frame."
-          value={headerImage || null}
-          onChange={(v) => setHeaderImage(v ?? '')}
-          folder="page-headers"
-          disabled={pending}
-        />
-        <ImageUpload
-          label="Share image"
-          hint="Link-preview image for social / messaging. Use 1200×630 (1.91:1) — the standard Open Graph size."
-          value={ogImage || null}
-          onChange={(v) => setOgImage(v ?? '')}
-          folder="page-shares"
-          disabled={pending}
-        />
+        {isBasics ? (
+          <>
+            <label className="block space-y-1">
+              <span className={labelClasses}>Title</span>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={pending}
+                className={fieldClasses}
+                placeholder="The page name shown at the top, in the tab, and in search"
+              />
+            </label>
+            {/* The WIDE banner shown at the top of the page. */}
+            <ImageUpload
+              label="Header image"
+              hint="Wide banner shown on the page. Use 1600×500 (16:5). The whole image scales to the screen and is never cropped, so keep important text or faces inside a wide frame."
+              value={headerImage || null}
+              onChange={(v) => setHeaderImage(v ?? '')}
+              folder="page-headers"
+              disabled={pending}
+            />
+          </>
+        ) : (
+          <>
+            <label className="block space-y-1">
+              <span className={labelClasses}>Description</span>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                disabled={pending}
+                className={`${fieldClasses} resize-none`}
+                placeholder="Search and link-preview description"
+              />
+            </label>
+            {/* The COMPACT social-share image used for link previews. */}
+            <ImageUpload
+              label="Share image"
+              hint="Link-preview image for social and messaging. Use 1200×630 (1.91:1), the standard Open Graph size."
+              value={ogImage || null}
+              onChange={(v) => setOgImage(v ?? '')}
+              folder="page-shares"
+              disabled={pending}
+            />
+          </>
+        )}
         {error && <p className="text-xs text-danger">{error}</p>}
         <div className="flex items-center justify-end gap-2 pt-1">
           {saved && (

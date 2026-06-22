@@ -10,8 +10,8 @@ export const metadata: Metadata = { title: 'Edit practice' }
 export const dynamic = 'force-dynamic'
 
 // Edit a practice you created (ADR-096). Free for any member, on their OWN practices
-// (ownership enforced). To change a library practice you don't own, the library page
-// offers "Customize" (fork → a private copy → here).
+// (ownership enforced). To change a library practice you don't own, the practice page
+// offers "Remix" (fork → a private copy → here).
 export default async function EditPracticePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const profileId = await getMyProfileId()
@@ -21,7 +21,7 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
   if (!practice) notFound()
   const isAdmin = (await getGlobalCapabilities()).has('admin.access')
   if (practice.created_by !== profileId && !isAdmin) {
-    // Not yours, and not an admin — you can only edit your own. (Customize a copy.)
+    // Not yours, and not an admin — you can only edit your own. (Remix a copy instead.)
     notFound()
   }
 

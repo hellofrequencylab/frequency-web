@@ -147,7 +147,10 @@ export function Reveal({
   }
 
   // Pull-down to close (P12): a clearly-vertical downward drag on ANY card
-  // swipes the whole reveal down and out. Horizontal swipes keep paging.
+  // swipes the whole reveal down and out. The threshold is DELIBERATE (B.2): a
+  // light touch on the Dispatch card must not dismiss it, so the drag has to be a
+  // long, clearly-vertical pull (>= 150px and well past any horizontal travel),
+  // not the old ~80px nudge. Horizontal swipes keep paging.
   const dismiss = () => {
     if (closed.current || dismissing) return
     setDismissing(true)
@@ -163,7 +166,7 @@ export function Reveal({
     const t = e.touches[0]
     const dy = t.clientY - s.y
     const dx = Math.abs(t.clientX - s.x)
-    if (dy > 80 && dy > dx * 1.5) {
+    if (dy > 150 && dy > dx * 2) {
       touchStart.current = null
       dismiss()
     }
@@ -172,12 +175,20 @@ export function Reveal({
     touchStart.current = null
   }
 
+  // The Dispatch is the LAST card; swiping it off the edge onto the trailing ghost
+  // panel closes the mode. That close is DECOUPLED from a tiny scroll (B.2): it no
+  // longer fires the moment the scroll rounds toward the ghost (which let a light
+  // nudge past the Dispatch, or momentum carried over from the Stats card, close it).
+  // It fires ONLY when the ghost panel is FULLY scrolled into view — a committed,
+  // deliberate swipe. The dots still track the four real panels (0..3).
   const onScroll = () => {
     const el = scroller.current
     if (!el) return
-    const idx = Math.round(el.scrollLeft / el.clientWidth)
-    setPanel(Math.min(idx, 3))
-    if (onClose && idx >= 4) close()
+    const w = el.clientWidth
+    setPanel(Math.min(Math.round(el.scrollLeft / w), 3))
+    // Fully committed to the trailing ghost panel (index 4): within a few px of its
+    // left edge, so a half-swipe that snaps back to the Dispatch never closes.
+    if (onClose && w > 0 && el.scrollLeft >= 4 * w - 6) close()
   }
 
   const go = (idx: number) => {

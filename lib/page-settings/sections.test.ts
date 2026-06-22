@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { PAGE_SETTING_SECTIONS, canManagePageSettings } from './sections'
 
 describe('page-settings spine', () => {
-  it('declares the interior page sections in spine order', () => {
-    expect(PAGE_SETTING_SECTIONS.map((s) => s.id)).toEqual(['layout', 'seo', 'status'])
+  it('declares the interior page sections in spine (hierarchy) order', () => {
+    // Identity first, then who-can-see, then how-it-shows-up, with the interior-layout
+    // control last (it only applies on module-driven pages).
+    expect(PAGE_SETTING_SECTIONS.map((s) => s.id)).toEqual(['basics', 'status', 'seo', 'layout'])
   })
 
   it('is interior-only — never exposes a shell-chrome control', () => {
@@ -14,7 +16,7 @@ describe('page-settings spine', () => {
   it('ships every interior section live', () => {
     const live = PAGE_SETTING_SECTIONS.filter((s) => s.status === 'live').map((s) => s.id)
     const next = PAGE_SETTING_SECTIONS.filter((s) => s.status === 'next').map((s) => s.id)
-    expect(live).toEqual(['layout', 'seo', 'status'])
+    expect(live).toEqual(['basics', 'status', 'seo', 'layout'])
     expect(next).toEqual([])
   })
 

@@ -51,7 +51,11 @@ export default async function LibraryPage({
 
   const isApprover = atLeastRole(caller.community_role, 'host')
   const [items, myRatings, pending] = await Promise.all([
-    getLibrary({ type, pillar: pillar ?? null }),
+    // Surface the full catalog — every approved/public practice, program, AND journey
+    // (the `community_library` RPC unions all three). `type`/`pillar` stay as the tab +
+    // filter, both defaulting to null (the "All" tab) so nothing is hidden. We ask for
+    // the RPC's max so a published item is never silently dropped by the default cap.
+    getLibrary({ type, pillar: pillar ?? null, limit: 200 }),
     getMyRatings(caller.id),
     isApprover ? pendingReviewCount() : Promise.resolve(0),
   ])

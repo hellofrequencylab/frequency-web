@@ -221,7 +221,7 @@ export async function setPracticeTagsAction(id: string, labels: string[]): Promi
   return ok()
 }
 
-// Customize a library practice you don't own: fork a PRIVATE copy you own, adopt it
+// Remix a library practice you don't own: fork a PRIVATE copy you own, adopt it
 // into your program, and open the editor on the copy.
 export async function forkPracticeAction(practiceId: string) {
   const profileId = await getMyProfileId()

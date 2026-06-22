@@ -15,7 +15,7 @@ import { ClaimPractice } from '@/components/practice/claim-practice'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { PracticeAuthor } from '@/components/practice/practice-author'
-import { forkPracticeAction } from '../actions'
+import { RemixPracticeButton } from '@/components/practice/remix-practice-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -178,14 +178,9 @@ export default async function PracticeDetailPage({ params }: Params) {
                 )}
               </>
             )}
-            <form action={forkPracticeAction.bind(null, practice.id)}>
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-              >
-                <Wand2 className="h-3.5 w-3.5" /> Customize
-              </button>
-            </form>
+            {/* Remix = fork a copy you own (ADR-109). Gated behind a confirm dialog so the
+                member knows they're creating a NEW practice, not editing the original. */}
+            <RemixPracticeButton practiceId={practice.id} />
           </>
         )}
 

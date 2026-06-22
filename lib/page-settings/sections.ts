@@ -21,7 +21,7 @@ export type PageSettingStatus = 'live' | 'next'
 
 export interface PageSettingSection {
   /** Stable id; the panel switches its control on this. */
-  id: 'layout' | 'seo' | 'status'
+  id: 'basics' | 'status' | 'seo' | 'layout'
   /** Operator-facing label. */
   label: string
   /** The spine "question" this setting answers (memorable, ordered). */
@@ -31,21 +31,22 @@ export interface PageSettingSection {
   status: PageSettingStatus
 }
 
-// Order is the spine order — same on every page, so operators learn it once. Every
-// section is INTERIOR (it tunes the page, never the shell).
+// Order IS the spine — the hierarchy operators read top to bottom, the same on every page,
+// so they learn it once. It runs identity first, then who-can-see, then how-it-shows-up, with
+// the interior-layout control last (it only applies on module-driven pages):
+//   1. Basics  — the page's identity: title, subtitle, header image.
+//   2. Status & visibility — published/draft + the lowest role that can reach it.
+//   3. SEO & meta — the search + link-preview description and share image.
+//   4. Layout  — which modules show inside the page (module-driven pages only).
+// A page exposes only the sections that apply to it; the rest are omitted (see
+// page-settings-module.tsx, where the Layout section is dropped off non-module routes).
+// Every section is INTERIOR — it tunes the page, never the app shell.
 export const PAGE_SETTING_SECTIONS: readonly PageSettingSection[] = [
   {
-    id: 'layout',
-    label: 'Layout',
-    question: 'What shows inside the page?',
-    hint: 'Choose which modules show inside the page and their order. Tunes the page, never the app shell.',
-    status: 'live',
-  },
-  {
-    id: 'seo',
-    label: 'SEO & meta',
-    question: 'How does it show up in search and shares?',
-    hint: 'Set the title, description, and share image for search and link previews.',
+    id: 'basics',
+    label: 'Basics',
+    question: 'What is the page called?',
+    hint: 'Set the title, subtitle, and header image shown at the top of the page.',
     status: 'live',
   },
   {
@@ -53,6 +54,20 @@ export const PAGE_SETTING_SECTIONS: readonly PageSettingSection[] = [
     label: 'Status & visibility',
     question: 'Who can see it?',
     hint: 'Set draft or published and the lowest role that can reach the page.',
+    status: 'live',
+  },
+  {
+    id: 'seo',
+    label: 'SEO & meta',
+    question: 'How does it show up in search and shares?',
+    hint: 'Set the search description and share image for search and link previews.',
+    status: 'live',
+  },
+  {
+    id: 'layout',
+    label: 'Layout',
+    question: 'What shows inside the page?',
+    hint: 'Choose which modules show inside the page and their order. Tunes the page, never the app shell.',
     status: 'live',
   },
 ] as const

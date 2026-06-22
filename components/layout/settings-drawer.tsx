@@ -39,6 +39,14 @@ const MIN_WIDTH = RAIL_WIDTH
 const MAX_WIDTH = 600
 const WIDTH_STEP = 24
 
+// The shell's right side-buffer (the content flex container's lg:px-8 = 2rem). The drawer is
+// painted this much WIDER than its logical width and offset right by the same amount, so its
+// LEFT edge still aligns with the rail column (covering the rail / driving the center
+// compression via the reported width) while its RIGHT edge sits FLUSH to the viewport edge with
+// no gap. Only the paint changes — the reported width below is the logical width, so the
+// shell's column sizing / compression is unchanged.
+const RIGHT_BUFFER = 32
+
 const clampWidth = (w: number) => Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.round(w)))
 
 /** What the drawer reports up so the shell can size the rail column to match (and so the
@@ -249,8 +257,23 @@ export function SettingsDrawer({
     <aside
       role="dialog"
       aria-label="Page settings"
-      style={{ width, transform: shown ? 'translateX(0)' : 'translateX(100%)' }}
-      className={`absolute inset-y-0 right-0 z-30 hidden max-w-full flex-col border-l border-border bg-surface shadow-pop lg:flex ${
+      // Pinned FLUSH to the viewport's right edge — no gap. The rail-column wrapper this is
+      // absolutely positioned inside sits one shell side-buffer (the content flex container's
+      // lg:px-8 = 2rem = RIGHT_BUFFER) in from the viewport edge, so a plain right-0 floats the
+      // drawer that far off the edge. We overhang the buffer: paint the panel RIGHT_BUFFER wider
+      // and offset it right by the same amount, so its LEFT edge still aligns with the rail
+      // column (covering the rail) while its RIGHT edge meets the viewport edge. The slide-in
+      // translateX uses the painted width so it still settles flush.
+      style={{
+        width: width + RIGHT_BUFFER,
+        right: -RIGHT_BUFFER,
+        transform: shown ? 'translateX(0)' : 'translateX(100%)',
+      }}
+      // No max-w cap here: the painted width intentionally overhangs the rail column by
+      // RIGHT_BUFFER to reach the viewport edge (max-w-full would resolve against the column and
+      // clamp the overhang back off). The width is already bounded by MAX_WIDTH + the buffer,
+      // which stays well within any lg viewport.
+      className={`absolute inset-y-0 z-30 hidden flex-col border-l border-border bg-surface shadow-pop lg:flex ${
         resizing ? '' : 'transition-transform duration-200 ease-out motion-reduce:transition-none'
       }`}
     >

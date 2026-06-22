@@ -8,7 +8,7 @@ import { isStaff } from '@/lib/core/roles'
 import { loadRootSpaceId, getSpaceById } from '@/lib/spaces/store'
 import { isSafeRoute } from '@/lib/layout/page-chrome'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { normalizeSeo, type SeoFields } from './seo'
+import { normalizeSeoForPane, type SeoFields, type SeoPane } from './seo'
 import { normalizeStatus, type StatusFields } from './status'
 import { parseLayout, moduleAssignments, isLayoutScopeKey, isModuleRole, type LayoutConfig, type ModuleRole, type SlotConfig } from './layout'
 import { moduleIdsForScope, moduleMeta } from '@/lib/widgets/modules'
@@ -56,22 +56,41 @@ function db() {
   return createAdminClient()
 }
 
-/** Save the per-route SEO (title / description / share image) for a space (default root).
- *  Upserts the (space_id, route) row. */
+/** Save the per-route SEO for a space (default root). Upserts the (space_id, route) row.
+ *
+ *  The settings spine splits these fields across two panes (the settings hierarchy): "Basics"
+ *  owns title + header image, "SEO & meta" owns description + share image. So an optional `pane`
+ *  scopes the write to JUST that pane's columns — the action reads the existing row and MERGES,
+ *  so saving one pane never nulls the other pane's fields on the shared row. With no `pane`, the
+ *  full set is written (the legacy single-form behavior). */
 export async function savePageSeo(
   route: string,
   input: { title?: string; description?: string; ogImage?: string; headerImage?: string },
   spaceId?: string | null,
+  pane?: SeoPane,
 ): Promise<ActionResult> {
   const ctx = await gateForSpace(spaceId)
   if (!ctx) return fail('You can only edit your own space.')
   if (!isSafeRoute(route)) return fail('That is not a valid app route.')
-  const fields = normalizeSeo(input)
+  const fields = normalizeSeoForPane(input, pane)
   if (!fields) return fail('An image must be an https URL or a path that starts with /.')
+
+  // Merge over the existing row so a pane only ever writes its OWN columns: read the current
+  // SEO, then overlay the normalized pane fields. (With no pane, `fields` already carries all
+  // four, so the merge is a full overwrite — the legacy behavior.)
+  const { loadPageSettings } = await import('./store')
+  const current = await loadPageSettings(route, ctx.spaceId)
+  const merged: SeoFields = {
+    seo_title: current?.seo_title ?? null,
+    seo_description: current?.seo_description ?? null,
+    og_image_url: current?.og_image_url ?? null,
+    header_image_url: current?.header_image_url ?? null,
+    ...fields,
+  }
 
   // space_id + header_image_url aren't in the generated types yet — cast the payload (ADR-246),
   // not the client. onConflict is the (space_id, route) composite key.
-  const payload = { route, space_id: ctx.spaceId, ...fields, updated_by: ctx.profileId, updated_at: new Date().toISOString() }
+  const payload = { route, space_id: ctx.spaceId, ...merged, updated_by: ctx.profileId, updated_at: new Date().toISOString() }
   const { error } = await db()
     .from('page_settings')
     .upsert(payload as unknown as Database['public']['Tables']['page_settings']['Insert'], { onConflict: 'space_id,route' })

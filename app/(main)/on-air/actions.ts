@@ -16,7 +16,24 @@ import { getOrCreateDispatch } from '@/lib/vera-dispatch'
 import { getNextGathering } from '@/lib/quest/next-gathering'
 import { buildSessionDispatch } from '@/lib/on-air'
 import { loadOnAirSessionData, type OnAirSessionData } from '@/lib/on-air/session-data'
-import type { OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
+import type { DispatchKind, OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
+
+/** Map a completed session to the Dispatch opener kind (task D). A Movement sit
+ *  reports its movementMode (walk / run / yoga / strength / stretch / play) — that
+ *  names the line. A plain Mindless sit reports no movementMode, so the sit mode
+ *  (timer / breath / journal / stillness / ritual / log) names it instead. A legacy
+ *  'workout' movementMode maps to 'strength' to match the six-mode engine. */
+function dispatchKindFor(
+  movementMode: string | null | undefined,
+  mode: SessionMode,
+): DispatchKind {
+  if (movementMode) {
+    const m = movementMode === 'workout' ? 'strength' : movementMode
+    const known = ['walk', 'run', 'yoga', 'strength', 'stretch', 'play']
+    if (known.includes(m)) return m as DispatchKind
+  }
+  return mode
+}
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -234,12 +251,17 @@ export async function completeSession(
       getNextGathering(profileId).catch(() => null),
     ])
     if (toLog === null && gathering === null) throw new Error('state reads failed')
+    // The opener reflects WHAT was practiced (task D): a Movement sit names its
+    // movement kind (walk / run / yoga / strength / stretch / play); a Mindless
+    // sit names its mode. So a walk never reads "Good sit."
+    const dispatchKind = dispatchKindFor(input.movementMode, input.mode)
     dispatch = buildSessionDispatch({
       practicesLeft: (toLog ?? []).map((p) => p.title),
       gathering:
         gathering && gathering.rsvped
           ? { title: gathering.title, slug: gathering.slug }
           : null,
+      kind: dispatchKind,
     })
   } catch {
     // Last resort only: the cached, AI-voiced Dispatch from Vera.
