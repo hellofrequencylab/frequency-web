@@ -173,6 +173,7 @@ export function MegaBar({
   panelAlign = 'viewport',
   rightRail = false,
   timings,
+  panelHeader,
 }: {
   /** The DB-backed (or code-default) menus this bar renders, in trigger order. */
   menus: ResolvedMenu[]
@@ -198,6 +199,9 @@ export function MegaBar({
   /** Only meaningful with panelAlign='content': reserve the right rail width (lg+) so the
    *  card stops at the right rail, like the member shell. Omit where there is no right rail. */
   rightRail?: boolean
+  /** Optional node rendered at the TOP of the panel body (content align only), e.g. the admin
+   *  search bar, so the menu can be searched while it stays open. */
+  panelHeader?: React.ReactNode
 }) {
   const pathname = usePathname()
   const [active, setActive] = useState<string | null>(null)
@@ -553,7 +557,10 @@ export function MegaBar({
             // SPACERS) so the visible card lands exactly in the content column between rails.
             <div className="mx-auto flex max-w-[105rem] gap-8 px-4 sm:px-6 lg:px-8">
               <div className="hidden w-48 shrink-0 md:block" aria-hidden />
-              <div className="min-w-0 flex-1 py-6">{panelBody}</div>
+              <div className="min-w-0 flex-1 py-6">
+                {panelHeader && <div className="mb-6">{panelHeader}</div>}
+                {panelBody}
+              </div>
               {rightRail && <div className="hidden w-72 shrink-0 lg:block" aria-hidden />}
             </div>
           ) : (

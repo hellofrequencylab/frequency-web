@@ -52,6 +52,7 @@ import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { MegaBar } from '@/components/layout/mega-menu'
+import { AdminSearchBar } from '@/components/admin/admin-search-bar'
 import { defaultMenu } from '@/lib/menus/defaults'
 import type {
   MenuAccess,
@@ -1724,7 +1725,7 @@ export default function AppShell({
           panel slides out from under it with panelAlign='content' (no rightRail — admin has
           no member right rail), so the slide-out stays in the page content column. */}
       {showAdminMega && adminMega && (
-        <div className="sticky top-14 z-20 hidden border-b border-border bg-surface/95 backdrop-blur-sm md:block">
+        <div className="sticky top-14 z-30 hidden border-b border-border bg-surface/95 backdrop-blur-sm md:block">
           <div className="mx-auto flex h-12 max-w-[105rem] items-center gap-8 px-4 sm:px-6 lg:px-8">
             <div className="hidden w-48 shrink-0 md:block" aria-hidden />
             <div className="min-w-0 flex-1">
@@ -1736,6 +1737,7 @@ export default function AppShell({
                 ariaLabel="Admin"
                 panelAlign="content"
                 timings={menuTimings}
+                panelHeader={<AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />}
               />
             </div>
           </div>
