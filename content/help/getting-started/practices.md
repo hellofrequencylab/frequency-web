@@ -3,7 +3,7 @@ title: Practices, choose, do, log
 description: Adopt a practice or follow your Circle's, then log it each day to earn Zaps and build your streak.
 category: getting-started
 order: 3
-updated: 2026-06-11
+updated: 2026-06-22
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -53,13 +53,19 @@ shifts.
 
 You can shape practices, not just pick them:
 
-- **Create one.** On **Practices**, hit **Create a practice**, give it a name, and
-  you will drop straight into the editor to add the details.
-- **Edit yours.** Any practice you created shows an **Edit** button. Change its
-  name, summary, full "how to" guide, cadence, Pillar, category, and icon.
-- **Customize one from the library.** See a practice that is close but not quite
-  yours? Hit **Customize** to make your own private copy and edit it freely. The
-  original stays exactly as it was for everyone else.
+- **Create one with Vera.** On **Practices**, hit **Create a practice** to open the
+  builder. Answer a few quick questions (who it is for, the act itself, what you want
+  out of it, how often, and how long) and Vera drafts the whole thing: a name, a hook,
+  the steps, a cadence, and a Pillar. Review it, change anything, and create. Want to
+  start from scratch instead? Pick "Skip, I'll build it myself" to go straight to the editor.
+- **Edit yours.** Any practice you created shows an **Edit** button. Change its name,
+  summary, full "how to" guide, cadence, Pillar, category, and icon by hand, or use
+  **Edit with Vera** to make a change in plain language ("make it a morning sit," "cut it
+  to five minutes").
+- **Remix one from the library.** See a practice that is close but not quite yours? Hit
+  **Remix** to make your own copy and edit it freely. The idea is to put your own spin on
+  it, a new angle or your own niche, not to repost the same thing. The original stays
+  exactly as it was for everyone else.
 
 (Editing covers the content and cadence. What a log is worth in Zaps is set by the team
 so the Quest stays fair: most Quest practices are valued by how often you do them, not how

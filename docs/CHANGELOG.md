@@ -10,8 +10,18 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Added
+
+- **Build a practice with Vera**: hit **Create a practice** and answer a few quick
+  questions (who it's for, the act, what you want from it, how often, how long). Vera
+  drafts the whole thing, a name, a hook, the steps, a cadence, and a Pillar, for you
+  to review and tweak. Prefer to start from scratch? Skip and go straight to the editor.
+
 ### Changed
 
+- **"Customize" is now "Remix"**: making a library practice your own works the same
+  way, with a clearer name. The nudge is to add your own spin (a new angle or your own
+  niche), not to repost the same thing.
 - **Vera welcomes new members now**: the old "Frequency Moderation" account is
   Vera, with a **Moderator** badge. When someone new joins, she drops a single
   quiet line in the feed instead of a full post, the way a group chat notes a
