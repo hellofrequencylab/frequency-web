@@ -47,8 +47,9 @@ import { GhostLink } from '@/components/layout/ghost-link'
 //
 // MOTION — opens with a slide-out-from-under (translateY reveal from behind the bar, which
 // sits opaque + above it). Opens on CLICK only (owner directive: never on hover/rollover).
-// Closes by FADING out (not an instant unmount) on a second click of the trigger, an
-// outside-click, Escape, scroll, or navigation. Honors prefers-reduced-motion.
+// AUTO-CLOSES on disengage: once open, a pointer-leave starts the DWELL timer (from the Menu
+// Manager speed settings), then fades; re-entering the bar or panel cancels it. Escape,
+// outside-click, scroll, and navigation also fade it closed. Honors prefers-reduced-motion.
 //
 // Accessible: real button/link triggers; the panel toggles on click (Enter/Space on the
 // button), closes on Escape / outside-click / focus-out / navigation (WCAG 1.4.13 + 2.1.1).
@@ -59,9 +60,12 @@ type Variant = 'light' | 'dark'
 // Default motion timings (ms). The global Menu Manager speed settings override these via the
 // `timings` prop; the constants are the fallback when none is passed.
 //   - OPEN_DELAY: grace after the trigger is clicked before the panel opens (0 = immediate).
+//   - DWELL: once open, how long the panel LINGERS after the pointer leaves before it fades
+//     (the auto-close delay); a longer dwell forgives a brief overshoot.
 //   - FADE: the fade-out duration; it matches the CSS transition so the panel unmounts the
 //     moment it finishes animating out.
 const DEFAULT_OPEN_DELAY_MS = 0
+const DEFAULT_DWELL_MS = 1500
 const DEFAULT_FADE_MS = 240
 
 // ── Resolved-menu adapter ─────────────────────────────────────────────────────
@@ -202,6 +206,7 @@ export function MegaBar({
   // so a close first flips `shown` false (fade out) and only THEN clears `active` (unmount).
   const [shown, setShown] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const lingerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const panelId = useId()
@@ -209,9 +214,14 @@ export function MegaBar({
   const triggers = useMemo(() => buildTriggers(menus, triggerLevel), [menus, triggerLevel])
 
   const openDelayMs = timings?.openDelayMs ?? DEFAULT_OPEN_DELAY_MS
+  const dwellMs = timings?.dwellMs ?? DEFAULT_DWELL_MS
   const fadeMs = timings?.fadeMs ?? DEFAULT_FADE_MS
 
   const clearTimers = useCallback(() => {
+    if (lingerTimer.current) {
+      clearTimeout(lingerTimer.current)
+      lingerTimer.current = null
+    }
     if (fadeTimer.current) {
       clearTimeout(fadeTimer.current)
       fadeTimer.current = null
@@ -241,6 +251,20 @@ export function MegaBar({
     setShown(false)
     fadeTimer.current = setTimeout(() => setActive(null), fadeMs)
   }, [clearTimers, fadeMs])
+
+  // Disengage (pointer left the open bar + panel): linger for the DWELL, THEN fade. A re-enter
+  // (cancelClose) aborts before the fade. This is the auto-close; opening stays click-only.
+  const scheduleClose = useCallback(() => {
+    clearTimers()
+    lingerTimer.current = setTimeout(beginClose, dwellMs)
+  }, [clearTimers, beginClose, dwellMs])
+
+  // Re-engaged (pointer back over the bar or panel): cancel a pending linger/fade and, if a fade
+  // had already started, settle the panel open again so it never half-vanishes.
+  const cancelClose = useCallback(() => {
+    clearTimers()
+    setShown((s) => (active ? true : s))
+  }, [clearTimers, active])
 
   // Slide-in on open: `shown` starts false, then settles true next frame so the entrance
   // animates. Switching between open triggers keeps it true (the panel persists).
@@ -439,6 +463,8 @@ export function MegaBar({
     <div
       ref={ref}
       className={className}
+      onMouseEnter={cancelClose}
+      onMouseLeave={scheduleClose}
       onBlur={(e) => {
         if (ref.current && !ref.current.contains(e.relatedTarget as Node)) beginClose()
       }}

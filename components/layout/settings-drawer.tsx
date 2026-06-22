@@ -273,7 +273,7 @@ export function SettingsDrawer({
       // RIGHT_BUFFER to reach the viewport edge (max-w-full would resolve against the column and
       // clamp the overhang back off). The width is already bounded by MAX_WIDTH + the buffer,
       // which stays well within any lg viewport.
-      className={`absolute inset-y-0 z-30 hidden flex-col border-l border-border bg-surface shadow-pop lg:flex ${
+      className={`absolute inset-y-0 z-50 hidden flex-col border-l border-border bg-surface shadow-pop lg:flex ${
         resizing ? '' : 'transition-transform duration-200 ease-out motion-reduce:transition-none'
       }`}
     >

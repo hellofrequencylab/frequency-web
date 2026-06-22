@@ -829,12 +829,6 @@ h1, h2, h3, h4, h5, h6 {
 .brandmark-link:focus-visible {
   box-shadow: none;
 }
-/* The admin command-bar search field sits on a transparent band (owner directive), so a
-   hard focus ring would box an otherwise borderless, background-matching field. The text
-   caret is the focus affordance. Higher specificity than the generic input ring above. */
-.admin-search-field:focus-visible {
-  box-shadow: none;
-}
 
 /* ── Rank badge primitive. Drives off three CSS vars set inline.
    Usage:
