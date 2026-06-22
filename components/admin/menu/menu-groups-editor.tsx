@@ -1,60 +1,58 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
-import { Columns3, FolderPlus, Plus, RotateCcw, Trash2 } from 'lucide-react'
-import type { ResolvedItem, ResolvedMenu, ResolvedRailCard } from '@/lib/menus/types'
+import { FolderPlus, Plus, Trash2 } from 'lucide-react'
+import type { ResolvedItem, ResolvedMenu } from '@/lib/menus/types'
 import {
   ensureMenu,
   materializeMenu,
-  seedMenuFromDefaults,
-  setMenuColumns,
   createCategory,
   updateCategory,
   deleteCategory,
   createItem,
   reorderItems,
-  createRailCard,
 } from '@/lib/menus/actions'
 import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ItemEditor, GridControls } from './item-editor'
-import { RailCardEditor } from './rail-card-editor'
 import { isGridSurface } from './known-routes'
 import { isPinnedRailItem, PINNED_PROFILE_ID } from '@/lib/menus/defaults'
 
-// The per-surface menu editor. Holds the working ResolvedMenu in state and drives
-// every CRUD path against lib/menus/actions. Categories (3), columns (5), grid
-// placement (6), drag/drop links within & across groups (7), and rail cards (10) all
-// live here; per-item depth (4, 8, 9, 11) is delegated to ItemEditor.
+// The Menu groups + links editor — the `menu-groups` template block, and the BULK of the
+// navigation editor. Holds the working ResolvedMenu in local state and drives the category/item
+// CRUD against lib/menus/actions: add/edit/delete groups & sub-groups (3), per-item depth — subheading,
+// placement, modes, the per-role matrix (4, 8, 9, 11), drag/drop links within and across groups (7).
+//
+// COUPLING — materialize-on-default lives HERE, and ONLY here. A surface that has never been
+// customized (or whose row is empty) is served from the code defaults with synthetic ids; per-item
+// edits need REAL DB rows. So on open this block materializes the defaults ONCE and adopts the real
+// menu. The sibling surface-scoped blocks (menu-layout, menu-rail-cards) must NOT each fire their
+// own materialize — three blocks racing seedMenuFromDefaults would clobber each other — so they
+// only read getAdminMenu and `ensureMenu` lazily on their own first write. This block is the single
+// primary editor that owns the one auto-materialize, preserving the empty-row→default fallback.
 //
 // ROOT is the synthetic bucket for items with no category (menu-level links).
 const ROOT = '__root__'
 
 type DragRef = { itemId: string; from: string } | null
 
-export function MenuEditor({
+export function MenuGroupsEditor({
   initialMenu,
   surfaceKey,
-  surfaceLabel,
-  onStatus,
-  leftColumnTop,
-  rightColumnTop,
 }: {
   initialMenu: ResolvedMenu
   surfaceKey: ResolvedMenu['surfaceKey']
-  surfaceLabel: string
-  onStatus: (msg: string) => void
-  /** Rendered at the TOP of the left (editor) column — the surface picker (point 2). */
-  leftColumnTop?: React.ReactNode
-  /** Rendered at the TOP of the right (settings) column — the speed panel (point 2). */
-  rightColumnTop?: React.ReactNode
 }) {
   const [menu, setMenu] = useState<ResolvedMenu>(initialMenu)
   const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState<string>('')
   const [isPending, startTransition] = useTransition()
-  const [columnsDraft, setColumnsDraft] = useState(String(initialMenu.columns))
   const dragRef = useRef<DragRef>(null)
   const [dragId, setDragId] = useState<string | null>(null)
+
+  function onStatus(msg: string) {
+    setStatus(msg)
+  }
 
   // Grid surfaces (mega-menus) show the column / row / span placement controls; linear
   // surfaces (left rail, marketing footer) hide them (point 4).
@@ -96,6 +94,7 @@ export function MenuEditor({
   // DB row is empty so the reader falls back to defaults. Per-item edits need REAL rows, so on
   // open we materialize the defaults into the DB once and adopt the real menu. This is what makes
   // a never-touched surface (e.g. the left rail) actually manageable instead of a dead default.
+  // This is the SINGLE place materialize runs (see the COUPLING note above).
   const materializedRef = useRef(false)
   useEffect(() => {
     if (!menu.isDefault || materializedRef.current) return
@@ -113,61 +112,12 @@ export function MenuEditor({
         onStatus('Could not load this menu')
       }
     })
-    // Runs once per surface mount (the parent keys MenuEditor by surface).
+    // Runs once per surface mount (the block is keyed by surface, so a re-scope remounts it).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surfaceKey])
 
   // ── Flatten the nested category tree to a render list (depth for indentation) ──
   const flatCategories = useMemo(() => flatten(menu.categories), [menu.categories])
-
-  // ── Columns (requirement 5) ────────────────────────────────────────────────
-  function saveColumns(next: number) {
-    const clamped = Math.max(1, Math.min(12, Math.round(next)))
-    const prev = menu.columns
-    setMenu((m) => ({ ...m, columns: clamped }))
-    setColumnsDraft(String(clamped))
-    setError(null)
-    onStatus('Saving columns')
-    startTransition(async () => {
-      const id = await ensuredMenuId()
-      if (!id) {
-        setMenu((m) => ({ ...m, columns: prev }))
-        return
-      }
-      const res = await setMenuColumns(id, clamped)
-      if (res.ok) onStatus('Columns saved')
-      else {
-        setMenu((m) => ({ ...m, columns: prev }))
-        setError(res.error)
-        onStatus('Could not save columns')
-      }
-    })
-  }
-
-  // ── Seed / reset (requirement 12) ──────────────────────────────────────────
-  function seed() {
-    const verb = menu.isDefault ? 'Seed' : 'Reset'
-    if (
-      !confirm(
-        `${verb} "${surfaceLabel}" from the site defaults? This replaces every category, link, and rail card on this surface with today's nav. This cannot be undone.`,
-      )
-    )
-      return
-    setError(null)
-    onStatus(`${verb}ing from defaults`)
-    startTransition(async () => {
-      const res = await seedMenuFromDefaults(surfaceKey)
-      if (res.ok) {
-        onStatus('Seeded from defaults. Reload to edit the new rows.')
-        // The action replaced rows server-side; the simplest faithful refresh is a
-        // reload so the editor rehydrates from the freshly seeded DB shape.
-        if (typeof window !== 'undefined') window.location.reload()
-      } else {
-        setError(res.error)
-        onStatus('Could not seed from defaults')
-      }
-    })
-  }
 
   // ── Add a category (requirement 3) ─────────────────────────────────────────
   function addCategory(parentId: string | null) {
@@ -296,42 +246,6 @@ export function MenuEditor({
     })
   }
 
-  // ── Add a rail card (requirement 10) ───────────────────────────────────────
-  function addRailCard(side: 'left' | 'right') {
-    setError(null)
-    onStatus('Adding rail card')
-    startTransition(async () => {
-      const id = await ensuredMenuId()
-      if (!id) return
-      const position = menu.railCards.filter((c) => c.side === side).length
-      const res = await createRailCard({
-        menuId: id,
-        side,
-        title: 'New card',
-        body: 'A short, inviting line.',
-        href: '/feed',
-        position,
-      })
-      if (res.ok) {
-        const fresh: ResolvedRailCard = {
-          id: res.id,
-          side,
-          title: 'New card',
-          body: 'A short, inviting line.',
-          href: '/feed',
-          position,
-          mode: 'active',
-          roleModes: {},
-        }
-        setMenu((m) => ({ ...m, railCards: [...m.railCards, fresh] }))
-        onStatus('Rail card added')
-      } else {
-        setError(res.error)
-        onStatus('Could not add rail card')
-      }
-    })
-  }
-
   // ── Drag/drop links within & across buckets (requirement 7) ────────────────
   function itemsInBucket(bucket: string): ResolvedItem[] {
     if (bucket === ROOT) return menu.rootItems
@@ -392,242 +306,132 @@ export function MenuEditor({
     }
   }
 
-  const seedLabel = menu.isDefault ? 'Seed from site defaults' : 'Reset from site defaults'
-
-  // Columns (the menu-wide column count) + Seed/Reset — the right (settings) column.
-  const layoutAndDefaults = (
+  return (
     <AdminSection
-      title="Layout & defaults"
-      description="Set how many columns this menu spreads across, then seed or reset it from today's site nav."
+      title="Groups & links"
+      description="Add groups and sub-groups, edit each group heading, then drag links to reorder within a group or move them across groups. Open a link to edit its subheading, placement, modes, and per-role visibility."
       actions={
-        <button
-          type="button"
-          onClick={seed}
-          disabled={isPending}
-          className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
-        >
-          <RotateCcw className="h-4 w-4 shrink-0" aria-hidden />
-          {seedLabel}
-        </button>
+        <div className="flex items-center gap-2">
+          {status && (
+            <span className="text-xs text-subtle" aria-hidden>
+              {status}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => addItem(null)}
+            disabled={isPending}
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Menu-level link
+          </button>
+          <button
+            type="button"
+            onClick={() => addCategory(null)}
+            disabled={isPending}
+            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          >
+            <FolderPlus className="h-4 w-4" aria-hidden />
+            Add group
+          </button>
+        </div>
       }
     >
-      <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
-        <div className="min-w-0">
-          <label htmlFor={`cols-${surfaceKey}`} className="mb-1 flex items-center gap-2 text-xs font-semibold text-subtle">
-            <Columns3 className="h-3.5 w-3.5" aria-hidden />
-            Columns
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              id={`cols-${surfaceKey}`}
-              type="number"
-              min={1}
-              max={12}
-              value={columnsDraft}
-              disabled={isPending}
-              onChange={(e) => setColumnsDraft(e.target.value)}
-              onBlur={() => {
-                const n = Number(columnsDraft)
-                if (Number.isFinite(n) && n !== menu.columns) saveColumns(n)
-                else setColumnsDraft(String(menu.columns))
-              }}
-              className="w-24 rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm tabular-nums text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-            />
-            <span className="text-xs text-subtle">1 to 12, default 6</span>
-          </div>
+      {/* Live status line — announced for assistive tech, visible via the section action above. */}
+      <p aria-live="polite" className="sr-only">
+        {status}
+      </p>
+
+      {error && (
+        <p className="mb-3 rounded-lg border border-danger/30 bg-danger-bg/40 px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
+
+      {menu.isDefault && (
+        <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/50 p-4 text-sm text-muted">
+          This surface has no saved menu yet, so it is showing the site defaults. Editing
+          anything, or seeding, creates an editable copy in the database.
         </div>
-      </div>
-    </AdminSection>
-  )
+      )}
 
-  return (
-    // Two-thirds / one-third on lg+ (point 2): editor left (col-span-2), settings right
-    // (col-span-1, sticky). Single column on mobile.
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-      {/* Left column: surface picker, then Groups & links, then Rail cards. */}
-      <div className="space-y-8 lg:col-span-2">
-        {leftColumnTop}
+      {/* Menu-level (root) links */}
+      <Bucket
+        title="Menu-level links"
+        hint="Links that sit directly on the menu, outside any group."
+        items={draggableRootItems}
+        pinnedLead={pinnedLead}
+        isGrid={isGrid}
+        bucket={ROOT}
+        dragId={dragId}
+        isPending={isPending}
+        onAddItem={() => addItem(null)}
+        onDropInto={() => moveIntoBucket(ROOT)}
+        dragHandlersFor={dragHandlersFor}
+        patchItem={(id, patch) => setMenu((m) => patchRootItem(m, id, patch))}
+        deleteItem={(id) => setMenu((m) => ({ ...m, rootItems: m.rootItems.filter((i) => i.id !== id) }))}
+        onStatus={onStatus}
+      />
 
-        {error && (
-          <p className="rounded-lg border border-danger/30 bg-danger-bg/40 px-3 py-2 text-sm text-danger">
-            {error}
-          </p>
-        )}
-
-        {menu.isDefault && (
-          <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-4 text-sm text-muted">
-            This surface has no saved menu yet, so it is showing the site defaults. Editing
-            anything, or seeding, creates an editable copy in the database.
-          </div>
-        )}
-
-      {/* Categories + links (3, 4, 6, 7, 8, 9) */}
-      <AdminSection
-        title="Groups & links"
-        description="Add groups and sub-groups, edit each group heading, then drag links to reorder within a group or move them across groups. Open a link to edit its subheading, placement, modes, and per-role visibility."
-        actions={
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => addItem(null)}
-              disabled={isPending}
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
-            >
-              <Plus className="h-4 w-4" aria-hidden />
-              Menu-level link
-            </button>
+      {flatCategories.length === 0 ? (
+        <EmptyState
+          title="No groups yet"
+          description="Add a group to start organizing this menu into columns of links."
+          action={
             <button
               type="button"
               onClick={() => addCategory(null)}
-              disabled={isPending}
-              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
-              <FolderPlus className="h-4 w-4" aria-hidden />
-              Add group
+              Add a group
             </button>
-          </div>
-        }
-      >
-        {/* Menu-level (root) links */}
-        <Bucket
-          title="Menu-level links"
-          hint="Links that sit directly on the menu, outside any group."
-          items={draggableRootItems}
-          pinnedLead={pinnedLead}
-          isGrid={isGrid}
-          bucket={ROOT}
-          dragId={dragId}
-          isPending={isPending}
-          onAddItem={() => addItem(null)}
-          onDropInto={() => moveIntoBucket(ROOT)}
-          dragHandlersFor={dragHandlersFor}
-          patchItem={(id, patch) => setMenu((m) => patchRootItem(m, id, patch))}
-          deleteItem={(id) => setMenu((m) => ({ ...m, rootItems: m.rootItems.filter((i) => i.id !== id) }))}
-          onStatus={onStatus}
+          }
         />
-
-        {flatCategories.length === 0 ? (
-          <EmptyState
-            title="No groups yet"
-            description="Add a group to start organizing this menu into columns of links."
-            action={
-              <button
-                type="button"
-                onClick={() => addCategory(null)}
-                className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-              >
-                Add a group
-              </button>
-            }
-          />
-        ) : (
-          <ul className="space-y-4">
-            {flatCategories.map(({ cat, depth }) => (
-              <li
-                key={cat.id}
-                style={{ marginLeft: depth * 16 }}
-                className="rounded-2xl border border-border bg-surface p-4 sm:p-5"
-              >
-                <CategoryHeader
-                  cat={cat}
-                  isPending={isPending}
-                  isGrid={isGrid}
-                  onRename={(label) => renameCategory(cat.id, label)}
-                  onAddSub={() => addCategory(cat.id)}
-                  onAddItem={() => addItem(cat.id)}
-                  onDelete={() => removeCategory(cat.id, cat.label)}
-                  onSaveGrid={(p) => saveCategoryGrid(cat.id, p)}
-                />
-                <Bucket
-                  items={cat.items}
-                  isGrid={isGrid}
-                  bucket={cat.id}
-                  dragId={dragId}
-                  isPending={isPending}
-                  onAddItem={() => addItem(cat.id)}
-                  onDropInto={() => moveIntoBucket(cat.id)}
-                  dragHandlersFor={dragHandlersFor}
-                  patchItem={(id, patch) => setMenu((m) => patchCategoryItem(m, cat.id, id, patch))}
-                  deleteItem={(id) =>
-                    setMenu((m) => ({
-                      ...m,
-                      categories: patchCategory(m.categories, cat.id, undefined, (c) => ({
-                        ...c,
-                        items: c.items.filter((i) => i.id !== id),
-                      })),
-                    }))
-                  }
-                  onStatus={onStatus}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </AdminSection>
-
-      {/* Rail cards (10) */}
-      <AdminSection
-        title="Rail cards"
-        description="Featured side cards on the menu panel, like the welcome card that invites a member to find their first circle."
-        actions={
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => addRailCard('left')}
-              disabled={isPending}
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+      ) : (
+        <ul className="space-y-4">
+          {flatCategories.map(({ cat, depth }) => (
+            <li
+              key={cat.id}
+              style={{ marginLeft: depth * 16 }}
+              className="rounded-2xl border border-border bg-surface p-4 sm:p-5"
             >
-              <Plus className="h-4 w-4" aria-hidden />
-              Left card
-            </button>
-            <button
-              type="button"
-              onClick={() => addRailCard('right')}
-              disabled={isPending}
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
-            >
-              <Plus className="h-4 w-4" aria-hidden />
-              Right card
-            </button>
-          </div>
-        }
-      >
-        {menu.railCards.length === 0 ? (
-          <EmptyState
-            title="No rail cards"
-            description="Add a left or right card to feature a destination beside the links."
-          />
-        ) : (
-          <ul className="space-y-2">
-            {menu.railCards.map((card) => (
-              <RailCardEditor
-                key={card.id}
-                card={card}
-                onStatus={onStatus}
-                onChanged={(patch) =>
+              <CategoryHeader
+                cat={cat}
+                isPending={isPending}
+                isGrid={isGrid}
+                onRename={(label) => renameCategory(cat.id, label)}
+                onAddSub={() => addCategory(cat.id)}
+                onAddItem={() => addItem(cat.id)}
+                onDelete={() => removeCategory(cat.id, cat.label)}
+                onSaveGrid={(p) => saveCategoryGrid(cat.id, p)}
+              />
+              <Bucket
+                items={cat.items}
+                isGrid={isGrid}
+                bucket={cat.id}
+                dragId={dragId}
+                isPending={isPending}
+                onAddItem={() => addItem(cat.id)}
+                onDropInto={() => moveIntoBucket(cat.id)}
+                dragHandlersFor={dragHandlersFor}
+                patchItem={(id, patch) => setMenu((m) => patchCategoryItem(m, cat.id, id, patch))}
+                deleteItem={(id) =>
                   setMenu((m) => ({
                     ...m,
-                    railCards: m.railCards.map((c) => (c.id === card.id ? { ...c, ...patch } : c)),
+                    categories: patchCategory(m.categories, cat.id, undefined, (c) => ({
+                      ...c,
+                      items: c.items.filter((i) => i.id !== id),
+                    })),
                   }))
                 }
-                onDeleted={() =>
-                  setMenu((m) => ({ ...m, railCards: m.railCards.filter((c) => c.id !== card.id) }))
-                }
+                onStatus={onStatus}
               />
-            ))}
-          </ul>
-        )}
-      </AdminSection>
-      </div>
-
-      {/* Right column: speed panel (top), then Layout & defaults. Sticky on lg+. */}
-      <div className="lg:col-span-1">
-        <div className="space-y-8 lg:sticky lg:top-6">
-          {rightColumnTop}
-          {layoutAndDefaults}
-        </div>
-      </div>
-    </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </AdminSection>
   )
 }
 

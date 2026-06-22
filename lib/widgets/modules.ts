@@ -40,8 +40,12 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'quest-explore', label: 'Explore links', description: 'Quick links to Journeys, Practices, Challenges, and The Vault.' },
   { id: 'quest-leaderboard', label: 'Circle leaderboard', description: "The member's circle ranked by season Zaps." },
 
-  // ── Menu Manager blocks (/admin/menu) — the DB-backed navigation editor ──
-  { id: 'menu-manager', label: 'Menu manager', description: 'The full navigation editor: surface picker, groups and links, drag-and-drop, the role matrix, on/off modes, rail cards, columns, speed, and seed.' },
+  // ── Menu Manager blocks (/admin/menu) — the DB-backed navigation editor, five blocks (ADR-359) ──
+  { id: 'menu-surface', label: 'Surface picker', description: 'Pick which navigation surface to edit (Discover, Explore, the admin sub-header, the in-app left rail, or the marketing footer). The only block that sets the active surface; every other menu block scopes to it.' },
+  { id: 'menu-groups', label: 'Groups & links', description: 'The bulk of the editor. Menu-level links plus groups and sub-groups with their links: add, edit, delete, drag within and across groups, and set per-item depth, modes, and the per-role visibility matrix, for the active surface.' },
+  { id: 'menu-speed', label: 'Open & dwell speed', description: 'The global mega-menu timings (open delay, dwell, fade). Applies to every surface, so it has no surface dependency.' },
+  { id: 'menu-layout', label: 'Layout & defaults', description: 'The column count for the active surface, plus the action to seed or reset that surface from the site defaults.' },
+  { id: 'menu-rail-cards', label: 'Rail cards', description: 'The left and right featured cards beside the links, for the active surface.' },
 
   // ── Admin Journeys blocks (/admin/content/journeys) — the curation surface ──
   { id: 'admin-journeys-stats', label: 'Journey stats', description: 'Headline counts: library size, awaiting review, official, and active adoptions.' },
@@ -135,10 +139,20 @@ const CREW_MODULE_IDS = [
   'quest-leaderboard',
 ] as const
 
-// The Menu Manager page (/admin/menu). The whole DB-backed navigation editor is one coupled,
-// self-fetching block: its surface picker, per-surface editor, and speed panel share live client
-// state, so it converts wholesale to one module rather than a set that would fragment that state.
-const MENU_MODULE_IDS = ['menu-manager'] as const
+// The Menu Manager page (/admin/menu), in default render order (ADR-359). The DB-backed navigation
+// editor is FIVE independently-arrangeable blocks. The Surface picker (menu-surface) is the ONLY
+// block that sets the active surface; the three surface-scoped blocks (menu-groups, menu-layout,
+// menu-rail-cards) each re-resolve the active surface through the x-search seam (lib/menus/
+// active-surface) and edit one independent slice, so they need no shared client state. The single
+// auto-materialize-on-default lives ONLY in menu-groups (the primary editor); menu-layout and
+// menu-rail-cards ensure the menu row lazily on their own first write, so they never race it.
+const MENU_MODULE_IDS = [
+  'menu-surface',
+  'menu-groups',
+  'menu-speed',
+  'menu-layout',
+  'menu-rail-cards',
+] as const
 
 // The admin Journeys curation surface, in default render order.
 const ADMIN_JOURNEYS_MODULE_IDS = [
