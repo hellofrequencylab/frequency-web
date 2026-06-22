@@ -11,23 +11,17 @@ export function isAppFullscreen(): boolean {
   return !!document.fullscreenElement
 }
 
-/** Ask the browser for true fullscreen on the whole document. Best-effort: returns
- *  a resolved promise whether or not it was granted, and never throws. Call from a
- *  click/tap handler (fullscreen is gesture-gated). */
+/** Enter the app's fullscreen-style takeover for the timer + capture surfaces.
+ *
+ *  DECISION (owner, 2026-06-22): we deliberately do NOT call Element.requestFullscreen.
+ *  True browser fullscreen shows a native, unsuppressible banner ("... is now full screen,
+ *  press Esc to exit") that read as an intrusive warning popup over the timer. The surfaces
+ *  already render a full-viewport (100dvh) takeover, which gives the same immersive feel
+ *  with no OS banner, so that is now the ONLY fullscreen mechanism. Kept async + named so
+ *  the click-handler callers stay unchanged; this is an intentional no-op (the dvh takeover
+ *  is the layout, not an API call). */
 export async function requestAppFullscreen(): Promise<void> {
-  if (typeof document === 'undefined') return
-  try {
-    const el = document.documentElement
-    // Already there, or no support (iOS Safari) — nothing to do; the dvh
-    // takeover covers it.
-    if (document.fullscreenElement || typeof el.requestFullscreen !== 'function') return
-    const req = el.requestFullscreen()
-    // requestFullscreen resolves on success and rejects when denied (no gesture);
-    // swallow the rejection so the caller never has to.
-    if (req && typeof req.then === 'function') await req.catch(() => {})
-  } catch {
-    // fullscreen is progressive enhancement
-  }
+  // Intentional no-op: the dvh takeover the surfaces render IS the fullscreen.
 }
 
 /** Drop true fullscreen if we're in it. Best-effort; never throws. Safe to call
