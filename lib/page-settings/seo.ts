@@ -51,3 +51,28 @@ export function normalizeSeo(input: SeoInput): SeoFields | null {
     header_image_url: header || null,
   }
 }
+
+// The two on-page panes that EDIT these fields (the settings spine, ADR-268): "Basics"
+// owns the identity half (title + header image), "SEO & meta" owns the search half
+// (description + share image). They save independently, so a save MUST only touch the fields
+// its pane owns — otherwise saving one pane would null the other's fields on the shared row.
+export type SeoPane = 'basics' | 'meta'
+
+/** The storable field KEYS each pane owns. The save path normalizes the full input, then
+ *  writes back ONLY these keys (merged over the existing row), so the other pane is untouched. */
+export const SEO_PANE_FIELDS: Record<SeoPane, readonly (keyof SeoFields)[]> = {
+  basics: ['seo_title', 'header_image_url'],
+  meta: ['seo_description', 'og_image_url'],
+}
+
+/** Normalize the input, then keep only the fields the given pane owns (or all fields when no
+ *  pane is given). Returns null when an image URL is unsafe (the whole save is rejected, as
+ *  before). Used by the partial-merge save so each pane writes back just its own columns. */
+export function normalizeSeoForPane(input: SeoInput, pane?: SeoPane): Partial<SeoFields> | null {
+  const full = normalizeSeo(input)
+  if (!full) return null
+  if (!pane) return full
+  const out: Partial<SeoFields> = {}
+  for (const key of SEO_PANE_FIELDS[pane]) out[key] = full[key]
+  return out
+}
