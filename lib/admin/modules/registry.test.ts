@@ -84,7 +84,8 @@ describe('admin module registry', () => {
   it('selects modules by scope kind, filtered by surface, ordered', () => {
     expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual(['circle.settings'])
     expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual(['event.settings'])
-    expect(modulesForScopeKind('profile', 'sidebar').map((m) => m.id)).toEqual(['person.settings'])
+    // person.settings was retired (covered by Edit Profile), so profile has no sidebar module.
+    expect(modulesForScopeKind('profile', 'sidebar').map((m) => m.id)).toEqual([])
     // No sidebar leakage across kinds, and inline surface is empty today.
     expect(modulesForScopeKind('circle', 'inline')).toHaveLength(0)
     // Without a surface filter, returns every module valid on the kind.

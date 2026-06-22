@@ -326,20 +326,24 @@ export default async function ProfilePage({
         }
         badges={badges}
         subtitle={
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <span className="font-medium">@{profile.handle as string}</span>
-            {regionName && (
-              <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
-            )}
-            <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
-            {circles.length > 0 && (
-              <Link
-                href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
-                className="flex items-center gap-1 transition-colors hover:text-text"
-              >
-                <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
-              </Link>
-            )}
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="font-medium">@{profile.handle as string}</span>
+              {regionName && (
+                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
+              )}
+              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
+              {circles.length > 0 && (
+                <Link
+                  href={circles.length === 1 ? `/circles/${circles[0]!.slug}` : '/circles'}
+                  className="flex items-center gap-1 transition-colors hover:text-text"
+                >
+                  <Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}
+                </Link>
+              )}
+            </div>
+            {/* Bio reads with the identity block, above the header's hairline rule. */}
+            <EditableIdentity isOwner={isOwner} bio={profile.bio ?? ''} />
           </div>
         }
         actions={isOwner ? ownerActions : viewerActions}
@@ -348,16 +352,9 @@ export default async function ProfilePage({
           carries bio + the relationship panels + composer + timeline; the info column
           lists Standing, Frequency Signature, then Achievements. ── */}
       <div className="grid gap-6 xl:grid-cols-3">
-        {/* CONTENT (2/3) — bio, practice, the relationship panels, composer, timeline. */}
+        {/* CONTENT (2/3) — practice, the relationship panels, composer, timeline.
+            (Bio now reads with the identity band above the header rule.) */}
         <div className="order-2 min-w-0 space-y-6 xl:order-1 xl:col-span-2">
-          {/* Bio — inline-editable for the owner, read-only for everyone else. */}
-          <EditableIdentity
-            isOwner={isOwner}
-            displayName={profile.display_name}
-            handle={profile.handle as string}
-            bio={profile.bio ?? ''}
-          />
-
           {/* Your private contact card — only the viewer who merged their own personal
               contact with this member sees this (their own logged data). */}
           {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}

@@ -10,7 +10,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, UserCog } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -115,17 +115,10 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     order: 10,
   },
-  {
-    id: 'person.settings',
-    label: 'Person settings',
-    desc: 'Display name, handle, and bio — a moderation surface (janitor only).',
-    Icon: UserCog,
-    scopes: ['profile'],
-    requiredCapability: 'profile.edit',
-    slot: 'safety',
-    surface: 'sidebar',
-    order: 10,
-  },
+  // The profile "Person settings" module was retired (ADR-133/PX.5): editing a
+  // profile's name/handle/bio now lives in the dedicated Edit Profile flow
+  // (/settings/profile for the owner; the full member manager for moderators), so
+  // the profile settings column no longer surfaces a person-settings box.
 ] as const
 
 /** The modules to render for a scope, given the viewer's resolved capabilities. */

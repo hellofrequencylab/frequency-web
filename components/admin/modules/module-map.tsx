@@ -6,7 +6,6 @@ import { HubSettingsModule } from './hub-settings-module'
 import { NexusSettingsModule } from './nexus-settings-module'
 import { EventSettingsModule } from './event-settings-module'
 import { ChannelSettingsModule } from './channel-settings-module'
-import { PersonSettingsModule } from './person-settings-module'
 
 // The render layer of the admin-module registry (ADR-250 step 1). The catalog
 // (lib/admin/modules/registry.ts) stays pure metadata — it must, because the module
@@ -22,5 +21,4 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'nexus.settings': NexusSettingsModule,
   'event.settings': EventSettingsModule,
   'channel.settings': ChannelSettingsModule,
-  'person.settings': PersonSettingsModule,
 }
