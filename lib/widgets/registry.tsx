@@ -14,7 +14,11 @@ import { QuestNextGathering } from '@/components/widgets/quest/quest-next-gather
 import { QuestTasks } from '@/components/widgets/quest/quest-tasks'
 import { QuestExplore } from '@/components/widgets/quest/quest-explore'
 import { QuestLeaderboard } from '@/components/widgets/quest/quest-leaderboard'
-import { MenuManagerBlock } from '@/components/widgets/menu/menu-manager-block'
+import { MenuSurfaceBlock } from '@/components/widgets/menu/menu-surface-block'
+import { MenuGroupsBlock } from '@/components/widgets/menu/menu-groups-block'
+import { MenuSpeedBlock } from '@/components/widgets/menu/menu-speed-block'
+import { MenuLayoutBlock } from '@/components/widgets/menu/menu-layout-block'
+import { MenuRailCardsBlock } from '@/components/widgets/menu/menu-rail-cards-block'
 import { AdminJourneysStats } from '@/components/widgets/admin/admin-journeys-stats'
 import { AdminJourneysReview } from '@/components/widgets/admin/admin-journeys-review'
 import { AdminJourneysLibrary } from '@/components/widgets/admin/admin-journeys-library'
@@ -75,8 +79,12 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'quest-tasks': QuestTasks,
   'quest-explore': QuestExplore,
   'quest-leaderboard': QuestLeaderboard,
-  // Menu Manager page (/admin/menu) — the DB-backed navigation editor as one coupled block.
-  'menu-manager': MenuManagerBlock,
+  // Menu Manager page (/admin/menu) — the DB-backed navigation editor as five blocks (ADR-359).
+  'menu-surface': MenuSurfaceBlock,
+  'menu-groups': MenuGroupsBlock,
+  'menu-speed': MenuSpeedBlock,
+  'menu-layout': MenuLayoutBlock,
+  'menu-rail-cards': MenuRailCardsBlock,
   // Admin Journeys blocks (/admin/content/journeys).
   'admin-journeys-stats': AdminJourneysStats,
   'admin-journeys-review': AdminJourneysReview,

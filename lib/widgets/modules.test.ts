@@ -59,6 +59,18 @@ describe('moduleIdsForScope', () => {
     expect(v).not.toContain('community-pulse')
   })
 
+  it('the Menu Manager (/admin/menu) resolves its five blocks, in render order, with no leakage', () => {
+    const m = moduleIdsForScope('/admin/menu')
+    expect(m).toBe(ROUTE_MODULE_IDS['/admin/menu'])
+    // The five blocks, in the locked render order (ADR-359): surface picker first, then the bulk
+    // groups editor, the global speed panel, layout & defaults, and the rail cards.
+    expect(m).toEqual(['menu-surface', 'menu-groups', 'menu-speed', 'menu-layout', 'menu-rail-cards'])
+    // The retired single `menu-manager` id is gone.
+    expect(m).not.toContain('menu-manager')
+    // A distinct exact route — it never inherits the global community blocks.
+    expect(m).not.toContain('community-pulse')
+  })
+
   it('a practice detail page resolves the shared detail blocks via the /practices/* section scope', () => {
     const d = moduleIdsForScope('/practices/some-practice-id')
     expect(d).toBe(ROUTE_MODULE_IDS['/practices/*'])
