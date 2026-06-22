@@ -17,7 +17,8 @@ import type { ManagedSpace } from '@/lib/spaces/managed'
 // a PURE LAUNCHER: no persistent active-Space context, no cookie — it just routes you into a Space's
 // back-end. The operator/admin world stays in the left rail (D3); this never touches it.
 //
-// BEHAVIOR (E.4): open on CLICK (not hover). Fade-on-disengage — the panel closes on outside-click,
+// BEHAVIOR: open on HOVER or click (owner directive: every header mega menu opens on rollover, to
+// match MegaBar). Fade-on-disengage — the panel closes on outside-click,
 // Esc, AND pointer-leave with a ~400ms exit delay (so a brief overshoot doesn't snap it shut). WCAG
 // 1.4.13: dismissible (Esc / click-away), keyboard reachable (Tab through the links, Esc to close),
 // and the trigger carries aria-haspopup/aria-expanded. Reuses the PrimaryNav Dropdown's outside-click
@@ -122,6 +123,7 @@ function ManageMegaMenuInner() {
           aria-haspopup="menu"
           aria-expanded={open}
           aria-label="Manage your Spaces"
+          onMouseEnter={() => setOpen(true)}
           onClick={() => setOpen((o) => !o)}
           className={`flex items-center gap-1.5 h-8 sm:h-9 px-2 sm:px-2.5 rounded-full text-sm font-semibold transition-colors ${
             open
