@@ -84,32 +84,41 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
   },
   {
     label: "Explore Frequency",
-    // Each sub-category is now its OWN column (one MegaSection = one column in
-    // mega-menu.tsx). Each column starts with its own landing link and will be
-    // built out with more sub-links later.
+    // Each sub-category is its OWN column (one MegaSection = one column in
+    // mega-menu.tsx). Each column leads with its landing link, then maps to the
+    // existing public pages that belong to that theme. We deliberately avoid the
+    // surfaces the Discover menu already owns (Circles / Events / Journeys /
+    // Interests), so the two menus stay distinct rather than duplicate each other.
     sections: [
       {
         heading: "The Lab",
         items: [
           { label: "The Lab", href: "/the-lab", desc: "The ideas and research behind Frequency" },
+          { label: "How it works", href: "/how-it-works", desc: "The simple loop behind every session" },
+          { label: "Practice library", href: "/discover/practices", desc: "Browse the practices you can run" },
         ],
       },
       {
         heading: "The Community",
         items: [
           { label: "The Community", href: "/the-community", desc: "Who's here and how it all works" },
+          { label: "Partners", href: "/discover/partners", desc: "The studios and hosts we work with" },
+          { label: "Help center", href: "/help", desc: "Answers, guides, and support" },
         ],
       },
       {
         heading: "The Quest",
         items: [
           { label: "The Quest", href: "/the-quest", desc: "The practice game: streaks, Zaps, and rewards" },
+          { label: "Join the Beta", href: "/onboarding/beta", desc: "Claim your spot in the community" },
         ],
       },
       {
         heading: "About",
         items: [
           { label: "About", href: "/about", desc: "The mission and the people building it" },
+          { label: "Pricing", href: "/pricing", desc: "Membership that keeps the room open" },
+          { label: "Privacy", href: "/privacy", desc: "How we handle your data" },
         ],
       },
     ],
