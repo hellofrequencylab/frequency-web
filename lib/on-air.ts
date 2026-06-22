@@ -436,18 +436,68 @@ export interface RevealPayload {
 //
 // VOICE (docs/CONTENT-VOICE.md): one short, warm, specific line. Proper nouns
 // (Practices, the feed) carry it; the sentence stays plain. Never narrate the
-// member's feelings. No em dashes. The close button (label + href) always
-// matches what the line mentions:
+// member's feelings. No em dashes. The opener REFLECTS what was actually
+// practiced (a walk vs a sit vs a journal), never a blanket "Good sit"; the
+// close button (label + href) always matches what the line mentions:
 //   * practices still to log today  → a gentle reminder    → "See your practices" /practices
 //   * done + an RSVP'd gathering     → congratulate + name  → "View event"        /events/{slug}
 //   * done, nothing pending          → congratulate          → "Back to feed"      /feed
 // ---------------------------------------------------------------------------
+
+/** What the member just did, so the Dispatch opener fits the practice. Mindless
+ *  modes map straight from SessionMode; Movement modes name the movement kind
+ *  (walk / run / yoga / strength / stretch / play). Defaults to a plain sit. */
+export type DispatchKind =
+  | SessionMode
+  | 'walk'
+  | 'run'
+  | 'yoga'
+  | 'strength'
+  | 'stretch'
+  | 'play'
+
+/** A short, warm opener for what was just practiced (no narrated feelings, no em
+ *  dashes). Vera names the thing the member actually did so a walk never reads
+ *  "Good sit." Falls back to a neutral "Nicely done." for anything unmapped. */
+export function dispatchOpener(kind: DispatchKind | null | undefined): string {
+  switch (kind) {
+    // Mindless
+    case 'timer':
+    case 'stillness':
+    case 'ritual':
+      return 'Good sit.'
+    case 'breath':
+      return 'Nice breathing.'
+    case 'journal':
+      return 'Good journal.'
+    case 'log':
+      return 'Logged.'
+    // Movement
+    case 'walk':
+      return 'Nice walk.'
+    case 'run':
+      return 'Good run.'
+    case 'yoga':
+      return 'Nice flow.'
+    case 'strength':
+      return 'Strong work.'
+    case 'stretch':
+      return 'Nice stretch.'
+    case 'play':
+      return 'Good moving.'
+    default:
+      return 'Nicely done.'
+  }
+}
 
 export interface SessionDispatchState {
   /** Titles of the member's adopted practices NOT yet logged today (any order). */
   practicesLeft: string[]
   /** The next gathering the member RSVP'd to (going/maybe), if any. */
   gathering: { title: string; slug: string } | null
+  /** What was just practiced, so the opener fits it (a walk, a sit, a journal).
+   *  Omitted falls back to a plain, kind-neutral congratulation. */
+  kind?: DispatchKind | null
 }
 
 export function buildSessionDispatch(state: SessionDispatchState): {
@@ -456,20 +506,23 @@ export function buildSessionDispatch(state: SessionDispatchState): {
   actionLabel: string
 } {
   const left = state.practicesLeft.filter((t) => t && t.trim().length > 0)
+  // The opener names what the member actually did (task D): a walk reads "Nice
+  // walk.", a sit "Good sit.", a journal "Good journal." Never a blanket sit line.
+  const opener = dispatchOpener(state.kind)
 
   // Still practices to log today — a gentle reminder, naming how many / which.
   if (left.length > 0) {
     const copy =
       left.length === 1
-        ? `Good sit. ${left[0]} is still on today's list. One more and you're caught up.`
-        : `Good sit. ${left.length} Practices still on today's list, starting with ${left[0]}. Pick them off when you can.`
+        ? `${opener} ${left[0]} is still on today's list. One more and you're caught up.`
+        : `${opener} ${left.length} Practices still on today's list, starting with ${left[0]}. Pick them off when you can.`
     return { copy, actionHref: '/practices', actionLabel: 'See your practices' }
   }
 
   // Done for the day, with a gathering they're going to — congratulate + name it.
   if (state.gathering) {
     return {
-      copy: `That's everything logged today. Next up is ${state.gathering.title}. See you in the room.`,
+      copy: `${opener} That's everything logged today. Next up is ${state.gathering.title}. See you in the room.`,
       actionHref: `/events/${state.gathering.slug}`,
       actionLabel: 'View event',
     }
@@ -477,7 +530,7 @@ export function buildSessionDispatch(state: SessionDispatchState): {
 
   // Done for the day, nothing pending — congratulate, send them back.
   return {
-    copy: "That's everything logged for today. Nice work. Same time tomorrow.",
+    copy: `${opener} That's everything logged for today. Nice work. Same time tomorrow.`,
     actionHref: '/feed',
     actionLabel: 'Back to feed',
   }

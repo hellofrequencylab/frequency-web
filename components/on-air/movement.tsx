@@ -52,8 +52,8 @@ export function useMovement(): MovementApi {
 
 type OverlayState =
   | { phase: 'closed' }
-  | { phase: 'loading'; practiceId?: string; mode?: MovementMode; resumeFromSec?: number; secondsTarget?: number }
-  | { phase: 'ready'; data: OnAirSessionData; mode?: MovementMode; resumeFromSec?: number; secondsTarget?: number }
+  | { phase: 'loading'; practiceId?: string; mode?: MovementMode; generic?: boolean; resumeFromSec?: number; secondsTarget?: number }
+  | { phase: 'ready'; data: OnAirSessionData; mode?: MovementMode; generic?: boolean; resumeFromSec?: number; secondsTarget?: number }
   | { phase: 'error' }
 
 export function MovementProvider({ children }: { children: React.ReactNode }) {
@@ -70,10 +70,16 @@ export function MovementProvider({ children }: { children: React.ReactNode }) {
     (opts?: { practiceId?: string; mode?: MovementMode; resumeFromSec?: number; secondsTarget?: number }) => {
       // Fullscreen rides the same tap that opened the overlay (gesture-gated).
       void requestAppFullscreen()
+      // A GENERIC open (the ZAP button / Movement tile: no practice, no mode) opens
+      // NEUTRAL on Free Practice (ADR-354, the Movement parallel to Mindless's Free
+      // sit). A SPECIFIC entry carries a practiceId (and usually its mode), which
+      // pre-selects that practice + its movement mode below.
+      const generic = !opts?.practiceId && !opts?.mode
       setState({
         phase: 'loading',
         practiceId: opts?.practiceId,
         mode: opts?.mode,
+        generic,
         resumeFromSec: opts?.resumeFromSec,
         secondsTarget: opts?.secondsTarget,
       })
@@ -88,6 +94,7 @@ export function MovementProvider({ children }: { children: React.ReactNode }) {
     let live = true
     const requestedPracticeId = state.practiceId
     const requestedMode = state.mode
+    const requestedGeneric = state.generic
     const requestedResumeFromSec = state.resumeFromSec
     const requestedSecondsTarget = state.secondsTarget
     void (async () => {
@@ -101,6 +108,7 @@ export function MovementProvider({ children }: { children: React.ReactNode }) {
         phase: 'ready',
         data: result.data,
         mode: requestedMode,
+        generic: requestedGeneric,
         resumeFromSec: requestedResumeFromSec,
         secondsTarget: requestedSecondsTarget,
       })
@@ -192,9 +200,12 @@ export function MovementProvider({ children }: { children: React.ReactNode }) {
           <MovementSession
             practices={state.data.practices}
             defaultPracticeId={state.data.defaultPracticeId}
-            // The mode given to open() wins; otherwise read it off the pre-selected
-            // practice's movement_config (else MovementSession falls back to Walk).
-            defaultMode={state.mode ?? resolveDefaultMode(state.data)}
+            // The mode to open on. A GENERIC open (ZAP button / Movement tile) opens on
+            // Free Practice (Play): the open, neutral count-up, the Movement parallel to
+            // Mindless's Free sit (C.3, ADR-354). A SPECIFIC entry uses the mode given to
+            // open(), else the pre-selected practice's movement_config (C.4); MovementSession
+            // still falls back to Walk if neither resolves.
+            defaultMode={state.generic ? 'play' : (state.mode ?? resolveDefaultMode(state.data))}
             resumeFromSec={state.resumeFromSec}
             secondsTarget={state.secondsTarget}
             practicedToday={state.data.practicedToday}

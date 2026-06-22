@@ -26,7 +26,18 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Minus, Plus, X, Check } from 'lucide-react'
+import {
+  Minus,
+  Plus,
+  X,
+  Check,
+  Footprints,
+  Rabbit,
+  Flower2,
+  Dumbbell,
+  StretchHorizontal,
+  Gamepad2,
+} from 'lucide-react'
 import { OnAirIcon } from './icons'
 import { MovementArt } from '@/components/feed/zap-menu-art'
 import { Reveal } from './reveal'
@@ -65,6 +76,17 @@ type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 // The bell voice is fixed to the tuned default for Movement (the sit's voice
 // picker is the place to choose one; here the cues are functional beats).
 const TONE = bellToneBySlug('soft')
+
+// The six mode icons (C.1): the movement modes show the SAME way the Mindless
+// modes do, so each gets a small glyph above its label in the 3-up grid.
+const MODE_ICON: Record<MovementMode, React.ElementType> = {
+  walk: Footprints,
+  run: Rabbit,
+  yoga: Flower2,
+  strength: Dumbbell,
+  stretch: StretchHorizontal,
+  play: Gamepad2,
+}
 
 /** Vibration where supported (Android). iOS web has no vibration; never throw. */
 function buzz(pulse: number | number[] = 15) {
@@ -138,6 +160,11 @@ export function MovementSession({
     defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
   const [practiceId, setPracticeId] = useState(initialId)
   const [mode, setMode] = useState<MovementMode>(defaultMode ?? 'walk')
+  // The practice chooser sheet (C.2): with more than one adopted practice the primary
+  // button reads "Select a practice" and opens this; picking one logs against it and
+  // starts the movement on the configured mode. With one/zero practices it auto-selects,
+  // so the button starts directly and the chooser never shows. Mirrors the Mindless sit.
+  const [showChooser, setShowChooser] = useState(false)
   // Walk
   const [walkMinutes, setWalkMinutes] = useState(20)
   const [walkIntervalMin, setWalkIntervalMin] = useState(0)
@@ -372,6 +399,16 @@ export function MovementSession({
     void acquireQuiet()
   }
 
+  // The chooser pick (C.2): select the practice this session logs against, close
+  // the sheet, and start the movement on the configured mode. The practiceId state
+  // settles long before finish() reads it (a workout runs for minutes), so no
+  // same-tick override is needed.
+  function chooseAndStart(id: string) {
+    setPracticeId(id)
+    setShowChooser(false)
+    void start()
+  }
+
   function togglePause() {
     if (pausedAt === null) {
       setPausedAt(Date.now())
@@ -593,29 +630,25 @@ export function MovementSession({
         {/* The setup body centers vertically in the viewport and scrolls when it
             overflows; the Start bar below stays docked and visible (LAYOUT directive). */}
         <div className="flex flex-1 flex-col justify-center gap-5 py-2">
-        {/* Mode */}
+        {/* Mode — the SAME display as the six Mindless modes (C.1): a 3-up grid of
+            icon-over-label tiles. The chosen mode's blurb sits as a one-line subline
+            below the grid (no narrated feelings, no em or en dashes). */}
         <div>
           <Label>Mode</Label>
-          <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="mt-2 grid grid-cols-3 gap-2">
             {MOVEMENT_MODES.map((m) => (
-              <button
+              <ModeButton
                 key={m.mode}
-                type="button"
+                active={m.mode === mode}
                 onClick={() => setMode(m.mode)}
-                title={m.blurb}
-                className={`flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
-                  m.mode === mode
-                    ? 'border-success/60 bg-success-bg/40 font-semibold text-text'
-                    : 'border-border text-muted hover:bg-surface-elevated'
-                }`}
-              >
-                <span>{m.label}</span>
-                <span className={`text-2xs font-normal ${m.mode === mode ? 'text-success' : 'text-subtle'}`}>
-                  {m.blurb}
-                </span>
-              </button>
+                icon={MODE_ICON[m.mode]}
+                label={m.label}
+              />
             ))}
           </div>
+          <p className="mt-2 text-2xs text-subtle">
+            {MOVEMENT_MODES.find((m) => m.mode === mode)?.blurb}
+          </p>
         </div>
 
         {/* Per-mode preset / tuning */}
@@ -770,7 +803,9 @@ export function MovementSession({
           {totalSeconds(plan) !== null && <span className="tabular-nums"> · {fmt(totalSeconds(plan)!)}</span>}
         </p>
 
-        {/* Practice read-out (which log this banks). */}
+        {/* Practice read-out (which log this banks). With several practices the chooser
+            below drives the choice, so this is a quiet read-out of the current pick
+            (matching the Mindless sit). One/zero practices auto-select, so nothing renders. */}
         {practices.length > 1 && practice && (
           <div>
             <Label>Logs as</Label>
@@ -781,41 +816,44 @@ export function MovementSession({
           </div>
         )}
 
-        {/* Practice chooser — a simple select when several practices are adopted. */}
-        {practices.length > 1 && (
-          <div>
-            <select
-              value={practiceId}
-              onChange={(e) => setPracticeId(e.target.value)}
-              aria-label="Practice to log"
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none"
-            >
-              {practices.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
         </div>
 
-        {/* Docked Start bar — always visible, even as the setup body scrolls. */}
+        {/* Docked Start bar — always visible, even as the setup body scrolls. With several
+            practices the primary action reads "Select a practice" (matching Mindless, C.2)
+            and opens the chooser; picking one logs against it and starts. One/zero practices
+            auto-select, so it starts directly. */}
         <div className="sticky bottom-0 -mx-6 bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6">
           {practicedToday >= 3 && (
             <p className="pb-1.5 text-center text-2xs text-subtle">{practicedToday} members practiced today.</p>
           )}
-          <button
-            type="button"
-            onClick={() => void start()}
-            disabled={!practiceId}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-success px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-success/90 disabled:opacity-50"
-          >
-            <OnAirIcon className="h-4 w-4" /> Start moving
-          </button>
+          {practices.length > 1 ? (
+            <button
+              type="button"
+              onClick={() => setShowChooser(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-success px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-success/90"
+            >
+              <OnAirIcon className="h-4 w-4" /> Select a practice
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void start()}
+              disabled={!practiceId}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-success px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-success/90 disabled:opacity-50"
+            >
+              <OnAirIcon className="h-4 w-4" /> Start moving
+            </button>
+          )}
         </div>
       </div>
+      {showChooser && (
+        <PracticeChooser
+          practices={practices}
+          selectedId={practiceId}
+          onPick={chooseAndStart}
+          onClose={() => setShowChooser(false)}
+        />
+      )}
     </Overlay>
   )
 }
@@ -824,6 +862,36 @@ export function MovementSession({
 
 function Label({ children }: { children: React.ReactNode }) {
   return <p className="text-xs font-semibold uppercase tracking-wider text-subtle">{children}</p>
+}
+
+/** A mode tile, matching the Mindless ModeButton (C.1): an icon over a label in a
+ *  bordered, rounded chip that fills its grid cell. Success-toned when active to
+ *  read as Movement (the sit uses primary). */
+function ModeButton({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ElementType
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs transition-colors ${
+        active
+          ? 'border-success/60 bg-success-bg/40 font-semibold text-text'
+          : 'border-border text-muted hover:bg-surface-elevated'
+      }`}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+    </button>
+  )
 }
 
 function Chip({
@@ -908,4 +976,74 @@ function Tune({
 
 function CenterScreen({ children }: { children: React.ReactNode }) {
   return <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">{children}</div>
+}
+
+/** The practice chooser sheet (C.2), mirroring the Mindless sit's: picking a practice
+ *  logs this session against it and starts the movement on the configured mode. A calm
+ *  centered overlay above the setup takeover (z-[60] > z-50), dismissed by the Close
+ *  button, the scrim, or Esc. */
+function PracticeChooser({
+  practices,
+  selectedId,
+  onPick,
+  onClose,
+}: {
+  practices: OnAirPractice[]
+  selectedId: string
+  onPick: (id: string) => void
+  onClose: () => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Select a practice"
+      className="fixed inset-0 z-[60] flex items-end justify-center px-4 pb-4 sm:items-center sm:px-6"
+    >
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
+      />
+      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface px-5 py-5 shadow-lg">
+        <div className="flex items-center justify-between pb-3">
+          <h2 className="text-base font-semibold text-text">Select a practice</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="-mx-1 max-h-[60vh] space-y-1.5 overflow-y-auto px-1">
+          {practices.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onPick(p.id)}
+              className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3.5 py-3 text-left text-sm transition-colors ${
+                p.id === selectedId
+                  ? 'border-success/60 bg-success-bg/40 font-semibold text-text'
+                  : 'border-border text-muted hover:bg-surface-elevated'
+              }`}
+            >
+              <span className="min-w-0 flex-1 truncate">{p.title}</span>
+              {p.loggedToday && <Check className="h-4 w-4 shrink-0 text-success" aria-label="Logged today" />}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }

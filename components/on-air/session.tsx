@@ -843,7 +843,9 @@ export function OnAirSession({
   return (
     <div className="fixed inset-x-0 top-0 z-50 h-[100dvh] overflow-y-auto bg-canvas">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5 lg:max-w-3xl lg:px-10 lg:py-8">
-      <div className="flex flex-1 flex-col px-2 pt-10 lg:px-0 lg:pt-9">
+      {/* The masthead (logo + subtitle) sits at the TOP OF THE CONTENT container, not
+          pushed down from the viewport top (B.1): no extra top padding above it. */}
+      <div className="flex flex-1 flex-col px-2 lg:px-0">
       <div className="relative flex items-center justify-center pb-2">
         <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-primary-strong lg:text-lg">
           <LotusIcon className="h-6 w-6 lg:h-7 lg:w-7" /> Mindless
