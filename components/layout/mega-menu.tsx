@@ -1,15 +1,40 @@
 'use client'
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, ArrowRight } from 'lucide-react'
+import type {
+  MenuAccess,
+  ResolvedCategory,
+  ResolvedItem,
+  ResolvedMenu,
+  ResolvedRailCard,
+} from '@/lib/menus/types'
+import { effectiveMode } from '@/components/layout/menu-role'
+import { GhostLink } from '@/components/layout/ghost-link'
 
 // ── MegaBar — the shared best-practice header navigation ───────────────────────
 // A row of triggers with a SINGLE panel that slides DOWN as a row from UNDER the
 // header (not a cramped floating dropdown per trigger). One open-state drives the bar:
 // hovering / focusing a trigger reveals that section's items as a row; the panel
 // anchors to the nearest POSITIONED ancestor (so it follows a sticky bar on scroll).
+//
+// DATA — driven by the DB-backed menu system (lib/menus). The bar takes one or more
+// ResolvedMenus and a `triggerLevel`:
+//   - 'menu' (public headers): each ResolvedMenu is ONE trigger (its `label`), and its
+//     panel renders the menu's top-level categories as columns, its rootItems, and its
+//     rail cards. Pass [public_discover, public_explore] for the marketing/site header.
+//   - 'category' (admin sub-header): a SINGLE ResolvedMenu whose top-level categories are
+//     each a trigger; a trigger's panel renders that category's CHILDREN as columns (plus
+//     the category's own items and the menu's rail cards). Mirrors the old ADMIN_NAV bar.
+// The reader returns everything; this renderer does the per-role / per-mode filtering via
+// `viewerRole` + effectiveMode (active = a link, ghost = a muted upsell, hidden = dropped).
+//
+// GRID — when a category / item / rail card carries free-grid placement (gridCol/gridRow/
+// colSpan, with the menu's `columns` count), the panel lays out on an explicit CSS grid so
+// the operator can place things precisely. When no placement is present it falls back to the
+// current auto-flow (flex-wrap), so an unseeded / default menu never looks broken.
 //
 // SPAN — `panelAlign` decides how wide the visible panel reads:
 //   - 'viewport' (default): the panel is a centered max-width row spanning the bar's
@@ -26,16 +51,9 @@ import { ChevronDown, ArrowRight } from 'lucide-react'
 // the bar OR the panel cancels it. Escape / outside-click also trigger the fade, not an
 // instant unmount. Honors prefers-reduced-motion.
 //
-// Data-driven, so adding a page is a data line. Accessible: real button/link triggers,
-// opens on hover AND keyboard focus, closes on Escape / outside-click / focus-out /
-// navigation (WCAG 1.4.13 + 2.1.1). Tokens only; no em or en dashes.
-
-export type MegaItem = { label: string; href: string; desc?: string }
-export type MegaSection = { heading?: string; items: MegaItem[] }
-export type MegaFeatured = { title: string; desc: string; href: string; cta?: string }
-/** One trigger in the bar. `sections` empty → a plain link (no panel). `href` set → the
- *  trigger navigates on click while still revealing its panel on hover/focus. */
-export type MegaEntry = { label: string; href?: string; sections: MegaSection[]; featured?: MegaFeatured }
+// Accessible: real button/link triggers, opens on hover AND keyboard focus, closes on
+// Escape / outside-click / focus-out / navigation (WCAG 1.4.13 + 2.1.1). Tokens only; no
+// em or en dashes.
 
 type Variant = 'light' | 'dark'
 
@@ -49,6 +67,78 @@ type Variant = 'light' | 'dark'
 const DEFAULT_OPEN_DELAY_MS = 0
 const DEFAULT_DWELL_MS = 1500
 const DEFAULT_FADE_MS = 240
+
+// ── Resolved-menu adapter ─────────────────────────────────────────────────────
+// The bar renders from a uniform shape regardless of triggerLevel: a list of TRIGGERS,
+// each with the panel's columns (categories), loose root items, and rail cards. Computed
+// once per menus/level change (useMemo) so render stays cheap.
+type Trigger = {
+  /** Stable key for React + open-state matching. */
+  key: string
+  label: string
+  /** Optional navigable href for the trigger itself (the category's / menu's landing). */
+  href?: string
+  columns: number
+  categories: ResolvedCategory[]
+  rootItems: ResolvedItem[]
+  railCards: ResolvedRailCard[]
+}
+
+function buildTriggers(menus: ResolvedMenu[], triggerLevel: 'menu' | 'category'): Trigger[] {
+  if (triggerLevel === 'category') {
+    // Admin: the single menu's top-level categories are the triggers. A category's
+    // landing href is its first item's href (the section root link in the defaults).
+    const menu = menus[0]
+    if (!menu) return []
+    return menu.categories.map((cat) => ({
+      key: cat.id,
+      label: cat.label ?? menu.label,
+      href: cat.items[0]?.href,
+      columns: menu.columns,
+      categories: cat.children,
+      // The section's own root link is its first item; the rest (if any) ride along as
+      // loose items beside the child columns.
+      rootItems: cat.items.slice(1),
+      railCards: menu.railCards,
+    }))
+  }
+  // Public: each menu is one trigger; its categories are the panel columns.
+  return menus.map((menu) => ({
+    key: menu.surfaceKey,
+    label: menu.label,
+    columns: menu.columns,
+    categories: menu.categories,
+    rootItems: menu.rootItems,
+    railCards: menu.railCards,
+  }))
+}
+
+// True when ANY placed element carries explicit grid coordinates — the cue to lay the
+// panel out on an explicit CSS grid rather than the auto-flow flex-wrap fallback.
+function hasGridPlacement(t: Trigger): boolean {
+  const catPlaced = t.categories.some(
+    (c) => c.gridCol != null || c.gridRow != null || c.items.some((i) => i.gridCol != null || i.gridRow != null),
+  )
+  const rootPlaced = t.rootItems.some((i) => i.gridCol != null || i.gridRow != null)
+  return catPlaced || rootPlaced
+}
+
+// CSS grid-placement style for a placed element (1-based columns/rows). colSpan widens it
+// across columns; a missing col/row lets the grid auto-flow that axis.
+function gridStyle(el: {
+  gridCol?: number
+  gridRow?: number
+  colSpan?: number
+}): React.CSSProperties {
+  const style: React.CSSProperties = {}
+  if (el.gridCol != null) {
+    style.gridColumn = el.colSpan && el.colSpan > 1 ? `${el.gridCol} / span ${el.colSpan}` : `${el.gridCol}`
+  } else if (el.colSpan && el.colSpan > 1) {
+    style.gridColumn = `span ${el.colSpan}`
+  }
+  if (el.gridRow != null) style.gridRow = `${el.gridRow}`
+  return style
+}
 
 function routeActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/'
@@ -70,7 +160,9 @@ function triggerClass(variant: Variant, highlighted: boolean) {
 }
 
 export function MegaBar({
-  entries,
+  menus,
+  triggerLevel = 'menu',
+  viewerRole = 'visitor',
   variant = 'light',
   ariaLabel = 'Primary',
   className = '',
@@ -78,7 +170,14 @@ export function MegaBar({
   rightRail = false,
   timings,
 }: {
-  entries: MegaEntry[]
+  /** The DB-backed (or code-default) menus this bar renders, in trigger order. */
+  menus: ResolvedMenu[]
+  /** 'menu' = one trigger per menu (public headers); 'category' = one trigger per
+   *  top-level category of a single menu (admin sub-header). */
+  triggerLevel?: 'menu' | 'category'
+  /** The viewer collapsed to a single MenuAccess token (components/layout/menu-role).
+   *  Drives per-item / per-card mode resolution (active / ghost / hidden). */
+  viewerRole?: MenuAccess
   variant?: Variant
   ariaLabel?: string
   /** Motion timings (ms) from the global Menu Manager speed settings; falls back to the
@@ -108,6 +207,8 @@ export function MegaBar({
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const panelId = useId()
 
+  const triggers = useMemo(() => buildTriggers(menus, triggerLevel), [menus, triggerLevel])
+
   const openDelayMs = timings?.openDelayMs ?? DEFAULT_OPEN_DELAY_MS
   const dwellMs = timings?.dwellMs ?? DEFAULT_DWELL_MS
   const fadeMs = timings?.fadeMs ?? DEFAULT_FADE_MS
@@ -128,12 +229,12 @@ export function MegaBar({
   }, [])
 
   const open = useCallback(
-    (label: string) => {
+    (key: string) => {
       clearTimers()
       if (openDelayMs > 0) {
-        openTimer.current = setTimeout(() => setActive(label), openDelayMs)
+        openTimer.current = setTimeout(() => setActive(key), openDelayMs)
       } else {
-        setActive(label)
+        setActive(key)
       }
     },
     [clearTimers, openDelayMs],
@@ -201,64 +302,157 @@ export function MegaBar({
 
   useEffect(() => () => clearTimers(), [clearTimers])
 
-  const activeEntry = entries.find((e) => e.label === active) ?? null
+  const activeTrigger = triggers.find((t) => t.key === active) ?? null
 
-  const columns = activeEntry && (
-    <>
-      {activeEntry.sections.map((section, si) => (
-        <div key={si} className="min-w-[10rem]">
-          {section.heading && (
-            <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">
-              {section.heading}
-            </p>
-          )}
-          <div className="space-y-0.5">
-            {section.items.map((item) => {
-              const itemActive = routeActive(pathname, item.href)
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={beginClose}
-                  className={`block rounded-lg px-2 py-1.5 transition-colors motion-reduce:transition-none ${
-                    itemActive ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
-                  }`}
-                >
-                  <span
-                    className={`block text-sm font-semibold ${itemActive ? 'text-primary-strong' : 'text-text'}`}
-                  >
-                    {item.label}
-                  </span>
-                  {item.desc && (
-                    <span className="mt-0.5 block text-xs leading-snug text-muted">{item.desc}</span>
-                  )}
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      ))}
+  // One leaf link. Resolves its mode for the viewer: hidden → null (caller drops it),
+  // active → a real Link, ghost → a muted GhostLink opening the upgrade lightbox.
+  const renderItem = (item: ResolvedItem) => {
+    const mode = effectiveMode(item, viewerRole)
+    if (mode === 'hidden') return null
 
-      {activeEntry.featured && (
-        <Link
-          href={activeEntry.featured.href}
-          onClick={beginClose}
-          className="ml-auto hidden w-60 shrink-0 flex-col justify-between rounded-xl border border-border bg-surface-elevated p-4 transition-colors hover:border-border-strong motion-reduce:transition-none lg:flex"
+    const inner = (
+      <>
+        <span className="block text-sm font-semibold text-text">{item.label}</span>
+        {item.subheading && (
+          <span className="mt-0.5 block text-xs leading-snug text-muted">{item.subheading}</span>
+        )}
+      </>
+    )
+
+    if (mode === 'ghost') {
+      return (
+        <GhostLink
+          key={item.id}
+          ghostTier={item.ghostTier}
+          ghostMessage={item.ghostMessage}
+          ariaLabel={item.label}
+          className="block rounded-lg px-2 py-1.5"
         >
-          <div>
-            <p className="text-sm font-bold text-text">{activeEntry.featured.title}</p>
-            <p className="mt-1 text-xs leading-snug text-muted">{activeEntry.featured.desc}</p>
+          {inner}
+        </GhostLink>
+      )
+    }
+
+    const itemActive = routeActive(pathname, item.href)
+    return (
+      <Link
+        key={item.id}
+        href={item.href}
+        onClick={beginClose}
+        className={`block rounded-lg px-2 py-1.5 transition-colors motion-reduce:transition-none ${
+          itemActive ? 'bg-primary-bg' : 'hover:bg-surface-elevated'
+        }`}
+      >
+        <span className={`block text-sm font-semibold ${itemActive ? 'text-primary-strong' : 'text-text'}`}>
+          {item.label}
+        </span>
+        {item.subheading && (
+          <span className="mt-0.5 block text-xs leading-snug text-muted">{item.subheading}</span>
+        )}
+      </Link>
+    )
+  }
+
+  // One column (a category). Renders its heading, its own items, and recurses into any
+  // nested child categories. Returns null when the whole column resolves empty for the viewer.
+  const renderCategory = (cat: ResolvedCategory, useGrid: boolean): React.ReactNode => {
+    const items = cat.items.map(renderItem).filter(Boolean)
+    const children = cat.children.map((c) => renderCategory(c, false)).filter(Boolean)
+    if (items.length === 0 && children.length === 0) return null
+    return (
+      <div key={cat.id} className="min-w-[10rem]" style={useGrid ? gridStyle(cat) : undefined}>
+        {cat.label && (
+          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">{cat.label}</p>
+        )}
+        {items.length > 0 && <div className="space-y-0.5">{items}</div>}
+        {children.length > 0 && <div className="mt-3 space-y-3">{children}</div>}
+      </div>
+    )
+  }
+
+  // One rail card (a featured tile). Mode-resolved like items; ghost opens the lightbox.
+  const renderRailCard = (card: ResolvedRailCard) => {
+    const mode = effectiveMode(card, viewerRole)
+    if (mode === 'hidden') return null
+
+    const body = (
+      <>
+        <div>
+          <p className="text-sm font-bold text-text">{card.title}</p>
+          <p className="mt-1 text-xs leading-snug text-muted">{card.body}</p>
+        </div>
+        {card.cta && (
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-strong">
+            {card.cta}
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </span>
+        )}
+      </>
+    )
+
+    const cardBox =
+      'flex w-60 shrink-0 flex-col justify-between rounded-xl border border-border bg-surface-elevated p-4'
+
+    if (mode === 'ghost') {
+      return (
+        <GhostLink
+          key={card.id}
+          ghostTier={undefined}
+          ghostMessage={undefined}
+          ariaLabel={card.title}
+          className={`${cardBox} ${card.side === 'right' ? 'ml-auto' : ''} hidden lg:flex`}
+        >
+          {body}
+        </GhostLink>
+      )
+    }
+
+    return (
+      <Link
+        key={card.id}
+        href={card.href}
+        onClick={beginClose}
+        className={`${cardBox} transition-colors hover:border-border-strong motion-reduce:transition-none ${
+          card.side === 'right' ? 'ml-auto' : ''
+        } hidden lg:flex`}
+      >
+        {body}
+      </Link>
+    )
+  }
+
+  // The full panel body for the active trigger: left rail cards, then the columns +
+  // loose root items, then right rail cards. Lays out on an explicit grid when any
+  // element carries placement; otherwise flex-wraps (the safe default).
+  const panelBody = activeTrigger && (() => {
+    const useGrid = hasGridPlacement(activeTrigger)
+    const leftCards = activeTrigger.railCards.filter((c) => c.side === 'left')
+    const rightCards = activeTrigger.railCards.filter((c) => c.side !== 'left')
+    const columns = activeTrigger.categories.map((c) => renderCategory(c, useGrid)).filter(Boolean)
+    const looseItems = activeTrigger.rootItems.map(renderItem).filter(Boolean)
+
+    const grid = (
+      <div
+        className={useGrid ? 'grid gap-x-10 gap-y-6' : 'flex flex-wrap gap-x-10 gap-y-6'}
+        style={useGrid ? { gridTemplateColumns: `repeat(${activeTrigger.columns}, minmax(0, 1fr))` } : undefined}
+      >
+        {columns}
+        {looseItems.length > 0 && (
+          <div className="min-w-[10rem]">
+            <div className="space-y-0.5">{looseItems}</div>
           </div>
-          {activeEntry.featured.cta && (
-            <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-strong">
-              {activeEntry.featured.cta}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </span>
-          )}
-        </Link>
-      )}
-    </>
-  )
+        )}
+      </div>
+    )
+
+    return (
+      <div className="flex w-full gap-x-10">
+        {leftCards.map(renderRailCard)}
+        <div className="min-w-0 flex-1">{grid}</div>
+        {rightCards.map(renderRailCard)}
+      </div>
+    )
+  })()
 
   return (
     <div
@@ -271,61 +465,63 @@ export function MegaBar({
       }}
     >
       <nav className="flex flex-wrap items-center gap-0.5" aria-label={ariaLabel}>
-        {entries.map((e) => {
-          const hasPanel = e.sections.length > 0
+        {triggers.map((t) => {
+          // A trigger with no panel content (no columns and no loose items) is a plain link.
+          const hasPanel = t.categories.length > 0 || t.rootItems.length > 0
           const highlighted =
-            active === e.label ||
-            (e.href
-              ? routeActive(pathname, e.href)
-              : e.sections.some((s) => s.items.some((i) => routeActive(pathname, i.href))))
+            active === t.key ||
+            (t.href
+              ? routeActive(pathname, t.href)
+              : t.categories.some((c) => c.items.some((i) => routeActive(pathname, i.href))) ||
+                t.rootItems.some((i) => routeActive(pathname, i.href)))
 
           if (!hasPanel) {
             return (
               <Link
-                key={e.label}
-                href={e.href ?? '#'}
-                aria-current={e.href && routeActive(pathname, e.href) ? 'page' : undefined}
+                key={t.key}
+                href={t.href ?? '#'}
+                aria-current={t.href && routeActive(pathname, t.href) ? 'page' : undefined}
                 className={triggerClass(variant, highlighted)}
               >
-                {e.label}
+                {t.label}
               </Link>
             )
           }
 
           const inner = (
             <>
-              {e.label}
+              {t.label}
               <ChevronDown
-                className={`h-3.5 w-3.5 transition-transform duration-200 motion-reduce:transition-none ${active === e.label ? 'rotate-180' : ''}`}
+                className={`h-3.5 w-3.5 transition-transform duration-200 motion-reduce:transition-none ${active === t.key ? 'rotate-180' : ''}`}
                 aria-hidden
               />
             </>
           )
 
-          return e.href ? (
+          return t.href ? (
             <Link
-              key={e.label}
-              href={e.href}
+              key={t.key}
+              href={t.href}
               aria-haspopup="true"
-              aria-expanded={active === e.label}
+              aria-expanded={active === t.key}
               aria-controls={panelId}
               className={triggerClass(variant, highlighted)}
-              onMouseEnter={() => open(e.label)}
-              onFocus={() => open(e.label)}
+              onMouseEnter={() => open(t.key)}
+              onFocus={() => open(t.key)}
             >
               {inner}
             </Link>
           ) : (
             <button
-              key={e.label}
+              key={t.key}
               type="button"
               aria-haspopup="true"
-              aria-expanded={active === e.label}
+              aria-expanded={active === t.key}
               aria-controls={panelId}
               className={triggerClass(variant, highlighted)}
-              onMouseEnter={() => open(e.label)}
-              onFocus={() => open(e.label)}
-              onClick={() => (active === e.label ? beginClose() : open(e.label))}
+              onMouseEnter={() => open(t.key)}
+              onFocus={() => open(t.key)}
+              onClick={() => (active === t.key ? beginClose() : open(t.key))}
             >
               {inner}
             </button>
@@ -333,11 +529,11 @@ export function MegaBar({
         })}
       </nav>
 
-      {activeEntry && (
+      {activeTrigger && (
         <div
           id={panelId}
           role="region"
-          aria-label={activeEntry.label}
+          aria-label={activeTrigger.label}
           // z BELOW the bar (the bar is opaque + higher), so the panel tucks UNDER it and
           // slides out from behind its bottom edge. `top-full` pins it to the bar's base. The
           // translate distance is deliberately large so the slide-from-under reads clearly.
@@ -351,15 +547,11 @@ export function MegaBar({
             // SPACERS) so the visible card lands exactly in the content column between rails.
             <div className="mx-auto flex max-w-[105rem] gap-8 px-4 sm:px-6 lg:px-8">
               <div className="hidden w-48 shrink-0 md:block" aria-hidden />
-              <div className="min-w-0 flex-1 py-6">
-                <div className="flex flex-wrap gap-x-10 gap-y-6">{columns}</div>
-              </div>
+              <div className="min-w-0 flex-1 py-6">{panelBody}</div>
               {rightRail && <div className="hidden w-72 shrink-0 lg:block" aria-hidden />}
             </div>
           ) : (
-            <div className="mx-auto flex max-w-[105rem] flex-wrap gap-x-10 gap-y-6 px-4 py-6 sm:px-6 lg:px-8">
-              {columns}
-            </div>
+            <div className="mx-auto flex max-w-[105rem] px-4 py-6 sm:px-6 lg:px-8">{panelBody}</div>
           )}
         </div>
       )}

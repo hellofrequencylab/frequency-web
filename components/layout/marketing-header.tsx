@@ -6,12 +6,28 @@ import Image from 'next/image'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { MarketingMobileMenu } from '@/components/layout/marketing-mobile-menu'
+import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 
 // Public marketing header. No search box (that's for the community app). When
 // `overHero`, it sits transparent over the dark hero and flips to a solid light
 // bar once scrolled (so the nav stays readable over light sections). On content
 // pages (no dark hero) it's solid light from the top.
-export function MarketingHeader({ overHero = false }: { overHero?: boolean }) {
+//
+// The nav megas are the DB-backed menus (lib/menus), fetched in the SERVER layout that
+// renders this header and threaded down through to PrimaryNav. They are optional: a
+// missing menu falls back to the code default inside PrimaryNav, so the header always
+// renders. The public header is always a logged-out 'visitor' for menu purposes.
+export function MarketingHeader({
+  overHero = false,
+  discoverMenu,
+  exploreMenu,
+  menuTimings,
+}: {
+  overHero?: boolean
+  discoverMenu?: ResolvedMenu
+  exploreMenu?: ResolvedMenu
+  menuTimings?: MenuSettings
+}) {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -41,7 +57,14 @@ export function MarketingHeader({ overHero = false }: { overHero?: boolean }) {
       </Link>
 
       {/* Unified primary nav (Discover + About dropdowns) */}
-      <PrimaryNav variant={light ? 'light' : 'dark'} className="ml-3" />
+      <PrimaryNav
+        variant={light ? 'light' : 'dark'}
+        className="ml-3"
+        discoverMenu={discoverMenu}
+        exploreMenu={exploreMenu}
+        viewerRole="visitor"
+        timings={menuTimings}
+      />
 
       <div className="flex-1" />
 

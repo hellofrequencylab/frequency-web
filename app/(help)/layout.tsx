@@ -4,11 +4,19 @@ import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { HelpNav } from '@/components/help/help-nav'
 import { HelpSearch } from '@/components/help/help-search'
 import { getAllCategories, getSearchIndex, helpHref } from '@/lib/help/content'
+import { getMenu, getMenuSettings } from '@/lib/menus/read'
 
 // Help-center chrome: shared marketing header/footer + a sticky sidebar (search +
 // topic nav). Public (not in proxy.ts PROTECTED_PATHS), statically generated.
 export default async function HelpLayout({ children }: { children: React.ReactNode }) {
-  const [categories, index] = await Promise.all([getAllCategories(), getSearchIndex()])
+  // DB-backed nav megas (lib/menus); fall back to code defaults on any miss.
+  const [categories, index, discoverMenu, exploreMenu, menuTimings] = await Promise.all([
+    getAllCategories(),
+    getSearchIndex(),
+    getMenu('public_discover'),
+    getMenu('public_explore'),
+    getMenuSettings(),
+  ])
   const nav = categories.map((c) => ({
     slug: c.slug,
     title: c.title,
@@ -21,7 +29,7 @@ export default async function HelpLayout({ children }: { children: React.ReactNo
 
   return (
     <>
-      <MarketingHeader />
+      <MarketingHeader discoverMenu={discoverMenu} exploreMenu={exploreMenu} menuTimings={menuTimings} />
       <main className="min-h-screen bg-surface pt-16">
         <div className="mx-auto flex max-w-6xl gap-10 px-4 py-10 lg:px-8">
           <aside className="hidden w-64 shrink-0 lg:block">

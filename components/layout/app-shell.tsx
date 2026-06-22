@@ -51,8 +51,9 @@ import type { AccessLevel } from '@/lib/core/access-matrix'
 import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
-import { MegaBar, type MegaEntry } from '@/components/layout/mega-menu'
-import { ADMIN_NAV, canSeeAdminSection } from '@/lib/admin/nav'
+import { MegaBar } from '@/components/layout/mega-menu'
+import { defaultMenu } from '@/lib/menus/defaults'
+import type { MenuAccess, MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { MemberFooter } from '@/components/layout/member-footer'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
@@ -1168,6 +1169,11 @@ export default function AppShell({
   webRole = 'none',
   generation = 'balanced',
   occasion = 'none',
+  exploreMenu,
+  discoverMenu,
+  adminMenu,
+  menuViewerRole = 'visitor',
+  menuTimings,
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -1221,6 +1227,20 @@ export default function AppShell({
   generation?: string
   /** The active occasion id; sets `data-occasion` on the shell root ('none' = omitted). */
   occasion?: string
+  /** The resolved `public_explore` menu (server-fetched, DB-backed). Drives the in-app
+   *  "Explore Frequency" header mega. Falls back to the code default when omitted. */
+  exploreMenu?: ResolvedMenu
+  /** The resolved `public_discover` menu (unused in-app today, where the left rail owns
+   *  discovery; passed through for parity / a safe fallback). */
+  discoverMenu?: ResolvedMenu
+  /** The resolved `admin_subheader` menu (server-fetched, DB-backed). Drives the admin
+   *  sub-header mega on /admin* routes. Falls back to the code default when omitted. */
+  adminMenu?: ResolvedMenu
+  /** The viewer collapsed to a single MenuAccess token; drives per-item mode (active /
+   *  ghost / hidden) in the header + admin megas. */
+  menuViewerRole?: MenuAccess
+  /** Mega-menu interaction timings from the global Menu Manager settings. */
+  menuTimings?: MenuSettings
 }) {
   const pathname = usePathname()
   const profileHref = `/people/${profile.handle}`
@@ -1339,19 +1359,16 @@ export default function AppShell({
   const showFooter = !hideAppNav && showLeftRail && effectiveRail !== 'none'
 
   // Admin secondary nav (mirrors the prior in-content admin mega bar, now promoted to a
-  // FULL-WIDTH sub-header below the main header). Built client-side from the SAME source of
-  // truth + gate as the server admin layout (ADMIN_NAV + canSeeAdminSection over the viewer's
-  // role / web_role / staff role), so it never drifts; the pages themselves re-gate server-side.
-  // Only on /admin* and never in stripped shells.
+  // FULL-WIDTH sub-header below the main header). Driven by the DB-backed `admin_subheader`
+  // menu (lib/menus), whose top-level categories are the sub-header triggers; MegaBar resolves
+  // each entry's mode for the viewer (menuViewerRole). The menu falls back to the code default
+  // (assembled from ADMIN_NAV) when no DB row exists, so it never drifts pre-migration; the
+  // pages themselves still re-gate server-side. Only on /admin* and never in stripped shells.
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
-  const adminEntries: MegaEntry[] =
-    !hideAppNav && isAdminRoute
-      ? ADMIN_NAV.filter((s) => canSeeAdminSection(s, role, webRole, staffRole)).map((s) => ({
-          label: s.label,
-          href: s.href,
-          sections: s.groups ?? [],
-        }))
-      : []
+  const adminMega: ResolvedMenu | null =
+    !hideAppNav && isAdminRoute ? (adminMenu ?? defaultMenu('admin_subheader')) : null
+  // True when the resolved admin menu has at least one top-level section to show.
+  const showAdminMega = !!adminMega && adminMega.categories.length > 0
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
@@ -1400,6 +1417,10 @@ export default function AppShell({
               showDiscover={false}
               panelAlign="content"
               rightRail={showSidebar}
+              discoverMenu={discoverMenu}
+              exploreMenu={exploreMenu}
+              viewerRole={menuViewerRole}
+              timings={menuTimings}
             />
           </div>
         )}
@@ -1524,12 +1545,20 @@ export default function AppShell({
           triggers align to the content column (a left rail-width spacer), and the MegaBar
           panel slides out from under it with panelAlign='content' (no rightRail — admin has
           no member right rail), so the slide-out stays in the page content column. */}
-      {adminEntries.length > 0 && (
+      {showAdminMega && adminMega && (
         <div className="sticky top-14 z-20 hidden border-b border-border bg-surface/95 backdrop-blur-sm md:block">
           <div className="mx-auto flex h-12 max-w-[105rem] items-center gap-8 px-4 sm:px-6 lg:px-8">
             <div className="hidden w-48 shrink-0 md:block" aria-hidden />
             <div className="min-w-0 flex-1">
-              <MegaBar entries={adminEntries} variant="light" ariaLabel="Admin" panelAlign="content" />
+              <MegaBar
+                menus={[adminMega]}
+                triggerLevel="category"
+                viewerRole={menuViewerRole}
+                variant="light"
+                ariaLabel="Admin"
+                panelAlign="content"
+                timings={menuTimings}
+              />
             </div>
           </div>
         </div>

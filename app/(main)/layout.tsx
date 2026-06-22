@@ -49,6 +49,8 @@ import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 import { FOUNDER_COACH } from '@/lib/onboarding/founder-config'
 import { getActiveTraining } from '@/lib/onboarding/training'
 import { atLeastRole, asWebRole, isStaff } from '@/lib/core/roles'
+import { getMenu, getMenuSettings } from '@/lib/menus/read'
+import { viewerRoleFor } from '@/components/layout/menu-role'
 
 // Per-route SEO overrides (ADR-268): an operator sets a route's title / description /
 // share-image in the on-page Page panel; this applies them as the (main) layout's metadata
@@ -144,6 +146,9 @@ export default async function MainLayout({
     space,
     chores,
     staffMember,
+    exploreMenu,
+    adminMenu,
+    menuTimings,
   ] = await Promise.all([
     applyViewAs(realRole),
     viewingAsVisitor(realRole),
@@ -160,6 +165,12 @@ export default async function MainLayout({
     resolveSpaceForHost(reqHeaders.get('host')).catch(() => null),
     BETA_INDUCTION_ACTIVE ? getProfileChores(profile.id) : Promise.resolve(null),
     getStaffMember().catch(() => null),
+    // DB-backed header menus (lib/menus). getMenu falls back to the code defaults on any
+    // miss/error, so these reads are safe pre-migration and the header never breaks. The
+    // in-app shell uses Explore (the "Explore Frequency" header mega) + the admin sub-header.
+    getMenu('public_explore'),
+    getMenu('admin_subheader'),
+    getMenuSettings(),
   ])
   const menuAreaKeys = orderedVisibleAreas(menuConfig).map((a) => a.key)
 
@@ -175,6 +186,18 @@ export default async function MainLayout({
   // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
   // steward's "view as" faithfully hides operator chrome, matching staffRole above.
   const pageWebRole = previewingDown ? 'none' : asWebRole(profile.web_role)
+
+  // The viewer collapsed to a single MenuAccess token for the DB-backed header / admin
+  // megas (components/layout/menu-role). View-as aware: a visitor preview reads as
+  // 'visitor', and a downgraded preview rides the effective community role (staff is
+  // already stripped to 'none' above), so "view as" faithfully previews what that role
+  // sees in the menus. Otherwise staff (admin/janitor) is authoritative over the trust role.
+  const menuViewerRole = viewerRoleFor({
+    loggedIn: !previewVisitor,
+    communityRole: effectiveRole,
+    webRole: pageWebRole,
+    previewVisitor,
+  })
 
   // Page status & visibility (ADR-269): an operator can mark a route DRAFT or set the
   // lowest community role that may reach it (the on-page Page panel → page_settings).
@@ -356,6 +379,10 @@ export default async function MainLayout({
       demoMode={demoMode}
       demoHidden={demoHidden}
       hasDemoContent={hasDemoContent}
+      exploreMenu={exploreMenu}
+      adminMenu={adminMenu}
+      menuViewerRole={menuViewerRole}
+      menuTimings={menuTimings}
     >
       <GaConsentGate disabled={!analyticsConsent} />
       {children}
