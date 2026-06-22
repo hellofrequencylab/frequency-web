@@ -49,6 +49,34 @@ function toAccess(v: string | null | undefined): MenuAccess {
   return v && (ACCESS_VALUES as readonly string[]).includes(v) ? (v as MenuAccess) : 'visitor'
 }
 
+/** Stable synthetic id for the pinned Profile row in the left rail. Profile can't be a
+ *  real NAV_AREA (its href is the viewer's own profile, injected at runtime by the shell's
+ *  withHomeProfile), so the editor treats this id as a FIXED pinned item: non-draggable,
+ *  non-deletable, on/off only. It is intentionally NOT persisted on seed (the runtime
+ *  injects Profile itself), which is why it carries a recognizable, prefix-detectable id. */
+export const PINNED_PROFILE_ID = 'default:left_rail:pinned:profile'
+
+/** Is this item the fixed, runtime-injected Profile pin (point 1b)? */
+export function isPinnedRailItem(id: string): boolean {
+  return id === PINNED_PROFILE_ID
+}
+
+/** Build the pinned Profile ResolvedItem for the left rail. `position` places it right
+ *  after Feed in the headerless home-anchor group. */
+function pinnedProfileItem(position: number): ResolvedItem {
+  return {
+    id: PINNED_PROFILE_ID,
+    label: 'Profile',
+    href: '/profile',
+    position,
+    colSpan: 1,
+    mode: 'active',
+    roleModes: {},
+    minAccess: 'visitor',
+    icon: 'profile',
+  }
+}
+
 /** Human label per surface (also exported via MENU_SURFACES in read.ts). */
 function surfaceLabel(surfaceKey: MenuSurfaceKey): string {
   switch (surfaceKey) {
@@ -186,16 +214,21 @@ function adminMenu(surfaceKey: MenuSurfaceKey): ResolvedMenu {
 }
 
 // ── left_rail, from NAV_AREAS ────────────────────────────────────────────────
-// Areas group by their `section` (consecutive runs, mirroring the shell). A null
-// section pins to the root (rootItems); each named section becomes a category. The
-// area's `defaultAccess` carries into minAccess; the area `key` rides along as the
-// icon NAME (the shell maps key -> a lucide icon today, so the key is the best
-// available icon hint as a string).
+// Areas group by CONSECUTIVE runs of `area.section`, EXACTLY like the shell's
+// buildSections: a new category starts whenever the section label changes from the
+// previous area, so two non-adjacent runs of the same section name stay TWO separate
+// categories (never merged). A null section pins to the headerless home-anchor group
+// (rootItems). The area's `defaultAccess` carries into minAccess; the area `key` rides
+// along as the icon NAME (the shell maps key -> a lucide icon today, so the key is the
+// best available icon hint as a string). Profile is pinned into the home-anchor group
+// right after Feed (point 1b) — see pinnedProfileItem.
 function leftRailMenu(surfaceKey: MenuSurfaceKey): ResolvedMenu {
   const rootItems: ResolvedItem[] = []
   const categories: ResolvedCategory[] = []
-  // Track category index per section label so consecutive runs share one category.
-  const catBySection = new Map<string, ResolvedCategory>()
+  // The current open category, reset to null whenever the section label changes, so a
+  // section that recurs after a gap opens a fresh category (consecutive-run grouping).
+  let current: ResolvedCategory | null = null
+  let currentSection: string | null | undefined = undefined
 
   NAV_AREAS.forEach((area, ai) => {
     const access = toAccess(area.defaultAccess)
@@ -206,26 +239,36 @@ function leftRailMenu(surfaceKey: MenuSurfaceKey): ResolvedMenu {
           icon: area.key,
         }),
       )
+      // A headerless area also breaks any open run.
+      current = null
+      currentSection = null
       return
     }
 
-    let cat = catBySection.get(area.section)
-    if (!cat) {
-      cat = category(
+    if (!current || currentSection !== area.section) {
+      current = category(
         `default:${surfaceKey}:cat:${categories.length}`,
         area.section,
         categories.length,
         [],
       )
-      categories.push(cat)
-      catBySection.set(area.section, cat)
+      categories.push(current)
+      currentSection = area.section
     }
-    cat.items.push(
-      item(`${cat.id}:item:${cat.items.length}`, area.label, area.href, cat.items.length, {
+    current.items.push(
+      item(`${current.id}:item:${current.items.length}`, area.label, area.href, current.items.length, {
         minAccess: access,
         icon: area.key,
       }),
     )
+  })
+
+  // Pin Profile into the headerless home-anchor group right after Feed. Feed is the
+  // first (and today only) null-section area, so Profile lands at index 1. Renumber the
+  // trailing root items so positions stay contiguous.
+  rootItems.splice(1, 0, pinnedProfileItem(1))
+  rootItems.forEach((it, i) => {
+    it.position = i
   })
 
   return {

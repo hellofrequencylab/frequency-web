@@ -1,17 +1,20 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ChevronDown, ChevronRight, GripVertical, Trash2 } from 'lucide-react'
-import type { MenuAccess, MenuMode, ResolvedItem } from '@/lib/menus/types'
+import { ChevronDown, ChevronRight, GripVertical, Lock, Trash2 } from 'lucide-react'
+import type { ResolvedItem } from '@/lib/menus/types'
 import { updateItem, deleteItem, type UpdateItemPatch } from '@/lib/menus/actions'
 import { LinkTargetField } from './link-target-field'
 import { RoleModeMatrix } from './role-mode-matrix'
-import { ACCESS_LABEL, ACCESS_ORDER, MODE_LABEL, MODE_ORDER } from './known-routes'
+import { OnOffToggle } from './on-off-toggle'
 
-// One editable menu link (requirements 3-9). Collapsed it shows the label + a mode
-// chip + drag handle; expanded it edits subheading (4), link target (11), grid
-// placement (6), default mode + ghost fields (9), min access + per-role matrix (8).
-// Each save is optimistic with rollback and reports through onStatus.
+// One editable menu link. Collapsed it shows the label + an on/off toggle + drag handle;
+// expanded it edits the subheading, link target, grid placement (grid surfaces only),
+// the on/off visibility (the global show/hide), the per-role matrix, and the ghost
+// upsell copy (surfaced when any role is set to Ghost). Per-role presentation is the
+// sole source of role visibility — there is no default-mode dropdown or min-access
+// floor (always persisted as 'visitor'). Each save is optimistic with rollback and
+// reports through onStatus.
 export function ItemEditor({
   item,
   onChanged,
@@ -19,6 +22,8 @@ export function ItemEditor({
   onStatus,
   dragHandlers,
   isDragging,
+  isGrid = true,
+  pinned = false,
 }: {
   item: ResolvedItem
   /** Patch the local copy after a successful save so the parent stays in sync. */
@@ -33,6 +38,11 @@ export function ItemEditor({
     onDragEnd: (e: React.DragEvent) => void
   }
   isDragging: boolean
+  /** True on grid surfaces (mega-menus). Linear surfaces (rail, footer) hide the grid
+   *  placement controls — point 4. */
+  isGrid?: boolean
+  /** The fixed Profile pin (point 1b): non-draggable, non-deletable, on/off locked on. */
+  pinned?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,6 +56,10 @@ export function ItemEditor({
   const [ghostTier, setGhostTier] = useState(item.ghostTier ?? 'crew')
   const [ghostMessage, setGhostMessage] = useState(item.ghostMessage ?? '')
 
+  // Any per-role override set to 'ghost' means this link can present as an upsell for at
+  // least one role, so surface the ghost tier + message fields to author that copy.
+  const hasGhostRole = Object.values(item.roleModes).some((m) => m === 'ghost')
+
   function save(patch: UpdateItemPatch, optimistic: Partial<ResolvedItem>) {
     const prev: Partial<ResolvedItem> = {}
     for (const k of Object.keys(optimistic) as (keyof ResolvedItem)[]) {
@@ -56,7 +70,9 @@ export function ItemEditor({
     onChanged(optimistic)
     onStatus('Saving link')
     startTransition(async () => {
-      const res = await updateItem(item.id, patch)
+      // Always pin minAccess to 'visitor' (point 5): the role floor is removed, so
+      // per-role presentation (the matrix) is the sole source of role visibility.
+      const res = await updateItem(item.id, { ...patch, minAccess: 'visitor' })
       if (res.ok) onStatus('Link saved')
       else {
         onChanged(prev)
@@ -82,24 +98,27 @@ export function ItemEditor({
     })
   }
 
-  const modeChipTone =
-    item.mode === 'active'
-      ? 'bg-success-bg text-success'
-      : item.mode === 'ghost'
-        ? 'bg-warning-bg text-warning'
-        : 'bg-surface-elevated text-subtle'
-
   return (
     <li className={`rounded-xl border border-border bg-canvas/40 ${isDragging ? 'opacity-40' : ''}`}>
       <div className="flex items-center gap-2 px-2.5 py-2">
-        <span
-          {...dragHandlers}
-          className="shrink-0 cursor-grab text-subtle active:cursor-grabbing"
-          aria-label="Drag to reorder or move between groups"
-          title="Drag to reorder or move between groups"
-        >
-          <GripVertical className="h-4 w-4" aria-hidden />
-        </span>
+        {pinned ? (
+          <span
+            className="shrink-0 text-subtle"
+            aria-label="Pinned, cannot be moved"
+            title="Pinned beside Feed"
+          >
+            <Lock className="h-4 w-4" aria-hidden />
+          </span>
+        ) : (
+          <span
+            {...dragHandlers}
+            className="shrink-0 cursor-grab text-subtle active:cursor-grabbing"
+            aria-label="Drag to reorder or move between groups"
+            title="Drag to reorder or move between groups"
+          >
+            <GripVertical className="h-4 w-4" aria-hidden />
+          </span>
+        )}
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -116,23 +135,37 @@ export function ItemEditor({
           </span>
           <span className="truncate text-xs text-subtle">{item.href}</span>
         </button>
-        <span
-          className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-semibold ${modeChipTone}`}
-        >
-          {MODE_LABEL[item.mode]}
-        </span>
-        <button
-          type="button"
-          onClick={remove}
+        <OnOffToggle
+          mode={item.mode}
           disabled={isPending}
-          aria-label={`Delete ${item.label}`}
-          className="shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
-        >
-          <Trash2 className="h-4 w-4" aria-hidden />
-        </button>
+          locked={pinned}
+          label={`Show ${item.label || 'this link'}`}
+          onChange={(mode) => save({ mode }, { mode })}
+        />
+        {!pinned && (
+          <button
+            type="button"
+            onClick={remove}
+            disabled={isPending}
+            aria-label={`Delete ${item.label}`}
+            className="shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden />
+          </button>
+        )}
       </div>
 
-      {open && (
+      {open && pinned && (
+        <div className="space-y-2 border-t border-border px-3 py-3 text-xs text-subtle">
+          <p>
+            Profile is pinned beside Feed and shown to every signed-in member. Its link is
+            personal to each viewer, so it cannot be renamed, retargeted, moved, or removed
+            here.
+          </p>
+        </div>
+      )}
+
+      {open && !pinned && (
         <div className="space-y-4 border-t border-border px-3 py-3">
           {error && <p className="text-sm text-danger">{error}</p>}
 
@@ -188,68 +221,26 @@ export function ItemEditor({
             />
           </div>
 
-          {/* Requirement 6: grid placement (column / row / span). */}
-          <GridControls
-            gridCol={item.gridCol}
-            gridRow={item.gridRow}
-            colSpan={item.colSpan}
-            disabled={isPending}
-            onSave={(p) =>
-              save(p, {
-                gridCol: 'gridCol' in p ? (p.gridCol ?? undefined) : item.gridCol,
-                gridRow: 'gridRow' in p ? (p.gridRow ?? undefined) : item.gridRow,
-                colSpan: p.colSpan ?? item.colSpan,
-              })
-            }
-          />
+          {/* Grid placement (column / row / span) — grid surfaces only (point 4). */}
+          {isGrid && (
+            <GridControls
+              gridCol={item.gridCol}
+              gridRow={item.gridRow}
+              colSpan={item.colSpan}
+              disabled={isPending}
+              onSave={(p) =>
+                save(p, {
+                  gridCol: 'gridCol' in p ? (p.gridCol ?? undefined) : item.gridCol,
+                  gridRow: 'gridRow' in p ? (p.gridRow ?? undefined) : item.gridRow,
+                  colSpan: p.colSpan ?? item.colSpan,
+                })
+              }
+            />
+          )}
 
-          {/* Requirement 9: default mode + ghost fields. */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="min-w-0">
-              <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`mode-${item.id}`}>
-                Default mode
-              </label>
-              <select
-                id={`mode-${item.id}`}
-                value={item.mode}
-                disabled={isPending}
-                onChange={(e) => save({ mode: e.target.value as MenuMode }, { mode: e.target.value as MenuMode })}
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-              >
-                {MODE_ORDER.map((m) => (
-                  <option key={m} value={m}>
-                    {MODE_LABEL[m]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {/* Requirement 8: min access. */}
-            <div className="min-w-0">
-              <label
-                className="mb-1 block text-xs font-semibold text-subtle"
-                htmlFor={`access-${item.id}`}
-              >
-                Lowest role that can use this
-              </label>
-              <select
-                id={`access-${item.id}`}
-                value={item.minAccess}
-                disabled={isPending}
-                onChange={(e) =>
-                  save({ minAccess: e.target.value as MenuAccess }, { minAccess: e.target.value as MenuAccess })
-                }
-                className="w-full rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-              >
-                {ACCESS_ORDER.map((a) => (
-                  <option key={a} value={a}>
-                    {ACCESS_LABEL[a]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {item.mode === 'ghost' && (
+          {/* Ghost upsell copy — surfaced when ANY per-role mode is set to Ghost (point 6),
+              so the operator can author the message the upsell shows. */}
+          {hasGhostRole && (
             <div className="grid gap-3 rounded-lg border border-warning/30 bg-warning-bg/40 p-3 sm:grid-cols-2">
               <div className="min-w-0">
                 <label className="mb-1 block text-xs font-semibold text-subtle" htmlFor={`gt-${item.id}`}>

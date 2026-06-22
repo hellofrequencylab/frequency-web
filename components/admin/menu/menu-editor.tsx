@@ -18,6 +18,8 @@ import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ItemEditor, GridControls } from './item-editor'
 import { RailCardEditor } from './rail-card-editor'
+import { isGridSurface } from './known-routes'
+import { isPinnedRailItem, PINNED_PROFILE_ID } from '@/lib/menus/defaults'
 
 // The per-surface menu editor. Holds the working ResolvedMenu in state and drives
 // every CRUD path against lib/menus/actions. Categories (3), columns (5), grid
@@ -34,11 +36,17 @@ export function MenuEditor({
   surfaceKey,
   surfaceLabel,
   onStatus,
+  leftColumnTop,
+  rightColumnTop,
 }: {
   initialMenu: ResolvedMenu
   surfaceKey: ResolvedMenu['surfaceKey']
   surfaceLabel: string
   onStatus: (msg: string) => void
+  /** Rendered at the TOP of the left (editor) column — the surface picker (point 2). */
+  leftColumnTop?: React.ReactNode
+  /** Rendered at the TOP of the right (settings) column — the speed panel (point 2). */
+  rightColumnTop?: React.ReactNode
 }) {
   const [menu, setMenu] = useState<ResolvedMenu>(initialMenu)
   const [error, setError] = useState<string | null>(null)
@@ -46,6 +54,29 @@ export function MenuEditor({
   const [columnsDraft, setColumnsDraft] = useState(String(initialMenu.columns))
   const dragRef = useRef<DragRef>(null)
   const [dragId, setDragId] = useState<string | null>(null)
+
+  // Grid surfaces (mega-menus) show the column / row / span placement controls; linear
+  // surfaces (left rail, marketing footer) hide them (point 4).
+  const isGrid = isGridSurface(surfaceKey)
+
+  // The left rail pins Profile right after Feed (point 1b): a fixed, runtime-injected row
+  // that is never persisted and can't be dragged or deleted. Render it as a separate lead
+  // row in the root bucket, and strip any copy out of the draggable root list (the code
+  // default carries it; a seeded menu does not — so handle both).
+  const pinnedLead =
+    surfaceKey === 'left_rail'
+      ? (menu.rootItems.find((i) => isPinnedRailItem(i.id)) ?? {
+          id: PINNED_PROFILE_ID,
+          label: 'Profile',
+          href: '/profile',
+          position: 1,
+          colSpan: 1,
+          mode: 'active' as const,
+          roleModes: {},
+          minAccess: 'visitor' as const,
+        })
+      : null
+  const draggableRootItems = menu.rootItems.filter((i) => !isPinnedRailItem(i.id))
 
   // The menu may be the code fallback (no DB id). Every write needs a real menu row,
   // so we lazily ensure one and stamp the id into local state.
@@ -301,9 +332,10 @@ export function MenuEditor({
     dragRef.current = null
     setDragId(null)
     if (!d) return
-    // Persist the new positions + category for the destination bucket.
+    // Persist the new positions + category for the destination bucket. The fixed pinned
+    // Profile row has no DB id, so never include it in a reorder write.
     const bucket = d.from
-    const items = itemsInBucket(bucket)
+    const items = itemsInBucket(bucket).filter((it) => !isPinnedRailItem(it.id))
     const categoryId = bucket === ROOT ? null : bucket
     const updates = items.map((it, i) => ({ id: it.id, position: i, category_id: categoryId }))
     setError(null)
@@ -336,64 +368,72 @@ export function MenuEditor({
 
   const seedLabel = menu.isDefault ? 'Seed from site defaults' : 'Reset from site defaults'
 
-  return (
-    <div className="space-y-8">
-      {error && (
-        <p className="rounded-lg border border-danger/30 bg-danger-bg/40 px-3 py-2 text-sm text-danger">
-          {error}
-        </p>
-      )}
-
-      {menu.isDefault && (
-        <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-4 text-sm text-muted">
-          This surface has no saved menu yet, so it is showing the site defaults. Editing
-          anything, or seeding below, creates an editable copy in the database.
-        </div>
-      )}
-
-      {/* Columns (5) + Seed/Reset (12) */}
-      <AdminSection
-        title="Layout & defaults"
-        description="Set how many columns this menu spreads across, then seed or reset it from today's site nav."
-        actions={
-          <button
-            type="button"
-            onClick={seed}
-            disabled={isPending}
-            className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
-          >
-            <RotateCcw className="h-4 w-4 shrink-0" aria-hidden />
-            {seedLabel}
-          </button>
-        }
-      >
-        <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
-          <div className="min-w-0">
-            <label htmlFor={`cols-${surfaceKey}`} className="mb-1 flex items-center gap-2 text-xs font-semibold text-subtle">
-              <Columns3 className="h-3.5 w-3.5" aria-hidden />
-              Columns
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                id={`cols-${surfaceKey}`}
-                type="number"
-                min={1}
-                max={12}
-                value={columnsDraft}
-                disabled={isPending}
-                onChange={(e) => setColumnsDraft(e.target.value)}
-                onBlur={() => {
-                  const n = Number(columnsDraft)
-                  if (Number.isFinite(n) && n !== menu.columns) saveColumns(n)
-                  else setColumnsDraft(String(menu.columns))
-                }}
-                className="w-24 rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm tabular-nums text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-              />
-              <span className="text-xs text-subtle">1 to 12, default 6</span>
-            </div>
+  // Columns (the menu-wide column count) + Seed/Reset — the right (settings) column.
+  const layoutAndDefaults = (
+    <AdminSection
+      title="Layout & defaults"
+      description="Set how many columns this menu spreads across, then seed or reset it from today's site nav."
+      actions={
+        <button
+          type="button"
+          onClick={seed}
+          disabled={isPending}
+          className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+        >
+          <RotateCcw className="h-4 w-4 shrink-0" aria-hidden />
+          {seedLabel}
+        </button>
+      }
+    >
+      <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+        <div className="min-w-0">
+          <label htmlFor={`cols-${surfaceKey}`} className="mb-1 flex items-center gap-2 text-xs font-semibold text-subtle">
+            <Columns3 className="h-3.5 w-3.5" aria-hidden />
+            Columns
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              id={`cols-${surfaceKey}`}
+              type="number"
+              min={1}
+              max={12}
+              value={columnsDraft}
+              disabled={isPending}
+              onChange={(e) => setColumnsDraft(e.target.value)}
+              onBlur={() => {
+                const n = Number(columnsDraft)
+                if (Number.isFinite(n) && n !== menu.columns) saveColumns(n)
+                else setColumnsDraft(String(menu.columns))
+              }}
+              className="w-24 rounded-lg border border-border bg-canvas/40 px-2.5 py-1.5 text-sm tabular-nums text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            />
+            <span className="text-xs text-subtle">1 to 12, default 6</span>
           </div>
         </div>
-      </AdminSection>
+      </div>
+    </AdminSection>
+  )
+
+  return (
+    // Two-thirds / one-third on lg+ (point 2): editor left (col-span-2), settings right
+    // (col-span-1, sticky). Single column on mobile.
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      {/* Left column: surface picker, then Groups & links, then Rail cards. */}
+      <div className="space-y-8 lg:col-span-2">
+        {leftColumnTop}
+
+        {error && (
+          <p className="rounded-lg border border-danger/30 bg-danger-bg/40 px-3 py-2 text-sm text-danger">
+            {error}
+          </p>
+        )}
+
+        {menu.isDefault && (
+          <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-4 text-sm text-muted">
+            This surface has no saved menu yet, so it is showing the site defaults. Editing
+            anything, or seeding, creates an editable copy in the database.
+          </div>
+        )}
 
       {/* Categories + links (3, 4, 6, 7, 8, 9) */}
       <AdminSection
@@ -426,7 +466,9 @@ export function MenuEditor({
         <Bucket
           title="Menu-level links"
           hint="Links that sit directly on the menu, outside any group."
-          items={menu.rootItems}
+          items={draggableRootItems}
+          pinnedLead={pinnedLead}
+          isGrid={isGrid}
           bucket={ROOT}
           dragId={dragId}
           isPending={isPending}
@@ -463,6 +505,7 @@ export function MenuEditor({
                 <CategoryHeader
                   cat={cat}
                   isPending={isPending}
+                  isGrid={isGrid}
                   onRename={(label) => renameCategory(cat.id, label)}
                   onAddSub={() => addCategory(cat.id)}
                   onAddItem={() => addItem(cat.id)}
@@ -471,6 +514,7 @@ export function MenuEditor({
                 />
                 <Bucket
                   items={cat.items}
+                  isGrid={isGrid}
                   bucket={cat.id}
                   dragId={dragId}
                   isPending={isPending}
@@ -548,15 +592,31 @@ export function MenuEditor({
           </ul>
         )}
       </AdminSection>
+      </div>
+
+      {/* Right column: speed panel (top), then Layout & defaults. Sticky on lg+. */}
+      <div className="lg:col-span-1">
+        <div className="space-y-8 lg:sticky lg:top-6">
+          {rightColumnTop}
+          {layoutAndDefaults}
+        </div>
+      </div>
     </div>
   )
 }
 
 // ── A bucket of draggable items (root or a category) ──────────────────────────
+// Every item is draggable and any group (root, sub-group, or empty group) is a valid
+// drop target — the wrapping div's onDrop always reparents into this bucket (point 3).
+// An optional `pinnedLead` renders a fixed, non-draggable row at the top (the Profile
+// pin, point 1b). `isGrid` flows down to each ItemEditor so linear surfaces hide grid
+// placement (point 4).
 function Bucket({
   title,
   hint,
   items,
+  pinnedLead,
+  isGrid,
   bucket,
   dragId,
   isPending,
@@ -570,6 +630,8 @@ function Bucket({
   title?: string
   hint?: string
   items: ResolvedItem[]
+  pinnedLead?: ResolvedItem | null
+  isGrid: boolean
   bucket: string
   dragId: string | null
   isPending: boolean
@@ -585,6 +647,13 @@ function Bucket({
   deleteItem: (id: string) => void
   onStatus: (msg: string) => void
 }) {
+  // Inert drag handlers for the pinned lead (it is never draggable).
+  const noDrag = {
+    draggable: false,
+    onDragStart: () => {},
+    onDragOver: () => {},
+    onDragEnd: () => {},
+  }
   return (
     <div
       onDragOver={(e) => {
@@ -599,30 +668,43 @@ function Bucket({
     >
       {title && <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">{title}</p>}
       {hint && <p className="mb-2 text-xs text-subtle">{hint}</p>}
-      {items.length === 0 ? (
+      <ul className="space-y-1.5">
+        {pinnedLead && (
+          <ItemEditor
+            key={pinnedLead.id}
+            item={pinnedLead}
+            pinned
+            isGrid={isGrid}
+            isDragging={false}
+            dragHandlers={noDrag}
+            onStatus={onStatus}
+            onChanged={() => {}}
+            onDeleted={() => {}}
+          />
+        )}
+        {items.map((item) => (
+          <ItemEditor
+            key={item.id}
+            item={item}
+            isGrid={isGrid}
+            isDragging={dragId === item.id}
+            dragHandlers={dragHandlersFor(item.id, bucket)}
+            onStatus={onStatus}
+            onChanged={(patch) => patchItem(item.id, patch)}
+            onDeleted={() => deleteItem(item.id)}
+          />
+        ))}
+      </ul>
+      {items.length === 0 && (
         <button
           type="button"
           onClick={onAddItem}
           disabled={isPending}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-3 text-xs font-medium text-subtle transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-3 text-xs font-medium text-subtle transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />
           Add a link, or drop one here
         </button>
-      ) : (
-        <ul className="space-y-1.5">
-          {items.map((item) => (
-            <ItemEditor
-              key={item.id}
-              item={item}
-              isDragging={dragId === item.id}
-              dragHandlers={dragHandlersFor(item.id, bucket)}
-              onStatus={onStatus}
-              onChanged={(patch) => patchItem(item.id, patch)}
-              onDeleted={() => deleteItem(item.id)}
-            />
-          ))}
-        </ul>
       )}
     </div>
   )
@@ -632,6 +714,7 @@ function Bucket({
 function CategoryHeader({
   cat,
   isPending,
+  isGrid,
   onRename,
   onAddSub,
   onAddItem,
@@ -640,6 +723,8 @@ function CategoryHeader({
 }: {
   cat: ResolvedCategoryLite
   isPending: boolean
+  /** Grid surfaces show the placement controls; linear surfaces hide them (point 4). */
+  isGrid: boolean
   onRename: (label: string) => void
   onAddSub: () => void
   onAddItem: () => void
@@ -695,13 +780,15 @@ function CategoryHeader({
           </button>
         </div>
       </div>
-      <GridControls
-        gridCol={cat.gridCol}
-        gridRow={cat.gridRow}
-        colSpan={cat.colSpan}
-        disabled={isPending}
-        onSave={onSaveGrid}
-      />
+      {isGrid && (
+        <GridControls
+          gridCol={cat.gridCol}
+          gridRow={cat.gridRow}
+          colSpan={cat.colSpan}
+          disabled={isPending}
+          onSave={onSaveGrid}
+        />
+      )}
     </div>
   )
 }
