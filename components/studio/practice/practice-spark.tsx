@@ -2,18 +2,19 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, ArrowLeft, Loader2 } from 'lucide-react'
+import { Sparkles, ArrowLeft, Loader2, Upload } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { isError } from '@/lib/action-result'
 import { sparkPracticeAction, createPracticeFromSparkAction } from '@/app/(main)/practices/create-actions'
 import { createPracticeDraftAction } from '@/app/(main)/practices/actions'
 import type { PracticePace, PracticeCadenceHint } from '@/lib/ai/practice-spark'
 
-// The guided Practice builder, Step 1 "Spark" (ADR-358). The atom-level twin of the Journey Spark
-// (components/journey/v2/journey-spark.tsx): a short stepped form (who / the act / outcome /
-// cadence + time), Vera drafts the WHOLE Practice for review, then committing creates the row and
-// drops the author into the editor. Nothing persists until that commit (deferred creation). "Build
-// it myself" creates a blank draft and opens the editor straight away.
+// The guided Practice builder, Step 1 "Spark" (ADR-358). Two ways in:
+//   • QUESTIONS — a short stepped form (who / the act / outcome / cadence + time), or
+//   • WRITTEN   — paste a Practice you already wrote and let Vera shape it into the fields.
+// Either way Vera drafts the WHOLE Practice for review, then committing creates the row and
+// drops the author into the editor. Nothing persists until that commit (deferred creation).
+// "Build it myself" creates a blank draft and opens the editor straight away.
 
 const FIELD =
   'w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
@@ -27,6 +28,7 @@ const CADENCE_CHOICES: { key: PracticeCadenceHint; label: string }[] = [
 export function PracticeSpark() {
   const router = useRouter()
   const [step, setStep] = useState(1)
+  const [usingWritten, setUsingWritten] = useState(false)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -35,6 +37,7 @@ export function PracticeSpark() {
   const [outcome, setOutcome] = useState('')
   const [cadence, setCadence] = useState<PracticeCadenceHint>('daily')
   const [pace, setPace] = useState<PracticePace>('light')
+  const [sourceText, setSourceText] = useState('') // the pasted, already-written practice
 
   // Vera's drafted Practice (review step, editable).
   const [title, setTitle] = useState('')
@@ -46,13 +49,14 @@ export function PracticeSpark() {
   const [durationMin, setDurationMin] = useState<number | null>(null)
 
   const onReview = step === 5
-  const total = 5
-  const label = onReview ? 'Review' : ['Who', 'The act', 'Outcome', 'Shape'][step - 1]
+  const total = usingWritten ? 2 : 5
+  const current = onReview ? total : usingWritten ? 1 : step
+  const label = onReview ? 'Review' : usingWritten ? 'Your practice' : ['Who', 'The act', 'Outcome', 'Shape'][step - 1]
 
   const generate = () => {
     setError(null)
     start(async () => {
-      const res = await sparkPracticeAction({ who, act, outcome, cadence, pace })
+      const res = await sparkPracticeAction({ who, act, outcome, cadence, pace }, usingWritten ? sourceText : undefined)
       if (isError(res)) {
         setError(res.error)
       } else {
@@ -95,25 +99,28 @@ export function PracticeSpark() {
   }
 
   const next = () => {
-    if (step === 4) generate()
+    if (usingWritten || step === 4) generate()
     else setStep((s) => Math.min(5, s + 1))
   }
   const back = () => setStep((s) => Math.max(1, s - 1))
 
-  const canNext =
-    (step === 1 && who.trim().length > 0) ||
-    (step === 2 && act.trim().length > 0) ||
-    (step === 3 && outcome.trim().length > 0) ||
-    step === 4
+  const canNext = usingWritten
+    ? sourceText.trim().length > 0
+    : (step === 1 && who.trim().length > 0) ||
+      (step === 2 && act.trim().length > 0) ||
+      (step === 3 && outcome.trim().length > 0) ||
+      step === 4
 
   const heading = onReview
     ? { title: 'Here is your Practice', description: "Vera's draft. Edit anything, then create it." }
-    : [
-        { title: 'Who is this Practice for?', description: 'Tell Vera who it is for in a sentence and she drafts the whole Practice.' },
-        { title: 'What do they actually do?', description: 'The act, in plain words. The concrete thing, not a vibe.' },
-        { title: 'What do they walk away with?', description: 'The outcome after a week. Lead with the feeling, plainly.' },
-        { title: 'How often, and how long?', description: 'Keep the ask honest. The entry version should fit in five minutes.' },
-      ][step - 1]
+    : usingWritten
+      ? { title: 'Paste your written practice', description: 'Drop in what you already wrote and Vera shapes it into a Practice you can review.' }
+      : [
+          { title: 'Who is this Practice for?', description: 'Tell Vera who it is for in a sentence and she drafts the whole Practice.' },
+          { title: 'What do they actually do?', description: 'The act, in plain words. The concrete thing, not a vibe.' },
+          { title: 'What do they walk away with?', description: 'The outcome after a week. Lead with the feeling, plainly.' },
+          { title: 'How often, and how long?', description: 'Keep the ask honest. The entry version should fit in five minutes.' },
+        ][step - 1]
 
   const PILLARS: { key: 'mind' | 'body' | 'spirit' | 'expression'; label: string }[] = [
     { key: 'mind', label: 'Mind' },
@@ -124,7 +131,7 @@ export function PracticeSpark() {
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-10">
-      <WizardProgress current={onReview ? total : step} total={total} label={label} />
+      <WizardProgress current={current} total={total} label={label} />
 
       <div className="mt-7">
         <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">New Practice</p>
@@ -132,16 +139,42 @@ export function PracticeSpark() {
         <p className="mt-1 text-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
-          {step === 1 && (
-            <textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={3} className={FIELD} placeholder="e.g. People who wake up wired and want a calmer start." />
+          {/* WRITTEN path — paste a Practice you already have and let Vera shape it. */}
+          {usingWritten && !onReview && (
+            <textarea
+              autoFocus
+              value={sourceText}
+              onChange={(e) => setSourceText(e.target.value)}
+              rows={9}
+              className={FIELD}
+              placeholder="Paste your practice here, the steps and how to do it, anything you've already written…"
+            />
           )}
-          {step === 2 && (
+
+          {!usingWritten && step === 1 && (
+            <>
+              <textarea autoFocus value={who} onChange={(e) => setWho(e.target.value)} rows={3} className={FIELD} placeholder="e.g. People who wake up wired and want a calmer start." />
+              {/* Second path: drop in a Practice you already wrote and let Vera shape it. */}
+              <button
+                type="button"
+                onClick={() => { setUsingWritten(true); setStep(1) }}
+                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary-bg/20 px-4 py-3 text-left transition-colors hover:bg-primary-bg/40"
+              >
+                <Upload className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-text">Already have the practice written?</span>
+                  <span className="block text-xs leading-snug text-muted">Paste what you wrote and Vera shapes it into a Practice for you to review.</span>
+                </span>
+              </button>
+            </>
+          )}
+          {!usingWritten && step === 2 && (
             <textarea autoFocus value={act} onChange={(e) => setAct(e.target.value)} rows={3} className={FIELD} placeholder="e.g. Sit for two minutes and breathe before reaching for the phone." />
           )}
-          {step === 3 && (
+          {!usingWritten && step === 3 && (
             <textarea autoFocus value={outcome} onChange={(e) => setOutcome(e.target.value)} rows={3} className={FIELD} placeholder="e.g. Start the day a notch calmer, most mornings." />
           )}
-          {step === 4 && (
+          {!usingWritten && step === 4 && (
             <div className="space-y-5">
               <div>
                 <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">How often</p>
@@ -174,7 +207,7 @@ export function PracticeSpark() {
             <div className="space-y-3">
               {pending && !title ? (
                 <p className="flex items-center gap-2 rounded-xl border border-border bg-canvas px-4 py-3 text-sm text-muted">
-                  <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is drafting your Practice…
+                  <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is shaping your Practice…
                 </p>
               ) : (
                 <>
@@ -220,15 +253,15 @@ export function PracticeSpark() {
         {error && <p className="mt-4 text-sm text-warning">{error}</p>}
 
         <div className="mt-7 flex gap-3">
-          {step > 1 && (
-            <button type="button" onClick={back} disabled={pending} className={`${wizardSecondaryClass} flex-1`}>
+          {(step > 1 || (usingWritten && !onReview)) && (
+            <button type="button" onClick={usingWritten && !onReview ? () => setUsingWritten(false) : back} disabled={pending} className={`${wizardSecondaryClass} flex-1`}>
               <ArrowLeft className="h-4 w-4" /> Back
             </button>
           )}
           {!onReview ? (
-            <button type="button" onClick={next} disabled={!canNext || pending} className={`${wizardPrimaryClass} ${step > 1 ? 'flex-1' : 'w-full'}`}>
-              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : step === 4 ? <Sparkles className="h-4 w-4" /> : null}
-              {step === 4 ? 'Draft with Vera' : 'Continue'}
+            <button type="button" onClick={next} disabled={!canNext || pending} className={`${wizardPrimaryClass} ${step > 1 || usingWritten ? 'flex-1' : 'w-full'}`}>
+              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : usingWritten || step === 4 ? <Sparkles className="h-4 w-4" /> : null}
+              {usingWritten || step === 4 ? 'Draft with Vera' : 'Continue'}
             </button>
           ) : (
             <button type="button" onClick={create} disabled={!title.trim() || pending} className={`${wizardPrimaryClass} flex-1`}>
@@ -240,6 +273,14 @@ export function PracticeSpark() {
 
       {!onReview && (
         <p className="mt-8 text-center text-xs text-subtle">
+          {!usingWritten && (
+            <>
+              <button type="button" onClick={() => { setUsingWritten(true); setStep(1) }} className="underline-offset-4 transition-colors hover:text-muted hover:underline">
+                Already have the practice written? Paste it
+              </button>
+              <span className="px-1.5 text-border" aria-hidden>·</span>
+            </>
+          )}
           <button type="button" onClick={buildItMyself} disabled={pending} className="underline-offset-4 transition-colors hover:text-muted hover:underline disabled:opacity-60">
             Skip — I&apos;ll build it myself
           </button>

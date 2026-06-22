@@ -98,26 +98,44 @@ How to write:
 - Always call the ${TOOL_NAME} tool.`
 
 export async function draftPracticeSpark(
-  input: PracticeSparkAnswers & { profileId?: string | null },
+  input: PracticeSparkAnswers & { profileId?: string | null; sourceText?: string | null },
 ): Promise<PracticeSpark | null> {
   if (!aiEnabled()) return null
   // Per-feature daily cap (lib/ai/budget.ts): over budget => fall back to hand-entry, never bill on.
   if (await featureOverBudget(FEATURE)) return null
 
-  const userText = [
-    `Who it is for: ${input.who.trim().slice(0, 400) || 'anyone'}`,
-    `The act (what you do): ${input.act.trim().slice(0, 400) || 'a small daily practice'}`,
-    `What they walk away with: ${input.outcome.trim().slice(0, 400) || 'a steadier week'}`,
-    `How often: ${CADENCE_LABEL[input.cadence] ?? 'Daily'}`,
-    `Time a session: ${input.pace === 'medium' ? 'around 10 to 15 minutes' : 'five minutes or less'}`,
-    '',
-    `Draft the Practice and call ${TOOL_NAME}.`,
-  ].join('\n')
+  // Two modes: structure a Practice the member ALREADY WROTE (sourceText), or draft one from
+  // their short answers. The written path preserves their content and only tidies + structures it.
+  const written = input.sourceText?.trim().slice(0, 6000) ?? ''
+  const userText = written
+    ? [
+        'The member has ALREADY WRITTEN their Practice below. Do not invent a different one.',
+        'Read it and STRUCTURE it into the fields: pull a clean, plain title; write the card hook',
+        'and one-line description from it; format what they wrote as the guide (keep their content,',
+        'order, and voice, tidy the wording only); and infer the Pillar, a cadence, and roughly how',
+        'long a session takes. If something is missing, fill the smallest sensible version.',
+        '',
+        'Their written Practice:',
+        '"""',
+        written,
+        '"""',
+        '',
+        `Structure it and call ${TOOL_NAME}.`,
+      ].join('\n')
+    : [
+        `Who it is for: ${input.who.trim().slice(0, 400) || 'anyone'}`,
+        `The act (what you do): ${input.act.trim().slice(0, 400) || 'a small daily practice'}`,
+        `What they walk away with: ${input.outcome.trim().slice(0, 400) || 'a steadier week'}`,
+        `How often: ${CADENCE_LABEL[input.cadence] ?? 'Daily'}`,
+        `Time a session: ${input.pace === 'medium' ? 'around 10 to 15 minutes' : 'five minutes or less'}`,
+        '',
+        `Draft the Practice and call ${TOOL_NAME}.`,
+      ].join('\n')
 
   try {
     const res = await completeRaw({
       tier: SPARK_TIER,
-      maxTokens: 800,
+      maxTokens: written ? 1200 : 800,
       thinking: { type: 'disabled' },
       system: withVoice(withPracticeShape(SYSTEM)),
       tools: [TOOL],

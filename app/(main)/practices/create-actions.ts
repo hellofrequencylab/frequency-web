@@ -50,10 +50,11 @@ async function authorizeCreatePractice(): Promise<
  *  lets them type the identity by hand. */
 export async function sparkPracticeAction(
   answers: PracticeSparkAnswers,
+  sourceText?: string,
 ): Promise<ActionResult<PracticeSpark>> {
   const gate = await authorizeCreatePractice()
   if ('error' in gate) return fail(gate.error)
-  const spark = await draftPracticeSpark({ ...answers, profileId: gate.profileId })
+  const spark = await draftPracticeSpark({ ...answers, sourceText, profileId: gate.profileId })
   if (!spark) return fail('Vera is offline right now. Name it yourself and keep going.')
   return ok(spark)
 }
