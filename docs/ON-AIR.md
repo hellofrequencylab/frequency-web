@@ -1,11 +1,54 @@
 # On Air: the practice timer mini-app (member-facing: **Mindless**)
 
-> Status: **P1 to P7 shipped** (ADR-229; desktop intercepted-modal entry deferred, see Roadmap). Canon names: NAMING.md §The Quest ("On Air" =
-> internal name; member-facing the app is **Mindless**, verb **"tune out"**; "Airtime", "Dispatch from Vera"). Member help: `content/help/the-game/on-air.md`.
+> Status: **P1 to P7 shipped** (ADR-229; desktop intercepted-modal entry deferred, see Roadmap). **Unified into one timer with two modes (ADR-360, see "The unified timer" below).** Canon names: NAMING.md §The Quest ("On Air" =
+> internal name; member-facing the app is **Mindless**, verb **"tune out"**, modes **Be Still** / **Get Moving**, tagline **"Get out of your head, and into your life."**; "Airtime", "Dispatch from Vera"). Member help: `content/help/the-quest/on-air.md`.
 
-One tap → the world goes quiet → you breathe → the game pays you in person → Vera
-hands you tomorrow's thread. A little app inside The Quest, and the intended daily
-anchor for WAM.
+One tap → the world goes quiet → you breathe (or you move) → the game pays you in
+person → Vera hands you tomorrow's thread. A little app inside The Quest, and the
+intended daily anchor for WAM. There is now **one** member-facing timer, Mindless,
+with two modes (**Be Still** / **Get Moving**); the former separate Movement timer
+is folded in as the Get Moving mode (ADR-360).
+
+## The unified timer: one Mindless, two modes (ADR-360)
+
+There is **one** member-facing practice timer, **Mindless**, tagline **"Get out
+of your head, and into your life."** It carries two modes the member toggles
+between:
+
+| Mode | What it is | Sub-modes |
+|---|---|---|
+| **Be Still** | the quiet sit (the former Mindless sit) | Meditate · Breathe · Stillness · Ritual · Journal · Just Log |
+| **Get Moving** | the moving timer (the former Movement timer) | Walk · Run · Yoga · Strength · Stretch · Play |
+
+Mode labels are EXACTLY `Be Still` and `Get Moving`. **"Movement" is no longer a
+separate member-facing timer name**; it is the Get Moving mode (NAMING.md Retired,
+ADR-360). "On Air" stays the internal name (this doc, routes, schema, `timer_kind`).
+
+- **Two engines, one door.** Nothing about the two timer engines changes. Be Still
+  reuses the breath/quiet engine (`lib/on-air.ts`, the breath patterns below); Get
+  Moving reuses the Movement interval engine (`lib/movement.ts`, ADR-346). They are
+  reused under one door, not rebuilt.
+- **Auto-route by `timer_kind`.** Launching from a practice auto-selects the mode
+  from the practice's `timer_kind`: `mindless` → **Be Still** · `movement` → **Get
+  Moving** · `none` → **Be Still** (defaulting to Just Log). A generic open (the
+  Free sit / a non-specific entry) lands on **Be Still** and **remembers the last
+  mode** used. (Generic opens stay neutral per ADR-354; only a practice-specific
+  entry pre-selects a practice and its mode.)
+- **Crossover is INTERNAL; one reward per session.** A practice may develop more
+  than one Pillar through the existing `focus_details` map (e.g. breathwork = Body
+  + Spirit, yoga = Body + Spirit). This is **never surfaced as a visible rubric**,
+  and there is exactly **one Zap reward per session**: a session ends through the
+  same `completeSession` → `logPractice()` path either mode shares, and nothing
+  else pays. **The invariant holds: On Air is a stage, never a second economy**
+  (see below). Multi-Pillar crossover is scoring metadata, not a member-facing
+  scoreboard, and it never multiplies the payout.
+
+**Why one timer (rationale).** One door = one daily anchor, one streak, one
+identity, the lowest friction, which is what habit formation wants. A single plain
+timer also fits the skeptical, anti-precious demographic (CONTENT-VOICE §2) far
+better than a two-timer taxonomy with a visible crossover-scoring rubric. The
+two-name split (Mindless vs Movement) added a taxonomy the member had to learn
+before doing the thing; one timer with a mode toggle removes that.
 
 ## Why it's built this way (research)
 

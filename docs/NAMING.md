@@ -70,6 +70,26 @@
   from member copy; "Connecting" was rejected (collides with the **Connect**
   tile). **Airtime** = timed practice minutes (`practice_sessions`): the stat
   keeps its name.
+- **Mindless = THE one timer; Be Still / Get Moving = its two modes (ADR-360).**
+  There is now **one** member-facing practice timer, **Mindless**, tagline
+  **"Get out of your head, and into your life."** It carries two modes the member
+  toggles between:
+  - **Be Still** = the quiet sit (the former Mindless sit). Sub-modes: Meditate /
+    Breathe / Stillness / Ritual / Journal / Just Log.
+  - **Get Moving** = the moving timer (the former Movement timer). Sub-modes: Walk
+    / Run / Yoga / Strength / Stretch / Play.
+
+  Mode labels are EXACTLY `Be Still` and `Get Moving`. The mode auto-selects from
+  the launching practice's `timer_kind` (`mindless` → Be Still · `movement` → Get
+  Moving · `none` → Be Still, defaulting to Just Log); a generic open lands on Be
+  Still and remembers the last mode used. The two former engines are reused under
+  one door. **"Movement" is RETIRED as a separate member-facing timer name** (it
+  is now the **Get Moving** mode; see Retired). Scoring stays INTERNAL: a practice
+  may develop more than one Pillar via the existing `focus_details` map (e.g.
+  breathwork = Body + Spirit, yoga = Body + Spirit), but this is never surfaced as
+  a visible rubric, and there is **ONE Zap reward per session** (the "On Air is a
+  stage, never a second economy" invariant holds). **"On Air" remains the internal
+  name**; routes, schema, and `timer_kind` are unchanged.
 - **The Zap button** (ADR-230) = the raised center action button (the engraved ⚡)
   and its menu of earning tools. Live row: share, Event, Contact, **Connect**
   (your personal code, /codes). Coming-soon row: Check In, Ghost Node, Partners.
@@ -231,7 +251,13 @@ the Luminary double-gate · Expression as a fourth Journey (it is the Challenge 
 Seasonal Quest ·
 Static/Tuned/Locked/Live (status set) · The Drop · Arc/Arcs/quest_chains · Bolts ·
 Field Days / "the Field" / Circle Field · Chorus · Domains (game taxonomy) ·
-Depth/Range/Altitude · deshi/sempai/sensei · "points"
+Depth/Range/Altitude · deshi/sempai/sensei · "points" ·
+**"Movement" as a separate member-facing TIMER name** (ADR-360: it is now the
+**Get Moving** mode of the one Mindless timer). **Collision guard:** this retires
+only the *timer* name. "Movement" stays alive as the topical **Channel** (the
+seven topics), as the movement's word in CONTENT-VOICE §6d, and in code/schema
+(`timer_kind = 'movement'`, `lib/movement.ts`, `movement_config`), which are
+internal and unchanged.
 
 **Rewards Economy v3 cuts (ADR-305), retired reward constructs:**
 witnessed / peer awards · secret awards ("Quiet Ones") ·
