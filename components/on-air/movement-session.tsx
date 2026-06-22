@@ -70,6 +70,19 @@ import {
   type YogaPresetKind,
 } from '@/lib/movement'
 import type { RevealPayload } from '@/lib/on-air'
+import {
+  loadLiveSession,
+  saveLiveSession,
+  clearLiveSession,
+  liveElapsedSeconds,
+  type LiveSessionRecord,
+} from '@/lib/on-air/live-session'
+
+// What a saved Movement run carries beyond the shared record fields: the config the plan is
+// rebuilt from. Everything else (startedAt, pausedAt, practiceId, banked, target) is on the record.
+interface MovementSetup {
+  config: MovementConfig
+}
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 
@@ -219,25 +232,31 @@ export function MovementSession({
 
   const plan = useMemo<MovementPlan>(() => buildPlan(config), [config])
 
+  // The banked-seconds + target the live math reads. They default to the props (a fresh open, or a
+  // "Finish Practice" resume), but a CRASH-RECOVERY resume overrides them from the saved record so a
+  // restored top-up still banks the earlier partial (see resumeFromRecord below).
+  const [bankedSec, setBankedSec] = useState(resumeFromSec)
+  const [targetSec, setTargetSec] = useState<number | undefined>(secondsTarget)
+
   // "Finish Practice" resume: the seconds already banked from an earlier partial sit.
   // The live screen reads the plan from this offset (so the member picks up where the
   // plan left off), and the only time we COUNT is this session's own elapsed. Clamped
   // to the plan total so a resume never reads past the end. A fresh sit has offset 0.
   const resumeOffset = useMemo(() => {
-    if (resumeFromSec <= 0) return 0
+    if (bankedSec <= 0) return 0
     const total = totalSeconds(plan)
-    return total === null ? Math.round(resumeFromSec) : Math.min(Math.round(resumeFromSec), total)
-  }, [resumeFromSec, plan])
+    return total === null ? Math.round(bankedSec) : Math.min(Math.round(bankedSec), total)
+  }, [bankedSec, plan])
 
   // The cap on what a finish can bank: the authored target on a "Finish Practice" resume
-  // (secondsTarget), else the plan's own run length, else null for open-ended Play. The
+  // (targetSec), else the plan's own run length, else null for open-ended Play. The
   // server still owns the partial-vs-full economy decision; this only stops an overshoot.
   const finishCap = useMemo<number | null>(() => {
-    if (resumeFromSec > 0 && typeof secondsTarget === 'number' && secondsTarget > 0) {
-      return Math.round(secondsTarget)
+    if (bankedSec > 0 && typeof targetSec === 'number' && targetSec > 0) {
+      return Math.round(targetSec)
     }
     return totalSeconds(plan)
-  }, [resumeFromSec, secondsTarget, plan])
+  }, [bankedSec, targetSec, plan])
 
   // Seed the Strength steppers from the chosen preset (so picking Tabata fills
   // 20/10/8, then the member can tune from there).
@@ -254,6 +273,9 @@ export function MovementSession({
   const [elapsed, setElapsed] = useState(0)
   const [pausedAt, setPausedAt] = useState<number | null>(null)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
+  // A run recovered from localStorage after a reload/discard, awaiting Resume or Discard. Surfaced
+  // over the setup screen so a dropped run is never silently lost (the owner-chosen Resume prompt).
+  const [resumePrompt, setResumePrompt] = useState<LiveSessionRecord<MovementSetup> | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
   const audio = useRef<AudioContext | null>(null)
@@ -377,6 +399,97 @@ export function MovementSession({
     return () => clearInterval(id)
   }, [stage, startedAt, pausedAt, plan, resumeOffset, walkIntervalMin, runIntervalMin, stretchIntervalMin])
 
+  // --- crash-safe persistence (lib/on-air/live-session) ---------------------
+  // On mount, surface any saved Movement run as a Resume prompt. Done in an effect (post-hydration)
+  // so it never mismatches the server-rendered setup screen. A reload after a tab discard lands here.
+  useEffect(() => {
+    const rec = loadLiveSession<MovementSetup>('movement')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (rec) setResumePrompt(rec)
+  }, [])
+
+  // While live, persist the running record on every state change + a 30s heartbeat (the freshness
+  // stamp tracks liveness). The wall-clock startedAt is what lets a reload recover the exact elapsed.
+  useEffect(() => {
+    if (stage !== 'live') return
+    const write = () =>
+      saveLiveSession<MovementSetup>({
+        kind: 'movement',
+        startedAt,
+        pausedAt,
+        practiceId: practice?.logsAs ?? practiceId,
+        resumeFromSec: resumeOffset,
+        secondsTarget: typeof targetSec === 'number' ? targetSec : null,
+        setup: { config },
+      })
+    write()
+    const id = setInterval(write, 30_000)
+    return () => clearInterval(id)
+  }, [stage, startedAt, pausedAt, practiceId, practice, resumeOffset, targetSec, config])
+
+  // Apply a saved MovementConfig back onto the setup state, so the plan rebuilds to the same shape.
+  // MovementConfig is a flat interface with per-mode optional fields, so fall back to the setup
+  // defaults (matching the initial state) for any field a stored config didn't carry.
+  function applyMovementConfig(c: MovementConfig) {
+    setMode(c.mode)
+    if (c.mode === 'walk') {
+      setWalkMinutes(c.walkMinutes ?? 20)
+      setWalkIntervalMin(c.walkIntervalMin ?? 0)
+    } else if (c.mode === 'run') {
+      setRunMinutes(c.runMinutes ?? 20)
+      setRunIntervalMin(c.runIntervalMin ?? 0)
+    } else if (c.mode === 'yoga') {
+      setYogaKind(c.yogaKind ?? 'vinyasa')
+    } else if (c.mode === 'stretch') {
+      setStretchMinutes(c.stretchMinutes ?? 10)
+      setStretchIntervalMin(c.stretchIntervalMin ?? 0)
+    } else if (c.mode === 'strength') {
+      setStrengthKind(c.strengthKind ?? 'tabata')
+      setWorkSec(c.workSec ?? 20)
+      setRestSec(c.restSec ?? 10)
+      setRounds(c.rounds ?? 8)
+    }
+    // 'play' carries no params.
+  }
+
+  // Resume a recovered run: rebuild the config, restore the exact wall clock, and seed the cue
+  // trackers to the current phase so the part already done is not replayed. Audio + wake lock are
+  // re-acquired on this tap (a gesture), so the screen re-locks just like a fresh start.
+  function resumeFromRecord(rec: LiveSessionRecord<MovementSetup>) {
+    try {
+      audio.current = audio.current ?? new AudioContext()
+      void audio.current.resume()
+    } catch {
+      // cues are a nicety
+    }
+    applyMovementConfig(rec.setup.config)
+    setPracticeId(rec.practiceId)
+    setBankedSec(rec.resumeFromSec)
+    setTargetSec(rec.secondsTarget ?? undefined)
+    setStartedAt(rec.startedAt)
+    setPausedAt(rec.pausedAt)
+    setElapsed(liveElapsedSeconds(rec))
+    // Seed the cue trackers to the resumed position so nothing already passed re-fires.
+    const recPlan = buildPlan(rec.setup.config)
+    const total = totalSeconds(recPlan)
+    const recOffset =
+      rec.resumeFromSec > 0 ? (total === null ? Math.round(rec.resumeFromSec) : Math.min(Math.round(rec.resumeFromSec), total)) : 0
+    const pos = phaseAt(recPlan, recOffset + liveElapsedSeconds(rec))
+    lastPhaseLabel.current = pos.phase.label
+    lastBeep.current = -1
+    lastWalkMinute.current = pos.phase.kind === 'work' ? Math.floor(pos.phaseElapsed / 60) : 0
+    endCued.current = pos.done
+    setResumePrompt(null)
+    setStage('live')
+    void acquireQuiet()
+  }
+
+  // Discard a recovered run and start fresh (drops the saved record).
+  function discardResume() {
+    clearLiveSession('movement')
+    setResumePrompt(null)
+  }
+
   // --- transitions ----------------------------------------------------------
   async function start() {
     if (!practiceId) return
@@ -434,6 +547,8 @@ export function MovementSession({
   }
 
   async function finishWith(seconds: number) {
+    // The run is ending: drop the crash-recovery record so it never re-prompts.
+    clearLiveSession('movement')
     setStage('saving')
     await releaseQuiet()
     const result = await completeSession({
@@ -457,6 +572,8 @@ export function MovementSession({
   }
 
   function leave() {
+    // Leaving is an explicit exit: drop the crash-recovery record.
+    clearLiveSession('movement')
     void exitAppFullscreen()
     if (onExit) {
       onExit()
@@ -475,6 +592,40 @@ export function MovementSession({
   }
 
   // --- screens --------------------------------------------------------------
+  // A run recovered from a reload/discard: offer to pick it up where it left off, or drop it. Shown
+  // over the setup screen so a dropped run is never silently lost.
+  if (resumePrompt) {
+    const modeLabel = MOVEMENT_MODES.find((m) => m.mode === resumePrompt.setup.config.mode)?.label ?? 'Movement'
+    const elapsedSec = liveElapsedSeconds(resumePrompt)
+    return (
+      <Overlay>
+        <CenterScreen>
+          <MovementArt className="block h-10" />
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-success">Pick up where you left off</p>
+          <p className="max-w-xs text-center text-sm text-muted">
+            Your {modeLabel} is still going, {fmt(elapsedSec)} in. Resume and the clock carries on.
+          </p>
+          <div className="flex w-full max-w-xs flex-col items-center gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => resumeFromRecord(resumePrompt)}
+              className="w-full rounded-full bg-success px-6 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-success/90"
+            >
+              Resume
+            </button>
+            <button
+              type="button"
+              onClick={discardResume}
+              className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+            >
+              Discard and start fresh
+            </button>
+          </div>
+        </CenterScreen>
+      </Overlay>
+    )
+  }
+
   if (stage === 'reveal' && payload) {
     return (
       <Overlay>

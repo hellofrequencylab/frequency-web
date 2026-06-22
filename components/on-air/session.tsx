@@ -60,6 +60,30 @@ import { BreathVisualizer } from './visualizer'
 import { Reveal } from './reveal'
 import type { TimerKind, MindlessMode } from '@/lib/practices'
 import type { MovementConfig } from '@/lib/movement'
+import {
+  loadLiveSession,
+  saveLiveSession,
+  clearLiveSession,
+  liveElapsedSeconds,
+  type LiveSessionRecord,
+} from '@/lib/on-air/live-session'
+
+// What a saved Mindless run carries beyond the shared record fields: the mode + cue settings the
+// live clock is rebuilt from. startedAt/pausedAt/practiceId/banked are on the record itself.
+interface MindlessSetup {
+  mode: SessionMode
+  minutes: number
+  patternSlug: string
+  customIn: number
+  customHold: number
+  customOut: number
+  bell: boolean
+  bellToneSlug: string
+  bellVolume: BellVolume
+  endBell: boolean
+  bellEveryMin: number
+  haptics: boolean
+}
 
 export interface OnAirPractice {
   id: string
@@ -270,6 +294,9 @@ export function OnAirSession({
   // button overrides it (begin() now).
   const [preroll, setPreroll] = useState<number | null>(null)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
+  // A sit recovered from localStorage after a reload/discard, awaiting Resume or Discard. Surfaced
+  // over the setup screen so a dropped sit is never silently lost (the owner-chosen Resume prompt).
+  const [resumePrompt, setResumePrompt] = useState<LiveSessionRecord<MindlessSetup> | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
   const audio = useRef<AudioContext | null>(null)
@@ -442,6 +469,116 @@ export function OnAirSession({
   // the mode state write has landed.
   const activeModeRef = useRef<SessionMode>(mode)
 
+  // --- crash-safe persistence (lib/on-air/live-session) ---------------------
+  // On mount, surface any saved sit as a Resume prompt (post-hydration, so it never mismatches the
+  // server-rendered setup screen). A reload after a tab discard lands here.
+  useEffect(() => {
+    const rec = loadLiveSession<MindlessSetup>('mindless')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (rec) setResumePrompt(rec)
+  }, [])
+
+  // While a sit is genuinely running (live, past the pre-roll), persist the record on every state
+  // change + a 30s heartbeat. The wall-clock startedAt is what lets a reload recover the exact
+  // elapsed. Cleared on finish / leave / discard.
+  useEffect(() => {
+    if (stage !== 'live' || preroll !== null) return
+    const write = () =>
+      saveLiveSession<MindlessSetup>({
+        kind: 'mindless',
+        startedAt,
+        pausedAt,
+        practiceId: practice?.logsAs ?? practiceId,
+        resumeFromSec: resumeBanked.current,
+        secondsTarget: resuming && typeof secondsTarget === 'number' ? Math.round(secondsTarget) : null,
+        setup: {
+          mode: activeModeRef.current,
+          minutes,
+          patternSlug,
+          customIn,
+          customHold,
+          customOut,
+          bell,
+          bellToneSlug,
+          bellVolume,
+          endBell,
+          bellEveryMin,
+          haptics,
+        },
+      })
+    write()
+    const id = setInterval(write, 30_000)
+    return () => clearInterval(id)
+  }, [
+    stage,
+    preroll,
+    startedAt,
+    pausedAt,
+    practiceId,
+    practice,
+    minutes,
+    patternSlug,
+    customIn,
+    customHold,
+    customOut,
+    bell,
+    bellToneSlug,
+    bellVolume,
+    endBell,
+    bellEveryMin,
+    haptics,
+    resuming,
+    secondsTarget,
+  ])
+
+  // Resume a recovered sit: rebuild the mode + cue settings, restore the exact wall clock, and seed
+  // the cue trackers to the current position so nothing already passed re-fires. Audio + wake lock
+  // are re-acquired on this tap (a gesture), so the screen re-locks like a fresh start.
+  function resumeFromRecord(rec: LiveSessionRecord<MindlessSetup>) {
+    const s = rec.setup
+    if (s.bell) {
+      try {
+        audio.current = audio.current ?? new AudioContext()
+        void audio.current.resume()
+      } catch {
+        // cues are a nicety
+      }
+    }
+    setPracticeId(rec.practiceId)
+    setMode(s.mode)
+    activeModeRef.current = s.mode
+    setMinutes(s.minutes)
+    setPatternSlug(s.patternSlug)
+    setCustomIn(s.customIn)
+    setCustomHold(s.customHold)
+    setCustomOut(s.customOut)
+    setBell(s.bell)
+    setBellToneSlug(s.bellToneSlug)
+    setBellVolume(s.bellVolume)
+    setEndBell(s.endBell)
+    setBellEveryMin(s.bellEveryMin)
+    setHaptics(s.haptics)
+    resumeBanked.current = rec.resumeFromSec
+    const total = s.minutes * 60
+    const elapsed = liveElapsedSeconds(rec)
+    setStartedAt(rec.startedAt)
+    setPausedAt(rec.pausedAt)
+    setPreroll(null)
+    setRemaining(Math.max(0, total - elapsed))
+    lastPhase.current = null
+    lastMinute.current = Math.floor(elapsed / 60)
+    endCued.current = total - elapsed <= 0
+    setResumePrompt(null)
+    setStage('live')
+    void acquireQuiet()
+  }
+
+  // Discard a recovered sit and start fresh (drops the saved record).
+  function discardResume() {
+    clearLiveSession('mindless')
+    setResumePrompt(null)
+  }
+
   // Begin a sit. The chooser (C.5) passes an override so a freshly picked practice
   // starts on ITS preset (mode + duration_min) the same tick it's selected, without
   // waiting for selectPractice's state writes to land. No override = the current
@@ -568,6 +705,8 @@ export function OnAirSession({
     practiceIdOverride?: string,
     modeOverride?: SessionMode,
   ) {
+    // The sit is ending: drop the crash-recovery record so it never re-prompts.
+    clearLiveSession('mindless')
     setStage('saving')
     await releaseQuiet()
     // The chooser can finish a freshly picked log-only practice the same tick it's
@@ -609,12 +748,53 @@ export function OnAirSession({
 
   // --- screens -------------------------------------------------------------------
 
+  // A sit recovered from a reload/discard: offer to pick it up where it left off, or drop it. Shown
+  // over the setup screen so a dropped sit is never silently lost.
+  if (resumePrompt) {
+    const s = resumePrompt.setup
+    const label = SESSION_MODE_META[s.mode]?.label ?? 'sit'
+    const el = liveElapsedSeconds(resumePrompt)
+    const mm = Math.floor(el / 60)
+    const ss = el % 60
+    return (
+      <Overlay>
+        <CenterScreen>
+          <LotusIcon className="h-8 w-8 text-primary" />
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary-strong">
+            Pick up where you left off
+          </p>
+          <p className="max-w-xs text-center text-sm text-muted">
+            Your {label} is still going, {mm}:{String(ss).padStart(2, '0')} in. Resume and the clock carries on.
+          </p>
+          <div className="flex w-full max-w-xs flex-col items-center gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => resumeFromRecord(resumePrompt)}
+              className="w-full rounded-full bg-primary px-6 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              Resume
+            </button>
+            <button
+              type="button"
+              onClick={discardResume}
+              className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+            >
+              Discard and start fresh
+            </button>
+          </div>
+        </CenterScreen>
+      </Overlay>
+    )
+  }
+
   // Drop the takeover. In overlay mode (the global Mindless launcher) that means
   // closing the overlay in place — no navigation. On the /on-air route (no
   // onExit) it returns to the screen the member came FROM (where they hit the
   // Zap button or the board's radio); direct entries (PWA shortcut, typed URL)
   // have no app history, so they land on the feed instead of exiting the app.
   function leave() {
+    // Leaving is an explicit exit: drop the crash-recovery record.
+    clearLiveSession('mindless')
     // Drop true fullscreen if the launcher's open gesture entered it (C.1-3); the
     // dvh takeover that remains is torn down by the unmount below.
     void exitAppFullscreen()
