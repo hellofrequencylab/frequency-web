@@ -1,66 +1,41 @@
 import { Menu } from 'lucide-react'
-import Link from 'next/link'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
-import { NAV_AREA_DEFAULTS } from '@/lib/nav-areas'
-import { getMenuConfig, orderedVisibleAreas } from '@/lib/menu-config'
-import { getAreaPermissions } from '@/lib/permissions'
-import { PermissionGrid } from '../roles/permission-grid'
-import { MenuSorter } from './menu-sorter'
+import { AdminTemplate } from '@/components/templates'
+import { getAdminMenu, getMenuSettings, MENU_SURFACES } from '@/lib/menus/read'
+import type { MenuSurfaceKey, ResolvedMenu } from '@/lib/menus/types'
+import { MenuManager } from '@/components/admin/menu/menu-manager'
 
 export const dynamic = 'force-dynamic'
 
-// The GLOBAL menu manager (janitor-only). ONE shared rail for everyone — the
-// operator sets the order and per-item visibility here (menu_config), and per-ROLE
-// access is surfaced via the existing PermissionGrid (area_permissions), so the two
-// concerns live side by side: "the exact same menu everywhere, with specific
-// visibility per user role."
+// The DB-backed Menu Manager (janitor-only). Reads every surface's resolved menu plus
+// the global speed settings server-side, then hands them to the client builder, which
+// drives the full CRUD in lib/menus/actions. Reads are best-effort: getAdminMenu falls
+// back to the code defaults per surface, so the page always renders something editable.
 export default async function AdminMenuPage() {
   await requireAdmin('janitor')
 
-  // The current global config, applied the same way the live rail applies it: the
-  // sorter hydrates from the ordered + visibility-resolved area list so the editor
-  // matches what members see. Best-effort — empty config (code defaults) on error.
-  const config = await getMenuConfig()
-  // Show EVERY area in the editor (visible ones in their saved order, then any hidden
-  // ones) so the operator can re-show a hidden item. Order: visible-in-order first,
-  // hidden appended in code order.
-  const visible = orderedVisibleAreas(config)
-  const hiddenAreas = Object.keys(NAV_AREA_DEFAULTS).filter((k) => config.hidden.has(k))
-  const initialOrder = [...visible.map((a) => a.key), ...hiddenAreas]
-  const initialHidden = [...config.hidden]
+  const [settings, ...resolved] = await Promise.all([
+    getMenuSettings(),
+    ...MENU_SURFACES.map((s) => getAdminMenu(s.key)),
+  ])
 
-  const permissions = await getAreaPermissions()
+  const menus = MENU_SURFACES.reduce(
+    (acc, s, i) => {
+      acc[s.key] = resolved[i]
+      return acc
+    },
+    {} as Record<MenuSurfaceKey, ResolvedMenu>,
+  )
 
   return (
     <AdminTemplate
       title="Menu manager"
       eyebrow="Platform"
       icon={Menu}
-      description="The one shared navigation menu, the same for everyone. Set its order and hide items globally, then tune who can reach each one by role."
-      width="default"
+      description="Build every navigation surface: its groups and links, how they sit in columns, who can reach each one, and the featured cards beside them."
+      width="wide"
     >
-      <AdminSection
-        title="Order & visibility"
-        description="Drag to set the global order of the left rail, and hide any item to remove it for everyone. This is the single menu every member sees."
-      >
-        <MenuSorter initialOrder={initialOrder} initialHidden={initialHidden} />
-      </AdminSection>
-
-      <AdminSection
-        title="Role permissions"
-        description="Set the lowest role that can reach each item. Hidden items are gone for everyone; the rest follow these per-role rules. The same grid lives on Roles & permissions."
-        actions={
-          <Link
-            href="/admin/roles"
-            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            Open Roles & permissions
-          </Link>
-        }
-      >
-        <PermissionGrid initial={permissions} defaults={NAV_AREA_DEFAULTS} />
-      </AdminSection>
+      <MenuManager surfaces={MENU_SURFACES} menus={menus} settings={settings} />
     </AdminTemplate>
   )
 }

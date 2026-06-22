@@ -32,6 +32,8 @@ import { Suspense } from 'react'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { getReferrer } from '@/lib/qr/referral'
 import type { LiveEvent } from '@/components/marketing/blocks'
+import { getMenu, getMenuSettings } from '@/lib/menus/read'
+import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 
 // SEO title + description are operator-editable through the ADR-180 page-content
 // system (edited at /pages/home; the coded strings below are the fallback). The
@@ -130,18 +132,51 @@ export default async function RootPage({
   // generic splash discards the inviter's social proof, the strongest referral
   // lever). Read-only — the cookie is applied/cleared at signup.
   const referrer = await getReferrer()
+  // DB-backed nav megas for the splash header (lib/menus); fall back to code defaults on any
+  // miss, so safe pre-migration. The splash is always a logged-out 'visitor' surface.
+  const [discoverMenu, exploreMenu, footerMenu, menuTimings] = await Promise.all([
+    getMenu('public_discover'),
+    getMenu('public_explore'),
+    getMenu('marketing_footer'),
+    getMenuSettings(),
+  ])
   // The live-proof band (counts, events, posts) streams in its own <Suspense> inside Splash,
   // so getLiveData never blocks the hero's first byte (PAGE-FRAMEWORK §5).
-  return <Splash referrer={referrer} />
+  return (
+    <Splash
+      referrer={referrer}
+      discoverMenu={discoverMenu}
+      exploreMenu={exploreMenu}
+      footerMenu={footerMenu}
+      menuTimings={menuTimings}
+    />
+  )
 }
 
 // Splash narrative — Place → People → Path (ADR-078):
 //   the Lab leads as the emblem, community carries the "start anywhere" on-ramp,
 //   and the Quest closes the feature arc before the CTA.
-function Splash({ referrer }: { referrer: { displayName: string; handle: string; avatarUrl: string | null } | null }) {
+function Splash({
+  referrer,
+  discoverMenu,
+  exploreMenu,
+  footerMenu,
+  menuTimings,
+}: {
+  referrer: { displayName: string; handle: string; avatarUrl: string | null } | null
+  discoverMenu?: ResolvedMenu
+  exploreMenu?: ResolvedMenu
+  footerMenu?: ResolvedMenu
+  menuTimings?: MenuSettings
+}) {
   return (
     <>
-      <MarketingHeader overHero />
+      <MarketingHeader
+        overHero
+        discoverMenu={discoverMenu}
+        exploreMenu={exploreMenu}
+        menuTimings={menuTimings}
+      />
 
       {/* ── PLACE · Hero — the Lab is the emblem ───────────────────────────── */}
       <PhotoHero
@@ -581,7 +616,7 @@ function Splash({ referrer }: { referrer: { displayName: string; handle: string;
         body="A Circle to call yours, a standing time, and a real room to walk into. Add your name and we'll reach out when a spot opens."
       />
 
-      <MarketingFooter />
+      <MarketingFooter menu={footerMenu} />
     </>
   )
 }

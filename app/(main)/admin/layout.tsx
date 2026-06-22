@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <main className="min-w-0 flex-1">
           {/* Sticks under the main header on mobile (no sub-header there) and under the
               full-width admin sub-header on md+ (3.5rem header + 3rem sub-header = 6.5rem). */}
-          <div className="sticky top-14 z-20 mb-6 bg-[var(--color-canvas)] py-2.5 md:top-[6.5rem]">
+          <div className="sticky top-14 z-20 mb-6 bg-surface py-2.5 md:top-[6.5rem]">
             <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
           </div>
 

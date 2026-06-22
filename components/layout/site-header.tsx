@@ -4,6 +4,9 @@ import { Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { UserMenu, AuthButtons, type UserMenuProfile } from './user-menu'
 import { PrimaryNav } from './primary-nav'
+import { getMenu, getMenuSettings } from '@/lib/menus/read'
+import { viewerRoleFor } from '@/components/layout/menu-role'
+import { asWebRole, type CommunityRole } from '@/lib/core/roles'
 
 // ── Public site header ────────────────────────────────────────────────────────
 // Used on the landing page and any future public-facing pages.
@@ -19,6 +22,11 @@ interface SiteHeaderProps {
 export async function SiteHeader({ profile: profileProp, variant = 'light' }: SiteHeaderProps) {
   // Only fetch if caller didn't provide explicit profile
   let profile: UserMenuProfile | null = profileProp ?? null
+  // The viewer's role/staff axes for the menu (only known on the self-fetch path; an
+  // explicitly-passed profile carries no role, so a logged-in viewer reads as a baseline
+  // 'member' below). Used to resolve per-item menu modes.
+  let communityRole: CommunityRole | null = null
+  let webRole: ReturnType<typeof asWebRole> = 'none'
 
   if (profileProp === undefined) {
     const supabase = await createClient()
@@ -27,18 +35,30 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
     } = await supabase.auth.getUser()
 
     if (user) {
-      // Own-row read via the session client (RLS-covered); see ADR-042.
+      // Own-row read via the session client (RLS-covered); see ADR-042. Pull the role
+      // axes alongside the identity so the public explore mega resolves per-role modes.
       const { data } = await supabase
         .from('profiles')
-        .select('display_name, handle, avatar_url')
+        .select('display_name, handle, avatar_url, community_role, web_role')
         .eq('auth_user_id', user.id)
         .maybeSingle()
       profile = data ?? null
+      communityRole = (data?.community_role ?? null) as CommunityRole | null
+      webRole = asWebRole(data?.web_role)
     }
   }
 
   const isAuth = !!profile
   const isDark = variant === 'dark'
+
+  // DB-backed nav megas (lib/menus); getMenu/getMenuSettings fall back to the code defaults
+  // on any miss, so these are safe pre-migration and the header always renders.
+  const [discoverMenu, exploreMenu, menuTimings] = await Promise.all([
+    getMenu('public_discover'),
+    getMenu('public_explore'),
+    getMenuSettings(),
+  ])
+  const viewerRole = viewerRoleFor({ loggedIn: isAuth, communityRole, webRole })
 
   return (
     <header
@@ -66,6 +86,10 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
         variant={isDark ? 'dark' : 'light'}
         showDiscover={!isAuth}
         className="ml-2"
+        discoverMenu={discoverMenu}
+        exploreMenu={exploreMenu}
+        viewerRole={viewerRole}
+        timings={menuTimings}
       />
 
       <div className="flex-1" />

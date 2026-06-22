@@ -51,11 +51,20 @@ import type { AccessLevel } from '@/lib/core/access-matrix'
 import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
-import { MegaBar, type MegaEntry } from '@/components/layout/mega-menu'
-import { ADMIN_NAV, canSeeAdminSection } from '@/lib/admin/nav'
+import { MegaBar } from '@/components/layout/mega-menu'
+import { defaultMenu } from '@/lib/menus/defaults'
+import type {
+  MenuAccess,
+  MenuSettings,
+  ResolvedCategory,
+  ResolvedItem,
+  ResolvedMenu,
+} from '@/lib/menus/types'
+import { effectiveMode } from '@/components/layout/menu-role'
+import { GhostLink } from '@/components/layout/ghost-link'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { MemberFooter } from '@/components/layout/member-footer'
-import { AREA_ICONS } from '@/components/layout/nav-icons'
+import { AREA_ICONS, railIconFor } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
@@ -87,6 +96,15 @@ type MainNavItem = {
   preview?: boolean
   /** Staff capability domain (team_members) that also unlocks this item. */
   staffDomain?: StaffDomain
+  /** DB-menu mode for this item (lib/menus). Present ONLY when the rail is DB-driven:
+   *  the menu reader + effectiveMode already resolved active/ghost (hidden was dropped),
+   *  so NavLinkList renders by this mode and SKIPS the legacy itemAccess/telescope gating
+   *  (the DB item's minAccess + role modes now own visibility — no double-gate). */
+  mode?: 'active' | 'ghost'
+  /** Tier this entry is gated behind, for the ghost upgrade lightbox. */
+  ghostTier?: string
+  /** Optional override copy for the ghost upgrade lightbox. */
+  ghostMessage?: string
 }
 
 type NavSectionGroup = { label: string | null; items: MainNavItem[] }
@@ -147,6 +165,68 @@ function withHomeProfile(sections: NavSectionGroup[], profileHref: string): NavS
     return [{ label: null, items: [...first.items, profileItem] }, ...rest]
   }
   return [{ label: null, items: [profileItem] }, ...sections]
+}
+
+// Build the rail's sections from a DB-backed menu (lib/menus, getMenu('left_rail')).
+// effectiveMode resolves each item for the viewer: 'hidden' is DROPPED here, 'ghost'
+// becomes a muted GhostLink row (the upgrade lightbox), 'active' a normal link — so the
+// DB item's minAccess + role modes OWN visibility and NavLinkList must NOT re-gate these
+// (every item carries `mode`, the signal to skip the legacy itemAccess path). The stored
+// `icon` (a NAV_AREAS key for defaults, a lucide name for custom rows) maps via railIconFor.
+//
+// Menu shape → rail sections: rootItems (category-less) become the leading label-less
+// HOME ANCHOR group (Feed et al, pinned top); each top-level category becomes a labelled
+// section. Nested child categories are FLATTENED into their parent section in order (the
+// rail is a single vertical list with one header level, so a deeper tree reads as one
+// group) — their own items keep their resolved mode. An empty group (everything hidden)
+// is skipped. Returns [] when nothing is visible, so the caller can fall back to the code rail.
+function menuItemToNav(item: ResolvedItem, viewerRole: MenuAccess): MainNavItem | null {
+  const mode = effectiveMode(item, viewerRole)
+  if (mode === 'hidden') return null
+  return {
+    key: item.id,
+    href: item.href,
+    label: item.label,
+    Icon: railIconFor(item.icon),
+    // defaultAccess is unused on menu-driven items (mode owns visibility); carry the item's
+    // own access floor for completeness. MenuAccess and NavAccess share the same tokens.
+    defaultAccess: item.minAccess as NavAccess,
+    mode,
+    ghostTier: item.ghostTier,
+    ghostMessage: item.ghostMessage,
+  }
+}
+
+// Collect a category's own items plus all descendants', flattened in tree order, each
+// resolved for the viewer (hidden dropped).
+function flattenCategoryItems(cat: ResolvedCategory, viewerRole: MenuAccess): MainNavItem[] {
+  const out: MainNavItem[] = []
+  for (const it of cat.items) {
+    const nav = menuItemToNav(it, viewerRole)
+    if (nav) out.push(nav)
+  }
+  for (const child of cat.children) out.push(...flattenCategoryItems(child, viewerRole))
+  return out
+}
+
+function menuToSections(menu: ResolvedMenu, viewerRole: MenuAccess): NavSectionGroup[] {
+  const sections: NavSectionGroup[] = []
+
+  // Root items (no category) lead as the headerless home anchor.
+  const rootItems: MainNavItem[] = []
+  for (const it of menu.rootItems) {
+    const nav = menuItemToNav(it, viewerRole)
+    if (nav) rootItems.push(nav)
+  }
+  if (rootItems.length > 0) sections.push({ label: null, items: rootItems })
+
+  // Each top-level category is a labelled section; descendants flatten into it.
+  for (const cat of menu.categories) {
+    const items = flattenCategoryItems(cat, viewerRole)
+    if (items.length > 0) sections.push({ label: cat.label ?? null, items })
+  }
+
+  return sections
 }
 
 // The Manage sections TELESCOPE: an item the viewer can't reach is hidden (not
@@ -571,6 +651,7 @@ function NavLinkList({
   staffRole = null,
   sections = NAV_SECTIONS,
   compact = false,
+  menuDriven = false,
 }: {
   isActive: (href: string) => boolean
   /** Gating role; null = visitor (the janitor's "view as visitor" preview). */
@@ -588,6 +669,10 @@ function NavLinkList({
   sections?: NavSectionGroup[]
   /** Icon-only column (the micro edge menu): no labels, no section headers. */
   compact?: boolean
+  /** Sections came from the DB-backed menu (lib/menus): each item carries its
+   *  already-resolved `mode` (active / ghost; hidden was dropped upstream), so render
+   *  by mode and SKIP the legacy itemAccess + telescope gating (no double-gate). */
+  menuDriven?: boolean
 }) {
   // `emphasize` = the home anchor (Feed): always the brand's dark brown and bold,
   // active or not, so it reads as the rail's permanent "home".
@@ -613,7 +698,9 @@ function NavLinkList({
         // to someone who can actually operate it (not a 'limited' preview), and the whole
         // group (header included) is skipped when nothing is full. So a visitor or member
         // never sees an Admin header, and below-access viewers never get a ghosted admin row.
-        const adminSection = TELESCOPE_SECTIONS.has(section.label ?? '')
+        // DB-driven sections skip this: effectiveMode already resolved each item (hidden
+        // dropped, empty groups dropped upstream), so the menu's minAccess + role modes own it.
+        const adminSection = !menuDriven && TELESCOPE_SECTIONS.has(section.label ?? '')
         const visibleItems = adminSection
           ? section.items.filter((it) => itemAccess(it, role, staffRole, permissions, navAccess) === 'full')
           : section.items
@@ -630,6 +717,66 @@ function NavLinkList({
           {!compact && section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {visibleItems.map((item) => {
             const { href, label, Icon } = item
+
+            // DB-driven rail (lib/menus): the item's mode was already resolved for the viewer
+            // by effectiveMode (hidden dropped upstream). 'ghost' → a muted GhostLink that opens
+            // the upgrade lightbox; 'active' → a normal rail link. No legacy itemAccess gating.
+            if (menuDriven && item.mode) {
+              const active = isActive(href)
+              if (item.mode === 'ghost') {
+                if (compact) {
+                  return (
+                    <GhostLink
+                      key={item.key}
+                      ghostTier={item.ghostTier}
+                      ghostMessage={item.ghostMessage}
+                      ariaLabel={label}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl text-subtle"
+                    >
+                      <Icon className="h-5 w-5" strokeWidth={2} aria-hidden />
+                    </GhostLink>
+                  )
+                }
+                return (
+                  <GhostLink
+                    key={item.key}
+                    ghostTier={item.ghostTier}
+                    ghostMessage={item.ghostMessage}
+                    ariaLabel={label}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-subtle"
+                  >
+                    <Icon className="h-[18px] w-[18px] shrink-0 text-subtle" strokeWidth={2} aria-hidden />
+                    {label}
+                  </GhostLink>
+                )
+              }
+              if (compact) {
+                return (
+                  <Link
+                    key={item.key}
+                    href={href}
+                    onClick={onNavigate}
+                    aria-label={label}
+                    title={label}
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+                      active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+                  </Link>
+                )
+              }
+              return (
+                <Link key={item.key} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active)}>
+                  <Icon
+                    className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
+                    strokeWidth={active ? 2.5 : 2}
+                  />
+                  {label}
+                </Link>
+              )
+            }
+
             // The viewer's matrix level on this surface. full → the normal link; limited →
             // a muted "ghost" preview that still clicks through to the gated page (e.g. a
             // visitor on Practices/Library); none → a disabled, non-clickable ghost. Admin
@@ -777,6 +924,7 @@ function MobileLeftDrawer({
   navAccess,
   staffRole = null,
   sections = NAV_SECTIONS,
+  menuDriven = false,
 }: {
   open: boolean
   onClose: () => void
@@ -791,8 +939,10 @@ function MobileLeftDrawer({
   permissions?: Record<string, NavAccess>
   navAccess?: Record<string, AccessLevel>
   staffRole?: StaffRole | null
-  /** The operator-ordered, visibility-filtered rail sections (GLOBAL menu config). */
+  /** The rail sections (DB-backed left_rail menu, else the legacy/code fallback). */
   sections?: NavSectionGroup[]
+  /** Sections are DB-driven (mode-per-item); forwarded to NavLinkList. */
+  menuDriven?: boolean
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -886,7 +1036,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={sections} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={sections} menuDriven={menuDriven} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -1156,6 +1306,7 @@ export default function AppShell({
   hideAppNav = false,
   permissions,
   menuAreaKeys,
+  leftRailMenu,
   navAccess,
   staffRole = null,
   demoMode = false,
@@ -1168,6 +1319,11 @@ export default function AppShell({
   webRole = 'none',
   generation = 'balanced',
   occasion = 'none',
+  exploreMenu,
+  discoverMenu,
+  adminMenu,
+  menuViewerRole = 'visitor',
+  menuTimings,
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -1188,11 +1344,15 @@ export default function AppShell({
   hideAppNav?: boolean
   /** Per-area access overrides (janitor-set); merged over code defaults. */
   permissions?: Record<string, NavAccess>
-  /** The GLOBAL menu order (janitor-set from /admin/menu), already ordered + with
-   *  hidden items removed. Drives the rail's order + visibility for EVERYONE. Empty
-   *  / omitted falls back to the full code rail (NAV_AREAS). Per-role gating is
-   *  unchanged — it still runs over these items via `permissions` / `navAccess`. */
+  /** LEGACY GLOBAL menu order (menu_config, /admin/menu): an ordered, visibility-filtered
+   *  key list. Used ONLY as a fallback now that `leftRailMenu` (the DB-backed lib/menus
+   *  surface) drives the rail; empty / omitted falls back to the full code rail (NAV_AREAS). */
   menuAreaKeys?: string[]
+  /** The resolved `left_rail` menu (server-fetched, DB-backed, lib/menus). When it has
+   *  items, it DRIVES the rail's order, grouping, icons, and per-item mode (active / ghost /
+   *  hidden) for the viewer. Falls back to the menuAreaKeys / code rail when empty / omitted,
+   *  so the rail can never vanish pre-migration. */
+  leftRailMenu?: ResolvedMenu
   /** Server-resolved access matrix per nav key — drives matrix-driven nav visibility
    *  (an item shows if the viewer has any access to its surface). */
   navAccess?: Record<string, AccessLevel>
@@ -1221,13 +1381,41 @@ export default function AppShell({
   generation?: string
   /** The active occasion id; sets `data-occasion` on the shell root ('none' = omitted). */
   occasion?: string
+  /** The resolved `public_explore` menu (server-fetched, DB-backed). Drives the in-app
+   *  "Explore Frequency" header mega. Falls back to the code default when omitted. */
+  exploreMenu?: ResolvedMenu
+  /** The resolved `public_discover` menu (unused in-app today, where the left rail owns
+   *  discovery; passed through for parity / a safe fallback). */
+  discoverMenu?: ResolvedMenu
+  /** The resolved `admin_subheader` menu (server-fetched, DB-backed). Drives the admin
+   *  sub-header mega on /admin* routes. Falls back to the code default when omitted. */
+  adminMenu?: ResolvedMenu
+  /** The viewer collapsed to a single MenuAccess token; drives per-item mode (active /
+   *  ghost / hidden) in the header + admin megas. */
+  menuViewerRole?: MenuAccess
+  /** Mega-menu interaction timings from the global Menu Manager settings. */
+  menuTimings?: MenuSettings
 }) {
   const pathname = usePathname()
   const profileHref = `/people/${profile.handle}`
-  // The rail's sections, built from the operator's GLOBAL order + visibility
-  // (menuAreaKeys). Same set everywhere; per-role gating still filters within it. Profile
-  // is injected into the home anchor (beside Feed) since its href is viewer-specific.
-  const navSections = withHomeProfile(sectionsFromKeys(menuAreaKeys), profileHref)
+  // The rail's link list. PREFERRED source: the DB-backed `left_rail` menu (lib/menus),
+  // resolved per-viewer here (active / ghost; hidden dropped) via menuToSections — its
+  // order, grouping, icons, and modes drive the rail. SAFE FALLBACK: when that menu is
+  // empty (unseeded / all-hidden), fall back to the legacy menu_config key order, then to
+  // the full code rail (NAV_AREAS) — so the rail can never vanish. `menuDriven` tells
+  // NavLinkList which gating path to use (mode-by-item for DB, itemAccess for the fallback).
+  // Profile is injected into the home anchor (beside Feed) since its href is viewer-specific.
+  // DB-driven ONLY when the menu came from real DB rows (a seeded left_rail surface), NOT
+  // the code fallback (isDefault). Pre-migration / unseeded, getMenu returns the NAV_AREAS
+  // default, where we keep the PROVEN legacy gating (menuAreaKeys + itemAccess / telescope /
+  // area_permissions) rather than the simpler minAccess/mode path, so the rail's access
+  // control stays unchanged until an operator seeds it from /admin/menu.
+  const dbRailSections =
+    leftRailMenu && !leftRailMenu.isDefault ? menuToSections(leftRailMenu, menuViewerRole) : []
+  const menuDriven = dbRailSections.length > 0
+  const navSections = menuDriven
+    ? withHomeProfile(dbRailSections, profileHref)
+    : withHomeProfile(sectionsFromKeys(menuAreaKeys), profileHref)
   const role = (profile.community_role ?? 'member') as CommunityRole
   const effectiveRealRole = realRole ?? role
   // Nav gating role: a visitor preview gates as a logged-out visitor (null).
@@ -1339,19 +1527,16 @@ export default function AppShell({
   const showFooter = !hideAppNav && showLeftRail && effectiveRail !== 'none'
 
   // Admin secondary nav (mirrors the prior in-content admin mega bar, now promoted to a
-  // FULL-WIDTH sub-header below the main header). Built client-side from the SAME source of
-  // truth + gate as the server admin layout (ADMIN_NAV + canSeeAdminSection over the viewer's
-  // role / web_role / staff role), so it never drifts; the pages themselves re-gate server-side.
-  // Only on /admin* and never in stripped shells.
+  // FULL-WIDTH sub-header below the main header). Driven by the DB-backed `admin_subheader`
+  // menu (lib/menus), whose top-level categories are the sub-header triggers; MegaBar resolves
+  // each entry's mode for the viewer (menuViewerRole). The menu falls back to the code default
+  // (assembled from ADMIN_NAV) when no DB row exists, so it never drifts pre-migration; the
+  // pages themselves still re-gate server-side. Only on /admin* and never in stripped shells.
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
-  const adminEntries: MegaEntry[] =
-    !hideAppNav && isAdminRoute
-      ? ADMIN_NAV.filter((s) => canSeeAdminSection(s, role, webRole, staffRole)).map((s) => ({
-          label: s.label,
-          href: s.href,
-          sections: s.groups ?? [],
-        }))
-      : []
+  const adminMega: ResolvedMenu | null =
+    !hideAppNav && isAdminRoute ? (adminMenu ?? defaultMenu('admin_subheader')) : null
+  // True when the resolved admin menu has at least one top-level section to show.
+  const showAdminMega = !!adminMega && adminMega.categories.length > 0
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
@@ -1400,6 +1585,10 @@ export default function AppShell({
               showDiscover={false}
               panelAlign="content"
               rightRail={showSidebar}
+              discoverMenu={discoverMenu}
+              exploreMenu={exploreMenu}
+              viewerRole={menuViewerRole}
+              timings={menuTimings}
             />
           </div>
         )}
@@ -1524,12 +1713,20 @@ export default function AppShell({
           triggers align to the content column (a left rail-width spacer), and the MegaBar
           panel slides out from under it with panelAlign='content' (no rightRail — admin has
           no member right rail), so the slide-out stays in the page content column. */}
-      {adminEntries.length > 0 && (
+      {showAdminMega && adminMega && (
         <div className="sticky top-14 z-20 hidden border-b border-border bg-surface/95 backdrop-blur-sm md:block">
           <div className="mx-auto flex h-12 max-w-[105rem] items-center gap-8 px-4 sm:px-6 lg:px-8">
             <div className="hidden w-48 shrink-0 md:block" aria-hidden />
             <div className="min-w-0 flex-1">
-              <MegaBar entries={adminEntries} variant="light" ariaLabel="Admin" panelAlign="content" />
+              <MegaBar
+                menus={[adminMega]}
+                triggerLevel="category"
+                viewerRole={menuViewerRole}
+                variant="light"
+                ariaLabel="Admin"
+                panelAlign="content"
+                timings={menuTimings}
+              />
             </div>
           </div>
         </div>
@@ -1569,7 +1766,7 @@ export default function AppShell({
                     to the column edge — matching the right rail's cards, so the outer margin reads
                     the same on both sides. */}
                 <nav className="flex-1 py-3 space-y-1">
-                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={navSections} />
+                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={navSections} menuDriven={menuDriven} />
                 </nav>
                 {/* Mirrors the right rail's stats dock: sticky to the column bottom, rises
                     on scroll, no longer fixed to the viewport. */}
@@ -1730,6 +1927,7 @@ export default function AppShell({
         navAccess={navAccess}
         staffRole={staffRole}
         sections={navSections}
+        menuDriven={menuDriven}
       />
 
     </div>
