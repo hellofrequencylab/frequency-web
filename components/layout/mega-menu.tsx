@@ -39,11 +39,16 @@ export type MegaEntry = { label: string; href?: string; sections: MegaSection[];
 
 type Variant = 'light' | 'dark'
 
-// Disengage grace before the fade STARTS (a brief overshoot off the bar doesn't snap it
-// shut), then the fade duration before the panel unmounts. The fade duration matches the
-// CSS transition so the element is gone the moment it finishes animating out.
-const LINGER_MS = 280
-const FADE_MS = 220
+// Default motion timings (ms). The global Menu Manager "open + dwell speed" settings
+// override these via the `timings` prop; the constants are the fallback when none is passed.
+//   - OPEN_DELAY: hover-intent grace before the panel opens (0 = open immediately).
+//   - DWELL: how long the panel LINGERS after the pointer leaves before the fade starts. A
+//     longer dwell reads as "it waits for you," so a brief overshoot never snaps it shut.
+//   - FADE: the fade-out duration; it matches the CSS transition so the panel unmounts the
+//     moment it finishes animating out.
+const DEFAULT_OPEN_DELAY_MS = 0
+const DEFAULT_DWELL_MS = 1500
+const DEFAULT_FADE_MS = 240
 
 function routeActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/'
@@ -71,10 +76,15 @@ export function MegaBar({
   className = '',
   panelAlign = 'viewport',
   rightRail = false,
+  timings,
 }: {
   entries: MegaEntry[]
   variant?: Variant
   ariaLabel?: string
+  /** Motion timings (ms) from the global Menu Manager speed settings; falls back to the
+   *  module defaults. openDelayMs = hover-intent before open; dwellMs = linger before the
+   *  fade; fadeMs = fade-out duration (also drives the slide transition). */
+  timings?: { openDelayMs?: number; dwellMs?: number; fadeMs?: number }
   /** Applied to the bar root. The PANEL anchors to the nearest positioned ANCESTOR of this
    *  root, so the caller chooses what the panel follows (a sticky header / sub-header).
    *  Keep the root itself unpositioned. */
@@ -95,7 +105,12 @@ export function MegaBar({
   const ref = useRef<HTMLDivElement>(null)
   const lingerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const panelId = useId()
+
+  const openDelayMs = timings?.openDelayMs ?? DEFAULT_OPEN_DELAY_MS
+  const dwellMs = timings?.dwellMs ?? DEFAULT_DWELL_MS
+  const fadeMs = timings?.fadeMs ?? DEFAULT_FADE_MS
 
   const clearTimers = useCallback(() => {
     if (lingerTimer.current) {
@@ -106,14 +121,22 @@ export function MegaBar({
       clearTimeout(fadeTimer.current)
       fadeTimer.current = null
     }
+    if (openTimer.current) {
+      clearTimeout(openTimer.current)
+      openTimer.current = null
+    }
   }, [])
 
   const open = useCallback(
     (label: string) => {
       clearTimers()
-      setActive(label)
+      if (openDelayMs > 0) {
+        openTimer.current = setTimeout(() => setActive(label), openDelayMs)
+      } else {
+        setActive(label)
+      }
     },
-    [clearTimers],
+    [clearTimers, openDelayMs],
   )
 
   // Begin the FADE-OUT: drop `shown` (the panel animates back under the bar + to
@@ -121,14 +144,14 @@ export function MegaBar({
   const beginClose = useCallback(() => {
     clearTimers()
     setShown(false)
-    fadeTimer.current = setTimeout(() => setActive(null), FADE_MS)
-  }, [clearTimers])
+    fadeTimer.current = setTimeout(() => setActive(null), fadeMs)
+  }, [clearTimers, fadeMs])
 
   // Disengage: linger briefly, THEN fade. A re-enter (cancelClose) aborts before the fade.
   const scheduleClose = useCallback(() => {
     clearTimers()
-    lingerTimer.current = setTimeout(beginClose, LINGER_MS)
-  }, [clearTimers, beginClose])
+    lingerTimer.current = setTimeout(beginClose, dwellMs)
+  }, [clearTimers, beginClose, dwellMs])
 
   // Re-engaged (pointer back over the bar or panel): cancel a pending linger/fade and, if a
   // fade had already started, settle the panel open again so it never half-vanishes.
@@ -154,7 +177,9 @@ export function MegaBar({
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [pathname, clearTimers])
 
-  // Escape + outside-click → FADE out (not an instant unmount).
+  // Escape + outside-click + scroll → FADE out (not an instant unmount). Scrolling the page
+  // while the panel is open dismisses it (content moving under a pinned panel reads as stale),
+  // matching the click-away behavior.
   useEffect(() => {
     if (!active) return
     const onKey = (e: KeyboardEvent) => {
@@ -163,11 +188,14 @@ export function MegaBar({
     const onDoc = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) beginClose()
     }
+    const onScroll = () => beginClose()
     document.addEventListener('keydown', onKey)
     document.addEventListener('mousedown', onDoc)
+    window.addEventListener('scroll', onScroll, { passive: true })
     return () => {
       document.removeEventListener('keydown', onKey)
       document.removeEventListener('mousedown', onDoc)
+      window.removeEventListener('scroll', onScroll)
     }
   }, [active, beginClose])
 
@@ -311,9 +339,11 @@ export function MegaBar({
           role="region"
           aria-label={activeEntry.label}
           // z BELOW the bar (the bar is opaque + higher), so the panel tucks UNDER it and
-          // slides out from behind its bottom edge. `top-full` pins it to the bar's base.
-          className={`absolute inset-x-0 top-full z-20 border-b border-border bg-surface shadow-pop transition-all duration-200 ease-out motion-reduce:transition-none ${
-            shown ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
+          // slides out from behind its bottom edge. `top-full` pins it to the bar's base. The
+          // translate distance is deliberately large so the slide-from-under reads clearly.
+          style={{ transitionDuration: `${fadeMs}ms` }}
+          className={`absolute inset-x-0 top-full z-20 border-b border-border bg-surface shadow-pop transition-all ease-out motion-reduce:transition-none ${
+            shown ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-8 opacity-0'
           }`}
         >
           {panelAlign === 'content' ? (
