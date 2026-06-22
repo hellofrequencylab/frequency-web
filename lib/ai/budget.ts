@@ -44,6 +44,9 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   // ── Circle / practice wizards (member-facing, one-shot drafts) ────────────────────────────────
   'circle-create': 1,          // suggest a circle name + about blurb (Haiku; one short draft per start)
   'practice-claim': 1,         // personalize a claimed practice template (Haiku; one short draft)
+  // ── Practice builder (member-facing, low-volume authoring; mirrors the Journey builder) ───────
+  'practice-spark': 2,         // draft a whole Practice from a few answers (Sonnet; structured, on-demand)
+  'practice-edit': 4,          // apply plain-language edits to a built Practice (Opus; low-volume, fail-safe)
   // ── Events (poster scan is Sonnet vision — the costliest of this group) ───────────────────────
   'event-poster-scan': 4,      // vision OCR of an event poster, plus the text assist (Sonnet vision)
   'event-blurb': 2,            // one "why you'd vibe" line per browse (Haiku; cached per day per pairing)

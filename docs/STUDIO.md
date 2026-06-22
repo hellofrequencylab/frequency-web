@@ -89,7 +89,7 @@ The builder calls the resolver, gets `caps`, and renders the admin tools only wh
 | Entity | Identity | Bespoke tools | Persists via |
 |---|---|---|---|
 | **Journey** ✅ | emoji · accent · title · summary · intro | path (SortableList of practices) · per-step cadence/note · Pillar balance · share | `lib/journey-plans.ts` + journeys/actions |
-| **Practice** | emoji/icon · title · summary | Pillar + sub-category · cadence · long **body** (markdown) · tags · (admin) reward | `lib/practices.ts` + practices/actions |
+| **Practice** ✅ | emoji/icon · title · summary | **Vera composer** (build/edit) · Pillar + sub-category · cadence · long **body** (markdown) · tags · (admin) reward | `lib/practices.ts` + practices/{actions,create-actions} |
 | **Circle** | emoji/cover · name · about | type (in-person/online) · topic (channel) · place (geo + "use my location") · member cap | `admin/actions.ts` createCircle + circles/admin-actions |
 | **Event** | cover · title · description | when (start/end) · recurrence · place · host circle · RSVP/check-in settings | `events/actions.ts` createEvent + events/admin-actions |
 
@@ -103,10 +103,20 @@ All four data layers + server actions **already exist**: the work is the builder
    `StudioLaunchButton`) + the registry (§3); the journey builder now composes it
    (behavior-neutral). The proof the kit fits.
 3. ✅ **Practice**: `components/studio/practice/*`: a `NewPracticeButton` launcher
-   (replaced the inline create) + a `PracticeBuilder` window (replaced
-   `/practices/[id]/edit`), composing `useStudioDraft` (autosave) + `StudioField`.
-   Practices keep their own lucide-icon identity (no emoji/accent): proof the kit is
-   composed-from, not a rigid template.
+   (now opens the guided builder at `/practices/new`) + a `PracticeBuilder` window
+   (replaced `/practices/[id]/edit`), composing `useStudioDraft` (autosave) +
+   `StudioField`. Practices keep their own lucide-icon identity (no emoji/accent):
+   proof the kit is composed-from, not a rigid template.
+   ✅ **Vera-powered (ADR-358):** the Practice builder now mirrors the Journey builder's
+   Vera capabilities, retargeted to the atomic Practice. A guided **Spark** wizard
+   (`PracticeSpark`, who · the act · outcome · cadence · time → `draftPracticeSpark`)
+   drafts the whole Practice for review (deferred creation, like Journeys); the editor
+   carries a **Vera composer** (`PracticeComposer`: "Build with Vera" until there's a
+   guide, then "Edit with Vera" → `buildPracticeWithVeraAction` / `applyVeraPractice
+   ChangeAction`). All paths reuse the shared Vera infra (`withVoice`, `completeRaw`,
+   the usage ledger + budget caps) and degrade to hand-entry when Vera is off. New AI
+   modules mirror the Journey ones: `lib/ai/practice-spark.ts`, `practice-edit.ts`,
+   `practice-shape.ts` (the `withPracticeShape` primer, the twin of `withJourneyShape`).
 4. **Circle** ← next. Adds geo + topic; high leverage (the member-create flywheel). Replace
    `NewCircleCompose` (CreateModal) + inline edit.
 5. **Event**: adds date/recurrence; host+. Replace `/events/new` + inline edit.
