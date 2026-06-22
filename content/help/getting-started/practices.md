@@ -39,9 +39,9 @@ Want to actually do the practice right there, with a timer and guided breathing?
 Tap the little lotus to **[tune out with Mindless](/help/the-quest/on-air)**. Same
 log, same rewards, plus the sit itself.
 
-Practice timers: there are two. Mindless times a sit;
-**[Movement](/help/the-quest/movement)** times a walk, yoga, play or a workout.
-Same log, same rewards.
+One timer, two modes. **[Mindless](/help/the-quest/on-air)** has **Be Still** for
+a sit and **Get Moving** for a walk, run, yoga, strength, stretch or play. Pick a
+practice and it opens in the mode that fits. Same log, same rewards.
 
 ## Adopt or change anytime
 

@@ -1,12 +1,25 @@
 'use client'
 
-// Mindless — the global timer overlay (ADR-229, docs/ON-AIR.md). The same
-// On Air session, launchable from anywhere via the header, layered over the
-// whole site instead of routed to. OnAirSession is already a `fixed inset-0
-// z-50` takeover, so the provider just decides WHEN it's mounted and feeds it
-// the member's setup state (loaded on open through a server action), then
-// hands it `onExit` so leaving closes the overlay in place rather than
-// navigating.
+// Mindless — the ONE practice-timer door (ADR-229, docs/ON-AIR.md). The same On
+// Air session, launchable from anywhere via the header / Zap menu / practice
+// pages, layered over the whole site instead of routed to.
+//
+// One overlay, two MODES the member toggles between on the setup screen:
+//   • Be Still   → the sit engine (components/on-air/session.tsx): Meditate /
+//                  Breathe / Stillness / Ritual / Journal / Just Log.
+//   • Get Moving → the movement engine (components/on-air/movement-session.tsx):
+//                  Walk / Run / Yoga / Strength / Stretch / Play.
+//
+// The provider loads the member's setup state ONCE (loadOnAirSession) and holds a
+// `mode` state, rendering OnAirSession (still) or MovementSession (move) with the
+// already-loaded data — so toggling between the two is INSTANT (no second fetch,
+// no "Settling in…"/"Lacing up…" flash). It passes `mode` + `onModeChange` down so
+// each session's SETUP screen renders the Be Still | Get Moving toggle and switches.
+//
+// The initial mode is AUTO-ROUTED from the opened practice's timer_kind: 'movement'
+// → Get Moving, 'mindless'/'none' → Be Still. A generic open (no practice) opens to
+// the member's last chosen mode (localStorage), else Be Still. Crash recovery checks
+// BOTH live-session kinds and opens in the matching mode so the right engine re-prompts.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -17,16 +30,46 @@ import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { loadOnAirSession } from '@/app/(main)/on-air/actions'
 import type { OnAirSessionData } from '@/lib/on-air/session-data'
 import { OnAirSession } from '@/components/on-air/session'
+import { MovementSession } from '@/components/on-air/movement-session'
 import { LotusIcon } from '@/components/on-air/icons'
 import { loadLiveSession } from '@/lib/on-air/live-session'
+import type { MovementMode } from '@/lib/movement'
 
-/** What `open` accepts. `practiceId` pre-selects an adopted practice (and the timer opens
- *  at that practice's mindless_mode). A "Finish Practice" resume passes BOTH `resumeFromSec`
- *  (how far the partial sit already got) and `secondsTarget` (the practice's full length): the
- *  timer then runs only the REMAINING time and, on completion, reports the TOTAL seconds so the
- *  server tops the partial log up to complete. */
+/** The two member-facing modes of the one timer: the sit ('still', "Be Still") and
+ *  the movement timer ('move', "Get Moving"). */
+export type TimerMode = 'still' | 'move'
+
+/** localStorage key for the member's last chosen mode (a generic open re-opens to it). */
+const LAST_MODE_KEY = 'fq_timer_mode'
+
+function readLastMode(): TimerMode | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const v = window.localStorage.getItem(LAST_MODE_KEY)
+    return v === 'still' || v === 'move' ? v : null
+  } catch {
+    return null
+  }
+}
+
+function writeLastMode(mode: TimerMode): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(LAST_MODE_KEY, mode)
+  } catch {
+    // remembering the mode is a nicety, never a blocker
+  }
+}
+
+/** What `open` accepts. `practiceId` pre-selects an adopted practice (and the door opens in
+ *  that practice's timer_kind mode — Be Still for 'mindless'/'none', Get Moving for 'movement').
+ *  `mode` (Movement) forces Get Moving on a given movement sub-mode. A "Finish Practice" resume
+ *  passes BOTH `resumeFromSec` (how far the partial sit already got) and `secondsTarget` (the
+ *  practice's full length): the timer then runs only the REMAINING time and reports the TOTAL. */
 export interface MindlessOpenOpts {
   practiceId?: string
+  /** Force Get Moving on this movement sub-mode (a movement practice / the Movement entry). */
+  mode?: MovementMode
   /** Seconds already banked on a partial log today (the "Finish Practice" resume). */
   resumeFromSec?: number
   /** The full target length in seconds (the practice's authored duration). */
@@ -61,9 +104,47 @@ interface ResumeInfo {
 
 type OverlayState =
   | { phase: 'closed' }
-  | { phase: 'loading'; practiceId?: string; resume?: ResumeInfo }
-  | { phase: 'ready'; data: OnAirSessionData; resume?: ResumeInfo }
+  | {
+      phase: 'loading'
+      practiceId?: string
+      movementMode?: MovementMode
+      resume?: ResumeInfo
+      /** A crash-recovery open forces the mode so the engine that owns the saved record mounts. */
+      forceMode?: TimerMode
+    }
+  | {
+      phase: 'ready'
+      data: OnAirSessionData
+      /** The mode the door is showing (auto-routed from the practice / entry; member-togglable). */
+      mode: TimerMode
+      /** A Movement sub-mode forced by the entry (a movement practice / the Movement door). */
+      movementMode?: MovementMode
+      resume?: ResumeInfo
+    }
   | { phase: 'error' }
+
+/** The mode to open in, routed from the opened practice's timer_kind. A 'movement' practice
+ *  opens Get Moving; 'mindless' / 'none' open Be Still. A crash-recovery open forces the mode.
+ *  A generic open (no practice) falls back to the member's last chosen mode, then Be Still. */
+function routeInitialMode(
+  data: OnAirSessionData,
+  requestedPracticeId: string | undefined,
+  forcedMovementMode: MovementMode | undefined,
+  forceMode: TimerMode | undefined,
+): TimerMode {
+  if (forceMode) return forceMode
+  // An explicit Movement entry (the Movement practice button passes its mode) wins.
+  if (forcedMovementMode) return 'move'
+  const practice = requestedPracticeId
+    ? data.practices.find((p) => p.id === requestedPracticeId)
+    : undefined
+  // A SPECIFIC practice routes by its timer_kind ('movement' → Get Moving; else Be Still).
+  if (requestedPracticeId && practice) {
+    return practice.timerKind === 'movement' ? 'move' : 'still'
+  }
+  // Generic open: remember where the member last was.
+  return readLastMode() ?? 'still'
+}
 
 export function MindlessProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -80,7 +161,9 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     router.refresh()
   }, [router])
 
-  const open = useCallback((opts?: MindlessOpenOpts) => {
+  // The open implementation. `forceMode` is the crash-recovery override (open Get Moving so the
+  // Movement engine, which owns the saved 'movement' record, mounts and re-prompts).
+  const openInternal = useCallback((opts?: MindlessOpenOpts, forceMode?: TimerMode) => {
     // Go fullscreen straight from the click that opened the overlay — fullscreen is
     // gesture-gated, so it has to ride the same tap, not a later effect (C.1-3).
     // Best-effort: iOS Safari no-ops and the dvh takeover is the fallback.
@@ -94,17 +177,28 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
       opts.resumeFromSec >= 0
         ? { resumeFromSec: Math.round(opts.resumeFromSec), secondsTarget: Math.round(opts.secondsTarget) }
         : undefined
-    setState({ phase: 'loading', practiceId: opts?.practiceId, resume })
+    setState({ phase: 'loading', practiceId: opts?.practiceId, movementMode: opts?.mode, resume, forceMode })
   }, [])
 
-  // Load the member's setup state on open. The request is tied to a token so a
-  // close (or a second open) before the load lands is ignored, never flashing
-  // a stale overlay.
+  const open = useCallback((opts?: MindlessOpenOpts) => openInternal(opts), [openInternal])
+
+  // Switch between Be Still and Get Moving WITHOUT re-fetching: the data is already loaded, so the
+  // toggle just swaps which engine renders. Remembered so a later generic open re-opens here.
+  const setMode = useCallback((mode: TimerMode) => {
+    writeLastMode(mode)
+    setState((s) => (s.phase === 'ready' ? { ...s, mode } : s))
+  }, [])
+
+  // Load the member's setup state on open, then auto-route the opening mode from the practice's
+  // timer_kind. The request is tied to a token so a close (or a second open) before the load lands
+  // is ignored, never flashing a stale overlay.
   useEffect(() => {
     if (state.phase !== 'loading') return
     let live = true
     const requestedPracticeId = state.practiceId
+    const forcedMovementMode = state.movementMode
     const requestedResume = state.resume
+    const forceMode = state.forceMode
     void (async () => {
       const result = await loadOnAirSession(requestedPracticeId)
       if (!live) return
@@ -112,20 +206,34 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         setState({ phase: 'error' })
         return
       }
-      setState({ phase: 'ready', data: result.data, resume: requestedResume })
+      const mode = routeInitialMode(result.data, requestedPracticeId, forcedMovementMode, forceMode)
+      writeLastMode(mode)
+      setState({
+        phase: 'ready',
+        data: result.data,
+        mode,
+        movementMode: forcedMovementMode,
+        resume: requestedResume,
+      })
     })()
     return () => {
       live = false
     }
   }, [state])
 
-  // Crash recovery: a tab discard drops a running sit (its React state is gone), but the record
-  // survives in localStorage. On the next app load, re-open the overlay so OnAirSession can surface
-  // its Resume prompt. Runs once on mount; the session then owns the recovery UX.
+  // Crash recovery (preserves #984): a tab discard drops a running sit (its React state is gone),
+  // but the record survives in localStorage. On the next app load, re-open the overlay so the
+  // session can surface its Resume prompt. Both engines persist under their OWN kind ('mindless' /
+  // 'movement'), so open in the matching mode and the right engine mounts + re-prompts. Movement
+  // wins if (improbably) both exist. Runs once on mount; only ONE door opens (no double-open).
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (loadLiveSession('mindless')) open()
-  }, [open])
+    if (loadLiveSession('movement')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      openInternal(undefined, 'move')
+    } else if (loadLiveSession('mindless')) {
+      openInternal(undefined, 'still')
+    }
+  }, [openInternal])
 
   // Lock body scroll while the overlay owns the viewport — the page behind
   // shouldn't scroll under the takeover. Restores whatever was there before.
@@ -195,6 +303,24 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </MindlessShell>
+        ) : state.mode === 'move' ? (
+          <MovementSession
+            // Loaded ONCE by the provider; passed to both engines so toggling is instant.
+            practices={state.data.practices}
+            defaultPracticeId={state.data.defaultPracticeId}
+            // The Movement sub-mode to open on: the forced one (a movement practice / Movement
+            // entry), else the pre-selected practice's movement_config, else MovementSession's own
+            // Walk default. A generic toggle into Get Moving opens neutral.
+            defaultMode={state.movementMode ?? resolveDefaultMode(state.data)}
+            practicedToday={state.data.practicedToday}
+            resumeFromSec={state.resume?.resumeFromSec}
+            secondsTarget={state.resume?.secondsTarget}
+            onExit={close}
+            // The Be Still | Get Moving toggle: passing onModeChange tells the session it's inside
+            // the unified door (the standalone /on-air route omits it, so no toggle there).
+            mode={state.mode}
+            onModeChange={setMode}
+          />
         ) : (
           <OnAirSession
             practices={state.data.practices}
@@ -204,14 +330,28 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             resumeFromSec={state.resume?.resumeFromSec}
             secondsTarget={state.resume?.secondsTarget}
             onExit={close}
+            mode={state.mode}
+            onModeChange={setMode}
           />
         ))}
     </MindlessContext.Provider>
   )
 }
 
+/** The Movement sub-mode to open on when the entry didn't force one: read it off the pre-selected
+ *  practice's movement_config. A stored config may still carry the legacy `'workout'` string, so
+ *  map that to `'strength'` to match the six-mode engine. Undefined lets MovementSession fall back
+ *  to its own default (Walk). */
+function resolveDefaultMode(data: OnAirSessionData): MovementMode | undefined {
+  const id = data.defaultPracticeId
+  const practice = id ? data.practices.find((p) => p.id === id) : undefined
+  const stored = practice?.movementConfig?.mode as string | undefined
+  if (!stored) return undefined
+  return stored === 'workout' ? 'strength' : (stored as MovementMode)
+}
+
 /** The takeover frame for the overlay's NON-session states (loading, error,
- *  empty) — matches OnAirSession's own `fixed inset-0 z-50` shell so the
+ *  empty) — matches the session's own `fixed inset-0 z-50` shell so the
  *  hand-off into the live session is seamless. */
 function MindlessShell({
   children,

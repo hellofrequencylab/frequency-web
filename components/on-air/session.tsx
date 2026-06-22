@@ -58,6 +58,8 @@ import {
 } from '@/lib/on-air'
 import { BreathVisualizer } from './visualizer'
 import { Reveal } from './reveal'
+import { MindlessMasthead } from './mode-toggle'
+import type { TimerMode } from './mindless'
 import type { TimerKind, MindlessMode } from '@/lib/practices'
 import type { MovementConfig } from '@/lib/movement'
 import {
@@ -187,6 +189,8 @@ export function OnAirSession({
   resumeFromSec,
   secondsTarget,
   onExit,
+  mode: doorMode,
+  onModeChange,
 }: {
   practices: OnAirPractice[]
   defaultPracticeId: string | null
@@ -203,6 +207,12 @@ export function OnAirSession({
    *  CLOSES the overlay via this callback instead of navigating the router. The
    *  route page (/on-air) omits it, keeping its back/replace exit unchanged. */
   onExit?: () => void
+  /** The unified-door mode this session is showing ('still'). Only meaningful with onModeChange. */
+  mode?: TimerMode
+  /** When provided (the unified Mindless door), the setup masthead renders the Be Still | Get
+   *  Moving toggle wired to this. The standalone /on-air route omits it, so no toggle shows there
+   *  and the sit behaves exactly as before. */
+  onModeChange?: (mode: TimerMode) => void
 }) {
   // A valid resume needs both halves and real remaining time; otherwise it's a normal sit.
   const resuming =
@@ -618,28 +628,19 @@ export function OnAirSession({
     void acquireQuiet()
   }
 
-  // Hand a Movement practice off to the Movement timer. OnAirSession is rendered under
-  // MindlessProvider, which sits OUTSIDE MovementProvider, so useMovement() is unreachable
-  // from here — the handoff goes through the same window-event channel the app uses for its
-  // other cross-overlay opens (open-capture, open-settings). MovementProvider listens for
-  // 'open-movement' and opens pre-set to this practice + mode; we then leave Mindless so the
-  // two takeovers swap cleanly. logsAs maps a Free-sit-style chip to its real practice.
+  // Hand a Movement practice off to the Get Moving engine. The sit + the movement engine now share
+  // ONE door (the unified Mindless overlay), so picking a movement practice here just SWITCHES the
+  // door's mode to 'move' (the data is already loaded, so the swap is instant and no second overlay
+  // opens). The standalone /on-air route has no door (onModeChange absent); there a movement pick is
+  // a no-op handled by the chooser only offering sit practices in practice, so we simply close it.
   function handOffToMovement(id: string) {
-    const picked = practices.find((p) => p.id === id)
-    try {
-      window.dispatchEvent(
-        new CustomEvent('open-movement', {
-          detail: {
-            practiceId: picked?.logsAs ?? id,
-            mode: picked?.movementConfig?.mode,
-          },
-        }),
-      )
-    } catch {
-      // if the channel isn't wired, fall through to leaving Mindless — no half-open state
-    }
+    void id
     setShowChooser(false)
-    leave()
+    if (onModeChange) {
+      onModeChange('move')
+      return
+    }
+    // No unified door (the standalone route): nothing to hand off to. Close the chooser and stay.
   }
 
   // The chooser pick (C.5) + the THE BUG fix (item #2): route by the practice's timer_kind, not
@@ -1026,20 +1027,29 @@ export function OnAirSession({
       {/* The masthead (logo + subtitle) sits at the TOP OF THE CONTENT container, not
           pushed down from the viewport top (B.1): no extra top padding above it. */}
       <div className="flex flex-1 flex-col px-2 lg:px-0">
-      <div className="relative flex items-center justify-center pb-2">
-        <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-primary-strong lg:text-lg">
-          <LotusIcon className="h-6 w-6 lg:h-7 lg:w-7" /> Mindless
-        </p>
-        <button
-          type="button"
-          onClick={leave}
-          aria-label="Close"
-          className="absolute -right-2 -top-1 rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-      <p className="pb-6 text-center text-xs text-subtle lg:pb-7">The world can wait a few minutes.</p>
+      {onModeChange ? (
+        // The unified door: one masthead ("Mindless" + the locked tagline) and the Be Still | Get
+        // Moving toggle directly under it. Be Still is the active segment here (this is the sit).
+        <MindlessMasthead mode={doorMode ?? 'still'} onModeChange={onModeChange} onClose={leave} />
+      ) : (
+        // Standalone /on-air route: no toggle, the sit's own masthead (unchanged).
+        <>
+          <div className="relative flex items-center justify-center pb-2">
+            <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-primary-strong lg:text-lg">
+              <LotusIcon className="h-6 w-6 lg:h-7 lg:w-7" /> Mindless
+            </p>
+            <button
+              type="button"
+              onClick={leave}
+              aria-label="Close"
+              className="absolute -right-2 -top-1 rounded-full p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="pb-6 text-center text-xs text-subtle lg:pb-7">The world can wait a few minutes.</p>
+        </>
+      )}
 
       {/* The settings content CENTERS vertically in the leftover space (item #5): on a tall
           screen it sits in the middle; on a short one it scrolls. The primary action below is a
