@@ -5,19 +5,26 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 
 // PER-SPACE CONTACTS (ENTITY-SPACES-BUILD Phase 2). A self-fetching server component that lists THIS
-// Space's CRM contacts, scoped by space_id. Each row links to the notes panel for that contact
-// (?contact=<id> on the same surface), so the owner picks a person and reads/adds notes beside the
-// list. Composes kit primitives (SectionHeader, EmptyState). No em/en dashes (CONTENT-VOICE §10).
+// Space's CRM contacts, scoped by space_id. Each row links to the detail/notes surface for that contact
+// (?contact=<id> on the surface named by `linkBase`), so the owner picks a person and sees their detail
+// beside the list. `linkBase` defaults to the Focus notes surface (/settings/crm) for backward
+// compatibility; the CRM board passes its own base so a row opens the on-board contact detail.
+// Composes kit primitives (SectionHeader, EmptyState). No em/en dashes (CONTENT-VOICE §10).
 
 export async function SpaceContacts({
   spaceId,
   slug,
   selectedContactId,
+  linkBase,
 }: {
   spaceId: string
   slug: string
   selectedContactId: string | null
+  /** The path a contact row links to, with `?contact=<id>` appended. Defaults to the Focus notes
+   *  surface so existing callers are unchanged; the board passes `/spaces/<slug>/crm`. */
+  linkBase?: string
 }) {
+  const base = linkBase ?? `/spaces/${slug}/settings/crm`
   const contacts = await getContacts(spaceId)
 
   if (contacts.length === 0) {
@@ -42,7 +49,7 @@ export async function SpaceContacts({
           return (
             <li key={c.id}>
               <Link
-                href={`/spaces/${slug}/settings/crm?contact=${c.id}`}
+                href={`${base}?contact=${c.id}`}
                 aria-current={selected ? 'true' : undefined}
                 className={`flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-surface-elevated ${
                   selected ? 'bg-surface-elevated' : ''
