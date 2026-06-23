@@ -42,6 +42,11 @@ describe('offersPeriod', () => {
     expect(offersPeriod('whitelabel', 'monthly')).toBe(true)
     expect(offersPeriod('whitelabel', 'annual')).toBe(false)
   })
+
+  it('nonprofit offers monthly + annual (it is sold, with a discounted annual line)', () => {
+    expect(offersPeriod('nonprofit', 'monthly')).toBe(true)
+    expect(offersPeriod('nonprofit', 'annual')).toBe(true)
+  })
 })
 
 describe('the key catalog', () => {
@@ -52,6 +57,10 @@ describe('the key catalog', () => {
     expect(keys).toContain('organization_monthly')
     expect(keys).not.toContain('organization_annual')
     expect(keys).not.toContain('whitelabel_annual')
+    // nonprofit is sold with both periods; partner is comped and never in the public catalog
+    expect(keys).toContain('nonprofit_monthly')
+    expect(keys).toContain('nonprofit_annual')
+    expect(keys.some((k) => k.startsWith('partner'))).toBe(false)
     // no founder variants in the public list
     expect(keys.every((k) => !k.endsWith('_founder'))).toBe(true)
   })
@@ -88,6 +97,13 @@ describe('narrowing helpers (default-deny)', () => {
     expect(asSpacePlanKey('free')).toBeNull()
     expect(asSpacePlanKey(null)).toBeNull()
     expect(asSpacePlanKey('nonsense')).toBeNull()
+  })
+
+  it('nonprofit is SOLD (a paid key); partner is comped, so it is NOT a paid key', () => {
+    // Nonprofit is sold self-serve to verified mission orgs → a real price key.
+    expect(asSpacePlanKey('nonprofit')).toBe('nonprofit')
+    // Partner is comped / operator-assigned (full-featured but never sold) → null (default-deny).
+    expect(asSpacePlanKey('partner')).toBeNull()
   })
 })
 

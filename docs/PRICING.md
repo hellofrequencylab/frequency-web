@@ -9,7 +9,8 @@
 > members and spaces keep their current access exactly as today.
 >
 > **Decision:** [ADR-362](DECISIONS.md) (P1) · [ADR-363](DECISIONS.md) (P2) ·
-> [ADR-364](DECISIONS.md) (P3, white-label-as-lead). **Authoritative model:** the owner's
+> [ADR-364](DECISIONS.md) (P3, white-label-as-lead) · [ADR-373](DECISIONS.md) (Nonprofit + Partner
+> plans, capability-ordered ladder, price changes, per-seat deferral). **Authoritative model:** the owner's
 > "Frequency — Pricing Model & Feature Gating Spec." **Source of truth (code):** `lib/pricing/*`,
 > `lib/billing/*`, the `/admin/pricing` console, and
 > `supabase/migrations/20260723010000_pricing_foundation.sql` + `20260723020000_pricing_stripe.sql`.
@@ -22,7 +23,7 @@ billing OFF leaves the product behaving exactly as it does today.
 
 | Flag | What it means | Where it lives | Set by |
 |---|---|---|---|
-| **billing_tier** | What someone PAYS for | personal: `profiles.membership_tier` (`free`/`crew`/`supporter`) · space: `spaces.plan` (`free`/`practitioner`/`business`/`organization`/`whitelabel`) | billing (P2) / operator |
+| **billing_tier** | What someone PAYS for | personal: `profiles.membership_tier` (`free`/`crew`/`supporter`) · space: `spaces.plan` (`free`/`practitioner`/`partner`/`nonprofit`/`business`/`organization`/`whitelabel`) | billing (P2) / operator |
 | **community_role** | EARNED standing | `community_role` ladder | earned, **never** billing (ADR-207) |
 | **gamification_access** | Full game vs earn only | derived from `billing_tier`, overridable via `profiles.gamification_access_override` | derive **or** operator |
 
@@ -63,17 +64,40 @@ a paying member to earn-only. Resolved by `resolveGamificationAccess(profile)` =
 Seeded by the migration and mirrored in code (`PRICING_DEFAULTS` in `lib/pricing/settings.ts`). Every
 value is editable at `/admin/pricing`; nothing charges while `billing_live` is OFF.
 
-| Plan | Monthly | Annual (≈ 2 months free) | Notes |
-|---|---|---|---|
-| Crew (member) | $9 | $90 | personal tier |
-| Supporter (member) | $24 | $240 | personal tier |
-| Practitioner (space) | $39 | $390 | take-rate 8% |
-| Business (space) | $99 | $990 | take-rate 5% |
-| Organization (space) | $199 | monthly only | take-rate 3% |
-| White-label (space) | $299 + $2,000 setup | monthly only | branding removal |
+| Plan | Monthly | Annual (≈ 2 months free) | Operator seats | For | Notes |
+|---|---|---|---|---|---|
+| Crew (member) | $9 | $90 | n/a | personal members | personal tier |
+| Supporter (member) | $24 | $240 | n/a | personal members | personal tier |
+| Practitioner (space) | $29 | $290 | 1 | solo practitioners | take-rate 8% |
+| Partner (space) | comped (free) + revenue share | n/a | 1 | influencers/collaborators hosting a program | operator-assigned "by arrangement"; full business-level features; **not sold via checkout** |
+| Nonprofit 501(c)(3) (space) | $39 | $390 | 3 (planned) | verified mission orgs | full business-level features; sold self-serve once enabled |
+| Business (space) | $89 | $890 | 1 | growing teams | take-rate 5% |
+| Organization (space) | $199 | monthly only | 1 | enterprise | take-rate 3%; **custom, built but not sold self-serve** |
+| White-label (space) | $299 + ≈ $1,500 setup | monthly only | 1 | full branding removal | branding removal; setup is a high-touch lead, not checkout |
+
+**Operator seats** are the count of operators who can administer the space. Seats are a **planned
+follow-up** (not built yet): only Nonprofit carries a higher planned seat count (3); per-seat billing
+is deferred (see below). Until seats ship, the column records the intended allocation, not a live
+limit.
 
 Other knobs: **Vera free cap** 10 messages/day · **annual discount** ≈ 2 months free · **trial** 0
 days (editable). Take-rates are stored in basis points (800 = 8%).
+
+**Capability order, not price order.** `SPACE_PLANS` (`lib/pricing/plans.ts`) is ordered by
+**capability, not price**: Nonprofit and Partner rank **above** Business so they clear the
+business-level feature gates (`space_email` / `space_automation` / `space_team` /
+`space_multi_pipeline`) despite being cheaper (Nonprofit) or comped (Partner). A gate that asks for
+"at least business" is satisfied by any plan at or above Business in the ladder, so the cheaper
+mission plans inherit the full business feature set without duplicating the gate map.
+
+**Partner** is comped (free) plus a revenue share and is **operator-assigned "by arrangement"** for
+influencers and collaborators hosting a program; it is never offered through self-serve checkout.
+**Organization** keeps its $199/mo price but is positioned as **custom, built but not sold
+self-serve** (the same posture as white-label setup: a high-touch path, not a checkout button).
+
+**Per-seat billing is a deferred follow-up.** The intended model is "3 included, +$9/seat" with extra
+seats **auto-charged via Stripe**. It is not built yet; the operator-seat counts above describe the
+planned allocation only.
 
 ## Feature gates (data, not code branches)
 
@@ -90,8 +114,12 @@ operator chrome overrides over code defaults (`mergeGate` mirrors `mergeChrome`)
 | `gamification_full` | tier | crew |
 | `vera_unlimited` | tier | crew |
 | `space_crm` | plan | practitioner |
-| `space_email` / `space_automation` / `space_team` / `space_multi_pipeline` | plan | business |
+| `space_email` / `space_automation` / `space_team` / `space_multi_pipeline` | plan | business (also cleared by Nonprofit + Partner via capability order) |
 | `space_whitelabel` | plan | whitelabel |
+
+The business-level gates ask for "at least business" against the capability-ordered ladder, so
+**Nonprofit** and **Partner** clear them too despite being cheaper/comped (see "Capability order, not
+price order" above).
 
 ## How OFF preserves current behavior 🔴 important
 
@@ -115,16 +143,19 @@ makes a live Stripe call unless `billingEnabled()` (env keys present) AND `billi
 per-tier/plan switch are all on. Migration: `20260723020000_pricing_stripe.sql`.
 
 **Stripe product/price catalog.** `lib/billing/pricing-products.ts` `syncPricingProductsToStripe()`
-creates/updates one Stripe **Product per tier** (Crew, Supporter, Practitioner, Business,
-Organization, White-label) and a **monthly + annual Price** from the admin `pricing_settings` values,
+creates/updates one Stripe **Product per tier** (Crew, Supporter, Practitioner, Nonprofit, Business,
+Organization, White-label; **Partner** is comped and never carries a checkout Price) and a
+**monthly + annual Price** from the admin `pricing_settings` values,
 writing the resolved ids into `pricing_stripe_prices` (`key` → `stripe_product_id` / `stripe_price_id`
 / `archived`). It is **admin-triggered only** (the `/admin/pricing` "Sync products to Stripe" action),
 **never** on import/boot, and a clear no-op when env is missing. Idempotent: Products are looked up by
 a stable metadata key (`frequency_pricing_key`); Prices (immutable in Stripe) are reused when amount +
 interval match, else a new Price is created. Founder prices are separate Price objects stored
 `archived=true` (not public, referenced by `locked_price_id`). Keys: `crew_monthly`, `crew_annual`,
-`supporter_monthly`/`_annual`, `practitioner_monthly`/`_annual`, `business_monthly`/`_annual`,
-`organization_monthly`, `whitelabel_monthly`, plus the `*_founder` variants for the member tiers.
+`supporter_monthly`/`_annual`, `practitioner_monthly`/`_annual`, `nonprofit_monthly`/`_annual`,
+`business_monthly`/`_annual`, `organization_monthly`, `whitelabel_monthly`, plus the `*_founder`
+variants for the member tiers. **Partner** has no checkout Price (comped + revenue share, operator-
+assigned).
 
 **Subscription checkout (all gated, return null when OFF).**
 
@@ -254,6 +285,7 @@ All wired through the OFF-preserving seam (`featureAllowed` grant-all while OFF,
 | Item | Why deferred |
 |---|---|
 | **`pricing_*` type regen** | No DB access in the gates worktree; the parent session regenerates `lib/database.types.ts` via Supabase MCP at integration, then the untyped casts that read the new columns are removed. Blocked columns/casts: `profiles.gamification_access_override`, `profiles.membership_payment_status`, `profiles.household_bundle_id`, `spaces.plan` (projected in `lib/spaces/store.ts`), `space_memberships.payment_status` (P2), and the `pricing_settings` / `pricing_feature_gates` / `pricing_stripe_prices` tables (P1/P2). Until then every reader fail-safes to the seeded code defaults. |
+| **Per-seat operator billing (ADR-373)** | The seat model ("3 included, +$9/seat", extra seats auto-charged via Stripe) is a planned follow-up, not built. Only Nonprofit's higher seat count (3) is recorded as intent; until seats ship there is no live seat limit or per-seat charge. |
 
 ## Roadmap
 
@@ -263,6 +295,7 @@ All wired through the OFF-preserving seam (`featureAllowed` grant-all while OFF,
 | ✅ **P2** | Stripe wiring: product/price sync, subscription checkout for tiers/plans/space-memberships, the webhook calls `setSpacePlan`, founder lock honored at checkout; still ships OFF |
 | ✅ **P3** | member-facing upgrade/plan/join surfaces on the operator values, white-label as a lead, the `vault_cash_in` gate routed through `featureAllowed`; still ships OFF (see Status & deferred) |
 | ✅ **Deferred gates (ADR-370)** | leaderboard compete · gamification access consumer + standalone gate · `vera_unlimited` · `space_*` via `featureAllowed` · Household bundle · dunning/proration UX · season-reset conversion nudge; all NO-OP while OFF |
+| ✅ **Nonprofit + Partner plans (ADR-373)** | new Nonprofit (501c3) self-serve plan + comped Partner plan, capability-ordered `SPACE_PLANS` ladder, Practitioner/Business/white-label price changes, Organization repositioned custom; per-seat billing deferred; ships inert (billing OFF) |
 
 ## References
 

@@ -15,9 +15,10 @@ import { resolveStripePriceId } from './pricing-prices'
 import { asSpacePlanKey, offersPeriod, priceKey, type BillingPeriod, type SpacePlanKey } from './pricing-keys'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
-const PLAN_FLAG: Record<SpacePlanKey, 'plan_practitioner_enabled' | 'plan_business_enabled' | 'plan_organization_enabled' | 'plan_whitelabel_enabled'> = {
+const PLAN_FLAG: Record<SpacePlanKey, 'plan_practitioner_enabled' | 'plan_business_enabled' | 'plan_nonprofit_enabled' | 'plan_organization_enabled' | 'plan_whitelabel_enabled'> = {
   practitioner: 'plan_practitioner_enabled',
   business: 'plan_business_enabled',
+  nonprofit: 'plan_nonprofit_enabled',
   organization: 'plan_organization_enabled',
   whitelabel: 'plan_whitelabel_enabled',
 }

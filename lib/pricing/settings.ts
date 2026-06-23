@@ -35,6 +35,7 @@ export interface PricingDefaults {
   plan: {
     practitioner: TierPrice
     business: TierPrice
+    nonprofit: TierPrice
     organization: TierPrice
     whitelabel: TierPrice
   }
@@ -52,10 +53,11 @@ export const PRICING_DEFAULTS: PricingDefaults = {
     supporter: { monthly_cents: 2400, annual_cents: 24000 }, // $24 / $240
   },
   plan: {
-    practitioner: { monthly_cents: 3900, annual_cents: 39000 }, // $39 / $390
-    business: { monthly_cents: 9900, annual_cents: 99000 }, // $99 / $990
-    organization: { monthly_cents: 19900, annual_cents: null }, // $199/mo
-    whitelabel: { monthly_cents: 29900, annual_cents: null, setup_cents: 200000 }, // $2000 + $299/mo
+    practitioner: { monthly_cents: 2900, annual_cents: 29000 }, // $29 / $290
+    business: { monthly_cents: 8900, annual_cents: 89000 }, // $89 / $890
+    nonprofit: { monthly_cents: 3900, annual_cents: 39000 }, // $39 / $390 (verified 501c3)
+    organization: { monthly_cents: 19900, annual_cents: null }, // $199/mo (custom; built, not publicly sold)
+    whitelabel: { monthly_cents: 29900, annual_cents: null, setup_cents: 150000 }, // ~$1,500 setup + $299/mo
   },
   take_rate: { practitioner_bps: 800, business_bps: 500, organization_bps: 300 },
   vera_free_daily_cap: { messages: 10 },
@@ -69,6 +71,7 @@ const SETTING_DEFAULTS: Record<string, unknown> = {
   'tier.supporter': PRICING_DEFAULTS.tier.supporter,
   'plan.practitioner': PRICING_DEFAULTS.plan.practitioner,
   'plan.business': PRICING_DEFAULTS.plan.business,
+  'plan.nonprofit': PRICING_DEFAULTS.plan.nonprofit,
   'plan.organization': PRICING_DEFAULTS.plan.organization,
   'plan.whitelabel': PRICING_DEFAULTS.plan.whitelabel,
   take_rate: PRICING_DEFAULTS.take_rate,
@@ -114,6 +117,7 @@ export async function getPricingValues(): Promise<PricingDefaults> {
     plan: {
       practitioner: pick('plan.practitioner', PRICING_DEFAULTS.plan.practitioner),
       business: pick('plan.business', PRICING_DEFAULTS.plan.business),
+      nonprofit: pick('plan.nonprofit', PRICING_DEFAULTS.plan.nonprofit),
       organization: pick('plan.organization', PRICING_DEFAULTS.plan.organization),
       whitelabel: pick('plan.whitelabel', PRICING_DEFAULTS.plan.whitelabel),
     },
@@ -133,6 +137,7 @@ export const PRICING_FLAG_KEYS = [
   'tier_supporter_enabled',
   'plan_practitioner_enabled',
   'plan_business_enabled',
+  'plan_nonprofit_enabled',
   'plan_organization_enabled',
   'plan_whitelabel_enabled',
   'gamification_full_member',
@@ -152,6 +157,7 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   tier_supporter_enabled: false,
   plan_practitioner_enabled: false,
   plan_business_enabled: false,
+  plan_nonprofit_enabled: false,
   plan_organization_enabled: false,
   plan_whitelabel_enabled: false,
   gamification_full_member: false,
