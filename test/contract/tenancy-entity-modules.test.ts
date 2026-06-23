@@ -117,12 +117,6 @@ describe('follows: every space_follows read/write binds space_id', () => {
     expect(recorded(rec(), 'eq', 'follower_profile_id', 'p1')).toBe(true)
   })
 
-  it('followerCount binds space_id', async () => {
-    const { followerCount } = await import('@/lib/spaces/follows')
-    await followerCount(SPACE_A)
-    expectSpaceScoped(rec(), SPACE_A)
-  })
-
   it('followSpace stamps space_id on the upsert', async () => {
     const { followSpace } = await import('@/lib/spaces/follows')
     await followSpace(SPACE_A)

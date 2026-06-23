@@ -4,8 +4,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // supabase admin client + auth + store seams are mocked):
 //   1. followSpace / unfollowSpace are IDEMPOTENT and authenticated: an anon caller is rejected and
 //      nothing is written; following twice is one row; unfollowing what you don't follow is a no-op.
-//   2. The READS are fail-safe: isFollowing reflects the row, followerCount counts the space's
-//      followers, listFollowedSpaceIds returns the viewer's set (empty for a missing profile).
+//   2. The READS are fail-safe: isFollowing reflects the row, listFollowedSpaceIds returns the
+//      viewer's set (empty for a missing profile).
 //   3. The reads are SCOPED: a follow of Space A never resolves for Space B (no cross-space leak).
 
 // ── Mock the caller identity + Space resolver (toggled per test) ───────────────────────────────────
@@ -107,7 +107,6 @@ import {
   followSpace,
   unfollowSpace,
   isFollowing,
-  followerCount,
   listFollowedSpaceIds,
 } from './follows'
 
@@ -174,15 +173,6 @@ describe('the reads (fail-safe, scoped)', () => {
     await followSpace(SPACE_A) // Alice follows A
     expect(await isFollowing(SPACE_A, ALICE)).toBe(true)
     expect(await isFollowing(SPACE_B, ALICE)).toBe(false) // no leak across the boundary
-  })
-
-  it('followerCount counts a space’s followers', async () => {
-    expect(await followerCount(SPACE_A)).toBe(0)
-    await followSpace(SPACE_A) // Alice
-    currentProfileId = BOB
-    await followSpace(SPACE_A) // Bob
-    expect(await followerCount(SPACE_A)).toBe(2)
-    expect(await followerCount(SPACE_B)).toBe(0) // scoped to A
   })
 
   it('listFollowedSpaceIds returns the viewer’s set; empty for a missing profile', async () => {

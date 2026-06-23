@@ -270,21 +270,3 @@ export async function savePageLayout(
   return ok()
 }
 
-/** Clear a route's SEO back to the code default (null the fields) for a space (default root). */
-export async function clearPageSeo(route: string, spaceId?: string | null): Promise<ActionResult> {
-  const ctx = await gateForSpace(spaceId)
-  if (!ctx) return fail('You can only edit your own space.')
-  if (!isSafeRoute(route)) return fail('That is not a valid app route.')
-  // The clear is scoped to (space_id, route) — space_id isn't in the generated types yet, so
-  // reach it with an untyped client (ADR-246) for the second filter.
-  const q = db().from('page_settings').update(
-    { seo_title: null, seo_description: null, og_image_url: null, header_image_url: null, updated_at: new Date().toISOString() } as unknown as Database['public']['Tables']['page_settings']['Update'],
-  ) as unknown as {
-    eq: (col: string, val: string) => { eq: (col: string, val: string) => Promise<{ error: unknown }> }
-  }
-  const { error } = await q.eq('space_id', ctx.spaceId).eq('route', route)
-  if (error) return fail('Could not clear SEO for that route.')
-
-  revalidatePath(route)
-  return ok()
-}

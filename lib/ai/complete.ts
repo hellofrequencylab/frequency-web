@@ -139,14 +139,6 @@ export async function completeText(p: CompleteParams): Promise<CompleteResult> {
   return { text: res.text, usage: res.usage, costUsd: res.costUsd, tier: res.tier }
 }
 
-/** A single round of a tool loop: what the model returned, plus a way to continue. */
-export interface ToolLoopRound {
-  /** The raw content blocks of this round (text + tool_use). */
-  content: Anthropic.Message['content']
-  /** Token usage for this round only. */
-  usage: TokenUsage
-}
-
 export interface RunToolLoopParams {
   system: string
   messages: CompleteMessage[]

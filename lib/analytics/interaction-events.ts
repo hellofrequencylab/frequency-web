@@ -24,8 +24,6 @@ export const KNOWN_INTERACTION_KINDS = [
   'custom',      // explicit observe() with props.name
 ] as const
 
-export type InteractionKind = (typeof KNOWN_INTERACTION_KINDS)[number] | (string & {})
-
 /** Max events accepted per batch POST (a flush). Bounds payload + insert size. */
 export const MAX_BATCH = 50
 

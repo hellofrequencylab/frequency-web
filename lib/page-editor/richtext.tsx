@@ -56,9 +56,3 @@ export function richParagraphs(body?: string): React.ReactNode {
     .filter(Boolean)
     .map((p, i) => <p key={i}>{inline(p)}</p>)
 }
-
-// Single run of inline formatting (no paragraph splitting).
-export function richInline(text?: string): React.ReactNode {
-  if (!text) return null
-  return inline(text)
-}

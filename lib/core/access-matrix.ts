@@ -205,11 +205,6 @@ export function canUse(surface: Surface, h: Hats): boolean {
   return accessTo(surface, h) === 'full'
 }
 
-/** Any access at all (limited preview or full)? */
-export function canPreview(surface: Surface, h: Hats): boolean {
-  return accessTo(surface, h) !== 'none'
-}
-
 /** Limited (preview / upgrade-gated) but not yet full — show the upgrade affordance. */
 export function isGated(surface: Surface, h: Hats): boolean {
   return accessTo(surface, h) === 'limited'

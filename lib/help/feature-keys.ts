@@ -89,11 +89,3 @@ export const FEATURE_KEYS: FeatureKey[] = [
 
 /** Fast membership check for the coverage tool + any future validation. */
 export const FEATURE_KEY_SET: ReadonlySet<string> = new Set(FEATURE_KEYS.map((f) => f.key))
-
-export function isKnownFeatureKey(key: string): boolean {
-  return FEATURE_KEY_SET.has(key)
-}
-
-export function getFeatureKey(key: string): FeatureKey | undefined {
-  return FEATURE_KEYS.find((f) => f.key === key)
-}

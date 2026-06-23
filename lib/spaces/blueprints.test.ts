@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { blueprintForType, tabForSegment, allEntityModuleIds, provisionableTypes } from './blueprints'
+import { blueprintForType, tabForSegment, provisionableTypes } from './blueprints'
 import { SUPPORTED_ACCENT_TOKENS } from './accent'
 
 // PER-TYPE BLUEPRINT contract (ENTITY-SPACES-BUILD §B.3, Epic 1.3). Locks the Practitioner typed
@@ -247,13 +247,3 @@ describe('per-role default accents (§1 KEYSTONE: every role reads on a supporte
   })
 })
 
-describe('allEntityModuleIds', () => {
-  it('is the de-duped union of every blueprint tab module (the registry must bind each)', () => {
-    const ids = allEntityModuleIds()
-    expect(new Set(ids).size).toBe(ids.length) // de-duped
-    // Every Practitioner module appears.
-    for (const id of ['entity-about', 'entity-offerings', 'entity-practices', 'entity-community', 'entity-cta']) {
-      expect(ids).toContain(id)
-    }
-  })
-})

@@ -187,8 +187,7 @@ export async function tryCompleteJourney(
 
     // The Trophy cosmetic: finishing a Journey mints its Pillar (Mind/Body/Spirit) badge
     // (REWARDS-ECONOMY.md §7), and the Full Spectrum banner once all four are held.
-    // Idempotent + best-effort — granted directly here so the Trophy lands with the finish
-    // (the batch sweepJourneyBadges is keyed on legacy journey.complete grants).
+    // Idempotent + best-effort — granted directly here so the Trophy lands with the finish.
     await grantJourneyBadgeOnCompletion(profileId, journeyId).catch(() => false)
 
     // The Certificate (season capstone): finishing the THIRD Journey this season = Master.

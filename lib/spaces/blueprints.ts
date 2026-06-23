@@ -362,12 +362,3 @@ export function tabForSegment(blueprint: RoleBlueprint, tabId: string | undefine
   return blueprint.tabs.find((t) => t.id === tabId) ?? blueprint.tabs[0]!
 }
 
-/** Every entity module id any blueprint references (the union): the palette the layout editor
- *  offers on /spaces/* and the registry must bind. De-duped, stable order. */
-export function allEntityModuleIds(): string[] {
-  const seen = new Set<string>()
-  for (const bp of Object.values(BLUEPRINTS)) {
-    for (const tab of bp.tabs) for (const id of tab.modules) seen.add(id)
-  }
-  return [...seen]
-}

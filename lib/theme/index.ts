@@ -33,7 +33,6 @@ export {
   OCCASIONS,
   DEFAULT_OCCASION,
   isOccasionId,
-  resolveOccasion,
   resolveOccasionForDate,
 } from './occasions'
 

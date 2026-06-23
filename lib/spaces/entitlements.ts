@@ -14,7 +14,7 @@
 // (`SpaceLike`) and reach it without a typed cast on the row (ADR-246). Keeping the entitlement
 // readers pure (a plain object in, a boolean out) makes them trivially unit-testable.
 
-import { isSpaceRole, atLeastSpaceRole, getSpaceMembership, type SpaceRole } from './membership'
+import { atLeastSpaceRole, getSpaceMembership, type SpaceRole } from './membership'
 import { isJanitor, type WebRole } from '@/lib/core/roles'
 
 // ── Entitlements (pure: jsonb in, boolean out, default-deny) ─────────────────────────────
@@ -94,19 +94,6 @@ export function spaceCapabilitiesFor(isOwner: boolean, memberRole: SpaceRole | n
     canManageMembers: isAdmin,
     canInvite: isOwner || atLeastSpaceRole(role, 'moderator'),
   }
-}
-
-/** Is this person a Space ADMIN — the owner, OR an `admin` member? The combined (owner-or-admin)
- *  check the settings/member surfaces gate on. Pure: pass the Space (for ownership) and the
- *  effective member role; for the IO version use getSpaceCapabilities(...).isAdmin. */
-export function isSpaceAdmin(
-  space: SpaceLike | null | undefined,
-  profileId: string | null | undefined,
-  memberRole: SpaceRole | null = null,
-): boolean {
-  if (!profileId) return false
-  const isOwner = !!space?.ownerProfileId && space.ownerProfileId === profileId
-  return isOwner || (isSpaceRole(memberRole) && atLeastSpaceRole(memberRole, 'admin'))
 }
 
 /** The full capability set for a person on a Space — the IO entry point the profile agents call.

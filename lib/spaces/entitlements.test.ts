@@ -8,7 +8,6 @@ import {
   spaceEntitlements,
   spaceHasEntitlement,
   spaceCapabilitiesFor,
-  isSpaceAdmin,
   resolveSpaceManageAccess,
   type SpaceLike,
 } from './entitlements'
@@ -90,24 +89,6 @@ describe('capabilities (owner + member role)', () => {
   it('no role (stranger) gets nothing', () => {
     const caps = spaceCapabilitiesFor(false, null)
     expect(caps).toMatchObject({ isOwner: false, isAdmin: false, role: null, canEditProfile: false, canManageMembers: false, canInvite: false })
-  })
-})
-
-describe('isSpaceAdmin (owner-or-admin)', () => {
-  const space: SpaceLike = { id: 's1', ownerProfileId: 'owner-1' }
-  it('the owner is a space admin', () => {
-    expect(isSpaceAdmin(space, 'owner-1')).toBe(true)
-  })
-  it('an admin member is a space admin', () => {
-    expect(isSpaceAdmin(space, 'someone-else', 'admin')).toBe(true)
-  })
-  it('a non-owner non-admin is not', () => {
-    expect(isSpaceAdmin(space, 'someone-else', 'moderator')).toBe(false)
-    expect(isSpaceAdmin(space, 'someone-else', null)).toBe(false)
-  })
-  it('anonymous is never admin', () => {
-    expect(isSpaceAdmin(space, null)).toBe(false)
-    expect(isSpaceAdmin(space, undefined)).toBe(false)
   })
 })
 

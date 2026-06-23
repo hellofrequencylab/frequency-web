@@ -127,7 +127,7 @@ governed tag, so origin is segmentable forever. One channel taxonomy lives in
 | Path | Role |
 |---|---|
 | `lib/traits/registry.ts` | the catalog: typed trait/tag definitions (the library; incl. `source_*` acquisition tags) |
-| `lib/traits/tags.ts` | `assignTag` / `removeTag` / `getMemberTags` / `hasTag` (registry-validated) |
+| `lib/traits/tags.ts` | `assignTag` (registry-validated member-tag write) |
 | `lib/attribution/channels.ts` | acquisition channel taxonomy + pure `deriveChannel()` (unit-tested) |
 | `lib/attribution/first-touch.ts` | edge-safe first-touch cookie capture (used by `proxy.ts`) |
 | `lib/attribution/server.ts` | `resolveAcquisition()` + `stampAcquisitionTag()` (first-touch primary) |
