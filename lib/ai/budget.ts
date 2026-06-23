@@ -75,3 +75,9 @@ export const SPACE_DAILY_CAP_USD = 0.5
 export function spaceDailyCapFor(feature: string): number {
   return Math.min(SPACE_DAILY_CAP_USD, dailyCapFor(feature))
 }
+
+// GLOBAL daily spend ceiling (USD) across EVERY AI feature combined. A single hard safety net so a
+// traffic spike or a runaway loop can never run up more than this much Anthropic spend in one UTC day,
+// regardless of the per-feature caps above. Enforced in featureOverBudget (lib/ai/usage.ts), so every
+// AI surface is bounded by it. Tuned for a small / solo launch; raise as real usage and revenue grow.
+export const GLOBAL_DAILY_CAP_USD = 25

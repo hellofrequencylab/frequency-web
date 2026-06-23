@@ -8,7 +8,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { aiEnabled } from './client'
-import { withinBudget, dailyCapFor, spaceDailyCapFor, type TokenUsage } from './budget'
+import { withinBudget, dailyCapFor, spaceDailyCapFor, GLOBAL_DAILY_CAP_USD, type TokenUsage } from './budget'
 
 /** Env switch AND the operator switch (platform_flags.ai_enabled). Both must pass.
  *  Defaults to OFF on any read failure — fail closed for spend safety. */
@@ -67,11 +67,19 @@ export async function featureOverBudget(feature: string, spaceId?: string | null
     const admin = createAdminClient()
     const since = new Date()
     since.setUTCHours(0, 0, 0, 0)
+    const sinceIso = since.toISOString()
+
+    // GLOBAL hard ceiling first: total AI spend across EVERY feature today. One safety net so a spike
+    // or a runaway can never exceed GLOBAL_DAILY_CAP_USD/day regardless of the per-feature caps.
+    const { data: allToday } = await admin.from('ai_usage').select('cost_usd').gte('created_at', sinceIso)
+    const totalSpent = ((allToday ?? []) as { cost_usd: number }[]).reduce((s, r) => s + Number(r.cost_usd), 0)
+    if (!withinBudget(totalSpent, 0, GLOBAL_DAILY_CAP_USD)) return true
+
     const query = admin
       .from('ai_usage')
       .select('cost_usd')
       .eq('feature', feature)
-      .gte('created_at', since.toISOString())
+      .gte('created_at', sinceIso)
     // `space_id` (migration 20260712020000) isn't in the generated column union yet, so cast the
     // filter column past the stale type (repo's `as unknown as` pattern). Sums only this Space's
     // spend so the per-Space cap can't be run up by one Space.
