@@ -9,6 +9,7 @@
 
 import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { recordContactInteraction, type InteractionChannel, type InteractionDirection } from '@/lib/crm/interactions'
 import type {
   NetworkContact,
   NetworkContactListItem,
@@ -149,7 +150,41 @@ export async function createContact(ownerId: string, input: CreateContactInput):
     .select('id')
     .maybeSingle()
   if (error || !data) return null
-  return String((data as { id: string }).id)
+  const id = String((data as { id: string }).id)
+  // Stamp the capture origin onto the unified CRM timeline (ADR-372). Fail-safe:
+  // recordContactInteraction never throws, so it can never break a capture.
+  const touch = captureTouch(input.source)
+  await recordContactInteraction({
+    ownerProfileId: ownerId,
+    subjectKind: 'network_contact',
+    subjectId: id,
+    channel: touch.channel,
+    direction: touch.direction,
+    summary: touch.summary,
+    source: 'system',
+  })
+  return id
+}
+
+/** The timeline origin entry for a capture, by how it was added. Pure display mapping. */
+function captureTouch(src: ContactSource): {
+  channel: InteractionChannel
+  direction: InteractionDirection
+  summary: string
+} {
+  switch (src) {
+    case 'card_scan':
+      return { channel: 'in_person', direction: 'inbound', summary: 'Met, scanned their card' }
+    case 'qr_scan':
+      return { channel: 'in_person', direction: 'inbound', summary: 'Met via QR' }
+    case 'poster':
+      return { channel: 'in_person', direction: 'inbound', summary: 'Added from a poster' }
+    case 'import':
+      return { channel: 'system', direction: 'internal', summary: 'Imported' }
+    case 'manual':
+    default:
+      return { channel: 'system', direction: 'internal', summary: 'Added manually' }
+  }
 }
 
 export interface UpdateContactPatch {

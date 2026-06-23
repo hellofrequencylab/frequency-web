@@ -1,6 +1,8 @@
 import { notFound, redirect } from 'next/navigation'
 import { contactsOwnerId } from '@/lib/connections/access'
 import { getContact, listRemindersForContact } from '@/lib/connections/store'
+import { listContactInteractions } from '@/lib/crm/interactions'
+import { buildTimeline } from '@/lib/crm/timeline'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { RelationshipTimeline } from '@/components/people/relationship-timeline'
@@ -34,11 +36,16 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
   // If this captured person became a member, show the caller's private shared
   // history with them (gated behind resonance, like the rest of P3). A non-member
   // contact has no Frequency event history, so we skip it entirely.
-  const [settings, linkedId, reminders] = await Promise.all([
+  const [settings, linkedId, reminders, interactions] = await Promise.all([
     getConnectionSettings(),
     linkedProfileId(ownerId, id),
     listRemindersForContact(ownerId, id),
+    listContactInteractions({ ownerProfileId: ownerId, subjectKind: 'network_contact', subjectId: id }),
   ])
+  // The unified CRM timeline for this contact (ADR-372): logged touches (follow-ups today,
+  // email/sms/calls as later phases wire their adapters). Notes keep their own section, so they
+  // are not folded in here.
+  const timelineEntries = buildTimeline({ interactions })
   const timeline =
     settings.resonanceEnabled && linkedId ? (
       <RelationshipTimeline otherId={linkedId} title={`Your history with ${data.contact.displayName ?? 'them'}`} />
@@ -51,7 +58,7 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
     // Focus surface (page-chrome.ts → 'none'): centered, no rail. The Detail shell owns the
     // header band + the single back-link; the page never hand-rolls chrome (PAGE-FRAMEWORK §8).
     <div className="mx-auto max-w-2xl">
-      <Detail initial={data} reminders={reminders} timeline={timeline} back={{ href: '/connections', label: 'Profiles' }} />
+      <Detail initial={data} reminders={reminders} timeline={timeline} timelineEntries={timelineEntries} back={{ href: '/connections', label: 'Profiles' }} />
       {/* Manual contact ↔ member link — the path for when the auto detector can't
           fire (card email differs from signup email, no phone on the profile). */}
       <LinkMemberCard contactId={id} contactName={data.contact.displayName} linked={linked} />

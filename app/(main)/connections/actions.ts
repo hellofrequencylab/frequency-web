@@ -10,6 +10,9 @@ import * as store from '@/lib/connections/store'
 import { mergeContactProfile, dismissContactMatch, unmergeContact } from '@/lib/connections/matching'
 import { syncScanToCrm } from '@/lib/connections/crm-sync'
 import { maybeSendScanIntro } from '@/lib/connections/invite'
+import { recordContactInteraction, listContactInteractions } from '@/lib/crm/interactions'
+import { buildTimeline } from '@/lib/crm/timeline'
+import { buildBriefContext, generateContactBrief } from '@/lib/crm/brief'
 import type {
   ExtractedContact,
   ContactSocials,
@@ -251,6 +254,42 @@ export async function removeTag(contactId: string, tagId: string): Promise<void>
   revalidatePath(`/connections/${contactId}`)
 }
 
+// ── Pre-interaction brief (Vera, metered) ─────────────────────────────────────
+
+export type BriefResult = { ok: true; brief: string } | { ok: false; reason: string }
+
+/** Write a short prep brief for a contact before reaching out (ADR-372 Phase 4). Owner-gated,
+ *  metered through the ai_usage ledger, and fail-soft: when Vera is off or over budget it returns a
+ *  calm reason rather than an error, and it NEVER sends anything (ADR-028). */
+export async function briefContact(contactId: string): Promise<BriefResult> {
+  const ownerId = await requireOwner()
+  if (!(await aiAvailable()) || (await featureOverBudget('crm-brief'))) {
+    return { ok: false, reason: 'Vera is resting right now. Try again in a bit.' }
+  }
+  const [detail, interactions, reminders] = await Promise.all([
+    store.getContact(ownerId, contactId),
+    listContactInteractions({ ownerProfileId: ownerId, subjectKind: 'network_contact', subjectId: contactId }),
+    store.listRemindersForContact(ownerId, contactId),
+  ])
+  if (!detail) return { ok: false, reason: 'That contact is not in your list.' }
+
+  const context = buildBriefContext({
+    name: detail.contact.displayName ?? 'this contact',
+    title: detail.contact.title,
+    company: detail.contact.company,
+    city: detail.contact.city,
+    tags: detail.tags.map((t) => t.tag),
+    notes: detail.notes.map((n) => ({ body: n.body, createdAt: n.createdAt })),
+    timeline: buildTimeline({ interactions }),
+    openReminders: reminders.map((r) => ({ dueAt: r.dueAt, note: r.note })),
+    lastContactedAt: detail.contact.lastContactedAt,
+  })
+
+  const brief = await generateContactBrief({ context, profileId: ownerId })
+  if (!brief) return { ok: false, reason: 'Could not write a brief just now. Try again.' }
+  return { ok: true, brief }
+}
+
 // ── Follow-up reminders (the free keep-in-touch layer) ────────────────────────
 
 export async function addReminder(
@@ -269,7 +308,20 @@ export async function completeReminder(reminderId: string, contactId?: string): 
   const ownerId = await requireOwner()
   const ok = await store.completeReminder(ownerId, reminderId)
   // Completing a follow-up is a touch.
-  if (ok && contactId) await store.touchLastContacted(ownerId, contactId)
+  if (ok && contactId) {
+    await store.touchLastContacted(ownerId, contactId)
+    // Mirror it onto the unified CRM timeline (ADR-372). Fail-safe: recordContactInteraction
+    // never throws, so a timeline write can never break completing a reminder.
+    await recordContactInteraction({
+      ownerProfileId: ownerId,
+      subjectKind: 'network_contact',
+      subjectId: contactId,
+      channel: 'system',
+      direction: 'outbound',
+      summary: 'Followed up',
+      source: 'system',
+    })
+  }
   revalidatePath('/network/contacts')
   if (contactId) revalidatePath(`/connections/${contactId}`)
   return ok
