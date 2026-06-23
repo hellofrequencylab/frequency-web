@@ -51,8 +51,13 @@ function queryFor(table: string) {
     limit() {
       return Promise.resolve({ data: matches(), error: null })
     },
-    in(_col: string, ids: string[]) {
-      return Promise.resolve({ data: store[table]!.filter((r) => ids.includes(r.id as string)) })
+    in(col: string, ids: string[]) {
+      // Apply any recorded eqs (e.g. a space_id scope set before .in) AND the id membership, so an
+      // id `in` read stays space-scoped just like the real query builder.
+      return Promise.resolve({
+        data: matches().filter((r) => ids.includes(r[col] as string)),
+        error: null,
+      })
     },
     maybeSingle() {
       return Promise.resolve({ data: matches()[0] ?? null, error: null })
@@ -78,6 +83,9 @@ import {
   countOpenTasks,
   getContacts,
   getContact,
+  getSpaceTasks,
+  partitionTasks,
+  type SpaceTask,
 } from './pipeline'
 
 function hasSpaceFilter(table: string): boolean {
@@ -187,5 +195,82 @@ describe('getContacts / getContact', () => {
     const contact = await getContact('c-root', 'space-A')
     expect(spaceFilterValue('contacts')).toBe('space-A')
     expect(contact).toBeNull()
+  })
+})
+
+describe('getSpaceTasks', () => {
+  it('reads only kind=task rows for the Space, scoped by space_id', async () => {
+    // Seed a task + a non-task activity in Space A, plus a root task that must NOT leak.
+    store.crm_activities = [
+      { id: 't-A', deal_id: null, contact_id: null, kind: 'task', body: 'Call A', due_at: null, completed_at: null, created_at: 'x', space_id: 'space-A' },
+      { id: 'n-A', deal_id: null, contact_id: null, kind: 'note', body: 'a note', due_at: null, completed_at: null, created_at: 'x', space_id: 'space-A' },
+      { id: 't-root', deal_id: null, contact_id: null, kind: 'task', body: 'Root task', due_at: null, completed_at: null, created_at: 'x', space_id: 'root' },
+    ]
+    const tasks = await getSpaceTasks('space-A')
+    expect(spaceFilterValue('crm_activities')).toBe('space-A')
+    expect(tasks.map((t) => t.id)).toEqual(['t-A'])
+    expect(tasks[0]!.title).toBe('Call A')
+  })
+
+  it('resolves a deal link label, space-scoped', async () => {
+    store.crm_activities = [
+      { id: 't-A', deal_id: 'd-A', contact_id: null, kind: 'task', body: 'Follow up', due_at: null, completed_at: null, created_at: 'x', space_id: 'space-A' },
+    ]
+    const tasks = await getSpaceTasks('space-A')
+    expect(tasks[0]!.linkLabel).toBe('A deal')
+  })
+
+  it('FAIL-SAFE: returns [] for an empty spaceId', async () => {
+    expect(await getSpaceTasks('')).toEqual([])
+  })
+})
+
+describe('partitionTasks (pure)', () => {
+  function task(over: Partial<SpaceTask>): SpaceTask {
+    return {
+      id: 'id',
+      title: 't',
+      due_at: null,
+      completed_at: null,
+      deal_id: null,
+      contact_id: null,
+      created_at: '2026-01-01T00:00:00.000Z',
+      linkLabel: null,
+      ...over,
+    }
+  }
+
+  it('splits open vs done by completed_at', () => {
+    const { open, done } = partitionTasks([
+      task({ id: 'a' }),
+      task({ id: 'b', completed_at: '2026-02-01T00:00:00.000Z' }),
+    ])
+    expect(open.map((t) => t.id)).toEqual(['a'])
+    expect(done.map((t) => t.id)).toEqual(['b'])
+  })
+
+  it('orders open tasks soonest-due first, then undated last', () => {
+    const { open } = partitionTasks([
+      task({ id: 'undated', due_at: null }),
+      task({ id: 'late', due_at: '2026-06-30T00:00:00.000Z' }),
+      task({ id: 'soon', due_at: '2026-06-24T00:00:00.000Z' }),
+    ])
+    expect(open.map((t) => t.id)).toEqual(['soon', 'late', 'undated'])
+  })
+
+  it('orders done tasks most-recently-completed first', () => {
+    const { done } = partitionTasks([
+      task({ id: 'older', completed_at: '2026-01-01T00:00:00.000Z' }),
+      task({ id: 'newer', completed_at: '2026-03-01T00:00:00.000Z' }),
+    ])
+    expect(done.map((t) => t.id)).toEqual(['newer', 'older'])
+  })
+
+  it('is deterministic on equal timestamps (stable id tiebreak)', () => {
+    const { open } = partitionTasks([
+      task({ id: 'b', due_at: '2026-06-24T00:00:00.000Z', created_at: '2026-01-01T00:00:00.000Z' }),
+      task({ id: 'a', due_at: '2026-06-24T00:00:00.000Z', created_at: '2026-01-01T00:00:00.000Z' }),
+    ])
+    expect(open.map((t) => t.id)).toEqual(['a', 'b'])
   })
 })

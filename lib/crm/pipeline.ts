@@ -276,6 +276,138 @@ export async function getFirstOpenStage(spaceId: string): Promise<{ id: string; 
   }
 }
 
+// ── Per-space tasks (CRM-STRATEGY §6/§7; crm_activities kind='task') ───────────────────────────────
+// A task is a crm_activities row with kind='task': a title (the `body`), an optional due date (due_at),
+// and a completion stamp (completed_at). It can hang off a deal (deal_id) and/or a contact (contact_id),
+// always scoped by space_id. The board's Tasks panel reads these and labels each one with the deal /
+// contact it points at. WRITES live in lib/crm/space-tasks.ts (owner-gated, space-scoped); this file
+// only READS (fail-safe, [] on error), matching the rest of the per-space pipeline read layer.
+
+export type SpaceTask = {
+  id: string
+  title: string
+  due_at: string | null
+  completed_at: string | null
+  deal_id: string | null
+  contact_id: string | null
+  created_at: string
+  /** A short label for what the task points at (deal title or contact name), resolved at read time. */
+  linkLabel: string | null
+}
+
+/** PURE: split a Space's tasks into OPEN (due-soon first, then undated, then by creation) and DONE
+ *  (most recently completed first). Deterministic with a stable id tiebreak so equal timestamps keep a
+ *  fixed order. No IO, so it is unit-testable on its own. */
+export function partitionTasks(tasks: SpaceTask[]): { open: SpaceTask[]; done: SpaceTask[] } {
+  const open: SpaceTask[] = []
+  const done: SpaceTask[] = []
+  for (const t of tasks) (t.completed_at ? done : open).push(t)
+
+  open.sort((a, b) => {
+    // A dated task always sorts ahead of an undated one; among dated tasks, the soonest due is first.
+    const da = a.due_at ? Date.parse(a.due_at) : null
+    const dbv = b.due_at ? Date.parse(b.due_at) : null
+    if (da !== null && dbv !== null && da !== dbv) return da - dbv
+    if (da !== null && dbv === null) return -1
+    if (da === null && dbv !== null) return 1
+    const ca = Date.parse(a.created_at) || 0
+    const cb = Date.parse(b.created_at) || 0
+    if (ca !== cb) return cb - ca
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+  })
+
+  done.sort((a, b) => {
+    const ca = a.completed_at ? Date.parse(a.completed_at) : 0
+    const cb = b.completed_at ? Date.parse(b.completed_at) : 0
+    if (ca !== cb) return cb - ca
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+  })
+
+  return { open, done }
+}
+
+/** Every task (kind='task') for a Space, scoped by space_id, each labeled with the deal / contact it
+ *  points at. FAIL-SAFE: [] on any read error / missing column (CRM-STRATEGY P3 fail-safe contract). */
+export async function getSpaceTasks(spaceId: string, limit = 200): Promise<SpaceTask[]> {
+  if (!spaceId) return []
+  try {
+    const { data } = await scopeBySpace(
+      db()
+        .from('crm_activities')
+        .select('id, body, due_at, completed_at, deal_id, contact_id, created_at')
+        .eq('kind', 'task'),
+      spaceId,
+    )
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    const rows = (data as Record<string, unknown>[] | null) ?? []
+    if (rows.length === 0) return []
+
+    // Resolve a short link label for each task: the deal title, else the contact's name / email.
+    const dealIds = [...new Set(rows.map((r) => r.deal_id).filter(Boolean) as string[])]
+    const contactIds = [...new Set(rows.map((r) => r.contact_id).filter(Boolean) as string[])]
+    const [dealLabels, contactLabels] = await Promise.all([
+      resolveDealLabels(dealIds, spaceId),
+      resolveContactLabels(contactIds, spaceId),
+    ])
+
+    return rows.map((r) => {
+      const dealId = (r.deal_id as string) ?? null
+      const contactId = (r.contact_id as string) ?? null
+      const linkLabel =
+        (dealId ? dealLabels.get(dealId) : null) ?? (contactId ? contactLabels.get(contactId) : null) ?? null
+      return {
+        id: r.id as string,
+        title: (r.body as string) ?? '',
+        due_at: (r.due_at as string) ?? null,
+        completed_at: (r.completed_at as string) ?? null,
+        deal_id: dealId,
+        contact_id: contactId,
+        created_at: r.created_at as string,
+        linkLabel,
+      }
+    })
+  } catch {
+    return []
+  }
+}
+
+/** Map a set of deal ids (within this Space) to their titles. Fail-safe to an empty map. The space
+ *  filter is applied BEFORE the id `in`, so the read is `.eq('space_id', …).in('id', …)`. */
+async function resolveDealLabels(ids: string[], spaceId: string): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  if (ids.length === 0) return map
+  try {
+    const { data } = await scopeBySpace(db().from('crm_deals').select('id, title'), spaceId).in('id', ids)
+    for (const d of (data as Record<string, unknown>[] | null) ?? []) {
+      map.set(d.id as string, ((d.title as string) ?? '').trim() || 'Untitled deal')
+    }
+  } catch {
+    /* fall through to the partial / empty map */
+  }
+  return map
+}
+
+/** Map a set of contact ids (within this Space) to a display label (name, else email). Fail-safe. The
+ *  space filter is applied BEFORE the id `in`, so the read is `.eq('space_id', …).in('id', …)`. */
+async function resolveContactLabels(ids: string[], spaceId: string): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  if (ids.length === 0) return map
+  try {
+    const { data } = await scopeBySpace(
+      db().from('contacts').select('id, display_name, email'),
+      spaceId,
+    ).in('id', ids)
+    for (const c of (data as Record<string, unknown>[] | null) ?? []) {
+      const label = ((c.display_name as string) ?? '').trim() || ((c.email as string) ?? '').trim()
+      if (label) map.set(c.id as string, label)
+    }
+  } catch {
+    /* fall through to the partial / empty map */
+  }
+  return map
+}
+
 // ── Presentation helpers ──────────────────────────────────────────────────────
 
 export function formatMoney(value: number, currency = 'USD'): string {
