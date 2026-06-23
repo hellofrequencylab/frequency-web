@@ -13,6 +13,7 @@
 // backfills the FK links.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { cityFromMeta } from '@/lib/crm/contact-fields'
 
 function db() {
   return createAdminClient()
@@ -28,6 +29,8 @@ export type ContactCore = {
   engagementScore: number
   profileId: string | null
   source: string | null
+  /** Stored at `meta.city` (the contacts row has no `city` column); staff-editable (ADR-379). */
+  city: string | null
   acquisition: Acquisition
   firstSeenAt: string | null
   lastSeenAt: string | null
@@ -101,6 +104,7 @@ function mapContactCore(c: Record<string, unknown>): ContactCore {
     engagementScore: Number(c.engagement_score ?? 0),
     profileId: (c.profile_id as string) ?? null,
     source: (c.source as string) ?? null,
+    city: cityFromMeta(c.meta),
     acquisition: asAcquisition(c.meta),
     firstSeenAt: (c.first_seen_at as string) ?? null,
     lastSeenAt: (c.last_seen_at as string) ?? null,
