@@ -6,6 +6,7 @@ import { DashboardTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { getDeals, countOpenTasks, computeMetrics, formatMoney, ensureSpaceStages } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -48,17 +49,25 @@ export default async function SpaceCrmBoardPage({
 
   const brandName = space.brandName ?? space.name
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const hasCrm = spaceHasEntitlement(space, 'crm')
+  // The CRM gate now runs through the single per-Space resolver: it folds the plan ENTITLEMENT (the
+  // on/off switch) and the per-Space MIN-ROLE (CRM defaults to 'admin', which reproduces the old
+  // caps.isAdmin threshold; an operator/owner can lower it via the new feature grids). Projecting
+  // spaces.entitlements onto the Space (lib/spaces/store.ts) is the corrective fix that lets the
+  // entitlement half actually read `crm:true` instead of always seeing undefined.
+  const canUseCrm = spaceFunctionAccess(space, 'crm', caps.role)
+  const hasCrm = spaceHasEntitlement(space, 'crm') // drives only the LOCKED-state reason split below
 
-  // GATE: a non-owner / non-admin viewer, or a space whose plan lacks CRM, gets the locked state.
-  if (!caps.isAdmin || !hasCrm) {
+  // GATE: a viewer whose role is too low, OR a space whose plan lacks CRM, gets the locked state.
+  if (!canUseCrm) {
     return (
       <LockedCrm
         brandName={brandName}
         slug={space.slug}
-        // Tailor the message: an admin on a plan without CRM sees an upgrade nudge; a non-admin sees a
-        // "this is for the team" note. Both are calm next steps, never a dead end.
-        reason={!caps.isAdmin ? 'not-admin' : 'no-entitlement'}
+        // Tailor the message: an admin on a plan without CRM sees an upgrade nudge; a viewer whose role
+        // is too low sees a "this is for the team" note. Both are calm next steps, never a dead end. The
+        // entitlement (hasCrm) decides which: no entitlement -> upgrade; entitlement present but role
+        // too low -> team note.
+        reason={hasCrm ? 'not-admin' : 'no-entitlement'}
       />
     )
   }

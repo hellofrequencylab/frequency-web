@@ -19,6 +19,8 @@ function makeSpace(over: Partial<Space>): Space {
     brandName: null,
     brandLogoUrl: null,
     brandAccent: null,
+    entitlements: {},
+    featureRoles: {},
     ...over,
   }
 }
