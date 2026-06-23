@@ -12,6 +12,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SpacePipeline } from '@/components/spaces/crm/space-pipeline'
+import { CrmFunnelPanel } from '@/components/spaces/crm/crm-funnel-panel'
 import { SpaceContacts } from '@/components/spaces/crm/space-contacts'
 import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail'
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
@@ -129,6 +130,12 @@ export default async function SpaceCrmBoardPage({
         <SpacePipeline spaceId={space.id} />
       </Suspense>
 
+      {/* Funnel analytics (ADR-381): a read-only conversion + engagement view. Behind its own Suspense
+          so the funnel read never blocks the pipeline / tasks / contacts above and below it. */}
+      <Suspense fallback={<FunnelSkeleton />}>
+        <CrmFunnelPanel spaceId={space.id} />
+      </Suspense>
+
       <div className="grid gap-6 @3xl:grid-cols-2">
         <Suspense fallback={<ListSkeleton />}>
           <SpaceTasks spaceId={space.id} slug={space.slug} />
@@ -239,6 +246,20 @@ function BoardSkeleton() {
           <div key={i} className="h-40 w-64 shrink-0 animate-pulse rounded-2xl bg-surface-elevated/50" />
         ))}
       </div>
+    </section>
+  )
+}
+
+function FunnelSkeleton() {
+  return (
+    <section>
+      <SectionHeader title="Funnel" />
+      <div className="mb-4 grid grid-cols-2 gap-3 @2xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
+        ))}
+      </div>
+      <div className="h-44 animate-pulse rounded-2xl bg-surface-elevated/50" />
     </section>
   )
 }
