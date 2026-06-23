@@ -134,7 +134,12 @@ export default async function ConnectionsPage({
                 href={`/connections/${c.id}`}
                 anchor={
                   c.avatarUrl ? (
-                    <Image src={c.avatarUrl} alt="" width={44} height={44} className="h-11 w-11 rounded-full object-cover" />
+                    // Private `network-contacts` bucket served via short-lived signed URLs
+                    // (/storage/v1/object/sign/…). `unoptimized` skips Next's image optimizer,
+                    // which only allowlists the PUBLIC storage path and would otherwise reject
+                    // these (broken avatars) — and re-optimize a new token every request. Matches
+                    // the plain <img> used for the card front/back/logo on the detail page.
+                    <Image src={c.avatarUrl} alt="" width={44} height={44} unoptimized className="h-11 w-11 rounded-full object-cover" />
                   ) : (
                     <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-muted">
                       {getInitials(c.displayName ?? '?')}
