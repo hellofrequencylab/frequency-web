@@ -146,6 +146,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
         items: [
           { label: 'Audit', href: '/admin/audit' },
           { label: 'Payments', href: '/admin/payments' },
+          { label: 'Pricing', href: '/admin/pricing' },
           { label: 'Roles', href: '/admin/roles' },
           { label: 'Support', href: '/admin/support' },
         ],

@@ -12,6 +12,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Plans and pricing, behind the scenes**: operators now have a Pricing console to set up
+  member and space plans, prices, and what each plan includes, all in one place. Nothing is
+  switched on for members yet, so prices and access stay exactly as they are today. This is the
+  groundwork for paid plans arriving in a later update.
+
 - **A CRM for your space**: if you run a space with a CRM, open it from Manage to see your pipeline
   and contacts in one place, with stages that fit what you do (a sales funnel for a business, a client
   journey for a practitioner, a supporter lifecycle for an organization). **Bring your contacts into

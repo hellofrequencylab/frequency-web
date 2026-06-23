@@ -1,0 +1,133 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/lib/admin/guard'
+import { setPlatformFlag } from '@/lib/platform-flags'
+import { setPricingSetting, type TierPrice } from '@/lib/pricing/settings'
+import { setFeatureGateOverride } from '@/lib/pricing/gates'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { ok, fail, type ActionResult } from '@/lib/action-result'
+
+// Operator writes for /admin/pricing (ADR-362, docs/PRICING.md). EVERYTHING SHIPS OFF: these only
+// edit operator config (prices, gates, switches); nothing charges and no Stripe call is made in P1.
+// Janitor-gated (matching the page + sections.ts entry); every flip is audited via setPlatformFlag.
+
+const PATH = '/admin/pricing'
+
+/** Set a pricing platform flag (master billing_live, per-tier/plan enable, per-role gamification).
+ *  Janitor-only; audited in platform_flag_events. */
+export async function setPricingFlag(key: string, value: boolean): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  try {
+    await setPlatformFlag(key, value, { changedBy: ctx.profileId, source: 'admin' })
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the switch.')
+  }
+}
+
+/** Save a tier/plan PRICE (monthly/annual cents, optional setup cents). The key is one of
+ *  'tier.crew' | 'tier.supporter' | 'plan.practitioner' | 'plan.business' | 'plan.organization' |
+ *  'plan.whitelabel'. Values are non-negative integer cents; null annual = monthly-only. */
+export async function savePrice(key: string, price: TierPrice): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const monthly = Math.max(0, Math.round(Number(price.monthly_cents) || 0))
+  const annual = price.annual_cents == null ? null : Math.max(0, Math.round(Number(price.annual_cents) || 0))
+  const value: TierPrice = { monthly_cents: monthly, annual_cents: annual }
+  if (price.setup_cents != null) value.setup_cents = Math.max(0, Math.round(Number(price.setup_cents) || 0))
+  try {
+    await setPricingSetting(key, value, ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the price.')
+  }
+}
+
+/** Save the take-rate (basis points per plan). */
+export async function saveTakeRate(rate: {
+  practitioner_bps: number
+  business_bps: number
+  organization_bps: number
+}): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const clamp = (n: unknown) => Math.min(10000, Math.max(0, Math.round(Number(n) || 0)))
+  try {
+    await setPricingSetting(
+      'take_rate',
+      {
+        practitioner_bps: clamp(rate.practitioner_bps),
+        business_bps: clamp(rate.business_bps),
+        organization_bps: clamp(rate.organization_bps),
+      },
+      ctx.profileId,
+    )
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the take-rate.')
+  }
+}
+
+/** Save the Vera free daily cap, trial days, and annual discount (months free). */
+export async function saveKnobs(knobs: {
+  vera_messages: number
+  trial_days: number
+  annual_months_free: number
+}): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const n = (v: unknown) => Math.max(0, Math.round(Number(v) || 0))
+  try {
+    await Promise.all([
+      setPricingSetting('vera_free_daily_cap', { messages: n(knobs.vera_messages) }, ctx.profileId),
+      setPricingSetting('trial', { days: n(knobs.trial_days) }, ctx.profileId),
+      setPricingSetting('annual_discount', { months_free: n(knobs.annual_months_free) }, ctx.profileId),
+    ])
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save.')
+  }
+}
+
+/** Save a feature-gate override (min_entitlement and/or enabled). */
+export async function saveFeatureGate(
+  feature: string,
+  patch: { minEntitlement?: string; enabled?: boolean },
+): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  try {
+    await setFeatureGateOverride(feature, patch, ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the feature gate.')
+  }
+}
+
+/** Toggle the founding-member lock on a profile by member id (display + lock in P1; honored at
+ *  checkout in P2). Sets is_founding_member; clears locked_price_id when turned off. */
+export async function setFoundingMember(profileId: string, value: boolean): Promise<ActionResult> {
+  await requireAdmin('janitor')
+  const id = profileId.trim()
+  if (!id) return fail('Enter a member id.')
+  try {
+    const db = createAdminClient()
+    const patch: Record<string, unknown> = { is_founding_member: value }
+    if (!value) patch.locked_price_id = null
+    const { error } = await (db as unknown as {
+      from: (t: string) => {
+        update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: { message?: string } | null }> }
+      }
+    })
+      .from('profiles')
+      .update(patch)
+      .eq('id', id)
+    if (error) return fail(error.message ?? 'Could not update the member.')
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not update the member.')
+  }
+}

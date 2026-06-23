@@ -208,7 +208,32 @@ ADR-201)
 `area_permissions`, `page_content` (operator-editable headers/SEO/hero/CTA,
 ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_members`,
 `email_events`, `email_suppressions`, `notification_queue` (durable outbox),
-`profile_personas` (partner hats, P3.1), `conversation_room_migration`
+`profile_personas` (partner hats, P3.1), `conversation_room_migration`,
+`pricing_settings` + `pricing_feature_gates` (pricing P1, ADR-362)
+
+> **Pricing foundation (ADR-362, [docs/PRICING.md](PRICING.md); migration
+> `20260723010000_pricing_foundation.sql`). EVERYTHING SHIPS OFF — nothing charges in P1.**
+> The entitlements + admin-config layer for the launch pricing model, built on the THREE
+> INDEPENDENT FLAGS (billing_tier · community_role · gamification_access). Additive + idempotent;
+> operator-config tables are service-role / admin-gated (RLS on, no client write policy), mirroring
+> `platform_settings` / `page_chrome_overrides`. Not yet in `lib/database.types.ts`; the readers
+> (`lib/pricing/*`) reach them untyped (ADR-246) and FAIL-SAFE to the seeded code defaults.
+> - **`profiles` additions** (the personal pricing bits — NOT a new tier column; `membership_tier`
+>   stays the `billing_tier`): `gamification_access_override text CHECK (earn_only|full)` (nullable
+>   = derive from tier — the THIRD flag's switch), `is_founding_member boolean default false`,
+>   `locked_price_id text` (founder price-lock reference, honored at checkout in P2).
+> - **`pricing_settings`** (`key text PK, value jsonb, updated_at, updated_by`): the editable VALUES
+>   (tier/plan prices in cents, take-rate bps per plan, Vera free daily cap, trial days, annual
+>   discount), seeded from the launch spec. Read via `lib/pricing/settings.ts` (`getPricingValues`,
+>   fail-safe to `PRICING_DEFAULTS`).
+> - **`pricing_feature_gates`** (`feature text PK, min_entitlement text, enabled boolean default
+>   true, updated_at, updated_by`): the §4/§5 feature→entitlement map as DATA. A row OVERRIDES the
+>   code default in `lib/pricing/gates.ts` (merged like `page_chrome_overrides`); `featureAllowed`
+>   is fail-safe to the code map.
+> - **Flags** (reuse `platform_flags`, audited in `platform_flag_events`): master `billing_live`
+>   (default **OFF** — the live gate is `billingLive()` = `billingEnabled()` env keys AND this flag,
+>   so OFF even with keys), per-tier/plan `*_enabled` (all OFF), and per-role `gamification_full_*`
+>   (member OFF, crew/supporter ON to match today's derive-from-tier default).
 
 > **CRM & marketing** tables (`contacts`, `campaigns`, `automation_rules`, `segments`,
 > `member_tags`, `member_traits`, `network_contacts`, `network_contact_notes`,
