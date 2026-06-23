@@ -2,11 +2,16 @@ import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { stripe, STRIPE_WEBHOOK_SECRET, tierForPrice } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { routeSpaceSubscription, subscriptionKind } from '@/lib/billing/space-subscriptions'
 
 // Stripe membership webhook (P2.2). Verifies the signature, then reconciles the
 // member's entitlement: a completed checkout / active subscription sets membership_tier
 // (crew/supporter); cancellation sets it back to free. Identity rides on
 // metadata.profile_id (set at checkout). Dormant until billing is configured.
+//
+// Pricing P2 (ADR-363): subscription events carrying metadata.kind = 'space_plan' /
+// 'space_membership' route to the Space reconcilers (lib/billing/space-subscriptions.ts) FIRST;
+// the member Crew/Supporter path below is untouched and only runs for non-Space subscriptions.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -54,14 +59,22 @@ export async function POST(req: Request) {
   switch (event.type) {
     case 'checkout.session.completed': {
       const s = event.data.object as Stripe.Checkout.Session
+      // Pricing P2: a Space plan/membership checkout completes — the subscription.created/updated
+      // event does the entitlement write (it carries the full subscription status), so skip the
+      // member tier path here for those kinds. The member Crew/Supporter checkout has no `kind`.
+      if (subscriptionKind(s.metadata)) break
       const profileId = s.metadata?.profile_id ?? s.client_reference_id ?? null
       const tier = s.metadata?.tier === 'supporter' ? 'supporter' : 'crew'
       const customerId = typeof s.customer === 'string' ? s.customer : s.customer?.id
       if (profileId) await setTier(profileId, tier, customerId)
       break
     }
+    case 'customer.subscription.created':
     case 'customer.subscription.updated': {
       const sub = event.data.object as Stripe.Subscription
+      // Pricing P2 (ADR-363): route Space subscriptions to their reconcilers first; if it was a
+      // Space sub, the member tier path is skipped.
+      if (await routeSpaceSubscription(sub)) break
       const profileId = sub.metadata?.profile_id
       if (profileId) {
         const active = sub.status === 'active' || sub.status === 'trialing'
@@ -72,6 +85,8 @@ export async function POST(req: Request) {
     }
     case 'customer.subscription.deleted': {
       const sub = event.data.object as Stripe.Subscription
+      // Pricing P2: a deleted Space subscription reverts the plan to free / cancels the membership.
+      if (await routeSpaceSubscription(sub)) break
       const profileId = sub.metadata?.profile_id
       if (profileId) await setTier(profileId, 'free')
       break

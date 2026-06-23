@@ -1,0 +1,226 @@
+import { describe, it, expect } from 'vitest'
+
+// Pricing P1 (ADR-362, docs/PRICING.md) — the PURE entitlement helpers (no IO). These are the
+// halves the admin console + the P2 webhook rely on; the IO readers (loadPricingSettings,
+// loadFeatureGateOverrides, featureAllowed) are fail-safe wrappers exercised at their call sites.
+// The headline invariant under test: OFF preserves current behavior (featureAllowed grants all).
+
+import {
+  SPACE_PLANS,
+  asSpacePlan,
+  planEntitlementKeys,
+  planEntitlements,
+  SPACE_PLAN_LABEL,
+} from './plans'
+import {
+  deriveGamificationAccess,
+  resolveGamificationAccess,
+  asGamificationAccess,
+} from './gamification'
+import {
+  FEATURE_GATES,
+  meetsGate,
+  mergeGate,
+  featureAllowed,
+  type FeatureGate,
+} from './gates'
+import { PRICING_DEFAULTS } from './settings'
+import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
+
+describe('space plans', () => {
+  it('narrows unknown / null labels to free (default-deny)', () => {
+    expect(asSpacePlan('business')).toBe('business')
+    expect(asSpacePlan('whitelabel')).toBe('whitelabel')
+    expect(asSpacePlan('nonsense')).toBe('free')
+    expect(asSpacePlan(null)).toBe('free')
+    expect(asSpacePlan(undefined)).toBe('free')
+  })
+
+  it('expands plan -> entitlement keys cumulatively', () => {
+    expect(planEntitlementKeys('free')).toEqual([])
+    expect(planEntitlementKeys('practitioner')).toEqual(['crm'])
+    expect(planEntitlementKeys('business')).toContain('crm')
+    expect(planEntitlementKeys('business')).toContain('email')
+    // whitelabel includes everything business + org have, plus the whitelabel key
+    expect(planEntitlementKeys('whitelabel')).toContain('whitelabel')
+    expect(planEntitlementKeys('whitelabel')).toContain('crm')
+  })
+
+  it('planEntitlements is exactly the { key: true } blob spaceHasEntitlement reads', () => {
+    expect(planEntitlements('free')).toEqual({})
+    expect(planEntitlements('practitioner')).toEqual({ crm: true })
+    const biz = planEntitlements('business')
+    expect(biz.crm).toBe(true)
+    expect(biz.email).toBe(true)
+  })
+
+  it('has a label for every plan', () => {
+    for (const p of SPACE_PLANS) expect(typeof SPACE_PLAN_LABEL[p]).toBe('string')
+  })
+})
+
+describe('gamification access (the third flag)', () => {
+  it('derives from billing tier by default: free = earn_only, paid = full', () => {
+    expect(deriveGamificationAccess('free')).toBe('earn_only')
+    expect(deriveGamificationAccess(null)).toBe('earn_only')
+    expect(deriveGamificationAccess('crew')).toBe('full')
+    expect(deriveGamificationAccess('supporter')).toBe('full')
+  })
+
+  it('asGamificationAccess only accepts the two known values', () => {
+    expect(asGamificationAccess('full')).toBe('full')
+    expect(asGamificationAccess('earn_only')).toBe('earn_only')
+    expect(asGamificationAccess('nonsense')).toBeNull()
+    expect(asGamificationAccess(null)).toBeNull()
+  })
+
+  it('override wins over the derived default (independent switch)', () => {
+    // A free member comped to full
+    expect(
+      resolveGamificationAccess({ membership_tier: 'free', gamification_access_override: 'full' }),
+    ).toBe('full')
+    // A paying member held to earn_only
+    expect(
+      resolveGamificationAccess({ membership_tier: 'crew', gamification_access_override: 'earn_only' }),
+    ).toBe('earn_only')
+  })
+
+  it('falls through to the derived tier when no override is set', () => {
+    expect(resolveGamificationAccess({ membership_tier: 'free' })).toBe('earn_only')
+    expect(resolveGamificationAccess({ membershipTier: 'crew' })).toBe('full')
+    expect(resolveGamificationAccess(null)).toBe('earn_only')
+    expect(resolveGamificationAccess({})).toBe('earn_only')
+  })
+})
+
+describe('feature gate ladder math (meetsGate)', () => {
+  const tierGate: FeatureGate = { axis: 'tier', minEntitlement: 'crew', enabled: true }
+  const planGate: FeatureGate = { axis: 'plan', minEntitlement: 'business', enabled: true }
+
+  it('tier ladder: free < crew < supporter', () => {
+    expect(meetsGate(tierGate, { tier: 'free' })).toBe(false)
+    expect(meetsGate(tierGate, { tier: 'crew' })).toBe(true)
+    expect(meetsGate(tierGate, { tier: 'supporter' })).toBe(true)
+  })
+
+  it('plan ladder: free < practitioner < business < organization < whitelabel', () => {
+    expect(meetsGate(planGate, { plan: 'practitioner' })).toBe(false)
+    expect(meetsGate(planGate, { plan: 'business' })).toBe(true)
+    expect(meetsGate(planGate, { plan: 'organization' })).toBe(true)
+    expect(meetsGate(planGate, { plan: 'whitelabel' })).toBe(true)
+  })
+
+  it('a disabled gate never blocks', () => {
+    expect(meetsGate({ ...tierGate, enabled: false }, { tier: 'free' })).toBe(true)
+  })
+
+  it('unknown / missing entitlement ranks lowest (default-deny)', () => {
+    expect(meetsGate(tierGate, {})).toBe(false)
+    expect(meetsGate(planGate, { plan: null })).toBe(false)
+  })
+})
+
+describe('mergeGate (DB override over code default, like mergeChrome)', () => {
+  it('returns the code default when there is no override', () => {
+    expect(mergeGate('space_crm', {})).toEqual(FEATURE_GATES.space_crm)
+  })
+
+  it('an override wins for min_entitlement and enabled', () => {
+    const merged = mergeGate('space_crm', { space_crm: { minEntitlement: 'business', enabled: false } })
+    expect(merged?.minEntitlement).toBe('business')
+    expect(merged?.enabled).toBe(false)
+    // axis still comes from the code default
+    expect(merged?.axis).toBe('plan')
+  })
+
+  it('builds a gate for a DB-only feature (no code default), inferring the axis from the label', () => {
+    const planFeature = mergeGate('custom_thing', { custom_thing: { minEntitlement: 'business' } })
+    expect(planFeature?.axis).toBe('plan')
+    const tierFeature = mergeGate('custom_perk', { custom_perk: { minEntitlement: 'crew' } })
+    expect(tierFeature?.axis).toBe('tier')
+  })
+
+  it('returns null for a feature with neither a code default nor a row', () => {
+    expect(mergeGate('does_not_exist', {})).toBeNull()
+  })
+})
+
+describe('featureAllowed — OFF preserves current behavior', () => {
+  it('grants EVERYTHING when billing is not live (the OFF invariant)', async () => {
+    // Even a free account on a gated feature is allowed while billing is OFF.
+    expect(await featureAllowed('space_crm', { tier: 'free', plan: 'free' }, { billingLive: false })).toBe(true)
+    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { billingLive: false })).toBe(true)
+    expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { billingLive: false })).toBe(true)
+  })
+
+  it('an unknown feature is ungated (default-allow for an undeclared key)', async () => {
+    expect(await featureAllowed('never_declared', { tier: 'free' }, { billingLive: true })).toBe(true)
+  })
+
+  // The exact gate wired into the Vault cash-in server action (app/(main)/crew/store/actions.ts, P3):
+  // OFF must preserve today's behavior (free can still be checked by canCashIn above, the gate is a
+  // no-op); when billing is live the gate applies the crew minimum (free blocked, paid allowed).
+  it('vault_cash_in: OFF is a no-op (free allowed); ON blocks free, allows crew+', async () => {
+    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { billingLive: false })).toBe(true)
+    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { billingLive: true })).toBe(false)
+    expect(await featureAllowed('vault_cash_in', { tier: 'crew' }, { billingLive: true })).toBe(true)
+    expect(await featureAllowed('vault_cash_in', { tier: 'supporter' }, { billingLive: true })).toBe(true)
+  })
+})
+
+describe('seeded defaults are sane (mirror the migration)', () => {
+  it('crew is cheaper than supporter; annual saves vs 12x monthly', () => {
+    expect(PRICING_DEFAULTS.tier.crew.monthly_cents).toBeLessThan(PRICING_DEFAULTS.tier.supporter.monthly_cents)
+    const crew = PRICING_DEFAULTS.tier.crew
+    expect(crew.annual_cents).not.toBeNull()
+    expect(crew.annual_cents!).toBeLessThan(crew.monthly_cents * 12)
+  })
+
+  it('take-rate decreases up the ladder (practitioner > business > org)', () => {
+    const t = PRICING_DEFAULTS.take_rate
+    expect(t.practitioner_bps).toBeGreaterThan(t.business_bps)
+    expect(t.business_bps).toBeGreaterThan(t.organization_bps)
+  })
+
+  it('vera free cap is the spec value (10/day)', () => {
+    expect(PRICING_DEFAULTS.vera_free_daily_cap.messages).toBe(10)
+  })
+})
+
+describe('pricing display (P3 — what the upgrade/plan surfaces render)', () => {
+  it('formats cents: whole dollars drop the cents, fractional keep two', () => {
+    expect(formatCents(900)).toBe('$9')
+    expect(formatCents(39000)).toBe('$390')
+    expect(formatCents(950)).toBe('$9.50')
+    expect(formatCents(200000)).toBe('$2,000')
+  })
+
+  it('priceRow carries labels + the raw cents (monthly/annual/setup)', () => {
+    const row = priceRow('whitelabel', 'White-label', PRICING_DEFAULTS.plan.whitelabel)
+    expect(row.key).toBe('whitelabel')
+    expect(row.label).toBe('White-label')
+    expect(row.monthly).toBe('$299')
+    expect(row.annual).toBeNull() // monthly-only
+    expect(row.setup).toBe('$2,000')
+    expect(row.monthlyCents).toBe(29900)
+    expect(row.setupCents).toBe(200000)
+  })
+
+  it('memberTierRows lists Crew then Supporter from the operator values', () => {
+    const rows = memberTierRows(PRICING_DEFAULTS)
+    expect(rows.map((r) => r.key)).toEqual(['crew', 'supporter'])
+    expect(rows[0].monthly).toBe('$9')
+    expect(rows[0].annual).toBe('$90')
+    expect(rows[1].monthly).toBe('$24')
+  })
+
+  it('spacePlanRows lists the paid ladder practitioner -> whitelabel (not free)', () => {
+    const rows = spacePlanRows(PRICING_DEFAULTS)
+    expect(rows.map((r) => r.key)).toEqual(['practitioner', 'business', 'organization', 'whitelabel'])
+    expect(rows[0].label).toBe('Practitioner')
+    // organization is monthly-only
+    expect(rows.find((r) => r.key === 'organization')?.annual).toBeNull()
+    // practitioner/business have an annual line
+    expect(rows.find((r) => r.key === 'practitioner')?.annual).toBe('$390')
+  })
+})
