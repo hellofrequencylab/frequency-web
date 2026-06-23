@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { phaseUnlockAt, isPhaseUnlocked, unlockedPhaseCount, nextPhaseUnlockAt } from './schedule'
+import { phaseUnlockAt, isPhaseUnlocked, unlockedPhaseCount } from './schedule'
 
 const start = new Date('2026-01-01T00:00:00Z')
 const day = (n: number) => new Date(start.getTime() + n * 86_400_000)
@@ -26,12 +26,5 @@ describe('journey phase drip schedule (ADR-252)', () => {
 
   it('interval 0 means everything is open (no drip)', () => {
     expect(unlockedPhaseCount(start, 0, 4, start)).toBe(4)
-    expect(nextPhaseUnlockAt(start, 0, 4, start)).toBeNull()
-  })
-
-  it('nextPhaseUnlockAt points at the next locked phase, null when all open', () => {
-    expect(nextPhaseUnlockAt(start, 7, 5, start)?.getTime()).toBe(day(7).getTime()) // next is phase 2 at day 7
-    expect(nextPhaseUnlockAt(start, 7, 5, day(7))?.getTime()).toBe(day(14).getTime())
-    expect(nextPhaseUnlockAt(start, 7, 5, day(30))).toBeNull() // all unlocked
   })
 })

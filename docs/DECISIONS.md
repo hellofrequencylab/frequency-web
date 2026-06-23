@@ -1105,7 +1105,11 @@ and left-bar **categories**:
   pull/testimonial; FeatureGrid: icon/image/number). The content-named `Pillars` → generic
   **Showcase**; `BetaCTA` → **CallToAction**.
 - **Content re-map** (`lib/page-editor/templates/*`): the-lab / how-it-works / about rebuilt as Puck
-  `Data` from the standard blocks. The `/edit` route seeds from these when a stored draft is empty
+  `Data` from the standard blocks. _(Update 2026-06-23: the `how-it-works` and `about` starter
+  templates were removed in a dead-code sweep — those slugs are not in `EDITABLE_PAGES` (only
+  `the-lab`/`the-community`/`the-quest`/`pricing` are editable), so their templates were never
+  reachable; the live `/how-it-works` and `/about` pages are static and unaffected.)_ The `/edit`
+  route seeds from these when a stored draft is empty
   **or predates the new blocks** (`isRenderable` check) — a load-time default only; nothing is
   written to the DB until Publish, so old drafts using retired keys can't crash the editor.
 **Consequences:** The editor and the public `<Render>` share one standardized, on-brand kit; the
@@ -6149,7 +6153,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 - **Sub-nav** is now a STABLE switcher of Home / Programs / Operations / Growth (active = `domainForPath`), with an `Admin › {Domain} › {Page}` breadcrumb underneath — it no longer reshuffles per page.
 - **Home** keeps the platform KPI cards + role panels but its launchpad is now the three prominent domain cards (one-line blurb + area count) as the primary jump-off.
 - **Left rail** collapses its admin entries to a single `Admin` section: Home + Programs + Operations + Growth (the scattered Studio/Platform admin sublinks retired from the rail; their pages stay reachable via the dashboards). The partner-business Studio surfaces (CRM, Website, Growth Studio, QR Studio, Settings) stay.
-**Consequences:** Operators get a calm, stable top bar and three real dashboards. Reversible by editing `sections.ts`; URLs and per-link gates are untouched. Routes referenced as area cards that don't yet exist would be dead links, but all referenced `/admin/*` and external routes (`/admin/content/*`, `/programs`, `/pages/splash`, `/crm`, `/connections`, `/marketing`, `/entry-points`) are present. Some surfaces outside the prompt's lists were slotted to keep them un-orphaned: Store/Rewards → Programs; Personas/Audit/Payments → Operations; AI Studio/AI read → Growth.
+**Consequences:** Operators get a calm, stable top bar and three real dashboards. Reversible by editing `sections.ts`; URLs and per-link gates are untouched. Routes referenced as area cards that don't yet exist would be dead links, but all referenced `/admin/*` and external routes (`/admin/content/*`, `/programs`, `/pages/splash`, `/crm`, `/connections`, `/marketing`, `/entry-points`) are present. Some surfaces outside the prompt's lists were slotted to keep them un-orphaned: Store/Rewards → Programs; Personas/Audit/Payments → Operations; AI Studio/AI read → Growth. _Update (2026-06-23, dead-code sweep): `components/admin/admin-launchpad.tsx` and `components/admin/admin-area-grid.tsx` (`AdminAreaGrid`/`AdminAreaSections`) have since been removed; the dashboards were superseded by the later mega-nav work (ADR-352+) and no longer render these helpers._
 
 ## ADR-214: Admin reorg Phase 3 — consolidate CRM + Marketing under /admin, redirect /growth
 
@@ -6736,7 +6740,7 @@ So the column drop is a **live-currency + member-UI refactor across ~10 files**,
 
 ## ADR-267: Finish the admin consolidation — Content home stripped to a navigation hub
 
-**Status:** Accepted (2026-06-15) — the finishing cleanup pass of the admin consolidation arc. Code is the source of truth: [`app/(main)/admin/content/page.tsx`](<../app/(main)/admin/content/page.tsx>).
+**Status:** Accepted (2026-06-15) — the finishing cleanup pass of the admin consolidation arc. _Update (2026-06-23): the standalone `/admin/content` home page and its reader (`lib/admin/content-home.ts`, `getContentHomeData`) have since been removed in a later refactor; `/admin/content` now resolves straight to its working sub-pages (`seasons`, `journeys`, `practices`, `challenges`, `tips`, `training`). Code remains the source of truth._
 
 **Context:** The content suite home (`/admin/content`) had grown into a mess: it duplicated the ranked-curation tables (top member Journeys/Practices, each with inline feature/official toggles) that already live on the dedicated sub-pages (`/admin/content/journeys`, `/admin/content/practices`), on top of its stats and nav doors. The owner asked to finish the admin cleanup and strip the content page to its primary functions.
 
@@ -7739,7 +7743,7 @@ Anti-cheat ships all three D5 layers: a per-member rate limit on the log/un-log 
 - **Network sub-tabs removed (8).** The in-page Community / My Contacts tab switcher is deleted; each surface keeps its own left-rail item, and Connections is relabeled "My Contacts" under Community.
 - **Focus ring opt-outs (bug).** Two unlayered, higher-specificity rules in `globals.css` remove the global `:focus-visible` ring from the composer textarea (`[data-tour-anchor="composer"] textarea`) and the header wordmark (`.brandmark-link`); the ring stays everywhere else for keyboard a11y.
 
-**Consequences.** The chrome model is simpler and matches the owner's mental model: one rail, present everywhere except admin and true takeovers, with the settings drawer as a rail-width overlay rather than a page-reflowing panel. Space management is a role-gated left-rail item (admin/janitor only) instead of a header surface, and previewing a Space is concrete (one specific Space, read-only) rather than a representative-of-type abstraction. The practice loop now respects the member's clock, fixing the "buttons reset at 4pm" report, with the day still server-resolved so it cannot be spoofed to backdate a log. This supersedes ADR-347's rail-hiding / widen / left-collapse reactions (the drawer's confine-to-rail design replaces them) and ADR-348's header launcher (the admin "Spaces" item replaces it); `manage-mega-menu.tsx` is left on disk, unmounted and removable.
+**Consequences.** The chrome model is simpler and matches the owner's mental model: one rail, present everywhere except admin and true takeovers, with the settings drawer as a rail-width overlay rather than a page-reflowing panel. Space management is a role-gated left-rail item (admin/janitor only) instead of a header surface, and previewing a Space is concrete (one specific Space, read-only) rather than a representative-of-type abstraction. The practice loop now respects the member's clock, fixing the "buttons reset at 4pm" report, with the day still server-resolved so it cannot be spoofed to backdate a log. This supersedes ADR-347's rail-hiding / widen / left-collapse reactions (the drawer's confine-to-rail design replaces them) and ADR-348's header launcher (the admin "Spaces" item replaces it). _Update (2026-06-23, dead-code sweep): `components/layout/manage-mega-menu.tsx` has now been deleted (it was unmounted and orphaned). Its `getManagedSpaces` Server Action wrapper (`lib/spaces/managed-actions.ts`) is retained as a stable seam._
 
 ## ADR-351: The settings drawer is a RESIZABLE push column — it slides over the rail, and its grab handle compresses the center content (refines ADR-350)
 

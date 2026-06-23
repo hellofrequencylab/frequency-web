@@ -7,7 +7,6 @@
 // REQUIRED leaf under it is done; the journey is complete when every phase is. A leaf is "done"
 // when its id is in `completedIds` (lesson check-offs and practice check-offs are unified).
 
-export type ContainerType = 'phase' | 'module'
 export type LeafType =
   | 'lesson' | 'video' | 'reading' | 'exercise' | 'reflection' | 'check' | 'resource' | 'practice'
 
