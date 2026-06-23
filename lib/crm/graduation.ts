@@ -17,6 +17,7 @@ import { revalidatePath } from 'next/cache'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listContacts } from '@/lib/connections/store'
 import { syncContactToSpaceCrm } from '@/lib/connections/crm-sync'
@@ -69,11 +70,15 @@ export async function importContactsToSpace(
   const space = await getSpaceById(spaceId)
   if (!space) return fail('We could not find that space.')
 
-  // Gate: the Space's plan must grant CRM, AND the caller must be an editor+ of the Space. The import
-  // is an OWNER action, so we require canEditProfile (the owner / admin / editor write authority).
-  if (!spaceHasEntitlement(space, 'crm')) return fail('This space does not have a CRM yet.')
+  // Gate (defense in depth, mirrors the CRM board page): the per-Space resolver folds the plan
+  // ENTITLEMENT and the CRM MIN-ROLE (default 'admin') into one decision. We keep the entitlement read
+  // to split the error message. The viewer's space role comes from caps.role (owner reports 'admin').
   const caps = await getSpaceCapabilities(space, me)
-  if (!caps.canEditProfile) return fail('Only this space’s team can bring contacts in.')
+  if (!spaceFunctionAccess(space, 'crm', caps.role)) {
+    return spaceHasEntitlement(space, 'crm')
+      ? fail('Only this space’s team can bring contacts in.')
+      : fail('This space does not have a CRM yet.')
+  }
 
   // Make sure the Space has its per-segment starting pipeline before we seed deals into it.
   await ensureSpaceStages(spaceId, space.type)

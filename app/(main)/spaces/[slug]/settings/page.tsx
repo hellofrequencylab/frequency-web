@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, CreditCard, DoorOpen, GraduationCap, HeartHandshake, Mail, QrCode, Ticket, Users } from 'lucide-react'
+import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, CreditCard, DoorOpen, GraduationCap, HeartHandshake, Mail, QrCode, SlidersHorizontal, Ticket, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
@@ -132,6 +132,15 @@ export default async function SpaceSettingsPage({
       />
 
       <div className="mt-4 space-y-3">
+        {/* Features and access — the cross-cutting control: turn the tools this space uses on or off, and
+            set who on the team can use each one. Owner / admin can edit; an editor sees it read-only. */}
+        <HubCard
+          href={`/spaces/${space.slug}/settings/features`}
+          icon={SlidersHorizontal}
+          title="Features and access"
+          description="Turn the tools this space uses on or off, and set who can use each one."
+        />
+
         {/* Plan and billing — the space's plan ladder (Free -> Practitioner -> Business ->
             Organization -> White-label). Available for every space type. The picker is gated; while
             billing is OFF it shows the ladder with the current plan and disabled CTAs. */}

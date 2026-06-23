@@ -182,6 +182,12 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/people', label: 'People', area: 'Member' },
   { route: '/spaces', label: 'Spaces (directory)', area: 'Member' },
   { route: '/spaces/_/crm', label: 'Space CRM board', area: 'Focus surfaces' },
+  // The owner "Features and access" sub-page (per-space-roles Phase 1): a centered Focus surface that
+  // composes <FocusTemplate>. Per the owner directive (2026-06-20) every /spaces/<slug>/settings* route
+  // keeps the GLOBAL community rail beside its centered body, so it falls through to 'global' in railFor
+  // like its sibling settings sub-pages (CRM notes, availability, memberships); this catalog entry makes
+  // the route an explicitly managed surface an operator can reframe.
+  { route: '/spaces/_/settings/features', label: 'Space features and access', area: 'Focus surfaces' },
   { route: '/practices', label: 'Practices', area: 'Member' },
   { route: '/practices/new', label: 'Practice builder', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },
