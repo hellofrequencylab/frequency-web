@@ -182,23 +182,51 @@ export function MovementSession({
   // --- setup state ----------------------------------------------------------
   const initialId =
     defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
+
+  // The resume point for a practice, in { bankedSec, targetSec }. The SELECTED practice's
+  // `partialToday` is now the PRIMARY source (so a Zap-menu / chooser / auto-select all resume),
+  // recomputed when the selected practice changes. The explicit resumeFromSec/secondsTarget
+  // open-args remain a fallback for the initial practice (the "Finish Practice" button). Returns
+  // null unless there's real remaining time, so anything malformed is a fresh sit.
+  function resolveResume(id: string): { bankedSec: number; targetSec: number } | null {
+    const partial = practices.find((p) => p.id === id)?.partialToday
+    if (partial && partial.targetSec > 0 && partial.targetSec - partial.bankedSec > 0) {
+      return { bankedSec: Math.round(partial.bankedSec), targetSec: Math.round(partial.targetSec) }
+    }
+    if (
+      id === initialId &&
+      resumeFromSec > 0 &&
+      typeof secondsTarget === 'number' &&
+      secondsTarget > 0 &&
+      secondsTarget - resumeFromSec > 0
+    ) {
+      return { bankedSec: Math.round(resumeFromSec), targetSec: Math.round(secondsTarget) }
+    }
+    return null
+  }
+  const initialResume = resolveResume(initialId)
+
   const [practiceId, setPracticeId] = useState(initialId)
   const [mode, setMode] = useState<MovementMode>(defaultMode ?? 'walk')
-  // The practice chooser sheet (C.2): with more than one adopted practice the primary
-  // button reads "Select a practice" and opens this; picking one logs against it and
-  // starts the movement on the configured mode. With one/zero practices it auto-selects,
-  // so the button starts directly and the chooser never shows. Mirrors the Mindless sit.
+  // The practice chooser sheet (C.2): with more than one adopted practice a "Change" affordance
+  // re-opens this; picking SELECTS the practice and returns to setup (it no longer auto-starts).
+  // With one/zero practices it auto-selects, so the chooser never shows. Mirrors the Mindless sit.
   const [showChooser, setShowChooser] = useState(false)
+  // The per-mode duration default, overridden to the resumed practice's TARGET length so the plan
+  // total matches and the live screen runs exactly the remaining time. A fresh sit uses the preset.
+  const resumeMin = initialResume ? Math.max(1, Math.round(initialResume.targetSec / 60)) : 0
   // Walk
-  const [walkMinutes, setWalkMinutes] = useState(20)
+  const [walkMinutes, setWalkMinutes] = useState(defaultMode === 'walk' && resumeMin ? resumeMin : 20)
   const [walkIntervalMin, setWalkIntervalMin] = useState(0)
   // Run
-  const [runMinutes, setRunMinutes] = useState(20)
+  const [runMinutes, setRunMinutes] = useState(defaultMode === 'run' && resumeMin ? resumeMin : 20)
   const [runIntervalMin, setRunIntervalMin] = useState(0)
   // Yoga
   const [yogaKind, setYogaKind] = useState<YogaPresetKind>('vinyasa')
   // Stretch
-  const [stretchMinutes, setStretchMinutes] = useState(10)
+  const [stretchMinutes, setStretchMinutes] = useState(
+    defaultMode === 'stretch' && resumeMin ? resumeMin : 10,
+  )
   const [stretchIntervalMin, setStretchIntervalMin] = useState(0)
   // Strength (a preset, plus tunable steppers that override it)
   const [strengthKind, setStrengthKind] = useState<StrengthPresetKind>('tabata')
@@ -243,11 +271,12 @@ export function MovementSession({
 
   const plan = useMemo<MovementPlan>(() => buildPlan(config), [config])
 
-  // The banked-seconds + target the live math reads. They default to the props (a fresh open, or a
-  // "Finish Practice" resume), but a CRASH-RECOVERY resume overrides them from the saved record so a
-  // restored top-up still banks the earlier partial (see resumeFromRecord below).
-  const [bankedSec, setBankedSec] = useState(resumeFromSec)
-  const [targetSec, setTargetSec] = useState<number | undefined>(secondsTarget)
+  // The banked-seconds + target the live math reads. They seed from the SELECTED practice's resume
+  // (its partial today, or the "Finish Practice" open-args), are re-seeded when the pick changes
+  // (selectPractice), and a CRASH-RECOVERY resume overrides them from the saved record so a restored
+  // top-up still banks the earlier partial (see resumeFromRecord below).
+  const [bankedSec, setBankedSec] = useState(initialResume?.bankedSec ?? 0)
+  const [targetSec, setTargetSec] = useState<number | undefined>(initialResume?.targetSec)
 
   // "Finish Practice" resume: the seconds already banked from an earlier partial sit.
   // The live screen reads the plan from this offset (so the member picks up where the
@@ -269,6 +298,17 @@ export function MovementSession({
     return totalSeconds(plan)
   }, [bankedSec, targetSec, plan])
 
+  // Whether THIS session is a resume (the selected practice has a partial today, or the open-args
+  // did). Drives the setup's "Continue Practice" label + the remaining-time cue. The live math
+  // already resumes off bankedSec; this is the render flag for the SELECTED practice.
+  const activeResume = resolveResume(practiceId)
+  // The remaining time of a resume, in seconds: target minus what's already banked. The plan total
+  // is seeded to the target (seedFromPractice), so the live screen runs exactly this.
+  const remainingSec = activeResume
+    ? Math.max(0, activeResume.targetSec - activeResume.bankedSec)
+    : 0
+  const remainingMin = remainingSec > 0 ? Math.max(1, Math.round(remainingSec / 60)) : 0
+
   // Seed the Strength steppers from the chosen preset (so picking Tabata fills
   // 20/10/8, then the member can tune from there).
   function pickStrength(kind: StrengthPresetKind) {
@@ -277,6 +317,39 @@ export function MovementSession({
     setWorkSec(preset.workSec)
     setRestSec(preset.restSec)
     setRounds(preset.rounds)
+  }
+
+  // Select a practice from the chooser (C.2): seed the mode + tuning from its movement_config, arm
+  // the resume (its partial today), and return to the setup. It no longer auto-starts — the member
+  // taps the primary button ("Start Practice", or "Continue Practice" for a partial) to begin.
+  //
+  // For a partial, the duration-based modes (Walk / Run / Stretch) are seeded to the TARGET length
+  // so the plan total matches and the live screen runs only the remaining time. Strength / Yoga /
+  // Play carry their length in the config itself, so the practice's authored config is applied as-is.
+  function selectPractice(id: string) {
+    const picked = practices.find((p) => p.id === id)
+    setPracticeId(id)
+    const resume = resolveResume(id)
+    setBankedSec(resume?.bankedSec ?? 0)
+    setTargetSec(resume?.targetSec)
+    const targetMin = resume ? Math.max(1, Math.round(resume.targetSec / 60)) : 0
+    // The mode the picked practice opens on (its authored movement_config), else the current mode.
+    const storedMode = picked?.movementConfig?.mode as string | undefined
+    const nextMode: MovementMode = storedMode
+      ? storedMode === 'workout'
+        ? 'strength'
+        : (storedMode as MovementMode)
+      : mode
+    setMode(nextMode)
+    // Apply the practice's authored tuning so the plan matches what the member adopted.
+    if (picked?.movementConfig) applyMovementConfig(picked.movementConfig)
+    // For a resume, override the duration-based length to the TARGET so the plan ends at the target
+    // and the remaining time is exactly target - banked.
+    if (targetMin > 0) {
+      if (nextMode === 'walk') setWalkMinutes(targetMin)
+      else if (nextMode === 'run') setRunMinutes(targetMin)
+      else if (nextMode === 'stretch') setStretchMinutes(targetMin)
+    }
   }
 
   // --- live state -----------------------------------------------------------
@@ -523,14 +596,12 @@ export function MovementSession({
     void acquireQuiet()
   }
 
-  // The chooser pick (C.2): select the practice this session logs against, close
-  // the sheet, and start the movement on the configured mode. The practiceId state
-  // settles long before finish() reads it (a workout runs for minutes), so no
-  // same-tick override is needed.
+  // The chooser pick (C.2): SELECT the practice (seed its mode + tuning + resume) and return to
+  // the setup. It no longer auto-starts — the member taps the primary button ("Start Practice", or
+  // "Continue Practice" for a partial) to begin. selectPractice does the seeding; close the sheet.
   function chooseAndStart(id: string) {
-    setPracticeId(id)
+    selectPractice(id)
     setShowChooser(false)
-    void start()
   }
 
   function togglePause() {
@@ -612,7 +683,7 @@ export function MovementSession({
       <Overlay>
         <CenterScreen>
           <MovementArt className="block h-10" />
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-success">Pick up where you left off</p>
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-move">Pick up where you left off</p>
           <p className="max-w-xs text-center text-sm text-muted">
             Your {modeLabel} is still going, {fmt(elapsedSec)} in. Resume and the clock carries on.
           </p>
@@ -620,7 +691,7 @@ export function MovementSession({
             <button
               type="button"
               onClick={() => resumeFromRecord(resumePrompt)}
-              className="w-full rounded-full bg-success px-6 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-success/90"
+              className="w-full rounded-full bg-move px-6 py-3 text-sm font-bold text-on-move transition-colors hover:bg-move-hover"
             >
               Resume
             </button>
@@ -706,7 +777,7 @@ export function MovementSession({
         {/* The clock block centers vertically; the action bar docks at the bottom and
             stays visible (LAYOUT directive). */}
         <div className="flex flex-1 flex-col items-center justify-center gap-4 pt-[max(3rem,env(safe-area-inset-top))]">
-          <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-success [animation-duration:3s]">
+          <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-move [animation-duration:3s]">
             <MovementArt className="block h-5" /> Movement
           </p>
 
@@ -782,7 +853,7 @@ export function MovementSession({
           // Standalone fallback (no door): the engine's own masthead, unchanged.
           <>
             <div className="relative flex items-center justify-center pb-2">
-              <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-success">
+              <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-move">
                 <MovementArt className="block h-6" /> Movement
               </p>
               <button
@@ -974,12 +1045,30 @@ export function MovementSession({
           {totalSeconds(plan) !== null && <span className="tabular-nums"> · {fmt(totalSeconds(plan)!)}</span>}
         </p>
 
-        {/* Practice read-out (which log this banks). With several practices the chooser
-            below drives the choice, so this is a quiet read-out of the current pick
-            (matching the Mindless sit). One/zero practices auto-select, so nothing renders. */}
+        {/* Resume cue: when the selected practice has a partial today this session picks up where it
+            stopped. The plan is seeded to the target, so it ends at the target and runs only the
+            remaining time. Surfaced so the setup makes the resume clear (it is no longer the full walk). */}
+        {activeResume && remainingMin > 0 && (
+          <p className="text-center text-xs font-semibold text-move">
+            Continue Practice, {remainingMin} min left.
+          </p>
+        )}
+
+        {/* Practice read-out (which log this banks). The chooser SELECTS a practice (it no longer
+            auto-starts), so with several practices this read-out doubles as the "Change" affordance
+            that re-opens the sheet. One/zero practices auto-select, so nothing renders. */}
         {practices.length > 1 && practice && (
           <div>
-            <Label>Logs as</Label>
+            <div className="flex items-center justify-between">
+              <Label>Logs as</Label>
+              <button
+                type="button"
+                onClick={() => setShowChooser(true)}
+                className="rounded-full px-2 py-0.5 text-2xs font-semibold uppercase tracking-wider text-move transition-colors hover:bg-move-bg/40"
+              >
+                Change
+              </button>
+            </div>
             <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold text-text">
               <span className="truncate">{practice.title}</span>
               {practice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
@@ -989,32 +1078,26 @@ export function MovementSession({
 
         </div>
 
-        {/* Docked Start bar — always visible, even as the setup body scrolls. With several
-            practices the primary action reads "Select a practice" (matching Mindless, C.2)
-            and opens the chooser; picking one logs against it and starts. One/zero practices
-            auto-select, so it starts directly. */}
+        {/* Docked Start bar — always visible, even as the setup body scrolls. A practice is always
+            SELECTED (the chooser now selects, not starts), so the button STARTS it. Label:
+            "Continue Practice" when the selected practice has a partial today (it resumes the
+            remaining time), else "Start Practice". The chooser is re-opened from the "Change"
+            affordance above when there is more than one practice. */}
         <div className="sticky bottom-0 -mx-6 bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6">
           {practicedToday >= 3 && (
             <p className="pb-1.5 text-center text-2xs text-subtle">{practicedToday} members practiced today.</p>
           )}
-          {practices.length > 1 ? (
-            <button
-              type="button"
-              onClick={() => setShowChooser(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-move px-4 py-3.5 text-sm font-bold text-on-move transition-colors hover:bg-move-hover lg:mx-auto lg:max-w-sm"
-            >
-              <OnAirIcon className="h-4 w-4" /> Select a practice
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void start()}
-              disabled={!practiceId}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-move px-4 py-3.5 text-sm font-bold text-on-move transition-colors hover:bg-move-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
-            >
-              <OnAirIcon className="h-4 w-4" /> Start moving
-            </button>
-          )}
+          {/* A practice is always selected, so this STARTS it (teal `move` accent — Get Moving's
+              color). "Continue Practice" when the selected practice has a partial today (it resumes
+              the remaining time), else "Start Practice". Re-pick via the "Change" affordance above. */}
+          <button
+            type="button"
+            onClick={() => void start()}
+            disabled={!practiceId}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-move px-4 py-3.5 text-sm font-bold text-on-move transition-colors hover:bg-move-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
+          >
+            <OnAirIcon className="h-4 w-4" /> {activeResume ? 'Continue Practice' : 'Start Practice'}
+          </button>
         </div>
       </div>
       {showChooser && (
