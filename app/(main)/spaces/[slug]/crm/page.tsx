@@ -13,6 +13,8 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SpacePipeline } from '@/components/spaces/crm/space-pipeline'
 import { SpaceContacts } from '@/components/spaces/crm/space-contacts'
+import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail'
+import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
 
 // PER-SPACE CRM BOARD (CRM-STRATEGY §6/§7, ADR-361 P3). The paid, full-width Dashboard a Space runs:
@@ -35,10 +37,14 @@ export const metadata = {
 
 export default async function SpaceCrmBoardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ contact?: string | string[] }>
 }) {
   const { slug } = await params
+  const { contact } = await searchParams
+  const selectedContactId = Array.isArray(contact) ? (contact[0] ?? null) : (contact ?? null)
 
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -78,11 +84,37 @@ export default async function SpaceCrmBoardPage({
   // render the board. ensureSpaceStages is idempotent + fail-safe (a no-op once seeded / customized).
   await ensureSpaceStages(space.id, space.type)
 
+  const boardHref = `/spaces/${space.slug}/crm`
+
+  // CONTACT DETAIL MODE: when a contact is selected (?contact=<id>) the board hands the full surface to
+  // the on-board detail (identity + fields + timeline + deals + note composer). The detail read is
+  // owner-gated + space-scoped inside getSpaceContactDetail, so a wrong-space / non-editor id shows the
+  // calm "pick a contact" prompt rather than another Space's data.
+  if (selectedContactId) {
+    return (
+      <DashboardTemplate
+        eyebrow={brandName}
+        title="Contact"
+        description="One person in your space CRM: their details, history, deals, and your private notes."
+        back={{ href: boardHref, label: 'CRM board' }}
+        width="default"
+      >
+        <Suspense fallback={<ListSkeleton />}>
+          <SpaceContactDetail
+            spaceId={space.id}
+            contactId={selectedContactId}
+            backHref={boardHref}
+          />
+        </Suspense>
+      </DashboardTemplate>
+    )
+  }
+
   return (
     <DashboardTemplate
       eyebrow={brandName}
       title="CRM"
-      description="Your space's pipeline and contacts. Bring people in from My Contacts and track each one through your stages."
+      description="Your space's pipeline, tasks, and contacts. Bring people in from My Contacts and track each one through your stages."
       back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
       stats={
         <Suspense fallback={<StatsSkeleton />}>
@@ -97,11 +129,21 @@ export default async function SpaceCrmBoardPage({
         <SpacePipeline spaceId={space.id} />
       </Suspense>
 
-      <Suspense fallback={<ListSkeleton />}>
-        {/* The board has no inline notes panel: each row links to the /settings/crm notes surface
-            where notes can be read/added, so there is no on-board selection to highlight. */}
-        <SpaceContacts spaceId={space.id} slug={space.slug} selectedContactId={null} />
-      </Suspense>
+      <div className="grid gap-6 @3xl:grid-cols-2">
+        <Suspense fallback={<ListSkeleton />}>
+          <SpaceTasks spaceId={space.id} slug={space.slug} />
+        </Suspense>
+
+        <Suspense fallback={<ListSkeleton />}>
+          {/* Each contact row opens the on-board detail (?contact=<id> on this board). */}
+          <SpaceContacts
+            spaceId={space.id}
+            slug={space.slug}
+            selectedContactId={null}
+            linkBase={boardHref}
+          />
+        </Suspense>
+      </div>
     </DashboardTemplate>
   )
 }
