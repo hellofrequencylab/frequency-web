@@ -187,6 +187,29 @@ function captureTouch(src: ContactSource): {
   }
 }
 
+/** The owner's existing contact keys for dedupe on import (ADR-374): lowercased emails and last-10-
+ *  digit phone keys. Owner-scoped read; fail-safe to empty sets so an import never crashes on a read
+ *  error (it would just create duplicates the member can prune, never lose data). */
+export async function existingContactKeys(
+  ownerId: string,
+): Promise<{ emails: Set<string>; phones: Set<string> }> {
+  const emails = new Set<string>()
+  const phones = new Set<string>()
+  try {
+    const { data } = await db().from('network_contacts').select('email, phone').eq('owner_id', ownerId)
+    for (const r of (data ?? []) as { email: string | null; phone: string | null }[]) {
+      if (r.email) emails.add(r.email.toLowerCase())
+      if (r.phone) {
+        const digits = r.phone.replace(/\D+/g, '')
+        if (digits) phones.add(digits.length > 10 ? digits.slice(-10) : digits)
+      }
+    }
+  } catch {
+    /* read failure → empty index (import proceeds, may create dupes but never loses data) */
+  }
+  return { emails, phones }
+}
+
 export interface UpdateContactPatch {
   displayName?: string | null
   email?: string | null

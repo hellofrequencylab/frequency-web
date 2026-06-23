@@ -114,7 +114,7 @@ the consolidation lever: we extend, we do not invent.
 | Goal | One contact home with a real timeline, free for every member. |
 | What we build | Unified contact detail + timeline UI; Gmail / phone import + dedupe. |
 | Reuses | ✅ Manual / QR / OCR capture already ship ([NETWORK-CRM.md](NETWORK-CRM.md)) · ✅ the keep-in-touch layer (reminders, last-contacted, "reach out today") ([CRM-STRATEGY.md](CRM-STRATEGY.md) P1). |
-| Net-new | The Gmail / phone importer + dedupe, the timeline view over the Phase 0 spine. |
+| Net-new | The Gmail / phone importer + dedupe, the timeline view over the Phase 0 spine. ✅ **Google contacts import shipped** ([ADR-374](DECISIONS.md)): one-shot OAuth (no stored token), People API pull, email/phone dedupe, "Imported" timeline stamp; free for every member, lit by the `GOOGLE_OAUTH_*` env. |
 
 ### Phase 2, Viral loop
 
