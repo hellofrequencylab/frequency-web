@@ -15,7 +15,7 @@ import { listInteractionsForPerson, type InteractionChannel } from '@/lib/crm/in
 import { buildTimeline } from '@/lib/crm/timeline'
 import { buildJourney, groupByPhase, type JourneyKind } from '@/lib/crm/journey'
 import { InviteButton } from './invite-button'
-import { ConsentToggle, AddNote } from './contact-actions'
+import { ConsentToggle, AddNote, EditContactFields } from './contact-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -168,12 +168,26 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
             </p>
             <p className="mt-2 text-sm text-text">{contact.email}</p>
             <p className="text-sm text-muted">Source: {contact.source ?? '–'} · Consent: {contact.consentState}</p>
+            {contact.city && (
+              <p className="mt-1 inline-flex items-center gap-1 text-xs text-subtle"><MapPin className="h-3 w-3" /> {contact.city}</p>
+            )}
             {person.deals.length > 0 && (
               <p className="mt-1 inline-flex items-center gap-1 text-xs text-subtle">
                 <Briefcase className="h-3 w-3" /> {person.deals.length} deal{person.deals.length !== 1 ? 's' : ''}
               </p>
             )}
           </div>
+        </div>
+
+        {/* Staff power action: edit the safe fields on the contact row (ADR-379). */}
+        <div className="mt-3">
+          <EditContactFields
+            contactId={contact.id}
+            email={contact.email}
+            displayName={contact.displayName}
+            city={contact.city}
+            source={contact.source}
+          />
         </div>
 
         {/* Private captures (steward scans) */}
