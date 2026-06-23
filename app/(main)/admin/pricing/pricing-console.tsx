@@ -65,6 +65,7 @@ const TIER_FLAGS: { key: PricingFlagKey; label: string }[] = [
 const PLAN_FLAGS: { key: PricingFlagKey; label: string }[] = [
   { key: 'plan_practitioner_enabled', label: 'Practitioner' },
   { key: 'plan_business_enabled', label: 'Business' },
+  { key: 'plan_nonprofit_enabled', label: 'Nonprofit' },
   { key: 'plan_organization_enabled', label: 'Organization' },
   { key: 'plan_whitelabel_enabled', label: 'White-label' },
 ]
@@ -103,6 +104,16 @@ function SwitchesSection({ flags }: { flags: Record<PricingFlagKey, boolean> }) 
           {PLAN_FLAGS.map((f) => (
             <FlagRow key={f.key} flagKey={f.key} initial={flags[f.key]} label={f.label} />
           ))}
+        </div>
+        <div className="mt-4 space-y-2 border-t border-border/60 pt-4 text-xs text-subtle">
+          <p>
+            <span className="font-semibold text-text">Partner</span> is comped, assigned by arrangement with a revenue
+            share. Not sold here, so it has no switch.
+          </p>
+          <p>
+            <span className="font-semibold text-text">Organization</span> is custom. It is built and working, but not
+            sold self-serve, so its switch stays off.
+          </p>
         </div>
       </FormSection>
 
@@ -183,6 +194,7 @@ const TIER_PRICE_ROWS: { key: string; label: string }[] = [
 const PLAN_PRICE_ROWS: { key: string; label: string; setup?: boolean }[] = [
   { key: 'plan.practitioner', label: 'Practitioner' },
   { key: 'plan.business', label: 'Business' },
+  { key: 'plan.nonprofit', label: 'Nonprofit' },
   { key: 'plan.organization', label: 'Organization' },
   { key: 'plan.whitelabel', label: 'White-label', setup: true },
 ]
@@ -211,7 +223,11 @@ function PlansSection({ values }: { values: PricingDefaults }) {
               settingKey={r.key}
               label={r.label}
               showSetup={r.setup}
-              price={values.plan[r.key.split('.')[1] as 'practitioner' | 'business' | 'organization' | 'whitelabel']}
+              price={
+                values.plan[
+                  r.key.split('.')[1] as 'practitioner' | 'business' | 'nonprofit' | 'organization' | 'whitelabel'
+                ]
+              }
             />
           ))}
         </div>

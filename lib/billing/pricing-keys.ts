@@ -17,8 +17,9 @@ export type BillingPeriod = 'monthly' | 'annual'
 export const MEMBER_TIER_KEYS = ['crew', 'supporter'] as const
 export type MemberTierKey = (typeof MEMBER_TIER_KEYS)[number]
 
-/** The space plans that are sold (free is never a paid key). */
-export const SPACE_PLAN_KEYS = ['practitioner', 'business', 'organization', 'whitelabel'] as const
+/** The space plans that are SOLD self-serve (free is never a paid key; Partner is comped/operator-
+ *  assigned, so it is intentionally NOT here). */
+export const SPACE_PLAN_KEYS = ['practitioner', 'business', 'nonprofit', 'organization', 'whitelabel'] as const
 export type SpacePlanKey = (typeof SPACE_PLAN_KEYS)[number]
 
 /** Which billing periods each tier/plan offers (mirrors PRICING_DEFAULTS: organization +
@@ -28,6 +29,7 @@ export const PERIODS_BY_KEY: Record<MemberTierKey | SpacePlanKey, readonly Billi
   supporter: ['monthly', 'annual'],
   practitioner: ['monthly', 'annual'],
   business: ['monthly', 'annual'],
+  nonprofit: ['monthly', 'annual'],
   organization: ['monthly'],
   whitelabel: ['monthly'],
 }

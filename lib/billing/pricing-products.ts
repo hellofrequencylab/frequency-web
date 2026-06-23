@@ -36,6 +36,7 @@ const PRODUCT_LABEL: Record<MemberTierKey | SpacePlanKey, string> = {
   supporter: 'Frequency Supporter',
   practitioner: 'Frequency Practitioner (Space)',
   business: 'Frequency Business (Space)',
+  nonprofit: 'Frequency Nonprofit (Space)',
   organization: 'Frequency Organization (Space)',
   whitelabel: 'Frequency White-label (Space)',
 }

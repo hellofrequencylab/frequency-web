@@ -15,6 +15,13 @@ export const SPACE_PLANS = [
   'free',
   'practitioner',
   'business',
+  // Nonprofit + Partner sit ABOVE business in this list ON PURPOSE. This array is the CAPABILITY
+  // ladder meetsGate ranks on (gates.ts PLAN_RANK), NOT a price order. Both are "lower-priced or
+  // comped but full-featured" (verified mission orgs / hosted programs), so they must out-rank
+  // business to clear the business-level feature gates (email / automation / team / multi-pipeline).
+  // Price + upgrade order live in PRICING_DEFAULTS and the admin console, not here.
+  'nonprofit',
+  'partner',
   'organization',
   'whitelabel',
 ] as const
@@ -26,6 +33,8 @@ export const SPACE_PLAN_LABEL: Record<SpacePlan, string> = {
   free: 'Free',
   practitioner: 'Practitioner',
   business: 'Business',
+  nonprofit: 'Nonprofit',
+  partner: 'Partner',
   organization: 'Organization',
   whitelabel: 'White-label',
 }
@@ -46,6 +55,10 @@ const PLAN_ENTITLEMENT_KEYS: Record<SpacePlan, readonly string[]> = {
   free: [],
   practitioner: ['crm'],
   business: ['crm', 'email', 'automation', 'team', 'multi_pipeline'],
+  // Nonprofit (verified mission orgs) + Partner (comped, hosting a program) get the full business
+  // toolset minus white-label branding. Per-feature tunable in /admin/pricing.
+  nonprofit: ['crm', 'email', 'automation', 'team', 'multi_pipeline'],
+  partner: ['crm', 'email', 'automation', 'team', 'multi_pipeline'],
   organization: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting'],
   whitelabel: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting', 'whitelabel'],
 }
