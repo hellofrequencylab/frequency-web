@@ -3,7 +3,7 @@
 // actions, the store, and the AI module can all share one vocabulary.
 
 export type Visibility = 'private' | 'shared' | 'network'
-export type ContactSource = 'manual' | 'card_scan' | 'poster' | 'import'
+export type ContactSource = 'manual' | 'card_scan' | 'poster' | 'import' | 'qr_scan'
 export type ContactStatus = 'new' | 'active' | 'archived'
 export type NoteKind = 'note' | 'connection' | 'ai'
 export type TagSource = 'manual' | 'ai'
@@ -129,6 +129,8 @@ export interface NetworkContact {
   logoPath: string | null
   /** The member profile this contact has been merged with (null = not linked). */
   linkedProfileId: string | null
+  /** When the owner last reached out (notes / completed follow-ups / a QR scan). */
+  lastContactedAt: string | null
   createdAt: string | null
   updatedAt: string | null
 }
@@ -145,6 +147,22 @@ export interface ContactNote {
   kind: NoteKind
   authorId: string | null
   createdAt: string | null
+}
+
+/** A follow-up reminder on a network contact (the free keep-in-touch layer). */
+export interface ContactReminder {
+  id: string
+  contactId: string
+  dueAt: string
+  note: string | null
+  doneAt: string | null
+  createdAt: string | null
+}
+
+/** A reminder joined with its contact's identity, for the "reach out" list. */
+export interface ReminderWithContact extends ContactReminder {
+  contactName: string | null
+  contactAvatarUrl: string | null
 }
 
 export interface ContactTag {

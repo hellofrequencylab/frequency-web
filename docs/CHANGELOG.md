@@ -12,6 +12,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Follow-ups in My Contacts**: set a reminder to reach out to anyone you've met, with
+  an optional note. Open reminders gather in a **Reach out** list at the top of My Contacts,
+  so the people worth a message are the first thing you see. Mark one **Done** and it clears.
+  Each contact now shows when you last reached out, and you can sort your list by recently
+  added, last contacted, follow-up due, or name. New **Card** and **QR Scan** tabs sort your
+  contacts by how you added them.
 - **Build a practice with Vera**: hit **Create a practice** and answer a few quick
   questions (who it's for, the act, what you want from it, how often, how long). Vera
   drafts the whole thing, a name, a hook, the steps, a cadence, and a Pillar, for you

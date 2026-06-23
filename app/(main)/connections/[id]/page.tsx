@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { contactsOwnerId } from '@/lib/connections/access'
-import { getContact } from '@/lib/connections/store'
+import { getContact, listRemindersForContact } from '@/lib/connections/store'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { RelationshipTimeline } from '@/components/people/relationship-timeline'
@@ -34,9 +34,10 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
   // If this captured person became a member, show the caller's private shared
   // history with them (gated behind resonance, like the rest of P3). A non-member
   // contact has no Frequency event history, so we skip it entirely.
-  const [settings, linkedId] = await Promise.all([
+  const [settings, linkedId, reminders] = await Promise.all([
     getConnectionSettings(),
     linkedProfileId(ownerId, id),
+    listRemindersForContact(ownerId, id),
   ])
   const timeline =
     settings.resonanceEnabled && linkedId ? (
@@ -50,7 +51,7 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
     // Focus surface (page-chrome.ts → 'none'): centered, no rail. The Detail shell owns the
     // header band + the single back-link; the page never hand-rolls chrome (PAGE-FRAMEWORK §8).
     <div className="mx-auto max-w-2xl">
-      <Detail initial={data} timeline={timeline} back={{ href: '/connections', label: 'Profiles' }} />
+      <Detail initial={data} reminders={reminders} timeline={timeline} back={{ href: '/connections', label: 'Profiles' }} />
       {/* Manual contact ↔ member link — the path for when the auto detector can't
           fire (card email differs from signup email, no phone on the profile). */}
       <LinkMemberCard contactId={id} contactName={data.contact.displayName} linked={linked} />

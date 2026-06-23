@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Plus, ScanText, Lock, Globe, MapPin, Search, Contact, UserRoundCheck } from 'lucide-react'
 import { contactsOwnerId } from '@/lib/connections/access'
-import { listContacts } from '@/lib/connections/store'
+import { listContacts, listDueReminders, type ContactSort as ContactSortKey } from '@/lib/connections/store'
 import { findContactMatches } from '@/lib/connections/matching'
 import { getInitials } from '@/lib/utils'
 import { IndexTemplate } from '@/components/templates'
@@ -11,46 +11,68 @@ import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { ContactMatches } from '@/components/connections/contact-matches'
-import type { ContactStatus, NetworkContactListItem } from '@/lib/connections/types'
+import { ReachOutList } from '@/components/connections/reach-out-list'
+import { ContactSort, type ContactSortValue } from '@/components/connections/contact-sort'
+import type { NetworkContactListItem } from '@/lib/connections/types'
 
 export const dynamic = 'force-dynamic'
 
-const STATUS_TABS = [
+// Two facets share one filter row (CRM-STRATEGY §3.1): how it arrived (Card / QR
+// Scan) and where it sits in its lifecycle (New / Active / Archived).
+const FACET_TABS = [
   { key: 'all', label: 'All' },
+  { key: 'card', label: 'Card' },
+  { key: 'qr_scan', label: 'QR Scan' },
   { key: 'new', label: 'New' },
   { key: 'active', label: 'Active' },
   { key: 'archived', label: 'Archived' },
 ] as const
-type StatusFilter = (typeof STATUS_TABS)[number]['key']
+type FacetFilter = (typeof FACET_TABS)[number]['key']
+
+const SORTS: ContactSortValue[] = ['recent', 'last_contacted', 'follow_up', 'name']
 
 const SOURCE_LABEL: Record<string, string> = {
-  card_scan: 'Scanned', poster: 'Poster', manual: 'Manual', import: 'Imported',
+  card_scan: 'Scanned', poster: 'Poster', manual: 'Manual', import: 'Imported', qr_scan: 'QR scan',
 }
 
-function matches(c: NetworkContactListItem, status: StatusFilter, q: string): boolean {
-  if (status !== 'all' && c.status !== (status as ContactStatus)) return false
+function matches(c: NetworkContactListItem, facet: FacetFilter, q: string): boolean {
+  if (facet === 'card' && !(c.source === 'card_scan' || c.source === 'poster')) return false
+  if (facet === 'qr_scan' && c.source !== 'qr_scan') return false
+  if ((facet === 'new' || facet === 'active' || facet === 'archived') && c.status !== facet) return false
   if (!q) return true
   const hay = [c.displayName, c.company, c.title, c.city, c.email, ...c.tags].join(' ').toLowerCase()
   return hay.includes(q)
 }
 
+/** Build a My Contacts URL preserving the active facet, search, and sort. */
+function buildHref(facet: FacetFilter, q: string, sort: ContactSortValue): string {
+  const sp = new URLSearchParams()
+  if (facet !== 'all') sp.set('status', facet)
+  if (q) sp.set('q', q)
+  if (sort !== 'recent') sp.set('sort', sort)
+  const qs = sp.toString()
+  return `/network/contacts${qs ? `?${qs}` : ''}`
+}
+
 export default async function ConnectionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string }>
+  searchParams: Promise<{ status?: string; q?: string; sort?: string }>
 }) {
   const ownerId = await contactsOwnerId()
   if (!ownerId) redirect('/feed')
 
-  const { status: rawStatus, q: rawQ } = await searchParams
-  const status: StatusFilter = (STATUS_TABS.find((s) => s.key === rawStatus)?.key ?? 'all') as StatusFilter
+  const { status: rawStatus, q: rawQ, sort: rawSort } = await searchParams
+  const facet: FacetFilter = (FACET_TABS.find((s) => s.key === rawStatus)?.key ?? 'all') as FacetFilter
   const q = (rawQ ?? '').trim().toLowerCase()
+  const sort: ContactSortValue = (SORTS.includes(rawSort as ContactSortValue) ? rawSort : 'recent') as ContactSortValue
 
-  const [all, suggestions] = await Promise.all([
-    listContacts(ownerId),
+  const [all, suggestions, dueReminders] = await Promise.all([
+    listContacts(ownerId, 300, sort as ContactSortKey),
     findContactMatches(ownerId),
+    listDueReminders(ownerId),
   ])
-  const rows = all.filter((c) => matches(c, status, q))
+  const rows = all.filter((c) => matches(c, facet, q))
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -83,32 +105,31 @@ export default async function ConnectionsPage({
         toolbar={
           <div className="flex flex-wrap items-end justify-between gap-3">
             <UnderlineTabs
-              activeHref={
-                status === 'all'
-                  ? `/network/contacts${q ? `?q=${encodeURIComponent(q)}` : ''}`
-                  : `/network/contacts?status=${status}${q ? `&q=${encodeURIComponent(q)}` : ''}`
-              }
-              tabs={STATUS_TABS.map((t) => ({
-                href: t.key === 'all'
-                  ? `/network/contacts${q ? `?q=${encodeURIComponent(q)}` : ''}`
-                  : `/network/contacts?status=${t.key}${q ? `&q=${encodeURIComponent(q)}` : ''}`,
+              activeHref={buildHref(facet, q, sort)}
+              tabs={FACET_TABS.map((t) => ({
+                href: buildHref(t.key, q, sort),
                 label: t.label,
                 count: all.filter((c) => matches(c, t.key, q)).length,
               }))}
             />
-            <form className="relative pb-2" action="/network/contacts" method="get">
-              {status !== 'all' && <input type="hidden" name="status" value={status} />}
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-[calc(50%+4px)] text-subtle" />
-              <input
-                name="q"
-                defaultValue={q}
-                placeholder="Search…"
-                className="w-44 rounded-lg border border-border-strong bg-surface py-1.5 pl-8 pr-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
-              />
-            </form>
+            <div className="flex flex-wrap items-end gap-2">
+              <ContactSort value={sort} />
+              <form className="relative pb-2" action="/network/contacts" method="get">
+                {facet !== 'all' && <input type="hidden" name="status" value={facet} />}
+                {sort !== 'recent' && <input type="hidden" name="sort" value={sort} />}
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-[calc(50%+4px)] text-subtle" />
+                <input
+                  name="q"
+                  defaultValue={q}
+                  placeholder="Search…"
+                  className="w-44 rounded-lg border border-border-strong bg-surface py-1.5 pl-8 pr-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
+                />
+              </form>
+            </div>
           </div>
         }
       >
+      <ReachOutList reminders={dueReminders} />
       <ContactMatches suggestions={suggestions} />
       {rows.length === 0 ? (
         <EmptyState

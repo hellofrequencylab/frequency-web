@@ -1,6 +1,7 @@
 # CRM Strategy: My Contacts (free) → Spaces CRM (paid)
 
-> **Status:** 📋 Designed, not built. Strategy + foundation plan for turning **My Contacts**
+> **Status:** ✅ P1 shipped (the free keep-in-touch foundation); P2/P3 designed, not built.
+> Strategy + foundation plan for turning **My Contacts**
 > (`/network/contacts`) into a lightweight, in-person relationship CRM that doubles as the
 > **lead generator** for the full CRM that paid **Spaces** (business / practitioner / org
 > accounts) run. Decision: [ADR-361](DECISIONS.md). Owner-approved direction (2026-06-23):
@@ -39,7 +40,7 @@
 | Unified shared contact — `contacts` (consent, engagement, `space_id`) | ✅ Built (ADR-027) | `lib/studio/contacts.ts`, `lib/crm/person.ts` |
 | Spaces tenancy + per-space CRM scope, `businessCrm` access surface | ✅ Shipped | [SPACES.md](SPACES.md), `lib/core/access-matrix.ts` |
 | People graph — resonance, near-miss, "this week" pulse | ✅ Shipped | [CONNECTION-LAYER.md](CONNECTION-LAYER.md) |
-| **Keep-in-touch layer** — reminders, last-contacted, "reach out today" | 🔴 Missing | this doc, P1 |
+| **Keep-in-touch layer** — reminders, last-contacted, "reach out today" | ✅ Shipped (P1) | this doc, P1 · `network_contact_reminders`, `last_contacted_at` |
 | **In-person QR capture** — scan a member's QR → a contact | 🔴 Missing | this doc, P2 |
 | **Graduation** — personal → Space CRM upgrade path | 🔴 Missing | this doc, P3 |
 
@@ -87,7 +88,9 @@ exclusive tab set:
 | **Active** | `status = 'active'` | in a relationship rhythm |
 | **Archived** | `status = 'archived'` | parked |
 
-`source` already exists (`manual / card_scan / poster / import`); **P1 adds `'qr_scan'`.**
+`source` already exists (`manual / card_scan / poster / import`); ✅ **P1 added `'qr_scan'`**
+to the CHECK constraint, and the My Contacts facet tabs (`All · Card · QR Scan · New · Active ·
+Archived`) now read it. The QR *capture* itself lands in P2.
 
 ### 3.2 The lightweight CRM layer (free)
 
@@ -95,10 +98,10 @@ exclusive tab set:
 |---|---|---|
 | Tags | ✅ exists (`network_contact_tags`) | surface as filter chips + sort |
 | Notes | ✅ exists (`network_contact_notes`) | already on the detail page |
-| Sorting | 🔴 | by recently added · last contacted · follow-up due · name |
-| **Follow-up reminders** | 🔴 | new `network_contact_reminders` (owner, contact, `due_at`, note, `done_at`) |
-| **Last-contacted** | 🔴 | `last_contacted_at` on `network_contacts`, set by notes/reminders/QR scan |
-| **"Reach out today"** | 🔴 | a derived list (overdue reminders + long-quiet ties) on My Contacts + the home pulse |
+| Sorting | ✅ Shipped (P1) | by recently added · last contacted · follow-up due · name |
+| **Follow-up reminders** | ✅ Shipped (P1) | `network_contact_reminders` (owner, contact, `due_at`, note, `done_at`); add/complete/delete on the detail page |
+| **Last-contacted** | ✅ Shipped (P1) | `last_contacted_at` on `network_contacts`, stamped by adding a note or completing a follow-up (QR scan in P2) |
+| **"Reach out today"** | ✅ Shipped (P1) | a derived list (open reminders due soon + overdue) atop My Contacts; the home pulse is a fast-follow |
 
 The reminders table + `last_contacted_at` are the only genuinely new primitives, and they are the
 backbone for both the free reach-out list and (later) paid reporting. They reuse the shape of the
@@ -179,7 +182,7 @@ Same primitives, different **stage + field templates per Space `type`** — whic
 
 | Phase | Scope | Migration cost |
 |---|---|---|
-| **P1 — Foundation (free)** | tab/IA facets + `qr_scan` source; `network_contact_reminders`; `last_contacted_at`; "reach out today"; sorting | 1 small additive migration |
+| ✅ **P1 — Foundation (free)** | tab/IA facets + `qr_scan` source; `network_contact_reminders`; `last_contacted_at`; "reach out today"; sorting | 1 small additive migration (`20260723000000_network_contacts_crm_p1.sql`) |
 | **P2 — QR capture** | `/q/<slug>` in-person capture (one-way + met-context + follow-up affordance); reciprocal handshake as a fast-follow | resolver change, no new tables |
 | **P3 — Graduation (paid)** | "Bring contacts into your Space CRM"; contextual upgrade prompts at the ceilings; wire `/spaces/<slug>/crm` pipeline UI over `crm_*` | reuses `crm_*`; per-space gating |
 

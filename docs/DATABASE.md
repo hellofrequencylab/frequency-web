@@ -212,9 +212,19 @@ ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_me
 
 > **CRM & marketing** tables (`contacts`, `campaigns`, `automation_rules`, `segments`,
 > `member_tags`, `member_traits`, `network_contacts`, `network_contact_notes`,
-> `network_contact_tags`, `crm_stages`, `crm_deals`, `crm_activities`) are specified in
-> `docs/COMMS-CRM-ARCHITECTURE.md` and `docs/NETWORK-CRM.md`, the source of truth for
-> that domain.
+> `network_contact_tags`, `network_contact_reminders`, `crm_stages`, `crm_deals`,
+> `crm_activities`) are specified in `docs/COMMS-CRM-ARCHITECTURE.md` and
+> `docs/NETWORK-CRM.md`, the source of truth for that domain; the My Contacts CRM layer
+> (the reminders table + `last_contacted_at`) is in [`docs/CRM-STRATEGY.md`](CRM-STRATEGY.md).
+
+> **My Contacts CRM · Phase 1** (ADR-361; migration `20260723000000_network_contacts_crm_p1.sql`,
+> additive). `network_contact_reminders` is the owner-scoped follow-up table
+> (`owner_id, contact_id, due_at, note, done_at, created_at`; partial index on
+> `(owner_id, due_at) WHERE done_at IS NULL`; RLS mirrors the `network_contacts` owner
+> policies). `network_contacts` gains `last_contacted_at timestamptz` (stamped on a note or a
+> completed follow-up) and `'qr_scan'` joins its `source` CHECK set. These power the free
+> "reach out" list, sorting, and the Card / QR Scan facet tabs. Source of truth:
+> [`docs/CRM-STRATEGY.md`](CRM-STRATEGY.md) P1.
 
 > *(`spatial_ref_sys` is PostGIS's reference table, not ours, no RLS by design.)*
 
