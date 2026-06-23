@@ -57,6 +57,36 @@ describe('space plans', () => {
   it('has a label for every plan', () => {
     for (const p of SPACE_PLANS) expect(typeof SPACE_PLAN_LABEL[p]).toBe('string')
   })
+
+  it('includes the nonprofit + partner plans on the capability ladder', () => {
+    expect(SPACE_PLANS).toContain('nonprofit')
+    expect(SPACE_PLANS).toContain('partner')
+    expect(asSpacePlan('nonprofit')).toBe('nonprofit')
+    expect(asSpacePlan('partner')).toBe('partner')
+  })
+
+  it('nonprofit + partner grant the full business toolset, NOT whitelabel / reporting', () => {
+    for (const plan of ['nonprofit', 'partner'] as const) {
+      const ents = planEntitlements(plan)
+      // business-level capabilities
+      expect(ents.crm).toBe(true)
+      expect(ents.email).toBe(true)
+      expect(ents.automation).toBe(true)
+      expect(ents.team).toBe(true)
+      expect(ents.multi_pipeline).toBe(true)
+      // but NOT the org/whitelabel-only keys
+      expect(ents.reporting).toBeUndefined()
+      expect(ents.whitelabel).toBeUndefined()
+      // keys reader agrees
+      expect(planEntitlementKeys(plan)).not.toContain('reporting')
+      expect(planEntitlementKeys(plan)).not.toContain('whitelabel')
+    }
+  })
+
+  it('nonprofit + partner unlock exactly the business toolset (same key set)', () => {
+    expect(planEntitlements('nonprofit')).toEqual(planEntitlements('business'))
+    expect(planEntitlements('partner')).toEqual(planEntitlements('business'))
+  })
 })
 
 describe('gamification access (the third flag)', () => {
@@ -108,6 +138,20 @@ describe('feature gate ladder math (meetsGate)', () => {
     expect(meetsGate(planGate, { plan: 'business' })).toBe(true)
     expect(meetsGate(planGate, { plan: 'organization' })).toBe(true)
     expect(meetsGate(planGate, { plan: 'whitelabel' })).toBe(true)
+  })
+
+  it('nonprofit + partner rank ABOVE business: they clear a business-min gate', () => {
+    // The capability ladder (SPACE_PLANS order) ranks nonprofit/partner over business ON PURPOSE,
+    // so both clear the business-level feature gates (email / automation / team / multi-pipeline).
+    expect(meetsGate(planGate, { plan: 'nonprofit' })).toBe(true)
+    expect(meetsGate(planGate, { plan: 'partner' })).toBe(true)
+  })
+
+  it('nonprofit does NOT clear a whitelabel-min gate (full-featured, but not white-label)', () => {
+    const whitelabelGate: FeatureGate = { axis: 'plan', minEntitlement: 'whitelabel', enabled: true }
+    expect(meetsGate(whitelabelGate, { plan: 'nonprofit' })).toBe(false)
+    expect(meetsGate(whitelabelGate, { plan: 'partner' })).toBe(false)
+    expect(meetsGate(whitelabelGate, { plan: 'whitelabel' })).toBe(true)
   })
 
   it('a disabled gate never blocks', () => {
@@ -185,6 +229,20 @@ describe('seeded defaults are sane (mirror the migration)', () => {
   it('vera free cap is the spec value (10/day)', () => {
     expect(PRICING_DEFAULTS.vera_free_daily_cap.messages).toBe(10)
   })
+
+  it('plan defaults reflect the new launch numbers (practitioner/business/nonprofit/whitelabel setup)', () => {
+    const plan = PRICING_DEFAULTS.plan
+    expect(plan.practitioner.monthly_cents).toBe(2900) // $29
+    expect(plan.practitioner.annual_cents).toBe(29000) // $290
+    expect(plan.business.monthly_cents).toBe(8900) // $89
+    expect(plan.business.annual_cents).toBe(89000) // $890
+    expect(plan.nonprofit.monthly_cents).toBe(3900) // $39 (verified 501c3)
+    expect(plan.nonprofit.annual_cents).toBe(39000) // $390
+    expect(plan.organization.monthly_cents).toBe(19900) // $199, custom
+    expect(plan.organization.annual_cents).toBeNull() // monthly-only
+    expect(plan.whitelabel.monthly_cents).toBe(29900) // $299
+    expect(plan.whitelabel.setup_cents).toBe(150000) // ~$1,500 one-time setup
+  })
 })
 
 describe('pricing display (P3 — what the upgrade/plan surfaces render)', () => {
@@ -201,9 +259,9 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     expect(row.label).toBe('White-label')
     expect(row.monthly).toBe('$299')
     expect(row.annual).toBeNull() // monthly-only
-    expect(row.setup).toBe('$2,000')
+    expect(row.setup).toBe('$1,500')
     expect(row.monthlyCents).toBe(29900)
-    expect(row.setupCents).toBe(200000)
+    expect(row.setupCents).toBe(150000)
   })
 
   it('memberTierRows lists Crew then Supporter from the operator values', () => {
@@ -221,6 +279,6 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     // organization is monthly-only
     expect(rows.find((r) => r.key === 'organization')?.annual).toBeNull()
     // practitioner/business have an annual line
-    expect(rows.find((r) => r.key === 'practitioner')?.annual).toBe('$390')
+    expect(rows.find((r) => r.key === 'practitioner')?.annual).toBe('$290')
   })
 })
