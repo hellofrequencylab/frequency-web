@@ -22,7 +22,10 @@ vi.mock('./store', () => ({
 
 // ── Mock the capability seam ─────────────────────────────────────────────────────────────────
 let canEdit = true
-vi.mock('./entitlements', () => ({
+// Keep the PURE entitlement readers real (updateSpaceProfile now calls spaceFunctionAccess for defense
+// in depth, per-space-roles Phase 2); override only getSpaceCapabilities.
+vi.mock('./entitlements', async (orig) => ({
+  ...(await orig<typeof import('./entitlements')>()),
   getSpaceCapabilities: async () => ({
     isOwner: canEdit,
     isAdmin: canEdit,

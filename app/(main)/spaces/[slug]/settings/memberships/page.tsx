@@ -3,11 +3,13 @@ import { Suspense } from 'react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listAllMembershipTiers } from '@/lib/spaces/memberships'
 import { MembershipTierForm } from '@/components/spaces/membership-tier-form'
 import { MembershipOwnerList } from '@/components/spaces/membership-owner-list'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
 
 // OWNER MEMBERSHIP TIER EDITOR + MEMBERS (ENTITY-SPACES-SYSTEM §2.5, memberships v1). A centered,
@@ -54,8 +56,31 @@ export default async function SpaceMembershipsPage({
   )
   if (!canManage && !staffViewing) notFound()
 
-  const tiers = await listAllMembershipTiers(space.id)
   const brandName = space.brandName ?? space.name
+
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). The default (memberships = editor) reproduces
+  // the old canEditProfile threshold; a staff janitor keeps the read-only preview (write stays gated).
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'memberships', caps.role)) {
+    return (
+      <FocusTemplate
+        eyebrow={brandName}
+        title="Memberships"
+        description="The membership tiers for this space."
+        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      >
+        <FeatureLockedNotice
+          brandName={brandName}
+          slug={space.slug}
+          label="Memberships"
+          reason={spaceFunctionAccess(space, 'memberships', 'admin') ? 'role' : 'disabled'}
+          canManageMembers={caps.canManageMembers}
+        />
+      </FocusTemplate>
+    )
+  }
+
+  const tiers = await listAllMembershipTiers(space.id)
 
   return (
     <FocusTemplate

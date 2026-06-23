@@ -22,6 +22,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { blueprintForType } from '@/lib/spaces/blueprints'
 import { addSpaceMember } from '@/lib/spaces/membership'
+import { isSpaceType, seedSpaceConfigFromDefaults } from '@/lib/spaces/functions'
+import { listTypeDefaultsForType } from '@/lib/spaces/type-defaults'
 import { isSafeSlug } from '@/lib/theme/validate'
 import { type ActionResult, fail } from '@/lib/action-result'
 
@@ -104,7 +106,19 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   const entityId = await rootEntityId()
   if (!entityId) return fail('Spaces are not ready yet. Try again in a moment.')
 
-  // Insert the Space. status active, plan free, no entitlements, the blueprint's default skin,
+  // Seed the new Space's tools (entitlements on/off + feature_roles min-role) from the operator's
+  // per-type defaults merged over the CODE defaults (per-space-roles Phase 2). FAIL-SAFE: the read is
+  // fail-safe to [] and the pure seed returns empty blobs with no defaults, so a Space stands up with
+  // exactly today's behavior (every universal tool on at its code default role) when no defaults exist.
+  // Plan-gated tools (CRM, email) are never seeded on here: a new Space starts on the free plan and a
+  // paid tool is granted later through billing or the operator's absolute override. `isSpaceType`
+  // guards the union (the wizard already restricts `type` to a blueprint, this keeps the seed pure).
+  const seedType = isSpaceType(type) ? type : null
+  const typeDefaults = seedType ? await listTypeDefaultsForType(seedType) : []
+  const { entitlements: seedEntitlements, featureRoles: seedFeatureRoles } =
+    seedSpaceConfigFromDefaults(seedType, typeDefaults)
+
+  // Insert the Space. status active, plan free, the seeded tool config, the blueprint's default skin,
   // owner = caller, ported into the network. brand_name seeds from the chosen brand/name.
   let spaceId: string
   try {
@@ -119,7 +133,8 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
         network_connected: true,
         visibility,
         plan: 'free',
-        entitlements: {},
+        entitlements: seedEntitlements,
+        feature_roles: seedFeatureRoles,
         owner_profile_id: profileId,
         brand_name: brandName,
       })

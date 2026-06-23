@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Building2, Palette, Pencil, Eye, Settings, Network } from 'lucide-react'
+import { Building2, Palette, Pencil, Eye, Settings, Network, SlidersHorizontal } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
@@ -162,6 +162,15 @@ export default async function SpacesBrandingPage() {
       eyebrow="Operations · Tenancy"
       description="Each Space is a white-label tenant of the one app. Set its theme and brand here, then jump to its live profile or open the owner settings the Space runs on."
       width="wide"
+      actions={
+        // The per-TYPE function-defaults editor (per-space-roles Phase 2): what every NEW space of a
+        // type starts with. A per-space override on a Space's own row still beats these seeds.
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/admin/spaces/defaults">
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden /> Space defaults
+          </Link>
+        </Button>
+      }
     >
       {spaces.length === 0 ? (
         <EmptyState

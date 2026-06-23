@@ -26,6 +26,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -187,6 +188,9 @@ export async function setDonationAsk(
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile)
     return fail('You do not have permission to set the donation ask for this space.')
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth) — see lib/spaces/booking.ts.
+  if (!spaceFunctionAccess(space, 'donations', caps.role))
+    return fail('Donations is not turned on for this space, or your role cannot use it.')
 
   // Normalize. A label-less / malformed ask (or an explicit null) clears the ask.
   const clean = ask ? normalizeAsk(ask) : null
