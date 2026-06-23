@@ -70,6 +70,40 @@ were updated, so the **first product sync uses the new numbers** (re-sync after 
 billing is OFF). Also added a **global AI spend ceiling** (`GLOBAL_DAILY_CAP_USD`, `lib/ai/budget.ts`) that
 hard-caps total daily Anthropic spend across every feature — always-on cost protection for the solo launch.
 
+### C. Launch day — order of operations (2026-06-23)
+
+The exact sequence to take Frequency live, safest-first. Everything through Phase 1 is **free and OFF**;
+real charges only begin at Phase 3. Legend: ✅ done · 📋 owner action · ⏳ waiting.
+
+**Phase 0 — staged (mostly done, safe anytime)**
+- ✅ Stripe products synced (16/16) · prices live ($19/$49/$29) · 14-day Space trial · webhook + `STRIPE_WEBHOOK_SECRET` set
+- 📋 Confirm `STRIPE_SECRET_KEY` is the **live** key (`sk_live_…`) before you ever flip billing on (if it's `sk_test_…`, swap it and re-sync)
+- 📋 Move Supabase to **Pro** (capacity + backups) and back up every secret in a password manager
+
+**Phase 1 — soft launch (free, billing OFF) — do this first**
+- Keep the master switch **OFF**. Personal features are free; Spaces run on the free plan. Nothing charges.
+- Open the doors: onboard members and **Partners** (comped + rev share is the audience engine). Lean on the free tier.
+- Google contacts import works behind the one "unverified app" warning (≤100 users). The global AI cap protects spend.
+
+**Phase 2 — Google verification (when ready / nearing 100 import users)**
+- ⏳ Wait for the **Safe Browsing** review to clear (requested 2026-06-23, ~72h)
+- 📋 Submit **OAuth verification** (branding is done) + record the **90-sec demo video** → YouTube *Unlisted* → paste the link
+- Result: the warning and the 100-user cap disappear and your logo shows on the consent screen
+
+**Phase 3 — turn billing ON (only when Spaces are pulling for paid features)**
+1. 📋 Confirm the **live** Stripe key + that `STRIPE_WEBHOOK_SECRET` matches the live webhook endpoint; redeploy
+2. 📋 `/admin/pricing` → toggle ON the **per-plan enable** switches for the plans you'll sell
+3. 📋 `/admin/pricing` → flip the master switch **`billing_live` ON**
+4. 📋 Test one real checkout end to end (buy Practitioner, confirm the 14-day trial starts + the plan grants via the webhook, then cancel/refund)
+5. Watch the first subscriptions reconcile (`customer.subscription.*` → `setSpacePlan`)
+
+**Phase 4 — optional, later**
+- 📋 Supabase **vanity domain** (after verification — it changes the auth callback; update the Google redirect URI + `NEXT_PUBLIC_SUPABASE_URL` in lockstep)
+- 📋 **A2P / SMS** registration (when you want SMS; see [A2P-REGISTRATION.md](A2P-REGISTRATION.md))
+- 📋 **Per-seat billing** ("3 included, +$9/seat") when you need multi-operator Spaces
+
+**Rollback:** flipping `billing_live` **OFF** instantly stops all new charges (existing Stripe subscriptions keep running until you cancel them in the Stripe dashboard). The OFF invariant means the whole layer goes inert the moment the switch is off.
+
 ## 🔎 Full-site audit — 2026-06-09 (post events / journeys / circles)
 
 Four-agent sweep (incompleteness · security · journeys/events/circles completeness · UI/linkage).
