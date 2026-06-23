@@ -24,8 +24,9 @@ The directory is how you find members and circles: by topic, and by place.
 
 ## My Contacts
 
-My Contacts is your own private address book: people you have met and logged, scanned from a card or a poster, or added by hand. Only you can see them.
+My Contacts is your own private address book: people you have met and logged, scanned from a card or a poster, imported from Google, or added by hand. Only you can see them.
 
+- **Import from Google** brings your Google contacts in with one tap. Choose **Import from Google**, pick your Google account, and the people saved there land in My Contacts. Anyone already in your book is skipped, so it is safe to run more than once. Frequency only reads your contacts, never your email, and stores nothing from Google beyond the contacts you bring over.
 - When someone in your contacts turns out to be a member too, Frequency spots it (by a matching email or phone) and shows a **merge** prompt at the top of My Contacts.
 - **Merge** links the two. Their live member profile fills in the card, and the details you logged plus your notes stay exactly as you wrote them. A merged contact gets an **On Frequency** tag.
 - The private details you logged also show up on that member's profile, in a card only you can see. Nobody else knows you kept a contact for them.

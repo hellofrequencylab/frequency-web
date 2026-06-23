@@ -1,8 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Plus, ScanText, Lock, Globe, MapPin, Search, Contact, UserRoundCheck } from 'lucide-react'
+import { Plus, ScanText, Lock, Globe, MapPin, Search, Contact, UserRoundCheck, Download } from 'lucide-react'
 import { contactsOwnerId } from '@/lib/connections/access'
+import { googleImportConfigured } from '@/lib/integrations/google/config'
 import { listContacts, listDueReminders, type ContactSort as ContactSortKey } from '@/lib/connections/store'
 import { findContactMatches } from '@/lib/connections/matching'
 import { getInitials } from '@/lib/utils'
@@ -14,7 +15,10 @@ import { ContactMatches } from '@/components/connections/contact-matches'
 import { ReachOutList } from '@/components/connections/reach-out-list'
 import { SpaceCrmPrompt } from '@/components/connections/space-crm-prompt'
 import { ContactSort, type ContactSortValue } from '@/components/connections/contact-sort'
+import { GoogleImportBanner, type GoogleImportOutcome } from '@/components/connections/google-import-banner'
 import type { NetworkContactListItem } from '@/lib/connections/types'
+
+const IMPORT_OUTCOMES = ['done', 'cancelled', 'error', 'unavailable'] as const
 
 export const dynamic = 'force-dynamic'
 
@@ -58,12 +62,28 @@ function buildHref(facet: FacetFilter, q: string, sort: ContactSortValue): strin
 export default async function ConnectionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; sort?: string }>
+  searchParams: Promise<{
+    status?: string
+    q?: string
+    sort?: string
+    import?: string
+    added?: string
+    skipped?: string
+  }>
 }) {
   const ownerId = await contactsOwnerId()
   if (!ownerId) redirect('/feed')
 
-  const { status: rawStatus, q: rawQ, sort: rawSort } = await searchParams
+  const params = await searchParams
+  const { status: rawStatus, q: rawQ, sort: rawSort } = params
+
+  // Result banner after returning from the Google contacts import (ADR-374).
+  const importOutcome = (IMPORT_OUTCOMES as readonly string[]).includes(params.import ?? '')
+    ? (params.import as GoogleImportOutcome)
+    : null
+  const importAdded = Number(params.added) || 0
+  const importSkipped = Number(params.skipped) || 0
+  const googleImportEnabled = googleImportConfigured()
   const facet: FacetFilter = (FACET_TABS.find((s) => s.key === rawStatus)?.key ?? 'all') as FacetFilter
   const q = (rawQ ?? '').trim().toLowerCase()
   const sort: ContactSortValue = (SORTS.includes(rawSort as ContactSortValue) ? rawSort : 'recent') as ContactSortValue
@@ -96,12 +116,22 @@ export default async function ConnectionsPage({
           </>
         }
         action={
-          <Link
-            href="/connections/new"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-3.5 sm:py-2"
-          >
-            <Plus className="h-4 w-4" /> New profile
-          </Link>
+          <div className="flex items-center gap-2">
+            {googleImportEnabled && (
+              <Link
+                href="/api/integrations/google/start"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated sm:px-3.5 sm:py-2"
+              >
+                <Download className="h-4 w-4" /> Import from Google
+              </Link>
+            )}
+            <Link
+              href="/connections/new"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-3.5 sm:py-2"
+            >
+              <Plus className="h-4 w-4" /> New profile
+            </Link>
+          </div>
         }
         toolbar={
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -130,6 +160,9 @@ export default async function ConnectionsPage({
           </div>
         }
       >
+      {importOutcome && (
+        <GoogleImportBanner outcome={importOutcome} added={importAdded} skipped={importSkipped} />
+      )}
       <ReachOutList reminders={dueReminders} />
       <ContactMatches suggestions={suggestions} />
       {/* A light, dismissible nudge to graduate into a Space CRM, shown only once a member has built up
