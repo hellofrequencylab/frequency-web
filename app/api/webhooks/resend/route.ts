@@ -6,7 +6,8 @@
 import { NextResponse } from 'next/server'
 import { recordEmailEvent, suppress } from '@/lib/suppression'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
-import { handleSpaceSendWebhook } from '@/lib/spaces/email'
+import { handleSpaceSendWebhook, handleSpaceSendEngagement } from '@/lib/spaces/email'
+import { mapResendEventToInteraction, type ResendTimelineEventType } from '@/lib/spaces/email-timeline'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
   // the missing field, so a non-2xx would only make Resend redeliver forever.
   // Log it so silently-skipped events are still visible.
   if (!to) {
-    console.warn(`[resend-webhook] skipped event with no recipient (type=${type}, id=${id})`)
+    console.warn('[resend-webhook] skipped event with no recipient')
     return NextResponse.json({ ok: true, skipped: 'no recipient' })
   }
 
@@ -83,8 +84,24 @@ export async function POST(req: Request) {
     errors.push(`recordEmailEvent: ${err instanceof Error ? err.message : String(err)}`)
   }
 
+  // CRM TIMELINE (ADR-378): project opened / clicked / bounced / complained onto the unified
+  // contact_interactions timeline, but ONLY when the Resend id belongs to a Space send AND the
+  // recipient maps to a known owner + contact. A pure platform email records NOTHING (no
+  // platform-owner sentinel). Purely additive + best-effort: it never touches suppression and is
+  // NOT pushed to `errors`, so a timeline-write blip cannot force a webhook redelivery (which would
+  // needlessly re-fire suppression). handleSpaceSendEngagement is itself fail-safe (never throws).
+  if (mapResendEventToInteraction(type)) {
+    try {
+      await handleSpaceSendEngagement(event.data?.email_id ?? null, type as ResendTimelineEventType)
+    } catch (err) {
+      // Pass the error as a separate console argument (not concatenated into the message) so a
+      // user-controlled value can never forge a log line (CodeQL log-injection).
+      console.warn('[resend-webhook] timeline projection failed', err)
+    }
+  }
+
   if (errors.length > 0) {
-    console.error(`[resend-webhook] processing failed (type=${type}, id=${id}): ${errors.join('; ')}`)
+    console.error('[resend-webhook] processing failed', errors.join('; '))
     return NextResponse.json({ ok: false, error: 'processing failed' }, { status: 503 })
   }
 
