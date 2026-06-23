@@ -7,6 +7,62 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
+## 🟢 CRM contacts import + go-live owner actions (2026-06-23)
+
+Two threads finished their **build** this session and now sit on **owner / external setup only (no more
+code for v1)**. Captured here so nothing lives only in chat.
+
+### A. Google Contacts import — shipped (#1003, [ADR-374](DECISIONS.md)); Google review pending
+
+The free "Import from Google" button on My Contacts is **built, merged, and live**. It works in
+production today behind the standard Google "unverified app" warning (Google caps that at **100 users**
+until the app is verified). Remaining steps are all in Google Cloud Console, owner-run:
+
+| # | Step | Status |
+|---|---|---|
+| 1 | `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` in Vercel | ✅ |
+| 2 | Redirect URIs on the shared "Frequency Web" OAuth client (`/api/integrations/google/callback`, prod + localhost) | ✅ |
+| 3 | Branding: app name "Frequency", logo, support email, home/privacy/terms, authorized domain | ✅ |
+| 4 | Domain ownership (frequencylocal.com, Search Console DNS TXT) | ✅ |
+| 5 | Homepage explains the app's purpose + links Privacy/Terms; `/privacy` carries the Google-data + Limited Use disclosure | ✅ (this PR) |
+| 6 | **Safe Browsing "deceptive pages" flag** → Request Review in Search Console | ⏳ requested 2026-06-23 (~72h). MUST clear before #7 |
+| 7 | **Submit OAuth verification** (Verification Center: branding + sensitive scope) | 📋 owner, after #6 clears |
+| 8 | **Demo video** (~90 sec) → upload to YouTube **Unlisted** → paste link in the scope verification form | 📋 owner, feature is already live |
+
+**Demo video shot list:** open frequencylocal.com → sign in → My Contacts → "Import from Google" →
+Google consent screen (shows "Frequency" + the contacts permission) → approve → "Imported N contacts"
+banner with the new contacts. Narrate one line: "This lets a member import their own Google contacts
+into their private contact book."
+
+**Scope justification** (paste into Data Access):
+> Frequency lets a signed-in member import their own Google contacts into their private personal address
+> book ("My Contacts"). We request contacts.readonly solely to read the user's own contacts and create
+> contact records owned by and visible only to that same user. We do not access email, calendar, or any
+> other data. We use one-time online access and store no Google access or refresh tokens. We never sell or
+> share this data and use it for no advertising. Read-only is the minimum scope, as we never modify Google data.
+
+Verification removes the warning + the 100-user cap and shows the logo on the consent screen (Google
+review typically 1–2 weeks). The feature needs no further code either way.
+
+### B. Stripe billing — built + inert; products never synced, switch never flipped
+
+The full pricing/billing layer (ADR-362 / 363 / 364 / [373](DECISIONS.md)) is **built but OFF**: nothing
+charges until BOTH the master `billing_live` flag is on AND Stripe keys are present (`billingLive()`).
+Products have not been synced, so the Stripe catalog is empty. To go live, **in order**:
+
+| # | Step | Status | Where |
+|---|---|---|---|
+| 1 | `STRIPE_SECRET_KEY` present | ✅ | Vercel (confirm it's the **live** key, not test, when you actually charge) |
+| 2 | `STRIPE_WEBHOOK_SECRET` set + a webhook endpoint added in Stripe pointing at `/api/stripe/webhook` | 📋 confirm | Stripe dashboard → Developers → Webhooks, then Vercel env |
+| 3 | **Sync products to Stripe** (creates the ~24 Products/Prices from the admin pricing values) | 📋 **0/24 synced** — SAFE, creates the catalog, charges nobody | `/admin/pricing` → "Sync products to Stripe" |
+| 4 | Review the created Products/Prices look right (amounts, monthly/annual) | 📋 | Stripe dashboard |
+| 5 | Turn ON the per-plan `*_enabled` flags for the plans you want to sell | 📋 | `/admin/pricing` |
+| 6 | **Flip the master switch `billing_live`** (the real go-live; this is when charging begins) | 📋 do last | `/admin/pricing` |
+
+**Deferred:** per-seat operator billing (the "+$9/seat" auto-charge, ADR-373). **Recommendation:** you can
+do step 3 (Sync) any time to populate and review the catalog with zero risk; keep step 6 (`billing_live`)
+OFF until you are truly ready to charge members.
+
 ## 🔎 Full-site audit — 2026-06-09 (post events / journeys / circles)
 
 Four-agent sweep (incompleteness · security · journeys/events/circles completeness · UI/linkage).
