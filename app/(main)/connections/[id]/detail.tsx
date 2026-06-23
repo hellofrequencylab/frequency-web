@@ -4,13 +4,14 @@ import Image from 'next/image'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Mail, Phone, MapPin, Globe, Lock, Pencil, Check, X, Plus, Trash2, Loader2, User, Sparkles, CalendarClock,
+  Mail, Phone, MapPin, Globe, Lock, Pencil, Check, X, Plus, Trash2, Loader2, User, Sparkles, CalendarClock, History,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { DetailTemplate } from '@/components/templates'
 import { normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
 import { DetailsEditor, DetailsView } from '@/components/connections/contact-details-fields'
 import type { ContactDetail } from '@/lib/connections/store'
+import type { TimelineEntry } from '@/lib/crm/timeline'
 import type { ContactDetails, ContactReminder, ContactStatus, Visibility } from '@/lib/connections/types'
 import {
   updateProfile, setStatus, setVisibility, deleteProfile, addNote, deleteNote, addTag, removeTag,
@@ -47,11 +48,14 @@ export function Detail({
   initial,
   reminders = [],
   timeline,
+  timelineEntries = [],
   back,
 }: {
   initial: ContactDetail
   reminders?: ContactReminder[]
   timeline?: React.ReactNode
+  /** The unified CRM timeline (ADR-372): logged touches for this contact, newest first. */
+  timelineEntries?: TimelineEntry[]
   /** Back-link rendered by the Detail shell above the identity band (the single back affordance). */
   back?: { href: string; label: string }
 }) {
@@ -216,6 +220,26 @@ export function Detail({
       <Section title="Follow up">
         <FollowUp contactId={contact.id} reminders={reminders} />
       </Section>
+
+      {/* Timeline — the unified history of logged touches (ADR-372). Notes keep their own
+          section, so they are not repeated here; this is reach-outs and, as later phases land,
+          email / sms / calls. Hidden until there is something to show. */}
+      {timelineEntries.length > 0 && (
+        <Section title="Timeline">
+          <ul className="space-y-3">
+            {timelineEntries.map((e) => (
+              <li key={e.id} className="flex items-start gap-2">
+                <History className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-text">{e.title}</p>
+                  {e.detail && <p className="whitespace-pre-wrap text-xs text-muted">{e.detail}</p>}
+                  <p className="text-xs text-subtle">{fmtDate(e.at)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
 
       {/* Tags */}
       <Section title="Tags">

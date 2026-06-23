@@ -10,6 +10,7 @@ import * as store from '@/lib/connections/store'
 import { mergeContactProfile, dismissContactMatch, unmergeContact } from '@/lib/connections/matching'
 import { syncScanToCrm } from '@/lib/connections/crm-sync'
 import { maybeSendScanIntro } from '@/lib/connections/invite'
+import { recordContactInteraction } from '@/lib/crm/interactions'
 import type {
   ExtractedContact,
   ContactSocials,
@@ -269,7 +270,20 @@ export async function completeReminder(reminderId: string, contactId?: string): 
   const ownerId = await requireOwner()
   const ok = await store.completeReminder(ownerId, reminderId)
   // Completing a follow-up is a touch.
-  if (ok && contactId) await store.touchLastContacted(ownerId, contactId)
+  if (ok && contactId) {
+    await store.touchLastContacted(ownerId, contactId)
+    // Mirror it onto the unified CRM timeline (ADR-372). Fail-safe: recordContactInteraction
+    // never throws, so a timeline write can never break completing a reminder.
+    await recordContactInteraction({
+      ownerProfileId: ownerId,
+      subjectKind: 'network_contact',
+      subjectId: contactId,
+      channel: 'system',
+      direction: 'outbound',
+      summary: 'Followed up',
+      source: 'system',
+    })
+  }
   revalidatePath('/network/contacts')
   if (contactId) revalidatePath(`/connections/${contactId}`)
   return ok
