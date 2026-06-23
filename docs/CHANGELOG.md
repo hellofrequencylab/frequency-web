@@ -42,6 +42,18 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 - **Season 1 challenges, sharpened**: a focused set of **15 challenges** (easy through
   legendary). Finish the first fourteen and **The Completionist** completes itself, with
   the biggest bonus and a border you can't get any other way.
+- **One timer now: Mindless, with Be Still and Get Moving**: the separate Movement
+  timer is gone. Mindless is one timer with two modes you switch between. **Be Still**
+  is the quiet sit (meditate, breathe, journal). **Get Moving** is for a walk, run,
+  yoga, strength set, stretch or play. Pick a practice and it opens in the mode that
+  fits. Get out of your head, and into your life.
+- **Continue a practice you started**: stop a timed sit partway, once you're past
+  halfway, and the day still counts and you bank one Zap. The practice now reads
+  **Continue Practice** wherever you'd log it, and picking it back up resumes the
+  time you had left.
+- **Pick up a dropped sit**: if your phone closes the tab mid-sit, reopen Mindless
+  and it offers to resume right where you were, with the exact time you'd already
+  done. Nothing lost.
 
 ### Changed
 
