@@ -17,6 +17,7 @@ import { listActiveVariants, pickVariant } from '@/lib/entry-points/ab'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { normalizeSplash, primarySplashLink } from '@/lib/qr/splash'
 import { renderSplashPage } from '@/lib/qr/splash-render'
+import { captureQrContact } from '@/lib/connections/qr-capture'
 
 export const dynamic = 'force-dynamic'
 
@@ -173,6 +174,33 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     return res
   }
 
+  // IN-PERSON QR CAPTURE (CRM-STRATEGY §4, ADR-361, P2). When a SIGNED-IN member
+  // scans another member's PERSONAL connect/referral code (owner-owned, the personal
+  // connect QR), keep them as a private contact and drop them into the follow-up
+  // moment. One-way only: pre-filled from the owner's PUBLIC profile, stamped with
+  // where/when they met — it never touches the marketing `contacts` DB and never
+  // notifies the owner.
+  // Scope is narrow on purpose: only a signed-in NON-owner, only a personal code.
+  // Everything else (anonymous scanners, self-scans, the owner-profile view, the
+  // splash/url/event/circle branches, every cookie) is untouched below. If the
+  // capture returns null (skip / any error), we fall through to the existing
+  // behavior so the scan never breaks.
+  const isPersonalCode =
+    !!code.owner_profile_id && (code.purpose === 'connect' || code.purpose === 'referral')
+  if (profileId && isPersonalCode && code.owner_profile_id && profileId !== code.owner_profile_id) {
+    // Met-context from what the scan already knows: the event/Space the code carries
+    // (if any), else the coarse IP-geo city. Date defaults to today inside capture.
+    let metAt: string | null = code.event_id ? await eventTitle(admin, code.event_id) : null
+    if (!metAt && city) metAt = decodeURIComponent(city)
+    const contactId = await captureQrContact(profileId, code.owner_profile_id, { at: metAt })
+    if (contactId) {
+      // Land on the captured contact's detail page — the P1 "Follow up" section is
+      // right there, so "set a follow-up now" is one tap away.
+      return to(`/connections/${contactId}`)
+    }
+    // null → fall through to the existing signed-in routing (owner profile view, etc.).
+  }
+
   // SPLASH (ENTITY-SPACES-BUILD §C, Phase 2): when a code carries a valid splash, a scan sees the
   // splash landing instead of a bare redirect. Two behaviors, both AFTER the scan is logged + the
   // referral/first-touch cookies are set (so a splash code still counts + attributes):
@@ -271,4 +299,13 @@ async function ownerHandle(
 ): Promise<string | null> {
   const { data } = await admin.from('profiles').select('handle').eq('id', ownerId).maybeSingle()
   return data?.handle ?? null
+}
+
+/** The title of the event a code carries (for the met-context stamp), or null. */
+async function eventTitle(
+  admin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+): Promise<string | null> {
+  const { data } = await admin.from('events').select('title').eq('id', eventId).maybeSingle()
+  return data?.title ?? null
 }

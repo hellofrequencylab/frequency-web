@@ -1,6 +1,6 @@
 # CRM Strategy: My Contacts (free) → Spaces CRM (paid)
 
-> **Status:** ✅ P1 shipped (the free keep-in-touch foundation); P2/P3 designed, not built.
+> **Status:** ✅ P1 + P2 shipped (the free keep-in-touch foundation + in-person QR capture); P3 designed, not built.
 > Strategy + foundation plan for turning **My Contacts**
 > (`/network/contacts`) into a lightweight, in-person relationship CRM that doubles as the
 > **lead generator** for the full CRM that paid **Spaces** (business / practitioner / org
@@ -41,7 +41,7 @@
 | Spaces tenancy + per-space CRM scope, `businessCrm` access surface | ✅ Shipped | [SPACES.md](SPACES.md), `lib/core/access-matrix.ts` |
 | People graph — resonance, near-miss, "this week" pulse | ✅ Shipped | [CONNECTION-LAYER.md](CONNECTION-LAYER.md) |
 | **Keep-in-touch layer** — reminders, last-contacted, "reach out today" | ✅ Shipped (P1) | this doc, P1 · `network_contact_reminders`, `last_contacted_at` |
-| **In-person QR capture** — scan a member's QR → a contact | 🔴 Missing | this doc, P2 |
+| **In-person QR capture** — scan a member's QR → a contact | ✅ Shipped (P2) | this doc, P2 · `lib/connections/qr-capture.ts`, `app/q/[slug]/route.ts` |
 | **Graduation** — personal → Space CRM upgrade path | 🔴 Missing | this doc, P3 |
 
 ## 2. The freemium barbell (the free/paid line)
@@ -107,29 +107,43 @@ The reminders table + `last_contacted_at` are the only genuinely new primitives,
 backbone for both the free reach-out list and (later) paid reporting. They reuse the shape of the
 existing `crm_activities` due-dated tasks rather than inventing a new pattern.
 
-## 4. In-person QR capture (decided: one-way + met-context)
+## 4. In-person QR capture (✅ shipped P2: one-way + met-context)
 
-**Today** a member's personal Frequency QR (`/q/<slug>`, purpose `connect`) only sets a referral
-cookie and redirects — scanning it creates **no** contact. We add a capture step in that resolver
-when the scanner is a **signed-in member** and the code is a personal connect code.
+**Shipped.** A member's personal Frequency QR (`/q/<slug>`, purpose `connect` or `referral`) now
+captures the scanner a private contact. When the scanner is a **signed-in member** who is **not the
+code owner**, the resolver (`app/q/[slug]/route.ts`) calls `captureQrContact`
+(`lib/connections/qr-capture.ts`) and then redirects them to `/connections/<id>` — the captured
+contact's detail page, where the P1 "Follow up" section is right there. Anonymous scanners,
+self-scans, and every other code type keep their existing behavior (cookies, sign-in redirect,
+owner-profile view, splash, url/event/circle); if the capture returns null the scan falls through to
+the prior redirect, so it can never break.
 
-**Decided build (one-way + met-context):**
+**Shipped build (one-way + met-context):**
 
 1. **One-way capture.** Member scans someone's QR → create a `network_contact` for the scanner,
    `source='qr_scan'`, `linked_profile_id` = the code owner, pre-filled from the owner's **public
-   profile** (name, avatar, handle, title), `visibility='private'`. No consent needed — it is the
-   scanner's private "I met them" note, exactly like a card scan. Lands in the **QR Scan** tab.
-2. **Met-context auto-stamp.** `record_qr_scan` already captures coarse geo + the place/event.
-   Stamp "Met at <Event/Space> · <date> · <city>" onto the capture. Stored in the existing
-   `details` jsonb → **no migration for the context itself.**
-3. **Follow-up at the moment.** Right after the scan, surface "Add a note / remind me to follow
-   up." One tap drops them into the reach-out list. This is the highest-ROI CRM habit.
+   profile** (display name, plus the professional title only when the member opted to share it on
+   their vCard), `visibility='private'`. The avatar is left null on purpose: the linked member's
+   photo renders via `linked_profile_id`, so we never copy a profile photo into the private bucket.
+   No consent needed — it is the scanner's private "I met them" note, exactly like a card scan.
+   Lands in the **QR Scan** tab.
+2. **Dedupe (one row per person).** If the scanner already has a contact `linked_profile_id` = this
+   owner, a re-scan does **not** create a duplicate: it refreshes `details.metContext` and bumps
+   `last_contacted_at`, then returns that contact's id. A first scan stamps `last_contacted_at = now()`.
+3. **Met-context auto-stamp.** From what the scan already knows: the event/Space the code carries
+   (`code.event_id` → event title), else the coarse IP-geo city. Stored as
+   `details.metContext = { via: 'qr', at: <event/space/city or null>, on: <iso date> }` in the existing
+   `details` jsonb → **no migration for the context itself** — plus a "Met via QR ..." connection note.
+4. **Follow-up at the moment.** The scanner is redirected straight to the captured contact's detail
+   page (`/connections/<id>`), so the P1 "Follow up" section ("set a follow-up now") is one tap away.
+   This is the highest-ROI CRM habit.
 
 **Fast-follow (not in the first cut):** the **reciprocal handshake** ("Share yours back?" → both
 parties capture each other), gated behind an explicit consent confirm (à la HiHello / Blinq).
 
-**Schema cost:** add `'qr_scan'` to the `source` check constraint; everything else reuses
-`network_contacts`, `/q/<slug>`, and `record_qr_scan`.
+**Schema cost:** none for P2. `'qr_scan'` was added to the `source` check constraint in P1;
+the met-context rides the existing `details` jsonb. Everything else reuses `network_contacts`,
+`/q/<slug>`, and the public `profiles` read.
 
 **Privacy posture (unchanged doctrine).** A capture stays personal/private. It enters the
 marketing `contacts` DB only as `consent_state='unknown'` and becomes mailable only on opt-in
@@ -183,7 +197,7 @@ Same primitives, different **stage + field templates per Space `type`** — whic
 | Phase | Scope | Migration cost |
 |---|---|---|
 | ✅ **P1 — Foundation (free)** | tab/IA facets + `qr_scan` source; `network_contact_reminders`; `last_contacted_at`; "reach out today"; sorting | 1 small additive migration (`20260723000000_network_contacts_crm_p1.sql`) |
-| **P2 — QR capture** | `/q/<slug>` in-person capture (one-way + met-context + follow-up affordance); reciprocal handshake as a fast-follow | resolver change, no new tables |
+| ✅ **P2 — QR capture** | `/q/<slug>` in-person capture (one-way + met-context + dedupe + redirect to the follow-up affordance); reciprocal handshake still a fast-follow | resolver change, no new tables |
 | **P3 — Graduation (paid)** | "Bring contacts into your Space CRM"; contextual upgrade prompts at the ceilings; wire `/spaces/<slug>/crm` pipeline UI over `crm_*` | reuses `crm_*`; per-space gating |
 
 ## 9. Economy alignment (don't reward the row)

@@ -22,7 +22,9 @@ into the wider network.
 `network_contacts`, the record:
 - `owner_id` → `profiles(id)`: **the privacy primitive**. Every read/write is filtered on it.
 - `visibility`: `private` (owner only) · `shared` (future: owner's team) · `network` (signed-in stewards). Gates promotion so personal captures don't bleed into public data.
-- `source`: `card_scan` · `poster` · `manual` · `import` (the "many inputs").
+- `source`: `card_scan` · `poster` · `manual` · `import` · `qr_scan` (the "many inputs"). `qr_scan`
+  is the in-person QR capture (CRM-STRATEGY §4, ADR-361, P2): a signed-in member scanning another
+  member's personal connect QR keeps them as a private contact — see "In-person QR capture" below.
 - `status`: `new` · `active` · `archived` (routing/sorting).
 - Harvested fields: `display_name, email, phone, title, company, city, website, socials(jsonb)`.
 - `details(jsonb)`: the rich, flexible harvest of everything printed on the card: phones, emails, addresses, services, certifications, hours, links, other (all optional, validated by `coerceContactDetails`; mirrors `events.details`). Added by `20260614000000_contact_card_media.sql` (ADR-215).
@@ -111,6 +113,24 @@ per-scan checkbox) the steward sends **one** transactional intro.
 **Posture:** a single, person-initiated introduction (the steward met them), not bulk
 marketing. No marketing email until the lead opts in (`consent_state='subscribed'`).
 
+## In-person QR capture (ADR-361, CRM-STRATEGY §4, P2)
+
+When a **signed-in member** scans another member's **personal connect QR** (`/q/<slug>`, purpose
+`connect` or `referral`, owner-owned), the resolver keeps the scanner a **private** contact and
+drops them into the follow-up moment. One-way only: it never adds the scanned person to the
+marketing `contacts` DB and never notifies them.
+
+| Piece | How |
+|---|---|
+| Capture | `lib/connections/qr-capture.ts#captureQrContact(scannerId, ownerProfileId, metContext)`: creates a `network_contacts` row `owner_id = scanner`, `source='qr_scan'`, `visibility='private'`, `linked_profile_id = owner`, `display_name`/`title` from the owner's **public** profile (title only if shared on their vCard). `avatar_path` stays null — the linked member's photo renders via `linked_profile_id`, so no profile photo is copied into the private bucket. Stamps `last_contacted_at = now()`. |
+| Met-context | `details.metContext = { via: 'qr', at: <event/Space title from `code.event_id`, else the coarse IP-geo city, else null>, on: <iso date> }` in the existing `details` jsonb (no migration), plus a "Met via QR ..." note (`kind='connection'`) through the existing note path. |
+| Dedupe | One contact per (scanner, linked member): a re-scan refreshes `details.metContext` + `last_contacted_at` and returns the existing id instead of duplicating. |
+| Skip-self + fail-safe | A self-scan (`scannerId === ownerProfileId`) is skipped; the whole function is wrapped in try/catch and returns null on any error, so a missing column/table can never break the scan/redirect. |
+| Wiring | `app/q/[slug]/route.ts`: for a signed-in non-owner scanning a personal code, call the capture, then redirect to `/connections/<id>` (the P1 "Follow up" section). Anonymous scanners, self-scans, and every other branch (cookies, sign-in redirect, owner-profile view, splash, url/event/circle) are unchanged; a null result falls through to the prior redirect. |
+
+The **reciprocal handshake** ("share yours back", both parties capture each other, consent-gated) is
+a deliberate fast-follow, not in this cut.
+
 ## Unified person: the "User Stats" page (ADR-130)
 
 One human can exist as up to three rows joined by **lowercased email**: `profiles` (member),
@@ -168,7 +188,8 @@ locality (`canViewLead`). A capture that's become a member is skipped (you find 
 - **My Contacts as a lightweight in-person CRM + the paid-Spaces upgrade funnel:** the strategy
   for the keep-in-touch layer (follow-up reminders, last-contacted, "reach out today"), the
   `Card`/`QR Scan` tab facets + in-person QR capture, and graduation into the paid Spaces CRM lives
-  in [CRM-STRATEGY.md](CRM-STRATEGY.md) (ADR-361). Build lands across P1–P3 there.
+  in [CRM-STRATEGY.md](CRM-STRATEGY.md) (ADR-361). ✅ P1 (keep-in-touch) and ✅ P2 (in-person QR
+  capture, see above) have shipped; P3 (graduation into the paid Spaces CRM) is designed, not built.
 - **Promotion into public/network** (`→ contacts`, link to a member `profile`): schema hooks exist; the action is gated behind its own review since that's where leak risk concentrates.
 - `shared` (team) visibility: modelled, not yet surfaced.
 - More sources (email/calendar import): `source` is open for it.

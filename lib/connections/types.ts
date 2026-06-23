@@ -55,6 +55,17 @@ export interface ContactOtherDetail {
   confidence?: FieldConfidence
 }
 
+/** Where and when two members met, stamped onto a QR-scan capture (CRM-STRATEGY
+ *  §4). Lives in the `details` jsonb so it needs no migration. */
+export interface MetContext {
+  /** How the capture happened. Today always `'qr'` (an in-person QR scan). */
+  via: 'qr'
+  /** Where they met: the event/Space name, else the city, else null. */
+  at: string | null
+  /** The day they met, ISO date (yyyy-mm-dd). */
+  on: string | null
+}
+
 /** The rich, flexible harvest of everything printed on the card. Every field is
  *  optional and omitted when empty. Persisted as the network_contacts.details
  *  JSONB column. Mirrors the events EventDetails contract. */
@@ -69,6 +80,8 @@ export interface ContactDetails {
   other?: ContactOtherDetail[]
   /** A top-level read on how confidently the card could be parsed at all. */
   confidence?: FieldConfidence
+  /** Set on a QR-scan capture: where/when the scanner met this person. */
+  metContext?: MetContext
 }
 
 export interface ContactSocials {

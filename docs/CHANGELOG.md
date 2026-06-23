@@ -12,6 +12,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Save someone by scanning their code**: scan another member's personal Frequency code in
+  person and they land in **My Contacts**, pre-filled from their public profile and stamped with
+  where and when you met. You go straight to their contact page to set a follow-up. It's private
+  to you, the other person isn't notified, and scanning the same person again just updates your
+  existing contact. Find these under the new **QR Scan** tab.
 - **Follow-ups in My Contacts**: set a reminder to reach out to anyone you've met, with
   an optional note. Open reminders gather in a **Reach out** list at the top of My Contacts,
   so the people worth a message are the first thing you see. Mark one **Done** and it clears.
