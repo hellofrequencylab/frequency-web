@@ -36,6 +36,15 @@ export interface AudienceRecipient {
 export interface AudienceFilter {
   /** A freeform tag to filter by (network_contact_tags). Null / omitted = all of the Space's contacts. */
   tag?: string | null
+  /** A saved segment to resolve from (space_segments, ADR-380). When set, resolveAudience loads the
+   *  segment's stored AudienceFilter-shaped `definition` and resolves from THAT (fail-safe to
+   *  "everyone" if the segment is missing / cross-space). Null / omitted = no segment. */
+  segmentId?: string | null
+  /** Consent scope (ADR-380). 'subscribed' would narrow to consented contacts; 'all' / omitted keeps
+   *  the current behavior (every matching contact). Reserved for a future consent join: today the v1
+   *  contacts read carries no per-Space consent column, so this is accepted + stored but does not yet
+   *  narrow, keeping the change purely additive. */
+  consent?: 'subscribed' | 'all'
 }
 
 // Hard cap so a malformed/hostile Space can never resolve an unbounded recipient list in one pass.
@@ -56,6 +65,21 @@ export function normalizeTag(raw: unknown): string | null {
  *  empty / malformed contact email never becomes a recipient. */
 function looksLikeEmail(email: unknown): email is string {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+}
+
+/** Coerce a stored segment `definition` jsonb into a safe AudienceFilter, reading ONLY the known
+ *  facets and DROPPING any nested segmentId (a segment never references another segment, so a stored
+ *  definition can never chain into an infinite resolve). Pure: an absent / malformed definition reads
+ *  as "everyone" ({}), which is the fail-safe posture. */
+export function definitionToFilter(raw: unknown): AudienceFilter {
+  if (!raw || typeof raw !== 'object') return {}
+  const d = raw as Record<string, unknown>
+  const filter: AudienceFilter = {}
+  const tag = normalizeTag(d.tag)
+  if (tag) filter.tag = tag
+  if (d.consent === 'subscribed' || d.consent === 'all') filter.consent = d.consent
+  // Intentionally NO segmentId: a segment definition never nests another segment.
+  return filter
 }
 
 // ── IO: the untyped admin-client seams (tables not in generated types yet, ADR-246) ────────────
@@ -128,6 +152,44 @@ async function readSpaceContacts(spaceId: string): Promise<{ id: string; email: 
   }
 }
 
+/** A saved segment's stored `definition` for THIS Space (space_segments, ADR-380), as a safe
+ *  AudienceFilter. Reads through the untyped admin client (table not in the generated types yet,
+ *  ADR-246), PINNED to space_id so a cross-space segment id resolves to null -> "everyone" (the
+ *  fail-safe). Single-row read filters BOTH id AND space_id so a cross-space id leaks nothing.
+ *  FAIL-SAFE to {} (everyone) on any error / missing row. */
+async function readSegmentFilter(spaceId: string, segmentId: string): Promise<AudienceFilter> {
+  if (!spaceId || !segmentId) return {}
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (
+            col: string,
+            val: string,
+          ) => {
+            eq: (
+              col: string,
+              val: string,
+            ) => {
+              maybeSingle: () => Promise<{ data: { definition: unknown } | null; error: unknown }>
+            }
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .from('space_segments')
+      .select('definition')
+      .eq('id', segmentId)
+      .eq('space_id', spaceId)
+      .maybeSingle()
+    if (error || !data) return {}
+    return definitionToFilter(data.definition)
+  } catch {
+    return {}
+  }
+}
+
 // ── PUBLIC: resolve + count (the recipients the send seam consumes) ─────────────────────────────
 
 /**
@@ -143,7 +205,14 @@ export async function resolveAudience(
   filter: AudienceFilter = {},
 ): Promise<AudienceRecipient[]> {
   if (!spaceId) return []
-  const tag = normalizeTag(filter.tag)
+
+  // A saved segment resolves from its STORED definition (ADR-380): load it (fail-safe to "everyone"
+  // if the segment is missing / cross-space) and resolve through the EXISTING tag logic. When no
+  // segmentId is given this is a pure no-op, so existing call sites are unchanged.
+  const effective = filter.segmentId
+    ? await readSegmentFilter(spaceId, filter.segmentId)
+    : filter
+  const tag = normalizeTag(effective.tag)
 
   const contacts = await readSpaceContacts(spaceId)
   if (contacts.length === 0) return []
