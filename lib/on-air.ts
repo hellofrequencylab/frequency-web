@@ -166,9 +166,11 @@ export function ringScaleAt(pattern: BreathPattern, elapsed: number): number {
   return band(prev.toScale ?? (prev.kind === 'out' ? 0 : 1))
 }
 
-/** Session duration presets (minutes). The 2-minute floor is deliberate: a
- *  sustainable daily sit beats an ambitious abandoned one. */
-export const DURATION_PRESETS = [2, 5, 10, 15, 20, 30] as const
+/** Session duration presets (minutes) for the silent-timer sit modes (Meditate, Journal,
+ *  Stillness, Ritual). Five chips in one clean row, matching Get Moving's Walk presets so
+ *  the Be Still and Get Moving setup screens share the same minutes layout. The free-form
+ *  stepper below still reaches any length (down to the 1-minute floor). */
+export const DURATION_PRESETS = [5, 10, 15, 20, 30] as const
 
 /** Breath-mode length presets — a shorter, calmer set than Meditate's (owner ask). The
  *  free-form stepper still lets a member pick any length under them. */

@@ -137,7 +137,9 @@ export async function loadOnAirSessionData(
   if (sit) {
     practices.push({
       id: FREE_SIT_ID,
-      title: 'Free sit',
+      // The neutral open-length entry. Labeled "Free Practice" so it reads the same on the
+      // Be Still and Get Moving sides of the door (item #4); kept short so it never wraps.
+      title: 'Free Practice',
       loggedToday: false,
       durationMin: null,
       logsAs: sit.id,
