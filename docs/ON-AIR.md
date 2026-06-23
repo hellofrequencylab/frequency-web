@@ -1,6 +1,6 @@
 # On Air: the practice timer mini-app (member-facing: **Mindless**)
 
-> Status: **P1 to P7 shipped** (ADR-229; desktop intercepted-modal entry deferred, see Roadmap). **Unified into one timer with two modes (ADR-360, see "The unified timer" below).** Canon names: NAMING.md §The Quest ("On Air" =
+> Status: **P1 to P16 shipped** (ADR-229; desktop intercepted-modal entry deferred, see Roadmap). **Unified into one timer with two modes (ADR-360, see "The unified timer" below); select-not-start setup + auto-resume from a partial + crash-safe recovery shipped (P15); design alignment + Get Moving teal/blue recolor shipped (P16).** Canon names: NAMING.md §The Quest ("On Air" =
 > internal name; member-facing the app is **Mindless**, verb **"tune out"**, modes **Be Still** / **Get Moving**, tagline **"Get out of your head, and into your life."**; "Airtime", "Dispatch from Vera"). Member help: `content/help/the-quest/on-air.md`.
 
 One tap → the world goes quiet → you breathe (or you move) → the game pays you in
@@ -81,7 +81,9 @@ practice page button      wake lock · visualizer      ② Streak    N-1 → N, 
 | Piece | Where | Notes |
 |---|---|---|
 | Route | `app/(main)/on-air/` | Focus surface; `'/on-air'` registered `'none'` in `lib/layout/page-chrome.ts` |
-| Session machine | `components/on-air/session.tsx` | setup → live → saving → reveal; wake lock + mobile fullscreen, re-acquired on visibility |
+| Session machine | `components/on-air/session.tsx` | setup → live → saving → reveal; wake lock + mobile fullscreen, re-acquired on visibility. The setup **selects** a practice (it does not auto-start); the primary button starts it |
+| Get Moving engine | `components/on-air/movement-session.tsx` | the interval engine under the same door (`lib/movement.ts`); same crash-resume + partial-resume wiring as Be Still |
+| Crash-safe persistence | `lib/on-air/live-session.ts` (+ tests) | a running sit/run is mirrored to `localStorage` (start/pause/resume + 30s heartbeat); a reload offers a Resume prompt. See "Crash-safe persistence" below |
 | Visualizer | `components/on-air/visualizer.tsx` | RippleRings motif breathing; rAF writes transforms via refs (no React frame-rate renders); reduced-motion → opacity fade |
 | Breath math | `lib/on-air.ts` (+ tests) | Box 4-4-4-4 · 3X (physiological sigh, 4-1-7) · 4-7-8; `breathPositionAt` / `ringScaleAt` pure, per-phase scale ranges for stacked breaths |
 | Completion | `app/(main)/on-air/actions.ts` | ONE action: insert `practice_sessions` → **`logPractice()` (the only economy entry: same idempotency, zaps, bonuses, streaks)** → gather reveal payload → Dispatch |
@@ -93,6 +95,77 @@ practice page button      wake lock · visualizer      ② Streak    N-1 → N, 
 **Invariant: On Air is a stage, never a second economy.** A session that ends calls
 `logPractice()` and nothing else pays. A practice already logged today still records
 a session (airtime). The reveal shows "already counted" honestly, streak intact.
+
+## Entry, selection, and resume (the final flow)
+
+The setup **selects** a practice; it does not auto-start. Across every entry path
+(Zap menu chooser, a "Continue Practice" button, an auto-selected lone practice, a
+`/on-air?practice` link, a Journey **Practice** button), the timer lands on the
+setup with the practice pre-selected and the mode + minutes seeded, then waits for
+the member to tap the primary button.
+
+- **Primary button label.** `Start Practice` normally; **`Continue Practice`** when
+  the selected practice has a resumable partial today (Just Log keeps `Log it`). The
+  setup also surfaces the remaining time on a partial ("N min left. Continue Practice
+  picks up where you stopped."), and Get Moving shows the same as "Continue Practice,
+  N min left." The chooser is re-opened from a **Change** affordance; with one or zero
+  practices nothing renders (auto-selected, ADR-306).
+- **Auto-resume from the SELECTED practice's `partialToday`.** Resume is no longer
+  gated to an explicit resume link. `lib/on-air/session-data.ts` attaches each
+  practice's `partialToday` (`{ bankedSec, targetSec }`), and the engines recompute
+  the resume from whichever practice is selected. So a Zap-menu pick, the Continue
+  Practice button, and an auto-select all resume the same way: the timer runs only
+  the **remaining** time and banks only the rest. Switching to a non-partial practice
+  abandons the in-flight resume. The partial is the completion-economy partial (ADR-353):
+  a started, banked-but-unfinished log today (`completed = false`, banked seconds with a
+  larger target ahead). `getPracticeMemberState` (detail surfaces) and `getPartialMapToday`
+  (index surfaces) both derive it through one `partialFromLogRow` helper in `lib/practices.ts`.
+- **The "Continue Practice" affordance.** A practice with a partial today reads
+  **Continue Practice** wherever a Log/Practice button appears (practice pages, the
+  JourneyBoard, the learn player, the "Your practices" rows, the Zap-menu chooser):
+  `components/practice/log-practice-button.tsx`, `practice-timer-button.tsx`,
+  `practice-row-actions.tsx`, `practice-prompt.tsx`, `components/feed/journey-board.tsx`,
+  `components/journey/v2/learn/practice-actions.tsx`. It resumes the remaining time, then
+  tops the partial up to complete and pays the rest of the Zaps (ADR-353's "Finish
+  Practice" top-up; the member-facing label is now "Continue Practice").
+- **Countdown rule.** Get Moving has **no** pre-roll countdown; Be Still keeps the
+  5-second "Starting in N" pre-roll on its sit modes (P14), with **Start** overriding
+  it to begin now. Just Log is an instant log (no live screen, no countdown).
+
+## Crash-safe persistence (recover a dropped sit/run)
+
+Both engines hold their running state (startedAt, pausedAt, mode/config) in React
+memory only. Mobile browsers freeze a backgrounded tab and then **discard** it to
+reclaim RAM; on reopen the page reloads and a naive timer resets to setup, losing the
+sit. The fix (`lib/on-air/live-session.ts`): mirror a tiny record to `localStorage` on
+start / pause / resume plus a 30s heartbeat, so a reload **detects** an in-progress run
+and offers a **Resume** prompt that restores the exact elapsed.
+
+- The clock is wall-clock based (`Date.now() - startedAt`, pause-adjusted), so the
+  exact elapsed is recovered from the saved `startedAt` — no time is lost to the freeze.
+- A per-surface `setup` payload rebuilds the mode + config on resume; a `resumeFromSec`
+  field carries any earlier-banked partial so crash-recovery and partial-resume compose.
+- Staleness guard: a record older than `LIVE_SESSION_MAX_AGE_MS` (6h) since its last
+  heartbeat is dropped, so a sit left overnight never resurrects. Best-effort throughout
+  (any read/parse/quota failure degrades to "no saved run"; never throws into a render).
+  The record is cleared on finish, discard, or recovery cleanup.
+
+## Design specifics (the alignment + recolor pass)
+
+- **Aligned setup screens.** Be Still and Get Moving share one setup layout. A
+  single-row **5 / 10 / 15 / 20 / 30** minute preset set serves the sit modes
+  (Meditate / Journal / Stillness / Ritual), with the free-form stepper (1 to 120)
+  beside it.
+- **"Free sit" is labeled "Free Practice".** The always-available neutral entry reads
+  the same in both modes (`lib/on-air/session-data.ts`); it still logs the default sit
+  practice (`morning-stillness`) through the one economy path.
+- **Get Moving is teal/blue.** A new `move` token (`--color-move`, cerulean blue-teal)
+  colors the Get Moving accents (resume cue, Change link, Start button, Resume prompt,
+  the live + standalone labels), set roughly opposite Be Still's warm amber and bluer
+  than the green-leaning success teal so it never collides with "done". Tokens only, no
+  hardcoded hex in UI.
+- The Get Moving Play icon is the **Volleyball** glyph; the masthead carries more top
+  margin.
 
 ## Dispatches from Vera
 
@@ -221,6 +294,24 @@ on revisit**, by design.
   **"Adopt it for myself"** option so an author's own Journey fills On Air. Plus
   a mobile Zap-popup pass: Check In / Ghost Node / Partners go to the inert
   ghost state, and the Capture box is one line shorter.
+
+- ~~P15: the unified door + auto-resume + crash-recovery~~ ✅ shipped: the two
+  timers became ONE Mindless with **Be Still** / **Get Moving** modes (ADR-360,
+  "The unified timer" above); the setup **selects** a practice instead of
+  auto-starting, and the primary button reads **Start Practice** (or **Continue
+  Practice** for a partial). Resume is no longer gated to an explicit link: the
+  timer **auto-resumes from the selected practice's `partialToday`** across every
+  entry path, running only the remaining time, and a **Continue Practice**
+  affordance appears wherever a Log/Practice button does. Crash-safe persistence
+  (`lib/on-air/live-session.ts`) mirrors a running sit/run to `localStorage` so a
+  reload after a mobile tab discard offers a **Resume** prompt that restores the
+  exact elapsed. See "Entry, selection, and resume" + "Crash-safe persistence".
+
+- ~~P16: design alignment + recolor~~ ✅ shipped: aligned Be Still / Get Moving
+  setup screens, a single-row 5/10/15/20/30 minute preset set, "Free sit" labeled
+  **Free Practice**, Get Moving recolored teal/blue via the new `move` token, the
+  Play icon swapped to **Volleyball**, and more masthead top margin. See "Design
+  specifics".
 
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.

@@ -3,7 +3,7 @@ title: Mindless, the practice timer
 description: One timer, two modes. Be Still for the quiet sit, Get Moving for a walk, run, yoga or workout. Then collect your rewards, streak and next assignment.
 category: the-quest
 order: 4
-updated: 2026-06-21
+updated: 2026-06-23
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -24,14 +24,14 @@ practice and Mindless opens in the mode that fits it, and you can switch.
 Open it from the **Mindless button in the header** (it opens fullscreen, taking
 over the screen wherever you are on the site), from the **Practice** button on a
 timer practice in a Journey, from the Zap button (the **Mindless** row), from your
-home screen (the little lotus next to any practice), or from a practice page. If
-you've adopted any practices, the button reads **Select a practice**: pick the one
-you're doing and the timer opens already set to its length. Pick three things, and
-it remembers them for next time:
+home screen (the little lotus next to any practice), or from a practice page.
+Mindless opens already set to the practice you picked and its length, and it
+remembers your choices for next time. When you have more than one to choose from,
+hit **Change** to switch. Pick three things:
 
-- **A practice.** Always there is a **Free sit**, so you can tune out any time
+- **A practice.** Always there is **Free Practice**, so you can tune out any time
   even before you adopt anything. Once you join a Journey, the practices for the
-  part you're on show up here too. Pick the one you're doing, or Free sit.
+  part you're on show up here too. Pick the one you're doing, or Free Practice.
 - **A mode: Be Still or Get Moving.** Pick a practice and Mindless opens in the
   mode that fits it. You can switch.
   - **Be Still** is for sitting. *Meditate*, *Stillness*, and *Ritual* are quiet
@@ -51,17 +51,24 @@ it remembers them for next time:
   you can change it. Two is enough. Five is plenty. Use the stepper for anything
   up to a hundred and twenty.
 
-Then hit **Tune out**. The world goes quiet and a short **five-second countdown**
-starts you off (tap **Start** to begin right away). While you're tuned out the
-screen stays awake and everything else gets out of the way. **Pause** if life
-interrupts (paused time doesn't count), and when the timer runs out, hit
-**Finish** to collect.
+Then hit **Start Practice**. In Be Still a short **five-second countdown** starts
+you off (tap **Start** to begin right away); Get Moving starts on your cue, no
+countdown. While you're tuned out the screen stays awake and everything else gets
+out of the way. **Pause** if life interrupts (paused time doesn't count), and when
+the timer runs out, hit **Finish** to collect.
 
 Stop early and it still counts, as long as you got at least **halfway**: the day
 is logged, your streak holds, and you bank **one Zap** right then. The practice
-then reads **Finish Practice** back on your home screen, so you can pick up where
-you left off and collect the rest of the Zaps. Stop before halfway and nothing
-logs yet, so come back to it when you can. The practice is the point, not the clock.
+then reads **Continue Practice** wherever you'd log it (your home screen, a
+Journey, the Zap button), so you can pick up where you left off and collect the
+rest of the Zaps. Continue Practice picks it up at the time you had left, not from
+zero. Stop before halfway and nothing logs yet, so come back to it when you can.
+The practice is the point, not the clock.
+
+**Closed the tab mid-sit?** If your phone shuts the page while you're tuned out (a
+long walk with the screen off, a tab the browser drops), reopen Mindless and it
+offers to **Resume** right where you were, with the exact time you'd already done.
+Nothing is lost.
 
 ## Breathing patterns (Be Still)
 
