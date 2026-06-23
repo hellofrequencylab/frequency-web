@@ -26,6 +26,7 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
           <div className="flex items-center gap-8 text-xs text-muted">
             <Link href="/discover" className="hover:text-text transition-colors">Discover</Link>
             <Link href="/privacy" className="hover:text-text transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-text transition-colors">Terms</Link>
             <a href="mailto:hello@frequencylocal.com" className="hover:text-text transition-colors">Contact</a>
           </div>
         </div>

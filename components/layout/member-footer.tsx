@@ -100,8 +100,8 @@ const COLUMNS: FootColumn[] = [
   {
     title: 'Legal',
     links: [
-      // Only /privacy exists today; /terms is omitted until the page ships.
       { href: '/privacy', label: 'Privacy' },
+      { href: '/terms', label: 'Terms' },
     ],
   },
 ]

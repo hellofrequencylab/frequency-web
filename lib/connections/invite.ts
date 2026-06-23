@@ -11,6 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { shortLinkUrl } from '@/lib/qr/links'
 import { sendScanIntroEmail } from '@/lib/email'
+import { recordContactInteraction } from '@/lib/crm/interactions'
 import { buildLeadUnsubUrl } from './lead-unsub'
 
 /** Operator master switch — default OFF so nothing sends until flipped. */
@@ -93,6 +94,17 @@ export async function maybeSendScanIntro(input: {
       .from('network_contacts')
       .update({ invited_at: new Date().toISOString() })
       .eq('id', input.networkContactId)
+
+    // Log the intro on the unified CRM timeline (ADR-372). Fail-safe.
+    await recordContactInteraction({
+      ownerProfileId: input.ownerId,
+      subjectKind: 'network_contact',
+      subjectId: input.networkContactId,
+      channel: 'email',
+      direction: 'outbound',
+      summary: 'Sent an intro to invite them to Frequency',
+      source: 'system',
+    })
 
     return { sent: true }
   } catch {
