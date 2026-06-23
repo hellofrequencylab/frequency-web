@@ -6,14 +6,6 @@
 //
 // Trust is reputation, never currency. Tune these centrally as the model matures.
 
-export type TrustContext =
-  | 'global'
-  | 'marketplace'
-  | 'host'
-  | 'roommate'
-  | 'practitioner'
-  | 'community'
-
 /** `source.signal_type` → weight. The single tunable source of truth for scoring. */
 export const SIGNAL_WEIGHTS: Record<string, number> = {
   // Identity / account standing (shared, score into global)
@@ -39,9 +31,4 @@ export const SIGNAL_WEIGHTS: Record<string, number> = {
 /** The weight for a `source.signal_type` pair (0 if not in the catalog). */
 export function weightFor(source: string, signalType: string): number {
   return SIGNAL_WEIGHTS[`${source}.${signalType}`] ?? 0
-}
-
-/** Whether a `source.signal_type` pair is a known, catalogued signal. */
-export function isKnownSignal(source: string, signalType: string): boolean {
-  return `${source}.${signalType}` in SIGNAL_WEIGHTS
 }

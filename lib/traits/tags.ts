@@ -2,18 +2,14 @@
 // every assignment is validated against the registry so tags stay governed. Writes
 // use the service role (admin); member-facing reads go through RLS. member_tags
 // isn't in database.types yet, so we cast (repo convention; see lib/ai/memory.ts).
+//
+// authz-delegated: caller-trusted system write. The upsert is intrinsically scoped to the
+// passed profile_id (the row + the (profile_id, tag_key) conflict key), and every caller is
+// server-side (onboarding/attribution) which authorizes the profileId before tagging.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTagKey } from './registry'
-
-export interface MemberTag {
-  tagKey: string
-  source: string
-  assignedAt: string
-  expiresAt: string | null
-  context: Record<string, unknown>
-}
 
 export interface AssignTagOptions {
   source?: string
@@ -45,25 +41,3 @@ export async function assignTag(profileId: string, tagKey: string, opts: AssignT
     )
 }
 
-/** Remove a tag from a member. */
-export async function removeTag(profileId: string, tagKey: string): Promise<void> {
-  await db().from('member_tags').delete().eq('profile_id', profileId).eq('tag_key', tagKey)
-}
-
-/** All currently-effective tags for a member (expired ones excluded). */
-export async function getMemberTags(profileId: string): Promise<MemberTag[]> {
-  const { data } = await db()
-    .from('member_tags')
-    .select('tag_key, source, assigned_at, expires_at, context')
-    .eq('profile_id', profileId)
-  const nowMs = Date.now()
-  return ((data ?? []) as Array<{ tag_key: string; source: string; assigned_at: string; expires_at: string | null; context: Record<string, unknown> }>)
-    .filter((r) => !r.expires_at || Date.parse(r.expires_at) > nowMs)
-    .map((r) => ({
-      tagKey: r.tag_key,
-      source: r.source,
-      assignedAt: r.assigned_at,
-      expiresAt: r.expires_at,
-      context: r.context ?? {},
-    }))
-}

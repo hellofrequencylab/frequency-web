@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   orderedSteps,
   firstStep,
-  stepAtOrder,
   nextStepAfter,
   runAtFrom,
   validateStepInput,
@@ -31,12 +30,6 @@ describe('nurture scheduling', () => {
   it('firstStep is the lowest enabled order', () => {
     expect(firstStep(steps)?.order).toBe(1)
     expect(firstStep([])).toBeNull()
-  })
-
-  it('stepAtOrder matches only an enabled step at that exact order', () => {
-    expect(stepAtOrder(steps, 1)?.id).toBe('s1')
-    expect(stepAtOrder(steps, 2)).toBeNull() // disabled
-    expect(stepAtOrder(steps, 9)).toBeNull()
   })
 
   it('nextStepAfter skips a disabled step to the next enabled one', () => {

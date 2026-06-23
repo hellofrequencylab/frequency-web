@@ -8,7 +8,7 @@ import { recordTrustSignal, type RecordTrustSignalInput, type RecordTrustSignalR
 
 export * from './store'
 export * from './compute'
-export { SIGNAL_WEIGHTS, weightFor, isKnownSignal, type TrustContext } from './weights'
+export { SIGNAL_WEIGHTS, weightFor } from './weights'
 
 /** A source-bound trust emitter. `trustSource('marketplace').signal({ profileId, signalType: 'deal_completed' })`. */
 export interface TrustSourceAdapter {

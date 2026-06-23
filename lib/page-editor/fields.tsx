@@ -46,7 +46,6 @@ export const alignField = {
     { label: 'Center', value: 'center' },
   ],
 }
-export type Align = 'left' | 'center'
 
 // Image picker (upload / pick / paste URL) — the project's custom control.
 export const imgField = {

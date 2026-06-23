@@ -35,9 +35,3 @@ export function setActiveSpace(space: Space | null): void {
 export function getActiveSpace(): Space | null {
   return holder().space
 }
-
-/** The active Space id for this request, or null. The one value the entity reads/list helpers
- *  (`listEventsForSpace(spaceId)`, …) take, so a module never reaches past its own tenant. */
-export function getActiveSpaceId(): string | null {
-  return holder().space?.id ?? null
-}

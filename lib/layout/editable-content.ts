@@ -30,5 +30,3 @@ export const CONTENT_EDIT_ROUTES = [
   // it via resolvePageContent('/admin/menu', fallback), with the coded line as the fallback.
   '/admin/menu',
 ] as const
-
-export type ContentEditRoute = (typeof CONTENT_EDIT_ROUTES)[number]

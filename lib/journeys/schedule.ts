@@ -37,15 +37,3 @@ export function unlockedPhaseCount(
   const unlocked = Math.floor(elapsedDays / interval) + 1 // +1: phase 0 open at t=0
   return Math.min(Math.max(1, unlocked), totalPhases)
 }
-
-/** When the next still-locked phase unlocks, or null if every phase is already unlocked. */
-export function nextPhaseUnlockAt(
-  anchorStart: Date,
-  dripIntervalDays: number,
-  totalPhases: number,
-  now: Date = new Date(),
-): Date | null {
-  const unlocked = unlockedPhaseCount(anchorStart, dripIntervalDays, totalPhases, now)
-  if (unlocked >= totalPhases) return null
-  return phaseUnlockAt(anchorStart, unlocked, dripIntervalDays) // next index == current unlocked count
-}

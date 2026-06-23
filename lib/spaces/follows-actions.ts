@@ -9,8 +9,8 @@
 //   follow-space-button.tsx -> followSpace / unfollowSpace
 //
 // SERVER components (the Space profile layout, the /spaces directory) import the READ helpers
-// (isFollowing / followerCount / listFollowedSpaceIds) directly from lib/spaces/follows.ts: they
-// never cross a client boundary, so they need no wrapper. The auth check lives in the implementations
+// (isFollowing / listFollowedSpaceIds) directly from lib/spaces/follows.ts: they never cross a
+// client boundary, so they need no wrapper. The auth check lives in the implementations
 // (getMyProfileId); these wrappers just re-expose them.
 
 import {

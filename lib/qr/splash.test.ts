@@ -2,9 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   normalizeSplash,
   normalizeLinks,
-  isValidSplash,
   primarySplashLink,
-  emptySplash,
   type Splash,
 } from './splash'
 import { renderSplashPage } from './splash-render'
@@ -13,7 +11,7 @@ import { renderSplashPage } from './splash-render'
 //   1. normalizeSplash is fail-closed: a headingless / non-object splash is null; heading/blurb are
 //      trimmed + capped; an unsafe image url drops to null; links are validated.
 //   2. normalizeLinks drops a link missing a label or a valid url; caps at 5.
-//   3. primarySplashLink is links[0] (or null); isValidSplash mirrors normalizeSplash.
+//   3. primarySplashLink is links[0] (or null).
 //   4. renderSplashPage escapes owner content (no injection) and resolves relative urls.
 
 describe('normalizeLinks (pure, fail-closed)', () => {
@@ -85,12 +83,7 @@ describe('normalizeSplash (pure, fail-closed)', () => {
   })
 })
 
-describe('isValidSplash + primarySplashLink (pure)', () => {
-  it('isValidSplash mirrors normalizeSplash', () => {
-    expect(isValidSplash({ heading: 'Hi' })).toBe(true)
-    expect(isValidSplash({ blurb: 'no heading' })).toBe(false)
-  })
-
+describe('primarySplashLink (pure)', () => {
   it('primarySplashLink returns links[0] or null', () => {
     const s = normalizeSplash({
       heading: 'Hi',
@@ -102,10 +95,6 @@ describe('isValidSplash + primarySplashLink (pure)', () => {
     expect(primarySplashLink(s)).toEqual({ label: 'A', url: 'https://a.com' })
     expect(primarySplashLink(normalizeSplash({ heading: 'Hi' })!)).toBeNull()
     expect(primarySplashLink(null)).toBeNull()
-  })
-
-  it('emptySplash is not valid (no heading) until a heading is set', () => {
-    expect(isValidSplash(emptySplash())).toBe(false)
   })
 })
 

@@ -126,20 +126,6 @@ export async function isFollowing(spaceId: string, profileId: string | null): Pr
   }
 }
 
-/** How many members follow this Space. Service-role count read; FAIL-SAFE (0 on any error), so a
- *  brand-new or pre-migration Space resolves to zero followers. */
-export async function followerCount(spaceId: string): Promise<number> {
-  try {
-    const result = (await followsTable()
-      .select('space_id', { count: 'exact', head: true })
-      .eq('space_id', spaceId)) as { count: number | null; error: unknown }
-    if (result.error) return 0
-    return result.count ?? 0
-  } catch {
-    return 0
-  }
-}
-
 /** The set of Space ids `profileId` follows — the input to the directory's "Following" filter.
  *  Service-role read; FAIL-SAFE (empty set on a missing profile or any error). */
 export async function listFollowedSpaceIds(profileId: string | null): Promise<Set<string>> {

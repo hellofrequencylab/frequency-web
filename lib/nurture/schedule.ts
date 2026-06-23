@@ -2,8 +2,6 @@
 // here — the store/runner/actions do I/O; this is the testable logic for "which step
 // runs next and when". Keeping it pure means the cron's progression is unit-tested.
 
-export type NurtureStatus = 'active' | 'completed' | 'cancelled'
-
 export interface NurtureSequence {
   id: string
   persona: string
@@ -22,18 +20,6 @@ export interface NurtureStep {
   enabled: boolean
 }
 
-export interface NurtureEnrollment {
-  id: string
-  sequenceId: string
-  contactId: string
-  email: string
-  persona: string
-  status: NurtureStatus
-  nextStepOrder: number
-  nextRunAt: string
-  lastSentAt: string | null
-}
-
 /** Enabled steps, ascending by order — the canonical send order. */
 export function orderedSteps(steps: NurtureStep[]): NurtureStep[] {
   return steps.filter((s) => s.enabled).sort((a, b) => a.order - b.order)
@@ -42,11 +28,6 @@ export function orderedSteps(steps: NurtureStep[]): NurtureStep[] {
 /** The first enabled step of a sequence (what enrollment starts on), or null. */
 export function firstStep(steps: NurtureStep[]): NurtureStep | null {
   return orderedSteps(steps)[0] ?? null
-}
-
-/** The step to send at `order` (exact match, enabled), or null if it's gone/disabled. */
-export function stepAtOrder(steps: NurtureStep[], order: number): NurtureStep | null {
-  return orderedSteps(steps).find((s) => s.order === order) ?? null
 }
 
 /** The next enabled step strictly after `order`, or null when the sequence is done. */

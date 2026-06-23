@@ -50,8 +50,6 @@ export const JOURNEY_ICONS: JourneyIcon[] = [
   { key: 'star', label: 'Star', Icon: Star, legacy: '💫' },
 ]
 
-export const DEFAULT_JOURNEY_ICON = 'compass'
-
 // One lookup keyed by BOTH the icon key and the legacy emoji, so a stored value
 // from either era resolves the same way. Exposed as a plain record so call sites
 // resolve by indexing — `JOURNEY_ICON_MAP[value] ?? Compass` — rather than calling

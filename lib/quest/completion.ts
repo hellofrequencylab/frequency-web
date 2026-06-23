@@ -137,17 +137,6 @@ export async function expressionRequirement(
   return { required: true, done: !!(progress as { completed_at: string | null } | null)?.completed_at }
 }
 
-/** Back-compat: whether the member completed this Journey's Expression Challenge.
- *  A Journey with no Expression Challenge returns false. Prefer `expressionRequirement`
- *  when you also need to know whether one is required. */
-export async function expressionChallengeDone(
-  profileId: string,
-  journeyId: string,
-  season: number,
-): Promise<boolean> {
-  return (await expressionRequirement(profileId, journeyId, season)).done
-}
-
 /** Pure threshold rule: enough distinct days AND (no Expression required, or it's done). */
 export function isJourneyFinished(
   distinctDays: number,

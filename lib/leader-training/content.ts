@@ -132,10 +132,6 @@ export async function getAllTrainingCategories(
     .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
 }
 
-export async function getAllTrainingDocs(): Promise<TrainingDoc[]> {
-  return (await getAllTrainingCategories()).flatMap((c) => c.docs)
-}
-
 export async function getTrainingDoc(
   category: string,
   slug: string

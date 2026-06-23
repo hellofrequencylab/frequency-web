@@ -3,7 +3,7 @@
 // A person's role in Space A is unrelated to Space B — isolation is the whole point.
 //
 // This file is two halves:
-//   1. The PURE role ladder (SPACE_ROLES, spaceRoleRank, atLeastSpaceRole, isSpaceAdminRole) —
+//   1. The PURE role ladder (SPACE_ROLES, spaceRoleRank, atLeastSpaceRole) —
 //      framework-independent, no Supabase/Next imports, fully unit-testable. Mirrors the ascending
 //      ladder in the CHECK constraint (20260711010000_space_members.sql).
 //   2. The SERVER seam (getSpaceMembership / listSpaceMembers + the add/update/remove helpers) —
@@ -68,12 +68,6 @@ export function spaceRoleRank(role: SpaceRole | string | null | undefined): numb
 export function atLeastSpaceRole(role: SpaceRole | string | null | undefined, min: SpaceRole): boolean {
   const r = spaceRoleRank(role)
   return r >= 0 && r >= spaceRoleRank(min)
-}
-
-/** Whether a role is Space ADMIN (the top rung). Pure ladder check (role only) — the combined
- *  owner-or-admin capability check is isSpaceAdmin in lib/spaces/entitlements.ts. */
-export function isSpaceAdminRole(role: SpaceRole | string | null | undefined): boolean {
-  return atLeastSpaceRole(role, 'admin')
 }
 
 // ── The server seam (admin client; untyped casts until the types regenerate) ─────────────

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { computeScores } from './compute'
-import { weightFor, isKnownSignal } from './weights'
+import { weightFor } from './weights'
 
 describe('trust score computation (ADR-247)', () => {
   it('rolls every signal into global and scopes per-context', () => {
@@ -30,8 +30,7 @@ describe('trust score computation (ADR-247)', () => {
 
   it('unknown signals weigh 0 (no silent scoring)', () => {
     expect(weightFor('marketplace', 'not_a_signal')).toBe(0)
-    expect(isKnownSignal('marketplace', 'deal_completed')).toBe(true)
-    expect(isKnownSignal('marketplace', 'nope')).toBe(false)
+    expect(weightFor('marketplace', 'deal_completed')).toBe(6)
     const { global } = computeScores([{ source: 'x', signalType: 'y', context: 'global' }])
     expect(global).toBe(0)
   })

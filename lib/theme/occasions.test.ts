@@ -5,7 +5,6 @@ import {
   OCCASIONS,
   DEFAULT_OCCASION,
   isOccasionId,
-  resolveOccasion,
   resolveOccasionForDate,
 } from './occasions'
 
@@ -20,15 +19,11 @@ describe('occasion registry (docs/SPACES.md adaptive theming)', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('resolveOccasion / isOccasionId pass known ids through and fall back otherwise', () => {
+  it('isOccasionId passes known ids through and rejects unknown ones', () => {
     for (const o of OCCASIONS) {
       expect(isOccasionId(o.id)).toBe(true)
-      expect(resolveOccasion(o.id)).toBe(o.id)
     }
     expect(isOccasionId('does-not-exist')).toBe(false)
-    expect(resolveOccasion('does-not-exist')).toBe(DEFAULT_OCCASION)
-    expect(resolveOccasion(null)).toBe(DEFAULT_OCCASION)
-    expect(resolveOccasion(undefined)).toBe(DEFAULT_OCCASION)
   })
 })
 

@@ -363,11 +363,3 @@ export function coerceEventExtraction(raw: unknown): ExtractedEvent {
     details: coerceEventDetails(r.details),
   }
 }
-
-/** True when the harvest produced anything worth pre-filling the form with. */
-export function hasAnyEventContent(e: ExtractedEvent): boolean {
-  return Boolean(
-    e.title || e.description || e.startsAt || e.location ||
-    e.organizerName || e.organizerContact || e.tags.length || e.domain,
-  )
-}

@@ -192,12 +192,6 @@ export type SessionMode = 'timer' | 'stillness' | 'ritual' | 'breath' | 'journal
  *  Ritual / Journal share it); 'breath' = the guided rings; 'log' = the instant log, no countdown. */
 export type SessionEngine = 'timer' | 'breath' | 'log'
 
-/** A mode that runs a countdown (everything but Just Log). The breath path and the
- *  silent-timer path are both "timed"; only Just Log skips the clock. */
-export function isTimedMode(mode: SessionMode): boolean {
-  return mode !== 'log'
-}
-
 /** Whether a mode shows the breath visualizer (vs. the plain countdown). */
 export function isBreathMode(mode: SessionMode): boolean {
   return mode === 'breath'

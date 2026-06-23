@@ -55,15 +55,6 @@ export function isOccasionId(id: string): id is OccasionId {
   return OCCASIONS.some((o) => o.id === id)
 }
 
-/**
- * Turn a raw cookie/preference string (or null/undefined) into a safe OccasionId.
- * Returns the id when known, else DEFAULT_OCCASION, so an unrecognized value never breaks
- * the shell.
- */
-export function resolveOccasion(raw: string | null | undefined): OccasionId {
-  return raw != null && isOccasionId(raw) ? raw : DEFAULT_OCCASION
-}
-
 /** Format a Date as the local-calendar 'MM-DD' key used to test occasion windows. */
 function monthDay(d: Date): string {
   const mm = String(d.getMonth() + 1).padStart(2, '0')

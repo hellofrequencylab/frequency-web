@@ -13,8 +13,6 @@ import { SPACE_PLANS, type SpacePlan } from '@/lib/pricing/plans'
 /** A subscription billing period. */
 export type BillingPeriod = 'monthly' | 'annual'
 
-export const BILLING_PERIODS = ['monthly', 'annual'] as const
-
 /** The member (personal) tiers that are sold (free is never a paid key). */
 export const MEMBER_TIER_KEYS = ['crew', 'supporter'] as const
 export type MemberTierKey = (typeof MEMBER_TIER_KEYS)[number]

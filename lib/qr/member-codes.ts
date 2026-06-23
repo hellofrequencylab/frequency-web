@@ -4,7 +4,7 @@
 // this single code IS the referral code: scanning routes through `/q`, which logs
 // the scan and drops the owner's referral cookie, then lands on the splash. If the
 // scanner signs up for the beta, the owner earns zaps (invite_accepted). The
-// destination is one constant (personalCodeTargetUrl) so it can be retargeted later
+// destination is one constant (the home splash) so it can be retargeted later
 // with no reprint. (The earlier referral / gift_zap codes are retired; any already
 // minted keep working but aren't re-provisioned.) Server-only.
 
@@ -46,7 +46,7 @@ const SPEC: Record<MemberCodePurpose, { title: string; destination_type: string;
 export async function ensureMemberCodes(profileId: string, handle: string): Promise<MemberCodeRow[]> {
   const db = await createClient()
   // `handle` is retained in the signature for call-site compatibility — the personal
-  // code now lands on the splash (personalCodeTargetUrl), so the handle is no longer
+  // code now lands on the home splash, so the handle is no longer
   // baked into the destination.
   void handle
 

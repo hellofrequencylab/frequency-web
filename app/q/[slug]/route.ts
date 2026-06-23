@@ -89,8 +89,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   const profileId = await getMyProfileId()
   const h = request.headers
   const city = h.get('x-vercel-ip-city')
-  const lat = Number(h.get('x-vercel-ip-latitude'))
-  const lng = Number(h.get('x-vercel-ip-longitude'))
+  // Guard before coercion: Number(null) === 0, so an absent geo header would log a
+  // phantom scan at (0,0). Read the raw header first and only coerce when present.
+  const rawLat = h.get('x-vercel-ip-latitude')
+  const rawLng = h.get('x-vercel-ip-longitude')
+  const lat = rawLat ? Number(rawLat) : NaN
+  const lng = rawLng ? Number(rawLng) : NaN
   // Channel attribution: a programmed NFC tag encodes `?m=nfc`; a printed QR has no
   // marker and falls back to 'qr'. Same code, distinct medium in the scan log.
   const medium = new URL(request.url).searchParams.get('m') === 'nfc' ? 'nfc' : 'qr'

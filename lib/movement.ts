@@ -105,12 +105,9 @@ export function strengthPresetByKind(kind: string | null | undefined): StrengthP
   return STRENGTH_PRESETS.find((p) => p.kind === kind) ?? STRENGTH_PRESETS[0]
 }
 
-/** Back-compat aliases. The old engine called these Workout; stored configs +
- *  existing imports still use the Workout names, so keep them pointing at Strength. */
+/** Back-compat alias. The old engine called these Workout; stored configs +
+ *  existing imports still use the Workout kind name, so keep it pointing at Strength. */
 export type WorkoutPresetKind = StrengthPresetKind
-export type WorkoutPreset = StrengthPreset
-export const WORKOUT_PRESETS = STRENGTH_PRESETS
-export const workoutPresetByKind = strengthPresetByKind
 
 // --- Yoga presets (hold + transition flow) ----------------------------------
 
@@ -276,9 +273,6 @@ export function buildStrength(preset: StrengthPreset): MovementPlan {
     openEnded: false,
   }
 }
-
-/** Back-compat alias for the old `buildWorkout` name (now Strength). */
-export const buildWorkout = buildStrength
 
 /** Build the plan for any mode from a small, serializable config (mirrors the
  *  movement_config JSON stored on a practice). The single front door the setup

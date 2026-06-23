@@ -314,7 +314,3 @@ export function computeMetrics(deals: Pick<CrmDeal, 'status' | 'value'>[], tasks
   const decided = won + lost
   return { openCount, openValue, wonValue, winRatePct: decided ? Math.round((won / decided) * 100) : null, tasksDue }
 }
-
-export function stageTone(kind: StageKind): string {
-  return kind === 'won' ? 'success' : kind === 'lost' ? 'danger' : 'open'
-}

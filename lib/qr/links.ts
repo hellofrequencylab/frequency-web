@@ -21,19 +21,9 @@ export function nodeUrl(nodeId: string, secret?: string | null): string {
 /** Absolute URL a member's personal "connect" code points at — their public
  *  profile (`app/(main)/people/[handle]`), where a scanner can friend/message.
  *  Still used for the in-app profile link; the SCANNABLE connect code now lands on
- *  the splash instead (see personalCodeTargetUrl). */
+ *  the home splash instead. */
 export function connectUrl(handle: string): string {
   return `${SITE_URL}/people/${handle}`
-}
-
-/** Where a member's personal "connect" QR now lands a scanner: the home splash —
- *  the front door to sign up for the beta. The scan still routes through the `/q`
- *  resolver first, which logs it and drops the owner's `fq_ref` referral cookie, so
- *  the owner is credited (and earns zaps) if the scanner signs up. This is the ONE
- *  place to retarget every personal code in the future (e.g. a seasonal campaign
- *  landing) with no reprint — the printed image encodes `/q/<slug>`, not this URL. */
-export function personalCodeTargetUrl(): string {
-  return `${SITE_URL}/`
 }
 
 /** Absolute short link a managed dynamic code encodes — the retargetable resolver
