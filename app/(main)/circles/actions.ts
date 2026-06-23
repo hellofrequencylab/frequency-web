@@ -60,24 +60,15 @@ export async function joinCircle(circleId: string, circleSlug: string) {
         .maybeSingle()
 
       if (nexus) {
-        // Count active memberships across all circles in all hubs in this nexus
+        // Count active memberships across every circle in every hub of this nexus in a
+        // SINGLE round-trip via an inner join (memberships → circles → hubs → nexus),
+        // instead of the old serial N+1 (fetch hub ids, then circle ids, then count with
+        // an unbounded IN(...)). Pre-check only — the F2 trigger is the hard guarantee.
         const { count } = await admin
           .from('memberships')
-          .select('id', { count: 'exact', head: true })
+          .select('id, circles!inner(hubs!inner(nexus_id))', { count: 'exact', head: true })
           .eq('status', 'active')
-          .in(
-            'circle_id',
-            // Subquery via admin: get circle IDs for this nexus
-            (
-              await admin
-                .from('circles')
-                .select('id')
-                .in(
-                  'hub_id',
-                  (await admin.from('hubs').select('id').eq('nexus_id', hub.nexus_id)).data?.map((h) => h.id) ?? []
-                )
-            ).data?.map((c) => c.id) ?? []
-          )
+          .eq('circles.hubs.nexus_id', hub.nexus_id)
 
         if ((count ?? 0) >= nexus.member_cap) return // nexus at capacity
       }

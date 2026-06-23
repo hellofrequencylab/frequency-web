@@ -15,7 +15,10 @@ export const queueHandlers: Record<string, JobHandler> = {
     if (!profileId || !p.payload) throw new Error('push job missing profileId or payload')
     await sendPushToProfile(profileId, p.payload as PushPayload, (p.category as SendCategory) ?? 'dispatches')
   },
-  // Durable email (ADR-026). payload: { to, subject, html, text?, headers? }.
+  // Durable email (ADR-026). payload: { to, subject, html, text?, headers?, from?, replyTo? }.
+  // `from`/`replyTo` carry the per-Space sender identity enqueueEmail serialized
+  // (lib/email.ts EmailPayload); dropping them here sent Space outreach from the platform
+  // default and routed replies to noreply, so pass them straight through.
   email: async (p) => {
     if (!p.to || !p.subject) throw new Error('email job missing to or subject')
     await sendRawEmail({
@@ -24,6 +27,11 @@ export const queueHandlers: Record<string, JobHandler> = {
       html: (p.html as string) ?? '',
       text: typeof p.text === 'string' ? p.text : undefined,
       headers: (p.headers as Record<string, string> | undefined) ?? undefined,
+      from: typeof p.from === 'string' ? p.from : undefined,
+      replyTo:
+        typeof p.replyTo === 'string' || Array.isArray(p.replyTo)
+          ? (p.replyTo as string | string[])
+          : undefined,
     })
   },
 }

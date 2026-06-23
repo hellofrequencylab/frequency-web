@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { X, UserPlus } from 'lucide-react'
 import { addCohost, removeCohost } from '@/app/(main)/events/[slug]/social-actions'
+import { isError } from '@/lib/action-result'
 import { getInitials } from '@/lib/utils'
 
 export type CohostView = {
@@ -97,6 +98,7 @@ function RemoveCohostButton({
 function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<HandleHit[]>([])
+  const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -118,8 +120,13 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
   }, [])
 
   function add(handle: string) {
+    setError(null)
     startTransition(async () => {
-      await addCohost(eventId, slug, handle)
+      const res = await addCohost(eventId, slug, handle)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
       setQuery('')
       setHits([])
     })
@@ -142,6 +149,8 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
           className="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
         />
       </div>
+
+      {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
 
       {hits.length > 0 && (
         <div className="absolute left-0 top-full z-50 mt-1 w-full max-w-sm rounded-xl border border-border bg-surface py-1 shadow-xl shadow-black/5">

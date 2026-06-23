@@ -10,6 +10,30 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Fixed
+
+- **Repeating events land on the right dates**: a monthly event set on the 29th, 30th, or
+  31st now falls on the last day of shorter months (so a "31st" series hits Feb 28 or 29,
+  then March 31, April 30) instead of skipping a month.
+- **RSVPs that roll to the waitlist are treated as waitlisted**: when an event fills up at
+  the moment you RSVP, you are now correctly placed on the waitlist, and the "you're going"
+  confirmation, calendar invite, and host credit only fire for a confirmed seat.
+- **Rewards always pay out**: if a Gem reward hit a hiccup while saving, it no longer gets
+  stuck as "claimed but unpaid". The claim is released so the next attempt pays it, exactly
+  once. A Welcome Back bonus also reverses the exact amount it paid if you undo that day's log.
+- **Spending Gems is safe under pressure**: gifting Gems and redeeming from the Vault now
+  check your balance the moment they charge, so two quick actions can never overspend. Joining
+  a circle is likewise capped at the circle's limit even if several people join at once.
+- **Payment and email events are handled reliably**: a Stripe event that hits a temporary
+  error is now retried instead of being skipped, and a signed email-status callback is rejected
+  if it is more than five minutes old, closing a replay gap.
+- **Blocking holds in older chats**: if you block someone, they can no longer send into a 1:1
+  conversation you already had open.
+- **Space emails send as the space**: outreach from a space now goes out from the space's own
+  sender and replies route back to the space, not the platform default.
+- **Site Admins can create channels again**: an admin-level account is no longer wrongly blocked
+  from creating a channel.
+
 ### Added
 
 - **Paid-plan groundwork, still switched off**: the last pieces of the pricing system are now wired

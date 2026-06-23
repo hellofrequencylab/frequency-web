@@ -28,22 +28,46 @@ type Anchor = {
   recurrence_until: string | null
 }
 
-// Advance a date by one recurrence step.
-function nextOccurrence(date: Date, type: RecurrenceType): Date {
-  const next = new Date(date)
+// Days in a given UTC month (month is 0-indexed; carry handled by the caller).
+function daysInUTCMonth(year: number, month: number): number {
+  // Day 0 of the next month is the last day of `month`.
+  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+}
+
+// The occurrence start for an anchor at recurrence step `step` (step 1 = the first
+// occurrence after the anchor). Daily/weekly are simple day arithmetic; monthly
+// counts whole months from the series start and CLAMPS the day to the target
+// month's length, so a day-29/30/31 anchor never overflows (Jan 31 lands on
+// Feb 28/29, then Mar 31, Apr 30…, not Mar 3). The clamp source is always the
+// ORIGINAL anchor day, computed from the series start each time, so a short month
+// never permanently shortens later occurrences.
+function occurrenceAt(start: Date, type: RecurrenceType, step: number): Date {
   switch (type) {
-    case 'daily':
-      next.setUTCDate(next.getUTCDate() + 1)
-      return next
-    case 'weekly':
-      next.setUTCDate(next.getUTCDate() + 7)
-      return next
-    case 'monthly':
-      next.setUTCMonth(next.getUTCMonth() + 1)
-      return next
+    case 'daily': {
+      const d = new Date(start)
+      d.setUTCDate(d.getUTCDate() + step)
+      return d
+    }
+    case 'weekly': {
+      const d = new Date(start)
+      d.setUTCDate(d.getUTCDate() + step * 7)
+      return d
+    }
+    case 'monthly': {
+      const originalDay = start.getUTCDate()
+      const totalMonths = start.getUTCMonth() + step
+      const year = start.getUTCFullYear() + Math.floor(totalMonths / 12)
+      const month = ((totalMonths % 12) + 12) % 12
+      const day = Math.min(originalDay, daysInUTCMonth(year, month))
+      return new Date(Date.UTC(
+        year, month, day,
+        start.getUTCHours(), start.getUTCMinutes(),
+        start.getUTCSeconds(), start.getUTCMilliseconds(),
+      ))
+    }
     case 'none':
     default:
-      return next
+      return new Date(start)
   }
 }
 
@@ -56,20 +80,20 @@ export function computeOccurrenceDates(
 ): Date[] {
   if (anchor.recurrence_type === 'none') return []
 
+  const start = new Date(anchor.starts_at)
   const horizon = new Date(Date.now() + horizonDays * 24 * 60 * 60 * 1000)
   const seriesEnd = anchor.recurrence_until
     ? new Date(anchor.recurrence_until)
     : null
 
   const dates: Date[] = []
-  let cursor = nextOccurrence(new Date(anchor.starts_at), anchor.recurrence_type)
-  let safetyBound = 0
-
-  while (cursor <= horizon && safetyBound < 365) {
+  // Each occurrence is computed FROM the series start (not the previous cursor), so a
+  // clamped short-month day can never accumulate drift across the series.
+  for (let step = 1; step <= 365; step++) {
+    const cursor = occurrenceAt(start, anchor.recurrence_type, step)
+    if (cursor > horizon) break
     if (seriesEnd && cursor > seriesEnd) break
     dates.push(cursor)
-    cursor = nextOccurrence(cursor, anchor.recurrence_type)
-    safetyBound++
   }
 
   return dates
@@ -97,15 +121,18 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
   const dates = computeOccurrenceDates(anchor)
   if (!dates.length) return 0
 
-  // Find existing occurrences so we don't double-insert.
+  // Find existing occurrences so we don't double-insert. We dedupe on the CALENDAR
+  // DAY (YYYY-MM-DD), not the exact getTime(): the per-day slug is unique, so two
+  // occurrence rows for the same day can never coexist, and keying on the day is
+  // robust to a stored timestamp that differs by milliseconds / a tz round-trip.
   const { data: existing } = await admin
     .from('events')
     .select('starts_at')
     .eq('parent_event_id', anchor.id)
 
-  const existingTimestamps = new Set(
+  const existingDays = new Set(
     (existing ?? []).map((e: { starts_at: string }) =>
-      new Date(e.starts_at).getTime(),
+      new Date(e.starts_at).toISOString().slice(0, 10),
     ),
   )
 
@@ -114,7 +141,7 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
     : null
 
   const rows = dates
-    .filter((d) => !existingTimestamps.has(d.getTime()))
+    .filter((d) => !existingDays.has(d.toISOString().slice(0, 10)))
     .map((d) => {
       const endsAt = durationMs != null
         ? new Date(d.getTime() + durationMs).toISOString()
@@ -136,7 +163,13 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
 
   if (!rows.length) return 0
 
-  const { error: insErr } = await admin.from('events').insert(rows)
+  // Upsert (ignore duplicates) on the unique slug so a single pre-existing row —
+  // e.g. a concurrent cron run that already materialised this day — never aborts the
+  // whole batch. The slug is `${anchor.slug}-${YYYY-MM-DD}`, unique per day, so the
+  // happy path (no collisions) inserts exactly the same rows as a plain insert.
+  const { error: insErr } = await admin
+    .from('events')
+    .upsert(rows, { onConflict: 'slug', ignoreDuplicates: true })
   if (insErr) {
     console.error('[generateOccurrencesForAnchor] insert error:', insErr.message)
     return 0

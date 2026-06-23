@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server'
 import { recordEmailEvent, suppress } from '@/lib/suppression'
-import { verifyResendSignature } from '@/lib/webhook-verify'
+import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
 import { handleSpaceSendWebhook } from '@/lib/spaces/email'
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +19,14 @@ export async function POST(req: Request) {
 
   if (!secret || !id || !timestamp || !signature || !verifyResendSignature(secret, id, timestamp, body, signature)) {
     return NextResponse.json({ error: 'invalid signature' }, { status: 401 })
+  }
+
+  // Replay window: the signature covers the timestamp, so a captured signed request can be
+  // replayed forever unless we also bound its age. Reject anything outside the 5-minute
+  // tolerance (svix's own default). Checked AFTER the signature so we never trust an
+  // unverified timestamp.
+  if (!isFreshTimestamp(timestamp)) {
+    return NextResponse.json({ error: 'stale timestamp' }, { status: 401 })
   }
 
   let event: { type?: string; data?: { to?: string | string[]; email_id?: string } }

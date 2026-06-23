@@ -1450,15 +1450,27 @@ export async function logPractice(input: {
     if (lastDay) {
       const gapDays = Math.round((Date.parse(day) - Date.parse(lastDay)) / 86_400_000)
       if (gapDays >= 7) {
+        // Claim-then-pay: the grant row is the idempotency lock. We then pay the LIVE
+        // welcome-back Zaps (zap_config, falling back to ZAP_AMOUNTS) and record the
+        // ACTUAL amount paid back onto the grant row, so the un-log reversal can debit
+        // exactly what was paid instead of guessing the static default (mirrors how the
+        // practice-log reversal reads practice_logs.zaps_awarded).
         const { error } = await db().from('reward_grants').insert({
           rule_key: `welcome.back:${day}`,
           profile_id: profileId,
           reward_kind: 'zaps',
-          amount: 0, // ledger row below carries the live amount
+          amount: 0, // updated to the live amount once the pay resolves below
           detail: 'Welcome Back',
         })
         if (!error) {
-          await awardZapsForAction(profileId, 'welcome_back')
+          const res = await awardZapsForAction(profileId, 'welcome_back')
+          if (res.amount > 0) {
+            await db()
+              .from('reward_grants')
+              .update({ amount: res.amount })
+              .eq('profile_id', profileId)
+              .eq('rule_key', `welcome.back:${day}`)
+          }
           welcomeBack = true
         }
       }
@@ -1752,14 +1764,19 @@ export async function unlogPractice(input: {
     const { data: wb } = todayIsNowEmpty
       ? await admin
           .from('reward_grants')
-          .select('reward_kind')
+          .select('reward_kind, amount')
           .eq('profile_id', profileId)
           .eq('rule_key', `welcome.back:${day}`)
           .maybeSingle()
       : { data: null }
     if (wb) {
+      // Reverse the ACTUAL amount the grant paid (the grant row now stores the live
+      // zap_config amount). Fall back to the static default only for a pre-feature row
+      // that still carries 0/null. Mirrors the practice-log reversal's use of zaps_awarded.
       const { ZAP_AMOUNTS } = await import('@/lib/zaps')
-      await reverseZaps(profileId, ZAP_AMOUNTS.welcome_back, {
+      const stored = (wb as { amount: number | null }).amount ?? 0
+      const reverseAmount = stored > 0 ? stored : ZAP_AMOUNTS.welcome_back
+      await reverseZaps(profileId, reverseAmount, {
         actionType: 'welcome_back_reversed',
         metadata: { day },
       })

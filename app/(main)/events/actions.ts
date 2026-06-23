@@ -356,6 +356,23 @@ async function fireEventValidation(eventId: string, rsvperId: string): Promise<v
   }
 }
 
+// Re-read the PERSISTED RSVP status for a row after a write. The DB capacity trigger
+// (enforce_event_rsvp_capacity, migration 20260610030000) silently coerces a 'going'
+// write to 'waitlist' when the event is full, so the app's intended status can diverge
+// from what actually landed. Side-effects (gems, host payout, confirmation + ICS) must
+// branch on THIS value, never the intent — otherwise a demoted guest is paid + emailed
+// as if confirmed. Best-effort: a read failure returns null so the caller falls back.
+async function readRsvpStatus(eventId: string, profileId: string): Promise<string | null> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('event_rsvps')
+    .select('status')
+    .eq('event_id', eventId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  return (data as { status: string } | null)?.status ?? null
+}
+
 export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
@@ -397,10 +414,17 @@ export async function toggleRSVP(eventId: string) {
       const { isFull } = await getCapacityInfo(eventId)
       const next = isFull ? 'waitlist' : 'going'
       await supabase.from('event_rsvps').update({ status: next }).eq('id', existing.id)
-      if (next === 'going') onGoing(false)
+      // The capacity trigger has the final say (a concurrent fill demotes 'going' →
+      // 'waitlist'), so branch the side-effects on the PERSISTED status, not the
+      // app's intent — otherwise a waitlisted guest gets gems / a host payout / a
+      // "you're going" confirmation they shouldn't.
+      const stored = await readRsvpStatus(eventId, myProfileId)
+      // On a read failure (null) fall back to the intent; otherwise trust the row.
+      const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
+      if (effective === 'going') onGoing(false)
       // Fire-and-forget confirmation — never blocks/breaks the RSVP (best-effort,
       // self-contained try-catch + pref/suppression gating inside the helper).
-      sendRsvpConfirmation(eventId, myProfileId, next).catch((e) =>
+      sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
         console.error('[events rsvp confirmation email]', e)
       )
     }
@@ -412,8 +436,11 @@ export async function toggleRSVP(eventId: string) {
       profile_id: myProfileId,
       status: next,
     })
-    if (next === 'going') onGoing(true)
-    sendRsvpConfirmation(eventId, myProfileId, next).catch((e) =>
+    // Branch on the PERSISTED status (the trigger may demote to waitlist), not intent.
+    const stored = await readRsvpStatus(eventId, myProfileId)
+    const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
+    if (effective === 'going') onGoing(true)
+    sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
       console.error('[events rsvp confirmation email]', e)
     )
   }
@@ -478,8 +505,14 @@ export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' |
           status: next,
         })
       }
-      if (next === 'going') onGoing(!existing)
-      sendRsvpConfirmation(eventId, myProfileId, next).catch((e) =>
+      // Branch the side-effects on the PERSISTED status: the capacity trigger may have
+      // demoted this 'going' write to 'waitlist', and a waitlisted guest must not get
+      // the gems / host payout / "you're going" confirmation. Fall back to intent on a
+      // read failure.
+      const stored = await readRsvpStatus(eventId, myProfileId)
+      const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
+      if (effective === 'going') onGoing(!existing)
+      sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
         console.error('[events rsvp confirmation email]', e)
       )
     }

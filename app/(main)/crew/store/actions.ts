@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import type { Database } from '@/lib/database.types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -155,14 +155,34 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   const cosmeticType = plan.kind === 'cosmetic' ? plan.cosmeticType : null
   const cosmeticValue = (item.metadata as { value?: string } | null)?.value
 
-  const { error } = await db.from('store_redemptions').insert({
-    profile_id: profileId,
-    item_id: itemId,
-    gems_spent: item.gem_cost,
-    metadata: item.metadata ?? {},
-  } as Database['public']['Tables']['store_redemptions']['Insert'])
+  // Charge ATOMICALLY: redeem_store_item_atomic (migration 20260726000000) takes
+  // pg_advisory_xact_lock on the buyer, rechecks the spendable balance AND the capped-SKU
+  // stock inside the transaction, and inserts the store_redemptions row only if both still
+  // hold — closing the check-then-insert overspend/oversell race the two app-side
+  // pre-checks above cannot close. The after_store_redemption trigger still fires on the
+  // insert (it decrements store_items.stock), so stock handling is unchanged.
+  // Untyped handle (same pattern as lib/blocking.ts): redeem_store_item_atomic is new
+  // (migration 20260726000000) and not yet in the generated Database types, so we widen to
+  // the un-parametrised SupabaseClient. Drop after `supabase gen types` is re-run.
+  const rpc: SupabaseClient = createAdminClient()
+  const { error } = await rpc.rpc('redeem_store_item_atomic', {
+    _profile: profileId,
+    _item: itemId,
+    _cost: item.gem_cost,
+  })
 
-  if (error) return fail(error.message)
+  if (error) {
+    // The RPC raises a typed P0001 message; map the two expected ones to clean copy and
+    // fail CLOSED on anything else (incl. a missing function) — never a silent overspend.
+    if (error.message?.includes('insufficient_balance')) {
+      return fail(`Not enough gems. You need ${item.gem_cost - balance} more.`)
+    }
+    if (error.message?.includes('out_of_stock')) {
+      return fail('Out of stock')
+    }
+    console.error('[redeemItem] redeem_store_item_atomic failed', error.message)
+    return fail('We could not complete that redemption. Your Gems stay safe.')
+  }
 
   // Buy-a-freeze sink (ADR-305): the Gems are now charged (the store_redemptions row
   // above is the debit). Bank the freeze token. The cap was pre-checked before charging;

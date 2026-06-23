@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { isEventCohost } from '@/lib/events/cohosts'
 import {
   setRsvp,
@@ -180,15 +181,21 @@ export async function deleteEventMedia(mediaId: string, slug: string) {
 
 // ── Cohosts ───────────────────────────────────────────────────────────────────
 
-export async function addCohost(eventId: string, slug: string, handle: string) {
+export async function addCohost(
+  eventId: string,
+  slug: string,
+  handle: string,
+): Promise<ActionResult<void>> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
+  if (!profileId) return fail('Sign in to manage cohosts.')
 
   const cleaned = handle.trim().replace(/^@/, '').toLowerCase()
-  if (!cleaned) return
+  if (!cleaned) return fail('Enter a name or @handle.')
 
   const admin = createAdminClient()
-  if (!(await isEventHost(admin, eventId, profileId))) return
+  if (!(await isEventHost(admin, eventId, profileId))) {
+    return fail('Only the host can add cohosts.')
+  }
 
   // Resolve the handle to a real profile. A cohost must exist and not be the host.
   const { data: target } = await admin
@@ -196,9 +203,12 @@ export async function addCohost(eventId: string, slug: string, handle: string) {
     .select('id')
     .eq('handle', cleaned)
     .maybeSingle()
-  if (!target || target.id === profileId) return
+  if (!target) return fail('We could not find that member.')
+  if (target.id === profileId) return fail('You are already the host.')
 
-  // Unique (event_id, profile_id) — ignore a duplicate add.
+  // Unique (event_id, profile_id). A unique violation (Postgres 23505) means they are
+  // already a cohost, which is a success from the caller's view; any OTHER error is a
+  // real failure and must surface rather than be swallowed.
   const { error } = await admin
     .from('event_cohosts')
     .insert({
@@ -206,12 +216,13 @@ export async function addCohost(eventId: string, slug: string, handle: string) {
       profile_id: target.id,
       added_by: profileId,
     })
-  if (error && !error.message.includes('duplicate')) {
+  if (error && error.code !== '23505') {
     console.error('[addCohost]', error.message)
-    return
+    return fail('We could not add that cohost. Please try again.')
   }
 
   revalidateEvent(slug)
+  return ok()
 }
 
 export async function removeCohost(eventId: string, slug: string, cohostProfileId: string) {
