@@ -138,12 +138,9 @@ export async function composeEventDispatch(
   //    provisioned this is a no-op log — fully fail-closed (ADR-256).
   if (toSms) {
     if (!isSmsProvisioned()) {
-      // Sanitize the id before logging (CodeQL log-injection): keep only UUID chars so a crafted
-      // value can never forge log lines.
-      const safeEventId = String(args.eventId).replace(/[^\w-]/g, '')
-      console.info(
-        `[event-dispatch] to_sms requested for event ${safeEventId} — SMS is gated (ADR-256), not sent`,
-      )
+      // Fail-closed (ADR-256): SMS is not provisioned, so this is a no-op. Log a STATIC line with no
+      // user-provided value, which avoids the log-injection class entirely (CodeQL).
+      console.info('[event-dispatch] to_sms requested but SMS is gated (ADR-256); not sent')
     } else {
       result.smsSent = await fanOutEventSms(args.eventId, title ?? 'Event update', body)
     }
