@@ -65,6 +65,16 @@
   --color-broadcast-bg:       #D8F2F5;
   --color-text-on-broadcast:  #FFFFFF;
 
+  /* Brand. Move (cerulean blue-teal) — the Get Moving accent for the Mindless door.
+     A clear blue-leaning teal that sits roughly opposite the warm amber primary on the
+     wheel, so "move" reads cool + active and COMPLEMENTS Be Still's orange. Deliberately
+     bluer than the green-leaning success/signal teals so it never collides with "done". */
+  --color-move:             #1C7FB5;
+  --color-move-hover:       #176A98;
+  --color-move-strong:      #0F4E72;
+  --color-move-bg:          #DCEFF8;
+  --color-text-on-move:     #FFFFFF;
+
   /* Semantic states. Success is a teal (the orange's complement), not a true
      green, so "done/progress" reads cohesive with the brand signal teal. */
   --color-success:          #11827A;
@@ -177,6 +187,11 @@
   --color-success-bg:        #D7EFEA;
   --color-danger:            #BA3B30;
   --color-danger-bg:         #F7E4E1;
+  --color-move:              #1C7FB5;
+  --color-move-hover:        #176A98;
+  --color-move-strong:       #0F4E72;
+  --color-move-bg:           #DCEFF8;
+  --color-text-on-move:      #FFFFFF;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -284,6 +299,14 @@
   --color-broadcast-strong:   #69D6E6;
   --color-broadcast-bg:       #0F2A34;
   --color-text-on-broadcast:  #FFFFFF;
+
+  /* Move (cerulean) — brighter blue-teal so the Get Moving accent reads clearly against
+     the warm dark wood while still sitting opposite the amber. */
+  --color-move:             #58B4E0;
+  --color-move-hover:       #76C2E7;
+  --color-move-strong:      #58B4E0;
+  --color-move-bg:          #102836;
+  --color-text-on-move:     #08161F;
 
   --color-success:          #5FD3BE;
   --color-success-bg:       #103029;
@@ -626,6 +649,12 @@
   --color-broadcast-strong: var(--color-broadcast-strong);
   --color-broadcast-bg:     var(--color-broadcast-bg);
   --color-on-broadcast:     var(--color-text-on-broadcast);
+
+  --color-move:             var(--color-move);
+  --color-move-hover:       var(--color-move-hover);
+  --color-move-strong:      var(--color-move-strong);
+  --color-move-bg:          var(--color-move-bg);
+  --color-on-move:          var(--color-text-on-move);
 
   --color-success:          var(--color-success);
   --color-success-bg:       var(--color-success-bg);

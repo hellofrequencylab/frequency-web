@@ -36,7 +36,7 @@ import {
   Flower2,
   Dumbbell,
   StretchHorizontal,
-  Gamepad2,
+  Volleyball,
 } from 'lucide-react'
 import { OnAirIcon } from './icons'
 import { MovementArt } from '@/components/feed/zap-menu-art'
@@ -100,7 +100,8 @@ const MODE_ICON: Record<MovementMode, React.ElementType> = {
   yoga: Flower2,
   strength: Dumbbell,
   stretch: StretchHorizontal,
-  play: Gamepad2,
+  // A ball glyph reads as outdoor / active play, not video gaming (item #6).
+  play: Volleyball,
 }
 
 /** Vibration where supported (Android). iOS web has no vibration; never throw. */
@@ -823,7 +824,7 @@ export function MovementSession({
 
         {/* Per-mode preset / tuning */}
         {mode === 'walk' && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
               <Label>Minutes</Label>
               <div className="mt-2 grid grid-cols-5 gap-2">
@@ -855,7 +856,7 @@ export function MovementSession({
         )}
 
         {mode === 'run' && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
               <Label>Minutes</Label>
               <div className="mt-2 grid grid-cols-4 gap-2">
@@ -903,7 +904,7 @@ export function MovementSession({
         )}
 
         {mode === 'stretch' && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
               <Label>Minutes</Label>
               <div className="mt-2 grid grid-cols-4 gap-2">
@@ -945,7 +946,7 @@ export function MovementSession({
         )}
 
         {mode === 'strength' && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
               <Label>Shape</Label>
               <div className="mt-2 grid grid-cols-4 gap-2">
@@ -1000,7 +1001,7 @@ export function MovementSession({
             <button
               type="button"
               onClick={() => setShowChooser(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-success px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-success/90"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-move px-4 py-3.5 text-sm font-bold text-on-move transition-colors hover:bg-move-hover lg:mx-auto lg:max-w-sm"
             >
               <OnAirIcon className="h-4 w-4" /> Select a practice
             </button>
@@ -1009,7 +1010,7 @@ export function MovementSession({
               type="button"
               onClick={() => void start()}
               disabled={!practiceId}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-success px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-success/90 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-move px-4 py-3.5 text-sm font-bold text-on-move transition-colors hover:bg-move-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
             >
               <OnAirIcon className="h-4 w-4" /> Start moving
             </button>
@@ -1035,8 +1036,8 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 /** A mode tile, matching the Mindless ModeButton (C.1): an icon over a label in a
- *  bordered, rounded chip that fills its grid cell. Success-toned when active to
- *  read as Movement (the sit uses primary). */
+ *  bordered, rounded chip that fills its grid cell. Move-toned (teal/blue) when active so
+ *  Get Moving reads in its own accent that complements Be Still's amber (item #5). */
 function ModeButton({
   active,
   onClick,
@@ -1054,7 +1055,7 @@ function ModeButton({
       onClick={onClick}
       className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs transition-colors ${
         active
-          ? 'border-success/60 bg-success-bg/40 font-semibold text-text'
+          ? 'border-move/60 bg-move-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'
       }`}
     >
@@ -1082,7 +1083,7 @@ function Chip({
       title={title}
       className={`rounded-xl border px-2 py-1.5 text-sm tabular-nums transition-colors ${
         active
-          ? 'border-success/60 bg-success-bg/40 font-semibold text-text'
+          ? 'border-move/60 bg-move-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'
       }`}
     >
@@ -1204,7 +1205,7 @@ function PracticeChooser({
               onClick={() => onPick(p.id)}
               className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3.5 py-3 text-left text-sm transition-colors ${
                 p.id === selectedId
-                  ? 'border-success/60 bg-success-bg/40 font-semibold text-text'
+                  ? 'border-move/60 bg-move-bg/40 font-semibold text-text'
                   : 'border-border text-muted hover:bg-surface-elevated'
               }`}
             >

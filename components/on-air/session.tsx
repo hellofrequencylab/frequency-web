@@ -1180,12 +1180,11 @@ export function OnAirSession({
         {mode !== 'log' && !durationLocked && (
           <div>
             <Label>Minutes</Label>
-            {/* Breathe gets the shorter, one-clean-row preset set; Meditate keeps the fuller grid. */}
-            <div
-              className={`mt-2 grid gap-2 ${
-                mode === 'breath' ? 'grid-cols-3' : 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-3'
-              }`}
-            >
+            {/* The silent-timer sit modes (Meditate / Journal / Stillness / Ritual) use the SAME
+                single-row layout as Get Moving's Walk (items #2, #3): five preset chips in one
+                row, the +/- stepper on its own row beneath. Breathe keeps its own shorter,
+                calmer preset set on a 3-up row. */}
+            <div className={`mt-2 grid gap-2 ${mode === 'breath' ? 'grid-cols-3' : 'grid-cols-5'}`}>
               {(mode === 'breath' ? BREATH_DURATION_PRESETS : DURATION_PRESETS).map((m) => (
                 <button
                   key={m}
@@ -1200,26 +1199,26 @@ export function OnAirSession({
                   {m}
                 </button>
               ))}
-              {/* The stepper: any length, one minute at a time (1–120). */}
-              <div className="col-span-3 flex items-center justify-between rounded-xl border border-border px-1.5 sm:col-span-4 lg:col-span-3">
-                <button
-                  type="button"
-                  onClick={() => setMinutes((m) => clampMinutes(m - 1))}
-                  aria-label="One minute less"
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </button>
-                <span className="text-sm font-semibold tabular-nums text-text">{minutes}m</span>
-                <button
-                  type="button"
-                  onClick={() => setMinutes((m) => clampMinutes(m + 1))}
-                  aria-label="One minute more"
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
+            </div>
+            {/* The stepper: any length, one minute at a time (1–120). Its own row, like Walk. */}
+            <div className="mt-2 flex items-center justify-between rounded-xl border border-border px-1.5">
+              <button
+                type="button"
+                onClick={() => setMinutes((m) => clampMinutes(m - 1))}
+                aria-label="One minute less"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-sm font-semibold tabular-nums text-text">{minutes}m</span>
+              <button
+                type="button"
+                onClick={() => setMinutes((m) => clampMinutes(m + 1))}
+                aria-label="One minute more"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
         )}
