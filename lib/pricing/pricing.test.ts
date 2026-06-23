@@ -230,14 +230,18 @@ describe('seeded defaults are sane (mirror the migration)', () => {
     expect(PRICING_DEFAULTS.vera_free_daily_cap.messages).toBe(10)
   })
 
+  it('space plans carry a 14-day free trial (members have none)', () => {
+    expect(PRICING_DEFAULTS.trial.days).toBe(14)
+  })
+
   it('plan defaults reflect the new launch numbers (practitioner/business/nonprofit/whitelabel setup)', () => {
     const plan = PRICING_DEFAULTS.plan
-    expect(plan.practitioner.monthly_cents).toBe(2900) // $29
-    expect(plan.practitioner.annual_cents).toBe(29000) // $290
-    expect(plan.business.monthly_cents).toBe(8900) // $89
-    expect(plan.business.annual_cents).toBe(89000) // $890
-    expect(plan.nonprofit.monthly_cents).toBe(3900) // $39 (verified 501c3)
-    expect(plan.nonprofit.annual_cents).toBe(39000) // $390
+    expect(plan.practitioner.monthly_cents).toBe(1900) // $19
+    expect(plan.practitioner.annual_cents).toBe(19000) // $190
+    expect(plan.business.monthly_cents).toBe(4900) // $49
+    expect(plan.business.annual_cents).toBe(49000) // $490
+    expect(plan.nonprofit.monthly_cents).toBe(2900) // $29 (verified 501c3)
+    expect(plan.nonprofit.annual_cents).toBe(29000) // $290
     expect(plan.organization.monthly_cents).toBe(19900) // $199, custom
     expect(plan.organization.annual_cents).toBeNull() // monthly-only
     expect(plan.whitelabel.monthly_cents).toBe(29900) // $299
@@ -279,6 +283,6 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     // organization is monthly-only
     expect(rows.find((r) => r.key === 'organization')?.annual).toBeNull()
     // practitioner/business have an annual line
-    expect(rows.find((r) => r.key === 'practitioner')?.annual).toBe('$290')
+    expect(rows.find((r) => r.key === 'practitioner')?.annual).toBe('$190')
   })
 })

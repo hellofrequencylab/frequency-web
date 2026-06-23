@@ -63,6 +63,13 @@ Products have not been synced, so the Stripe catalog is empty. To go live, **in 
 do step 3 (Sync) any time to populate and review the catalog with zero risk; keep step 6 (`billing_live`)
 OFF until you are truly ready to charge members.
 
+**Update 2026-06-23 ([ADR-375](DECISIONS.md)):** launch prices lowered — Practitioner **$19/$190**,
+Business **$49/$490**, Nonprofit **$29/$290** (Crew/Supporter/Org/White-label/Partner unchanged) — and a
+**14-day card-upfront trial** added on Space plans (members have none). The live `pricing_settings` rows
+were updated, so the **first product sync uses the new numbers** (re-sync after any later change; safe while
+billing is OFF). Also added a **global AI spend ceiling** (`GLOBAL_DAILY_CAP_USD`, `lib/ai/budget.ts`) that
+hard-caps total daily Anthropic spend across every feature — always-on cost protection for the solo launch.
+
 ## 🔎 Full-site audit — 2026-06-09 (post events / journeys / circles)
 
 Four-agent sweep (incompleteness · security · journeys/events/circles completeness · UI/linkage).

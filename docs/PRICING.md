@@ -68,10 +68,10 @@ value is editable at `/admin/pricing`; nothing charges while `billing_live` is O
 |---|---|---|---|---|---|
 | Crew (member) | $9 | $90 | n/a | personal members | personal tier |
 | Supporter (member) | $24 | $240 | n/a | personal members | personal tier |
-| Practitioner (space) | $29 | $290 | 1 | solo practitioners | take-rate 8% |
+| Practitioner (space) | $19 | $190 | 1 | solo practitioners | take-rate 8% |
 | Partner (space) | comped (free) + revenue share | n/a | 1 | influencers/collaborators hosting a program | operator-assigned "by arrangement"; full business-level features; **not sold via checkout** |
-| Nonprofit 501(c)(3) (space) | $39 | $390 | 3 (planned) | verified mission orgs | full business-level features; sold self-serve once enabled |
-| Business (space) | $89 | $890 | 1 | growing teams | take-rate 5% |
+| Nonprofit 501(c)(3) (space) | $29 | $290 | 3 (planned) | verified mission orgs | full business-level features; sold self-serve once enabled |
+| Business (space) | $49 | $490 | 1 | growing teams | take-rate 5% |
 | Organization (space) | $199 | monthly only | 1 | enterprise | take-rate 3%; **custom, built but not sold self-serve** |
 | White-label (space) | $299 + ≈ $1,500 setup | monthly only | 1 | full branding removal | branding removal; setup is a high-touch lead, not checkout |
 
@@ -80,8 +80,11 @@ follow-up** (not built yet): only Nonprofit carries a higher planned seat count 
 is deferred (see below). Until seats ship, the column records the intended allocation, not a live
 limit.
 
-Other knobs: **Vera free cap** 10 messages/day · **annual discount** ≈ 2 months free · **trial** 0
-days (editable). Take-rates are stored in basis points (800 = 8%).
+Other knobs: **Vera free cap** 10 messages/day · **annual discount** ≈ 2 months free · **trial** 14
+days on Space plans, card upfront (members have no trial, the free tier is theirs; editable). Take-rates
+are stored in basis points (800 = 8%). Separately, a **global AI spend ceiling** (`GLOBAL_DAILY_CAP_USD`,
+`lib/ai/budget.ts`) hard-caps total Anthropic spend per day across every feature as an always-on cost
+safety net (ADR-375).
 
 **Capability order, not price order.** `SPACE_PLANS` (`lib/pricing/plans.ts`) is ordered by
 **capability, not price**: Nonprofit and Partner rank **above** Business so they clear the

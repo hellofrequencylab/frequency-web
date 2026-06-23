@@ -9,7 +9,7 @@
 
 import { stripe, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { billingLive, loadPricingFlags } from '@/lib/pricing/settings'
+import { billingLive, getPricingValues, loadPricingFlags } from '@/lib/pricing/settings'
 import { type SpacePlan } from '@/lib/pricing/plans'
 import { resolveStripePriceId } from './pricing-prices'
 import { asSpacePlanKey, offersPeriod, priceKey, type BillingPeriod, type SpacePlanKey } from './pricing-keys'
@@ -76,13 +76,20 @@ export async function createSpacePlanCheckout(
   }
 
   const metadata = { kind: 'space_plan', space_id: spaceId, plan: planKey, billing_period: billingPeriod }
+  // Free trial on Space plans (card upfront; days are operator-editable via pricing settings, default 14).
+  // Stripe starts the subscription in `trialing`, which the reconciler treats as active
+  // (lib/billing/space-subscriptions.ts), so the plan is granted during the trial and auto-converts when
+  // it ends. Members have no trial (their checkout never reads this).
+  const trialDays = (await getPricingValues()).trial.days
+  const subscriptionData: { metadata: typeof metadata; trial_period_days?: number } =
+    trialDays > 0 ? { metadata, trial_period_days: trialDays } : { metadata }
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
     ...(customer ? { customer } : { customer_email: ownerEmail }),
     client_reference_id: spaceId,
     metadata,
-    subscription_data: { metadata },
+    subscription_data: subscriptionData,
     success_url: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing?plan=upgraded&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing`,
     allow_promotion_codes: true,

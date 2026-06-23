@@ -53,15 +53,15 @@ export const PRICING_DEFAULTS: PricingDefaults = {
     supporter: { monthly_cents: 2400, annual_cents: 24000 }, // $24 / $240
   },
   plan: {
-    practitioner: { monthly_cents: 2900, annual_cents: 29000 }, // $29 / $290
-    business: { monthly_cents: 8900, annual_cents: 89000 }, // $89 / $890
-    nonprofit: { monthly_cents: 3900, annual_cents: 39000 }, // $39 / $390 (verified 501c3)
+    practitioner: { monthly_cents: 1900, annual_cents: 19000 }, // $19 / $190
+    business: { monthly_cents: 4900, annual_cents: 49000 }, // $49 / $490
+    nonprofit: { monthly_cents: 2900, annual_cents: 29000 }, // $29 / $290 (verified 501c3)
     organization: { monthly_cents: 19900, annual_cents: null }, // $199/mo (custom; built, not publicly sold)
     whitelabel: { monthly_cents: 29900, annual_cents: null, setup_cents: 150000 }, // ~$1,500 setup + $299/mo
   },
   take_rate: { practitioner_bps: 800, business_bps: 500, organization_bps: 300 },
   vera_free_daily_cap: { messages: 10 },
-  trial: { days: 0 },
+  trial: { days: 14 }, // 14-day free trial on Space plans (card upfront; members get none, the free tier is their trial)
   annual_discount: { months_free: 2 },
 }
 
