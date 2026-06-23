@@ -1492,6 +1492,10 @@ export default function AppShell({
     // /crew/store are their own rail items, so match /crew exactly and let those
     // sub-routes light up their own entry via the generic prefix rule below.
     if (href === '/crew')     return pathname === '/crew'
+    // Community (/network) is the Network-hub root; its sibling /network/contacts
+    // (My Contacts) is its own rail item, so match /network EXACTLY — otherwise the
+    // generic prefix rule below would also light up Community on the Contacts page.
+    if (href === '/network')  return pathname === '/network'
     if (href === '/search')   return pathname === '/search'
     // /admin is the section root with many sub-routes that are their own rail items
     // (QR Studio, Support, Insight, Vera, Hubs, Memberships). Match it EXACTLY so a
