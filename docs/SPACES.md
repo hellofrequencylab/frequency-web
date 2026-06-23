@@ -137,6 +137,46 @@ stage. Idempotent (already-linked contacts are skipped) and fail-safe. The perso
 unchanged; this is a scope flip, not a move. A light dismissible prompt on My Contacts points members who
 are running a business toward this path.
 
+### 2.2 Functions & access (per-Space tools gated by member role · ADR-366)
+
+Every Space tool (CRM, email, members, QR codes, the per-type surfaces, plan/billing, profile/brand) is
+gated on **two axes**, resolved by one pure function: `spaceFunctionAccess(space, fn, viewerSpaceRole)`
+in `lib/spaces/functions.ts`. The registry `SPACE_FUNCTIONS` is the catalog; adding a tool is **one row**
+(plus one entitlement key if it is plan-gated), never a schema change. The resolver is pure and
+**fail-safe**: an unknown function, a null/unknown viewer role, or a malformed blob all read as NO access.
+
+- **ON/OFF — `spaces.entitlements`.** A PLAN-GATED function (CRM, email) reads its plan entitlement key
+  (default-deny). A UNIVERSAL function (members, QR, profile, billing, the per-type surfaces) keys the
+  SAME blob by its function key, **default-ON** (only an explicit `false` turns it off). No new column for
+  the switch. (Projecting `entitlements` onto the resolved Space in `lib/spaces/store.ts` is also the fix
+  for the latent CRM lock: the board read `undefined` for `crm` before and was locked for everyone.)
+- **MIN-ROLE — `spaces.feature_roles`.** A jsonb mapping a function key to the lowest `SpaceRole`
+  (viewer < editor < moderator < admin) that may use it, **sparse** against a code default
+  (`DEFAULT_FUNCTION_ROLE`). An empty blob = every function at its code default, so this reproduces
+  today's gating exactly. Defaults: universal tools at editor (the old `canEditProfile` threshold),
+  check-in at moderator, billing + CRM + email at admin.
+
+**Who controls it (two tiers).**
+
+| Control | Surface | Scope |
+| --- | --- | --- |
+| Operator absolute switch | `/admin/spaces/[id]` "Features and access" grid (janitor) | One Space; the override beats the plan |
+| Operator per-type defaults | `/admin/spaces/defaults` (janitor) → `space_function_type_defaults` | What every NEW Space of a type starts with |
+| Owner toggle + min-role | `/spaces/<slug>/settings/features` (owner/admin) | One Space, within the plan only |
+
+`space_function_type_defaults` is RLS-on, **service-role only** (no client policies), sparse (one row per
+`(type, fn)` an operator touched), and **fail-safe**: a missing row = the code default, so an empty table
+resolves exactly as today. A new Space **seeds** its `entitlements` + `feature_roles` from those per-type
+defaults merged over the code defaults (`seedSpaceConfigFromDefaults`, in `lib/spaces/provision.ts`);
+plan-gated tools are never seeded ON (a new Space starts free). Existing Spaces are untouched.
+
+**Defense in depth.** Each settings surface gates BOTH the page render AND its server action through the
+same resolver, so a lowered/disabled per-Space setting is enforced on the write, not merely hidden. A
+locked tool renders a calm `FeatureLockedNotice` (turn it on, upgrade the plan, or ask whoever runs the
+Space), never a 404 of a visible Space. The settings hub hides cards for tools the viewer cannot use (no
+dead cards). A platform janitor previewing a Space they do not manage keeps the existing read-only
+preview; the resolver is bypassed only for that staff-view render, and every write stays gated.
+
 ---
 
 ## 3. The network switch (the direct port into the network)

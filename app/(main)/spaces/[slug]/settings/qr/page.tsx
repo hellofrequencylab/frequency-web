@@ -4,11 +4,13 @@ import { ScanLine, Users, Nfc } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listSpaceCodes, listSpaceScanRows, codeCapForPlan } from '@/lib/qr/space-codes'
 import { summarizeScans } from '@/lib/qr/analytics'
 import { QrSplashForm } from '@/components/spaces/qr-splash-form'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
 
@@ -58,6 +60,29 @@ export default async function SpaceQrPage({
   if (!canManage && !staffViewing) notFound()
 
   const brandName = space.brandName ?? space.name
+
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). QR codes default to editor (the old
+  // canEditProfile threshold); a staff janitor keeps the read-only preview (every write stays gated).
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'qr', caps.role)) {
+    return (
+      <FocusTemplate
+        eyebrow={brandName}
+        title="QR codes"
+        description="The codes for this space."
+        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      >
+        <FeatureLockedNotice
+          brandName={brandName}
+          slug={space.slug}
+          label="QR codes"
+          reason={spaceFunctionAccess(space, 'qr', 'admin') ? 'role' : 'disabled'}
+          canManageMembers={caps.canManageMembers}
+        />
+      </FocusTemplate>
+    )
+  }
+
   const codes = await listSpaceCodes(space.id)
   // The per-plan cap drives whether the create form shows. The plan rides the untyped Space read in
   // space-codes.ts; here we just need the cap number for the form's note + gate.

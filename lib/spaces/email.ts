@@ -22,6 +22,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { sendRawEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { isSuppressed, suppress } from '@/lib/suppression'
 import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
@@ -231,6 +232,11 @@ export async function setSpaceEmailEnabled(
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile)
     return fail('You do not have permission to manage email for this space.')
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth). Email is PLAN-GATED with an
+  // admin default role; the resolver folds the plan entitlement and the per-Space min-role, so the page
+  // render gate and this write gate agree.
+  if (!spaceFunctionAccess(space, 'email', caps.role))
+    return fail('Email is not available on this space plan, or your role cannot use it.')
 
   // Enabling REQUIRES the explicit acknowledgement (the anti-spam affirmation). Disabling does not.
   if (enabled && acknowledged !== true) {
@@ -276,6 +282,9 @@ export async function sendSpaceCampaign(
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile)
     return fail('You do not have permission to send email for this space.')
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth) — see setSpaceEmailEnabled above.
+  if (!spaceFunctionAccess(space, 'email', caps.role))
+    return fail('Email is not available on this space plan, or your role cannot use it.')
 
   // (b) KILL-SWITCH: fail closed if email is not explicitly enabled for this Space.
   if (!(await isSpaceEmailEnabled(spaceId))) {

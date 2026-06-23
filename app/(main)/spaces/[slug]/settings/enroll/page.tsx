@@ -3,11 +3,13 @@ import { Suspense } from 'react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { getSpaceProgramForOwner } from '@/lib/spaces/enroll'
 import { ProgramForm } from '@/components/spaces/enroll/program-form'
 import { EnrollmentOwnerList } from '@/components/spaces/enroll/enrollment-owner-list'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
 
 // OWNER PROGRAM EDITOR + ENROLLEES (ENTITY-SPACES-SYSTEM §2.7, MASTER-PLAN ADMIN-02, enroll v1). A
@@ -54,8 +56,31 @@ export default async function SpaceEnrollPage({
   )
   if (!canManage && !staffViewing) notFound()
 
-  const program = await getSpaceProgramForOwner(space.id)
   const brandName = space.brandName ?? space.name
+
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). The default (enroll = editor) reproduces the old
+  // canEditProfile threshold; a staff janitor keeps the read-only preview (write stays gated).
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'enroll', caps.role)) {
+    return (
+      <FocusTemplate
+        eyebrow={brandName}
+        title="Enrollment"
+        description="The program members enroll in for this space."
+        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      >
+        <FeatureLockedNotice
+          brandName={brandName}
+          slug={space.slug}
+          label="Enrollment"
+          reason={spaceFunctionAccess(space, 'enroll', 'admin') ? 'role' : 'disabled'}
+          canManageMembers={caps.canManageMembers}
+        />
+      </FocusTemplate>
+    )
+  }
+
+  const program = await getSpaceProgramForOwner(space.id)
 
   return (
     <FocusTemplate

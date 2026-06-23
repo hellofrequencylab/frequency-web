@@ -26,6 +26,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -382,6 +383,11 @@ export async function setSpaceAvailability(
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile)
     return fail('You do not have permission to set availability for this space.')
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth). The page already gates the
+  // render on the same resolver; re-check it here so a per-Space role/disable override is enforced on the
+  // WRITE too (the resolver folds the tool's on/off + lowest-role for this space).
+  if (!spaceFunctionAccess(space, 'availability', caps.role))
+    return fail('Availability is not turned on for this space, or your role cannot use it.')
 
   // Normalize + drop anything invalid. An empty result is a valid "no availability" state.
   const clean = (Array.isArray(windows) ? windows : []).slice(0, MAX_WINDOWS).flatMap((w) => {

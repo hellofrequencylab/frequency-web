@@ -27,6 +27,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -329,6 +330,9 @@ export async function setSpaceProgram(
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile)
     return fail('You do not have permission to set up a program for this space.')
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth) — see lib/spaces/booking.ts.
+  if (!spaceFunctionAccess(space, 'enroll', caps.role))
+    return fail('Enrollment is not turned on for this space, or your role cannot use it.')
 
   const clean = normalizeProgram(raw)
   if (!clean) return fail('Give your program a name.')

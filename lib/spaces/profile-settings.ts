@@ -19,6 +19,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -74,6 +75,11 @@ export async function updateSpaceProfile(
 
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile) return fail('You do not have permission to edit this space.')
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth). The hub renders the profile form
+  // read-only when the viewer cannot use the `profile` function (default editor = the canEditProfile
+  // threshold); this re-check enforces a per-Space role/disable override on the WRITE too.
+  if (!spaceFunctionAccess(space, 'profile', caps.role))
+    return fail('Profile and brand is not turned on for this space, or your role cannot use it.')
 
   const patch: Record<string, unknown> = {}
 

@@ -26,6 +26,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -247,6 +248,10 @@ export async function ensureCheckinNode(spaceId: string): Promise<CheckinNode | 
 
   // No node yet: only an EDITOR may create one (a staff previewer reads, never writes).
   if (!canEdit) return null
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth). MINTING the node is a write, so
+  // it must also clear the per-Space check-in gate (default moderator). The page already gates its
+  // render on the same resolver; this keeps a per-Space role/disable override enforced on the write.
+  if (!spaceFunctionAccess(space, 'checkin', caps.role)) return null
   const label = `${space.brandName ?? space.name} check-in`
   const created = await insertCheckinNode(spaceId, label)
   return created ? { id: created.id, secret: created.secret } : null

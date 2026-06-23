@@ -31,7 +31,8 @@ vi.mock('./store', () => ({
 }))
 
 // canEditProfile is true only when the caller OWNS the space being asked about (the real gate's shape).
-vi.mock('./entitlements', () => ({
+vi.mock('./entitlements', async (orig) => ({
+  ...(await orig<typeof import('./entitlements')>()),
   getSpaceCapabilities: async (
     space: { ownerProfileId?: string | null } | null | undefined,
     profileId: string | null | undefined,

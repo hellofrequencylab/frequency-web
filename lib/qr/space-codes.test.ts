@@ -32,7 +32,10 @@ vi.mock('@/lib/spaces/store', () => ({
 // canEditProfile is true for the Space whose id matches `editableSpaceId` (default space-a). This
 // models "the caller can edit Space A but not Space B".
 let editableSpaceId: string | null = 'space-a'
-vi.mock('@/lib/spaces/entitlements', () => ({
+// Keep the PURE entitlement readers real (createSpaceCode / setCodeSplash now call spaceFunctionAccess
+// for defense in depth, per-space-roles Phase 2); override only getSpaceCapabilities.
+vi.mock('@/lib/spaces/entitlements', async (orig) => ({
+  ...(await orig<typeof import('@/lib/spaces/entitlements')>()),
   getSpaceCapabilities: async (space: { id?: string } | null) => {
     const canEdit = !!space && space.id === editableSpaceId
     return {

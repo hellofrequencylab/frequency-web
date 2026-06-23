@@ -20,20 +20,34 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 let resolvedSpace:
-  | { id: string; slug: string; name: string; brandName: string | null; ownerProfileId?: string | null }
+  | {
+      id: string
+      slug: string
+      name: string
+      brandName: string | null
+      ownerProfileId?: string | null
+      entitlements?: unknown
+      featureRoles?: unknown
+    }
   | null = {
   id: 'space-A',
   slug: 'river-studio',
   name: 'River Studio',
   brandName: 'River Studio',
   ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
+  // Email is PLAN-GATED: the Space's plan must grant the `email` entitlement for the per-space-roles
+  // Phase 2 gate (spaceFunctionAccess) to allow the email action. Seat it so the email action passes.
+  entitlements: { email: true },
 }
 vi.mock('./store', () => ({
   getSpaceById: async (id: string) => (resolvedSpace && resolvedSpace.id === id ? resolvedSpace : null),
 }))
 
 let canEdit = true
-vi.mock('./entitlements', () => ({
+// Keep the PURE entitlement readers real (the email action now calls spaceFunctionAccess for defense in
+// depth, per-space-roles Phase 2); override only getSpaceCapabilities.
+vi.mock('./entitlements', async (orig) => ({
+  ...(await orig<typeof import('./entitlements')>()),
   getSpaceCapabilities: async () => ({
     isOwner: canEdit,
     isAdmin: canEdit,
@@ -203,6 +217,7 @@ beforeEach(() => {
     name: 'River Studio',
     brandName: 'River Studio',
     ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
+    entitlements: { email: true },
   }
   canEdit = true
   sends.length = 0

@@ -4,8 +4,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { getPricingValues } from '@/lib/pricing/settings'
 import { spacePlanSellable } from '@/lib/billing/space-plan-checkout'
 import { spacePlanRows } from '@/lib/pricing/display'
@@ -45,6 +47,31 @@ export default async function SpaceBillingPage({
   const { canManage, staffViewing } = await resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole)
   if (!canManage && !staffViewing) notFound()
 
+  const brandName = space.brandName ?? space.name
+
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). Plan and billing default to ADMIN (money is an
+  // admin tool), reproducing the intended threshold. A staff janitor keeps the read-only preview (the
+  // picker is already fieldset-disabled for them; every write stays gated server-side).
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'billing', caps.role)) {
+    return (
+      <FocusTemplate
+        eyebrow={brandName}
+        title="Plan and billing"
+        description="The plan and billing for this space."
+        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      >
+        <FeatureLockedNotice
+          brandName={brandName}
+          slug={space.slug}
+          label="Plan and billing"
+          reason={spaceFunctionAccess(space, 'billing', 'admin') ? 'role' : 'disabled'}
+          canManageMembers={caps.canManageMembers}
+        />
+      </FocusTemplate>
+    )
+  }
+
   // The owner's email, prefilled into the white-label request form (getCallerProfile omits it).
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -58,7 +85,6 @@ export default async function SpaceBillingPage({
     .maybeSingle()) as { data: { plan?: string | null } | null }
   const currentPlan = asSpacePlan(planRow?.plan)
 
-  const brandName = space.brandName ?? space.name
   const values = await getPricingValues()
   const rows = spacePlanRows(values)
 

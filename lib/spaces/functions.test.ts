@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   SPACE_FUNCTIONS,
+  SPACE_TYPES,
   DEFAULT_FUNCTION_ROLE,
   defaultEnabledFunctions,
   functionsForType,
@@ -16,6 +17,9 @@ import {
   spaceFunctionMinRoleOverride,
   spaceFunctionAccess,
   isSpaceFunctionKey,
+  isSpaceType,
+  seedSpaceConfigFromDefaults,
+  type SpaceFunctionTypeDefault,
 } from './functions'
 
 describe('the registry', () => {
@@ -166,5 +170,83 @@ describe('spaceFunctionAccess (the gate)', () => {
     // ^ universal default-on survives a garbage entitlements blob (spaceEntitlements -> {}), editor meets editor.
     expect(spaceFunctionAccess({ entitlements: 'garbage', featureRoles: 'garbage' }, 'crm', 'admin')).toBe(false)
     // ^ plan-gated stays off on a garbage blob (default-deny).
+  })
+})
+
+describe('SpaceType guard (Phase 2)', () => {
+  it('SPACE_TYPES carries the member-facing + platform types and isSpaceType fails closed', () => {
+    expect(SPACE_TYPES).toContain('practitioner')
+    expect(SPACE_TYPES).toContain('event_space')
+    expect(SPACE_TYPES).toContain('root')
+    expect(isSpaceType('business')).toBe(true)
+    expect(isSpaceType('made-up')).toBe(false)
+    expect(isSpaceType(null)).toBe(false)
+    expect(isSpaceType(42)).toBe(false)
+  })
+})
+
+describe('seedSpaceConfigFromDefaults (Phase 2 type-defaults resolution)', () => {
+  it('no defaults -> empty blobs (a new space resolves to pure code defaults, today exactly)', () => {
+    const seed = seedSpaceConfigFromDefaults('business', [])
+    expect(seed.entitlements).toEqual({})
+    expect(seed.featureRoles).toEqual({})
+  })
+
+  it('a null type -> empty blobs', () => {
+    expect(seedSpaceConfigFromDefaults(null, [])).toEqual({ entitlements: {}, featureRoles: {} })
+  })
+
+  it('a min-role override that DIFFERS from the code default is written; a matching one is not', () => {
+    const defaults: SpaceFunctionTypeDefault[] = [
+      { type: 'business', fn: 'members', enabled: true, minRole: 'admin' }, // members default is editor -> write
+      { type: 'business', fn: 'qr', enabled: true, minRole: 'editor' }, // qr default is editor -> sparse, no write
+    ]
+    const seed = seedSpaceConfigFromDefaults('business', defaults)
+    expect(seed.featureRoles).toEqual({ members: 'admin' })
+    expect(seed.entitlements).toEqual({}) // both still enabled -> nothing sparse to write
+  })
+
+  it('a UNIVERSAL function turned OFF writes the sparse false; default-ON writes nothing', () => {
+    const defaults: SpaceFunctionTypeDefault[] = [
+      { type: 'business', fn: 'qr', enabled: false, minRole: 'editor' }, // off -> write false
+    ]
+    const seed = seedSpaceConfigFromDefaults('business', defaults)
+    expect(seed.entitlements).toEqual({ qr: false })
+    expect(seed.featureRoles).toEqual({}) // role matches code default -> sparse
+  })
+
+  it('PLAN-GATED functions are never seeded ON (a new space starts on the free plan)', () => {
+    const defaults: SpaceFunctionTypeDefault[] = [
+      // Even if an operator marks crm/email enabled at the type level, the seed never grants the plan.
+      { type: 'business', fn: 'crm', enabled: true, minRole: 'admin' },
+      { type: 'business', fn: 'email', enabled: true, minRole: 'admin' },
+    ]
+    const seed = seedSpaceConfigFromDefaults('business', defaults)
+    expect(seed.entitlements.crm).toBeUndefined()
+    expect(seed.entitlements.email).toBeUndefined()
+  })
+
+  it('ignores rows for OTHER types and unknown function keys', () => {
+    const defaults = [
+      { type: 'practitioner', fn: 'availability', enabled: true, minRole: 'admin' }, // other type -> ignored for business
+      { type: 'business', fn: 'made-up', enabled: false, minRole: 'admin' }, // unknown fn -> ignored
+    ] as unknown as SpaceFunctionTypeDefault[]
+    const seed = seedSpaceConfigFromDefaults('business', defaults)
+    expect(seed.entitlements).toEqual({})
+    expect(seed.featureRoles).toEqual({})
+  })
+
+  it('the seeded config, read back through the resolver, reproduces the operator intent', () => {
+    // An operator sets business `members` to admin and turns `qr` off. A new business space seeded from
+    // that should: deny an editor on members (now admin-only) and deny everyone on qr (off).
+    const defaults: SpaceFunctionTypeDefault[] = [
+      { type: 'business', fn: 'members', enabled: true, minRole: 'admin' },
+      { type: 'business', fn: 'qr', enabled: false, minRole: 'editor' },
+    ]
+    const seed = seedSpaceConfigFromDefaults('business', defaults)
+    const space = { entitlements: seed.entitlements, featureRoles: seed.featureRoles }
+    expect(spaceFunctionAccess(space, 'members', 'editor')).toBe(false) // raised to admin
+    expect(spaceFunctionAccess(space, 'members', 'admin')).toBe(true)
+    expect(spaceFunctionAccess(space, 'qr', 'admin')).toBe(false) // turned off entirely
   })
 })

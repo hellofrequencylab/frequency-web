@@ -4,10 +4,12 @@ import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isSpaceEmailEnabled } from '@/lib/spaces/email-toggle'
 import { listAudienceTags } from '@/lib/spaces/audiences'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { EmailEnableCard } from '@/components/spaces/email/email-enable-card'
 import { ComposerShell } from '@/components/spaces/email/composer-shell'
 import { CampaignList } from '@/components/spaces/email/campaign-list'
@@ -61,6 +63,33 @@ export default async function SpaceEmailPage({
   if (!canManage && !staffViewing) notFound()
 
   const brandName = space.brandName ?? space.name
+
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). Email is PLAN-GATED (the on/off switch is the
+  // plan's `email` entitlement) with an `admin` default role. The resolver folds both: a space whose
+  // plan lacks email, or a viewer below the role, gets the locked state. A staff janitor keeps the
+  // read-only preview (the EmailEnableCard + composer render read-only; every write stays gated). The
+  // separate per-space email kill-switch (isSpaceEmailEnabled) still governs whether SENDING is live.
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'email', caps.role)) {
+    return (
+      <FocusTemplate
+        eyebrow={brandName}
+        title="Email"
+        description="Campaigns for this space."
+        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      >
+        <FeatureLockedNotice
+          brandName={brandName}
+          slug={space.slug}
+          label="Email"
+          // Plan-gated: no entitlement -> a plan nudge; entitlement present but role too low -> a team note.
+          reason={spaceHasEntitlement(space, 'email') ? 'role' : 'plan'}
+          canManageMembers={caps.canManageMembers}
+        />
+      </FocusTemplate>
+    )
+  }
+
   const [emailOn, tags] = await Promise.all([
     isSpaceEmailEnabled(space.id),
     listAudienceTags(space.id),

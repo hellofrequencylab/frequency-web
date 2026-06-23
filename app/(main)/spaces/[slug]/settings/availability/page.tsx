@@ -3,11 +3,13 @@ import { Suspense } from 'react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listSpaceAvailability } from '@/lib/spaces/booking'
 import { BookingAvailabilityForm } from '@/components/spaces/booking-availability-form'
 import { BookingOwnerList } from '@/components/spaces/booking-owner-list'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
 
 // OWNER AVAILABILITY EDITOR + BOOKINGS (ENTITY-SPACES-SYSTEM section 2.4, booking v1). A centered,
@@ -52,10 +54,36 @@ export default async function SpaceAvailabilityPage({
   )
   if (!canManage && !staffViewing) notFound()
 
+  const brandName = space.brandName ?? space.name
+
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). The single resolver folds the tool's ON/OFF
+  // switch and its lowest-role for this space. The Phase-1 default (availability = editor) reproduces
+  // the old canEditProfile threshold, so behavior is unchanged unless an operator/owner tunes it. A
+  // staff janitor (caps.role === null) is exempt: they keep the read-only preview the surface always
+  // gave them, with every write still gated server-side.
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'availability', caps.role)) {
+    return (
+      <FocusTemplate
+        eyebrow={brandName}
+        title="Availability"
+        description="The weekly booking windows for this space."
+        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      >
+        <FeatureLockedNotice
+          brandName={brandName}
+          slug={space.slug}
+          label="Availability and bookings"
+          reason={spaceFunctionAccess(space, 'availability', 'admin') ? 'role' : 'disabled'}
+          canManageMembers={caps.canManageMembers}
+        />
+      </FocusTemplate>
+    )
+  }
+
   const windows = await listSpaceAvailability(space.id)
   // Seed the timezone from the saved windows, else a sensible default the owner can change.
   const initialTimezone = windows[0]?.timezone ?? 'UTC'
-  const brandName = space.brandName ?? space.name
 
   return (
     <FocusTemplate

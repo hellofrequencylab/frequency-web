@@ -19,9 +19,29 @@
 //
 // Copy follows docs/CONTENT-VOICE.md: plain operator-facing nouns, no em or en dashes.
 
-import { atLeastSpaceRole, SPACE_ROLES, type SpaceRole } from './membership'
+import { atLeastSpaceRole, isSpaceRole, SPACE_ROLES, type SpaceRole } from './membership'
 import { spaceHasEntitlement, spaceEntitlements, type SpaceLike } from './entitlements'
 import type { SpaceType } from './types'
+
+/** Every value `spaces.type` can hold (kept in lock-step with SpaceType in ./types). The operator
+ *  type-defaults editor and the seed-from-defaults path validate against this list (fail-closed for an
+ *  unknown type). `root` is the platform host (not member-facing), but it stays here so the union is
+ *  complete; the editor renders only the provisionable, member-facing types. */
+export const SPACE_TYPES: readonly SpaceType[] = [
+  'root',
+  'practitioner',
+  'business',
+  'organization',
+  'coaching',
+  'event_space',
+  'lab',
+  'partner',
+] as const
+
+/** Is `value` a known SpaceType? Fail-closed for unknown / future values. */
+export function isSpaceType(value: unknown): value is SpaceType {
+  return typeof value === 'string' && (SPACE_TYPES as readonly string[]).includes(value)
+}
 
 // ── The function registry (the catalog of gateable Space tools) ──────────────────────────────────
 
@@ -262,4 +282,65 @@ export function spaceFunctionAccess(
   if (!spaceFunctionEnabled(space, def)) return false
   const minRole = spaceFunctionMinRoleOverride(space, def.key) ?? def.defaultMinRole
   return atLeastSpaceRole(viewerSpaceRole, minRole)
+}
+
+// ── Per-TYPE seed defaults (operator-set; merged over the code defaults at provision time) ──────────
+//
+// An operator may pre-configure each Space TYPE so every NEW Space of that type starts with a function's
+// on/off + min-role already tuned (e.g. all business spaces start with `members` at 'admin'). These
+// rows live in space_function_type_defaults (sparse: one row per (type, fn) the operator touched). The
+// pure helpers below RESOLVE those rows over the code defaults, and SEED a new Space's entitlements +
+// feature_roles from the result. FAIL-SAFE: no rows = the code defaults (today's behavior exactly).
+
+/** One operator-set per-type default row (the sparse table shape, narrowed to the app vocabulary). */
+export interface SpaceFunctionTypeDefault {
+  type: SpaceType
+  fn: SpaceFunctionKey
+  enabled: boolean
+  minRole: SpaceRole
+}
+
+/** The on/off + feature_roles blobs a NEW Space of `type` should be created with. PURE. It walks the
+ *  functions the type offers, applies any operator per-type default over the CODE default, and returns
+ *  two SPARSE jsonb blobs ready to write to spaces.entitlements + spaces.feature_roles:
+ *   - `entitlements`: only the universal functions the operator turned OFF are written (as `false`);
+ *     a default-ON universal function writes nothing (an empty/absent key reads as ON). Plan-gated
+ *     functions are NEVER seeded on here (a new Space starts on the free plan; the operator/owner grants
+ *     a paid tool later through billing or the absolute operator override), so the seed never out-grants
+ *     the plan.
+ *   - `featureRoles`: only a min-role that DIFFERS from the code default is written (sparse), so an
+ *     untouched type yields '{}' and the Space resolves exactly as today.
+ *  An empty `defaults` list (the common case) returns two empty blobs = pure code defaults. */
+export function seedSpaceConfigFromDefaults(
+  type: SpaceType | null | undefined,
+  defaults: readonly SpaceFunctionTypeDefault[],
+): { entitlements: Record<string, boolean>; featureRoles: Record<string, SpaceRole> } {
+  const entitlements: Record<string, boolean> = {}
+  const featureRoles: Record<string, SpaceRole> = {}
+  if (!type) return { entitlements, featureRoles }
+
+  // Index the operator defaults for THIS type by function key (ignore rows for other types / unknown fns).
+  const byFn = new Map<SpaceFunctionKey, SpaceFunctionTypeDefault>()
+  for (const row of defaults) {
+    if (row.type === type && isSpaceFunctionKey(row.fn)) byFn.set(row.fn, row)
+  }
+
+  for (const fn of functionsForType(type)) {
+    const override = byFn.get(fn.key)
+
+    // ON/OFF — only UNIVERSAL functions are seeded (plan-gated tools come from the plan, never the seed).
+    // A universal function is default-ON, so we only write the sparse OFF case: an operator default that
+    // explicitly disables it.
+    if (fn.entitlement === null && override && override.enabled === false) {
+      entitlements[fn.key] = false
+    }
+
+    // MIN-ROLE — write only a genuine override (differs from the code default), keeping the blob sparse.
+    const minRole = override?.minRole ?? fn.defaultMinRole
+    if (isSpaceRole(minRole) && minRole !== fn.defaultMinRole) {
+      featureRoles[fn.key] = minRole
+    }
+  }
+
+  return { entitlements, featureRoles }
 }

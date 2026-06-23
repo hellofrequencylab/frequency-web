@@ -7,7 +7,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
+import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { ensureCheckinNode, listCheckins } from '@/lib/spaces/checkin'
 import { nodeUrl } from '@/lib/qr/links'
 import { renderQrSvg } from '@/lib/qr/render'
@@ -63,6 +65,29 @@ export default async function SpaceCheckinPage({
   if (!canManage && !staffViewing) notFound()
 
   const brandName = space.brandName ?? space.name
+
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). Check in defaults to MODERATOR (the door is a
+  // moderator+ tool), so by default an editor-only manager sees the locked state, reproducing the
+  // intended threshold. A staff janitor keeps the read-only preview (every write stays gated).
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'checkin', caps.role)) {
+    return (
+      <FocusTemplate
+        eyebrow={brandName}
+        title="Check in"
+        description="The door check-in for this space."
+        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      >
+        <FeatureLockedNotice
+          brandName={brandName}
+          slug={space.slug}
+          label="Check in"
+          reason={spaceFunctionAccess(space, 'checkin', 'admin') ? 'role' : 'disabled'}
+          canManageMembers={caps.canManageMembers}
+        />
+      </FocusTemplate>
+    )
+  }
 
   // Ensure (create-or-get) the Space's one check-in node, then render its QR with the EXISTING helpers
   // (read-only: nodeUrl builds the /n/<id> destination; renderQrSvg paints it inline). A staff

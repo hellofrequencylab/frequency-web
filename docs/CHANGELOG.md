@@ -41,6 +41,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   questions (who it's for, the act, what you want from it, how often, how long). Vera
   drafts the whole thing, a name, a hook, the steps, a cadence, and a Pillar, for you
   to review and tweak. Prefer to start from scratch? Skip and go straight to the editor.
+- **Features and access for your space**: if you run a space, open **Features and access**
+  from Manage to turn the tools your space uses on or off and set the lowest role that can
+  use each one. Hand the door check-in to a moderator without making them an admin, or turn
+  off a tool you do not use, and it stops showing for the team. Your space starts with sensible
+  settings and you change them whenever you like. Operators can set the starting tools for each
+  kind of space, and a paid tool turns on when your plan includes it.
 
 ### Changed
 
