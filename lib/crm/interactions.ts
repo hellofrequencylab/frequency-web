@@ -288,3 +288,46 @@ export async function listContactInteractions(filter: ListInteractionsFilter): P
     return []
   }
 }
+
+/**
+ * Read the timeline for ONE person across ALL of their subject rows at once — the platform/admin
+ * "person view" (ADR-372). A person is stitched from several identity rows (their `contact` id, their
+ * `profile` id, and any `network_contact` capture ids), so this gathers every interaction whose
+ * `subject_id` is one of those, regardless of who logged it. Subject ids are UUIDs, so an `in` filter
+ * across them never collides between kinds. Newest first. Service-role read; the caller (a staff-gated
+ * admin surface) has authorized the scope. FAIL-SAFE: [] on any error.
+ */
+export async function listInteractionsForPerson(
+  subjectIds: (string | null | undefined)[],
+  limit = 200,
+): Promise<ContactInteraction[]> {
+  const ids = [...new Set(subjectIds.filter((s): s is string => typeof s === 'string' && s.length > 0))]
+  if (ids.length === 0) return []
+  const capped = Math.min(Math.max(limit, 1), 500)
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          in: (col: string, vals: string[]) => {
+            order: (col: string, opts: { ascending: boolean }) => {
+              limit: (n: number) => Promise<{ data: InteractionRow[] | null; error: unknown }>
+            }
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .from('contact_interactions')
+      .select(ROW_COLS)
+      .in('subject_id', ids)
+      .order('occurred_at', { ascending: false })
+      .limit(capped)
+    if (error || !data) return []
+    return data.flatMap((r) => {
+      const m = mapRow(r)
+      return m ? [m] : []
+    })
+  } catch {
+    return []
+  }
+}
