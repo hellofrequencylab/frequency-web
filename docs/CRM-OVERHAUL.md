@@ -130,9 +130,9 @@ the consolidation lever: we extend, we do not invent.
 | | Detail |
 |---|---|
 | Goal | A real people graph with provenance and mutual consent. |
-| What we build | `connection_edges` with provenance (`met_at_event` / `introduced_by` / `opt_in` / `referral`) + mutual opt-in (pending / active); graph UI; Root-visible, private contacts excluded. |
-| Reuses | ✅ the connection layer (Resonance, orbits, Pulse, Near Misses) ([CONNECTION-LAYER.md](CONNECTION-LAYER.md)) · ✅ the consent-gated promotion doctrine (ADR-099/132). |
-| Net-new | `connection_edges`, the mutual opt-in handshake, the graph UI. |
+| What we build | Structured provenance on the member graph: `friendships.edge_type` (`met_at_event` / `introduced_by` / `shared_circle` / `opt_in_connect`) + `event_id` / `introduced_by` / `circle_id` FKs (✅ shipped). Mutual opt-in (pending/accepted), introductions, resonance/orbits, near-misses, the connect button all ALREADY existed, not rebuilt. |
+| Reuses | ✅ `friendships` mutual opt-in + `introductions` + resonance/orbits/near-misses (the whole connection layer, [CONNECTION-LAYER.md](CONNECTION-LAYER.md)). |
+| Net-new | `friendships` provenance columns + `lib/connections/edge-types.ts` (✅ shipped); stamped at connect time + on introduction→friendship. Follow-up: surface "how you connected" in the graph UI. `referral` stays on the CRM axis, not the member graph. |
 | Guardrail | ⚠️ Private `network_contacts` are excluded from the graph and from Root. The §1.2 boundary is enforced here. |
 
 ### Phase 4, Personal AI (metered)

@@ -111,6 +111,15 @@ export async function claimIntroductionRewards(): Promise<IntroductionRewardResu
       .eq('rewarded', false)
       .select('id')
     if (claimed?.length) {
+      // Stamp provenance on the now-formed friendship: it came from this introduction (ADR-372).
+      // Best-effort, and the columns aren't in the generated types until regen (cast past, ADR-246).
+      await db
+        .from('friendships')
+        .update({ edge_type: 'introduced_by', introduced_by: me.id } as unknown as Database['public']['Tables']['friendships']['Update'])
+        .or(
+          `and(user_a_id.eq.${intro.person_a_id},user_b_id.eq.${intro.person_b_id}),and(user_a_id.eq.${intro.person_b_id},user_b_id.eq.${intro.person_a_id})`,
+        )
+
       const r = await awardGems(me.id, 'achievement', settings.rewardIntroduction, {
         reason: 'introduction',
         introduction: intro.id,
