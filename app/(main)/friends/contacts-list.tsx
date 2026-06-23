@@ -43,7 +43,8 @@ export function ContactsList({ contacts }: { contacts: NetworkContactListItem[] 
             href={`/connections/${c.id}`}
             anchor={
               c.avatarUrl ? (
-                <Image src={c.avatarUrl} alt="" width={44} height={44} className="h-11 w-11 rounded-full object-cover" />
+                // Private `network-contacts` signed URL — skip the optimizer (see page.tsx note).
+                <Image src={c.avatarUrl} alt="" width={44} height={44} unoptimized className="h-11 w-11 rounded-full object-cover" />
               ) : (
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-muted">
                   {getInitials(c.displayName ?? '?')}

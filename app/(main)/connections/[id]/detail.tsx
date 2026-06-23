@@ -71,7 +71,8 @@ export function Detail({
       title={
         <span className="inline-flex items-center gap-3 align-middle">
           {avatarUrl ? (
-            <Image src={avatarUrl} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-surface" />
+            // Private `network-contacts` signed URL — skip the optimizer (see network/contacts page note).
+            <Image src={avatarUrl} alt="" width={48} height={48} unoptimized className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-surface" />
           ) : (
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-base font-semibold text-muted">
               {contact.displayName ? getInitials(name) : <User className="h-6 w-6" />}
