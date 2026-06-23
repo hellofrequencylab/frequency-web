@@ -69,6 +69,7 @@ import {
   liveElapsedSeconds,
   type LiveSessionRecord,
 } from '@/lib/on-air/live-session'
+import { FREE_SIT_ID } from '@/lib/on-air/session-data'
 
 // What a saved Mindless run carries beyond the shared record fields: the mode + cue settings the
 // live clock is rebuilt from. startedAt/pausedAt/practiceId/banked are on the record itself.
@@ -316,6 +317,18 @@ export function OnAirSession({
   const [cuesOpen, setCuesOpen] = useState(false)
   // The pattern how-to popup (setup + live): the full instructions for the current pattern.
   const [showInstructions, setShowInstructions] = useState(false)
+  // Whether the member has ANY real adopted practice (anything beyond the synthetic Free Practice
+  // chip). Only then is there something to choose, so only then does a generic open prompt them to
+  // "Select Practice" rather than auto-committing to Free Practice.
+  const hasRealPractices = practices.some((p) => p.id !== FREE_SIT_ID)
+  // Distinguish an AUTO-DEFAULT (a generic open landed on Free Practice) from an EXPLICIT selection
+  // (opened pre-set to a specific practice, the chooser pick, the "Change" re-pick). On a generic
+  // open the engine sits on the Free Practice default, so the primary button reads "Select Practice"
+  // (and opens the chooser) until the member explicitly picks one. Initialized true when the door
+  // opened on a real practice id (Continue Practice, a practice page, a Journey step).
+  const [explicitlySelected, setExplicitlySelected] = useState(
+    !!defaultPracticeId && defaultPracticeId !== FREE_SIT_ID,
+  )
   // The practice chooser sheet (C.5): with more than one adopted practice the primary
   // button reads "Select a practice" and opens this; picking one seeds its preset and
   // begins the sit. With one/zero practices there's nothing to choose, so it never shows.
@@ -371,6 +384,11 @@ export function OnAirSession({
   const activeResumeRemainingMin = activeResume
     ? clampMinutes(Math.ceil((activeResume.targetSec - activeResume.bankedSec) / 60))
     : 0
+  // "Select Practice" state: the member has a real practice to choose AND hasn't explicitly picked
+  // one yet (a generic open auto-defaulted to Free Practice). The primary button then opens the
+  // chooser instead of starting. With only Free Practice (nothing to choose) it never triggers.
+  // Just Log keeps its own "Log it" label/behavior, so it overrides this in the label below.
+  const needsSelect = hasRealPractices && !explicitlySelected
 
   // Pick a practice + seed its opening mode + length, routed by timer_kind (item #2). A 'none'
   // practice opens Just Log; a mindless practice (Free sit included) opens its sit mode. Movement
@@ -714,6 +732,9 @@ export function OnAirSession({
     // ready for the primary button. modeForPractice never returns 'log' for a mindless practice,
     // so a Free sit lands on the timer; a 'none' practice opens to Just Log.
     selectPractice(id)
+    // The pick is an explicit selection: from here the primary button STARTS (or continues) it,
+    // never "Select Practice". Stays explicit through any later "Change" re-pick.
+    setExplicitlySelected(true)
     setShowChooser(false)
   }
 
@@ -1423,25 +1444,26 @@ export function OnAirSession({
         </div>
       </div>
 
-      {/* Practice — the current pick. The chooser SELECTS a practice (it no longer auto-starts),
-          so with more than one practice this read-out doubles as the "Change" affordance that
-          re-opens the sheet. One/zero practices auto-select (nothing to change), so nothing renders. */}
-      {practices.length > 1 && practice && (
+      {/* Practice read-out (which log this banks), on ONE line with an inline "Change" link. Shown
+          only once a practice is explicitly selected (it pairs with the Start/Continue button); in
+          the "Select Practice" state nothing renders here. With more than one practice "Change"
+          re-opens the chooser. */}
+      {practices.length > 1 && practice && explicitlySelected && (
         <div className="mt-5 lg:mt-6">
-          <div className="flex items-center justify-between">
-            <Label>Practice</Label>
+          <div className="flex items-center justify-between gap-2">
+            <p className="flex min-w-0 items-center gap-1.5 text-sm text-text">
+              <span className="shrink-0 text-subtle">Logs as</span>
+              <span className="truncate font-semibold">{practice.title}</span>
+              {practice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
+            </p>
             <button
               type="button"
               onClick={() => setShowChooser(true)}
-              className="rounded-full px-2 py-0.5 text-2xs font-semibold uppercase tracking-wider text-primary-strong transition-colors hover:bg-primary-bg/40"
+              className="shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold uppercase tracking-wider text-primary-strong transition-colors hover:bg-primary-bg/40"
             >
               Change
             </button>
           </div>
-          <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold text-text">
-            <span className="truncate">{practice.title}</span>
-            {practice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
-          </p>
           {/* A partial today resumes: surface the remaining time so "Continue Practice" reads true. */}
           {activeResume && (
             <p className="mt-1 text-2xs text-primary-strong">
@@ -1465,15 +1487,19 @@ export function OnAirSession({
             {practicedToday} members practiced today.
           </p>
         )}
-        {/* The primary action: a practice is always SELECTED (the chooser now selects, not
-            starts), so the button STARTS it. Label: "Continue Practice" when the selected
-            practice has a partial today (it resumes the remaining time), else "Start Practice";
-            Just Log keeps "Log it" (an instant log, not a timed start). The chooser is re-opened
-            from the "Change" affordance above when there is more than one practice. */}
+        {/* The primary action. When the member has a real practice to choose AND hasn't explicitly
+            selected one (a generic open landed on the Free Practice default), the button reads
+            "Select Practice" and OPENS the chooser rather than starting, so they pick one of their
+            adopted practices first. Just Log keeps "Log it" (an instant log) even in that state.
+            Once a practice is explicitly selected (or the member only has Free Practice, nothing to
+            choose), it STARTS the sit: "Continue Practice" when the selected practice has a partial
+            today (it resumes the remaining time), else "Start Practice". Re-pick via "Change" above. */}
         <button
           type="button"
           onClick={() => {
             if (!practiceId) return
+            // Prompt a pick first on a generic open (Just Log goes straight through to its log).
+            if (needsSelect && mode !== 'log') { setShowChooser(true); return }
             // A lone Movement practice still hands off to the Movement timer (item #2); every
             // other kind runs the sit on the member's chosen mode + minutes (resuming if partial).
             if (practiceKind === 'movement') { handOffToMovement(practiceId); return }
@@ -1483,7 +1509,13 @@ export function OnAirSession({
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
         >
           <OnAirIcon className="h-4 w-4" />{' '}
-          {mode === 'log' ? 'Log it' : activeResume ? 'Continue Practice' : 'Start Practice'}
+          {mode === 'log'
+            ? 'Log it'
+            : needsSelect
+              ? 'Select Practice'
+              : activeResume
+                ? 'Continue Practice'
+                : 'Start Practice'}
         </button>
       </div>
       </div>
