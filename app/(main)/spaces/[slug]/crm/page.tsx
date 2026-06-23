@@ -34,14 +34,10 @@ export const metadata = {
 
 export default async function SpaceCrmBoardPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ contact?: string | string[] }>
 }) {
   const { slug } = await params
-  const { contact } = await searchParams
-  const selectedContactId = Array.isArray(contact) ? (contact[0] ?? null) : (contact ?? null)
 
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -91,7 +87,9 @@ export default async function SpaceCrmBoardPage({
       </Suspense>
 
       <Suspense fallback={<ListSkeleton />}>
-        <SpaceContacts spaceId={space.id} slug={space.slug} selectedContactId={selectedContactId} />
+        {/* The board has no inline notes panel: each row links to the /settings/crm notes surface
+            where notes can be read/added, so there is no on-board selection to highlight. */}
+        <SpaceContacts spaceId={space.id} slug={space.slug} selectedContactId={null} />
       </Suspense>
     </DashboardTemplate>
   )

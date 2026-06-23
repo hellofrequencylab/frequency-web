@@ -1,11 +1,11 @@
 {
   "name": "Frequency",
   "short_name": "Frequency",
-  "description": "Your local community.",
-  "start_url": "/feed",
+  "description": "Frequency connects neighborhoods into real-world community. Join local circles, show up for events near you, and build lasting friendships with people who live close by.",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1a1a1a",
+  "background_color": "#FBFAF6",
+  "theme_color": "#FBFAF6",
   "orientation": "portrait-primary",
   "categories": ["social", "lifestyle"],
   "icons": [

@@ -2,8 +2,9 @@
 // Stripe subscription event by its `metadata.kind` to the right Space entitlement write:
 //
 //   kind:'space_plan'        → setSpacePlan(space_id, plan|free) + persist spaces.stripe_subscription_id
-//                              / stripe_customer_id + payment_status (active|past_due|canceled).
-//   kind:'space_membership'  → upsert space_memberships.stripe_subscription_id + payment_status.
+//                              / stripe_customer_id. There is no spaces.payment_status column: the
+//                              space's plan (free vs paid) is the payment state-of-record.
+//   kind:'space_membership'  → upsert space_memberships.stripe_subscription_id + payment_status + status.
 //
 // The member Crew/Supporter path stays in app/api/stripe/webhook/route.ts UNTOUCHED. All writes are
 // idempotent (the webhook claims the event id first; these set fixed values keyed by id) and FAIL-SAFE
@@ -68,13 +69,15 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
   if (!spaceId) return
   const status = sub.status
   const plan = planForSubscription(sub.metadata?.plan, status)
-  const payment = paymentStatusForSubscription(status)
+  const isCanceled = paymentStatusForSubscription(status) === 'canceled'
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id ?? null
 
   // Expand/contract entitlements via the gated writer (a no-op if billing somehow went OFF mid-flight).
+  // The space's effective plan IS the payment-state-of-record here: there is no spaces.payment_status
+  // column, so a canceled sub reverts the space to 'free' via setSpacePlan rather than persisting a status.
   await setSpacePlan(spaceId, plan)
 
-  // Persist the subscription identifiers + payment status regardless (audit/reference). The columns
+  // Persist the subscription identifiers (audit/reference); a canceled sub clears the id. The columns
   // aren't in the generated types yet (ADR-246) — reach untyped, scope the write to the space id.
   const db = createAdminClient()
   await (db as unknown as {
@@ -84,7 +87,7 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
   })
     .from('spaces')
     .update({
-      stripe_subscription_id: payment === 'canceled' ? null : sub.id,
+      stripe_subscription_id: isCanceled ? null : sub.id,
       ...(customerId ? { stripe_customer_id: customerId } : {}),
     })
     .eq('id', spaceId)
@@ -113,7 +116,10 @@ export async function reconcileSpaceMembershipSubscription(sub: Stripe.Subscript
     .update({
       stripe_subscription_id: sub.id,
       payment_status: payment,
-      ...(payment === 'canceled' ? { status: 'cancelled' } : {}),
+      // Keep status symmetric with payment_status: a reactivated member must flip back to
+      // 'active' (not stay 'cancelled'), or memberships gated on .eq('status','active')
+      // would keep excluding a paying member.
+      status: payment === 'canceled' ? 'cancelled' : 'active',
     })
     .eq('space_id', spaceId)
     .eq('member_profile_id', memberId)

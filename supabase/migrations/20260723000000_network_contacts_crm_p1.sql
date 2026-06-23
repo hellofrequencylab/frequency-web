@@ -54,23 +54,25 @@ create index if not exists network_contact_reminders_contact_idx
 -- ── RLS — mirrors the network_contacts owner policies exactly ─────────────────
 alter table public.network_contact_reminders enable row level security;
 
+-- auth.uid() is wrapped in (select auth.uid()) so Postgres evaluates it once per query
+-- (initplan), not once per row — the rls_init_plan advisor's recommended form.
 drop policy if exists network_contact_reminders_select on public.network_contact_reminders;
 create policy network_contact_reminders_select on public.network_contact_reminders for select using (
-  owner_id in (select id from public.profiles where auth_user_id = auth.uid())
+  owner_id in (select id from public.profiles where auth_user_id = (select auth.uid()))
 );
 drop policy if exists network_contact_reminders_insert on public.network_contact_reminders;
 create policy network_contact_reminders_insert on public.network_contact_reminders for insert with check (
-  owner_id in (select id from public.profiles where auth_user_id = auth.uid())
+  owner_id in (select id from public.profiles where auth_user_id = (select auth.uid()))
 );
 drop policy if exists network_contact_reminders_update on public.network_contact_reminders;
 create policy network_contact_reminders_update on public.network_contact_reminders for update using (
-  owner_id in (select id from public.profiles where auth_user_id = auth.uid())
+  owner_id in (select id from public.profiles where auth_user_id = (select auth.uid()))
 ) with check (
-  owner_id in (select id from public.profiles where auth_user_id = auth.uid())
+  owner_id in (select id from public.profiles where auth_user_id = (select auth.uid()))
 );
 drop policy if exists network_contact_reminders_delete on public.network_contact_reminders;
 create policy network_contact_reminders_delete on public.network_contact_reminders for delete using (
-  owner_id in (select id from public.profiles where auth_user_id = auth.uid())
+  owner_id in (select id from public.profiles where auth_user_id = (select auth.uid()))
 );
 
 -- ── Docs ─────────────────────────────────────────────────────────────────────

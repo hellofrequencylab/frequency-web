@@ -2372,7 +2372,7 @@ community centered on **Encinitas**: ~250 auth-less members across 12 circles,
 modeling a community that is one year old and "went viral" but stayed inside the
 North County border (Oceanside / Vista / San Marcos / Poway / La Mesa / San Diego
 proper). Migration series `20260605000001`–`…000300`. Casting bible + build spec:
-[DEMO-CAST.md](DEMO-CAST.md).
+[DEMO-SYSTEM.md](DEMO-SYSTEM.md).
 
 **Why.** The brief wanted a believable, *bounded* local community, not a national
 sprinkle. The story is carried by **maturity signals** (deep streaks, full trophy
@@ -3156,7 +3156,7 @@ work, strength, real outreach) get a touch more, like surf/cold already do.
 **Future (not in this ADR).** A larger, creator-driven library — deep **sub-categories +
 tags** (applied by members and auto-suggested by Vera), **popularity-based ranking** so used
 practices rise, and **creator usage rewards** — is a separate design tracked in
-[ROADMAP.md](ROADMAP.md); this ADR only covers the content seed that balances the Pillars.
+[ROADMAP.md](../ROADMAP.md); this ADR only covers the content seed that balances the Pillars.
 
 ---
 
@@ -7920,3 +7920,13 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 **Rationale.** Rendering from `getPricingValues()` keeps one source of truth (the admin console) and removes the hardcoded prices. Gating every CTA on the existing sell-gates means OFF is structurally safe: while `billing_live` is OFF, `memberTierSellable`/`spacePlanSellable` are false (disabled previews), `createSpaceMembershipCheckout` returns `billing_off` (the join card silently uses the unchanged `joinTier`), and `featureAllowed` short-circuits to grant-all (the cash-in action behaves exactly as today). White-label-as-lead is the network-effect call: a self-serve white-label checkout would let operators peel off into branded silos that don't reinforce the shared network, so the expensive door is a human conversation, captured as a `contacts` lead an operator follows up on — reusing the proven lead seam, no new table. Routing only `vault_cash_in` through `featureAllowed` (and explicitly deferring the riskier gates) honors the "if rewiring risks changing current behavior, expose the seam and defer" rule.
 
 **Consequences.** P3 adds NO migration (reuses P1/P2 tables + the existing `contacts` table). New: `lib/pricing/display.ts` + `memberTierSellable`, the Space billing route (`page.tsx`/`plan-picker.tsx`/`whitelabel-request.tsx`/`actions.ts`), the `startSpaceMembershipCheckout` action seam, the join-card paid path, the `/upgrade` rewrite, and the `redeemItem` gate wire. Tests cover the pure display helpers + the `vault_cash_in` gate semantics (`lib/pricing/pricing.test.ts`); no Stripe client is instantiated in test/build (every Stripe call sits behind `billingLive()`/`billingEnabled()`). Founding-member founder pricing is honored at checkout (P2) and now surfaced (the badge). Deferred items are listed in PRICING.md "Status & deferred" (the leaderboard/compete gate, `resolveGamificationAccess` consumers, `vera_unlimited`, the `space_*` gates, household/Circle bundle, dunning/proration, conversion-mechanics polish).
+
+## ADR-365: Accepted advisor exceptions + RLS/view hardening
+
+**Status:** Accepted (2026-06-23). Records the disposition of the standing Supabase advisor findings from the audit sweep. Migrations: `20260724000000_wrap_reminders_rls_auth.sql`, `20260724000100_practices_ranked_security_invoker.sql`. Source forward-fix: `20260723000000_network_contacts_crm_p1.sql`.
+
+**Context.** The advisor reported two ERROR-level `security_definer_view` / `rls_disabled` items plus `auth_rls_initplan` warnings on the new `network_contact_reminders` table (shipped in ADR-361 P1). Each needs a verdict: fix in place, or accept with a reason.
+
+**Decision.** (a) `spatial_ref_sys` reporting `rls_disabled_in_public` is a PostGIS extension-owned table; a non-superuser role cannot `ALTER` it to enable RLS, and it holds only static reference data (the spatial reference catalog). The advisory is benign and unactionable, so it is **accepted** as a standing exception. (b) The four `network_contact_reminders` policies wrap `auth.uid()` in `(select auth.uid())` so Postgres evaluates it once per query (initplan), matching the repo-wide pattern set by `20260615200000`. The fix lands as a forward-fix to the P1 source migration (so a fresh DB is born correct) AND an idempotent sweep migration (`20260724000000`) so an already-applied DB is corrected on the next run. (c) `practices_ranked` is reset to `security_invoker = on` (`20260724000100`): it was created that way (`20260606160000`) but `20260617000000` recreated it with `CREATE OR REPLACE VIEW` without restating the option, reverting it to the implicit `security_definer` and tripping the advisor.
+
+**Consequences.** One of the two standing ERROR advisories clears (`practices_ranked`); the other (`spatial_ref_sys`) is documented as accepted. The reminders policies are perf-aligned with the rest of public RLS. Both new migrations are idempotent and carry rollback comments; neither changes access semantics. Migrations are not auto-applied; they ship with the branch and apply on the next deploy.

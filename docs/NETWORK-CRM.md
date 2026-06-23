@@ -183,13 +183,17 @@ locality (`canViewLead`). A capture that's become a member is skipped (you find 
 - **Types:** no regen needed, additive indexes + a data backfill, no new columns. The crm/network
   tables still go through the untyped admin handle (repo convention).
 
+## Shipped
+
+- ✅ **My Contacts as a lightweight in-person CRM + the paid-Spaces upgrade funnel:** the
+  keep-in-touch layer (follow-up reminders, last-contacted, "reach out today"), the `Card`/`QR Scan`
+  tab facets + in-person QR capture, and graduation into the paid Spaces CRM. The strategy lives in
+  [CRM-STRATEGY.md](CRM-STRATEGY.md) (ADR-361). All three phases have shipped: ✅ P1 (keep-in-touch),
+  ✅ P2 (in-person QR capture, see above), and ✅ P3 (graduation into the paid Spaces CRM, the
+  `/spaces/<slug>/crm` board + "bring your contacts in" import).
+
 ## Not yet (deliberate follow-ups)
 
-- **My Contacts as a lightweight in-person CRM + the paid-Spaces upgrade funnel:** the strategy
-  for the keep-in-touch layer (follow-up reminders, last-contacted, "reach out today"), the
-  `Card`/`QR Scan` tab facets + in-person QR capture, and graduation into the paid Spaces CRM lives
-  in [CRM-STRATEGY.md](CRM-STRATEGY.md) (ADR-361). ✅ P1 (keep-in-touch) and ✅ P2 (in-person QR
-  capture, see above) have shipped; P3 (graduation into the paid Spaces CRM) is designed, not built.
 - **Promotion into public/network** (`→ contacts`, link to a member `profile`): schema hooks exist; the action is gated behind its own review since that's where leak risk concentrates.
 - `shared` (team) visibility: modelled, not yet surfaced.
 - More sources (email/calendar import): `source` is open for it.

@@ -33,4 +33,12 @@ describe('qr code slugs', () => {
     expect(isValidTargetUrl('javascript:alert(1)')).toBe(false)
     expect(isValidTargetUrl('not a url')).toBe(false)
   })
+
+  it('rejects protocol-relative and backslash-tricked open redirects', () => {
+    expect(isValidTargetUrl('//evil.com')).toBe(false)
+    expect(isValidTargetUrl('/\\evil.com')).toBe(false)
+    // normal site-relative paths and absolute http(s) URLs still pass
+    expect(isValidTargetUrl('/path')).toBe(true)
+    expect(isValidTargetUrl('https://x.com')).toBe(true)
+  })
 })
