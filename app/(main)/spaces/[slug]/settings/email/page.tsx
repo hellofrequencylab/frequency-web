@@ -5,7 +5,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
-import { spaceFunctionAccess } from '@/lib/spaces/functions'
+import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { isSpaceEmailEnabled } from '@/lib/spaces/email-toggle'
 import { listAudienceTags } from '@/lib/spaces/audiences'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
@@ -70,7 +70,9 @@ export default async function SpaceEmailPage({
   // read-only preview (the EmailEnableCard + composer render read-only; every write stays gated). The
   // separate per-space email kill-switch (isSpaceEmailEnabled) still governs whether SENDING is live.
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  if (!staffViewing && !spaceFunctionAccess(space, 'email', caps.role)) {
+  // LIVE gate (ADR-370): the pure role + entitlement check PLUS the consistent featureAllowed('space_email')
+  // plan-ladder check. While billing is OFF featureAllowed grants all, so this is today's behavior exactly.
+  if (!staffViewing && !(await spaceFunctionAccessLive(space, 'email', caps.role, space.plan))) {
     return (
       <FocusTemplate
         eyebrow={brandName}

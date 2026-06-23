@@ -234,18 +234,26 @@ plan picker → `createSpacePlanCheckout` · space membership join → `createSp
 (OFF preserves display-only join) · white-label lead flow (ADR-364) · `vault_cash_in` gate routed
 through `featureAllowed` · pure display helpers + tests. All ships OFF.
 
-⏳ **Deferred (tracked):**
+✅ **Done in the deferred-gates batch (ADR-370, migration `20260727000000_pricing_deferred_gates.sql`).**
+All wired through the OFF-preserving seam (`featureAllowed` grant-all while OFF, or gated on
+`billingLive()`), so each is a NO-OP today and only bites once an operator turns billing on:
+
+| Item | What shipped | Inert-while-OFF mechanism |
+|---|---|---|
+| **Leaderboard "join to compete" gate** | The individual board gates on `gamificationFullAllowed(tier)`; an earn-only member (billing ON) sees a calm `CompeteLocked` preview, still counted toward the shared goal. | `gamificationFullAllowed` → `featureAllowed('gamification_full')` grants while OFF, so the board renders exactly as today. |
+| **`resolveGamificationAccess` live consumer** | `lib/pricing/gamification-access.ts` (`resolveViewerGamificationAccess` / `…WithFlags`) folds override → per-role flags → derive; consumed in `getCrewContext`. | With the seeded flags it returns exactly `deriveGamificationAccess(tier)` (today's line). |
+| **`vera_unlimited` gate** | `lib/ai/vera/usage-gate.ts` enforces `vera_free_daily_cap` per member/day, routed through `featureAllowed('vera_unlimited')`; over the cap a free member degrades to the deterministic concierge. | OFF grants, so the cap never bites; no extra read changes the answer. |
+| **`space_*` plan-feature gates** | `lib/spaces/function-access.ts` `spaceFunctionAccessLive` composes the pure resolver with `featureAllowed('space_crm'/'space_email'/…)`, wired into the CRM + email surfaces. | OFF grants, so it equals the pure `spaceFunctionAccess` result (today's behavior). |
+| **`gamification_full` standalone gate** | `gamificationFullAllowed(tier)` — the single tier gate, reused by the leaderboard + season-reset nudge. | Routes through `featureAllowed('gamification_full')`; grants while OFF. |
+| **Household / Circle bundle (P2)** | `lib/pricing/bundle.ts` + `bundleSellable()` + `lib/billing/bundle-checkout.ts`; config + `profiles.household_bundle_id` link in the migration. | `bundleSellable` = `billingLive()` AND `bundle_household_enabled` (OFF); checkout returns null while OFF. |
+| **Dunning / proration / past-due UX** | `lib/pricing/dunning.ts` + `PastDueBanner` on `/settings/billing`; `profiles.membership_payment_status` in the migration. | `resolveMemberPaymentState` gated on `billingLive()` → returns `active` while OFF (banner dark); NULL column reads as active. |
+| **Conversion-mechanics polish** | `lib/pricing/conversion.ts` (season-reset timing) + `SeasonResetPrompt`, shown only when `!gamificationFull` AND inside the reset window. | `gamificationFull` is true while OFF, so the nudge never renders. |
+
+⏳ **Still deferred:**
 
 | Item | Why deferred |
 |---|---|
-| **Leaderboard "join to compete" gate** | The leaderboard is currently FULLY OPEN (no lock state). Wiring a gate there would need a new visible-but-locked preview UI; doing it now risks changing today's OFF behavior. The seam (`resolveGamificationAccess`) is ready; build the locked preview first, then wire. |
-| **`resolveGamificationAccess` at any live surface** | No current surface gates on it; the only consumer would be a not-yet-built "compete" lock. Pure resolver is shipped + tested, unused in app code by design. |
-| **`vera_unlimited` (Vera free daily cap) gate** | The Vera cap is its own enforcement path; rewiring it onto `featureAllowed` risks changing current message behavior. Left as a seam. |
-| **`space_*` plan-feature gates** (`space_crm`/`space_email`/`space_automation`/`space_team`/`space_multi_pipeline`/`space_whitelabel`) | These already gate on `spaceHasEntitlement` (default-deny) which `setSpacePlan` expands; routing them additionally through `featureAllowed` would change the resolution order and risks live behavior. Deferred to a deliberate rewire once billing is on. |
-| **`gamification_full` standalone gate** | Same line as `vault_cash_in` today; a separate enforcement point doesn't exist yet. |
-| **Household / Circle bundle** | Phase 2 (per the spec); not in scope. |
-| **Dunning / proration / past-due UX** | Phase 2 once billing is actually live. |
-| **Conversion-mechanics polish** | Founder-scarcity badge shipped on `/upgrade`; the season-reset "convert before reset" prompt and broader visible-but-locked value are deferred — they only read neutral OFF on surfaces that already have a lock state, so they wait for the locked-preview work above. |
+| **`pricing_*` type regen** | No DB access in the gates worktree; the parent session regenerates `lib/database.types.ts` via Supabase MCP at integration, then the untyped casts that read the new columns are removed. Blocked columns/casts: `profiles.gamification_access_override`, `profiles.membership_payment_status`, `profiles.household_bundle_id`, `spaces.plan` (projected in `lib/spaces/store.ts`), `space_memberships.payment_status` (P2), and the `pricing_settings` / `pricing_feature_gates` / `pricing_stripe_prices` tables (P1/P2). Until then every reader fail-safes to the seeded code defaults. |
 
 ## Roadmap
 
@@ -254,6 +262,7 @@ through `featureAllowed` · pure display helpers + tests. All ships OFF.
 | ✅ **P1** | entitlements layer + operator config + `/admin/pricing` console; everything OFF |
 | ✅ **P2** | Stripe wiring: product/price sync, subscription checkout for tiers/plans/space-memberships, the webhook calls `setSpacePlan`, founder lock honored at checkout; still ships OFF |
 | ✅ **P3** | member-facing upgrade/plan/join surfaces on the operator values, white-label as a lead, the `vault_cash_in` gate routed through `featureAllowed`; still ships OFF (see Status & deferred) |
+| ✅ **Deferred gates (ADR-370)** | leaderboard compete · gamification access consumer + standalone gate · `vera_unlimited` · `space_*` via `featureAllowed` · Household bundle · dunning/proration UX · season-reset conversion nudge; all NO-OP while OFF |
 
 ## References
 

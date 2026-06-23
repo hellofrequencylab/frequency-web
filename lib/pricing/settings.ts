@@ -13,6 +13,11 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingEnabled } from '@/lib/billing/stripe'
+import {
+  asHouseholdBundleConfig,
+  HOUSEHOLD_BUNDLE_DEFAULT,
+  type HouseholdBundleConfig,
+} from './bundle'
 
 // ── The seeded DEFAULT values (kept in sync with 20260723010000_pricing_foundation.sql) ──
 // Prices in CENTS. annual ≈ 2 months free (the spec). organization + whitelabel are monthly-only
@@ -133,6 +138,8 @@ export const PRICING_FLAG_KEYS = [
   'gamification_full_member',
   'gamification_full_crew',
   'gamification_full_supporter',
+  // Household / Circle multi-seat bundle (ADR-370, REMAINING-WORK #6). Default OFF (never sold while OFF).
+  'bundle_household_enabled',
 ] as const
 
 export type PricingFlagKey = (typeof PRICING_FLAG_KEYS)[number]
@@ -150,6 +157,7 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   gamification_full_member: false,
   gamification_full_crew: true,
   gamification_full_supporter: true,
+  bundle_household_enabled: false,
 }
 
 /** Read all pricing flags as a key -> boolean map, merged over the safe defaults. REQUEST-CACHED;
@@ -205,6 +213,31 @@ export async function memberTierSellable(tier: 'crew' | 'supporter'): Promise<bo
     if (!(await billingLive())) return false
     const flags = await loadPricingFlags()
     return flags[TIER_FLAG[tier]] === true
+  } catch {
+    return false
+  }
+}
+
+/** The Household / Circle bundle config (ADR-370, REMAINING-WORK #6), merged over the seeded default.
+ *  FAIL-SAFE to HOUSEHOLD_BUNDLE_DEFAULT. The bundle config is not in PricingDefaults (it keeps the typed
+ *  core stable); read it through here. */
+export async function getHouseholdBundle(): Promise<HouseholdBundleConfig> {
+  try {
+    const raw = await loadPricingSettings()
+    return asHouseholdBundleConfig(raw.household_bundle)
+  } catch {
+    return HOUSEHOLD_BUNDLE_DEFAULT
+  }
+}
+
+/** Is the Household / Circle bundle sellable right now? billingLive() AND bundle_household_enabled.
+ *  GATED — FALSE while billing is OFF, so the bundle is never sold and no member is seated. The mirror
+ *  of memberTierSellable / spacePlanSellable for the bundle. FAIL-SAFE FALSE. */
+export async function bundleSellable(): Promise<boolean> {
+  try {
+    if (!(await billingLive())) return false
+    const flags = await loadPricingFlags()
+    return flags.bundle_household_enabled === true
   } catch {
     return false
   }

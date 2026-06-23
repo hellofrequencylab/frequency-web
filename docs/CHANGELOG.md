@@ -12,6 +12,15 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Paid-plan groundwork, still switched off**: the last pieces of the pricing system are now wired
+  in, all behind the same master switch, so nothing changes for members yet. When paid plans are
+  eventually turned on, this is what unlocks: a "join to compete" path on the leaderboard, unlimited
+  Vera for paid members (with a generous free daily allowance for everyone else), a consistent way
+  spaces unlock their tools by plan, a Household bundle that covers several members on one plan, a
+  gentle reminder to upgrade before a season resets, and clear, calm handling if a payment fails or a
+  plan changes. Until billing is deliberately turned on, every one of these stays invisible and no one
+  is charged. Access stays exactly as it is today.
+
 - **Plans and pricing, behind the scenes**: operators now have a Pricing console to set up
   member and space plans, prices, and what each plan includes, all in one place. Operators can now
   also connect Stripe and sync those plans into Stripe products with one click from the console.

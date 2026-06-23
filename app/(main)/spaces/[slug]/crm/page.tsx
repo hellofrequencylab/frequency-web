@@ -6,7 +6,7 @@ import { DashboardTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
-import { spaceFunctionAccess } from '@/lib/spaces/functions'
+import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { getDeals, countOpenTasks, computeMetrics, formatMoney, ensureSpaceStages } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -49,12 +49,14 @@ export default async function SpaceCrmBoardPage({
 
   const brandName = space.brandName ?? space.name
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  // The CRM gate now runs through the single per-Space resolver: it folds the plan ENTITLEMENT (the
-  // on/off switch) and the per-Space MIN-ROLE (CRM defaults to 'admin', which reproduces the old
-  // caps.isAdmin threshold; an operator/owner can lower it via the new feature grids). Projecting
-  // spaces.entitlements onto the Space (lib/spaces/store.ts) is the corrective fix that lets the
-  // entitlement half actually read `crm:true` instead of always seeing undefined.
-  const canUseCrm = spaceFunctionAccess(space, 'crm', caps.role)
+  // The CRM gate now runs through the LIVE per-Space resolver (ADR-370): it folds the plan ENTITLEMENT
+  // (the on/off switch via spaceHasEntitlement), the per-Space MIN-ROLE (CRM defaults to 'admin', which
+  // reproduces the old caps.isAdmin threshold; an operator/owner can lower it via the feature grids),
+  // AND the consistent featureAllowed('space_crm') plan-ladder check. While billing is OFF, featureAllowed
+  // grants everything, so this returns EXACTLY what the pure resolver returned before (today's behavior).
+  // Projecting spaces.entitlements onto the Space (lib/spaces/store.ts) lets the entitlement half read
+  // `crm:true` instead of always seeing undefined.
+  const canUseCrm = await spaceFunctionAccessLive(space, 'crm', caps.role, space.plan)
   const hasCrm = spaceHasEntitlement(space, 'crm') // drives only the LOCKED-state reason split below
 
   // GATE: a viewer whose role is too low, OR a space whose plan lacks CRM, gets the locked state.

@@ -15,7 +15,7 @@ import type { Space, SpaceStatus, SpaceType } from './types'
 // read undefined and the per-Space CRM board was locked for everyone. `feature_roles` is not in the
 // generated DB types yet, so it rides the untyped select tail (the ADR-246 pattern, like `visibility`).
 const COLS =
-  'id, slug, name, type, status, entity_id, skin, domain, network_connected, enabled_verticals, owner_profile_id, brand_name, brand_logo_url, brand_accent, entitlements'
+  'id, slug, name, type, status, entity_id, skin, domain, network_connected, enabled_verticals, owner_profile_id, brand_name, brand_logo_url, brand_accent, entitlements, plan'
 
 // `feature_roles` is appended to every select via this tail so a single change covers all readers; it
 // is reached untyped (ADR-246) because the column is not in the generated types yet.
@@ -38,6 +38,7 @@ type SpaceRow = {
   brand_accent: string | null
   entitlements: unknown
   feature_roles?: unknown
+  plan?: string | null
 }
 
 function mapSpace(r: SpaceRow): Space {
@@ -61,6 +62,9 @@ function mapSpace(r: SpaceRow): Space {
     // loosely (`unknown`). `feature_roles` defaults to {} when the column is absent (pre-migration).
     entitlements: r.entitlements ?? {},
     featureRoles: r.feature_roles ?? {},
+    // The billing plan label feeds the live plan-ladder gate (lib/spaces/function-access.ts). Null
+    // pre-write reads as 'free' there; while billing is OFF it never gates anything.
+    plan: r.plan ?? null,
   }
 }
 
