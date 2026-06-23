@@ -102,10 +102,10 @@ the consolidation lever: we extend, we do not invent.
 | | Detail |
 |---|---|
 | Goal | The interaction timeline, the person resolver read model, and one consent surface exist. |
-| What we build | CRM capability layer (`lib/crm/capabilities.ts`, ✅ shipped); the `contact_interactions` timeline fed by the `engagement_events` backbone (channel / direction / summary / body / metadata + write adapters from `email_events`, `crm_activities`, notes, sms); the canonical person resolver read model; one per-channel consent surface with a global STOP. |
-| Reuses | ✅ `engagement_events` + `recordEngagementEvent` (the backbone) · ✅ `resolvePerson` (ADR-130) · ✅ the consent + suppression lanes (COMMS-CRM §2). |
-| Net-new | The `contact_interactions` table + the write adapters; `lib/crm/capabilities.ts` (✅ shipped, ADR-372). |
-| Cross-cutting | 🔴 **Start Twilio A2P 10DLC registration now** (a 10 to 15 day external clock; SMS send is blocked on it through Phase 5). |
+| What we build | CRM capability layer (`lib/crm/capabilities.ts`, ✅ shipped); the `contact_interactions` timeline fed by the `engagement_events` backbone (✅ shipped: migration + `lib/crm/interactions.ts`); the person resolver read model (✅ already exists: `lib/crm/person.ts#resolvePerson`); one contact-level consent surface with a global STOP (✅ shipped: `lib/crm/contact-consent.ts`). |
+| Reuses | ✅ `engagement_events` + `recordEngagementEvent` (the backbone) · ✅ `resolvePerson` (ADR-130) · ✅ the consent + suppression lanes (`lib/suppression.ts`, `lib/comms/send-gate.ts`, `sms_consent`). |
+| Net-new | The `contact_interactions` table + the write adapter (✅); `lib/crm/capabilities.ts` (✅, ADR-372); `lib/crm/contact-consent.ts` + global STOP (✅). |
+| Cross-cutting | 🔴 **Twilio A2P 10DLC registration** — packet ready in [A2P-REGISTRATION.md](A2P-REGISTRATION.md) (a 10 to 15 day external clock; SMS blocked through Phase 5). ⚠️ Blocker found: a live **terms-of-service** page is required for filing and does not exist yet (only `/privacy`). |
 
 ### Phase 1, Free personal CRM, consolidated
 
@@ -216,3 +216,4 @@ Editable knobs, not architecture. Set these from operator config as we tune.
 - [CONNECTION-LAYER.md](CONNECTION-LAYER.md), the people graph (Resonance, orbits, Pulse).
 - [PRICING.md](PRICING.md), the three-flag billing model + `featureAllowed`.
 - [ROLES.md](ROLES.md), the role / entitlement / staff axes + the access matrix.
+- [A2P-REGISTRATION.md](A2P-REGISTRATION.md), the Twilio A2P 10DLC brand + campaign filing packet (the SMS long pole).
