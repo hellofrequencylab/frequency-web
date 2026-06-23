@@ -6,7 +6,8 @@
 import { NextResponse } from 'next/server'
 import { recordEmailEvent, suppress } from '@/lib/suppression'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
-import { handleSpaceSendWebhook } from '@/lib/spaces/email'
+import { handleSpaceSendWebhook, handleSpaceSendEngagement } from '@/lib/spaces/email'
+import { mapResendEventToInteraction, type ResendTimelineEventType } from '@/lib/spaces/email-timeline'
 
 export const dynamic = 'force-dynamic'
 
@@ -81,6 +82,22 @@ export async function POST(req: Request) {
     })
   } catch (err) {
     errors.push(`recordEmailEvent: ${err instanceof Error ? err.message : String(err)}`)
+  }
+
+  // CRM TIMELINE (ADR-378): project opened / clicked / bounced / complained onto the unified
+  // contact_interactions timeline, but ONLY when the Resend id belongs to a Space send AND the
+  // recipient maps to a known owner + contact. A pure platform email records NOTHING (no
+  // platform-owner sentinel). Purely additive + best-effort: it never touches suppression and is
+  // NOT pushed to `errors`, so a timeline-write blip cannot force a webhook redelivery (which would
+  // needlessly re-fire suppression). handleSpaceSendEngagement is itself fail-safe (never throws).
+  if (mapResendEventToInteraction(type)) {
+    try {
+      await handleSpaceSendEngagement(event.data?.email_id ?? null, type as ResendTimelineEventType)
+    } catch (err) {
+      console.warn(
+        `[resend-webhook] timeline projection failed (type=${type}, id=${id}): ${err instanceof Error ? err.message : String(err)}`,
+      )
+    }
   }
 
   if (errors.length > 0) {
