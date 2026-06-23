@@ -34,6 +34,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 - **Site Admins can create channels again**: an admin-level account is no longer wrongly blocked
   from creating a channel.
 
+### Security
+
+- **Internal spend functions are service-role only**: the new atomic gift/redeem database
+  functions are locked so only the server can call them, not the public API. (Caught by the
+  database security advisor before release; no member-facing change.)
+
 ### Added
 
 - **Paid-plan groundwork, still switched off**: the last pieces of the pricing system are now wired
