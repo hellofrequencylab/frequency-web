@@ -89,12 +89,25 @@ export function isSafeRoute(pathname: string): boolean {
   return typeof pathname === 'string' && /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?$/.test(pathname)
 }
 
+// FULL-WIDTH DASHBOARD surfaces — member-side operator workspaces that compose <DashboardTemplate>
+// and want the full center width (a horizontally-scrolling CRM board would fight the community rail).
+// These keep the global LEFT menu but drop the member RIGHT rail, like /admin's own dashboard. Today
+// the only one is a Space's own CRM board (/spaces/<slug>/crm), a paid per-Space pipeline workspace
+// (CRM-STRATEGY P3) distinct from the Focus settings/crm notes surface. Pattern match (one slug deep).
+const DASHBOARD_NONE_PATTERNS: RegExp[] = [
+  /^\/spaces\/[^/]+\/crm$/, // a Space's CRM board (paid, owner/admin-gated)
+]
+
 export function railFor(pathname: string): Rail {
   // The Leader surface (/lead/*) is a member-side CONSOLIDATED dashboard (not the
   // /admin operator workspace), so it rides the standard GLOBAL community right rail
   // — it is intentionally absent from the takeover/SCOPED lists below and falls through
   // to 'global' at the end. Registered here so the decision is explicit (PAGE-FRAMEWORK
   // §3): a leader keeps the member chrome, unlike /admin which drops both rails.
+
+  // A Space's CRM board is a full-width Dashboard workspace: it keeps the left menu but drops the
+  // member right rail (the board scrolls horizontally and reads best edge to edge).
+  if (DASHBOARD_NONE_PATTERNS.some((re) => re.test(pathname))) return 'none'
 
   // The admin workspace keeps the global LEFT menu (the one site nav) but drops the
   // member community RIGHT rail: the admin layout (app/(main)/admin/layout.tsx) mounts
@@ -168,6 +181,7 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/events', label: 'Events', area: 'Member' },
   { route: '/people', label: 'People', area: 'Member' },
   { route: '/spaces', label: 'Spaces (directory)', area: 'Member' },
+  { route: '/spaces/_/crm', label: 'Space CRM board', area: 'Focus surfaces' },
   { route: '/practices', label: 'Practices', area: 'Member' },
   { route: '/practices/new', label: 'Practice builder', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },

@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { ContactMatches } from '@/components/connections/contact-matches'
 import { ReachOutList } from '@/components/connections/reach-out-list'
+import { SpaceCrmPrompt } from '@/components/connections/space-crm-prompt'
 import { ContactSort, type ContactSortValue } from '@/components/connections/contact-sort'
 import type { NetworkContactListItem } from '@/lib/connections/types'
 
@@ -131,6 +132,9 @@ export default async function ConnectionsPage({
       >
       <ReachOutList reminders={dueReminders} />
       <ContactMatches suggestions={suggestions} />
+      {/* A light, dismissible nudge to graduate into a Space CRM, shown only once a member has built up
+          some contacts (CRM-STRATEGY §6 P3). Never greets an empty list. */}
+      {all.length > 0 && <SpaceCrmPrompt />}
       {rows.length === 0 ? (
         <EmptyState
           icon={ScanText}

@@ -27,7 +27,7 @@ import type {
 
 const BUCKET = 'network-contacts'
 const COLS =
-  'id, owner_id, visibility, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, details, card_front_path, card_back_path, logo_path, linked_profile_id, last_contacted_at, created_at, updated_at'
+  'id, owner_id, visibility, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, details, card_front_path, card_back_path, logo_path, linked_profile_id, linked_contact_id, last_contacted_at, created_at, updated_at'
 
 const db = () => createAdminClient()
 const emptyToNull = (v: string | null | undefined): string | null => {
@@ -56,6 +56,7 @@ function mapContact(r: Record<string, unknown>): NetworkContact {
     cardBackPath: (r.card_back_path as string) ?? null,
     logoPath: (r.logo_path as string) ?? null,
     linkedProfileId: (r.linked_profile_id as string) ?? null,
+    linkedContactId: (r.linked_contact_id as string) ?? null,
     lastContactedAt: (r.last_contacted_at as string) ?? null,
     createdAt: (r.created_at as string) ?? null,
     updatedAt: (r.updated_at as string) ?? null,

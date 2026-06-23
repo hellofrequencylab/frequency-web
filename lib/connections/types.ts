@@ -142,6 +142,9 @@ export interface NetworkContact {
   logoPath: string | null
   /** The member profile this contact has been merged with (null = not linked). */
   linkedProfileId: string | null
+  /** The shared-CRM `contacts` row this personal card has been bridged into (the graduation /
+   *  scan-to-invite link, null = not bridged). Set when the contact graduates into a Space CRM. */
+  linkedContactId: string | null
   /** When the owner last reached out (notes / completed follow-ups / a QR scan). */
   lastContactedAt: string | null
   createdAt: string | null

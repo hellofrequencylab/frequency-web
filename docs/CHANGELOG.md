@@ -12,6 +12,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **A CRM for your space**: if you run a space with a CRM, open it from Manage to see your pipeline
+  and contacts in one place, with stages that fit what you do (a sales funnel for a business, a client
+  journey for a practitioner, a supporter lifecycle for an organization). **Bring your contacts into
+  your Space CRM** copies the people from My Contacts into the space, starts a deal for each one, and
+  skips anyone you have already brought in. Your private My Contacts list stays exactly as it is.
 - **Save someone by scanning their code**: scan another member's personal Frequency code in
   person and they land in **My Contacts**, pre-filled from their public profile and stamped with
   where and when you met. You go straight to their contact page to set a follow-up. It's private

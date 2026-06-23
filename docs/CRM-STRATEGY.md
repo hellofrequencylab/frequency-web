@@ -1,6 +1,6 @@
 # CRM Strategy: My Contacts (free) → Spaces CRM (paid)
 
-> **Status:** ✅ P1 + P2 shipped (the free keep-in-touch foundation + in-person QR capture); P3 designed, not built.
+> **Status:** ✅ P1 + P2 + P3 shipped (the free keep-in-touch foundation + in-person QR capture + the paid per-Space CRM and the graduation flow). The freemium barbell is fully wired end to end.
 > Strategy + foundation plan for turning **My Contacts**
 > (`/network/contacts`) into a lightweight, in-person relationship CRM that doubles as the
 > **lead generator** for the full CRM that paid **Spaces** (business / practitioner / org
@@ -42,7 +42,7 @@
 | People graph — resonance, near-miss, "this week" pulse | ✅ Shipped | [CONNECTION-LAYER.md](CONNECTION-LAYER.md) |
 | **Keep-in-touch layer** — reminders, last-contacted, "reach out today" | ✅ Shipped (P1) | this doc, P1 · `network_contact_reminders`, `last_contacted_at` |
 | **In-person QR capture** — scan a member's QR → a contact | ✅ Shipped (P2) | this doc, P2 · `lib/connections/qr-capture.ts`, `app/q/[slug]/route.ts` |
-| **Graduation** — personal → Space CRM upgrade path | 🔴 Missing | this doc, P3 |
+| **Graduation** — personal → Space CRM upgrade path | ✅ Shipped (P3) | this doc, P3 · `lib/crm/graduation.ts`, `app/(main)/spaces/[slug]/crm/` |
 
 ## 2. The freemium barbell (the free/paid line)
 
@@ -167,13 +167,22 @@ tables — most of it already exists:
 | **Custom fields** | `details` jsonb (personal) / `meta` jsonb (shared) | extensible without migrations |
 | **Owner + workspace scope** | `owner_id` (personal) → `space_id` (shared) | private → shared is a **scope flip + roles**, not a migration |
 
-## 6. Graduation: personal → Spaces CRM (the upgrade funnel)
+## 6. Graduation: personal → Spaces CRM (the upgrade funnel) ✅ Shipped (P3)
 
 The graduation moment is **structural, not a migration**. When a member runs a Space
 (practitioner / business / org), offer **"Bring your contacts into your Space CRM"**: take their
 `network_contacts` (or a tagged subset) into the Space's `contacts(space_id)`, optionally seeding
 `crm_deals` in a per-segment pipeline. The bridge (`linked_contact_id`) and the scan-to-invite
 sync (`lib/connections/crm-sync.ts`) already exist — extend them.
+
+**Shipped (P3).** `importContactsToSpace(spaceId, { status?, tag? })` (`lib/crm/graduation.ts`, owner +
+`spaceHasEntitlement(space,'crm')` gated) takes the owner's `network_contacts` (optionally filtered by
+status/tag), upserts each into the Space's `contacts(space_id)` via `syncContactToSpaceCrm` (consent stays
+`unknown`, ADR-099), sets `network_contacts.linked_contact_id`, and seeds one open `crm_deal` per imported
+contact in the Space's first open stage. Idempotent (already-linked are skipped) and fail-safe. The entry
+point lives on the per-Space CRM board (`app/(main)/spaces/[slug]/crm/`), gated on the crm entitlement AND
+owner/admin, with a tasteful locked/upgrade state when either is missing. The contextual nudge (§contextual)
+lives on My Contacts as a light dismissible prompt shown only when the member has some contacts.
 
 **The conversion is contextual.** Surface the upgrade exactly where a free member bumps into a
 ceiling: wants a second pipeline, wants to share a contact set with a teammate, wants an automation
@@ -182,15 +191,21 @@ to fire a follow-up for them. Those are the proven upgrade-trigger events; instr
 Gating rides the existing access matrix surface **`businessCrm`** (practitioner = limited,
 business / organization = full) and the Space plan/entitlements columns (ADR-322).
 
-## 7. Segment templates (one model, many shapes)
+## 7. Segment templates (one model, many shapes) ✅ Shipped (P3)
 
 Same primitives, different **stage + field templates per Space `type`** — which we already store:
 
 | Segment | "Pipeline" is really | Stage template (starting point) |
 |---|---|---|
 | **Business** | a sales funnel | Lead → Contacted → Qualified → Proposal → Won / Lost |
-| **Practitioner** | a client journey | Inquiry → Intake → Active → Lapsed → Rebook |
+| **Practitioner** (and **Coaching**) | a client journey | Inquiry → Intake → Active → Lapsed → Rebook |
 | **Org / nonprofit** | a supporter lifecycle | Prospect → First gift → Recurring → Lapsed → Reactivated |
+| **Everything else** (event_space / lab / partner / root) | a generic funnel | New → Active → Won / Lost |
+
+**Shipped (P3).** `defaultStagesForSpaceType(type)` (`lib/crm/stage-templates.ts`) is a pure, unit-tested
+helper returning the seed stages above; `ensureSpaceStages(spaceId, type)` (`lib/crm/pipeline.ts`) seeds
+them into `crm_stages(space_id)` idempotently on first CRM open (a no-op once any stage exists, so a
+customized pipeline is never overwritten). Field templates beyond stages remain a later step.
 
 ## 8. Phasing
 
@@ -198,7 +213,7 @@ Same primitives, different **stage + field templates per Space `type`** — whic
 |---|---|---|
 | ✅ **P1 — Foundation (free)** | tab/IA facets + `qr_scan` source; `network_contact_reminders`; `last_contacted_at`; "reach out today"; sorting | 1 small additive migration (`20260723000000_network_contacts_crm_p1.sql`) |
 | ✅ **P2 — QR capture** | `/q/<slug>` in-person capture (one-way + met-context + dedupe + redirect to the follow-up affordance); reciprocal handshake still a fast-follow | resolver change, no new tables |
-| **P3 — Graduation (paid)** | "Bring contacts into your Space CRM"; contextual upgrade prompts at the ceilings; wire `/spaces/<slug>/crm` pipeline UI over `crm_*` | reuses `crm_*`; per-space gating |
+| ✅ **P3 — Graduation (paid)** | "Bring contacts into your Space CRM"; contextual upgrade prompt on My Contacts; per-segment stage templates; `/spaces/<slug>/crm` board over `crm_*`, gated on the `crm` entitlement + owner/admin with a locked/upgrade state | reuses `crm_*` (`space_id` already on the tables, ADR-331/333); per-space gating; **no migration** |
 
 ## 9. Economy alignment (don't reward the row)
 

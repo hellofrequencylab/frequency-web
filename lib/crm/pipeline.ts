@@ -72,22 +72,33 @@ export type CrmActivity = {
 const PERSON_COLS = 'id, display_name, handle, avatar_url'
 
 export async function getStages(spaceId?: string): Promise<CrmStage[]> {
-  const { data } = await scopeBySpace(
-    db().from('crm_stages').select('id, name, sort_order, kind'),
-    spaceId,
-  ).order('sort_order')
-  return (data as CrmStage[] | null) ?? []
+  // FAIL-SAFE: a read error or a missing space_id column yields [] so the per-space board renders
+  // empty rather than throwing (CRM-STRATEGY P3 fail-safe contract).
+  try {
+    const { data } = await scopeBySpace(
+      db().from('crm_stages').select('id, name, sort_order, kind'),
+      spaceId,
+    ).order('sort_order')
+    return (data as CrmStage[] | null) ?? []
+  } catch {
+    return []
+  }
 }
 
 // All deals + resolved owner/member people, newest activity first within a stage.
 // Optional spaceId scopes to one Space (absent = the global, unscoped admin view).
 export async function getDeals(spaceId?: string): Promise<CrmDeal[]> {
-  const { data } = await scopeBySpace(db().from('crm_deals').select('*'), spaceId)
-    .order('sort_order', { ascending: true })
-    .order('updated_at', { ascending: false })
-  const deals = (data as Record<string, unknown>[] | null) ?? []
-  const people = await resolvePeople(deals.flatMap((d) => [d.owner_id, d.profile_id]).filter(Boolean) as string[])
-  return deals.map((d) => hydrateDeal(d, people))
+  // FAIL-SAFE: a read error / missing column yields [] (CRM-STRATEGY P3 fail-safe contract).
+  try {
+    const { data } = await scopeBySpace(db().from('crm_deals').select('*'), spaceId)
+      .order('sort_order', { ascending: true })
+      .order('updated_at', { ascending: false })
+    const deals = (data as Record<string, unknown>[] | null) ?? []
+    const people = await resolvePeople(deals.flatMap((d) => [d.owner_id, d.profile_id]).filter(Boolean) as string[])
+    return deals.map((d) => hydrateDeal(d, people))
+  } catch {
+    return []
+  }
 }
 
 // A single deal. Optional spaceId pins the read to one Space (the per-space surface passes
@@ -144,20 +155,25 @@ export type CrmContact = {
 // absent = the global contacts table (unchanged). Newest first. Reads only the columns the
 // per-space contacts surface needs.
 export async function getContacts(spaceId?: string, limit = 200): Promise<CrmContact[]> {
-  const { data } = await scopeBySpace(
-    db().from('contacts').select('id, email, display_name, consent_state, created_at'),
-    spaceId,
-  )
-    .order('created_at', { ascending: false })
-    .limit(limit)
-  const rows = (data as Record<string, unknown>[] | null) ?? []
-  return rows.map((c) => ({
-    id: c.id as string,
-    email: (c.email as string) ?? '',
-    display_name: (c.display_name as string) ?? null,
-    consent_state: (c.consent_state as string) ?? 'unknown',
-    created_at: (c.created_at as string) ?? null,
-  }))
+  // FAIL-SAFE: a read error / missing column yields [] (CRM-STRATEGY P3 fail-safe contract).
+  try {
+    const { data } = await scopeBySpace(
+      db().from('contacts').select('id, email, display_name, consent_state, created_at'),
+      spaceId,
+    )
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    const rows = (data as Record<string, unknown>[] | null) ?? []
+    return rows.map((c) => ({
+      id: c.id as string,
+      email: (c.email as string) ?? '',
+      display_name: (c.display_name as string) ?? null,
+      consent_state: (c.consent_state as string) ?? 'unknown',
+      created_at: (c.created_at as string) ?? null,
+    }))
+  } catch {
+    return []
+  }
 }
 
 // A single contact, scoped to a Space when spaceId is present (so the notes surface can confirm
@@ -207,6 +223,56 @@ function hydrateDeal(d: Record<string, unknown>, people: Map<string, PersonLite>
     closed_at: (d.closed_at as string) ?? null,
     owner: d.owner_id ? people.get(d.owner_id as string) ?? null : null,
     member: d.profile_id ? people.get(d.profile_id as string) ?? null : null,
+  }
+}
+
+// ── Per-space stage seeding (CRM-STRATEGY §7, P3) ─────────────────────────────────────────────────
+// A Space gets a per-segment starting pipeline (lib/crm/stage-templates.ts) seeded into crm_stages,
+// scoped by space_id, the first time its CRM is opened. These are service-role writes (the crm_*
+// tables are RLS-enabled with no policies; the caller gates on the Space owner / admin before calling),
+// matching the lib/crm/pipeline.ts read posture.
+
+import type { SpaceType } from '@/lib/spaces/types'
+import { defaultStagesForSpaceType } from './stage-templates'
+
+/** Idempotently seed the per-segment starting stages for a Space, scoped by space_id. A NO-OP when
+ *  the Space already has any stage (so an owner who has customized their pipeline is never overwritten,
+ *  and a second CRM open never re-seeds). FAIL-SAFE: returns false and writes nothing on any error or
+ *  missing column, so opening the CRM never throws. Returns true when it seeded a fresh set. */
+export async function ensureSpaceStages(spaceId: string, type: SpaceType | null | undefined): Promise<boolean> {
+  if (!spaceId) return false
+  try {
+    // Already seeded (or customized) -> leave it alone. One head count, scoped to this Space.
+    const { count } = await db()
+      .from('crm_stages')
+      .select('id', { count: 'exact', head: true })
+      .eq('space_id', spaceId)
+    if ((count ?? 0) > 0) return false
+
+    const rows = defaultStagesForSpaceType(type).map((stage, i) => ({
+      space_id: spaceId,
+      name: stage.name,
+      kind: stage.kind,
+      sort_order: i,
+    }))
+    if (rows.length === 0) return false
+    const { error } = await db().from('crm_stages').insert(rows)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+/** The id + kind of a Space's FIRST OPEN stage (the lowest sort_order with kind='open'), or null. A
+ *  graduated contact's deal lands here (CRM-STRATEGY §6). FAIL-SAFE: null on any error. */
+export async function getFirstOpenStage(spaceId: string): Promise<{ id: string; kind: StageKind } | null> {
+  if (!spaceId) return null
+  try {
+    const stages = await getStages(spaceId)
+    const open = stages.find((s) => s.kind === 'open') ?? stages[0]
+    return open ? { id: open.id, kind: open.kind } : null
+  } catch {
+    return null
   }
 }
 
