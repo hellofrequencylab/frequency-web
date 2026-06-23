@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Sparkles, Flame, Check, ChevronDown } from 'lucide-react'
 import { LogPracticeButton } from './log-practice-button'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
-import type { Practice } from '@/lib/practices'
+import type { Practice, PartialPracticeToday } from '@/lib/practices'
 
 const COLLAPSE_KEY = 'fq_streak_collapsed'
 
@@ -16,11 +16,15 @@ const COLLAPSE_KEY = 'fq_streak_collapsed'
 // nothing to log.
 export function PracticePrompt({
   practices,
+  partials = [],
   streak = 0,
   atRisk = false,
   loggedToday = false,
 }: {
   practices: Practice[]
+  /** Practices started but not finished today (a partial timed log). Each renders a
+   *  "Continue Practice" row that resumes the right timer where the member left off. */
+  partials?: PartialPracticeToday[]
   streak?: number
   /** Streak is alive but today isn't logged yet — log to keep it. */
   atRisk?: boolean
@@ -45,10 +49,10 @@ export function PracticePrompt({
     })
   }
 
-  if (practices.length === 0 && streak <= 0) return null
+  if (practices.length === 0 && partials.length === 0 && streak <= 0) return null
 
   const p = streakProgress(streak)
-  const hasReminders = practices.length > 0
+  const hasReminders = practices.length > 0 || partials.length > 0
 
   // Collapsed → a single skinny line (~1/3 the open height): streak + a slim inline
   // progress bar + the expand chevron. Reminders/checkpoints only show when open.
@@ -157,6 +161,28 @@ export function PracticePrompt({
       <div className="mt-3 border-t border-primary-bg pt-3">
         {hasReminders ? (
           <ul className="space-y-2">
+            {/* Partials first — a started-but-unfinished sit reads "Continue Practice" and
+                resumes the right timer where the member left off. */}
+            {partials.map(({ practice, secondsDone, secondsTarget }) => (
+              <li key={`partial-${practice.id}`} className="flex items-center justify-between gap-3">
+                <Link
+                  href={`/practices/${practice.id}`}
+                  className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
+                >
+                  {practice.title}
+                </Link>
+                <span className="shrink-0">
+                  <LogPracticeButton
+                    practiceId={practice.id}
+                    timerKind={practice.timer_kind}
+                    mindlessMode={practice.mindless_mode}
+                    movementConfig={practice.movement_config}
+                    resumeFromSec={secondsDone}
+                    secondsTarget={secondsTarget}
+                  />
+                </span>
+              </li>
+            ))}
             {practices.map((practice) => (
               <li key={practice.id} className="flex items-center justify-between gap-3">
                 <Link

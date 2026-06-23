@@ -19,6 +19,7 @@ import { useMovement } from '@/components/on-air/movement'
 import { logPracticeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
 import type { MovementMode } from '@/lib/movement'
+import type { PartialToday } from '@/lib/practices'
 
 /** How long the "Logged" confirmation lingers before the button resets to rest. */
 const CONFIRM_MS = 4000
@@ -33,6 +34,9 @@ export function PracticeActions({
   pillar,
   /** Already logged today (server truth) — a Log it practice rests in its "Logged" state. */
   logged = false,
+  /** A banked-but-unfinished log today on a TIMER practice → "Practice" becomes "Continue
+   *  Practice" and resumes the timer for the remaining time. */
+  partialToday,
   /** Fired after a successful Log it, so the player can clear the completion gate optimistically. */
   onLogged,
   /** Compact variant for tight rows (the syllabus); default is the roomy lesson-pane button. */
@@ -43,17 +47,24 @@ export function PracticeActions({
   movementMode?: MovementMode | null
   pillar?: string
   logged?: boolean
+  partialToday?: PartialToday | null
   onLogged?: (practiceId: string) => void
   compact?: boolean
 }) {
   const router = useRouter()
   const mindless = useMindless()
   const movement = useMovement()
-  // "Practice" opens the Movement timer when a movement mode is set, else the Mindless sit.
-  const openTimer = () =>
-    movementMode
-      ? movement.open({ practiceId, mode: movementMode })
-      : mindless.open({ practiceId })
+  // A partial today resumes the timer for the rest (the unified resume contract); otherwise a
+  // fresh open. "Practice" opens the Movement timer when a movement mode is set, else the
+  // Mindless sit (both forward to the same door).
+  const isResume = !!partialToday && partialToday.targetSec - partialToday.bankedSec > 0
+  const openTimer = () => {
+    const resume = isResume && partialToday
+      ? { resumeFromSec: partialToday.bankedSec, secondsTarget: partialToday.targetSec }
+      : {}
+    if (movementMode) movement.open({ practiceId, mode: movementMode, ...resume })
+    else mindless.open({ practiceId, ...resume })
+  }
   const [pending, start] = useTransition()
   const [done, setDone] = useState<{ logged: boolean; zaps: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -96,7 +107,7 @@ export function PracticeActions({
             onClick={openTimer}
             className={`${base} bg-primary text-on-primary hover:bg-primary-hover`}
           >
-            <Play className="h-4 w-4 shrink-0" aria-hidden /> Practice
+            <Play className="h-4 w-4 shrink-0" aria-hidden /> {isResume ? 'Continue Practice' : 'Practice'}
           </button>
         ) : (
           // Log it — earns Zaps + a streak tick. Confirms inline, then resets.

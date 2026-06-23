@@ -9,7 +9,7 @@
 //        reads mindless_mode = 'log' and opens the Just Log screen + optional note.
 // duration_min seeds both timers (loaded by the session data). Pass `resumeFromSec`
 // + `secondsTarget` (from a partial log today) to resume in place: the label reads
-// "Finish Practice" and the timer opens where the member left off.
+// "Continue Practice" and the timer opens where the member left off.
 
 import { Play } from 'lucide-react'
 import { LotusIcon } from '@/components/on-air/icons'
@@ -33,7 +33,7 @@ export function PracticeTimerButton({
   /** The Movement mode to open on, from the practice's movement_config. */
   movementMode?: MovementMode | null
   /** Resume a PARTIAL log started today: open the timer where the member left off.
-   *  When set (with secondsTarget), the label becomes "Finish Practice". */
+   *  When set (with secondsTarget), the label becomes "Continue Practice". */
   resumeFromSec?: number
   /** The target length of the partial sit, in seconds (paired with resumeFromSec). */
   secondsTarget?: number
@@ -72,7 +72,7 @@ export function PracticeTimerButton({
       onClick={onClick}
       className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
     >
-      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden /> {isResume ? 'Finish Practice' : 'Practice'}
+      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden /> {isResume ? 'Continue Practice' : 'Practice'}
     </button>
   )
 }

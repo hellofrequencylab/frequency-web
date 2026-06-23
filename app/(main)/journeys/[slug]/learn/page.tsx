@@ -10,6 +10,7 @@ import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKick
 import { HostSchedule } from '@/components/journey/v2/learn/host-schedule'
 import { getPlanAuthor } from '@/lib/journey-plans'
 import { getJourneyLearnExtras, getLinkedEvent, getLoggedTodayPracticeIds, pillarsById } from '@/lib/journeys/learn'
+import { getPartialMapToday, type PartialToday } from '@/lib/practices'
 import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
 import { PracticeDetail } from '@/components/journey/v2/learn/practice-detail'
 import { AboutThisJourneyHero, MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
@@ -52,11 +53,15 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   // The follow-along extras: the library practice behind each `practice` step, each phase's focus
   // copy, the normalized meeting, and the four-Pillar balance — composed over the existing reads
   // (lib/journeys/learn.ts), plus the author. Loaded in parallel with the Run/cohort resolution.
-  const [extras, author, loggedToday] = await Promise.all([
+  const [extras, author, loggedToday, partialMap] = await Promise.all([
     getJourneyLearnExtras(slug),
     getPlanAuthor(plan.author_id),
     getLoggedTodayPracticeIds(profileId),
+    // Banked-but-unfinished sits today, keyed by practice id — a timer practice step then offers
+    // "Continue Practice" to resume the rest. One read, no per-step query.
+    getPartialMapToday(profileId),
   ])
+  const partialByPractice: Record<string, PartialToday> = Object.fromEntries(partialMap)
 
   // The Events each touchpoint gathers around (the Circle Meetup + the Weekend Gathering, ADR-307),
   // resolved to link targets. Null when unset or gone — the block then shows a plain line.
@@ -222,6 +227,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         anchorLessonId={extras.anchorItemId}
         phaseEventsById={phaseEventsById}
         loggedPracticeIds={loggedToday}
+        partialByPractice={partialByPractice}
         certificateEnabled={plan.certificate_enabled}
         anchorStart={anchorStart}
         dripIntervalDays={dripIntervalDays}

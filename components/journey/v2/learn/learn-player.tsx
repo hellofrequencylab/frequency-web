@@ -20,6 +20,7 @@ import { TrophyCelebration, type TrophyMilestone } from '@/components/journey/v2
 import { PracticeActions } from '@/components/journey/v2/learn/practice-actions'
 import type { JourneyTree } from '@/lib/journeys/tree'
 import type { LessonContent, CheckConfig } from '@/lib/journeys/store'
+import type { PartialToday } from '@/lib/practices'
 
 interface Props {
   slug: string
@@ -53,6 +54,9 @@ interface Props {
   /** Practice ids the member has logged TODAY — gates a practice step's "Mark complete & continue"
    *  until the practice is done (run the timer, or Log it). */
   loggedPracticeIds?: string[]
+  /** A banked-but-unfinished log today, keyed by practice id — a timer practice step then offers
+   *  "Continue Practice" to resume the sit for the remaining time. */
+  partialByPractice?: Record<string, PartialToday>
   /** Show a printable certificate on Journey completion (plan opt-in). */
   certificateEnabled?: boolean
   /** Phase-drip anchor (ISO): the Run's start (cohort) or the member's enrollment start (solo).
@@ -134,6 +138,7 @@ export function LearnPlayer({
   anchorLessonId = null,
   phaseEventsById = {},
   loggedPracticeIds = [],
+  partialByPractice = {},
   certificateEnabled = false,
   anchorStart = null,
   dripIntervalDays = 7,
@@ -481,6 +486,7 @@ export function LearnPlayer({
                     usesTimer={selectedUsesTimer}
                     pillar={selectedPillar}
                     logged={selectedPracticeLogged}
+                    partialToday={partialByPractice[selectedPracticeId] ?? null}
                     onLogged={(pid) => setLocallyLogged((s) => new Set(s).add(pid))}
                   />
                 </div>

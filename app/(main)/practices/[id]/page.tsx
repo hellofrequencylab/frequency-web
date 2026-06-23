@@ -60,7 +60,7 @@ export default async function PracticeDetailPage({ params }: Params) {
     getPillars(),
     profileId
       ? getPracticeMemberState(profileId, practice.id)
-      : Promise.resolve({ adopted: false, loggedToday: false }),
+      : Promise.resolve({ adopted: false, loggedToday: false, partialToday: null }),
     getPracticeCreator(practice.created_by),
   ])
   const pillarName = practice.domain_id ? pillarsById(pillars).get(practice.domain_id)?.name ?? null : null
@@ -124,14 +124,26 @@ export default async function PracticeDetailPage({ params }: Params) {
           </Link>
         ) : isOwner ? (
           <>
-            <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
+            {/* A PARTIAL today on a TIMED practice belongs on the timer button below (it resumes
+                the sit); the plain log button collapses to "Logged today" so we never show two
+                "Continue Practice" buttons. A NON-timed partial can't be resumed, so it just
+                reads "Logged today". */}
+            <LogPracticeButton
+              practiceId={practice.id}
+              initialLogged={state.loggedToday}
+              resumeFromSec={practice.uses_timer ? undefined : state.partialToday?.bankedSec}
+              secondsTarget={practice.uses_timer ? undefined : state.partialToday?.targetSec}
+            />
             {/* A timed practice opens the On Air timer pre-set to this practice + its length
-                in place (C.4); a log-only practice has no timer. */}
+                in place (C.4); a log-only practice has no timer. A partial today resumes it
+                ("Continue Practice") instead of starting from zero. */}
             {practice.uses_timer && (
                   <PracticeTimerButton
                     practiceId={practice.id}
                     timerKind={practice.timer_kind}
                     movementMode={practice.movement_config?.mode ?? null}
+                    resumeFromSec={state.partialToday?.bankedSec}
+                    secondsTarget={state.partialToday?.targetSec}
                   />
                 )}
             <Link
@@ -152,12 +164,21 @@ export default async function PracticeDetailPage({ params }: Params) {
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
             {state.adopted && (
               <>
-                <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
+                {/* A PARTIAL today on a timed practice resumes via the timer button below; the
+                    plain log button stays "Logged today" so there's never a double button. */}
+                <LogPracticeButton
+                  practiceId={practice.id}
+                  initialLogged={state.loggedToday}
+                  resumeFromSec={practice.uses_timer ? undefined : state.partialToday?.bankedSec}
+                  secondsTarget={practice.uses_timer ? undefined : state.partialToday?.targetSec}
+                />
                 {practice.uses_timer && (
                   <PracticeTimerButton
                     practiceId={practice.id}
                     timerKind={practice.timer_kind}
                     movementMode={practice.movement_config?.mode ?? null}
+                    resumeFromSec={state.partialToday?.bankedSec}
+                    secondsTarget={state.partialToday?.targetSec}
                   />
                 )}
               </>
@@ -168,12 +189,21 @@ export default async function PracticeDetailPage({ params }: Params) {
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
             {state.adopted && (
               <>
-                <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
+                {/* A PARTIAL today on a timed practice resumes via the timer button below; the
+                    plain log button stays "Logged today" so there's never a double button. */}
+                <LogPracticeButton
+                  practiceId={practice.id}
+                  initialLogged={state.loggedToday}
+                  resumeFromSec={practice.uses_timer ? undefined : state.partialToday?.bankedSec}
+                  secondsTarget={practice.uses_timer ? undefined : state.partialToday?.targetSec}
+                />
                 {practice.uses_timer && (
                   <PracticeTimerButton
                     practiceId={practice.id}
                     timerKind={practice.timer_kind}
                     movementMode={practice.movement_config?.mode ?? null}
+                    resumeFromSec={state.partialToday?.bankedSec}
+                    secondsTarget={state.partialToday?.targetSec}
                   />
                 )}
               </>
