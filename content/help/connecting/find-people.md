@@ -3,7 +3,7 @@ title: Finding people & circles
 description: Browse the directory and search by location.
 category: connecting
 order: 1
-updated: 2026-06-10
+updated: 2026-06-23
 audience: member
 featureKeys: [people]
 status: published
@@ -30,6 +30,8 @@ My Contacts is your own private address book: people you have met and logged, sc
 - **Merge** links the two. Their live member profile fills in the card, and the details you logged plus your notes stay exactly as you wrote them. A merged contact gets an **On Frequency** tag.
 - The private details you logged also show up on that member's profile, in a card only you can see. Nobody else knows you kept a contact for them.
 - If it is not the same person, **Dismiss** the prompt and it stays quiet.
+- Open a contact to see a **Timeline** of what you've logged with them, newest first, so your history with someone is in one place.
+- Before you reach out, use **Prep brief** and Vera writes a short read from what you've saved: who they are, your history, and one way to start. Vera never sends anything for you.
 
 ## A note on privacy
 
