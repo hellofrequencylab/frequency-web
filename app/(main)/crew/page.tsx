@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation'
 import { DashboardTemplate } from '@/components/templates'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
+import { SeasonResetPrompt } from '@/components/quest/season-reset-prompt'
 import { PageModules } from '@/components/widgets/page-modules'
 import { getCrewContext } from '@/lib/quest/crew-context'
+import { shouldNudgeBeforeReset, daysUntilSeasonReset } from '@/lib/pricing/conversion'
 import { getPageHeaderImage } from '@/lib/page-settings/store'
 
 // My Quest (/crew) — the member's season home. Module-driven (ADR-270/294): the page composes the
@@ -21,9 +23,19 @@ export default async function CrewPage() {
   // Operator-set wide header image — set from Settings → SEO & meta → Header image.
   const headerImage = await getPageHeaderImage('/crew')
 
+  // Season-reset conversion nudge (ADR-370, REMAINING-WORK #8). Shows ONLY when the viewer is gated to
+  // earn-only (gamificationFull is false) AND the season is within the reset window. gamificationFull is
+  // routed through featureAllowed('gamification_full'), so it is TRUE while billing is OFF, making this
+  // nudge inert (it never renders today). The deadline it names is the real season reset, never manufactured.
+  const showSeasonReset = !ctx.gamificationFull && shouldNudgeBeforeReset(ctx.season?.ends_at)
+  const resetDays = showSeasonReset ? daysUntilSeasonReset(ctx.season?.ends_at) : null
+
   return (
     <>
       {!ctx.isCrew && <CrewPreviewBanner />}
+      {showSeasonReset && resetDays !== null && (
+        <SeasonResetPrompt days={resetDays} seasonName={ctx.season?.name} />
+      )}
       <DashboardTemplate
         banner={
           headerImage && (

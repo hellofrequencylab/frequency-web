@@ -11,6 +11,7 @@ import { runVeraClaudeTurn, type VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { joinCircle } from '@/app/(main)/circles/actions'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { ConciergeStage, ProposedToolCall } from '@/lib/ai/vera/concierge'
 
 async function callerProfileId(): Promise<string | null> {
@@ -23,13 +24,13 @@ async function callerProfileId(): Promise<string | null> {
 
 /** The caller's id + both role axes (ADR-208), so Vera can answer to the depth their
  *  permissions allow — operator-to-operator for staff, companion scope for members. */
-async function callerIdentity(): Promise<{ id: string; communityRole: string; webRole: WebRole } | null> {
+async function callerIdentity(): Promise<{ id: string; communityRole: string; webRole: WebRole; tier: EntitlementTier } | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const { data } = await supabase
     .from('profiles')
-    .select('id, community_role, web_role')
+    .select('id, community_role, web_role, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!data?.id) return null
@@ -37,6 +38,8 @@ async function callerIdentity(): Promise<{ id: string; communityRole: string; we
     id: data.id,
     communityRole: (data.community_role as string) ?? 'member',
     webRole: ((data.web_role as WebRole | null) ?? 'none'),
+    // The billing tier feeds the vera_unlimited daily-cap gate (ADR-370). INERT while billing is OFF.
+    tier: ((data.membership_tier as EntitlementTier | null) ?? 'free'),
   }
 }
 
@@ -62,7 +65,7 @@ export async function conciergeTurn(stage: string, memberText: string, history: 
     const viewer = ident
       ? { isOperator: isStaff(ident.webRole), roleLabel: isStaff(ident.webRole) ? ident.webRole : ident.communityRole }
       : null
-    const live = await runVeraClaudeTurn({ history, memberText, memberContext, supportSummary, profileId, viewer })
+    const live = await runVeraClaudeTurn({ history, memberText, memberContext, supportSummary, profileId, tier: ident?.tier ?? null, viewer })
     if (live) return { message: live.reply, stage: 'chat', proposals: live.proposals, suggestions: live.suggestions, done: false }
   }
 

@@ -8,6 +8,8 @@ import { confirmCheckout } from '@/lib/billing/checkout'
 import { getConnectStatus, syncConnectedAccount, payoutsLive, type ConnectStatus } from '@/lib/billing/connect'
 import { ENTITLEMENT_LABEL, type EntitlementTier } from '@/lib/core/entitlement'
 import { FocusTemplate } from '@/components/templates'
+import { resolveMemberPaymentState } from '@/lib/pricing/dunning'
+import { PastDueBanner } from '@/components/billing/past-due-banner'
 import { ManageBillingButton } from './manage-button'
 import { canReceivePayouts } from './actions'
 import { StartPayoutButton, ManagePayoutButton } from './payout-controls'
@@ -40,6 +42,10 @@ export default async function BillingPage({
   const live = billingEnabled()
   const paid = tier !== 'free'
 
+  // Dunning / past-due state (ADR-370). resolveMemberPaymentState is GATED on billingLive(): it returns
+  // 'active' while billing is OFF, so the recovery banner is dark until launch (today's behavior).
+  const paymentState = await resolveMemberPaymentState(me.id)
+
   // Payouts (ADR-175): show the Connect card to earners only. On return from the
   // hosted onboarding (?payouts=return) reconcile the account synchronously so the
   // card reflects reality immediately — the account.updated webhook also does this.
@@ -55,6 +61,9 @@ export default async function BillingPage({
       description="Your plan and payment."
       back={{ href: '/settings', label: 'Settings' }}
     >
+      {/* Dunning recovery (ADR-370): dark until billing is live AND a payment fails/cancels. */}
+      <PastDueBanner state={paymentState} />
+
       {justUpgradedTo && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg/30 px-4 py-2.5 text-sm font-semibold text-success">
           <Check className="h-4 w-4" />{' '}

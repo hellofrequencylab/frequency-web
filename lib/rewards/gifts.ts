@@ -23,6 +23,7 @@
 // gem_gifts table shape is authored in a separate migration; coded against it here.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { awardGems } from '@/lib/gems'
 import { getSpendableBalance } from '@/lib/store/balance'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -63,26 +64,42 @@ export async function giftGems(
     .maybeSingle()
   if (!recipient) return fail('We could not find that member.')
 
-  // --- spendable balance must cover the gift --------------------------------
+  // --- spendable balance must cover the gift (fast-fail UX pre-check) -------
   // ONE shared computation (store + gift agree): earned − store spend − gifts already sent.
+  // This is a friendly pre-check only; the RPC below is the AUTHORITATIVE guard (it
+  // rechecks the balance under an advisory lock, so two concurrent spends can't overspend).
   const balance = await getSpendableBalance(admin, fromProfileId)
   if (balance < amount) {
     return fail(`Not enough Gems. You have ${balance} to spend.`)
   }
 
-  // --- record the gift (the giver's outflow) BEFORE crediting the recipient --
-  // Inserting the gem_gifts row is what debits the giver (lib/store/balance subtracts
-  // it). Doing it first means there is no order in which Gems are double-spent: the
+  // --- record the gift ATOMICALLY (the giver's outflow) ---------------------
+  // gift_gems_atomic (migration 20260726000000) takes pg_advisory_xact_lock on the giver,
+  // recomputes the spendable balance inside the transaction, and inserts the gem_gift only
+  // if it still covers the gift — closing the check-then-insert overspend race the app
+  // cannot close on its own. Inserting the gem_gifts row is what debits the giver
+  // (lib/store/balance subtracts it), and we do it BEFORE crediting the recipient so the
   // balance has already moved before the recipient is paid.
-  const { error: giftError } = await admin.from('gem_gifts').insert({
-    giver_id: fromProfileId,
-    recipient_id: toProfileId,
-    amount,
+  // authz-delegated: the caller (crew/store action) establishes + authorizes the giver
+  // before calling; this helper trusts that gate, same as the rest of lib/rewards.
+  // Untyped handle (same pattern as lib/blocking.ts): gift_gems_atomic is new (migration
+  // 20260726000000) and not yet in the generated Database types, so we widen to the
+  // un-parametrised SupabaseClient. Drop after `supabase gen types` is re-run.
+  const rpc: SupabaseClient = createAdminClient()
+  const { error: giftError } = await rpc.rpc('gift_gems_atomic', {
+    _giver: fromProfileId,
+    _recipient: toProfileId,
+    _amount: amount,
   })
   if (giftError) {
-    // The gem_gifts table may not exist yet (migration authored separately) — fail
-    // cleanly so no Gems are lost and the caller can surface a real error.
-    return fail('Gifting is not available yet.')
+    // The RPC raises a typed P0001 message on a real overspend / invalid request; map it
+    // to a clean failure. A missing function (migration not yet applied) or any other DB
+    // error also fails CLOSED here — never a silent overspend.
+    if (giftError.message?.includes('insufficient_balance')) {
+      return fail(`Not enough Gems. You have ${balance} to spend.`)
+    }
+    console.error('[giftGems] gift_gems_atomic failed', giftError.message)
+    return fail('Gifting is not available right now.')
   }
 
   // --- credit the recipient -------------------------------------------------

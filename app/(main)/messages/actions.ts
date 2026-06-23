@@ -83,15 +83,25 @@ export async function sendMessage(conversationId: string, formData: FormData) {
   const myProfileId = await getMyProfileId()
   const admin = createAdminClient()
 
-  // Verify I'm a participant before inserting
-  const { data: part } = await admin
+  // Load every participant in one read: it verifies I'm a participant AND gives us the
+  // other party for the block gate below (`conversations` is 1:1-only — group chats are
+  // rooms, see startGroupConversation).
+  const { data: participants } = await admin
     .from('conversation_participants')
     .select('profile_id')
     .eq('conversation_id', conversationId)
-    .eq('profile_id', myProfileId)
-    .maybeSingle()
 
-  if (!part) return
+  const memberIds = (participants ?? []).map((p) => p.profile_id as string)
+  if (!memberIds.includes(myProfileId)) return
+
+  // Blocking gate (parity with startConversation): startConversation refuses to OPEN a
+  // thread when either party blocked the other, but a thread that pre-dates the block was
+  // never re-checked here, so a blocked member could keep posting into it. For a 1:1
+  // conversation, refuse the send if the two parties are blocked in either direction.
+  const others = memberIds.filter((id) => id !== myProfileId)
+  if (others.length === 1 && (await isBlockedBetween(myProfileId, others[0]))) {
+    throw new Error('You cannot message this member')
+  }
 
   await admin.from('messages').insert({
     conversation_id: conversationId,

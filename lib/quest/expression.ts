@@ -50,12 +50,18 @@ async function grantGemsOnce(
     .from('reward_grants')
     .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: 'gems', amount, detail: label })
   if (error) return false // already granted / lost the race
-  await admin.from('gem_transactions').insert({
+  // The claim is the lock, but the GEMS must actually land. If the ledger insert fails,
+  // release the claim so a retry can re-pay (else: claimed-but-unpaid permanently).
+  const { error: txErr } = await admin.from('gem_transactions').insert({
     profile_id: profileId,
     action_type: 'expression_challenge',
     amount,
     metadata: { rule: ruleKey, label, ...metadata },
   })
+  if (txErr) {
+    await admin.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', profileId)
+    return false
+  }
   return true
 }
 

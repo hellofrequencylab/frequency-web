@@ -106,12 +106,19 @@ async function grantGemsOnce(
     .from('reward_grants')
     .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: 'gems', amount, detail: label })
   if (error) return false // already granted / lost the race
-  await admin.from('gem_transactions').insert({
+  // The claim is the lock, but the GEMS must actually land. If the ledger insert fails
+  // (a transient DB error), swallowing it would leave the lock permanent and the Gems
+  // never paid (claimed-but-unpaid). Release the claim so a retry can re-pay.
+  const { error: txErr } = await admin.from('gem_transactions').insert({
     profile_id: profileId,
     action_type: actionType,
     amount,
     metadata: { rule: ruleKey, label },
   })
+  if (txErr) {
+    await admin.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', profileId)
+    return false
+  }
   return true
 }
 
@@ -161,15 +168,26 @@ export async function tryCompleteJourney(
 
     const { data: profile } = await admin
       .from('profiles')
-      .select('lifetime_rank')
+      .select('current_season_rank, lifetime_rank')
       .eq('id', profileId)
       .maybeSingle()
-    const currentLifetime = (profile as { lifetime_rank: SeasonRank | null } | null)?.lifetime_rank ?? 'ghost'
+    const prof = profile as { current_season_rank: SeasonRank | null; lifetime_rank: SeasonRank | null } | null
+    const currentSeason = prof?.current_season_rank ?? 'ghost'
+    const currentLifetime = prof?.lifetime_rank ?? 'ghost'
 
-    await admin
-      .from('profiles')
-      .update({ current_season_rank: newRank, lifetime_rank: higherRank(currentLifetime, newRank) })
-      .eq('id', profileId)
+    // NON-LOWERING write: the season-finished count is read non-atomically, so a
+    // concurrent completion can momentarily observe a STALE (lower) count and compute a
+    // lower rank than one already written. Only ever RAISE current_season_rank — never
+    // overwrite a higher rank with a lower one. lifetime_rank is already the monotonic
+    // peak via higherRank. Skip the write entirely when neither would change.
+    const raisedSeason = higherRank(currentSeason, newRank)
+    const raisedLifetime = higherRank(currentLifetime, newRank)
+    if (raisedSeason !== currentSeason || raisedLifetime !== currentLifetime) {
+      await admin
+        .from('profiles')
+        .update({ current_season_rank: raisedSeason, lifetime_rank: raisedLifetime })
+        .eq('id', profileId)
+    }
 
     // +75 Zaps (the finish purse). Reads zap_config, falls back to ZAP_AMOUNTS.
     await awardZapsForAction(profileId, 'journey_finished')
@@ -191,9 +209,20 @@ export async function tryCompleteJourney(
     await grantJourneyBadgeOnCompletion(profileId, journeyId).catch(() => false)
 
     // The Certificate (season capstone): finishing the THIRD Journey this season = Master.
-    // Granted once per member per season (claim-then-pay on reward_grants), best-effort.
+    // Re-evaluated idempotently on EVERY completion, not only when THIS call's `count`
+    // crossed 3: two journeys finishing concurrently can both read a stale count < 3 and
+    // each compute a non-master rank, so neither would have fired the capstone. By
+    // re-reading the count fresh here and firing whenever it is >= 3, a later completion
+    // that observes the true total still triggers the capstone. grantCertificate is the
+    // claim-then-pay lock (certificate:{season}), so it fires exactly once per season.
+    //
+    // TODO (follow-up, schema): the count read is still non-atomic, so a vanishingly
+    // small window remains where two completions both read 2 and the season ends with no
+    // 4th completion to re-fire it. A fully race-proof fix is a SECURITY DEFINER RPC that
+    // counts + claims under a single advisory lock; tracked separately, no RPC invented here.
     let certificate = false
-    if (newRank === 'master' && count >= 3) {
+    const finishedCount = await journeysFinishedThisSeason(profileId)
+    if (finishedCount >= 3) {
       certificate = await grantCertificate(admin, profileId, season)
     }
 

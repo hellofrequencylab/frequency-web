@@ -7,22 +7,23 @@ the whole tail at a glance. The source docs stay the spec; this links back, neve
 
 Status legend: ✅ shipped · ⏳ in progress · 📋 designed, not built · 🔴 after PMF / blocked.
 
-## Pricing (📋 deferred gates on top of ADR-362/363/364)
+## Pricing (✅ deferred gates wired — ADR-370, all NO-OP while `billing_live` is OFF)
 
-Source of truth: [PRICING.md](PRICING.md) "Status & deferred". The layer ships OFF; these are the
-gates and polish not yet wired so as not to change live behavior while `billing_live` is OFF.
+Source of truth: [PRICING.md](PRICING.md) "Status & deferred". The layer still ships OFF; these gates
+are now wired through the OFF-preserving seam (`featureAllowed` grant-all while OFF, or gated on
+`billingLive()`), so each is a no-op today and only bites once an operator turns billing on.
 
-| # | Item | One line |
+| # | Item | Status |
 |---|---|---|
-| 1 | Leaderboard "join to compete" gate | The compete gate + its UI, not yet routed through `featureAllowed`. |
-| 2 | `resolveGamificationAccess` live consumer | A real consumer reading the resolved gamification access tier. |
-| 3 | `vera_unlimited` gate | Gate Vera's unlimited usage on the entitlement (deferred to avoid changing live Vera). |
-| 4 | `space_*` feature-gates via `featureAllowed` | The `space_*` plan features still resolve via `spaceHasEntitlement`; move them onto `featureAllowed`. |
-| 5 | `gamification_full` standalone gate | A standalone gate for the full gamification entitlement. |
-| 6 | Household / Circle bundle (P2) | The multi-seat bundle pricing path. |
-| 7 | Dunning / proration / past-due UX | The member-facing recovery flows for failed/changed payments. |
-| 8 | Conversion-mechanics polish | The season-reset upgrade prompt + other conversion nudges. |
-| 9 | `pricing_*` type regen | Regenerate the generated types once the pricing columns are typed. |
+| 1 | Leaderboard "join to compete" gate | ✅ Gated on `gamificationFullAllowed` → `featureAllowed('gamification_full')`; `CompeteLocked` preview when ON. |
+| 2 | `resolveGamificationAccess` live consumer | ✅ `lib/pricing/gamification-access.ts` consumed in `getCrewContext`. |
+| 3 | `vera_unlimited` gate | ✅ `lib/ai/vera/usage-gate.ts` enforces the free daily cap via `featureAllowed('vera_unlimited')`. |
+| 4 | `space_*` feature-gates via `featureAllowed` | ✅ `lib/spaces/function-access.ts` `spaceFunctionAccessLive`, wired into the CRM + email surfaces. |
+| 5 | `gamification_full` standalone gate | ✅ `gamificationFullAllowed(tier)`, reused by the leaderboard + season-reset nudge. |
+| 6 | Household / Circle bundle (P2) | ✅ `lib/pricing/bundle.ts` + `bundleSellable()` + `lib/billing/bundle-checkout.ts`; config in the migration. |
+| 7 | Dunning / proration / past-due UX | ✅ `lib/pricing/dunning.ts` + `PastDueBanner`; `profiles.membership_payment_status` in the migration. |
+| 8 | Conversion-mechanics polish | ✅ `lib/pricing/conversion.ts` + `SeasonResetPrompt`, inert while OFF. |
+| 9 | `pricing_*` type regen | ⏳ Parent session regenerates `lib/database.types.ts` at integration, then removes the untyped casts (see PRICING.md "Status & deferred"). |
 
 ## CRM (📋 follow-ups on top of ADR-361, P1-P3 shipped)
 
