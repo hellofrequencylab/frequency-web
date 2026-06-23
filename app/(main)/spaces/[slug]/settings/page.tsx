@@ -215,10 +215,10 @@ export default async function SpaceSettingsPage({
           description="Create codes for your space and the landing page they open to."
         />
         <HubCard
-          href={`/spaces/${space.slug}/settings/crm`}
+          href={`/spaces/${space.slug}/crm`}
           icon={Briefcase}
           title="CRM"
-          description="Track your pipeline and contacts, and keep private notes on the people you work with."
+          description="Your pipeline and contacts. Bring people over from My Contacts, and keep private notes on the people you work with."
         />
         <HubCard
           href={`/spaces/${space.slug}/settings/email`}

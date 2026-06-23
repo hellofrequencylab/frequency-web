@@ -13,6 +13,8 @@ import type {
   NetworkContact,
   NetworkContactListItem,
   ContactNote,
+  ContactReminder,
+  ReminderWithContact,
   ContactTag,
   ContactSocials,
   ContactDetails,
@@ -25,7 +27,7 @@ import type {
 
 const BUCKET = 'network-contacts'
 const COLS =
-  'id, owner_id, visibility, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, details, card_front_path, card_back_path, logo_path, linked_profile_id, created_at, updated_at'
+  'id, owner_id, visibility, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, details, card_front_path, card_back_path, logo_path, linked_profile_id, linked_contact_id, last_contacted_at, created_at, updated_at'
 
 const db = () => createAdminClient()
 const emptyToNull = (v: string | null | undefined): string | null => {
@@ -54,6 +56,8 @@ function mapContact(r: Record<string, unknown>): NetworkContact {
     cardBackPath: (r.card_back_path as string) ?? null,
     logoPath: (r.logo_path as string) ?? null,
     linkedProfileId: (r.linked_profile_id as string) ?? null,
+    linkedContactId: (r.linked_contact_id as string) ?? null,
+    lastContactedAt: (r.last_contacted_at as string) ?? null,
     createdAt: (r.created_at as string) ?? null,
     updatedAt: (r.updated_at as string) ?? null,
   }
@@ -206,17 +210,45 @@ async function ownsContact(ownerId: string, contactId: string): Promise<boolean>
   return !!data
 }
 
-export async function listContacts(ownerId: string, limit = 300): Promise<NetworkContactListItem[]> {
-  const { data } = await db()
-    .from('network_contacts')
-    .select(`${COLS}, network_contact_tags(tag)`)
-    .eq('owner_id', ownerId)
-    .order('created_at', { ascending: false })
-    .limit(limit)
-  const rows = (data ?? []) as Record<string, unknown>[]
-  const paths = rows.map((r) => r.avatar_path).filter((p): p is string => typeof p === 'string')
+export type ContactSort = 'recent' | 'name' | 'last_contacted' | 'follow_up'
+
+export async function listContacts(
+  ownerId: string,
+  limit = 300,
+  sort: ContactSort = 'recent',
+): Promise<NetworkContactListItem[]> {
+  // The DB-backed orders. `follow_up` is resolved in JS (below) by joining the
+  // next open reminder; until then it falls back to last-contacted-then-recent.
+  // FAIL-SAFE: a missing last_contacted_at column makes the ordered select error,
+  // so we retry without the new column's ordering before degrading to empty.
+  async function read(order: { col: string; ascending: boolean; nullsFirst?: boolean }) {
+    const { data } = await db()
+      .from('network_contacts')
+      .select(`${COLS}, network_contact_tags(tag)`)
+      .eq('owner_id', ownerId)
+      .order(order.col, { ascending: order.ascending, nullsFirst: order.nullsFirst })
+      .limit(limit)
+    return data as unknown as Record<string, unknown>[] | null
+  }
+
+  const order =
+    sort === 'name'
+      ? { col: 'display_name', ascending: true, nullsFirst: false }
+      : sort === 'last_contacted'
+        ? { col: 'last_contacted_at', ascending: false, nullsFirst: false }
+        : { col: 'created_at', ascending: false }
+
+  // Try the requested order; if it fails (e.g. the column isn't there yet), fall
+  // back to created_at so the list always renders.
+  let rows = await read(order)
+  if (rows === null && order.col !== 'created_at') {
+    rows = await read({ col: 'created_at', ascending: false })
+  }
+  const safeRows = rows ?? []
+
+  const paths = safeRows.map((r) => r.avatar_path).filter((p): p is string => typeof p === 'string')
   const urls = await signedUrlMap(paths)
-  return rows.map((r) => {
+  let items = safeRows.map((r) => {
     const base = mapContact(r)
     const tagRows = (r.network_contact_tags as { tag: string }[] | null) ?? []
     return {
@@ -225,6 +257,44 @@ export async function listContacts(ownerId: string, limit = 300): Promise<Networ
       avatarUrl: base.avatarPath ? urls.get(base.avatarPath) ?? null : null,
     }
   })
+
+  if (sort === 'follow_up') {
+    // Order by the soonest open reminder's due date (overdue first), then the
+    // rest by last-contacted. FAIL-SAFE: a missing table yields an empty map.
+    const dueByContact = await nextDueByContact(ownerId)
+    items = items.slice().sort((a, b) => {
+      const da = dueByContact.get(a.id)
+      const dbb = dueByContact.get(b.id)
+      if (da && dbb) return da - dbb
+      if (da) return -1
+      if (dbb) return 1
+      const la = a.lastContactedAt ? new Date(a.lastContactedAt).getTime() : 0
+      const lb = b.lastContactedAt ? new Date(b.lastContactedAt).getTime() : 0
+      return lb - la
+    })
+  }
+
+  return items
+}
+
+/** Map of contactId → soonest open reminder due time (ms). Fail-safe: {} on error. */
+async function nextDueByContact(ownerId: string): Promise<Map<string, number>> {
+  const map = new Map<string, number>()
+  try {
+    const { data } = await remindersTable()
+      .select('contact_id, due_at')
+      .eq('owner_id', ownerId)
+      .is('done_at', null)
+      .order('due_at', { ascending: true })
+    for (const row of (data ?? []) as unknown as { contact_id: string; due_at: string }[]) {
+      const t = new Date(row.due_at).getTime()
+      const prev = map.get(row.contact_id)
+      if (prev === undefined || t < prev) map.set(row.contact_id, t)
+    }
+  } catch {
+    /* missing table → no follow-up ordering */
+  }
+  return map
 }
 
 export interface ContactDetail {
@@ -246,7 +316,7 @@ export async function getContact(ownerId: string, id: string): Promise<ContactDe
     .eq('owner_id', ownerId)
     .maybeSingle()
   if (!data) return null
-  const contact = mapContact(data as Record<string, unknown>)
+  const contact = mapContact(data as unknown as Record<string, unknown>)
 
   const [notesRes, tagsRes, avatarUrl, cardFrontUrl, cardBackUrl, logoUrl] = await Promise.all([
     db()
@@ -388,4 +458,158 @@ export async function deleteTag(ownerId: string, tagId: string): Promise<boolean
   if (!contactId || !(await ownsContact(ownerId, contactId))) return false
   const { error } = await db().from('network_contact_tags').delete().eq('id', tagId)
   return !error
+}
+
+// ── Reminders (the free keep-in-touch layer) ──────────────────────────────────
+// Every read/write is owner-scoped AND fail-safe: a missing network_contact_reminders
+// table (code merged before the migration is applied) must never throw — list reads
+// return [] and writes return false, so My Contacts keeps rendering.
+//
+// network_contact_reminders is not in the generated DB types yet (regenerate after
+// the migration applies), so we talk to it through an untyped admin handle — the
+// same seam lib/crm/client-notes.ts uses for client_notes.
+
+type AnyResult = Promise<{ data: Record<string, unknown>[] | null; error: unknown }>
+type AnyFilter = {
+  eq: (col: string, val: string) => AnyFilter
+  is: (col: string, val: null) => AnyFilter
+  lte: (col: string, val: string) => AnyFilter
+  order: (col: string, opts: { ascending: boolean }) => AnyFilter
+} & AnyResult
+type RemindersTable = {
+  select: (cols: string) => AnyFilter
+  insert: (row: Record<string, unknown>) => AnyResult
+  update: (patch: Record<string, unknown>) => { eq: (col: string, val: string) => { eq: (col: string, val: string) => AnyResult } }
+  delete: () => { eq: (col: string, val: string) => { eq: (col: string, val: string) => AnyResult } }
+}
+
+/** The network_contact_reminders table via an untyped admin handle. */
+function remindersTable(): RemindersTable {
+  return (createAdminClient() as unknown as { from: (t: string) => RemindersTable }).from(
+    'network_contact_reminders',
+  )
+}
+
+function mapReminder(r: Record<string, unknown>): ContactReminder {
+  return {
+    id: String(r.id),
+    contactId: String(r.contact_id),
+    dueAt: String(r.due_at),
+    note: (r.note as string) ?? null,
+    doneAt: (r.done_at as string) ?? null,
+    createdAt: (r.created_at as string) ?? null,
+  }
+}
+
+export async function addReminder(
+  ownerId: string,
+  contactId: string,
+  dueAt: string,
+  note?: string | null,
+): Promise<boolean> {
+  const due = new Date(dueAt)
+  if (Number.isNaN(due.getTime())) return false
+  if (!(await ownsContact(ownerId, contactId))) return false
+  try {
+    const { error } = await remindersTable().insert({
+      owner_id: ownerId,
+      contact_id: contactId,
+      due_at: due.toISOString(),
+      note: emptyToNull(note ?? null),
+    })
+    return !error
+  } catch {
+    return false
+  }
+}
+
+export async function completeReminder(ownerId: string, id: string): Promise<boolean> {
+  try {
+    const { error } = await remindersTable()
+      .update({ done_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('owner_id', ownerId)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+export async function deleteReminder(ownerId: string, id: string): Promise<boolean> {
+  try {
+    const { error } = await remindersTable().delete().eq('id', id).eq('owner_id', ownerId)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+/** Open reminders for one contact, oldest-due first. Fail-safe: [] on error. */
+export async function listRemindersForContact(
+  ownerId: string,
+  contactId: string,
+): Promise<ContactReminder[]> {
+  try {
+    const { data } = await remindersTable()
+      .select('id, contact_id, due_at, note, done_at, created_at')
+      .eq('owner_id', ownerId)
+      .eq('contact_id', contactId)
+      .is('done_at', null)
+      .order('due_at', { ascending: true })
+    return ((data ?? []) as Record<string, unknown>[]).map(mapReminder)
+  } catch {
+    return []
+  }
+}
+
+/** The "reach out" list: open reminders due within `withinDays` (overdue included),
+ *  each joined to its contact's name + signed avatar URL, soonest-due first.
+ *  Fail-safe: [] on any error (missing table merges cleanly). */
+export async function listDueReminders(
+  ownerId: string,
+  withinDays = 7,
+): Promise<ReminderWithContact[]> {
+  try {
+    const cutoff = new Date(Date.now() + withinDays * 86_400_000).toISOString()
+    const { data } = await remindersTable()
+      .select(
+        'id, contact_id, due_at, note, done_at, created_at, network_contacts!inner ( display_name, avatar_path )',
+      )
+      .eq('owner_id', ownerId)
+      .is('done_at', null)
+      .lte('due_at', cutoff)
+      .order('due_at', { ascending: true })
+    const rows = (data ?? []) as Record<string, unknown>[]
+    const paths = rows
+      .map((r) => (r.network_contacts as { avatar_path?: string } | null)?.avatar_path)
+      .filter((p): p is string => typeof p === 'string')
+    const urls = await signedUrlMap(paths)
+    return rows.map((r) => {
+      const contact = (r.network_contacts as { display_name?: string; avatar_path?: string } | null) ?? null
+      const avatarPath = contact?.avatar_path ?? null
+      return {
+        ...mapReminder(r),
+        contactName: contact?.display_name ?? null,
+        contactAvatarUrl: avatarPath ? urls.get(avatarPath) ?? null : null,
+      }
+    })
+  } catch {
+    return []
+  }
+}
+
+/** Stamp last_contacted_at = now() on a contact the owner just reached out to.
+ *  Fail-safe: a missing column never throws (the update simply no-ops). */
+export async function touchLastContacted(ownerId: string, contactId: string): Promise<void> {
+  try {
+    // last_contacted_at isn't in the generated types yet — write it through an
+    // untyped update payload (the column is added by 20260723000000…crm_p1).
+    await db()
+      .from('network_contacts')
+      .update({ last_contacted_at: new Date().toISOString() } as unknown as Database['public']['Tables']['network_contacts']['Update'])
+      .eq('id', contactId)
+      .eq('owner_id', ownerId)
+  } catch {
+    /* missing column → no-op */
+  }
 }

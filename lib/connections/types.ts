@@ -3,7 +3,7 @@
 // actions, the store, and the AI module can all share one vocabulary.
 
 export type Visibility = 'private' | 'shared' | 'network'
-export type ContactSource = 'manual' | 'card_scan' | 'poster' | 'import'
+export type ContactSource = 'manual' | 'card_scan' | 'poster' | 'import' | 'qr_scan'
 export type ContactStatus = 'new' | 'active' | 'archived'
 export type NoteKind = 'note' | 'connection' | 'ai'
 export type TagSource = 'manual' | 'ai'
@@ -55,6 +55,17 @@ export interface ContactOtherDetail {
   confidence?: FieldConfidence
 }
 
+/** Where and when two members met, stamped onto a QR-scan capture (CRM-STRATEGY
+ *  §4). Lives in the `details` jsonb so it needs no migration. */
+export interface MetContext {
+  /** How the capture happened. Today always `'qr'` (an in-person QR scan). */
+  via: 'qr'
+  /** Where they met: the event/Space name, else the city, else null. */
+  at: string | null
+  /** The day they met, ISO date (yyyy-mm-dd). */
+  on: string | null
+}
+
 /** The rich, flexible harvest of everything printed on the card. Every field is
  *  optional and omitted when empty. Persisted as the network_contacts.details
  *  JSONB column. Mirrors the events EventDetails contract. */
@@ -69,6 +80,8 @@ export interface ContactDetails {
   other?: ContactOtherDetail[]
   /** A top-level read on how confidently the card could be parsed at all. */
   confidence?: FieldConfidence
+  /** Set on a QR-scan capture: where/when the scanner met this person. */
+  metContext?: MetContext
 }
 
 export interface ContactSocials {
@@ -129,6 +142,11 @@ export interface NetworkContact {
   logoPath: string | null
   /** The member profile this contact has been merged with (null = not linked). */
   linkedProfileId: string | null
+  /** The shared-CRM `contacts` row this personal card has been bridged into (the graduation /
+   *  scan-to-invite link, null = not bridged). Set when the contact graduates into a Space CRM. */
+  linkedContactId: string | null
+  /** When the owner last reached out (notes / completed follow-ups / a QR scan). */
+  lastContactedAt: string | null
   createdAt: string | null
   updatedAt: string | null
 }
@@ -145,6 +163,22 @@ export interface ContactNote {
   kind: NoteKind
   authorId: string | null
   createdAt: string | null
+}
+
+/** A follow-up reminder on a network contact (the free keep-in-touch layer). */
+export interface ContactReminder {
+  id: string
+  contactId: string
+  dueAt: string
+  note: string | null
+  doneAt: string | null
+  createdAt: string | null
+}
+
+/** A reminder joined with its contact's identity, for the "reach out" list. */
+export interface ReminderWithContact extends ContactReminder {
+  contactName: string | null
+  contactAvatarUrl: string | null
 }
 
 export interface ContactTag {

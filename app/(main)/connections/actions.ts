@@ -225,7 +225,10 @@ export async function setAvatar(id: string, path: string): Promise<void> {
 
 export async function addNote(contactId: string, body: string): Promise<void> {
   const ownerId = await requireOwner()
-  await store.addNote(ownerId, contactId, body, 'note', ownerId)
+  const ok = await store.addNote(ownerId, contactId, body, 'note', ownerId)
+  // A note is a touch — stamp last-contacted so the reach-out list stays honest.
+  if (ok) await store.touchLastContacted(ownerId, contactId)
+  revalidatePath('/network/contacts')
   revalidatePath(`/connections/${contactId}`)
 }
 
@@ -246,6 +249,38 @@ export async function removeTag(contactId: string, tagId: string): Promise<void>
   const ownerId = await requireOwner()
   await store.deleteTag(ownerId, tagId)
   revalidatePath(`/connections/${contactId}`)
+}
+
+// ── Follow-up reminders (the free keep-in-touch layer) ────────────────────────
+
+export async function addReminder(
+  contactId: string,
+  dueAt: string,
+  note?: string,
+): Promise<boolean> {
+  const ownerId = await requireOwner()
+  const ok = await store.addReminder(ownerId, contactId, dueAt, note ?? null)
+  revalidatePath('/network/contacts')
+  revalidatePath(`/connections/${contactId}`)
+  return ok
+}
+
+export async function completeReminder(reminderId: string, contactId?: string): Promise<boolean> {
+  const ownerId = await requireOwner()
+  const ok = await store.completeReminder(ownerId, reminderId)
+  // Completing a follow-up is a touch.
+  if (ok && contactId) await store.touchLastContacted(ownerId, contactId)
+  revalidatePath('/network/contacts')
+  if (contactId) revalidatePath(`/connections/${contactId}`)
+  return ok
+}
+
+export async function deleteReminder(reminderId: string, contactId?: string): Promise<boolean> {
+  const ownerId = await requireOwner()
+  const ok = await store.deleteReminder(ownerId, reminderId)
+  revalidatePath('/network/contacts')
+  if (contactId) revalidatePath(`/connections/${contactId}`)
+  return ok
 }
 
 // ── Contact ↔ Community merge ─────────────────────────────────────────────────

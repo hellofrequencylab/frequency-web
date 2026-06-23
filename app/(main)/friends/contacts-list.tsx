@@ -11,6 +11,7 @@ const SOURCE_LABEL: Record<string, string> = {
   poster: 'Poster',
   manual: 'Manual',
   import: 'Imported',
+  qr_scan: 'QR scan',
 }
 
 /** The member's personal CRM rolodex (network_contacts) inside the Friends home —

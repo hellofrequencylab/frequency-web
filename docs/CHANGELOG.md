@@ -12,6 +12,22 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **A CRM for your space**: if you run a space with a CRM, open it from Manage to see your pipeline
+  and contacts in one place, with stages that fit what you do (a sales funnel for a business, a client
+  journey for a practitioner, a supporter lifecycle for an organization). **Bring your contacts into
+  your Space CRM** copies the people from My Contacts into the space, starts a deal for each one, and
+  skips anyone you have already brought in. Your private My Contacts list stays exactly as it is.
+- **Save someone by scanning their code**: scan another member's personal Frequency code in
+  person and they land in **My Contacts**, pre-filled from their public profile and stamped with
+  where and when you met. You go straight to their contact page to set a follow-up. It's private
+  to you, the other person isn't notified, and scanning the same person again just updates your
+  existing contact. Find these under the new **QR Scan** tab.
+- **Follow-ups in My Contacts**: set a reminder to reach out to anyone you've met, with
+  an optional note. Open reminders gather in a **Reach out** list at the top of My Contacts,
+  so the people worth a message are the first thing you see. Mark one **Done** and it clears.
+  Each contact now shows when you last reached out, and you can sort your list by recently
+  added, last contacted, follow-up due, or name. New **Card** and **QR Scan** tabs sort your
+  contacts by how you added them.
 - **Build a practice with Vera**: hit **Create a practice** and answer a few quick
   questions (who it's for, the act, what you want from it, how often, how long). Vera
   drafts the whole thing, a name, a hook, the steps, a cadence, and a Pillar, for you

@@ -110,6 +110,33 @@ shared spine is entity-blind and tenant-blind:
 
 A Space does not get its own copy of any of these. It gets a *scoped view* of them.
 
+### 2.1 Per-Space CRM + graduation (CRM-STRATEGY P3 ✅)
+
+Every owner gets a per-Space CRM. There are two surfaces, both scoped by `space_id` (ADR-331/333):
+
+- **CRM board** — `app/(main)/spaces/[slug]/crm` (Dashboard template, full-width, rail `'none'`): the
+  Space's pipeline (per-segment stages + deals) and contacts, read through `lib/crm/pipeline.ts` scoped
+  to the Space. **Gated twice:** the Space's plan must grant CRM (`spaceHasEntitlement(space,'crm')`) AND
+  the viewer must be an **owner / admin** of the Space. When either fails the page renders a tasteful
+  **locked / upgrade state**, not a 404 dead end (a missing/not-visible Space still 404s). All reads are
+  fail-safe (`[]` on error).
+- **Client notes** — `app/(main)/spaces/[slug]/settings/crm` (Focus): per-contact private notes, owner-
+  gated personal data (ADR-333). The board's contacts list links here.
+
+**Per-segment stage templates** (`lib/crm/stage-templates.ts`, pure + tested): `defaultStagesForSpaceType`
+seeds a different starting pipeline per `spaces.type` — business = sales funnel, practitioner/coaching =
+client journey, organization = supporter lifecycle, everything else = a generic funnel.
+`ensureSpaceStages(spaceId, type)` seeds them idempotently on first CRM open (a no-op once stages exist,
+so an owner's customized pipeline is never overwritten).
+
+**Graduation** (`lib/crm/graduation.ts`, owner + crm-entitlement gated): "Bring your contacts into your
+Space CRM" copies the owner's `network_contacts` (optionally a status/tag subset) into the Space's
+`contacts(space_id)` via the upsert-by-email bridge (`syncContactToSpaceCrm`), links each personal row
+back via `linked_contact_id`, and seeds one open `crm_deal` per imported contact in the Space's first open
+stage. Idempotent (already-linked contacts are skipped) and fail-safe. The personal My Contacts list is
+unchanged; this is a scope flip, not a move. A light dismissible prompt on My Contacts points members who
+are running a business toward this path.
+
 ---
 
 ## 3. The network switch (the direct port into the network)
