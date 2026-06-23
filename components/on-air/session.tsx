@@ -91,6 +91,12 @@ export interface OnAirPractice {
   id: string
   title: string
   loggedToday: boolean
+  /** The partial-today resume point (the completion economy's partial): a banked-but-unfinished
+   *  sit for THIS practice today. Non-null = the timer auto-resumes — it runs only the REMAINING
+   *  time (target - banked) and reports the TOTAL so the server tops the log up. Null = a fresh sit.
+   *  Set by lib/on-air/session-data; the engines recompute their resume from the SELECTED practice's
+   *  value so a Zap-menu / chooser pick resumes just like the "Continue Practice" button does. */
+  partialToday?: { bankedSec: number; targetSec: number } | null
   /** Typical length in minutes (the practice's duration_min). The timer defaults to it on select;
    *  null/undefined = open length (a free-length sit). */
   durationMin?: number | null
@@ -214,20 +220,41 @@ export function OnAirSession({
    *  and the sit behaves exactly as before. */
   onModeChange?: (mode: TimerMode) => void
 }) {
-  // A valid resume needs both halves and real remaining time; otherwise it's a normal sit.
-  const resuming =
-    typeof resumeFromSec === 'number' &&
-    typeof secondsTarget === 'number' &&
-    secondsTarget > 0 &&
-    resumeFromSec >= 0 &&
-    secondsTarget - resumeFromSec > 0
-  const resumeBankedSec = resuming ? Math.round(resumeFromSec as number) : 0
-  const resumeRemainingMin = resuming
-    ? clampMinutes(Math.ceil(((secondsTarget as number) - (resumeFromSec as number)) / 60))
-    : 0
   const [stage, setStage] = useState<Stage>('setup')
   const initialId =
     defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
+  // The resume point for a sit, in { bankedSec, targetSec }. The SELECTED practice's
+  // `partialToday` is now the PRIMARY source (so a Zap-menu / chooser / auto-select all resume,
+  // not just the "Continue Practice" button), recomputed whenever the selected practice changes.
+  // The explicit resumeFromSec/secondsTarget open-args remain a fallback for the initial practice
+  // (a /on-air?practice link, the streak box) when the loader hasn't attached a partial. Returns
+  // null unless there's real remaining time, so anything malformed is a normal sit.
+  function resolveResume(
+    id: string,
+  ): { bankedSec: number; targetSec: number } | null {
+    const partial = practices.find((p) => p.id === id)?.partialToday
+    if (partial && partial.targetSec > 0 && partial.targetSec - partial.bankedSec > 0) {
+      return { bankedSec: Math.round(partial.bankedSec), targetSec: Math.round(partial.targetSec) }
+    }
+    // Fallback: the explicit resume args only apply to the practice the door opened on.
+    if (
+      id === initialId &&
+      typeof resumeFromSec === 'number' &&
+      typeof secondsTarget === 'number' &&
+      secondsTarget > 0 &&
+      resumeFromSec >= 0 &&
+      secondsTarget - resumeFromSec > 0
+    ) {
+      return { bankedSec: Math.round(resumeFromSec), targetSec: Math.round(secondsTarget) }
+    }
+    return null
+  }
+  const initialResume = resolveResume(initialId)
+  const resuming = initialResume !== null
+  const resumeBankedSec = initialResume?.bankedSec ?? 0
+  const resumeRemainingMin = initialResume
+    ? clampMinutes(Math.ceil((initialResume.targetSec - initialResume.bankedSec) / 60))
+    : 0
   // A practice's own length seeds the timer; no duration (or Free sit) falls back to the remembered
   // minutes (an open-length sit the member can still adjust).
   const durationFor = (id: string): number => {
@@ -316,6 +343,10 @@ export function OnAirSession({
   // Seconds already banked on a resumed partial sit. The clock runs the remaining time, then
   // finishWith reports resumeBanked + this session's elapsed so the server tops the log up to full.
   const resumeBanked = useRef(resumeBankedSec)
+  // The full target of the resumed partial (its authored duration in seconds). Drives the
+  // crash-recovery record's secondsTarget so a recovered top-up still tops up to full. 0 = not a
+  // resume. Re-seeded whenever the selected practice changes (selectPractice / finishTheRest).
+  const resumeTarget = useRef(initialResume?.targetSec ?? 0)
 
   const pattern = useMemo(
     () =>
@@ -333,17 +364,38 @@ export function OnAirSession({
   const practiceCanTime = practiceKind !== 'none'
   // The author pinned the length: the minutes editor is hidden + locked to the practice's length.
   const durationLocked = !!practice?.durationLocked && (practice?.durationMin ?? 0) > 0
+  // The SELECTED practice's resume point (its partial today, or the open-arg fallback). Drives the
+  // "Continue Practice" label + the remaining-time read-out, recomputed as the pick changes. Only a
+  // timed practice resumes — a 'none' (log-only) practice has no countdown to continue.
+  const activeResume = practiceCanTime ? resolveResume(practiceId) : null
+  const activeResumeRemainingMin = activeResume
+    ? clampMinutes(Math.ceil((activeResume.targetSec - activeResume.bankedSec) / 60))
+    : 0
 
   // Pick a practice + seed its opening mode + length, routed by timer_kind (item #2). A 'none'
   // practice opens Just Log; a mindless practice (Free sit included) opens its sit mode. Movement
   // is handed off in chooseAndStart before this runs, so it never lands here.
+  //
+  // When the picked practice has a partial today, this is a RESUME: open the silent timer, seed
+  // the minutes to the REMAINING time, and arm the banked/target refs so finish() reports the
+  // total. So a Zap-menu / chooser pick of a partial resumes the same as the Continue button.
   function selectPractice(id: string) {
     setPracticeId(id)
+    const resume = resolveResume(id)
+    if (resume) {
+      const remainingMin = clampMinutes(Math.ceil((resume.targetSec - resume.bankedSec) / 60))
+      setMinutes(remainingMin)
+      setMode('timer')
+      resumeBanked.current = resume.bankedSec
+      resumeTarget.current = resume.targetSec
+      return
+    }
     setMinutes(durationFor(id))
     setMode(modeForPractice(id))
-    // Switching practices abandons any in-flight resume top-up so it can never apply to the
-    // wrong practice (a fresh sit reports only its own seconds).
+    // Switching to a NON-partial practice abandons any in-flight resume top-up so it can never
+    // apply to the wrong practice (a fresh sit reports only its own seconds).
     resumeBanked.current = 0
+    resumeTarget.current = 0
   }
 
   // --- takeover plumbing ----------------------------------------------------
@@ -500,7 +552,9 @@ export function OnAirSession({
         pausedAt,
         practiceId: practice?.logsAs ?? practiceId,
         resumeFromSec: resumeBanked.current,
-        secondsTarget: resuming && typeof secondsTarget === 'number' ? Math.round(secondsTarget) : null,
+        // The live resume target tracks the SELECTED practice (selectPractice / finishTheRest /
+        // the open-arg fallback), not just the open-arg, so a chooser-picked partial recovers right.
+        secondsTarget: resumeTarget.current > 0 ? resumeTarget.current : null,
         setup: {
           mode: activeModeRef.current,
           minutes,
@@ -537,8 +591,6 @@ export function OnAirSession({
     endBell,
     bellEveryMin,
     haptics,
-    resuming,
-    secondsTarget,
   ])
 
   // Resume a recovered sit: rebuild the mode + cue settings, restore the exact wall clock, and seed
@@ -569,6 +621,7 @@ export function OnAirSession({
     setBellEveryMin(s.bellEveryMin)
     setHaptics(s.haptics)
     resumeBanked.current = rec.resumeFromSec
+    resumeTarget.current = rec.secondsTarget ?? 0
     const total = s.minutes * 60
     const elapsed = liveElapsedSeconds(rec)
     setStartedAt(rec.startedAt)
@@ -645,11 +698,11 @@ export function OnAirSession({
 
   // The chooser pick (C.5) + the THE BUG fix (item #2): route by the practice's timer_kind, not
   // by whether it has a duration_min.
-  //   movement → close Mindless + hand off to the Movement timer
-  //   none     → open Just Log (no countdown), logged on the next tick
-  //   mindless → open the sit at the practice's mindless_mode (Breathe if that's its mode),
-  //              minutes = duration_min ?? prefs.minutes. A Free sit (open length) opens the
-  //              plain timer at prefs.minutes — never an instant log (the reported Free-sit bug).
+  //   movement → close Mindless + hand off to the Movement timer (the only kind that still leaves
+  //              this engine, so it acts on the pick immediately)
+  //   none / mindless → SELECT the practice + close the sheet, then RETURN to the setup. The
+  //              member taps the primary button (now "Start Practice", or "Continue Practice" for a
+  //              partial) to actually begin. The chooser no longer auto-starts (owner UX directive).
   function chooseAndStart(id: string) {
     const picked = practices.find((p) => p.id === id)
     const kind = picked?.timerKind ?? 'mindless'
@@ -657,16 +710,11 @@ export function OnAirSession({
       handOffToMovement(id)
       return
     }
+    // selectPractice seeds the mode + minutes (and the resume, for a partial) so the setup is
+    // ready for the primary button. modeForPractice never returns 'log' for a mindless practice,
+    // so a Free sit lands on the timer; a 'none' practice opens to Just Log.
     selectPractice(id)
     setShowChooser(false)
-    if (kind === 'none') {
-      // Log-only practice: open Just Log, which logs on the next tick (no countdown).
-      void start({ practiceId: id, mode: 'log', minutes: durationFor(id) })
-      return
-    }
-    // Mindless: the sit at the practice's flavour. modeForPractice resolves the mode (and never
-    // returns 'log' for a mindless practice, so a Free sit opens the timer, not an instant log).
-    void start({ practiceId: id, mode: modeForPractice(id), minutes: durationFor(id) })
   }
 
   // Begin the sit now: end the pre-roll and unpause from the armed state (shift startedAt by the
@@ -848,6 +896,7 @@ export function OnAirSession({
     }
     const remainingMin = clampMinutes(Math.ceil(remainingSec / 60))
     resumeBanked.current = banked
+    resumeTarget.current = targetSec
     setPayload(null)
     setNote('')
     activeModeRef.current = 'timer'
@@ -1374,17 +1423,31 @@ export function OnAirSession({
         </div>
       </div>
 
-      {/* Practice — the current pick (C.5). With more than one adopted practice the
-          chip row is promoted to the chooser sheet behind the "Select a practice"
-          button below, so this is just a quiet read-out of what's selected. One/zero
-          practices auto-select, so nothing renders. */}
+      {/* Practice — the current pick. The chooser SELECTS a practice (it no longer auto-starts),
+          so with more than one practice this read-out doubles as the "Change" affordance that
+          re-opens the sheet. One/zero practices auto-select (nothing to change), so nothing renders. */}
       {practices.length > 1 && practice && (
         <div className="mt-5 lg:mt-6">
-          <Label>Practice</Label>
+          <div className="flex items-center justify-between">
+            <Label>Practice</Label>
+            <button
+              type="button"
+              onClick={() => setShowChooser(true)}
+              className="rounded-full px-2 py-0.5 text-2xs font-semibold uppercase tracking-wider text-primary-strong transition-colors hover:bg-primary-bg/40"
+            >
+              Change
+            </button>
+          </div>
           <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold text-text">
             <span className="truncate">{practice.title}</span>
             {practice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
           </p>
+          {/* A partial today resumes: surface the remaining time so "Continue Practice" reads true. */}
+          {activeResume && (
+            <p className="mt-1 text-2xs text-primary-strong">
+              {activeResumeRemainingMin} min left. Continue Practice picks up where you stopped.
+            </p>
+          )}
         </div>
       )}
       </div>
@@ -1402,33 +1465,26 @@ export function OnAirSession({
             {practicedToday} members practiced today.
           </p>
         )}
-        {/* With several practices the primary action is "Select a practice" → the
-            chooser sheet (C.5); picking one opens its timer preset and begins. With
-            one/zero practices there's nothing to choose, so it starts directly. */}
-        {practices.length > 1 ? (
-          <button
-            type="button"
-            onClick={() => setShowChooser(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover lg:mx-auto lg:max-w-sm"
-          >
-            <OnAirIcon className="h-4 w-4" /> Select a practice
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              if (!practiceId) return
-              // A lone Movement practice still hands off to the Movement timer (item #2); every
-              // other kind runs the sit on the member's chosen mode + minutes.
-              if (practiceKind === 'movement') { handOffToMovement(practiceId); return }
-              void start({ practiceId, mode, minutes })
-            }}
-            disabled={!practiceId}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
-          >
-            <OnAirIcon className="h-4 w-4" /> {mode === 'log' ? 'Log it' : 'Tune out'}
-          </button>
-        )}
+        {/* The primary action: a practice is always SELECTED (the chooser now selects, not
+            starts), so the button STARTS it. Label: "Continue Practice" when the selected
+            practice has a partial today (it resumes the remaining time), else "Start Practice";
+            Just Log keeps "Log it" (an instant log, not a timed start). The chooser is re-opened
+            from the "Change" affordance above when there is more than one practice. */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!practiceId) return
+            // A lone Movement practice still hands off to the Movement timer (item #2); every
+            // other kind runs the sit on the member's chosen mode + minutes (resuming if partial).
+            if (practiceKind === 'movement') { handOffToMovement(practiceId); return }
+            void start({ practiceId, mode, minutes })
+          }}
+          disabled={!practiceId}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
+        >
+          <OnAirIcon className="h-4 w-4" />{' '}
+          {mode === 'log' ? 'Log it' : activeResume ? 'Continue Practice' : 'Start Practice'}
+        </button>
       </div>
       </div>
       </div>
