@@ -15,7 +15,7 @@ import type { TimelineEntry } from '@/lib/crm/timeline'
 import type { ContactDetails, ContactReminder, ContactStatus, Visibility } from '@/lib/connections/types'
 import {
   updateProfile, setStatus, setVisibility, deleteProfile, addNote, deleteNote, addTag, removeTag,
-  addReminder, completeReminder, deleteReminder,
+  addReminder, completeReminder, deleteReminder, briefContact,
 } from '../actions'
 
 const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30'
@@ -67,6 +67,21 @@ export function Detail({
   const [editing, setEditing] = useState(false)
   const [noteDraft, setNoteDraft] = useState('')
   const [tagDraft, setTagDraft] = useState('')
+  const [brief, setBrief] = useState<string | null>(null)
+  const [briefBusy, setBriefBusy] = useState(false)
+  const [briefError, setBriefError] = useState<string | null>(null)
+
+  async function onBrief() {
+    setBriefBusy(true)
+    setBriefError(null)
+    try {
+      const res = await briefContact(contact.id)
+      if (res.ok) setBrief(res.brief)
+      else setBriefError(res.reason)
+    } finally {
+      setBriefBusy(false)
+    }
+  }
 
   const name = contact.displayName ?? 'Unnamed'
   const website = contact.website
@@ -214,6 +229,39 @@ export function Detail({
       {/* Shared history — only when this capture is a linked member and resonance
           is enabled (the timeline node is built server-side in page.tsx). */}
       {timeline && <section className="rounded-2xl border border-border/70 bg-surface/60 p-5">{timeline}</section>}
+
+      {/* Before you reach out — a short, grounded brief from Vera (metered, never auto-sends). */}
+      <Section title="Before you reach out">
+        {brief ? (
+          <div className="space-y-2">
+            <p className="whitespace-pre-wrap text-sm text-text">{brief}</p>
+            <button
+              type="button"
+              onClick={onBrief}
+              disabled={briefBusy}
+              className="text-xs font-medium text-primary-strong hover:underline disabled:opacity-50"
+            >
+              {briefBusy ? 'Thinking…' : 'Refresh brief'}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-subtle">
+              A quick brief from Vera before you reach out: who they are, your history, and a way in.
+            </p>
+            {briefError && <p className="text-xs text-danger">{briefError}</p>}
+            <button
+              type="button"
+              onClick={onBrief}
+              disabled={briefBusy}
+              className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            >
+              {briefBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {briefBusy ? 'Thinking…' : 'Prep brief'}
+            </button>
+          </div>
+        )}
+      </Section>
 
       {/* Follow up — set a reminder to reach out; open ones surface in the daily
           "Reach out" list on My Contacts. */}
