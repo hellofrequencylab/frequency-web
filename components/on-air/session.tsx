@@ -1601,7 +1601,15 @@ function PracticeChooser({
               }`}
             >
               <span className="min-w-0 flex-1 truncate">{p.title}</span>
-              {p.loggedToday && <Check className="h-4 w-4 shrink-0 text-success" aria-label="Logged today" />}
+              {/* An unfinished session today shows a "N min left" pill to resume (it is NOT complete,
+                  so it does not get the done check); a finished one keeps the check. */}
+              {p.partialToday ? (
+                <span className="shrink-0 rounded-full bg-primary-bg/60 px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+                  {Math.max(1, Math.ceil((p.partialToday.targetSec - p.partialToday.bankedSec) / 60))} min left
+                </span>
+              ) : p.loggedToday ? (
+                <Check className="h-4 w-4 shrink-0 text-success" aria-label="Logged today" />
+              ) : null}
             </button>
           ))}
         </div>
