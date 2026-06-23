@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import crypto from 'node:crypto'
-import { verifyResendSignature, isFreshTimestamp, WEBHOOK_TOLERANCE_SECONDS } from '@/lib/webhook-verify'
+import {
+  verifyResendSignature,
+  isFreshTimestamp,
+  WEBHOOK_TOLERANCE_SECONDS,
+  buildTwilioSignedString,
+  verifyTwilioSignature,
+} from '@/lib/webhook-verify'
 
 const secret = 'whsec_' + Buffer.from('test-signing-key').toString('base64')
 
@@ -59,5 +65,64 @@ describe('isFreshTimestamp — replay window (A5)', () => {
     expect(isFreshTimestamp(null, WEBHOOK_TOLERANCE_SECONDS, NOW_MS)).toBe(false)
     expect(isFreshTimestamp(undefined, WEBHOOK_TOLERANCE_SECONDS, NOW_MS)).toBe(false)
     expect(isFreshTimestamp('not-a-number', WEBHOOK_TOLERANCE_SECONDS, NOW_MS)).toBe(false)
+  })
+})
+
+// ── Twilio X-Twilio-Signature (ADR-256) ───────────────────────────────────────
+// Twilio signs: URL + each POST param's key+value, params sorted alphabetically by
+// key, no separators; HMAC-SHA1 keyed by the auth token, base64.
+
+const TWILIO_TOKEN = 'twilio-test-auth-token'
+const TWILIO_URL = 'https://app.frequencylocal.com/api/webhooks/twilio'
+
+function twilioSign(url: string, params: Record<string, string>, token = TWILIO_TOKEN): string {
+  const signed = buildTwilioSignedString(url, params)
+  return crypto.createHmac('sha1', token).update(Buffer.from(signed, 'utf8')).digest('base64')
+}
+
+describe('buildTwilioSignedString — Twilio canonical string', () => {
+  it('appends sorted key+value pairs to the URL with no separators', () => {
+    // Twilio's own documented example shape: alphabetical by key.
+    const params = { To: '+15555550123', From: '+15555550100', Body: 'STOP' }
+    expect(buildTwilioSignedString('https://x/y', params)).toBe(
+      'https://x/yBodySTOPFrom+15555550100To+15555550123',
+    )
+  })
+
+  it('is stable regardless of insertion order (sorts by key)', () => {
+    const a = buildTwilioSignedString('u', { b: '2', a: '1' })
+    const z = buildTwilioSignedString('u', { a: '1', b: '2' })
+    expect(a).toBe(z)
+  })
+})
+
+describe('verifyTwilioSignature', () => {
+  const params = { From: '+15555550100', To: '+15555550123', Body: 'STOP', MessageSid: 'SM1' }
+
+  it('accepts a correctly signed request', () => {
+    expect(verifyTwilioSignature(TWILIO_TOKEN, TWILIO_URL, params, twilioSign(TWILIO_URL, params))).toBe(true)
+  })
+
+  it('rejects a tampered param (a forged STOP from a different number)', () => {
+    const forged = { ...params, From: '+19998887777' }
+    expect(verifyTwilioSignature(TWILIO_TOKEN, TWILIO_URL, forged, twilioSign(TWILIO_URL, params))).toBe(false)
+  })
+
+  it('rejects a wrong auth token', () => {
+    expect(verifyTwilioSignature('wrong-token', TWILIO_URL, params, twilioSign(TWILIO_URL, params))).toBe(false)
+  })
+
+  it('rejects a different URL (URL is part of the signed string)', () => {
+    const sig = twilioSign(TWILIO_URL, params)
+    expect(verifyTwilioSignature(TWILIO_TOKEN, 'https://evil.example/api/webhooks/twilio', params, sig)).toBe(false)
+  })
+
+  it('rejects a missing signature header (fail-closed)', () => {
+    expect(verifyTwilioSignature(TWILIO_TOKEN, TWILIO_URL, params, null)).toBe(false)
+    expect(verifyTwilioSignature(TWILIO_TOKEN, TWILIO_URL, params, undefined)).toBe(false)
+  })
+
+  it('rejects an empty auth token (fail-closed)', () => {
+    expect(verifyTwilioSignature('', TWILIO_URL, params, twilioSign(TWILIO_URL, params))).toBe(false)
   })
 })
