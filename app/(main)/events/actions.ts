@@ -19,6 +19,8 @@ import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
 import { sendEventRsvpConfirmationEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
+import { sendSms } from '@/lib/comms/sms'
+import { recordContactInteraction } from '@/lib/crm/interactions'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
@@ -280,17 +282,21 @@ async function sendRsvpConfirmation(
   profileId: string,
   status: 'going' | 'waitlist',
 ): Promise<void> {
+  const admin = createAdminClient()
+
+  const { data: ev } = await admin
+    .from('events')
+    .select('title, starts_at, ends_at, location, slug, description, scope_id, scope_type, is_cancelled, host:profiles!host_id ( display_name )')
+    .eq('id', eventId)
+    .maybeSingle()
+  if (!ev || ev.is_cancelled) return
+
+  // The SMS leg is independent of the email leg (a member may want one and not the
+  // other), so it runs in its own gated, self-contained try/catch below.
+  void sendRsvpConfirmationSms(eventId, profileId, status, ev.title, ev.starts_at)
+
   try {
     if (!(await shouldSend(profileId, 'email', 'events'))) return
-
-    const admin = createAdminClient()
-
-    const { data: ev } = await admin
-      .from('events')
-      .select('title, starts_at, ends_at, location, slug, description, scope_id, scope_type, is_cancelled, host:profiles!host_id ( display_name )')
-      .eq('id', eventId)
-      .maybeSingle()
-    if (!ev || ev.is_cancelled) return
 
     const { data: profile } = await admin
       .from('profiles')
@@ -335,6 +341,53 @@ async function sendRsvpConfirmation(
     })
   } catch (e) {
     console.error('[events rsvp confirmation email]', e)
+  }
+}
+
+// Best-effort RSVP confirmation TEXT — the SMS sibling of the email leg above. Routes
+// through sendSms, which enforces the FULL per-member gate (provisioning -> consent ->
+// SMS prefs -> quiet hours), so it sends nothing until the A2P legal track is live AND
+// the member opted in. Records an outbound 'sms' touch on the timeline only when the
+// gate allowed the send. Never throws into the RSVP action. Carries sender identity +
+// a STOP line (carrier requirement + the registered A2P samples).
+async function sendRsvpConfirmationSms(
+  eventId: string,
+  profileId: string,
+  status: 'going' | 'waitlist',
+  eventTitle: string,
+  startsAt: string,
+): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    // home_timezone drives the quiet-hours check (cast: not in generated types yet).
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('home_timezone')
+      .eq('id', profileId)
+      .maybeSingle()
+    const timeZone = (profile as { home_timezone?: string | null } | null)?.home_timezone ?? null
+
+    const when = formatEventWhen(startsAt)
+    const body =
+      status === 'going'
+        ? `Frequency: You're going to ${eventTitle} on ${when}. Reply STOP to opt out.`
+        : `Frequency: You're on the waitlist for ${eventTitle} on ${when}. We'll text if a spot opens. Reply STOP to opt out.`
+
+    const decision = await sendSms({ profileId, category: 'events', body, timeZone })
+    if (decision.allowed) {
+      await recordContactInteraction({
+        ownerProfileId: profileId,
+        subjectKind: 'profile',
+        subjectId: profileId,
+        channel: 'sms',
+        direction: 'outbound',
+        summary: body,
+        source: 'engagement',
+        metadata: { kind: 'event_rsvp_confirmation', event_id: eventId, status },
+      })
+    }
+  } catch (e) {
+    console.error('[events rsvp confirmation sms]', e)
   }
 }
 

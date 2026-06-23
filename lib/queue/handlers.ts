@@ -4,6 +4,8 @@
 import type { JobHandler } from '@/lib/queue/outbox'
 import { sendPushToProfile, type PushPayload } from '@/lib/push'
 import { sendRawEmail } from '@/lib/email'
+import { sendRawSms } from '@/lib/comms/sms-send'
+import { recordContactInteraction } from '@/lib/crm/interactions'
 import type { SendCategory } from '@/lib/comms/send-gate'
 
 export const queueHandlers: Record<string, JobHandler> = {
@@ -33,5 +35,33 @@ export const queueHandlers: Record<string, JobHandler> = {
           ? (p.replyTo as string | string[])
           : undefined,
     })
+  },
+  // Durable SMS (ADR-256). payload: { to, body, profileId? }. sendRawSms is itself
+  // fail-closed (no-op + null when SMS is not provisioned), so a job drained before
+  // the legal track is live simply marks done without touching the provider. On a
+  // real send it records an outbound 'sms' touch on the contact timeline (the
+  // recipient as the subject). The interaction write is best-effort — a logging
+  // failure must never re-send the text — so it never throws back into the drain.
+  sms: async (p) => {
+    if (!p.to || !p.body) throw new Error('sms job missing to or body')
+    const to = p.to as string
+    const sid = await sendRawSms({ to, body: p.body as string })
+    // Only log a touch when something was actually sent (sid present). When SMS is
+    // gated, sid is null and there is nothing to record.
+    if (sid) {
+      const profileId = typeof p.profileId === 'string' ? p.profileId : null
+      if (profileId) {
+        await recordContactInteraction({
+          ownerProfileId: profileId,
+          subjectKind: 'profile',
+          subjectId: profileId,
+          channel: 'sms',
+          direction: 'outbound',
+          summary: typeof p.body === 'string' ? p.body : null,
+          source: 'engagement',
+          metadata: { provider: 'twilio', message_sid: sid, to },
+        })
+      }
+    }
   },
 }
