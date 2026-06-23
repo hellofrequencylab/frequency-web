@@ -15,6 +15,7 @@
 // reuse it without importing route code.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveMemberDay } from '@/lib/member-day'
 import { getMemberPractices, type TimerKind, type MindlessMode, type PartialToday } from '@/lib/practices'
 import type { MovementConfig } from '@/lib/movement'
 import { getCurrentLegPracticeIds } from '@/lib/journeys/current-leg'
@@ -61,7 +62,11 @@ export async function loadOnAirSessionData(
   requestedPracticeId?: string | null,
 ): Promise<OnAirSessionData> {
   const admin = createAdminClient()
-  const today = new Date().toISOString().slice(0, 10)
+  // "Today" must be the member's LOCAL calendar day (profiles.home_timezone), the SAME day
+  // logPractice writes logged_for under — NOT UTC. With UTC, the practice day rolled at UTC
+  // midnight (~5pm Pacific), so an evening partial logged earlier the same local day stopped
+  // matching and the timer opened fresh instead of resuming. resolveMemberDay fixes the boundary.
+  const today = await resolveMemberDay(profileId)
   const [legIds, mine, { data: prof }, { data: todayLogs }, { data: presenceRows }, { data: sitRow }] =
     await Promise.all([
       getCurrentLegPracticeIds(profileId),
