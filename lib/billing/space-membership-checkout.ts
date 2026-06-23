@@ -89,7 +89,8 @@ export async function createSpaceMembershipCheckout(
       // Connect destination charge on the subscription: fee stays with the platform, the rest
       // transfers to the space owner's connected account on every invoice.
       subscription_data: {
-        application_fee_percent: amount > 0 ? round2((fee / amount) * 100) : 0,
+        // `amount > 0` is guaranteed by the free_tier guard above, so divide directly.
+        application_fee_percent: round2((fee / amount) * 100),
         transfer_data: { destination: ownerStatus.accountId },
         metadata,
       },

@@ -6,8 +6,10 @@ import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { canCashIn } from '@/lib/core/entitlement'
+import { canCashIn, deriveTier } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
+import { featureAllowed } from '@/lib/pricing/gates'
+import { billingLive } from '@/lib/pricing/settings'
 import { classifyRedemption } from '@/lib/store/fulfillment'
 import { computeSpendableBalance, fetchGiftsSent } from '@/lib/store/balance'
 import { giftGems, type GiftGemsResult } from '@/lib/rewards/gifts'
@@ -58,6 +60,14 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   // enforce it here too and hand back a clean upsell pointing at /upgrade.
   const tier = ((profile as { membership_tier?: EntitlementTier | null } | null)?.membership_tier) ?? 'free'
   if (!canCashIn(tier)) {
+    return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems — you keep everything you’ve earned.')
+  }
+  // Pricing P3: the SAME gate, now also routed through the operator-tunable entitlements layer
+  // (featureAllowed) so an operator can adjust the cash-in minimum from /admin/pricing once billing
+  // is live. FAIL-SAFE + OFF-PRESERVING: while billing_live is OFF, featureAllowed short-circuits to
+  // true, so this is a no-op and today's behavior (the canCashIn line above) is exactly preserved.
+  const cashInAllowed = await featureAllowed('vault_cash_in', { tier: deriveTier(tier) }, { billingLive: await billingLive() })
+  if (!cashInAllowed) {
     return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems — you keep everything you’ve earned.')
   }
 

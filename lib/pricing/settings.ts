@@ -191,6 +191,25 @@ export async function billingLive(): Promise<boolean> {
   }
 }
 
+/** The per-tier enable flag for a paid member tier (must be ON, with billing live, to SELL it). */
+const TIER_FLAG: Record<'crew' | 'supporter', 'tier_crew_enabled' | 'tier_supporter_enabled'> = {
+  crew: 'tier_crew_enabled',
+  supporter: 'tier_supporter_enabled',
+}
+
+/** Is this member tier sellable right now? billingLive() AND the per-tier switch (P3). GATED — false
+ *  while billing is OFF, so the upgrade surface shows a tasteful disabled "coming soon" CTA instead of
+ *  a live checkout. The mirror of spacePlanSellable for personal tiers. FAIL-SAFE FALSE. */
+export async function memberTierSellable(tier: 'crew' | 'supporter'): Promise<boolean> {
+  try {
+    if (!(await billingLive())) return false
+    const flags = await loadPricingFlags()
+    return flags[TIER_FLAG[tier]] === true
+  } catch {
+    return false
+  }
+}
+
 // ── Writes (service-role; call ONLY from admin-gated server actions) ──────────────────────
 // authz-delegated: setPricingSetting is a caller-trusted operator-config write (ADR-274) with no
 // per-caller scope by design (pricing values are platform-wide config); authorization lives at its

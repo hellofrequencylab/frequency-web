@@ -1,15 +1,17 @@
 # Pricing & entitlements
 
 > **Status:** ✅ P1 shipped (the entitlements + admin-config foundation). ✅ P2 shipped (Stripe
-> products/prices + subscription checkout + the webhook → entitlements, founder lock honored). ⏳
-> P3 = wire the gates into live surfaces. **EVERYTHING STILL SHIPS OFF: no charge happens and no
-> live Stripe call fires unless an operator has set env keys AND flipped `billing_live` + the
-> per-tier switch.** The master `billing_live` switch is OFF by default, so members and spaces keep
-> their current access exactly as today.
+> products/prices + subscription checkout + the webhook → entitlements, founder lock honored). ✅
+> P3 shipped (member-facing upgrade/plan/join surfaces render the operator values, the cash-in gate
+> routes through `featureAllowed`, white-label is a lead flow). **EVERYTHING STILL SHIPS OFF: no
+> charge happens and no live Stripe call fires unless an operator has set env keys AND flipped
+> `billing_live` + the per-tier switch.** The master `billing_live` switch is OFF by default, so
+> members and spaces keep their current access exactly as today.
 >
-> **Decision:** [ADR-362](DECISIONS.md) (P1) · [ADR-363](DECISIONS.md) (P2). **Authoritative model:**
-> the owner's "Frequency — Pricing Model & Feature Gating Spec." **Source of truth (code):**
-> `lib/pricing/*`, `lib/billing/*`, the `/admin/pricing` console, and
+> **Decision:** [ADR-362](DECISIONS.md) (P1) · [ADR-363](DECISIONS.md) (P2) ·
+> [ADR-364](DECISIONS.md) (P3, white-label-as-lead). **Authoritative model:** the owner's
+> "Frequency — Pricing Model & Feature Gating Spec." **Source of truth (code):** `lib/pricing/*`,
+> `lib/billing/*`, the `/admin/pricing` console, and
 > `supabase/migrations/20260723010000_pricing_foundation.sql` + `20260723020000_pricing_stripe.sql`.
 
 ## TL;DR
@@ -184,10 +186,66 @@ button is disabled until the Stripe env keys are set). All writes are admin-gate
 | Stripe product/price sync (admin-triggered) | `lib/billing/pricing-products.ts` |
 | Resolved Stripe price map (IO) | `lib/billing/pricing-prices.ts` |
 | Space plan / membership checkout | `lib/billing/space-plan-checkout.ts` · `lib/billing/space-membership-checkout.ts` |
+| Pricing display shaping (pure, P3) | `lib/pricing/display.ts` |
+| Member upgrade surface (P3) | `app/(main)/upgrade/page.tsx` |
+| Space plan + white-label lead (P3) | `app/(main)/spaces/[slug]/settings/billing/` (`page.tsx`, `plan-picker.tsx`, `whitelabel-request.tsx`, `actions.ts`) |
+| Space membership join CTA (P3) | `components/spaces/membership-join.tsx` · `membership-join-card.tsx` · `lib/spaces/memberships-actions.ts` (`startSpaceMembershipCheckout`) |
+| Vault cash-in gate wiring (P3) | `app/(main)/crew/store/actions.ts` (`redeemItem`) |
 | Webhook → entitlements (by `metadata.kind`) | `lib/billing/space-subscriptions.ts` · `app/api/stripe/webhook/route.ts` |
 | Take-rate IO wrapper | `lib/billing/fees.ts` (`spaceTakeRateCents`) |
 | Admin console | `app/(main)/admin/pricing/` |
 | Tests | `lib/pricing/pricing.test.ts` · `lib/billing/pricing-keys.test.ts` · `lib/billing/space-subscriptions.test.ts` |
+
+## P3 — member-facing surfaces + gate wiring (ADR-364)
+
+P3 puts the layer in front of people, still entirely OFF until an operator turns billing on. Nothing
+here charges or fires a live Stripe call while `billing_live` is OFF; every CTA degrades to a tasteful
+disabled "coming soon" state, never a broken button.
+
+**Pure display shaping.** `lib/pricing/display.ts` (`formatCents`, `priceRow`, `memberTierRows`,
+`spacePlanRows`) shapes the operator-set `getPricingValues()` into the rows the surfaces render, so no
+price is ever hardcoded. Pure + unit-tested (`lib/pricing/pricing.test.ts`).
+
+**Sell gates.** `memberTierSellable(tier)` (new, `lib/pricing/settings.ts`) mirrors the existing
+`spacePlanSellable(plan)` (`lib/billing/space-plan-checkout.ts`): both = `billingLive()` AND the
+per-tier/plan `*_enabled` switch, FAIL-SAFE FALSE. A surface shows a live checkout CTA only when its
+row is sellable; otherwise a disabled preview.
+
+| Surface | File | OFF state | ON state |
+|---|---|---|---|
+| **Member upgrade** | `app/(main)/upgrade/page.tsx` | the free-beta toggle (unchanged) + a Crew/Supporter price preview from the operator values + a Founding-Member badge when `is_founding_member` | a live Crew/Supporter Stripe checkout via the existing `createMembershipCheckout` (founder lock already honored there) |
+| **Space plan picker** | `app/(main)/spaces/[slug]/settings/billing/` (`page.tsx` + `plan-picker.tsx`) | the plan ladder with the current plan marked + disabled "coming soon" CTAs | "Upgrade to <Plan>" → `createSpacePlanCheckout` |
+| **Space membership join** | `components/spaces/membership-join.tsx` + `membership-join-card.tsx` | the EXACT display-only `joinTier` behavior (no charge) | a paid tier opens `createSpaceMembershipCheckout` (Connect destination charge); falls back to `joinTier` if the owner is not payout-ready |
+| **White-label** | `whitelabel-request.tsx` + `requestWhitelabel` action | a LEAD form (writes a `contacts` row, `source='whitelabel_request'`) — NOT a checkout | unchanged (always a lead; ADR-364) |
+
+The space billing page is linked from the Manage-space hub (`settings/page.tsx`, "Plan and billing"
+card) and is the `success_url`/`cancel_url` target `createSpacePlanCheckout` already pointed at.
+
+**Gate consumption wired (additive, OFF-preserving).** The Vault **cash-in** server action
+(`app/(main)/crew/store/actions.ts` `redeemItem`) now routes through `featureAllowed('vault_cash_in',
+…, { billingLive })` IN ADDITION TO the existing `canCashIn(tier)` line. While `billing_live` is OFF,
+`featureAllowed` short-circuits to `true`, so the action behaves EXACTLY as today; once billing is on,
+the operator can retune the cash-in minimum from `/admin/pricing`. Tested in `pricing.test.ts`.
+
+## Status & deferred
+
+✅ **Done in P3:** member upgrade surface (operator prices, founder lock display, gated CTA) · space
+plan picker → `createSpacePlanCheckout` · space membership join → `createSpaceMembershipCheckout`
+(OFF preserves display-only join) · white-label lead flow (ADR-364) · `vault_cash_in` gate routed
+through `featureAllowed` · pure display helpers + tests. All ships OFF.
+
+⏳ **Deferred (tracked):**
+
+| Item | Why deferred |
+|---|---|
+| **Leaderboard "join to compete" gate** | The leaderboard is currently FULLY OPEN (no lock state). Wiring a gate there would need a new visible-but-locked preview UI; doing it now risks changing today's OFF behavior. The seam (`resolveGamificationAccess`) is ready; build the locked preview first, then wire. |
+| **`resolveGamificationAccess` at any live surface** | No current surface gates on it; the only consumer would be a not-yet-built "compete" lock. Pure resolver is shipped + tested, unused in app code by design. |
+| **`vera_unlimited` (Vera free daily cap) gate** | The Vera cap is its own enforcement path; rewiring it onto `featureAllowed` risks changing current message behavior. Left as a seam. |
+| **`space_*` plan-feature gates** (`space_crm`/`space_email`/`space_automation`/`space_team`/`space_multi_pipeline`/`space_whitelabel`) | These already gate on `spaceHasEntitlement` (default-deny) which `setSpacePlan` expands; routing them additionally through `featureAllowed` would change the resolution order and risks live behavior. Deferred to a deliberate rewire once billing is on. |
+| **`gamification_full` standalone gate** | Same line as `vault_cash_in` today; a separate enforcement point doesn't exist yet. |
+| **Household / Circle bundle** | Phase 2 (per the spec); not in scope. |
+| **Dunning / proration / past-due UX** | Phase 2 once billing is actually live. |
+| **Conversion-mechanics polish** | Founder-scarcity badge shipped on `/upgrade`; the season-reset "convert before reset" prompt and broader visible-but-locked value are deferred — they only read neutral OFF on surfaces that already have a lock state, so they wait for the locked-preview work above. |
 
 ## Roadmap
 
@@ -195,7 +253,7 @@ button is disabled until the Stripe env keys are set). All writes are admin-gate
 |---|---|
 | ✅ **P1** | entitlements layer + operator config + `/admin/pricing` console; everything OFF |
 | ✅ **P2** | Stripe wiring: product/price sync, subscription checkout for tiers/plans/space-memberships, the webhook calls `setSpacePlan`, founder lock honored at checkout; still ships OFF |
-| ⏳ **P3** | wire `featureAllowed` / `resolveGamificationAccess` into live gated surfaces once billing is on |
+| ✅ **P3** | member-facing upgrade/plan/join surfaces on the operator values, white-label as a lead, the `vault_cash_in` gate routed through `featureAllowed`; still ships OFF (see Status & deferred) |
 
 ## References
 

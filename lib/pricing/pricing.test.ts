@@ -25,6 +25,7 @@ import {
   type FeatureGate,
 } from './gates'
 import { PRICING_DEFAULTS } from './settings'
+import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 
 describe('space plans', () => {
   it('narrows unknown / null labels to free (default-deny)', () => {
@@ -155,6 +156,16 @@ describe('featureAllowed — OFF preserves current behavior', () => {
   it('an unknown feature is ungated (default-allow for an undeclared key)', async () => {
     expect(await featureAllowed('never_declared', { tier: 'free' }, { billingLive: true })).toBe(true)
   })
+
+  // The exact gate wired into the Vault cash-in server action (app/(main)/crew/store/actions.ts, P3):
+  // OFF must preserve today's behavior (free can still be checked by canCashIn above, the gate is a
+  // no-op); when billing is live the gate applies the crew minimum (free blocked, paid allowed).
+  it('vault_cash_in: OFF is a no-op (free allowed); ON blocks free, allows crew+', async () => {
+    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { billingLive: false })).toBe(true)
+    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { billingLive: true })).toBe(false)
+    expect(await featureAllowed('vault_cash_in', { tier: 'crew' }, { billingLive: true })).toBe(true)
+    expect(await featureAllowed('vault_cash_in', { tier: 'supporter' }, { billingLive: true })).toBe(true)
+  })
 })
 
 describe('seeded defaults are sane (mirror the migration)', () => {
@@ -173,5 +184,43 @@ describe('seeded defaults are sane (mirror the migration)', () => {
 
   it('vera free cap is the spec value (10/day)', () => {
     expect(PRICING_DEFAULTS.vera_free_daily_cap.messages).toBe(10)
+  })
+})
+
+describe('pricing display (P3 — what the upgrade/plan surfaces render)', () => {
+  it('formats cents: whole dollars drop the cents, fractional keep two', () => {
+    expect(formatCents(900)).toBe('$9')
+    expect(formatCents(39000)).toBe('$390')
+    expect(formatCents(950)).toBe('$9.50')
+    expect(formatCents(200000)).toBe('$2,000')
+  })
+
+  it('priceRow carries labels + the raw cents (monthly/annual/setup)', () => {
+    const row = priceRow('whitelabel', 'White-label', PRICING_DEFAULTS.plan.whitelabel)
+    expect(row.key).toBe('whitelabel')
+    expect(row.label).toBe('White-label')
+    expect(row.monthly).toBe('$299')
+    expect(row.annual).toBeNull() // monthly-only
+    expect(row.setup).toBe('$2,000')
+    expect(row.monthlyCents).toBe(29900)
+    expect(row.setupCents).toBe(200000)
+  })
+
+  it('memberTierRows lists Crew then Supporter from the operator values', () => {
+    const rows = memberTierRows(PRICING_DEFAULTS)
+    expect(rows.map((r) => r.key)).toEqual(['crew', 'supporter'])
+    expect(rows[0].monthly).toBe('$9')
+    expect(rows[0].annual).toBe('$90')
+    expect(rows[1].monthly).toBe('$24')
+  })
+
+  it('spacePlanRows lists the paid ladder practitioner -> whitelabel (not free)', () => {
+    const rows = spacePlanRows(PRICING_DEFAULTS)
+    expect(rows.map((r) => r.key)).toEqual(['practitioner', 'business', 'organization', 'whitelabel'])
+    expect(rows[0].label).toBe('Practitioner')
+    // organization is monthly-only
+    expect(rows.find((r) => r.key === 'organization')?.annual).toBeNull()
+    // practitioner/business have an annual line
+    expect(rows.find((r) => r.key === 'practitioner')?.annual).toBe('$390')
   })
 })

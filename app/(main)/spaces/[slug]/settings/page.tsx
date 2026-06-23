@@ -1,12 +1,13 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, DoorOpen, GraduationCap, HeartHandshake, Mail, QrCode, Ticket, Users } from 'lucide-react'
+import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, CreditCard, DoorOpen, GraduationCap, HeartHandshake, Mail, QrCode, Ticket, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
 import { SpaceSettingsForm, type SpaceSettingsValues } from './settings-form'
 
 // MANAGE <Space> — the owner back-end HUB (ENTITY-SPACES-BUILD Wave B, Epic 1.7). A centered,
@@ -28,14 +29,14 @@ import { SpaceSettingsForm, type SpaceSettingsValues } from './settings-form'
 // DB types yet, ADR-246), so they're read here through the untyped admin client alongside the
 // resolved Space, the same pattern lib/spaces/store.ts uses for `visibility`.
 
-type ExtraRow = { about?: string | null; tagline?: string | null; visibility?: string | null }
+type ExtraRow = { about?: string | null; tagline?: string | null; visibility?: string | null; plan?: string | null }
 
-/** Read the not-yet-typed profile columns (about / tagline / visibility) for a Space id. */
+/** Read the not-yet-typed profile columns (about / tagline / visibility / plan) for a Space id. */
 async function readProfileExtras(spaceId: string): Promise<ExtraRow> {
   try {
     const { data } = (await createAdminClient()
       .from('spaces')
-      .select('about, tagline, visibility')
+      .select('about, tagline, visibility, plan')
       .eq('id', spaceId)
       .maybeSingle()) as { data: ExtraRow | null }
     return data ?? {}
@@ -131,6 +132,16 @@ export default async function SpaceSettingsPage({
       />
 
       <div className="mt-4 space-y-3">
+        {/* Plan and billing — the space's plan ladder (Free -> Practitioner -> Business ->
+            Organization -> White-label). Available for every space type. The picker is gated; while
+            billing is OFF it shows the ladder with the current plan and disabled CTAs. */}
+        <HubCard
+          href={`/spaces/${space.slug}/settings/billing`}
+          icon={CreditCard}
+          title="Plan and billing"
+          description={`Your current plan: ${SPACE_PLAN_LABEL[asSpacePlan(extras.plan)]}. See what each plan unlocks.`}
+        />
+
         {space.type === 'practitioner' && (
           // The Practitioner's 1:1 booking lives on its own Focus surface (weekly availability + the
           // owner's upcoming bookings). Link to it from the hub rather than nesting another editor.

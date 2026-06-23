@@ -5,17 +5,22 @@ import { useRouter } from 'next/navigation'
 import { Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
-import { joinTier } from '@/lib/spaces/memberships-actions'
+import { joinTier, startSpaceMembershipCheckout } from '@/lib/spaces/memberships-actions'
 import type { MembershipInterval, MembershipTier } from '@/lib/spaces/memberships'
 
 // MEMBER JOIN CARD (client). One tier rendered as a kit card (name, price, interval, benefits) with
-// a Join button that calls the joinTier server action. The server re-validates the tier + that the
-// caller is not already a member, so this card is convenience, not the gate. On success it refreshes
-// so the surface flips to the "you are a member" state.
+// a Join button. The server re-validates the tier + that the caller is not already a member, so this
+// card is convenience, not the gate.
 //
-// HONESTY (CONTENT-VOICE skeptic test): the price is labeled as what membership WILL cost; the
-// button says "Join" (not "Pay" / "Subscribe") and the helper line says no payment is taken yet. No
-// narrated feelings, no em/en dashes (CONTENT-VOICE §10).
+// TWO PATHS (Pricing P3): while billing is OFF (billingOn=false) the button keeps the EXACT
+// display-only behavior — joinTier records a membership and takes no charge. When billing is live AND
+// the tier is paid, Join opens Stripe Checkout (startSpaceMembershipCheckout); if checkout no-ops
+// (e.g. the owner is not payout-ready), it falls back to the free join path, so the button is never
+// broken. A free ($0) tier always uses joinTier.
+//
+// HONESTY (CONTENT-VOICE skeptic test): while OFF the price is labeled as what membership WILL cost;
+// the button says "Join" (not "Pay") and the helper line says no payment is taken yet. No narrated
+// feelings, no em/en dashes (CONTENT-VOICE §10).
 
 /** Cents to a plain price label, e.g. 2500 -> "$25", 2550 -> "$25.50". Whole dollars drop the
  *  cents. USD only in v1 (a currency column is a later, additive expansion). */
@@ -40,19 +45,34 @@ export function intervalLabel(interval: MembershipInterval): string {
 export function MembershipJoinCard({
   spaceId,
   tier,
+  billingOn = false,
 }: {
   spaceId: string
   tier: MembershipTier
+  /** When true (billing live), a PAID tier joins via Stripe Checkout; otherwise the display-only
+   *  joinTier path is used (unchanged OFF behavior). */
+  billingOn?: boolean
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
+
+  const free = tier.priceCents === 0
 
   function join() {
     if (!tier.id) return
     setError(null)
     const tierId = tier.id
     start(async () => {
+      // Paid tier with billing live: try secure checkout first. If it no-ops (owner not payout-ready,
+      // billing off, etc.) fall back to the free join path so the button is never broken.
+      if (billingOn && !free) {
+        const checkout = await startSpaceMembershipCheckout(spaceId, tierId)
+        if (!isError(checkout)) {
+          window.location.href = checkout.data.url
+          return
+        }
+      }
       const result = await joinTier(spaceId, tierId)
       if (isError(result)) {
         setError(result.error)
@@ -61,8 +81,6 @@ export function MembershipJoinCard({
       router.refresh()
     })
   }
-
-  const free = tier.priceCents === 0
 
   return (
     <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm">
@@ -105,7 +123,9 @@ export function MembershipJoinCard({
         </Button>
         {!free && (
           <p className="mt-2 text-2xs text-subtle">
-            No payment is taken yet. Paid billing comes later.
+            {billingOn
+              ? 'Join opens secure checkout. You can cancel any time.'
+              : 'No payment is taken yet. Paid billing comes later.'}
           </p>
         )}
         {error && (
