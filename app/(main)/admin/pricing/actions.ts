@@ -6,6 +6,8 @@ import { setPlatformFlag } from '@/lib/platform-flags'
 import { setPricingSetting, type TierPrice } from '@/lib/pricing/settings'
 import { setFeatureGateOverride } from '@/lib/pricing/gates'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { billingEnabled } from '@/lib/billing/stripe'
+import { syncPricingProductsToStripe } from '@/lib/billing/pricing-products'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 
 // Operator writes for /admin/pricing (ADR-362, docs/PRICING.md). EVERYTHING SHIPS OFF: these only
@@ -103,6 +105,27 @@ export async function saveFeatureGate(
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the feature gate.')
+  }
+}
+
+/** Sync the Stripe Products/Prices from the current pricing values (Pricing P2, ADR-363). Janitor-
+ *  gated; ONLY runs when the Stripe env keys are present (billingEnabled) — never makes a Stripe call
+ *  otherwise. Creates/updates one Product per tier + monthly/annual Prices (idempotent) and writes the
+ *  resolved ids into pricing_stripe_prices. Returns a per-key summary for the surface. */
+export async function syncStripeProducts(): Promise<
+  ActionResult<{ synced: number; errors: { key: string; message: string }[] }>
+> {
+  const ctx = await requireAdmin('janitor')
+  if (!billingEnabled()) return fail('Connect Stripe first. Set the Stripe env keys, then sync.')
+  try {
+    const res = await syncPricingProductsToStripe(ctx.profileId)
+    revalidatePath(PATH)
+    if (!res.ok && res.synced.length === 0) {
+      return fail(res.errors[0]?.message ?? 'Could not sync products to Stripe.')
+    }
+    return ok({ synced: res.synced.length, errors: res.errors })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not sync products to Stripe.')
   }
 }
 

@@ -209,7 +209,8 @@ ADR-201)
 ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_members`,
 `email_events`, `email_suppressions`, `notification_queue` (durable outbox),
 `profile_personas` (partner hats, P3.1), `conversation_room_migration`,
-`pricing_settings` + `pricing_feature_gates` (pricing P1, ADR-362)
+`pricing_settings` + `pricing_feature_gates` (pricing P1, ADR-362),
+`pricing_stripe_prices` (pricing P2, ADR-363)
 
 > **Pricing foundation (ADR-362, [docs/PRICING.md](PRICING.md); migration
 > `20260723010000_pricing_foundation.sql`). EVERYTHING SHIPS OFF — nothing charges in P1.**
@@ -234,6 +235,25 @@ ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_me
 >   (default **OFF** — the live gate is `billingLive()` = `billingEnabled()` env keys AND this flag,
 >   so OFF even with keys), per-tier/plan `*_enabled` (all OFF), and per-role `gamification_full_*`
 >   (member OFF, crew/supporter ON to match today's derive-from-tier default).
+
+> **Pricing P2 — Stripe products/prices + subscriptions (ADR-363, [docs/PRICING.md](PRICING.md);
+> migration `20260723020000_pricing_stripe.sql`). STILL SHIPS OFF — no charge / no live Stripe call
+> unless env keys + `billing_live` + the per-tier switch are all on.** Additive + idempotent; the new
+> map table is service-role / admin-gated (RLS on, no client write policy). Not yet in
+> `lib/database.types.ts`; the readers/writers reach them untyped (ADR-246) and FAIL-SAFE.
+> - **`pricing_stripe_prices`** (`key text PK`, `stripe_product_id text`, `stripe_price_id text`,
+>   `archived boolean default false`, `updated_at`, `updated_by`): the resolved Stripe Product/Price
+>   per pricing key (e.g. `crew_monthly`, `practitioner_annual`, `crew_monthly_founder`). Written by
+>   `syncPricingProductsToStripe` (`lib/billing/pricing-products.ts`), invoked ONLY from the env-gated
+>   `/admin/pricing` "Sync products to Stripe" action. Founder variants stored `archived=true` so they
+>   are referenced by `profiles.locked_price_id` but never offered publicly.
+> - **`space_membership_tiers` addition**: `stripe_product_id text` (the synced Product for a paid
+>   space tier; NULL until billing live).
+> - **`space_memberships` additions**: `stripe_subscription_id text`, `payment_status text CHECK
+>   (pending|active|past_due|canceled) default 'pending'` (reconciled by the gated `space_membership`
+>   webhook; v1 display-only memberships stay `pending`).
+> - **`spaces` additions**: `stripe_customer_id text` + `stripe_subscription_id text` (the owner's
+>   plan subscription; set by the gated `space_plan` Checkout/webhook → `setSpacePlan`).
 
 > **CRM & marketing** tables (`contacts`, `campaigns`, `automation_rules`, `segments`,
 > `member_tags`, `member_traits`, `network_contacts`, `network_contact_notes`,
@@ -277,8 +297,8 @@ as today**.
 | `space_follows` | applied (`20260712010000`) | `space_id, follower_profile_id, created_at`; unique `(space_id, follower_profile_id)`; service-role RLS. The network-follow ledger behind FollowSpaceButton + the "Following" directory filter | `space_id` |
 | `space_availability` | applied (ADR-325; `20260711050000`) | `space_id, weekday 0-6, start_minute/end_minute (local-midnight minutes), slot_minutes, timezone (one IANA tz per Space), created_at` (Practitioner 1:1 booking v1 weekly windows) | `space_id` |
 | `space_bookings` | applied (ADR-325; `20260711050000`) | `space_id, member_profile_id, starts_at/ends_at (UTC), status CHECK (confirmed\|cancelled), note`; partial unique `(space_id, starts_at) WHERE status=confirmed` (double-book guard); service-role RLS | `space_id` |
-| `space_membership_tiers` | applied (ADR-327; `20260711070000`) | `space_id, name, price_cents, interval CHECK (month\|year\|once), benefits jsonb, sort, is_active`; price/interval DISPLAY-ONLY in v1 (no billing); service-role RLS | `space_id` |
-| `space_memberships` | applied (ADR-327; `20260711070000`) | `space_id, member_profile_id, tier_id, status CHECK (active\|cancelled), started_at`; partial unique `(space_id, member_profile_id) WHERE status=active` (one-active guard); service-role RLS | `space_id` |
+| `space_membership_tiers` | applied (ADR-327; `20260711070000`, `20260723020000`) | `space_id, name, price_cents, interval CHECK (month\|year\|once), benefits jsonb, sort, is_active`, **+ `stripe_product_id` (P2, ADR-363)**; price/interval DISPLAY-ONLY in v1 (no billing); service-role RLS | `space_id` |
+| `space_memberships` | applied (ADR-327; `20260711070000`, `20260723020000`) | `space_id, member_profile_id, tier_id, status CHECK (active\|cancelled), started_at`, **+ `stripe_subscription_id` + `payment_status` CHECK (pending\|active\|past_due\|canceled) default pending (P2, ADR-363)**; partial unique `(space_id, member_profile_id) WHERE status=active` (one-active guard); service-role RLS | `space_id` |
 | `space_donation_asks` | applied (ADR-342; `20260716000000`) | `space_id, fund_label, description, suggested_amounts_cents jsonb, is_active`; display only, NO charge (no Stripe; real giving is Phase 4); unique `(space_id)` (one ask per Space); service-role RLS | `space_id` |
 | `space_programs` | applied (ADR-343; `20260716000100`) | `space_id, name, description, schedule (free text), starts_on/ends_on, capacity (0=no cap), is_published`; NO price column (no payment in v1); partial unique `(space_id)` (one program per Space); service-role RLS | `space_id` |
 | `space_enrollments` | applied (ADR-343; `20260716000100`) | `space_id, program_id, member_profile_id, status CHECK (active\|cancelled), enrolled_at`; partial unique `(space_id, member_profile_id) WHERE status=active` (one-active guard); service-role RLS | `space_id` |

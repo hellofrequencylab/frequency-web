@@ -17,6 +17,7 @@ import {
   saveKnobs,
   saveFeatureGate,
   setFoundingMember,
+  syncStripeProducts,
 } from './actions'
 
 // The /admin/pricing operator console (ADR-362, docs/PRICING.md). EVERYTHING SHIPS OFF: the master
@@ -564,25 +565,114 @@ function FounderSection() {
   )
 }
 
-// ── Stripe status (read-only) ───────────────────────────────────────────────────────────
+// ── Stripe status + product sync (Pricing P2) ─────────────────────────────────────────────
 
 function StripeStatusSection({ stripe }: { stripe: PricingConsoleData['stripe'] }) {
   return (
-    <AdminSection title="Stripe status" description="Read only. Stripe is wired in a later phase.">
-      <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-        <dl className="grid gap-3 sm:grid-cols-3">
-          <StatusItem label="Stripe keys" ok={stripe.configured} okText="Configured" offText="Not configured" />
-          <StatusItem label="Master switch" ok={stripe.masterLive} okText="On" offText="Off" />
-          <StatusItem label="Billing" ok={stripe.live} okText="Live" offText="Off" />
-        </dl>
-        {!stripe.live && (
-          <p className="mt-4 text-sm text-muted">
-            Billing is off. Connecting Stripe and turning on the master switch are both part of a later phase. Until
-            then, nothing charges and everyone keeps their current access.
-          </p>
-        )}
-      </div>
+    <AdminSection
+      title="Stripe products"
+      description="Connect Stripe, then sync your prices to Stripe products. Syncing is safe while billing is off: it only creates the products and prices, it does not charge anyone."
+    >
+      <FormSection title="Status" description="Whether Stripe is connected and billing is live.">
+        <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+          <dl className="grid gap-3 sm:grid-cols-3">
+            <StatusItem label="Stripe keys" ok={stripe.configured} okText="Configured" offText="Not configured" />
+            <StatusItem label="Master switch" ok={stripe.masterLive} okText="On" offText="Off" />
+            <StatusItem label="Billing" ok={stripe.live} okText="Live" offText="Off" />
+          </dl>
+          {!stripe.configured && (
+            <p className="mt-4 text-sm text-muted">
+              Stripe is not connected. Set the Stripe env keys to enable syncing. Until then, nothing charges and
+              everyone keeps their current access.
+            </p>
+          )}
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Sync products to Stripe"
+        description="Create or update one Stripe product per plan and a price for each billing period from the values above. Run this after you change a price. It is idempotent, so running it again is safe."
+      >
+        <SyncRow configured={stripe.configured} syncedCount={stripe.syncedCount} total={stripe.prices.length} />
+      </FormSection>
+
+      <FormSection title="Resolved prices" description="The Stripe price each plan resolves to. Founder prices are kept for price-locked members and are not shown publicly.">
+        <PriceMapTable prices={stripe.prices} />
+      </FormSection>
     </AdminSection>
+  )
+}
+
+function SyncRow({ configured, syncedCount, total }: { configured: boolean; syncedCount: number; total: number }) {
+  const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState<string | null>(null)
+
+  function sync() {
+    setError(null)
+    setDone(null)
+    start(async () => {
+      const res = await syncStripeProducts()
+      if (isError(res)) setError(res.error)
+      else {
+        const { synced, errors } = res.data
+        setDone(
+          errors.length > 0
+            ? `Synced ${synced} price${synced === 1 ? '' : 's'}. ${errors.length} had a problem: ${errors[0].message}`
+            : `Synced ${synced} price${synced === 1 ? '' : 's'}.`,
+        )
+      }
+    })
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button size="sm" variant="secondary" onClick={sync} disabled={pending || !configured}>
+          {pending ? 'Syncing…' : 'Sync products to Stripe'}
+        </Button>
+        <StatusChip tone={syncedCount === total && total > 0 ? 'success' : 'neutral'}>
+          {syncedCount} of {total} synced
+        </StatusChip>
+      </div>
+      {!configured && (
+        <p className="text-xs text-subtle">Connect Stripe first. Syncing is disabled until the env keys are set.</p>
+      )}
+      {done && <p className="text-xs text-success">{done}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
+function PriceMapTable({ prices }: { prices: PricingConsoleData['stripe']['prices'] }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-border bg-surface-elevated px-4 py-2 text-2xs font-bold uppercase tracking-wide text-subtle">
+        <span>Key</span>
+        <span>Price id</span>
+        <span className="text-right">State</span>
+      </div>
+      <div className="divide-y divide-border">
+        {prices.map((p) => (
+          <div key={p.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2 text-sm">
+            <span className="font-mono text-xs text-text">
+              {p.key}
+              {p.founder && (
+                <StatusChip tone="info" size="sm">
+                  founder
+                </StatusChip>
+              )}
+            </span>
+            <span className="truncate font-mono text-2xs text-subtle">{p.priceId ?? '—'}</span>
+            <span className="text-right">
+              <StatusChip tone={p.synced ? 'success' : 'neutral'} size="sm">
+                {p.synced ? 'synced' : 'not synced'}
+              </StatusChip>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 

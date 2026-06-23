@@ -1,13 +1,16 @@
 # Pricing & entitlements
 
-> **Status:** ✅ P1 shipped (the entitlements + admin-config foundation). ⏳ P2 = Stripe wiring;
-> ⏳ P3 = wire the gates into live surfaces. **EVERYTHING SHIPS OFF in P1: nothing charges, no
-> live Stripe call is made.** The master `billing_live` switch is OFF by default, so members and
-> spaces keep their current access exactly as today.
+> **Status:** ✅ P1 shipped (the entitlements + admin-config foundation). ✅ P2 shipped (Stripe
+> products/prices + subscription checkout + the webhook → entitlements, founder lock honored). ⏳
+> P3 = wire the gates into live surfaces. **EVERYTHING STILL SHIPS OFF: no charge happens and no
+> live Stripe call fires unless an operator has set env keys AND flipped `billing_live` + the
+> per-tier switch.** The master `billing_live` switch is OFF by default, so members and spaces keep
+> their current access exactly as today.
 >
-> **Decision:** [ADR-362](DECISIONS.md). **Authoritative model:** the owner's "Frequency — Pricing
-> Model & Feature Gating Spec." **Source of truth (code):** `lib/pricing/*`, the
-> `/admin/pricing` console, and `supabase/migrations/20260723010000_pricing_foundation.sql`.
+> **Decision:** [ADR-362](DECISIONS.md) (P1) · [ADR-363](DECISIONS.md) (P2). **Authoritative model:**
+> the owner's "Frequency — Pricing Model & Feature Gating Spec." **Source of truth (code):**
+> `lib/pricing/*`, `lib/billing/*`, the `/admin/pricing` console, and
+> `supabase/migrations/20260723010000_pricing_foundation.sql` + `20260723020000_pricing_stripe.sql`.
 
 ## TL;DR
 
@@ -103,6 +106,52 @@ operator flips the master switch. While OFF:
 Every reader is additionally FAIL-SAFE: a DB error or the pre-migration state falls back to the
 seeded code defaults, never to a charge or a lockout.
 
+## P2 — Stripe products/prices + subscriptions (ADR-363)
+
+P2 wires Stripe behind the same gate, so the whole layer still ships OFF. Nothing here charges or
+makes a live Stripe call unless `billingEnabled()` (env keys present) AND `billing_live` AND the
+per-tier/plan switch are all on. Migration: `20260723020000_pricing_stripe.sql`.
+
+**Stripe product/price catalog.** `lib/billing/pricing-products.ts` `syncPricingProductsToStripe()`
+creates/updates one Stripe **Product per tier** (Crew, Supporter, Practitioner, Business,
+Organization, White-label) and a **monthly + annual Price** from the admin `pricing_settings` values,
+writing the resolved ids into `pricing_stripe_prices` (`key` → `stripe_product_id` / `stripe_price_id`
+/ `archived`). It is **admin-triggered only** (the `/admin/pricing` "Sync products to Stripe" action),
+**never** on import/boot, and a clear no-op when env is missing. Idempotent: Products are looked up by
+a stable metadata key (`frequency_pricing_key`); Prices (immutable in Stripe) are reused when amount +
+interval match, else a new Price is created. Founder prices are separate Price objects stored
+`archived=true` (not public, referenced by `locked_price_id`). Keys: `crew_monthly`, `crew_annual`,
+`supporter_monthly`/`_annual`, `practitioner_monthly`/`_annual`, `business_monthly`/`_annual`,
+`organization_monthly`, `whitelabel_monthly`, plus the `*_founder` variants for the member tiers.
+
+**Subscription checkout (all gated, return null when OFF).**
+
+| Function | What | Gate |
+|---|---|---|
+| `createMembershipCheckout` (extended) | member Crew/Supporter subscription; **honors the founder lock** (`locked_price_id` → founder Price → public Price → env fallback) | `billingEnabled` (existing path); founder lock applied at price resolution |
+| `createSpacePlanCheckout(spaceId, plan, period)` | Space owner buys a plan; customer = the space owner; metadata `{ kind:'space_plan', space_id, plan }` | `billingLive()` AND `plan_*_enabled` |
+| `createSpaceMembershipCheckout(spaceId, tierId, memberId)` | member joins a paid space tier; **Connect destination charge**, application fee = the SPACE plan's take-rate (8/5/3% from `pricing_settings`); metadata `{ kind:'space_membership', space_id, tier_id, member_id }` | `billingLive()` + owner Connect-ready |
+
+The pure price-key, take-rate, and founder-lock math lives in `lib/billing/pricing-keys.ts`
+(`priceKey`, `takeRateCents`, `memberCheckoutPriceKey`); the take-rate IO wrapper is
+`lib/billing/fees.ts` `spaceTakeRateCents` (reads `pricing_settings.take_rate`, fail-safe). Management
+reuses `createBillingPortal`.
+
+**Webhook → entitlements (idempotent, by `metadata.kind`).** The existing membership webhook
+(`app/api/stripe/webhook/route.ts`) now routes subscription events through
+`lib/billing/space-subscriptions.ts` FIRST:
+
+- `kind:'space_plan'` (`created`/`updated`/`deleted`) → `setSpacePlan(space_id, plan|free)` (active →
+  the plan, canceled → free) + persist `spaces.stripe_subscription_id` / `stripe_customer_id`.
+- `kind:'space_membership'` → upsert `space_memberships.stripe_subscription_id` + `payment_status`
+  (`active`/`past_due`/`canceled`).
+- No `kind` → the member Crew/Supporter path runs unchanged.
+
+Idempotency is the existing `stripe_webhook_events` claim plus fixed-value writes keyed by id.
+**No live Stripe call happens during `pnpm test`/`pnpm build`** — every Stripe call sits behind
+`billingEnabled()`/`billingLive()` and is invoked only at runtime; the pure logic is unit-tested with
+the client never touched (`lib/billing/pricing-keys.test.ts`, `space-subscriptions.test.ts`).
+
 ## The /admin/pricing console
 
 A janitor-gated operator surface (`app/(main)/admin/pricing/`, registered in
@@ -116,29 +165,36 @@ admin page kit (`AdminTemplate` + `FormSection` + `Toggle`). Routes:
 Sections: **Switches** (master `billing_live`, prominent + OFF; per-tier/plan enable; per-role
 gamification) · **Plans and prices** (every value, in dollars) · **Feature gates** (the editable
 feature → entitlement matrix with a per-feature enable toggle) · **Founding members** (the founder
-lock + locked-price reference, honored in P2) · **Stripe status** (read-only; "not configured /
-billing OFF" until P2). All writes are admin-gated server actions (`actions.ts`) that audit flag
-flips via `setPlatformFlag` → `platform_flag_events`.
+lock + locked-price reference, honored at checkout) · **Stripe products** (P2: status, the
+env-gated "Sync products to Stripe" action, and the resolved `pricing_stripe_prices` map; the sync
+button is disabled until the Stripe env keys are set). All writes are admin-gated server actions
+(`actions.ts`) that audit flag flips via `setPlatformFlag` → `platform_flag_events`.
 
 ## Files
 
 | Concern | File |
 |---|---|
-| Migration | `supabase/migrations/20260723010000_pricing_foundation.sql` |
+| Migrations | `supabase/migrations/20260723010000_pricing_foundation.sql` (P1) · `20260723020000_pricing_stripe.sql` (P2) |
 | Space plans + plan→entitlements | `lib/pricing/plans.ts` |
 | Gamification resolver (flag 3) | `lib/pricing/gamification.ts` |
 | Feature gates (code map + DB merge + `featureAllowed`) | `lib/pricing/gates.ts` |
 | Settings, flags, `billingLive()` | `lib/pricing/settings.ts` |
-| `setSpacePlan` (the P2 webhook entry) | `lib/pricing/space-plan.ts` |
+| `setSpacePlan` (the webhook entry) | `lib/pricing/space-plan.ts` |
+| Price keys + take-rate + founder-lock math (pure) | `lib/billing/pricing-keys.ts` |
+| Stripe product/price sync (admin-triggered) | `lib/billing/pricing-products.ts` |
+| Resolved Stripe price map (IO) | `lib/billing/pricing-prices.ts` |
+| Space plan / membership checkout | `lib/billing/space-plan-checkout.ts` · `lib/billing/space-membership-checkout.ts` |
+| Webhook → entitlements (by `metadata.kind`) | `lib/billing/space-subscriptions.ts` · `app/api/stripe/webhook/route.ts` |
+| Take-rate IO wrapper | `lib/billing/fees.ts` (`spaceTakeRateCents`) |
 | Admin console | `app/(main)/admin/pricing/` |
-| Tests | `lib/pricing/pricing.test.ts` |
+| Tests | `lib/pricing/pricing.test.ts` · `lib/billing/pricing-keys.test.ts` · `lib/billing/space-subscriptions.test.ts` |
 
 ## Roadmap
 
 | Phase | Scope |
 |---|---|
 | ✅ **P1** | entitlements layer + operator config + `/admin/pricing` console; everything OFF |
-| ⏳ **P2** | Stripe wiring: checkout for tiers/plans, the webhook calls `setSpacePlan`, founder lock honored at checkout |
+| ✅ **P2** | Stripe wiring: product/price sync, subscription checkout for tiers/plans/space-memberships, the webhook calls `setSpacePlan`, founder lock honored at checkout; still ships OFF |
 | ⏳ **P3** | wire `featureAllowed` / `resolveGamificationAccess` into live gated surfaces once billing is on |
 
 ## References

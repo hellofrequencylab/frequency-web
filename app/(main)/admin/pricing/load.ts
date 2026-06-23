@@ -6,6 +6,8 @@
 import { getPricingValues, loadPricingFlags, type PricingDefaults, type PricingFlagKey } from '@/lib/pricing/settings'
 import { FEATURE_GATES, loadFeatureGateOverrides, mergeGate, type FeatureGate } from '@/lib/pricing/gates'
 import { billingEnabled } from '@/lib/billing/stripe'
+import { loadStripePriceMap, type StripePriceRow } from '@/lib/billing/pricing-prices'
+import { allPublicPriceKeys, allFounderPriceKeys } from '@/lib/billing/pricing-keys'
 
 export interface FeatureGateRow {
   feature: string
@@ -14,6 +16,15 @@ export interface FeatureGateRow {
   enabled: boolean
   /** True when a DB row overrides the code default (shown as "customized"). */
   overridden: boolean
+}
+
+/** One row in the Stripe price map panel: the expected key + whether it's synced. */
+export interface StripePriceRowView {
+  key: string
+  founder: boolean
+  productId: string | null
+  priceId: string | null
+  synced: boolean
 }
 
 export interface PricingConsoleData {
@@ -27,14 +38,19 @@ export interface PricingConsoleData {
     masterLive: boolean
     /** Billing actually live (configured AND masterLive). */
     live: boolean
+    /** The resolved Stripe Product/Price map (Pricing P2): every expected key + its synced state. */
+    prices: StripePriceRowView[]
+    /** How many of the expected keys are synced. */
+    syncedCount: number
   }
 }
 
 export async function getPricingConsoleData(): Promise<PricingConsoleData> {
-  const [values, flags, overrides] = await Promise.all([
+  const [values, flags, overrides, priceMap] = await Promise.all([
     getPricingValues(),
     loadPricingFlags(),
     loadFeatureGateOverrides(),
+    loadStripePriceMap(),
   ])
 
   // The feature->entitlement matrix: every code-declared feature, merged with any DB override, plus
@@ -54,12 +70,26 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
   }
   gates.sort((a, b) => (a.axis === b.axis ? a.feature.localeCompare(b.feature) : a.axis.localeCompare(b.axis)))
 
+  // The expected price catalog (public + founder variants) merged with what's actually synced.
+  const expectedKeys = [...allPublicPriceKeys(), ...allFounderPriceKeys()]
+  const prices: StripePriceRowView[] = expectedKeys.map((key) => {
+    const row: StripePriceRow | undefined = priceMap[key]
+    return {
+      key,
+      founder: key.endsWith('_founder'),
+      productId: row?.stripe_product_id ?? null,
+      priceId: row?.stripe_price_id ?? null,
+      synced: !!row?.stripe_price_id,
+    }
+  })
+  const syncedCount = prices.filter((p) => p.synced).length
+
   const configured = billingEnabled()
   const masterLive = flags.billing_live
   return {
     values,
     flags,
     gates,
-    stripe: { configured, masterLive, live: configured && masterLive },
+    stripe: { configured, masterLive, live: configured && masterLive, prices, syncedCount },
   }
 }
