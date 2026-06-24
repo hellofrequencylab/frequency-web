@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Check, Award, Users, MapPin, CalendarDays, Sparkles, Heart, MessageCircle, Compass, Flame, Star, Shield, Coffee, Music, Sun, Leaf, Handshake, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { ComponentConfig } from '@measured/puck'
+import { safeHref } from '@/lib/page-editor/richtext'
 
 import {
   Band,
@@ -118,7 +119,7 @@ export function FeatureGridBlock({
                   {item.title && <h3 className={`text-xl font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
                   {item.body && <div className={`text-base leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                   {item.href && (
-                    <Link href={item.href} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                    <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
                       Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                     </Link>
                   )}
@@ -135,7 +136,7 @@ export function FeatureGridBlock({
                 {item.title && <h3 className={`text-xl font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
                 {item.body && <div className={`text-base leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                 {item.href && (
-                  <Link href={item.href} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                  <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
                     Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                   </Link>
                 )}
@@ -154,7 +155,7 @@ export function FeatureGridBlock({
               {item.title && <h3 className={`text-xl font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
               {item.body && <div className={`text-base leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
               {item.href && (
-                <Link href={item.href} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
                   Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                 </Link>
               )}
@@ -328,7 +329,7 @@ export function ShowcaseBlock({
                 <div className="bg-surface rounded-3xl p-8 shadow-pop">
                   <div className="text-base text-muted leading-relaxed space-y-3">{richParagraphs(p.body)}</div>
                   {p.href && (
-                    <Link href={p.href} className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline">
+                    <Link href={safeHref(p.href) ?? '#'} className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline">
                       Learn more <ArrowRight className="w-4 h-4" aria-hidden />
                     </Link>
                   )}
@@ -469,7 +470,7 @@ export function TiersBlock({
                   </span>
                 ) : (
                   <Link
-                    href={tier.ctaHref || '#'}
+                    href={safeHref(tier.ctaHref) ?? '#'}
                     className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold transition-colors ${
                       tier.ctaStyle === 'primary'
                         ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'

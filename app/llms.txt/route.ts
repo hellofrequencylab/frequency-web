@@ -22,11 +22,8 @@ const abs = (path: string) => `${SITE_URL}${path}`
 // The key public pages, each with a one-line description in the locked voice.
 const PAGES: { path: string; label: string; desc: string }[] = [
   { path: '/', label: 'Home', desc: `${SITE_NAME}, a place to be human. The short version of who it is for and how it works.` },
-  { path: '/start', label: 'Start here', desc: 'Pick your role: Build a Circle, Practice on your own, or Spread the word.' },
-  { path: '/build', label: 'Build a Circle', desc: 'For community builders: host one Circle, and we hand you the format and the first-night script.' },
-  { path: '/practice', label: 'Practice', desc: 'For anyone, today: Journeys, Practices, and the Mindless timer, on your own.' },
-  { path: '/spread', label: 'Spread', desc: 'Take a small role in building community: invite one person, host once, or share the idea.' },
-  { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles.' },
+  { path: '/start', label: 'Start here', desc: 'Choose how you want to get involved, then join the beta.' },
+  { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
   { path: '/the-quest', label: 'The Quest', desc: 'The light, in-person game: Zaps, Gems, season ranks, and Journeys.' },
   { path: '/the-lab', label: 'The Lab', desc: 'The physical third space, and why a community needs a room.' },
   { path: '/pricing', label: 'Pricing', desc: 'Membership that keeps the room open. Member is free; Crew and Supporter add more, with Space plans for practitioners and businesses.' },

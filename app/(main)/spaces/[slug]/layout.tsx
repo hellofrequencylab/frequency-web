@@ -188,7 +188,7 @@ export default async function SpaceProfileLayout({
               logoUrl: space.brandLogoUrl,
             }),
             breadcrumbSchema([
-              { name: 'Spaces', path: '/spaces' },
+              { name: 'Spaces', path: '/spaces/directory' },
               { name: brandName, path: `/spaces/${space.slug}` },
             ]),
           ]}

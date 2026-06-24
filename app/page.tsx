@@ -168,10 +168,10 @@ export default async function RootPage({
     }
   }
 
-  // The splash is code-locked (see EDITABLE_PAGES note in lib/page-editor/data):
-  // `home` is intentionally not editable in the visual editor, so the coded
-  // flagship splash is always the source of truth for `/` — no published draft
-  // can shadow it.
+  // `home` is editable in the visual editor (see EDITABLE_PAGES in
+  // lib/page-editor/data): the render chain is getPublishedData('home') ->
+  // getTemplate('home') -> this coded splash as the last-resort fallback. So a
+  // published draft or the designed template shadows the splash when present.
   // Personalize the splash when arriving via a scanned personal code: the /q
   // resolver dropped an fq_ref cookie, so we can name the inviter (research: a
   // generic splash discards the inviter's social proof, the strongest referral

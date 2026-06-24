@@ -56,30 +56,70 @@ export const SITE_NAV: NavLink[] = PRIMARY_NAV;
 export const SITE_NAV_MEMBER: NavLink[] = PRIMARY_NAV;
 
 // ── The public mega menu (the header nav) ─────────────────────────────────────
-// The public header is now exactly the SIX primary pages as flat tabs: Home, The
-// Community, The Quest, The Lab, Spaces, About. Each panel here is a single flat
-// trigger (a `label` + `href`, no `sections`). The shape still allows `sections`
-// (multi-column dropdowns) so the header can grow back into mega panels later
-// without a renderer change; today every panel is flat. Data-driven so a nav edit
-// is a data edit, never a header edit. Copy carries no em or en dashes.
+// The header is a MEGA MENU: the six primary pages are the top-level triggers, and
+// each can open a dropdown of sub-pages. A panel with `items` (one column of
+// sub-pages) or `sections` (multi-column) renders as a disclosure trigger; a panel
+// with only `href` renders as a plain link. Today Home and The Lab are plain links;
+// The Community, The Quest, Spaces, and About open dropdowns. This is the FALLBACK
+// for the DB-backed `header` surface (lib/menus): operators edit the LIVE menu in
+// /admin/menu, adding pages and categories, and the live seed mirrors this shape.
+// Copy carries no em or en dashes.
 export type MegaNavItem = { label: string; href: string; desc?: string };
 export type MegaNavGroup = { heading?: string; items: MegaNavItem[] };
 export type MegaNavFeatured = { title: string; desc: string; href: string; cta?: string };
 export type PublicMegaMenu = {
   label: string;
-  /** A flat tab links straight here (no dropdown). Omit when the panel has `sections`. */
+  /** A plain link (no dropdown). Used when the panel has no `items` and no `sections`. */
   href?: string;
-  /** Dropdown columns. Empty/absent → the panel is a flat link to `href`. */
+  /** A single dropdown column of sub-pages. Renders the trigger as a disclosure. */
+  items?: MegaNavItem[];
+  /** Multi-column dropdown. Each group is one column (optional heading + items). */
   sections?: MegaNavGroup[];
   featured?: MegaNavFeatured;
 };
 
-// Six flat tabs, one per primary page, in nav order. Built from PRIMARY_NAV so the
-// header, footer, and the menus/defaults header surface stay in lockstep.
-export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = PRIMARY_NAV.map((p) => ({
-  label: p.label,
-  href: p.href,
-}));
+// The six primaries as mega-menu triggers, in nav order. Home + The Lab are plain
+// links; the rest open a dropdown of sub-pages. Mirrors the DB `header` seed so the
+// fallback and the live menu match; operators grow this in /admin/menu.
+export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
+  { label: "Home", href: "/" },
+  {
+    label: "The Community",
+    items: [
+      { label: "The Community", href: "/the-community", desc: "Who's here and how it works" },
+      { label: "Discover", href: "/discover", desc: "Everything happening near you" },
+      { label: "Circles", href: "/discover/circles", desc: "Small groups around an interest" },
+      { label: "Events", href: "/discover/events", desc: "Gatherings you can show up to" },
+      { label: "Partners", href: "/discover/partners", desc: "The studios and hosts we work with" },
+    ],
+  },
+  {
+    label: "The Quest",
+    items: [
+      { label: "The Quest", href: "/the-quest", desc: "The practice game: streaks, Zaps, and the Vault" },
+      { label: "Journeys", href: "/discover/journeys", desc: "Guided practices for a season" },
+      { label: "Practices", href: "/discover/practices", desc: "Browse the practices you can run" },
+      { label: "Interests", href: "/discover/topics", desc: "Browse by what you practice" },
+    ],
+  },
+  { label: "The Lab", href: "/the-lab" },
+  {
+    label: "Spaces",
+    items: [
+      { label: "Spaces", href: "/spaces", desc: "Bring your people. They join free" },
+      { label: "Pricing", href: "/pricing", desc: "Membership that keeps the room open" },
+    ],
+  },
+  {
+    label: "About",
+    items: [
+      { label: "About", href: "/about", desc: "The mission and the people building it" },
+      { label: "Help center", href: "/help", desc: "Answers, guides, and support" },
+      { label: "Privacy", href: "/privacy", desc: "How we handle your data" },
+      { label: "Terms", href: "/terms", desc: "The rules of the road" },
+    ],
+  },
+];
 
 // Flat list for the marketing footer — the same six primary pages, same order.
 export const MARKETING_NAV: NavLink[] = PRIMARY_NAV;
