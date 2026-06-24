@@ -13,6 +13,9 @@ import type { NavArea } from '@/lib/nav-areas'
 import type { AdminModule } from '@/lib/admin/modules/registry'
 import type { Viewer } from '@/lib/core/capabilities'
 import { market } from './market'
+import { housing } from './housing'
+import { maker } from './maker'
+import { shop } from './shop'
 
 /** A vertical's own scope (its kind + whatever ids/state its resolver needs). */
 export interface ModuleScope {
@@ -63,7 +66,7 @@ export interface Vertical {
 }
 
 /** Every registered vertical. Add a vertical = import its descriptor and add it here. */
-export const VERTICALS: readonly Vertical[] = [market]
+export const VERTICALS: readonly Vertical[] = [market, housing, maker, shop]
 
 export function verticalById(id: string): Vertical | undefined {
   return VERTICALS.find((v) => v.id === id)
