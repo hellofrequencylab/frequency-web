@@ -1,6 +1,6 @@
 # Starter Circles
 
-Status: in progress (foundation landed locally, not yet pushed or applied). Owner-confirmed decisions below. This doc is the technical source of truth; an ADR will be appended to `docs/DECISIONS.md` at push time (number reserved pending the active admin-reorg ADRs).
+Status: live. Foundation + actions + admin + member builder + gallery shipped and applied to prod (`azsqfeonabsbmemvddqd`); the `circle_templates_enabled` master flag is ON. The twelve blueprints are also surfaced as geo-located, claim-able virtual circles in the main `/circles` directory and on its map (ADR-391). This doc is the technical source of truth; decisions are recorded as ADRs in `docs/DECISIONS.md` (foundation + **ADR-391** for the directory/map surfacing).
 
 ## What this is
 
@@ -67,6 +67,20 @@ Replace the popup-based creation with one clean builder. Remove only once the ne
 | Popup mount points | `app/(main)/circles/page.tsx`, `app/(main)/channels/[id]/page.tsx` | point to the new builder |
 
 Open question for sign-off: the **demo "claim" flow** (`components/circles/claim-circle.tsx`, `app/(main)/circles/[slug]/claim-actions.ts`) is the existing "adopt a demo Circle to make it real" mechanism. Keep it as part of the demo system, or fold its intent into the new "Make it yours"? Recommendation: keep for now (different surface, demo-scoped), revisit after the builder ships.
+
+## Geo-located surfacing in the main directory + map (ADR-391)
+
+Beyond the `/circles/templates` gallery, the active blueprints are surfaced as **virtual, claim-able circles scattered within ~10 miles of each viewer** — so a member anywhere sees startable Circles near them. They are NOT rows in `circles`: nothing is persisted, and the synthetic ids (`starter-<slug>`) never collide with real circle ids. Gated by the same `circle_templates_enabled` flag.
+
+| Piece | File | Role |
+|---|---|---|
+| Projection core (pure, client-safe) | `lib/circles/starter-projection.ts` | `projectStarterCircles(...)` + `StarterSeed`; seeded mulberry32, uniform-disk offset, stable per viewer (rounded location folded into the seed) |
+| Directory cards (server) | `app/(main)/circles/page.tsx` | injects Starter `CircleCardData` (`isStarter: true`) honoring the page facets; order = members → Starters → discovery; passes `starterSeeds` to `MapZone` |
+| Card badge + Claim action | `components/circles/circle-card.tsx`, `components/ui/starter-badge.tsx` | `isStarter` ⇒ Starter badge, `/circles/starter/<slug>` link, Claim (not Join), "Ready to start" meta |
+| Map markers (client) | `components/circles/circles-map.tsx` → `components/circles/circle-map.tsx` | projects Starters around the IP/precise viewer center; renders a separate **unclustered violet layer** (`#7C5CD6`) with a popup linking to the preview |
+| Preview + Claim | `app/(main)/circles/starter/[slug]/page.tsx`, `components/circles/starter-claim.tsx` | Detail-template read-only blueprint; Claim runs the existing `remixTemplateAction` → private draft → builder |
+
+**Why client-side for the map:** viewer location is resolved only in the browser (`lib/geolocation.ts` IP geo, inside `MapZone`); the server page never sees it. So cards (no geo) are injected server-side and markers (need geo) are projected client-side. When the flag is off, every surface renders exactly as before.
 
 ## Build stages
 

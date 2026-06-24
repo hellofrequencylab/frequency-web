@@ -13,6 +13,9 @@ import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import type { CircleBase } from '@/lib/types/circle'
+import { getActiveTemplates, templatesEnabled } from '@/lib/circles/templates-data'
+import type { StarterSeed } from '@/lib/circles/starter-projection'
+import type { PillarSlug } from '@/lib/pillars'
 
 type CircleRow = CircleBase & {
   slug: string
@@ -50,6 +53,13 @@ function toCardData(c: CircleRow): CircleCardData {
     context: contextFor(c), imageUrl: c.image_url, isDemo: c.is_demo,
     isFeatured: !!c.featured_at,
   }
+}
+
+const PILLAR_LABELS: Record<PillarSlug, string> = {
+  mind: 'Mind',
+  body: 'Body',
+  spirit: 'Spirit',
+  expression: 'Expression',
 }
 
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
@@ -162,13 +172,45 @@ export default async function CirclesPage({
 
   const myCircles = filtered.filter((c) => myCircleIds.includes(c.id))
   const discover = filtered.filter((c) => !myCircleIds.includes(c.id))
-  const combined = [...myCircles, ...discover] // members first, then discover
+
+  // Starter Circles — staff blueprints surfaced as virtual, claim-able circles near
+  // the viewer (the map scatters them; here they ride the directory list with a
+  // Starter badge and a Claim action). Gated by the master flag; they honor the same
+  // facets as real circles. They are not rows in `circles` — the card id is synthetic
+  // and links to the /circles/starter/<slug> preview, never to a live circle.
+  const starterTemplates = (await templatesEnabled()) ? await getActiveTemplates() : []
+  const starterSeeds: StarterSeed[] = starterTemplates.map((t) => ({
+    id: t.id, slug: t.slug, name: t.name, card: t.card, oneLiner: t.oneLiner, primaryPillar: t.primaryPillar,
+  }))
+  const starterCards: CircleCardData[] = starterTemplates
+    .filter((t) => {
+      if (selectedDomain && t.primaryPillar !== selectedDomain.slug) return false
+      if (type === 'online') return false // Starters default to in-person
+      if (interest) return false // Starters carry no Channel binding
+      if (qLower) {
+        const hay = `${t.name} ${t.card} ${t.oneLiner}`.toLowerCase()
+        if (!hay.includes(qLower)) return false
+      }
+      return true
+    })
+    .map((t) => ({
+      id: `starter-${t.slug}`, name: t.name, slug: t.slug, about: t.card || t.oneLiner,
+      type: 'in-person' as const, member_count: 0, member_cap: 0, status: 'active',
+      context: PILLAR_LABELS[t.primaryPillar], imageUrl: t.imageUrl, isStarter: true,
+    }))
+
+  // Members first, then the Starters to claim, then the rest of discovery.
+  const combined: CircleCardData[] = [...myCircles.map(toCardData), ...starterCards, ...discover.map(toCardData)]
   const filtering = !!(type || interest || qLower || channel)
 
   // Near-you data (in-person, located) from the unfiltered set
   const locatableCircles = all
     .filter((c) => c.type === 'in-person' && c.latitude != null && c.longitude != null)
     .map((c) => ({ id: c.id, name: c.name, slug: c.slug, latitude: c.latitude as number, longitude: c.longitude as number, neighborhood: c.neighborhood }))
+
+  // The map opens when there are located real circles OR Starters to scatter near
+  // the viewer (the Starter pins are projected client-side, where viewer geo lives).
+  const showMap = locatableCircles.length > 0 || starterSeeds.length > 0
 
   // Flywheel: circles ≥80% of cap are "filling up". When a circle fills, the
   // next one should start — so we surface a gentle nudge to open the next door.
@@ -258,10 +300,10 @@ export default async function CirclesPage({
           tiles — MEMBER-DESIGN-SYSTEM §2). */}
       <PageContents links={channelLinks} divider={false} />
 
-      <MapZone circles={locatableCircles}>
+      <MapZone circles={locatableCircles} starterSeeds={starterSeeds}>
         {/* Find-near-me opens the map; the stats moved up beside the filter menu and
             "Start a circle" lives in the page header now. */}
-        {locatableCircles.length > 0 && (
+        {showMap && (
           <div className="mb-6">
             <FindNearMeButton />
           </div>
@@ -312,7 +354,7 @@ export default async function CirclesPage({
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
           {/* Left — map (when present) over the circle grid */}
           <div className="min-w-0 space-y-6">
-            {locatableCircles.length > 0 && (
+            {showMap && (
               <div className="h-72">
                 <MapPreview />
               </div>
@@ -327,8 +369,8 @@ export default async function CirclesPage({
               />
             ) : (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                {combined.map((c) => (
-                  <CircleCard key={c.id} circle={toCardData(c)} isMember={myCircleIds.includes(c.id)} />
+                {combined.map((card) => (
+                  <CircleCard key={card.id} circle={card} isMember={myCircleIds.includes(card.id)} />
                 ))}
               </div>
             )}

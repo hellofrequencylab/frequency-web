@@ -28,12 +28,29 @@ export type MapCircle = {
   neighborhood: string | null
 }
 
-// Frame the viewer's location together with their nearest circles, so opening
-// the map shows the closest circles in their area.
-function frameNearest(map: maplibregl.Map, center: [number, number], circles: MapCircle[], count = 5, duration = 800) {
+// A virtual Starter Circle pin, already projected near the viewer (lib/circles/
+// starter-projection.ts) by the parent client component. Rendered as its own
+// violet layer and links to the /circles/starter/<slug> claim preview.
+export type StarterMarker = {
+  slug: string
+  name: string
+  lat: number
+  lng: number
+}
+
+// Frame the viewer's location together with their nearest points, so opening
+// the map shows the closest circles (real + Starter) in their area. Takes only
+// the coordinate fields so real circles and Starter pins can be framed together.
+function frameNearest(
+  map: maplibregl.Map,
+  center: [number, number],
+  points: { latitude: number; longitude: number }[],
+  count = 5,
+  duration = 800,
+) {
   const bounds = new maplibregl.LngLatBounds()
   bounds.extend(center)
-  const nearest = [...circles]
+  const nearest = [...points]
     .sort((a, b) => distanceKm(center[1], center[0], a.latitude, a.longitude) - distanceKm(center[1], center[0], b.latitude, b.longitude))
     .slice(0, count)
   for (const c of nearest) bounds.extend([c.longitude, c.latitude])
@@ -46,11 +63,14 @@ function frameNearest(map: maplibregl.Map, center: [number, number], circles: Ma
 // (ssr:false) so maplibre never runs on the server.
 export default function CircleMap({
   circles,
+  starters = [],
   interactive = true,
   className = 'h-[420px] w-full overflow-hidden rounded-2xl border border-border',
   center = null,
 }: {
   circles: MapCircle[]
+  /** Virtual Starter Circle pins, pre-projected near the viewer. */
+  starters?: StarterMarker[]
   interactive?: boolean
   className?: string
   /** [lng, lat] of the viewer (from IP geo) — the map eases here when it arrives. */
@@ -59,15 +79,20 @@ export default function CircleMap({
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const centerRef = useRef(center)
+  const startersRef = useRef(starters)
 
   // Once IP geolocation resolves (after first paint), frame the viewer's area
-  // and their nearest circles.
+  // and their nearest circles (real + Starter).
   useEffect(() => {
     centerRef.current = center
+    startersRef.current = starters
     if (center && mapRef.current) {
-      frameNearest(mapRef.current, center, circles)
+      frameNearest(mapRef.current, center, [
+        ...circles,
+        ...starters.map((s) => ({ latitude: s.lat, longitude: s.lng })),
+      ])
     }
-    // `circles` is stable per map instance (it re-creates the map on change).
+    // `circles`/`starters` are stable per map instance (it re-creates on change).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center])
 
@@ -149,12 +174,37 @@ export default function CircleMap({
         },
       })
 
+      // Virtual Starter Circles — a separate, unclustered violet layer so they read
+      // as distinct from real (amber) circles and never merge into their clusters.
+      const starterFeatures: GeoJSON.Feature<GeoJSON.Point>[] = starters.map((s) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
+        properties: { name: s.name, slug: s.slug },
+      }))
+      map.addSource('starters', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: starterFeatures },
+      })
+      map.addLayer({
+        id: 'starter-point',
+        type: 'circle',
+        source: 'starters',
+        paint: {
+          'circle-color': '#7C5CD6',
+          'circle-radius': 7,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+        },
+      })
+
+      const framePoints = [...circles, ...starters.map((s) => ({ latitude: s.lat, longitude: s.lng }))]
       if (centerRef.current) {
-        // Viewer location already known -> frame them + their nearest circles.
-        frameNearest(map, centerRef.current, circles, 5, 0)
-      } else if (features.length > 0) {
+        // Viewer location already known -> frame them + their nearest points.
+        frameNearest(map, centerRef.current, framePoints, 5, 0)
+      } else if (features.length > 0 || starterFeatures.length > 0) {
         const bounds = new maplibregl.LngLatBounds()
         for (const f of features) bounds.extend(f.geometry.coordinates as [number, number])
+        for (const f of starterFeatures) bounds.extend(f.geometry.coordinates as [number, number])
         map.fitBounds(bounds, { padding: interactive ? 60 : 36, maxZoom: 11, duration: 0 })
       }
 
@@ -191,7 +241,25 @@ export default function CircleMap({
           .addTo(map)
       })
 
-      for (const layer of ['point', 'clusters']) {
+      map.on('click', 'starter-point', (e) => {
+        const f = e.features?.[0]
+        if (!f) return
+        const geom = f.geometry as GeoJSON.Point
+        const props = f.properties ?? {}
+        // Starter name is staff-authored, but escape it anyway — defence in depth,
+        // and the same code path as the user-controlled circle popup above.
+        const name = escapeHtml(String(props.name ?? 'Starter Circle'))
+        const slug = encodeURIComponent(String(props.slug ?? ''))
+        new maplibregl.Popup({ offset: 12, closeButton: false })
+          .setLngLat(geom.coordinates as [number, number])
+          .setHTML(
+            `<a href="/circles/starter/${slug}" style="font-weight:600;color:#5B3FB0;text-decoration:none">${name}</a>` +
+              `<div style="font-size:12px;color:#8a7a66;margin-top:2px">Starter Circle · claim it</div>`,
+          )
+          .addTo(map)
+      })
+
+      for (const layer of ['point', 'starter-point', 'clusters']) {
         map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer' })
         map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = '' })
       }
@@ -201,7 +269,7 @@ export default function CircleMap({
       map.remove()
       mapRef.current = null
     }
-  }, [circles, interactive])
+  }, [circles, starters, interactive])
 
   // Subtle warm filter so the (cool, grayscale) base tiles sit on the cream
   // palette instead of fighting it. Amber pins stay amber.
