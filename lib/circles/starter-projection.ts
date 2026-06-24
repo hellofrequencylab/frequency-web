@@ -14,6 +14,11 @@
 import type { PillarSlug } from '@/lib/pillars'
 import type { CircleTemplate } from './templates'
 
+/** The minimal template fields the projection (and its markers/cards) needs. Kept
+ *  narrow so the client only ships these six fields, not the whole blueprint.
+ *  `CircleTemplate` satisfies it, so server callers can pass templates directly. */
+export type StarterSeed = Pick<CircleTemplate, 'id' | 'slug' | 'name' | 'card' | 'oneLiner' | 'primaryPillar'>
+
 /** A projected virtual Starter Circle for one viewer. The page maps this onto its
  *  own card/marker shapes; nothing here is stored. */
 export interface StarterProjection {
@@ -74,7 +79,7 @@ function offsetWithinRadius(
 }
 
 export interface ProjectInput {
-  templates: CircleTemplate[]
+  templates: StarterSeed[]
   /** The viewer's location to scatter around. */
   viewer: { lat: number; lng: number }
   /** Stable per-viewer seed (e.g. profile id, else a rounded-location string),
