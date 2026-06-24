@@ -17,6 +17,7 @@ import { SpaceContacts } from '@/components/spaces/crm/space-contacts'
 import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail'
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
+import { SpaceCockpitBand } from './space-cockpit-band'
 
 // PER-SPACE CRM BOARD (CRM-STRATEGY §6/§7, ADR-361 P3). The paid, full-width Dashboard a Space runs:
 // its pipeline (per-segment stages + deals) plus its contacts, scoped to this space_id, with the
@@ -124,6 +125,15 @@ export default async function SpaceCrmBoardPage({
       }
       width="wide"
     >
+      {/* RESONANCE COCKPIT BAND (Phase 2 · ADR-383): the verdict line + four Space-scoped health
+          StatCards + the Space who-needs-attention worklist, ABOVE the existing pipeline / funnel /
+          tasks (which stay intact). Its own Suspense so the cockpit reads never block the board, and
+          every read is fail-safe (zeros / empty). Gated by the same canUseCrm check that gates the
+          whole board (entitlement + owner/admin). */}
+      <Suspense fallback={<CockpitSkeleton />}>
+        <SpaceCockpitBand spaceId={space.id} slug={space.slug} />
+      </Suspense>
+
       <ImportContactsForm spaceId={space.id} />
 
       <Suspense fallback={<BoardSkeleton />}>
@@ -234,6 +244,19 @@ function StatsSkeleton() {
         <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
       ))}
     </>
+  )
+}
+
+function CockpitSkeleton() {
+  return (
+    <section className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
+        ))}
+      </div>
+      <div className="h-40 animate-pulse rounded-2xl bg-surface-elevated/50" />
+    </section>
   )
 }
 

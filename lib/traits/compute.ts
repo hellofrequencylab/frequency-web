@@ -194,6 +194,91 @@ export function predictiveInputs(stats: MemberStats, istats: InteractionStats, n
   }
 }
 
+// ── Resonance Health (the one shared dashboard score · ADR-383) ──────────────
+// ONE governed 0-100 number every dashboard altitude shares (platform, Space, person),
+// so they all speak the same language. A weighted rollup of the signals that ALREADY
+// exist in the feature store: how deeply a member engages (engagement_depth), how
+// recently + often (rfm_score), whether they are weekly-active (wam_status), and the
+// predicted churn risk pulling against all of it. PURE + unit-tested; the per-signal
+// "why" (explainability) is Phase 3, so this emits only the number + its tier.
+
+export type ResonanceTier = 'resonant' | 'cooling' | 'at_risk'
+
+/** The inputs to the Resonance Health rollup. Every field is an already-computed trait
+ *  (or a cheap derivation of one), so the score never needs a new data source. */
+export interface ResonanceHealthInputs {
+  engagementDepth: EngagementDepth
+  /** rfm_score in [11, 55] (recency tens + frequency units). */
+  rfmScore: number
+  /** wam_status: at least one verified practice in the trailing 7 days. */
+  weeklyActive: boolean
+  churnRisk: ChurnRisk
+}
+
+// Each band maps to a 0..1 contribution; the weights below sum to 1.
+const DEPTH_POINTS: Record<EngagementDepth, number> = { idle: 0, shallow: 0.34, moderate: 0.67, deep: 1 }
+const CHURN_DRAG: Record<ChurnRisk, number> = { low: 1, medium: 0.5, high: 0 }
+// The weights of the four signals (sum to 1). Engagement depth + churn carry the most;
+// RFM is the recency/frequency tie-breaker; weekly-active is the binary North Star nudge.
+const W_DEPTH = 0.35
+const W_RFM = 0.25
+const W_WAM = 0.1
+const W_CHURN = 0.3
+
+/** Normalize rfm_score (11..55) to 0..1. Out-of-range values clamp, so a malformed trait
+ *  can never push the health above 100 or below 0. */
+function rfmNormalized(rfm: number): number {
+  if (!Number.isFinite(rfm)) return 0
+  const clamped = Math.max(11, Math.min(55, rfm))
+  return (clamped - 11) / (55 - 11)
+}
+
+/**
+ * The Resonance Health score, 0 to 100. PURE + deterministic. A weighted rollup of
+ * engagement depth, RFM, weekly-active status, and (as a drag) predicted churn risk.
+ * Always lands in [0, 100] (every term is clamped), so the dashboard can color it safely.
+ */
+export function resonanceHealth(p: ResonanceHealthInputs): number {
+  const depth = DEPTH_POINTS[p.engagementDepth] ?? 0
+  const rfm = rfmNormalized(p.rfmScore)
+  const wam = p.weeklyActive ? 1 : 0
+  const churn = CHURN_DRAG[p.churnRisk] ?? 0
+  const raw = W_DEPTH * depth + W_RFM * rfm + W_WAM * wam + W_CHURN * churn
+  return Math.max(0, Math.min(100, Math.round(raw * 100)))
+}
+
+/**
+ * Band the Resonance Health number into the dashboard's three-color legend. PURE.
+ * Resonant (green, healthy) at 67+, Cooling (amber, slipping) at 34..66, At risk (red,
+ * needs you) below 34. The thresholds match the StatCard green/amber/red legend.
+ */
+export function resonanceTier(health: number): ResonanceTier {
+  if (!Number.isFinite(health) || health < 34) return 'at_risk'
+  if (health < 67) return 'cooling'
+  return 'resonant'
+}
+
+/** The two Resonance Health traits for one member (the shared dashboard score + tier). */
+export function computeResonanceTraits(p: ResonanceHealthInputs): ComputedTrait[] {
+  const health = resonanceHealth(p)
+  return [
+    { key: 'resonance_health', type: 'number', value: health },
+    { key: 'resonance_tier', type: 'enum', value: resonanceTier(health) },
+  ]
+}
+
+/** Assemble the Resonance Health inputs from the member + interaction stat views + clock
+ *  (the refresh seam). Reuses the existing engagement/RFM/WAM/churn derivations, so the
+ *  health score never drifts from the traits it summarizes. */
+export function resonanceHealthInputs(stats: MemberStats, istats: InteractionStats, now: number): ResonanceHealthInputs {
+  return {
+    engagementDepth: engagementDepth(istats),
+    rfmScore: rfmScore(stats, now),
+    weeklyActive: stats.verifiedPractices7d >= 1,
+    churnRisk: churnRisk(predictiveInputs(stats, istats, now)),
+  }
+}
+
 /** All registry-governed computed traits for one member. */
 export function computeTraits(stats: MemberStats, now: number): ComputedTrait[] {
   return [

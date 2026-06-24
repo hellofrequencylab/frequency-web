@@ -214,6 +214,12 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/scan', label: 'QR scanner', area: 'Focus surfaces' },
   // ── Operator workspace (default NONE — full-width admin) ──
   { route: '/admin', label: 'Admin workspace', area: 'Operator' },
+  // The Resonance cockpit (Phase 2 · ADR-383): the platform CRM dashboard. It lives under
+  // /admin/*, so railFor already returns 'none' (the admin workspace mounts its OWN info rail;
+  // adding it to SCOPED_PREFIXES would be a no-op because the /admin/* branch wins first). This
+  // catalog entry makes the cockpit an explicitly managed operator surface; the rail decision
+  // stays the admin default, exactly like Phase 1's /admin/crm/today.
+  { route: '/admin/crm', label: 'Resonance cockpit', area: 'Operator' },
 ] as const
 
 export type ChromeOverrides = Record<string, Rail>

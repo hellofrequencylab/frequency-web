@@ -373,6 +373,31 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     derivation: 'banded from interaction_days_30 + dwell_minutes_30',
   },
 
+  // ── Resonance Health (the one shared score · Resonance Engine Phase 2 · ADR-383) ──
+  // ONE governed 0-100 health number every dashboard altitude shares, so the platform,
+  // a Space, and a person all speak the same language. A weighted rollup of the existing
+  // computed + predicted traits (engagement_depth + rfm_score + wam_status + churn_risk),
+  // computed PURELY in lib/traits/compute.ts and unit-tested. The per-signal "why" (the
+  // explainability path) is Phase 3; here we emit only the number + its tier. No new data,
+  // no new gate: it reads traits that already exist.
+  {
+    key: 'resonance_health',
+    label: 'Resonance Health',
+    description: 'A single 0 to 100 health score for a member, rolling up engagement depth, RFM, weekly-active status, and predicted churn risk. The one number the dashboard shares across platform, Space, and person.',
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'weighted rollup of engagement_depth + rfm_score + wam_status + churn_risk (lib/traits/compute.ts resonanceHealth)',
+  },
+  {
+    key: 'resonance_tier',
+    label: 'Resonance tier',
+    description: 'The banded Resonance Health: Resonant (green, healthy), Cooling (amber, slipping), or At risk (red, needs you). The legend the dashboard colors by.',
+    kind: 'computed', category: 'engagement', type: 'enum',
+    values: ['resonant', 'cooling', 'at_risk'],
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'banded from resonance_health (lib/traits/compute.ts resonanceTier)',
+  },
+
   // ── Predicted features (the prediction layer · PI.3 / ADR-166) ───────────────
   // Forward-looking inferences from the feature store. Heuristic v1 (rules over the
   // computed traits); a model/Claude-graded path slots in behind the same keys later.

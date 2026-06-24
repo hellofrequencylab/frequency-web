@@ -8,7 +8,9 @@ import {
   computeTraits,
   computeBehavioralTraits,
   computePredictiveTraits,
+  computeResonanceTraits,
   predictiveInputs,
+  resonanceHealthInputs,
   type ComputedTrait,
   type MemberStats,
   type InteractionStats,
@@ -106,11 +108,28 @@ export async function refreshMemberTraits(now: Date = new Date()): Promise<{ mem
       for (const c of computePredictiveTraits(predictiveInputs(stats, istats, nowMs))) {
         upserts.push(toRow(id, c, computedAt))
       }
+      // Resonance Health (ADR-383) — the one shared dashboard score, rolled up from the
+      // engagement/RFM/WAM/churn traits this same member just computed (no extra source).
+      for (const c of computeResonanceTraits(resonanceHealthInputs(stats, istats, nowMs))) {
+        upserts.push(toRow(id, c, computedAt))
+      }
     }
   }
 
   if (upserts.length) {
     await db.from('member_traits').upsert(upserts, { onConflict: 'profile_id,trait_key' })
   }
+
+  // Refresh the dashboard read layer (ADR-383) so the cockpit aggregates reflect tonight's
+  // scores. Fail-safe: a missing matview / RPC (pre-migration) is swallowed, so a deploy
+  // before the migration applies still completes the trait refresh, just with a stale (or
+  // empty) dashboard until the matview exists. CONCURRENTLY so reads never block on it.
+  try {
+    // The wrapper RPC isn't in the generated types yet (ADR-246), so cast for the call.
+    await (db as unknown as { rpc: (fn: string) => Promise<unknown> }).rpc('refresh_member_engagement_scores')
+  } catch {
+    /* dashboard matview absent or refresh failed; the cockpit degrades to its last snapshot. */
+  }
+
   return { members: rows.length, traits: upserts.length }
 }
