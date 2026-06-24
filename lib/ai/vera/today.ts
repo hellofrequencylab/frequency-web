@@ -26,16 +26,21 @@
 // cards propose runs later through the governed confirm-then-execute path
 // (lib/ai/vera/execute.ts), self-guarded + send-gated there.
 
-import type { ChurnRisk, NextBestAction } from '@/lib/traits/compute'
+import type { ChurnRisk, NextBestAction, ScoreConfidence } from '@/lib/traits/compute'
 import {
   playbookForChurnRisk,
   playbookForNextBestAction,
+  effectiveAutonomyTier,
   type Playbook,
+  type AutonomyTier,
 } from '@/lib/playbooks/registry'
 import { withVoice } from '@/lib/ai/voice'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
+import { readBreakerStatus } from '@/lib/playbooks/circuit-breaker'
+import { autoExecutionAllowed } from '@/lib/spaces/entitlements'
+import { getSpaceById } from '@/lib/spaces/store'
 
 /** The HARD cap on Today cards. The cap is sacred (docs/NEXT-GEN-CRM.md): overflow goes
  *  to a "Later" shelf, never onto Today. */
@@ -143,9 +148,16 @@ export interface TodayCard {
   playbookId: string
   /** The playbook's name + autonomy tier (the operator-facing badge). */
   playbookName: string
-  autonomyTier: Playbook['autonomyTier']
+  /** The EFFECTIVE tier after the per-Space autonomy slider (an `auto` playbook reads `suggest`
+   *  when the Space is suggest_only). The UI badges + the execute path honor this, not the raw tier. */
+  autonomyTier: AutonomyTier
   /** The composite score (for ordering + debugging). */
   score: number
+  /** The confidence band behind this card's churn read (drives the confidence chip). */
+  confidence: ScoreConfidence
+  /** The top contributing signals (already plain, in voice), most-decisive first. The "top signals"
+   *  line the card shows beneath "why now". A bare score is never shown (ADR-384). */
+  signals: string[]
 }
 
 export interface TodayResult {
@@ -173,6 +185,42 @@ function contextLabel(c: TodayCandidate): string {
   if (c.churnRisk === 'high') return 'At risk'
   if (c.churnRisk === 'medium') return 'Cooling'
   return 'Steady'
+}
+
+// ── Explainability on the card (Resonance Engine Phase 3 · ADR-384) ──────────────
+// A bare score is never shown. Each card carries the top contributing signals + a confidence band,
+// derived PURELY from the candidate's prediction signals (the card only has the three traits, not
+// the full feature vector, so this is a lightweight read; the full explainChurnRisk lives in
+// lib/traits/compute.ts for the Person view where the inputs are richer).
+
+const NBA_SIGNAL: Record<NextBestAction, string> = {
+  reengage: 'gone quiet lately',
+  activate: 'has not done a first Practice',
+  join_circle: 'not anchored in a Circle',
+  deepen: 'active but sticking to one corner',
+  invite: 'a strong member with room to lead',
+  none: 'steady for now',
+}
+
+/** The top contributing signals for a card, most-decisive first, plain + in voice (no dashes). PURE. */
+export function cardSignals(c: TodayCandidate): string[] {
+  const out: string[] = []
+  if (c.churnRisk === 'high') out.push('about to slip away')
+  else if (c.churnRisk === 'medium') out.push('starting to cool')
+  if (c.nextBestAction !== 'none') out.push(NBA_SIGNAL[c.nextBestAction])
+  if (c.activationPropensity >= 60) out.push('high room to move')
+  else if (c.activationPropensity <= 15 && c.nextBestAction === 'activate') out.push('little early signal')
+  if (out.length === 0) out.push('worth a light touch today')
+  return out.slice(0, 3)
+}
+
+/** The card's confidence band, from how decisive its signals are. PURE. High when churn is high and a
+ *  concrete move exists; low when the signal is thin (steady + low propensity); medium otherwise. */
+export function cardConfidence(c: TodayCandidate): ScoreConfidence {
+  if (c.churnRisk === 'high' && c.nextBestAction !== 'none') return 'high'
+  if (c.churnRisk === 'low' && c.nextBestAction === 'none') return 'low'
+  if (c.nextBestAction === 'activate' && c.activationPropensity <= 15) return 'low'
+  return 'medium'
 }
 
 /** Deterministic, in-voice fallback lines (used when AI is off / over budget). */
@@ -283,9 +331,28 @@ export async function buildTodayCards(opts: { spaceId?: string | null } = {}): P
     const ranked = rankTodayCandidates(candidates)
     if (ranked.today.length === 0) return { cards: [], laterCount: ranked.later.length }
 
+    // 2b. Circuit breaker + autonomy (Phase 3 · ADR-384). A PAUSED playbook never produces a card;
+    //     a paused candidate spills to the Later count (still owed, just suppressed for safety). On a
+    //     DEGRADED breaker read, fail-CLOSED for outbound: drop a paused-or-unknown outbound card; an
+    //     in-product `auto` card may proceed. The autonomy slider (fail-closed to suggest_only) then
+    //     decides the EFFECTIVE tier the cards carry.
+    const breaker = await readBreakerStatus({ spaceId: opts.spaceId })
+    const autoAllowed = opts.spaceId ? autoExecutionAllowed(await getSpaceById(opts.spaceId)) : false
+    const survivors: RankedCandidate[] = []
+    let suppressed = 0
+    for (const c of ranked.today) {
+      const isPaused = breaker.degraded
+        ? c.playbook.autonomyTier !== 'auto' // degraded: suppress outbound, allow in-product auto
+        : breaker.paused.has(c.playbook.id)
+      if (isPaused) suppressed += 1
+      else survivors.push(c)
+    }
+    const gated: RankedToday = { today: survivors, later: ranked.later }
+    if (survivors.length === 0) return { cards: [], laterCount: ranked.later.length + suppressed }
+
     // 3. Resolve each top candidate to a CRM contact, scoped. A member without a contact
     //    row (no email match) is skipped fail-closed (no card we cannot act on).
-    const topProfileIds = ranked.today.map((c) => c.profileId)
+    const topProfileIds = survivors.map((c) => c.profileId)
     const contactQuery = admin
       .from('contacts')
       .select('id, profile_id, display_name, email')
@@ -301,21 +368,28 @@ export async function buildTodayCards(opts: { spaceId?: string | null } = {}): P
         .eq('subject_kind', 'contact')
       const allowed = new Set(((spaceContactRows ?? []) as { subject_id: string }[]).map((r) => r.subject_id))
       // When a Space has no scoped contacts yet, there is nothing to show (fail-closed).
-      if (allowed.size === 0) return { cards: [], laterCount: ranked.later.length }
+      if (allowed.size === 0) return { cards: [], laterCount: ranked.later.length + suppressed }
       const { data: contactData } = await contactQuery
       const rows = ((contactData ?? []) as ContactRow[]).filter((r) => allowed.has(r.id))
-      return assembleCards(ranked, rows)
+      return assembleCards(gated, rows, autoAllowed, suppressed)
     }
     const { data: contactData, error: contactErr } = await contactQuery
     if (contactErr) return EMPTY
-    return assembleCards(ranked, (contactData ?? []) as ContactRow[])
+    return assembleCards(gated, (contactData ?? []) as ContactRow[], autoAllowed, suppressed)
   } catch {
     return EMPTY
   }
 }
 
-/** Draft + shape the cards from the ranked candidates + their resolved contacts. */
-async function assembleCards(ranked: RankedToday, contactRows: ContactRow[]): Promise<TodayResult> {
+/** Draft + shape the cards from the ranked candidates + their resolved contacts. `autoAllowed` is the
+ *  per-Space autonomy gate (false = suggest_only default), which sets each card's EFFECTIVE tier;
+ *  `suppressedCount` is how many cards the circuit breaker paused (they roll into the Later count). */
+async function assembleCards(
+  ranked: RankedToday,
+  contactRows: ContactRow[],
+  autoAllowed: boolean,
+  suppressedCount: number,
+): Promise<TodayResult> {
   const contactByProfile = new Map<string, ContactRow>()
   for (const r of contactRows) {
     if (r.profile_id && !contactByProfile.has(r.profile_id)) contactByProfile.set(r.profile_id, r)
@@ -336,15 +410,18 @@ async function assembleCards(ranked: RankedToday, contactRows: ContactRow[]): Pr
         actionDraft: lines.actionDraft,
         playbookId: c.playbook.id,
         playbookName: c.playbook.name,
-        autonomyTier: c.playbook.autonomyTier,
+        // The EFFECTIVE tier after the per-Space autonomy slider (auto -> suggest when suggest_only).
+        autonomyTier: effectiveAutonomyTier(c.playbook.autonomyTier, autoAllowed),
         score: c.score,
+        confidence: cardConfidence(c),
+        signals: cardSignals(c),
       }
       return card
     }),
   )
 
   const cards = drafted.filter((c): c is TodayCard => c !== null)
-  // Cards we could not resolve to a contact roll into the Later count (still owed).
+  // Cards we could not resolve to a contact, plus the breaker-suppressed ones, roll into Later (owed).
   const dropped = ranked.today.length - cards.length
-  return { cards, laterCount: ranked.later.length + dropped }
+  return { cards, laterCount: ranked.later.length + dropped + suppressedCount }
 }

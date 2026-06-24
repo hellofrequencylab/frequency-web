@@ -19,6 +19,7 @@ import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { getPlaybook } from '@/lib/playbooks/registry'
 import { recordPlaybookRun, type PlaybookSubjectKind } from '@/lib/playbooks/runs'
 import { recordContactInteraction } from '@/lib/crm/interactions'
+import { isPlaybookPaused } from '@/lib/playbooks/circuit-breaker'
 
 export interface TodayActionResult {
   ok: boolean
@@ -70,6 +71,20 @@ export async function runPlaybookAction(input: {
   if (!playbook) return { ok: false, error: 'That playbook is not in the registry.' }
   const primary = playbook.actions[0]
   if (!primary) return { ok: false, error: 'This playbook has nothing to run.' }
+
+  // Circuit breaker (Phase 3 · ADR-384): a PAUSED playbook never executes, even on an explicit tap.
+  // FAIL-CLOSED for outbound (isPlaybookPaused suppresses an outbound playbook on a degraded read).
+  if (await isPlaybookPaused(input.playbookId)) {
+    await recordPlaybookRun({
+      playbookId: input.playbookId,
+      subjectKind: 'contact' as PlaybookSubjectKind,
+      subjectId: input.contactId,
+      actorProfileId: profileId,
+      status: 'failed',
+      outcome: 'paused by circuit breaker',
+    })
+    return { ok: false, error: 'This playbook is paused for now. Too many people have waved it off lately.' }
+  }
 
   const args = argsForTool(primary.tool, input)
   if (!args) return { ok: false, error: 'This card is missing what that action needs.' }

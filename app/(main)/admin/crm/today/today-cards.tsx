@@ -14,11 +14,21 @@ import { runPlaybookAction, dismissPlaybookCard } from './actions'
 // Semantic tokens only (no hardcoded hex); copy in voice (no em or en dashes).
 
 // The autonomy badge: a quiet label so the operator knows what a Do-it will do. `auto` is
-// in-product + reversible; `suggest` drafts an outbound message they approve.
+// in-product + reversible; `suggest` drafts an outbound message they approve. The tier shown is the
+// EFFECTIVE tier after the per-Space autonomy slider (an `auto` playbook reads `suggest` when the
+// Space is suggest_only, Phase 3 · ADR-384).
 const TIER_BADGE: Record<TodayCard['autonomyTier'], { label: string; cls: string }> = {
   auto: { label: 'In-product, reversible', cls: 'bg-success/10 text-success' },
   suggest: { label: 'You approve before it sends', cls: 'bg-primary/10 text-primary-strong' },
   never_auto: { label: 'Needs an explicit confirm', cls: 'bg-warning/10 text-warning' },
+}
+
+// The confidence chip (Phase 3 · ADR-384): how sure the model is about this card. A bare score is
+// never shown; the chip + the top-signals line carry the "why". Plain words, no dashes.
+const CONFIDENCE_CHIP: Record<TodayCard['confidence'], { label: string; cls: string }> = {
+  high: { label: 'High confidence', cls: 'bg-success/10 text-success' },
+  medium: { label: 'Worth a look', cls: 'bg-primary/10 text-primary-strong' },
+  low: { label: 'Early read', cls: 'bg-surface-elevated text-subtle' },
 }
 
 function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string) => void }) {
@@ -30,6 +40,7 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
 
   const isOutbound = card.autonomyTier === 'suggest'
   const badge = TIER_BADGE[card.autonomyTier]
+  const chip = CONFIDENCE_CHIP[card.confidence]
 
   const doIt = () =>
     start(async () => {
@@ -57,10 +68,19 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="text-sm font-bold text-text">{card.name}</span>
         <span className="text-xs text-subtle">{card.context}</span>
-        <span className={`ml-auto rounded-full px-2 py-0.5 text-2xs font-medium ${badge.cls}`}>{badge.label}</span>
+        <span className={`ml-auto rounded-full px-2 py-0.5 text-2xs font-medium ${chip.cls}`}>{chip.label}</span>
+        <span className={`rounded-full px-2 py-0.5 text-2xs font-medium ${badge.cls}`}>{badge.label}</span>
       </div>
 
       <p className="mt-2 text-sm text-muted">{card.whyNow}</p>
+
+      {/* The "top signals" line (Phase 3 · ADR-384): the drivers behind the read, so the operator
+          sees WHY, never a bare score. */}
+      {card.signals.length > 0 && (
+        <p className="mt-1 text-xs text-subtle">
+          <span className="font-medium">Top signals:</span> {card.signals.join(' · ')}
+        </p>
+      )}
       <p className="mt-1 text-sm font-medium text-text">{card.actionDraft}</p>
 
       {tweaking && isOutbound && (

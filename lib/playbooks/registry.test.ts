@@ -5,6 +5,8 @@ import {
   playbookForChurnRisk,
   playbookForNextBestAction,
   isFullyInProduct,
+  effectiveAutonomyTier,
+  willAutoExecute,
 } from './registry'
 import type { ChurnRisk, NextBestAction } from '@/lib/traits/compute'
 
@@ -80,5 +82,32 @@ describe('playbook registry', () => {
   it('getPlaybook resolves known ids only', () => {
     expect(getPlaybook('churn_high_streak_save')?.autonomyTier).toBe('auto')
     expect(getPlaybook('not_a_real_playbook')).toBeUndefined()
+  })
+
+  // ── The per-Space autonomy slider downgrade (Phase 3 · ADR-384) ─────────────
+  describe('effectiveAutonomyTier (the autonomy-slider downgrade)', () => {
+    it('downgrades an auto playbook to suggest when the Space does NOT allow auto (the default)', () => {
+      expect(effectiveAutonomyTier('auto', false)).toBe('suggest')
+    })
+
+    it('keeps an auto playbook auto only when the Space allows auto (safe_auto)', () => {
+      expect(effectiveAutonomyTier('auto', true)).toBe('auto')
+    })
+
+    it('never raises suggest or never_auto, regardless of the slider', () => {
+      expect(effectiveAutonomyTier('suggest', true)).toBe('suggest')
+      expect(effectiveAutonomyTier('suggest', false)).toBe('suggest')
+      expect(effectiveAutonomyTier('never_auto', true)).toBe('never_auto')
+      expect(effectiveAutonomyTier('never_auto', false)).toBe('never_auto')
+    })
+
+    it('willAutoExecute: only the auto streak save, only in a safe_auto Space', () => {
+      const streakSave = getPlaybook('churn_high_streak_save')!
+      const winback = getPlaybook('reengage_winback')!
+      expect(willAutoExecute(streakSave, true)).toBe(true)
+      expect(willAutoExecute(streakSave, false)).toBe(false) // suggest_only default
+      expect(willAutoExecute(winback, true)).toBe(false) // outbound is never auto
+      expect(willAutoExecute(winback, false)).toBe(false)
+    })
   })
 })

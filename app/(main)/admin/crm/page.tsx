@@ -15,6 +15,7 @@ import { Worklist } from '@/components/dashboard/worklist'
 import { LifecycleFunnelPanel } from '@/components/dashboard/lifecycle-funnel'
 import { RisingMembers } from './rising-members'
 import { ToneStat } from './tone-stat'
+import { runChurnBacktest } from '@/lib/playbooks/backtest'
 
 // ALTITUDE 1 - the Platform cockpit (Resonance Engine Phase 2 · ADR-383 ·
 // docs/NEXT-GEN-CRM.md "The brilliant admin dashboard"). The whole platform in one screen:
@@ -74,6 +75,14 @@ export default async function PlatformCockpitPage() {
       <AdminSection title="About to resonate" description="Members with room to move who are not yet resonant. The reach-out that converts.">
         <Suspense fallback={<PanelSkeleton />}>
           <RisingSection />
+        </Suspense>
+      </AdminSection>
+
+      {/* Score trustworthiness (Phase 3 · ADR-384): the backtest of predicted churn vs actual
+          dormancy, so an operator knows whether to trust the scores. Its own boundary; fail-safe. */}
+      <AdminSection title="Can you trust the scores" description="A backtest of the churn risk calls against what actually happened.">
+        <Suspense fallback={<PanelSkeleton />}>
+          <TrustSection />
         </Suspense>
       </AdminSection>
     </AdminTemplate>
@@ -141,6 +150,36 @@ async function FunnelSection({ funnel }: { funnel: import('@/lib/dashboard/score
 async function RisingSection() {
   const rising = await getRisingMembers()
   return <RisingMembers members={rising} />
+}
+
+/** The score-trustworthiness panel: the backtest verdict + the per-band calibration. Fail-safe (the
+ *  read returns the honest "not enough history" report on any error). */
+async function TrustSection() {
+  const report = await runChurnBacktest()
+  if (!report.trustworthy) {
+    return (
+      <EmptyState
+        variant="first-use"
+        title="Not enough history yet"
+        description="Once a few cycles of predictions have something to compare against, the score trustworthiness shows here."
+      />
+    )
+  }
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-text">{report.verdict}</p>
+      <div className="grid grid-cols-3 gap-3">
+        {report.calibration.map((c) => (
+          <StatCard
+            key={c.band}
+            label={`Predicted ${c.band}`}
+            value={`${Math.round(c.actualDormantRate * 100)}%`}
+            detail={`went dormant · ${c.count} ${c.count === 1 ? 'member' : 'members'}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function PanelSkeleton() {

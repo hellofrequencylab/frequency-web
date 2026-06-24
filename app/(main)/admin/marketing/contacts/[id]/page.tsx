@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { resolvePerson } from '@/lib/crm/person'
 import { getMemberScores } from '@/lib/dashboard/scores'
-import { draftContextLine } from '@/lib/dashboard/person-band'
+import { draftContextLine, explainMemberScores } from '@/lib/dashboard/person-band'
 import { tierLabel, healthTone } from '@/lib/dashboard/verdict'
 import { listInteractionsForPerson, type InteractionChannel } from '@/lib/crm/interactions'
 import { buildTimeline } from '@/lib/crm/timeline'
@@ -102,9 +102,11 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
   // ALTITUDE 3 - the Person view (ADR-383): the shared scores + a "where this person is" band.
   // Both reads are fail-safe (nulls / a deterministic line on any error), so they never break the
   // page. Scores read from the dashboard matview; the band is drafted via withVoice (deterministic
-  // fallback). The per-signal "why" (explainability) is Phase 3, so the bare scores show here only.
+  // fallback). Phase 3 (ADR-384) adds the "why": a confidence chip + a top-signals line, so a bare
+  // score is never shown.
   const scores = await getMemberScores(contact.profileId)
   const hasScores = scores.resonanceTier != null || scores.lifecycleStage != null
+  const readout = explainMemberScores(scores)
   const contextLine = await draftContextLine(
     (member?.displayName || contact.displayName || contact.email.split('@')[0] || 'This person').trim(),
     scores,
@@ -138,14 +140,32 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
         </div>
       }
     >
-      {/* Context band + score row (Altitude 3, ADR-383): the "where this person is" line, then the
-          shared scores as StatCards. The per-signal "why" is Phase 3; the bare scores show here. */}
+      {/* Context band + score row (Altitude 3, ADR-383). Phase 3 (ADR-384) adds the confidence chip
+          + the "top signals" line, so a bare score is never shown. */}
       <section>
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-subtle">
             <Sparkles className="h-3.5 w-3.5" /> Where this person is
           </p>
           <p className="mt-1.5 text-sm text-text">{contextLine}</p>
+          {hasScores && (
+            <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-subtle">
+              <span
+                className={`rounded-full px-2 py-0.5 text-2xs font-medium ${
+                  readout.confidence === 'high'
+                    ? 'bg-success/10 text-success'
+                    : readout.confidence === 'medium'
+                      ? 'bg-primary/10 text-primary-strong'
+                      : 'bg-surface-elevated text-subtle'
+                }`}
+              >
+                {readout.confidence === 'high' ? 'High confidence' : readout.confidence === 'medium' ? 'Worth a look' : 'Early read'}
+              </span>
+              <span>
+                <span className="font-medium">Top signals:</span> {readout.signals.join(' · ')}
+              </span>
+            </p>
+          )}
         </div>
 
         {hasScores && (
