@@ -49,8 +49,8 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
       {
         heading: 'People',
         items: [
-          { label: 'Members', href: '/admin/members' },
-          { label: 'Connections', href: '/admin/connections' },
+          { label: 'Member Roster', href: '/admin/members' },
+          { label: 'Connection Settings', href: '/admin/connections' },
           { label: 'Personas', href: '/admin/personas' },
           { label: 'Segments', href: '/admin/segments' },
         ],
@@ -108,12 +108,6 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
           { label: 'Nurture', href: '/admin/marketing/nurture' },
           { label: 'Analytics', href: '/admin/marketing/analytics' },
           { label: 'Beta', href: '/admin/marketing/beta' },
-        ],
-      },
-      {
-        heading: 'Pipeline',
-        items: [
-          { label: 'Contacts', href: '/admin/marketing/contacts' },
           { label: 'Referrals', href: '/admin/referrals' },
         ],
       },
@@ -133,14 +127,17 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
         items: [
           { label: 'Cockpit', href: '/admin/crm' },
           { label: 'Today', href: '/admin/crm/today' },
-          { label: 'Members', href: '/admin/crm/members' },
+          { label: 'Member Intelligence', href: '/admin/crm/members' },
+          { label: 'Playbooks', href: '/admin/crm/playbooks' },
+          { label: 'Resonance Graph', href: '/admin/crm/graph' },
         ],
       },
       {
         heading: 'Records',
         items: [
-          { label: 'Contacts', href: '/admin/marketing/contacts' },
-          { label: 'Pipeline', href: '/admin/crm/contacts' },
+          { label: 'Contacts', href: '/admin/crm/contacts' },
+          { label: 'Deals', href: '/admin/crm/deals' },
+          { label: 'All Contacts', href: '/admin/marketing/contacts' },
         ],
       },
     ],

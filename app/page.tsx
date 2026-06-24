@@ -2,13 +2,12 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Check, CalendarDays } from 'lucide-react'
+import { ArrowRight, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import {
   Marquee,
-  BetaCTA,
   Button,
   Section,
   SectionHeading,
@@ -16,9 +15,10 @@ import {
   PullQuote,
   Stat,
   Steps,
-  ZigZag,
+  Card,
   Faq,
 } from '@/components/marketing/marketing-ui'
+import { Illustration, type IllustrationName } from '@/components/marketing/illustrations'
 import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
@@ -34,6 +34,13 @@ import { getReferrer } from '@/lib/qr/referral'
 import type { LiveEvent } from '@/components/marketing/blocks'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
+
+// The home is philosophy-led and builder-first: it sells a movement and a role,
+// not "Circles near you." There is no local inventory yet, so the sequence runs
+// manifesto → the three roles (Build / Practice / Spread, the same decision as
+// /start) → how it works → live proof (honest below the SOCIAL_PROOF_FLOOR) →
+// an honest "we are early" beat → a short FAQ → one CTA into /start. The single
+// primary action is /start; "Join the Beta" is the secondary path.
 
 // SEO title + description are operator-editable through the ADR-180 page-content
 // system (edited at /pages/home; the coded strings below are the fallback). The
@@ -70,12 +77,46 @@ function hasRole(role: string | null | undefined): role is CommunityRole {
   return !!role && role in ROLE_RANK
 }
 
-// Plain-text mirror of the visible "Is this for you?" FAQ, emitted as FAQPage
+// The three roles — the same decision a visitor makes at /start. Each card carries
+// its spot illustration and routes to its landing (and its first action there).
+type HomeRole = {
+  illustration: IllustrationName
+  label: string
+  blurb: string
+  cta: string
+  href: string
+}
+
+const HOME_ROLES: HomeRole[] = [
+  {
+    illustration: 'lead',
+    label: 'Build',
+    blurb: 'Be the reason your people have somewhere to go. Host one Circle and we hand you the format.',
+    cta: 'Start one Circle',
+    href: '/build',
+  },
+  {
+    illustration: 'practice',
+    label: 'Practice',
+    blurb: 'Start where you are, today. Practices, Journeys, and the Mindless timer, all on your own.',
+    cta: 'Do one practice today',
+    href: '/practice',
+  },
+  {
+    illustration: 'spread',
+    label: 'Spread',
+    blurb: 'Take a small role in building community around you. Bring one person, host once, or share the idea.',
+    cta: 'Bring one person',
+    href: '/spread',
+  },
+]
+
+// Plain-text mirror of the visible "Honest answers" FAQ, emitted as FAQPage
 // JSON-LD (AEO: lets search + AI engines surface and cite the answers).
 const HOME_FAQ = [
   {
-    q: 'Do I have to be outgoing?',
-    a: 'Not at all. Circles are deliberately small, a handful of regulars rather than a crowd, so there is no pressure to perform. You do not have to network or post. The standing time and the small group do the work, and familiarity quietly turns into belonging.',
+    q: 'Do I have to be a leader to start?',
+    a: 'No. There are three ways in. Build means you set out the chairs for one Circle, and we hand you the format. Practice means you start where you are today, on your own. Spread means you bring one person or host once. Pick the one that fits, and you can change your mind later.',
   },
   {
     q: 'What does it cost?',
@@ -86,12 +127,12 @@ const HOME_FAQ = [
     a: 'None. Frequency is leaderful, not leader-dependent: it is built to outlast any one person, with no single figure to follow and no upsell funnel. Memberships fund the physical spaces rather than extract from members.',
   },
   {
-    q: 'I am not in North County San Diego.',
-    a: 'That is fine, the community starts anywhere. The first Lab is taking root in North County San Diego, but a Circle only needs a few people and a standing time, so you can start one where you are. We map where people gather so we know which city to seed next.',
+    q: 'What if there are no Circles near me yet?',
+    a: 'That is most places right now, and that is the point. We are recruiting the people who start them. A Circle only needs a few people and a standing time, so you can start one where you are. The first Lab is taking root in North County San Diego, and the next cities follow the people who show up.',
   },
   {
     q: 'What if it is not for me?',
-    a: 'Then you leave anytime, no questions and nothing lost. The beta is free, there is no card on file, and nothing locks you in. The only thing you risk by waiting is missing the founding cohort.',
+    a: 'Then you leave anytime, no questions and nothing lost. The beta is free, there is no card on file, and nothing locks you in.',
   },
 ]
 
@@ -153,9 +194,10 @@ export default async function RootPage({
   )
 }
 
-// Splash narrative — Place → People → Path (ADR-078):
-//   the Lab leads as the emblem, community carries the "start anywhere" on-ramp,
-//   and the Quest closes the feature arc before the CTA.
+// Splash narrative — philosophy first, then the role:
+//   manifesto (the third place is gone; you can be the reason it comes back) →
+//   the three roles (Build / Practice / Spread) → how it works → live proof →
+//   the honest "we are early" beat → the short FAQ → one CTA into /start.
 function Splash({
   referrer,
   discoverMenu,
@@ -178,19 +220,22 @@ function Splash({
         menuTimings={menuTimings}
       />
 
-      {/* ── PLACE · Hero — the Lab is the emblem ───────────────────────────── */}
+      {/* ── Manifesto hero — the third place is gone; you can be the reason it
+          comes back. One primary CTA into /start. ─────────────────────────── */}
       <PhotoHero
         minHeight="screen"
-        image="/images/site/lab-thermal.jpg"
-        alt="The cedar sauna and thermal circuit inside The Lab, glowing in warm amber light"
+        image="/images/site/community-1.jpg"
+        alt="A small circle of neighbors talking and laughing together on a sunny lawn"
         focal="object-center"
-        eyebrow="Not home. Not work."
+        eyebrow="Not home. Not work. The third place."
         title={
           <>
-            We&apos;re rebuilding the <span className="text-primary">third place.</span>
+            The place we all met
+            <br />
+            is <span className="text-primary">gone.</span> You can bring it back.
           </>
         }
-        subtitle="A real room you can walk into: sauna, cold plunge, warm light, and people who notice when you're gone. It's taking root in North County San Diego. Wherever you are, you can start your circle today."
+        subtitle="The café, the square, the gathering ground all quietly closed, and a generation got lonely. Frequency hands ordinary people the tools to rebuild community where they already live. Pick how you start."
         footer={
           <>
             <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
@@ -204,7 +249,7 @@ function Splash({
                 Already a member? Sign in
               </Link>
             </p>
-            <ScrollCue label="Why we're building it" />
+            <ScrollCue label="Three ways to start" />
           </>
         }
       >
@@ -229,106 +274,106 @@ function Splash({
               </span>
             </div>
           )}
-          <Button href={BETA_CTA_HREF}>
-            {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
-          </Button>
+          <div className="flex flex-col items-center gap-3 sm:flex-row">
+            <Button href="/start">
+              Find your way in <ArrowRight className="w-5 h-5" aria-hidden />
+            </Button>
+            <Link
+              href={BETA_CTA_HREF}
+              className="text-sm font-semibold text-white/70 underline-offset-4 hover:text-white hover:underline"
+            >
+              {BETA_CTA_LABEL}
+            </Link>
+          </div>
         </div>
       </PhotoHero>
 
-      {/* ── The ache · why it's needed (compressed) ────────────────────────── */}
-      <ZigZag
-        img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
-        alt="A handwritten 'you are beautiful' card tucked into an aloe plant beside people resting on the grass"
-        eyebrow="It's not you"
-        title={
-          <>
-            The places that held us
-            <br />
-            are <span className="text-primary">vanishing.</span>
-          </>
-        }
-        imgAspect="portrait"
-        tone="surface"
-      >
-        <p>
-          Most of a generation reports feeling lonely, not for lack of people, but for lack of{' '}
-          <em>places</em>. The corner café, the town square, the gathering ground all quietly closed.
-        </p>
-        <p>
-          We traded them for feeds and ended up surrounded yet unseen. You&apos;re not broken. The
-          third place is. <span className="font-semibold text-text">So we&apos;re building it back.</span>
-        </p>
-      </ZigZag>
+      {/* ── The case · why it falls to ordinary people ─────────────────────── */}
+      <Section tone="canvas">
+        <Reveal>
+          <SectionHeading
+            eyebrow="It's not you"
+            title={
+              <>
+                The third place is broken.
+                <br />
+                <span className="text-primary">Somebody</span> has to start the next one.
+              </>
+            }
+            kicker="It does not take a big personality. It takes a standing time and a door someone holds open."
+          />
+        </Reveal>
+        <Reveal delay={100} className="space-y-5 text-lg text-muted leading-relaxed">
+          <p>
+            Most of a generation reports feeling lonely, not for lack of people, but for lack of{' '}
+            <em>places</em>. The corner café, the town square, the gathering ground all quietly
+            closed, and we traded them for feeds. You are not broken. The third place is.
+          </p>
+          <p>
+            <span className="font-semibold text-text">
+              No company is going to hand the third place back. People rebuild it, one Circle at a
+              time.
+            </span>{' '}
+            Frequency is the toolkit for the people who decide to be one of them: the format, the
+            rails, the backup, and a real room to grow into.
+          </p>
+        </Reveal>
+      </Section>
 
-      <PullQuote tone="canvas" cite="The wedge, in one line">
+      <PullQuote tone="surface" cite="The wedge, in one line">
         Seen, not followed.
         <br />
         <span className="text-primary">Missed,</span> not muted.
       </PullQuote>
 
-      {/* ── PLACE · The Lab — the emblem, expanded ─────────────────────────── */}
-      <ZigZag
-        img="/images/site/lab-pool.jpg"
-        alt="The cold plunge pool at The Lab, still water under low amber light"
-        eyebrow="The third place, with a front door"
-        title={
-          <>
-            A room <span className="text-primary">built to be felt.</span>
-          </>
-        }
-        kicker="Heat, then cold, then quiet, then connection."
-        tone="surface"
-        reverse
-      >
-        <p>
-          Dark wood, warm light, steam and greenery, engineered for your nervous system. Movement
-          studios, a thermal circuit, a cold pool, a connection bar, an events floor. Move, sweat,
-          plunge, cool down, and stay for the people.
+      {/* ── The three roles — Build / Practice / Spread, the /start decision ── */}
+      <Section tone="canvas">
+        <Reveal>
+          <SectionHeading
+            eyebrow="Pick your way in"
+            title={
+              <>
+                Three ways to <span className="text-primary">be one of them.</span>
+              </>
+            }
+            kicker="Builders first. Pick the role that fits you, and we will point you at your first move."
+          />
+        </Reveal>
+        <Reveal delay={100}>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {HOME_ROLES.map((role) => (
+              <Card key={role.label} tone="feature" className="flex flex-col text-center">
+                <div className="mb-5 flex h-28 items-center justify-center">
+                  <Illustration name={role.illustration} className="h-full" />
+                </div>
+                <h3 className="mb-2 font-display uppercase text-2xl text-text">{role.label}</h3>
+                <p className="mb-6 text-base leading-relaxed text-muted">{role.blurb}</p>
+                <div className="mt-auto">
+                  <Button href={role.href} size="sm">
+                    {role.cta} <ArrowRight className="h-4 w-4" aria-hidden />
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </Reveal>
+        <p className="mt-10 text-center text-sm text-subtle">
+          Not sure yet? Any door works.{' '}
+          <Link href="/start" className="font-semibold text-primary-strong hover:underline">
+            Help me pick
+          </Link>
+          .
         </p>
-        <p>
-          The first Lab is taking root in {FOUNDING_PLACE}. The next ones follow the people who show
-          up.
-        </p>
-        <Link
-          href="/the-lab"
-          className="mt-1 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline"
-        >
-          Step inside the Lab <ArrowRight className="h-4 w-4" aria-hidden />
-        </Link>
-      </ZigZag>
+      </Section>
 
-      {/* ── PEOPLE · Community — your people, start anywhere ────────────────── */}
-      <ZigZag
-        img="/images/site/community-1.jpg"
-        alt="A small circle of neighbors talking and laughing together on a sunny lawn"
-        eyebrow="Your people, near you"
-        title={
-          <>
-            It starts with <span className="text-primary">people.</span>
-          </>
-        }
-        tone="canvas"
-      >
-        <p>
-          Before there&apos;s a room, there&apos;s a Circle: a small standing group around something
-          you love, a run, a supper, a sauna night, a side project.
-        </p>
-        <p>
-          <span className="font-semibold text-text">Join one near you, or start one tonight,
-          anywhere.</span>{' '}
-          Real plans, real faces, off the feed. Circles cluster into neighborhoods and spread city by
-          city, and where enough people gather, the next Lab gets a reason to open.
-        </p>
-      </ZigZag>
-
-      {/* ── How you join · two words and you're in ─────────────────────────── */}
+      {/* ── How it works · three plain steps ───────────────────────────────── */}
       <Section tone="surface">
         <Reveal>
           <SectionHeading
-            eyebrow="How you join"
+            eyebrow="How it works"
             title={
               <>
-                Two words and <span className="text-primary">you&apos;re in.</span>
+                A standing time, a small group, and <span className="text-primary">show up.</span>
               </>
             }
             kicker="No application. No audition. No performance."
@@ -338,23 +383,23 @@ function Splash({
           <Steps
             steps={[
               {
-                title: 'Pick what you love',
-                body: 'Surfing, sound baths, supper clubs, strength training. Choose the interest that’s yours. That’s word one.',
+                title: 'Pick a Circle',
+                body: 'A small standing group around something you love, a run, a supper, a sauna night, a side project. Join one near you, or start one where you are.',
               },
               {
-                title: 'Join a Circle',
-                body: 'A small standing group around it, near you. Drop in on the next gathering. That’s word two, and that’s belonging.',
+                title: 'Set the rhythm',
+                body: 'Same time, same group, week after week. We hand builders the format and the first-night script, so a group lasts past week three.',
               },
               {
                 title: 'Show up',
-                body: 'Come back. Your people notice, the Quest rewards it, and you’re missed when you’re gone.',
+                body: 'Come back. Your people notice, the Quest rewards the real stuff, and you are missed when you are gone.',
               },
             ]}
           />
         </Reveal>
       </Section>
 
-      {/* ── Proof · Moonlight Beach, the origin as evidence ────────────────── */}
+      {/* ── It already happened once · Moonlight Beach as evidence ──────────── */}
       <section className="relative bg-slat overflow-hidden">
         <div className="light-strip absolute inset-x-0 top-0 z-20" />
         <Parallax speed={-0.18} className="absolute inset-0">
@@ -389,12 +434,12 @@ function Splash({
             <Reveal as="div" delay={100} className="lg:col-span-7 lg:col-start-6">
               <div className="space-y-5 text-lg sm:text-xl text-white/85 leading-relaxed">
                 <p>
-                  We started gathering on the cliffs at Moonlight Beach to meditate, every single
-                  morning. We kept showing up for more than 500 days straight.
+                  A few people started gathering on the cliffs at Moonlight Beach to meditate, every
+                  single morning. They kept showing up for more than 500 days straight.
                 </p>
                 <p className="text-white/70">
                   Over a thousand people came through. No app, no agenda, just a standing time and a
-                  place to be. It proved the hunger is real, and that it can be answered.
+                  place to be. It proved the hunger is real, and that ordinary people can answer it.
                 </p>
               </div>
               <Link
@@ -433,126 +478,99 @@ function Splash({
         <div className="light-strip absolute inset-x-0 bottom-0 z-20" />
       </section>
 
-      {/* ── Built together · the flywheel + pay-it-forward ─────────────────── */}
-      <ZigZag
-        img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
-        alt="Dozens of neighbors practicing yoga together on a sunlit lawn between palm trees"
-        eyebrow="Built together"
-        title={
-          <>
-            It grows on <span className="text-primary">its own.</span>
-          </>
-        }
-        kicker="Leaderful, never leader-dependent."
-        tone="surface"
-        reverse
-      >
-        <p>
-          No guru, no franchise. Leaders rise from the people who simply keep showing up. Circles fill
-          and split, neighborhoods multiply, and where enough people gather in one place, the next Lab
-          gets a reason to open.
-        </p>
-        <p>
-          Membership keeps the rooms open, and those who can give more quietly hold the door for those
-          who can&apos;t. Belonging shouldn&apos;t depend on what you can afford.
-        </p>
-      </ZigZag>
-
-      <PullQuote tone="canvas" cite="The rule we won't trade">
-        Circulation, <span className="text-primary">not exclusion.</span>
-      </PullQuote>
-
-      {/* ── The exhale · what belonging here feels like ────────────────────── */}
-      <ZigZag
-        img="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
-        alt="People dancing together with arms raised at golden hour, faces lit and joyful"
-        eyebrow="The exhale"
-        title={
-          <>
-            What it feels like to be <span className="text-primary">known.</span>
-          </>
-        }
-        tone="surface"
-        imgAspect="portrait"
-      >
-        <p>
-          A standing time. A handful of faces that light up when you arrive. A room of settled nervous
-          systems that settles yours, too.
-        </p>
-        <p>You don&apos;t have to perform. You just have to show up.</p>
-      </ZigZag>
-
       {/* ── Live proof (counts · events · posts) — streamed so it never blocks the
-          hero's first byte (PAGE-FRAMEWORK §5). ───── */}
+          hero's first byte (PAGE-FRAMEWORK §5). Honest below the floor. ───── */}
       <Suspense fallback={<LiveProofSkeleton />}>
         <LiveProof />
       </Suspense>
 
-      {/* ── PATH · The Quest — the last feature, the reason you come back ───── */}
+      {/* ── It grows on its own · leaderful, pay-it-forward ─────────────────── */}
+      <Section tone="canvas">
+        <Reveal>
+          <SectionHeading
+            eyebrow="Built together"
+            title={
+              <>
+                It grows on <span className="text-primary">its own.</span>
+              </>
+            }
+            kicker="Leaderful, never leader-dependent."
+          />
+        </Reveal>
+        <Reveal delay={100} className="space-y-5 text-lg text-muted leading-relaxed">
+          <p>
+            No guru, no franchise. Leaders rise from the people who simply keep showing up. Circles
+            fill and split, neighborhoods multiply, and where enough people gather in one place, the
+            next Lab gets a reason to open.
+          </p>
+          <p>
+            Membership keeps the rooms open, and those who can give more quietly hold the door for
+            those who can&apos;t. Belonging shouldn&apos;t depend on what you can afford.
+          </p>
+        </Reveal>
+      </Section>
+
+      <PullQuote tone="surface" cite="The rule we won't trade">
+        Circulation, <span className="text-primary">not exclusion.</span>
+      </PullQuote>
+
+      {/* ── The honest "we are early" trust beat ───────────────────────────── */}
       <section className="relative bg-slat overflow-hidden">
         <div className="light-strip absolute inset-x-0 top-0 z-10" />
-        <Marquee items={['One community', 'One Quest', 'Real places', 'Built together']} />
+        <Marquee items={['Worldwide', 'Day one', 'Built together', 'Real places']} />
         <div className="amber-glow absolute inset-0 pointer-events-none" />
-        <div className="relative z-10 mx-auto max-w-5xl px-6 py-24 sm:py-28">
-          <div className="grid items-center gap-12 lg:grid-cols-12">
-            <Reveal className="lg:col-span-7">
-              <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">
-                Your Quest
+        <div className="relative z-10 mx-auto max-w-3xl px-6 py-24 sm:py-28 text-center">
+          <Reveal>
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-4">
+              The honest part
+            </p>
+            <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6 text-balance">
+              We are early. That&apos;s the offer.
+            </h2>
+          </Reveal>
+          <Reveal delay={100}>
+            <div className="mx-auto max-w-xl space-y-4 text-lg text-on-ink-muted leading-relaxed">
+              <p>
+                We won&apos;t pretend there are Circles on every corner yet. There aren&apos;t. The
+                first ones are forming in {FOUNDING_PLACE}, and the rest of the map is open.
               </p>
-              <h2 className="font-display uppercase text-white text-5xl sm:text-6xl leading-[0.95] text-balance">
-                Real life is the <span className="text-primary">high score.</span>
-              </h2>
-              <div className="mt-7 max-w-xl space-y-4 text-lg text-white/75 leading-relaxed">
-                <p>
-                  Membership turns on the Quest, the part that pulls you off the screen. Inviting a
-                  stranger, backing a local spot, showing up again: the things that actually build
-                  community are what it rewards. Not scrolling.
-                </p>
-                <p className="font-semibold text-white/90">
-                  You level up by becoming someone your community misses.
-                </p>
-              </div>
-            </Reveal>
-            <Reveal delay={120} className="lg:col-span-5">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-white/10 shadow-pop">
-                <Image
-                  src="/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg"
-                  alt="A small group spinning hula hoops together on the beach beneath a lone palm at golden hour"
-                  fill
-                  sizes="(min-width: 1024px) 28rem, 100vw"
-                  className="object-cover object-center"
-                />
-              </div>
-            </Reveal>
-          </div>
+              <p className="font-semibold text-on-ink/90">
+                That is the whole point of joining now. You don&apos;t arrive to a finished thing.
+                You help start it, and the way it works in your city is shaped by the people who show
+                up first.
+              </p>
+            </div>
+          </Reveal>
         </div>
         <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
       </section>
 
-      {/* ── Is this for you? (objection handling / short FAQ) ──────────────── */}
+      {/* ── Honest answers (short FAQ) ─────────────────────────────────────── */}
       <Section tone="canvas">
         <JsonLd data={[faqSchema(HOME_FAQ)]} />
         <Reveal>
           <SectionHeading
             eyebrow="Honest answers"
             title="Is this for you?"
-            kicker="The real questions people ask before they join."
+            kicker="The real questions people ask before they start."
           />
         </Reveal>
         <div className="space-y-3">
-          <Faq q="Do I have to be outgoing?">
-            Not at all. Circles are deliberately small, a handful of regulars rather than a crowd, so
-            there&apos;s no room to disappear and no pressure to perform. You don&apos;t have to network,
-            post, or be &ldquo;on.&rdquo; The standing time and the small group do the work, and
-            familiarity quietly turns into belonging on its own. A lot of our quietest members say
-            it&apos;s the first place they&apos;ve felt at ease in years.
+          <Faq q="Do I have to be a leader to start?">
+            No. There are three ways in. <span className="font-semibold text-text">Build</span> means
+            you set out the chairs for one Circle, and we hand you the format, the first-night script,
+            and the rails. <span className="font-semibold text-text">Practice</span> means you start
+            where you are today, on your own, with the Practices and the Mindless timer.{' '}
+            <span className="font-semibold text-text">Spread</span> means you bring one person, host
+            once, or share the idea. Pick the one that fits, and you can change your mind later.
           </Faq>
           <Faq q="What does it cost?">
             The community is free, forever. Browsing, joining a Circle, and showing up never cost
-            anything. Crew membership, which turns on the Quest and helps keep the physical spaces open,
-            is $10/mo and free for the whole beta. There&apos;s no card today: join now and your founder
-            pricing is locked in for life when paid memberships launch. Memberships exist to sustain the
-            rooms and hold the door open for people who can&apos;t pay, never to extract from you.{' '}
+            anything. Crew membership, which turns on the Quest and helps keep the physical spaces
+            open, is $10/mo and free for the whole beta. There&apos;s no card today: join now and
+            your founder pricing is locked in for life when paid memberships launch. Memberships
+            exist to sustain the rooms and hold the door open for people who can&apos;t pay, never to
+            extract from you.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
             </Link>
@@ -565,56 +583,46 @@ function Splash({
             Circle keeps going. The whole model is designed to sustain real places to gather, which is
             why memberships fund the rooms rather than line anyone&apos;s pockets.
           </Faq>
-          <Faq q="I'm not in North County San Diego.">
-            That&apos;s fine, the community starts anywhere. The first Lab is taking root in North County
-            San Diego, but a Circle only needs a few people and a standing time, so you can start one
-            where you are tonight. We&apos;re mapping where people gather so we know which city to seed
-            next, and that&apos;s exactly how it spreads: Circle by Circle, neighborhood by neighborhood,
-            city by city, like cells. Add your name and tell us where you are.
+          <Faq q="What if there are no Circles near me yet?">
+            That&apos;s most places right now, and that&apos;s the point. We&apos;re recruiting the
+            people who start them. A Circle only needs a few people and a standing time, so you can
+            start one where you are. The first Lab is taking root in {FOUNDING_PLACE}, and the next
+            cities follow the people who show up. Tell us where you are and we&apos;ll know which city
+            to seed next.
           </Faq>
           <Faq q="What if it's not for me?">
-            Then you leave anytime, no questions and nothing lost. The beta is free, there&apos;s no card
-            on file, and nothing locks you in: no contracts, no cancellation maze. Try a gathering or
-            two, and if the room isn&apos;t for you, walk away with our blessing. The only thing you
-            actually risk by waiting is missing the founding cohort and the founder pricing that comes
-            with it.
+            Then you leave anytime, no questions and nothing lost. The beta is free, there&apos;s no
+            card on file, and nothing locks you in: no contracts, no cancellation maze. Try a
+            gathering or two, and if the room isn&apos;t for you, walk away with our blessing.
           </Faq>
         </div>
       </Section>
 
-      {/* ── The invitation — true scarcity, one calm path ──────────────────── */}
-      <Section tone="surface" pad="py-16 sm:py-20">
-        <Reveal>
-          <div className="rounded-3xl border border-border bg-marketing-canvas px-7 py-9 sm:px-10 sm:py-11 shadow-pop">
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
-              Founding cohort
-            </p>
-            <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5 text-balance">
-              We open a few spots at a time.
-            </h2>
-            <p className="text-lg text-muted leading-relaxed mb-6 max-w-xl">
-              A community is only as good as the people who start it, so we grow the beta deliberately,
-              a small group at a time, so every new member is actually welcomed in. The constraint is
-              the care. Add your name and we&apos;ll reach out when the next spots open.
-            </p>
-            <ul className="grid gap-3 sm:grid-cols-2 mb-8">
-              <Perk>Free for the whole beta, no card</Perk>
-              <Perk>Founder pricing locked for life</Perk>
-              <Perk>Shape the Circles from day one</Perk>
-              <Perk>First through the doors at The Lab</Perk>
-            </ul>
-            <Button href={BETA_CTA_HREF}>
-              {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
+      {/* ── Closing CTA — one calm path into /start ─────────────────────────── */}
+      <section className="relative bg-slat px-6 py-24 sm:py-28 text-center overflow-hidden">
+        <div className="light-strip absolute inset-x-0 top-0" />
+        <div className="amber-glow absolute inset-0 pointer-events-none" />
+        <div className="relative mx-auto max-w-2xl">
+          <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6 text-balance">
+            Be the reason your people have somewhere to go.
+          </h2>
+          <p className="text-xl text-on-ink-muted mb-9 leading-relaxed">
+            Three ways in: build a Circle, start a practice today, or bring one person. Pick yours and
+            we&apos;ll point you at the first move.
+          </p>
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button href="/start" size="lg">
+              Find your way in <ArrowRight className="w-5 h-5" aria-hidden />
             </Button>
+            <Link
+              href={BETA_CTA_HREF}
+              className="text-sm font-semibold text-on-ink-muted underline-offset-4 hover:text-on-ink hover:underline"
+            >
+              {BETA_CTA_LABEL}
+            </Link>
           </div>
-        </Reveal>
-      </Section>
-
-      {/* ── Closing CTA ────────────────────────────────────────────────────── */}
-      <BetaCTA
-        heading="Come build the third place."
-        body="A Circle to call yours, a standing time, and a real room to walk into. Add your name and we'll reach out when a spot opens."
-      />
+        </div>
+      </section>
 
       <MarketingFooter menu={footerMenu} />
     </>
@@ -819,17 +827,5 @@ function EventRow({ event }: { event: LiveEvent }) {
         Join <ArrowRight className="h-3 w-3" aria-hidden />
       </Link>
     </div>
-  )
-}
-
-// Founding-cohort perk — checkmark + line.
-function Perk({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-3 text-base text-text">
-      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
-        <Check className="h-3 w-3" aria-hidden />
-      </span>
-      <span className="leading-snug">{children}</span>
-    </li>
   )
 }

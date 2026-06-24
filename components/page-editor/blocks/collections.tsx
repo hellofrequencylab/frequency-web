@@ -360,12 +360,14 @@ type TierItem = {
   tagline?: string
   /** Featured tier: lifts, rings, and shows a "Most popular" ribbon. */
   highlight?: 'featured' | 'normal'
-  /** Small badge by the name, e.g. a Founder marker. */
-  badge?: 'none' | 'founder'
+  /** Small badge by the name: a Founder marker, a "Coming Soon" marker for tiers that
+   *  are listed and detailed but not yet purchasable, or an "Invite only" marker. */
+  badge?: 'none' | 'founder' | 'comingSoon' | 'inviteOnly'
   features?: { text?: string }[]
   ctaLabel?: string
   ctaHref?: string
-  ctaStyle?: 'primary' | 'secondary'
+  /** "disabled" renders a non-clickable, muted button for not-yet-purchasable tiers. */
+  ctaStyle?: 'primary' | 'secondary' | 'disabled'
 }
 
 export function TiersBlock({
@@ -406,11 +408,21 @@ export function TiersBlock({
                 </span>
               )}
 
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <h3 className="font-display uppercase text-text text-2xl">{tier.name}</h3>
                 {tier.badge === 'founder' && (
                   <span className="inline-flex items-center gap-1 rounded-md bg-signal-bg px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-signal-strong">
                     <Award className="w-3 h-3" aria-hidden /> Founder
+                  </span>
+                )}
+                {tier.badge === 'comingSoon' && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated border border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-subtle">
+                    <Sparkles className="w-3 h-3" aria-hidden /> Coming soon
+                  </span>
+                )}
+                {tier.badge === 'inviteOnly' && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated border border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-subtle">
+                    <Shield className="w-3 h-3" aria-hidden /> Invite only
                   </span>
                 )}
               </div>
@@ -445,20 +457,29 @@ export function TiersBlock({
                 ))}
               </ul>
 
-              {/* CTA */}
-              {tier.ctaLabel && (
-                <Link
-                  href={tier.ctaHref || '#'}
-                  className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold transition-colors ${
-                    tier.ctaStyle === 'primary'
-                      ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'
-                      : 'border border-border-strong text-text hover:bg-surface-elevated'
-                  }`}
-                >
-                  {tier.ctaLabel}
-                  {tier.ctaStyle === 'primary' && <ArrowRight className="w-4 h-4" aria-hidden />}
-                </Link>
-              )}
+              {/* CTA. A "disabled" tier (not yet purchasable) renders a non-clickable,
+                  muted button rather than a dead link, so the card stays honest. */}
+              {tier.ctaLabel &&
+                (tier.ctaStyle === 'disabled' ? (
+                  <span
+                    aria-disabled="true"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold border border-border bg-surface-elevated text-subtle cursor-default select-none"
+                  >
+                    {tier.ctaLabel}
+                  </span>
+                ) : (
+                  <Link
+                    href={tier.ctaHref || '#'}
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold transition-colors ${
+                      tier.ctaStyle === 'primary'
+                        ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'
+                        : 'border border-border-strong text-text hover:bg-surface-elevated'
+                    }`}
+                  >
+                    {tier.ctaLabel}
+                    {tier.ctaStyle === 'primary' && <ArrowRight className="w-4 h-4" aria-hidden />}
+                  </Link>
+                ))}
             </article>
           )
         })}
@@ -819,11 +840,13 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
             ],
           },
           badge: {
-            type: 'radio',
+            type: 'select',
             label: 'Badge',
             options: [
               { label: 'None', value: 'none' },
               { label: 'Founder', value: 'founder' },
+              { label: 'Coming soon', value: 'comingSoon' },
+              { label: 'Invite only', value: 'inviteOnly' },
             ],
           },
           features: {
@@ -835,11 +858,12 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
           ctaLabel: { type: 'text', label: 'Button label' },
           ctaHref: { type: 'text', label: 'Button link' },
           ctaStyle: {
-            type: 'radio',
+            type: 'select',
             label: 'Button style',
             options: [
               { label: 'Primary', value: 'primary' },
               { label: 'Secondary', value: 'secondary' },
+              { label: 'Disabled (not yet purchasable)', value: 'disabled' },
             ],
           },
         },
