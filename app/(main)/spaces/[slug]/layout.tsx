@@ -195,7 +195,7 @@ export default async function SpaceProfileLayout({
         />
       )}
       <DetailTemplate
-        back={{ href: '/spaces', label: 'Spaces' }}
+        back={{ href: '/spaces/directory', label: 'Spaces' }}
         title={brandName}
         band={
           <ProfileHeroCard

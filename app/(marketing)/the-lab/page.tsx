@@ -27,6 +27,7 @@ import {
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
+import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 
@@ -79,17 +80,18 @@ const INSIDE = [
 ]
 
 export default async function TheLabPage() {
-  const data = await getPublishedData('the-lab')
+  // getPublishedData -> getTemplate -> legacy: prefer the operator-published doc,
+  // else the designed git template (so the designed page is live without a DB
+  // publish), with the hardcoded legacy component as a last resort.
+  const published = await getPublishedData('the-lab')
+  const template = getTemplate('the-lab')
+  const data = isRenderable(published) ? published : isRenderable(template) ? template : null
   return (
     <>
       <JsonLd
         data={breadcrumbSchema([{ name: 'The Lab', path: '/the-lab' }])}
       />
-      {data && Array.isArray(data.content) && data.content.length > 0 ? (
-        <Render config={config} data={data} />
-      ) : (
-        <LegacyTheLab />
-      )}
+      {data ? <Render config={config} data={data} /> : <LegacyTheLab />}
     </>
   )
 }

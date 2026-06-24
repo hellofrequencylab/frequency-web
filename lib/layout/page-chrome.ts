@@ -49,7 +49,7 @@ const SCOPED_PREFIXES: string[] = [
   // of the app (operator request): a profile reads as a normal Detail page beside the site's Quest
   // rail, not a suppressed-rail island. Its context band lives in the interior content column (a
   // hero CARD, not a shell rail), so there is no double-rail trap to avoid. EVERY /spaces route now
-  // falls through to 'global' below — the directory (/spaces), the provisioning wizard (/spaces/new),
+  // falls through to 'global' below — the directory (/spaces/directory), the provisioning wizard (/spaces/new),
   // the invite landing, AND the owner settings sub-surfaces (/spaces/<slug>/settings*): the right
   // rail shows site-wide (owner directive, 2026-06-20). The settings sub-pages still compose
   // <FocusTemplate> for a centered body; they just keep the rail beside it. Re-add '/spaces/' here
@@ -180,7 +180,7 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/channels', label: 'Channels', area: 'Member' },
   { route: '/events', label: 'Events', area: 'Member' },
   { route: '/people', label: 'People', area: 'Member' },
-  { route: '/spaces', label: 'Spaces (directory)', area: 'Member' },
+  { route: '/spaces/directory', label: 'Spaces (directory)', area: 'Member' },
   { route: '/spaces/_/crm', label: 'Space CRM board', area: 'Focus surfaces' },
   // The owner "Features and access" sub-page (per-space-roles Phase 1): a centered Focus surface that
   // composes <FocusTemplate>. Per the owner directive (2026-06-20) every /spaces/<slug>/settings* route

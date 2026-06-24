@@ -41,7 +41,7 @@ export default async function NewSpacePage() {
       eyebrow="Spaces"
       title="Create a space"
       description="Set up a home for your practice, business, or organization. You can change everything later."
-      back={{ href: '/spaces', label: 'Spaces' }}
+      back={{ href: '/spaces/directory', label: 'Spaces' }}
     >
       <CreateSpaceForm types={types} />
     </FocusTemplate>

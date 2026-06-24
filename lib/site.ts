@@ -30,121 +30,59 @@ export const DISCOVER_NAV: NavLink[] = [
   { label: "Interests", href: "/discover/topics", desc: "Browse by what you practice" },
 ];
 
-// The mission / splash pages — shown as flat tabs beside the Discover dropdown,
-// to VISITORS only. These are marketing/educational surfaces (how it works, the
-// space, the story, membership); they are deliberately NOT shown in-app, so the
-// feed nav isn't cluttered with splash. Demo was merged into How it works.
-export const SITE_NAV: NavLink[] = [
-  { label: "The Lab", href: "/the-lab" },
+// The six PRIMARY marketing pages, in nav order: Home, The Community, The Quest,
+// The Lab, Spaces, About. This is the single source for the public header tabs
+// (PUBLIC_MEGA_NAV, below) and the footer (MARKETING_NAV). Build / Practice /
+// Spread were FOLDED into these six (their routes 308-redirect here), and the SEO
+// articles (loneliness, friendship-as-an-adult, …) + /help stay off the nav.
+export const PRIMARY_NAV: NavLink[] = [
+  { label: "Home", href: "/" },
   { label: "The Community", href: "/the-community" },
   { label: "The Quest", href: "/the-quest" },
+  { label: "The Lab", href: "/the-lab" },
+  { label: "Spaces", href: "/spaces" },
   { label: "About", href: "/about" },
 ];
+
+// The mission / splash pages — shown as flat tabs beside the Discover dropdown,
+// to VISITORS only. These are marketing/educational surfaces (the story, the
+// game, the space, the community); they are deliberately NOT shown in-app, so the
+// feed nav isn't cluttered with splash.
+export const SITE_NAV: NavLink[] = PRIMARY_NAV;
 
 // Members in-app get NO splash tabs — only the shared community core (the Discover
 // dropdown). Splash stays on the public site; the left rail owns in-app nav. This
 // is what keeps the "main menu" and the "feed menu" in sync, minus splash.
-export const SITE_NAV_MEMBER: NavLink[] = [
-  { label: "The Lab", href: "/the-lab" },
-  { label: "The Community", href: "/the-community" },
-  { label: "The Quest", href: "/the-quest" },
-  { label: "About", href: "/about" },
-];
+export const SITE_NAV_MEMBER: NavLink[] = PRIMARY_NAV;
 
-// ── The public mega menu (the best-practice header nav) ───────────────────────
-// The header's flat tabs + thin Discover dropdown collapse into a couple of grouped
-// MEGA panels: fewer triggers (no overflow), each opening a multi-column panel with a
-// one-line description per item. Data-driven so the growing set of public pages is a
-// data edit, never a header edit. The shapes mirror MegaMenu's props structurally, so
-// this stays a plain (no-React) data module. Copy carries no em or en dashes.
+// ── The public mega menu (the header nav) ─────────────────────────────────────
+// The public header is now exactly the SIX primary pages as flat tabs: Home, The
+// Community, The Quest, The Lab, Spaces, About. Each panel here is a single flat
+// trigger (a `label` + `href`, no `sections`). The shape still allows `sections`
+// (multi-column dropdowns) so the header can grow back into mega panels later
+// without a renderer change; today every panel is flat. Data-driven so a nav edit
+// is a data edit, never a header edit. Copy carries no em or en dashes.
 export type MegaNavItem = { label: string; href: string; desc?: string };
 export type MegaNavGroup = { heading?: string; items: MegaNavItem[] };
 export type MegaNavFeatured = { title: string; desc: string; href: string; cta?: string };
 export type PublicMegaMenu = {
   label: string;
-  sections: MegaNavGroup[];
+  /** A flat tab links straight here (no dropdown). Omit when the panel has `sections`. */
+  href?: string;
+  /** Dropdown columns. Empty/absent → the panel is a flat link to `href`. */
+  sections?: MegaNavGroup[];
   featured?: MegaNavFeatured;
 };
 
-export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
-  {
-    label: "Discover",
-    sections: [
-      {
-        heading: "Explore the community",
-        items: DISCOVER_NAV,
-      },
-    ],
-    featured: {
-      title: "Find your first circle",
-      desc: "Tell us what you're into and we'll point you at your people.",
-      href: "/discover/circles",
-      cta: "Start exploring",
-    },
-  },
-  {
-    label: "Explore Frequency",
-    // Each sub-category is its OWN column (one MegaSection = one column in
-    // mega-menu.tsx). Each column leads with its landing link, then maps to the
-    // existing public pages that belong to that theme. We deliberately avoid the
-    // surfaces the Discover menu already owns (Circles / Events / Journeys /
-    // Interests), so the two menus stay distinct rather than duplicate each other.
-    sections: [
-      {
-        heading: "Where to start",
-        items: [
-          { label: "Build", href: "/build", desc: "Host one Circle. We hand you the format" },
-          { label: "Practice", href: "/practice", desc: "Start where you are, today" },
-          { label: "Spread", href: "/spread", desc: "Take a role in building community around you" },
-        ],
-      },
-      {
-        heading: "The Lab",
-        items: [
-          { label: "The Lab", href: "/the-lab", desc: "The ideas and research behind Frequency" },
-          { label: "How it works", href: "/how-it-works", desc: "The simple loop behind every session" },
-          { label: "Practice library", href: "/discover/practices", desc: "Browse the practices you can run" },
-        ],
-      },
-      {
-        heading: "The Community",
-        items: [
-          { label: "The Community", href: "/the-community", desc: "Who's here and how it all works" },
-          { label: "Partners", href: "/discover/partners", desc: "The studios and hosts we work with" },
-          { label: "Help center", href: "/help", desc: "Answers, guides, and support" },
-        ],
-      },
-      {
-        heading: "The Quest",
-        items: [
-          { label: "The Quest", href: "/the-quest", desc: "The practice game: streaks, Zaps, and rewards" },
-          { label: "Join the Beta", href: "/onboarding/beta", desc: "Claim your spot in the community" },
-        ],
-      },
-      {
-        heading: "About",
-        items: [
-          { label: "About", href: "/about", desc: "The mission and the people building it" },
-          { label: "Pricing", href: "/pricing", desc: "Membership that keeps the room open" },
-          { label: "Privacy", href: "/privacy", desc: "How we handle your data" },
-        ],
-      },
-    ],
-  },
-];
+// Six flat tabs, one per primary page, in nav order. Built from PRIMARY_NAV so the
+// header, footer, and the menus/defaults header surface stay in lockstep.
+export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = PRIMARY_NAV.map((p) => ({
+  label: p.label,
+  href: p.href,
+}));
 
-// Flat list for the marketing footer (every public page, no grouping).
-export const MARKETING_NAV: NavLink[] = [
-  { label: "Build", href: "/build" },
-  { label: "Practice", href: "/practice" },
-  { label: "Spread", href: "/spread" },
-  { label: "The Lab", href: "/the-lab" },
-  { label: "The Community", href: "/the-community" },
-  { label: "The Quest", href: "/the-quest" },
-  { label: "Discover", href: "/discover" },
-  { label: "Partners", href: "/discover/partners" },
-  { label: "About", href: "/about" },
-];
+// Flat list for the marketing footer — the same six primary pages, same order.
+export const MARKETING_NAV: NavLink[] = PRIMARY_NAV;
 
 // Primary acquisition CTA. The beta is OPEN — clicking "Join the Beta" opens the
 // beta induction SEQUENCE directly (/onboarding/beta). Signed-out visitors get the

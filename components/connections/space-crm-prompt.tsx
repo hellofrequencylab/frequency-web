@@ -48,7 +48,7 @@ export function SpaceCrmPrompt() {
           you work with. Bring them over in one step and keep your private list as it is.
         </p>
         <Link
-          href="/spaces"
+          href="/spaces/directory"
           className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline"
         >
           See spaces

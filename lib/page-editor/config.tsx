@@ -17,6 +17,7 @@ import { mediaComponents } from '@/components/page-editor/blocks/media'
 import { primitivesComponents } from '@/components/page-editor/blocks/primitives'
 import { dynamicComponents } from '@/components/page-editor/blocks/dynamic'
 import { marketingComponents } from '@/components/page-editor/blocks/marketing'
+import { productStoryComponents } from '@/components/page-editor/blocks/product-story'
 
 export const config: Config = {
   components: {
@@ -26,6 +27,7 @@ export const config: Config = {
     ...collectionsComponents,
     ...mediaComponents,
     ...marketingComponents,
+    ...productStoryComponents,
     ...dynamicComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
@@ -41,6 +43,10 @@ export const config: Config = {
     sections: {
       title: 'Sections',
       components: ['Hero', 'FeatureGrid', 'IllustratedFeature', 'RolePicker', 'Manifesto', 'Showcase', 'StatRow', 'Tiers', 'Checklist', 'Accordion', 'CallToAction'],
+    },
+    productStory: {
+      title: 'Product story',
+      components: ['SeasonTimeline', 'CircleFirstNight', 'RolesPath', 'QuestLoop', 'BackTheBuild'],
     },
     media: {
       title: 'Media',
