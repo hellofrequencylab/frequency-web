@@ -260,17 +260,25 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     ],
   },
   {
+    // Promoted to a PRIMARY domain (was folded under Growth) so the Resonance Engine
+    // (ADR-382 to 387) has its own first-class admin home. Rooted at the cockpit; gated
+    // 'janitor' to match the pages (per-member predictions are sensitive). Marketing staff
+    // still reach the deal board + contacts via the Growth > CRM workspace tab (groupLinks
+    // filters per-link), so nothing regresses for them.
     key: 'crm',
-    label: 'CRM',
-    blurb: 'Relationships and the pipeline. Contacts, deals, and the audiences they form.',
-    href: '/admin/growth?tab=crm',
+    label: 'Resonance CRM',
+    blurb: 'The Vera-driven CRM. The cockpit, the daily action queue, member intelligence, contacts, and the pipeline.',
+    href: '/admin/crm',
     Icon: Contact,
-    min: 'host',
+    min: 'janitor',
     staffDomain: 'marketing',
-    primary: false,
-    related: ['acquisition', 'marketing'],
+    related: ['acquisition', 'marketing', 'vera-ai'],
     links: [
-      // ── Pipeline (the area home /admin/crm is the deal board) ──
+      // ── Resonance Engine: the cockpit, the daily loop, and member intelligence. ──
+      { href: '/admin/crm', label: 'Cockpit', desc: 'The dashboard: resonance health, the funnel, and who needs attention now.', Icon: LayoutDashboard, min: 'janitor', section: 'Resonance', exact: true },
+      { href: '/admin/crm/today', label: 'Today', desc: "Vera's daily queue: the people and one-tap actions that matter now.", Icon: ClipboardList, min: 'janitor', section: 'Resonance' },
+      { href: '/admin/crm/members', label: 'Members', desc: 'Drill into any member: scores, the why behind them, and the full timeline.', Icon: Users, min: 'janitor', section: 'Resonance' },
+      // ── Pipeline (the deal board) ──
       { href: '/admin/crm/deals/new', label: 'New deal', desc: 'Add a deal to the pipeline.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
       // ── Contacts ──
       { href: '/admin/crm/contacts', label: 'Contacts', desc: 'Leads, customers, and members as one record.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Contacts' },
