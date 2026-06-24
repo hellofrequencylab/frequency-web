@@ -7,6 +7,15 @@
 // filtering is the renderer's job, not the reader's. These types stay framework
 // independent (no React, no Supabase) so the server reader, the server actions, and
 // any client editor can all import them.
+//
+// GATE (ADR-390): every item and category carries the SAME two-axis gate the admin
+// nav uses — a `minAccess` community/role floor PLUS an optional staff capability
+// (`staffDomain` + `staffLevel`, ADR-127). The renderer unions them (see
+// canSeeMenuEl in components/layout/menu-role.ts): an element shows if EITHER the
+// access floor admits the viewer OR the staff axis grants the domain. This keeps
+// staff-gated admin pages safe when they live inside the standardized containers.
+
+import type { StaffDomain, Access } from '@/lib/core/staff-roles'
 
 /** The five menu surfaces the system can drive. */
 export type MenuSurfaceKey =
@@ -47,6 +56,11 @@ export type ResolvedItem = {
   /** Per-role overrides of `mode`, keyed by role name (e.g. { host: 'active' }). */
   roleModes: Record<string, MenuMode>
   minAccess: MenuAccess
+  /** Optional staff capability domain (ADR-127) that ALSO unlocks this link, unioned
+   *  with the minAccess floor + roleModes by canSeeMenuEl. */
+  staffDomain?: StaffDomain
+  /** Capability level the staff domain needs (default 'write' for a leaf link). */
+  staffLevel?: Access
   ghostTier?: string
   ghostMessage?: string
 }
@@ -59,6 +73,18 @@ export type ResolvedCategory = {
   gridCol?: number
   gridRow?: number
   colSpan: number
+  /** Lowest access that may SEE this category (default 'visitor' when unset). A
+   *  category can be a gated section when it doubles as a rail entry / dashboard card. */
+  minAccess?: MenuAccess
+  /** Optional staff capability domain that ALSO unlocks this section (read-level by
+   *  default for a section floor). */
+  staffDomain?: StaffDomain
+  staffLevel?: Access
+  /** Icon NAME (resolved by nav-icons.ts) for when the category renders as a rail
+   *  entry / dashboard card. */
+  icon?: string
+  /** One-line framing shown when the category renders as a dashboard / overview card. */
+  blurb?: string
   items: ResolvedItem[]
   children: ResolvedCategory[]
 }

@@ -104,7 +104,7 @@ function item(
   label: string,
   href: string,
   position: number,
-  extra?: Partial<Pick<ResolvedItem, 'subheading' | 'icon' | 'minAccess'>>,
+  extra?: Partial<Pick<ResolvedItem, 'subheading' | 'icon' | 'minAccess' | 'staffDomain' | 'staffLevel'>>,
 ): ResolvedItem {
   return {
     id,
@@ -117,18 +117,35 @@ function item(
     mode: 'active',
     roleModes: {},
     minAccess: extra?.minAccess ?? 'visitor',
+    staffDomain: extra?.staffDomain,
+    staffLevel: extra?.staffLevel,
   }
 }
 
-/** A category wrapper with the resolved defaults applied. */
+/** A category wrapper with the resolved defaults applied. `gate` carries the section's
+ *  access floor + optional staff domain + display metadata (icon/blurb) for when the
+ *  category doubles as a rail entry / dashboard card (ADR-390). */
 function category(
   id: string,
   label: string | undefined,
   position: number,
   items: ResolvedItem[],
   children: ResolvedCategory[] = [],
+  gate?: Partial<Pick<ResolvedCategory, 'minAccess' | 'staffDomain' | 'staffLevel' | 'icon' | 'blurb'>>,
 ): ResolvedCategory {
-  return { id, label, position, colSpan: 1, items, children }
+  return {
+    id,
+    label,
+    position,
+    colSpan: 1,
+    minAccess: gate?.minAccess,
+    staffDomain: gate?.staffDomain,
+    staffLevel: gate?.staffLevel,
+    icon: gate?.icon,
+    blurb: gate?.blurb,
+    items,
+    children,
+  }
 }
 
 // ── public_discover / public_explore, from PUBLIC_MEGA_NAV ───────────────────
@@ -183,28 +200,34 @@ function publicMenu(surfaceKey: MenuSurfaceKey, panelIndex: number): ResolvedMen
 function adminMenu(surfaceKey: MenuSurfaceKey): ResolvedMenu {
   const categories: ResolvedCategory[] = ADMIN_NAV.map((section: AdminNavSection, si: number) => {
     const access = toAccess(section.min)
+    const staffDomain = section.staffDomain
     const catId = `default:${surfaceKey}:cat:${si}`
+    // The section gate (ADR-390): carried onto the category AND its items so the gate
+    // survives even when this section lives inside a standardized container later.
+    const gate = { minAccess: access, staffDomain }
 
     // The section's own root link (its trigger navigates to section.href).
     const sectionItem = item(`${catId}:item:0`, section.label, section.href, 0, {
       minAccess: access,
+      staffDomain,
     })
 
     if (!section.groups || section.groups.length === 0) {
       // A plain tab, just the section link, no children.
-      return category(catId, section.label, si, [sectionItem])
+      return category(catId, section.label, si, [sectionItem], [], gate)
     }
 
     const children: ResolvedCategory[] = section.groups.map((group, gi) => {
       const items = group.items.map((link, li) =>
         item(`${catId}:child:${gi}:item:${li}`, link.label, link.href, li, {
           minAccess: access,
+          staffDomain,
         }),
       )
-      return category(`${catId}:child:${gi}`, group.heading, gi, items)
+      return category(`${catId}:child:${gi}`, group.heading, gi, items, [], gate)
     })
 
-    return category(catId, section.label, si, [sectionItem], children)
+    return category(catId, section.label, si, [sectionItem], children, gate)
   })
 
   return {

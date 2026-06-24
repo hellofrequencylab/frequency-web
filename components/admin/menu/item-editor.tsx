@@ -7,14 +7,16 @@ import { updateItem, deleteItem, type UpdateItemPatch } from '@/lib/menus/action
 import { LinkTargetField } from './link-target-field'
 import { RoleModeMatrix } from './role-mode-matrix'
 import { OnOffToggle } from './on-off-toggle'
+import { GateControls } from './gate-controls'
 
 // One editable menu link. Collapsed it shows the label + an on/off toggle + drag handle;
 // expanded it edits the subheading, link target, grid placement (grid surfaces only),
-// the on/off visibility (the global show/hide), the per-role matrix, and the ghost
-// upsell copy (surfaced when any role is set to Ghost). Per-role presentation is the
-// sole source of role visibility — there is no default-mode dropdown or min-access
-// floor (always persisted as 'visitor'). Each save is optimistic with rollback and
-// reports through onStatus.
+// the on/off visibility (the global show/hide), the two-axis access gate (min access +
+// staff domain/level, ADR-390), the per-role matrix, and the ghost upsell copy
+// (surfaced when any role is set to Ghost). Visibility is the UNION of the access gate
+// and the per-role matrix; the gate keeps staff-only pages safe when they live inside a
+// standardized container. Each save is optimistic with rollback and reports through
+// onStatus.
 export function ItemEditor({
   item,
   onChanged,
@@ -70,9 +72,9 @@ export function ItemEditor({
     onChanged(optimistic)
     onStatus('Saving link')
     startTransition(async () => {
-      // Always pin minAccess to 'visitor' (point 5): the role floor is removed, so
-      // per-role presentation (the matrix) is the sole source of role visibility.
-      const res = await updateItem(item.id, { ...patch, minAccess: 'visitor' })
+      // ADR-390: the access gate (min access + staff domain/level) is now editable, so we
+      // persist exactly what the patch carries instead of pinning minAccess to 'visitor'.
+      const res = await updateItem(item.id, patch)
       if (res.ok) onStatus('Link saved')
       else {
         onChanged(prev)
@@ -281,7 +283,25 @@ export function ItemEditor({
             </div>
           )}
 
-          {/* Requirement 8: per-role mode matrix. */}
+          {/* Two-axis access gate (ADR-390): the floor + optional staff domain. */}
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-subtle">Who can see this</p>
+            <GateControls
+              minAccess={item.minAccess}
+              staffDomain={item.staffDomain}
+              staffLevel={item.staffLevel}
+              disabled={isPending}
+              onSave={(p) =>
+                save(p, {
+                  ...(p.minAccess != null ? { minAccess: p.minAccess } : {}),
+                  ...('staffDomain' in p ? { staffDomain: p.staffDomain ?? undefined } : {}),
+                  ...('staffLevel' in p ? { staffLevel: p.staffLevel ?? undefined } : {}),
+                })
+              }
+            />
+          </div>
+
+          {/* Per-role mode matrix — the finer override layer on top of the gate. */}
           <RoleModeMatrix
             roleModes={item.roleModes}
             disabled={isPending}

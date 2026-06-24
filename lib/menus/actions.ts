@@ -7,6 +7,7 @@ import { menuDb } from './db'
 import { defaultMenu, DEFAULT_MENU_SETTINGS, isPinnedRailItem } from './defaults'
 import { getAdminMenu } from './read'
 import { getMenuConfig } from '@/lib/menu-config'
+import { STAFF_DOMAINS, ACCESS_LEVELS, type StaffDomain, type Access } from '@/lib/core/staff-roles'
 import type {
   MenuAccess,
   MenuMode,
@@ -73,6 +74,20 @@ function isMode(v: unknown): v is MenuMode {
 }
 function isAccess(v: unknown): v is MenuAccess {
   return typeof v === 'string' && (ACCESS_VALUES as readonly string[]).includes(v)
+}
+function isStaffDomain(v: unknown): v is StaffDomain {
+  return typeof v === 'string' && (STAFF_DOMAINS as readonly string[]).includes(v)
+}
+function isStaffLevel(v: unknown): v is Access {
+  return typeof v === 'string' && (ACCESS_LEVELS as readonly string[]).includes(v)
+}
+/** Resolve a staff-domain input to a clean column value: a valid domain, or null
+ *  (clears the gate). Unknown strings are rejected to null rather than written. */
+function cleanStaffDomain(v: unknown): string | null {
+  return isStaffDomain(v) ? v : null
+}
+function cleanStaffLevel(v: unknown): string | null {
+  return isStaffLevel(v) ? v : null
 }
 
 /** Clamp to the column CHECK ranges. `null`/`undefined` pass through unchanged. */
@@ -236,6 +251,11 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
           grid_col: clampGrid(cat.gridCol) ?? null,
           grid_row: clampGrid(cat.gridRow) ?? null,
           col_span: clampSpan(cat.colSpan) ?? 1,
+          min_access: cat.minAccess ?? 'visitor',
+          staff_domain: cleanStaffDomain(cat.staffDomain),
+          staff_level: cleanStaffLevel(cat.staffLevel),
+          icon: cat.icon ?? null,
+          blurb: cat.blurb ?? null,
         })
         .select('id')
         .limit(1)
@@ -271,6 +291,8 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
       mode: MenuMode
       role_modes: Record<string, MenuMode>
       min_access: MenuAccess
+      staff_domain: string | null
+      staff_level: string | null
     }
     const itemRows: ItemInsert[] = []
     const pushItems = (cats: ResolvedCategory[]) => {
@@ -289,6 +311,8 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
             mode: it.mode,
             role_modes: it.roleModes,
             min_access: it.minAccess,
+            staff_domain: cleanStaffDomain(it.staffDomain),
+            staff_level: cleanStaffLevel(it.staffLevel),
           })
         }
         pushItems(cat.children)
@@ -311,6 +335,8 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
         mode: it.mode,
         role_modes: it.roleModes,
         min_access: it.minAccess,
+        staff_domain: cleanStaffDomain(it.staffDomain),
+        staff_level: cleanStaffLevel(it.staffLevel),
       })
     }
     pushItems(def.categories)
@@ -383,6 +409,11 @@ export type CreateCategoryInput = {
   gridCol?: number | null
   gridRow?: number | null
   colSpan?: number
+  minAccess?: MenuAccess
+  staffDomain?: StaffDomain | null
+  staffLevel?: Access | null
+  icon?: string | null
+  blurb?: string | null
 }
 
 export async function createCategory(input: CreateCategoryInput): Promise<EnsureResult> {
@@ -400,6 +431,11 @@ export async function createCategory(input: CreateCategoryInput): Promise<Ensure
         grid_col: clampGrid(input.gridCol) ?? null,
         grid_row: clampGrid(input.gridRow) ?? null,
         col_span: clampSpan(input.colSpan) ?? 1,
+        min_access: input.minAccess && isAccess(input.minAccess) ? input.minAccess : 'visitor',
+        staff_domain: cleanStaffDomain(input.staffDomain),
+        staff_level: cleanStaffLevel(input.staffLevel),
+        icon: input.icon ?? null,
+        blurb: input.blurb ?? null,
       })
       .select('id')
       .limit(1)
@@ -420,6 +456,11 @@ export type UpdateCategoryPatch = {
   gridCol?: number | null
   gridRow?: number | null
   colSpan?: number
+  minAccess?: MenuAccess
+  staffDomain?: StaffDomain | null
+  staffLevel?: Access | null
+  icon?: string | null
+  blurb?: string | null
 }
 
 export async function updateCategory(id: string, patch: UpdateCategoryPatch): Promise<Result> {
@@ -433,6 +474,11 @@ export async function updateCategory(id: string, patch: UpdateCategoryPatch): Pr
     if ('gridCol' in patch) update.grid_col = clampGrid(patch.gridCol) ?? null
     if ('gridRow' in patch) update.grid_row = clampGrid(patch.gridRow) ?? null
     if (patch.colSpan != null) update.col_span = clampSpan(patch.colSpan)
+    if (patch.minAccess != null && isAccess(patch.minAccess)) update.min_access = patch.minAccess
+    if ('staffDomain' in patch) update.staff_domain = cleanStaffDomain(patch.staffDomain)
+    if ('staffLevel' in patch) update.staff_level = cleanStaffLevel(patch.staffLevel)
+    if ('icon' in patch) update.icon = patch.icon ?? null
+    if ('blurb' in patch) update.blurb = patch.blurb ?? null
     if (Object.keys(update).length === 0) return { ok: true }
 
     const db = adminDb()
@@ -476,6 +522,8 @@ export type CreateItemInput = {
   mode?: MenuMode
   roleModes?: Record<string, MenuMode>
   minAccess?: MenuAccess
+  staffDomain?: StaffDomain | null
+  staffLevel?: Access | null
   ghostTier?: string | null
   ghostMessage?: string | null
 }
@@ -506,6 +554,8 @@ export async function createItem(input: CreateItemInput): Promise<EnsureResult> 
         mode: input.mode ?? 'active',
         role_modes: sanitizeRoleModes(input.roleModes),
         min_access: input.minAccess ?? 'visitor',
+        staff_domain: cleanStaffDomain(input.staffDomain),
+        staff_level: cleanStaffLevel(input.staffLevel),
         ghost_tier: input.ghostTier ?? null,
         ghost_message: input.ghostMessage ?? null,
       })
@@ -534,6 +584,8 @@ export type UpdateItemPatch = {
   mode?: MenuMode
   roleModes?: Record<string, MenuMode>
   minAccess?: MenuAccess
+  staffDomain?: StaffDomain | null
+  staffLevel?: Access | null
   ghostTier?: string | null
   ghostMessage?: string | null
 }
@@ -559,6 +611,8 @@ export async function updateItem(id: string, patch: UpdateItemPatch): Promise<Re
     if (patch.mode != null) update.mode = patch.mode
     if (patch.roleModes != null) update.role_modes = sanitizeRoleModes(patch.roleModes)
     if (patch.minAccess != null) update.min_access = patch.minAccess
+    if ('staffDomain' in patch) update.staff_domain = cleanStaffDomain(patch.staffDomain)
+    if ('staffLevel' in patch) update.staff_level = cleanStaffLevel(patch.staffLevel)
     if ('ghostTier' in patch) update.ghost_tier = patch.ghostTier ?? null
     if ('ghostMessage' in patch) update.ghost_message = patch.ghostMessage ?? null
     if (Object.keys(update).length === 0) return { ok: true }

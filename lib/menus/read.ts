@@ -10,6 +10,7 @@
 
 import { menuDb } from './db'
 import { defaultMenu, DEFAULT_MENU_SETTINGS } from './defaults'
+import { STAFF_DOMAINS, ACCESS_LEVELS, type StaffDomain, type Access } from '@/lib/core/staff-roles'
 import type {
   MenuMode,
   MenuSettings,
@@ -19,6 +20,15 @@ import type {
   ResolvedMenu,
   ResolvedRailCard,
 } from './types'
+
+/** Narrow a raw string to a StaffDomain, else undefined (unknown domains drop). */
+function toStaffDomain(v: string | null | undefined): StaffDomain | undefined {
+  return v && (STAFF_DOMAINS as readonly string[]).includes(v) ? (v as StaffDomain) : undefined
+}
+/** Narrow a raw string to an Access level, else undefined. */
+function toStaffLevel(v: string | null | undefined): Access | undefined {
+  return v && (ACCESS_LEVELS as readonly string[]).includes(v) ? (v as Access) : undefined
+}
 
 /** The five surfaces with human labels, drives the editor's surface picker. */
 export const MENU_SURFACES: { key: MenuSurfaceKey; label: string }[] = [
@@ -39,6 +49,11 @@ type CategoryRow = {
   grid_col: number | null
   grid_row: number | null
   col_span: number | null
+  min_access: string | null
+  staff_domain: string | null
+  staff_level: string | null
+  icon: string | null
+  blurb: string | null
 }
 type ItemRow = {
   id: string
@@ -54,6 +69,8 @@ type ItemRow = {
   mode: string | null
   role_modes: Record<string, string> | null
   min_access: string | null
+  staff_domain: string | null
+  staff_level: string | null
   ghost_tier: string | null
   ghost_message: string | null
 }
@@ -116,6 +133,8 @@ function mapItem(row: ItemRow): ResolvedItem {
     mode: toMode(row.mode),
     roleModes: toRoleModes(row.role_modes),
     minAccess: toAccess(row.min_access),
+    staffDomain: toStaffDomain(row.staff_domain),
+    staffLevel: toStaffLevel(row.staff_level),
     ghostTier: row.ghost_tier ?? undefined,
     ghostMessage: row.ghost_message ?? undefined,
   }
@@ -166,6 +185,11 @@ function assemble(
       gridCol: row.grid_col ?? undefined,
       gridRow: row.grid_row ?? undefined,
       colSpan: row.col_span ?? 1,
+      minAccess: toAccess(row.min_access),
+      staffDomain: toStaffDomain(row.staff_domain),
+      staffLevel: toStaffLevel(row.staff_level),
+      icon: row.icon ?? undefined,
+      blurb: row.blurb ?? undefined,
       items: (itemsByCategory.get(row.id) ?? []).sort((a, b) => a.position - b.position),
       children: [],
     })
@@ -228,12 +252,14 @@ export async function getMenu(
     const [categoriesRes, itemsRes, railCardsRes] = await Promise.all([
       db
         .from<CategoryRow>('menu_categories')
-        .select('id, parent_id, label, position, grid_col, grid_row, col_span')
+        .select(
+          'id, parent_id, label, position, grid_col, grid_row, col_span, min_access, staff_domain, staff_level, icon, blurb',
+        )
         .eq('menu_id', menu.id),
       db
         .from<ItemRow>('menu_items')
         .select(
-          'id, category_id, label, href, subheading, icon, position, grid_col, grid_row, col_span, mode, role_modes, min_access, ghost_tier, ghost_message',
+          'id, category_id, label, href, subheading, icon, position, grid_col, grid_row, col_span, mode, role_modes, min_access, staff_domain, staff_level, ghost_tier, ghost_message',
         )
         .eq('menu_id', menu.id),
       db

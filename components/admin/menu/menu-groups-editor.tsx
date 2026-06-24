@@ -15,6 +15,7 @@ import {
 import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ItemEditor, GridControls } from './item-editor'
+import { GateControls, type GatePatch } from './gate-controls'
 import { isGridSurface } from './known-routes'
 import { isPinnedRailItem, PINNED_PROFILE_ID } from '@/lib/menus/defaults'
 
@@ -184,6 +185,28 @@ export function MenuGroupsEditor({
       else {
         setError(res.error)
         onStatus('Could not save group placement')
+      }
+    })
+  }
+
+  // Save a category's two-axis access gate (ADR-390). Optimistic, mirrors saveCategoryGrid.
+  function saveCategoryGate(catId: string, patch: GatePatch) {
+    setError(null)
+    onStatus('Saving group access')
+    setMenu((m) => ({
+      ...m,
+      categories: patchCategory(m.categories, catId, {
+        ...(patch.minAccess != null ? { minAccess: patch.minAccess } : {}),
+        ...('staffDomain' in patch ? { staffDomain: patch.staffDomain ?? undefined } : {}),
+        ...('staffLevel' in patch ? { staffLevel: patch.staffLevel ?? undefined } : {}),
+      }),
+    }))
+    startTransition(async () => {
+      const res = await updateCategory(catId, patch)
+      if (res.ok) onStatus('Group access saved')
+      else {
+        setError(res.error)
+        onStatus('Could not save group access')
       }
     })
   }
@@ -405,6 +428,7 @@ export function MenuGroupsEditor({
                 onAddItem={() => addItem(cat.id)}
                 onDelete={() => removeCategory(cat.id, cat.label)}
                 onSaveGrid={(p) => saveCategoryGrid(cat.id, p)}
+                onSaveGate={(p) => saveCategoryGate(cat.id, p)}
               />
               <Bucket
                 items={cat.items}
@@ -550,6 +574,7 @@ function CategoryHeader({
   onAddItem,
   onDelete,
   onSaveGrid,
+  onSaveGate,
 }: {
   cat: ResolvedCategoryLite
   isPending: boolean
@@ -560,6 +585,8 @@ function CategoryHeader({
   onAddItem: () => void
   onDelete: () => void
   onSaveGrid: (patch: { gridCol?: number | null; gridRow?: number | null; colSpan?: number }) => void
+  /** Save the section's two-axis access gate (ADR-390). */
+  onSaveGate: (patch: GatePatch) => void
 }) {
   const [label, setLabel] = useState(cat.label ?? '')
   return (
@@ -619,6 +646,17 @@ function CategoryHeader({
           onSave={onSaveGrid}
         />
       )}
+      {/* Section access gate (ADR-390): floor + optional staff domain for the whole group. */}
+      <div>
+        <p className="mb-1.5 text-xs font-semibold text-subtle">Who can see this group</p>
+        <GateControls
+          minAccess={cat.minAccess}
+          staffDomain={cat.staffDomain}
+          staffLevel={cat.staffLevel}
+          disabled={isPending}
+          onSave={onSaveGate}
+        />
+      </div>
     </div>
   )
 }
