@@ -23,6 +23,7 @@ import Image from 'next/image'
 import { ArrowRight, ChevronDown } from 'lucide-react'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { SiteImage } from '@/components/marketing/site-image'
+import { safeHref } from '@/lib/page-editor/richtext'
 
 // Full-bleed photo hero — the editorial counterpart to PageHero, for pages that
 // open on imagery. Warm ink wash + amber glow + LED light-strip seam, matching
@@ -514,7 +515,7 @@ export function ZigZag({
           </div>
           {cta && (
             <Link
-              href={cta.href}
+              href={safeHref(cta.href) ?? '#'}
               className={`mt-6 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide hover:underline ${
                 isInk ? 'text-primary' : 'text-primary-strong'
               }`}

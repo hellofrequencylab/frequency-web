@@ -34,13 +34,13 @@ const MODULE_SECTIONS: readonly string[] = ['/practices']
 const ENTITY_PROFILE_ROOT = '/spaces'
 
 /** Whether a path is an entity-profile tab (the index /spaces/<slug> or a tab /spaces/<slug>/<tab>),
- *  excluding the directory (/spaces) and the wizard/settings sub-surfaces (/spaces/new, …/settings). */
+ *  excluding the member directory (/spaces/directory) and the wizard/settings sub-surfaces (/spaces/new, …/settings). */
 export function isEntityProfileRoute(pathname: string): boolean {
   if (!pathname.startsWith(`${ENTITY_PROFILE_ROOT}/`)) return false
   const segs = pathname.slice(1).split('/') // ['spaces', '<slug>', '<tab>'?]
   if (segs.length < 2 || segs.length > 3) return false
   const slug = segs[1]
-  if (!slug || slug === 'new') return false // the provisioning wizard is bespoke (Focus)
+  if (!slug || slug === 'new' || slug === 'directory') return false // the wizard (Focus) and the member directory (Index) are bespoke, not profiles
   if (segs.length === 3 && segs[2] === 'settings') return false // the settings surface is bespoke (Focus)
   return true
 }
