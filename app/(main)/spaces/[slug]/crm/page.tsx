@@ -19,6 +19,7 @@ import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
 import { SpaceCockpitBand } from './space-cockpit-band'
 import { AutonomyControl } from './autonomy-control'
+import { SpaceResonanceSection } from './space-resonance-section'
 
 // PER-SPACE CRM BOARD (CRM-STRATEGY §6/§7, ADR-361 P3). The paid, full-width Dashboard a Space runs:
 // its pipeline (per-segment stages + deals) plus its contacts, scoped to this space_id, with the
@@ -152,6 +153,13 @@ export default async function SpaceCrmBoardPage({
           so the funnel read never blocks the pipeline / tasks / contacts above and below it. */}
       <Suspense fallback={<FunnelSkeleton />}>
         <CrmFunnelPanel spaceId={space.id} />
+      </Suspense>
+
+      {/* Resonance Graph (Phase 4 · ADR-385): "people close by with your vibe", the Space-scoped
+          reciprocal match suggestions. ADDED as a section (the page above is unchanged); its own
+          Suspense so the edge reads never block the board, and every read is fail-safe (empty). */}
+      <Suspense fallback={<ListSkeleton />}>
+        <SpaceResonanceSection spaceId={space.id} />
       </Suspense>
 
       <div className="grid gap-6 @3xl:grid-cols-2">

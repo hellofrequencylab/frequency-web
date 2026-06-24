@@ -453,3 +453,22 @@ export function computeTraits(stats: MemberStats, now: number): ComputedTrait[] 
     { key: 'lifecycle_stage', type: 'enum', value: lifecycleStage(stats, now) },
   ]
 }
+
+// ── Resonance Graph match count (the density trait · Resonance Engine Phase 4 · ADR-385) ──────
+// A SIBLING export (it does not touch any function above, to stay merge-clean): the
+// resonance_match_count trait from a member's not-expired edge count. PURE: the cron counts the
+// edges in resonance_edges (lib/resonance/edges.ts) and hands the raw count here for clamping into a
+// registry-governed trait. Kept tiny + pure so it is unit-testable and never an IO dependency of the
+// pure compute layer.
+
+/** Clamp a raw edge count into the resonance_match_count trait. PURE. A negative / non-finite count
+ *  (a malformed read) floors to 0; a huge count is capped so a runaway never poisons the trait. */
+export function resonanceMatchCount(rawCount: number): number {
+  if (!Number.isFinite(rawCount) || rawCount <= 0) return 0
+  return Math.min(999, Math.floor(rawCount))
+}
+
+/** The resonance_match_count trait for one member (the nightly edge-density cue). PURE. */
+export function computeResonanceMatchTrait(rawCount: number): ComputedTrait {
+  return { key: 'resonance_match_count', type: 'number', value: resonanceMatchCount(rawCount) }
+}

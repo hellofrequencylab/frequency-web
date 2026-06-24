@@ -3,6 +3,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { Worklist } from '@/components/dashboard/worklist'
 import { getSpaceHealth, getWorklist } from '@/lib/dashboard/scores'
 import { getSpaceCrmFunnel } from '@/lib/spaces/crm-funnel'
+import { getSpaceAcceptedIntros } from '@/lib/resonance/surface'
 import { spaceVerdictLine, healthTone } from '@/lib/dashboard/verdict'
 
 // ALTITUDE 2 - the Space cockpit band (Resonance Engine Phase 2 · ADR-383). The same verdict +
@@ -28,11 +29,13 @@ function toneLabel(label: string, tone: keyof typeof DOT) {
 }
 
 export async function SpaceCockpitBand({ spaceId, slug }: { spaceId: string; slug: string }) {
-  // The three reads, all fail-safe + scoped to this Space. Parallel so the band paints in one tick.
-  const [health, worklist, funnel] = await Promise.all([
+  // The reads, all fail-safe + scoped to this Space. Parallel so the band paints in one tick. The
+  // intros count (ADR-385) reads accepted double-opt-in matches touching the Space; 0 pre-migration.
+  const [health, worklist, funnel, introsAccepted] = await Promise.all([
     getSpaceHealth(spaceId),
     getWorklist({ spaceId }),
     getSpaceCrmFunnel(spaceId),
+    getSpaceAcceptedIntros(spaceId),
   ])
 
   const verdict = spaceVerdictLine(health.meanHealth, worklist.rows.length, health.members)
@@ -65,9 +68,9 @@ export async function SpaceCockpitBand({ spaceId, slug }: { spaceId: string; slu
         />
         <StatCard
           label="Intros accepted"
-          value={0}
+          value={introsAccepted}
           icon={Users}
-          detail="double opt-in, coming with the Resonance Graph"
+          detail="double opt-in matches, both said yes"
         />
       </div>
 
