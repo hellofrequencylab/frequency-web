@@ -49,8 +49,8 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
       {
         heading: 'People',
         items: [
-          { label: 'Members', href: '/admin/members' },
-          { label: 'Connections', href: '/admin/connections' },
+          { label: 'Member Roster', href: '/admin/members' },
+          { label: 'Connection Settings', href: '/admin/connections' },
           { label: 'Personas', href: '/admin/personas' },
           { label: 'Segments', href: '/admin/segments' },
         ],
@@ -139,8 +139,9 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
       {
         heading: 'Records',
         items: [
-          { label: 'Contacts', href: '/admin/marketing/contacts' },
-          { label: 'Pipeline', href: '/admin/crm/contacts' },
+          { label: 'Contacts', href: '/admin/crm/contacts' },
+          { label: 'Deals', href: '/admin/crm/deals' },
+          { label: 'All Contacts', href: '/admin/marketing/contacts' },
         ],
       },
     ],
