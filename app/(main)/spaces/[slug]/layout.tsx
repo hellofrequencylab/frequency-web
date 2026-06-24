@@ -188,14 +188,14 @@ export default async function SpaceProfileLayout({
               logoUrl: space.brandLogoUrl,
             }),
             breadcrumbSchema([
-              { name: 'Spaces', path: '/spaces' },
+              { name: 'Spaces', path: '/spaces/directory' },
               { name: brandName, path: `/spaces/${space.slug}` },
             ]),
           ]}
         />
       )}
       <DetailTemplate
-        back={{ href: '/spaces', label: 'Spaces' }}
+        back={{ href: '/spaces/directory', label: 'Spaces' }}
         title={brandName}
         band={
           <ProfileHeroCard

@@ -76,7 +76,7 @@ export async function followSpace(spaceId: string): Promise<ActionResult> {
   }
 
   revalidatePath(`/spaces/${space.slug}`, 'layout')
-  revalidatePath('/spaces')
+  revalidatePath('/spaces/directory')
   return ok()
 }
 
@@ -103,7 +103,7 @@ export async function unfollowSpace(spaceId: string): Promise<ActionResult> {
   }
 
   revalidatePath(`/spaces/${space.slug}`, 'layout')
-  revalidatePath('/spaces')
+  revalidatePath('/spaces/directory')
   return ok()
 }
 

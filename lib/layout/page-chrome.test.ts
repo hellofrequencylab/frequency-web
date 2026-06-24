@@ -92,8 +92,8 @@ describe('railFor — the single source of truth for page chrome', () => {
   })
 
   it('frames every entity-space route — directory, profiles, wizard AND owner settings — with the GLOBAL rail', () => {
-    // The directory (/spaces) is an Index page — it keeps the global community rail.
-    expect(railFor('/spaces')).toBe('global')
+    // The member directory (/spaces/directory) is an Index page — it keeps the global community rail.
+    expect(railFor('/spaces/directory')).toBe('global')
     // A profile (/spaces/<slug>) and its tabs ride the GLOBAL community rail like the rest of the
     // app (operator request): the context band is an in-body hero card, not a shell rail, so there
     // is no double-rail trap. Nothing is 'scoped' anymore.

@@ -41,6 +41,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
         heading: 'Spaces & groups',
         items: [
           { label: 'Circles', href: '/admin/circles' },
+          { label: 'Circle Templates', href: '/admin/circle-templates' },
           { label: 'Channels', href: '/admin/channels' },
           { label: 'Hubs', href: '/admin/hubs' },
           { label: 'Nexuses', href: '/admin/nexuses' },

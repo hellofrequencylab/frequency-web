@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, CalendarDays } from 'lucide-react'
+import { Render } from '@measured/puck/rsc'
 import { createClient } from '@/lib/supabase/server'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
@@ -28,6 +29,9 @@ import { resolvePageContent } from '@/lib/page-content'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { communityHref } from '@/lib/community-href'
 import { getJanitor } from '@/lib/page-editor/guard'
+import { config } from '@/lib/page-editor/config'
+import { getPublishedData } from '@/lib/page-editor/data'
+import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
 import { Suspense } from 'react'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { getReferrer } from '@/lib/qr/referral'
@@ -164,10 +168,10 @@ export default async function RootPage({
     }
   }
 
-  // The splash is code-locked (see EDITABLE_PAGES note in lib/page-editor/data):
-  // `home` is intentionally not editable in the visual editor, so the coded
-  // flagship splash is always the source of truth for `/` — no published draft
-  // can shadow it.
+  // `home` is editable in the visual editor (see EDITABLE_PAGES in
+  // lib/page-editor/data): the render chain is getPublishedData('home') ->
+  // getTemplate('home') -> this coded splash as the last-resort fallback. So a
+  // published draft or the designed template shadows the splash when present.
   // Personalize the splash when arriving via a scanned personal code: the /q
   // resolver dropped an fq_ref cookie, so we can name the inviter (research: a
   // generic splash discards the inviter's social proof, the strongest referral
@@ -180,6 +184,25 @@ export default async function RootPage({
     getMenu('footer'),
     getMenuSettings(),
   ])
+  // getPublishedData -> getTemplate -> legacy, mirroring every other marketing route.
+  // Home keeps its live counts OFF: a designed `home` template (when one ships) carries
+  // the honest, qualitative founding framing — never invented numbers — and the coded
+  // Splash stays the last-resort fallback. The home splash renders its OWN header/footer
+  // (it sits over a dark hero, outside the (marketing) layout), so a Puck document is
+  // wrapped in that same chrome here.
+  const published = await getPublishedData('home')
+  const template = getTemplate('home')
+  const data = isRenderable(published) ? published : isRenderable(template) ? template : null
+  if (data) {
+    return (
+      <>
+        <MarketingHeader overHero headerMenu={headerMenu} menuTimings={menuTimings} />
+        <Render config={config} data={data} />
+        <MarketingFooter menu={footerMenu} />
+      </>
+    )
+  }
+
   // The live-proof band (counts, events, posts) streams in its own <Suspense> inside Splash,
   // so getLiveData never blocks the hero's first byte (PAGE-FRAMEWORK §5).
   return (

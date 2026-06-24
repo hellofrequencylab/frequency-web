@@ -142,28 +142,45 @@ function category(
   }
 }
 
-// ── header, from PUBLIC_MEGA_NAV (Discover + Explore as the two dropdowns) ─────
-// One header menu whose TOP-LEVEL categories are the mega-menu triggers (MegaBar at
-// triggerLevel='category'). Each PUBLIC_MEGA_NAV panel (index 0 = Discover, 1 =
-// Explore) becomes a top-level category; each of its MegaNavGroups becomes a CHILD
-// category (a column inside that trigger's panel), with the group's links as items.
-// The panel's `featured` tile is dropped: rail cards are menu-level (shared across all
-// triggers), so a per-panel featured card has no clean home under one merged menu.
+// ── header, from PUBLIC_MEGA_NAV (the six primary pages as mega-menu triggers) ──
+// One header menu whose TOP-LEVEL categories are the triggers (MegaBar at
+// triggerLevel='category'). Each PUBLIC_MEGA_NAV panel becomes a top-level category:
+//   - a panel with `sections` -> a disclosure trigger whose CHILD categories are the
+//     dropdown columns (a multi-column mega panel);
+//   - a panel with `items` -> a disclosure trigger whose own items are a single
+//     dropdown column of sub-pages (MegaBar shows a category with >1 item as a panel);
+//   - a panel with only `href` -> a category with one landing item, which MegaBar
+//     renders as a plain nav link (hasPanel === false).
+// The panel's `featured` tile is dropped: rail cards are menu-level, so a per-panel
+// featured card has no clean home under one merged menu.
 function headerMenu(): ResolvedMenu {
   const categories: ResolvedCategory[] = PUBLIC_MEGA_NAV.map((panel, pi) => {
-    const children: ResolvedCategory[] = (panel?.sections ?? []).map(
-      (group: MegaNavGroup, gi: number) => {
+    const label = panel?.label ?? `Menu ${pi + 1}`
+    const sections = panel?.sections ?? []
+    const directItems = panel?.items ?? []
+    // Multi-column dropdown: each section group becomes a child column.
+    if (sections.length > 0) {
+      const children: ResolvedCategory[] = sections.map((group: MegaNavGroup, gi: number) => {
         const items = group.items.map((it, ii) =>
           item(`default:header:cat:${pi}:child:${gi}:item:${ii}`, it.label, it.href, ii, {
             subheading: it.desc,
           }),
         )
         return category(`default:header:cat:${pi}:child:${gi}`, group.heading, gi, items)
-      },
-    )
-    // A top category with children renders as a disclosure trigger; its panel shows the
-    // child columns. Panels have no own landing link today, so no category items.
-    return category(`default:header:cat:${pi}`, panel?.label ?? `Menu ${pi + 1}`, pi, [], children)
+      })
+      return category(`default:header:cat:${pi}`, label, pi, [], children)
+    }
+    // Single-column dropdown: sub-pages ride directly on the top category. MegaBar
+    // renders a category with >1 item as a panel; the first item is its own landing page.
+    if (directItems.length > 0) {
+      const items = directItems.map((it, ii) =>
+        item(`default:header:cat:${pi}:item:${ii}`, it.label, it.href, ii, { subheading: it.desc }),
+      )
+      return category(`default:header:cat:${pi}`, label, pi, items)
+    }
+    // Plain link: a single landing item carries the href; MegaBar renders it as a link.
+    const landing = item(`default:header:cat:${pi}:item:0`, label, panel?.href ?? '#', 0)
+    return category(`default:header:cat:${pi}`, label, pi, [landing])
   })
 
   return {

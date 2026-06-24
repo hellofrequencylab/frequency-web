@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ArrowRight, Compass, Users, HandHeart, Home } from 'lucide-react'
+import { Render } from '@measured/puck/rsc'
 import {
   PhotoHero,
   Section,
@@ -12,6 +13,9 @@ import {
   Button,
   Card,
 } from '@/components/marketing/marketing-ui'
+import { config } from '@/lib/page-editor/config'
+import { getPublishedData } from '@/lib/page-editor/data'
+import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
@@ -32,17 +36,29 @@ export function generateMetadata(): Metadata {
   }
 }
 
-// Code-locked (like the splash): the coded story is the single source of truth, so
-// no published page-editor draft can shadow it with duplicated/garbled blocks.
-// Builder-first movement framing: a thousand people proved the hunger is real, we
-// learned what to build so it lasts, and now we hand the tools to the people who
-// start the next one. One rationed movement line; guru-free throughout.
-export default function AboutPage() {
+// getPublishedData -> getTemplate -> legacy, mirroring every other marketing route.
+// The (marketing) layout supplies the header/footer chrome, so a Puck document drops
+// straight in. The coded story below is the last-resort legacy fallback: a thousand
+// people proved the hunger is real, we learned what to build so it lasts, and now we
+// hand the tools to the people who start the next one. One rationed movement line;
+// guru-free throughout.
+export default async function AboutPage() {
+  const published = await getPublishedData('about')
+  const template = getTemplate('about')
+  const data = isRenderable(published) ? published : isRenderable(template) ? template : null
   return (
     <>
       <JsonLd
         data={breadcrumbSchema([{ name: 'About', path: '/about' }])}
       />
+      {data ? <Render config={config} data={data} /> : <LegacyAbout />}
+    </>
+  )
+}
+
+function LegacyAbout() {
+  return (
+    <>
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <PhotoHero
         image="/images/site/moonlight-1.jpg"
