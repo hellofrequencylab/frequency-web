@@ -13,6 +13,7 @@ import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 import { tierLabel } from '@/lib/dashboard/verdict'
 import type { MemberScores } from '@/lib/dashboard/scores'
+import type { ScoreConfidence } from '@/lib/traits/compute'
 
 const LIFECYCLE_PHRASE: Record<string, string> = {
   new: 'just arrived and still finding their feet',
@@ -51,6 +52,68 @@ export function deterministicContextLine(name: string, scores: MemberScores): st
   let line = `${parts.join('. ')}.`
   if (move) line += ` ${move}`
   return line
+}
+
+// ── Score explainability (the "why" on the Person view score row · Phase 3 · ADR-384) ──────────
+// A bare score is never shown. The Person view's MemberScores carry the verdicts but not the full
+// feature vector (that lives in member_traits at refresh time), so this derives a plain, ordered
+// "top signals" line + a confidence band from the shared scores themselves. PURE + deterministic +
+// unit-tested. No dashes. The richer driver derivation (over full PredictiveInputs) is
+// explainChurnRisk in lib/traits/compute.ts; this is the read-model-shaped companion.
+
+/** A surface-ready explanation for a member's score row: the top signals + a confidence band. */
+export interface ScoreReadout {
+  /** Top contributing signals, plain + in voice, most-decisive first (capped). */
+  signals: string[]
+  confidence: ScoreConfidence
+}
+
+const NBA_READOUT: Record<string, string> = {
+  reengage: 'gone quiet lately',
+  activate: 'has not done a first Practice',
+  join_circle: 'not anchored in a Circle',
+  deepen: 'active but sticking to one corner',
+  invite: 'a strong member with room to lead',
+  none: 'steady for now',
+}
+
+/**
+ * The plain "why" behind a member's scores, from the shared MemberScores. PURE. Orders the strongest
+ * drivers first: a high churn read leads, then the recommended next move, then the resonance tier and
+ * activation room. Confidence is `high` when scores agree on a clear standing, `low` when the member
+ * is barely scored, `medium` otherwise. Never narrates feelings; no dashes.
+ */
+export function explainMemberScores(scores: MemberScores): ScoreReadout {
+  const signals: string[] = []
+
+  if (scores.churnRisk === 'high') signals.push('high churn risk')
+  else if (scores.churnRisk === 'medium') signals.push('some churn risk')
+
+  if (scores.nextBestAction && scores.nextBestAction !== 'none') {
+    signals.push(NBA_READOUT[scores.nextBestAction] ?? 'has a clear next move')
+  }
+
+  if (scores.resonanceTier === 'at_risk') signals.push('resonance reads at risk')
+  else if (scores.resonanceTier === 'resonant') signals.push('resonance reads strong')
+
+  if (typeof scores.activationPropensity === 'number' && scores.activationPropensity >= 60) {
+    signals.push('high room to move')
+  }
+
+  if (signals.length === 0) signals.push('steady, nothing pressing')
+
+  // Confidence from how much standing is known + whether churn + tier agree.
+  const known = (scores.churnRisk ? 1 : 0) + (scores.resonanceTier ? 1 : 0) + (scores.lifecycleStage ? 1 : 0)
+  let confidence: ScoreConfidence = 'medium'
+  if (known <= 1) confidence = 'low'
+  else if (
+    (scores.churnRisk === 'high' && scores.resonanceTier === 'at_risk') ||
+    (scores.churnRisk === 'low' && scores.resonanceTier === 'resonant')
+  ) {
+    confidence = 'high'
+  }
+
+  return { signals: signals.slice(0, 3), confidence }
 }
 
 const SYSTEM = withVoice(

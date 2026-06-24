@@ -9,6 +9,10 @@ import {
   spaceHasEntitlement,
   spaceCapabilitiesFor,
   resolveSpaceManageAccess,
+  spaceAutonomyLevel,
+  autoExecutionAllowed,
+  asAutonomyLevel,
+  DEFAULT_AUTONOMY,
   type SpaceLike,
 } from './entitlements'
 
@@ -42,6 +46,42 @@ describe('entitlements (DEFAULT-DENY)', () => {
     expect(spaceEntitlements({ entitlements: 'not-an-object' })).toEqual({})
     expect(spaceEntitlements({ entitlements: ['crm'] })).toEqual({}) // arrays are not maps
     expect(spaceHasEntitlement({ entitlements: null }, 'crm')).toBe(false)
+  })
+})
+
+describe('autonomy slider (FAIL-CLOSED to suggest_only · ADR-384)', () => {
+  it('the default everywhere is suggest_only', () => {
+    expect(DEFAULT_AUTONOMY).toBe('suggest_only')
+    expect(spaceAutonomyLevel(null)).toBe('suggest_only')
+    expect(spaceAutonomyLevel(undefined)).toBe('suggest_only')
+    expect(spaceAutonomyLevel({})).toBe('suggest_only')
+    expect(spaceAutonomyLevel({ entitlements: {} })).toBe('suggest_only')
+  })
+
+  it('reads an explicit safe_auto setting off the entitlements blob', () => {
+    const space: SpaceLike = { entitlements: { 'crm.autonomy': 'safe_auto' } }
+    expect(spaceAutonomyLevel(space)).toBe('safe_auto')
+    expect(autoExecutionAllowed(space)).toBe(true)
+  })
+
+  it('FAIL-CLOSED: a garbage / unknown value reads as suggest_only', () => {
+    expect(spaceAutonomyLevel({ entitlements: { 'crm.autonomy': 'full_send' } })).toBe('suggest_only')
+    expect(spaceAutonomyLevel({ entitlements: { 'crm.autonomy': 1 } })).toBe('suggest_only')
+    expect(spaceAutonomyLevel({ entitlements: { 'crm.autonomy': null } })).toBe('suggest_only')
+    expect(spaceAutonomyLevel({ entitlements: ['crm.autonomy'] })).toBe('suggest_only')
+  })
+
+  it('autoExecutionAllowed is false by default (nothing auto-executes until raised)', () => {
+    expect(autoExecutionAllowed(null)).toBe(false)
+    expect(autoExecutionAllowed({})).toBe(false)
+    expect(autoExecutionAllowed({ entitlements: { 'crm.autonomy': 'suggest_only' } })).toBe(false)
+  })
+
+  it('asAutonomyLevel normalizes loosely, fail-closed', () => {
+    expect(asAutonomyLevel('safe_auto')).toBe('safe_auto')
+    expect(asAutonomyLevel('suggest_only')).toBe('suggest_only')
+    expect(asAutonomyLevel('nope')).toBe('suggest_only')
+    expect(asAutonomyLevel(undefined)).toBe('suggest_only')
   })
 })
 

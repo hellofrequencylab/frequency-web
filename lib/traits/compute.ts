@@ -279,6 +279,168 @@ export function resonanceHealthInputs(stats: MemberStats, istats: InteractionSta
   }
 }
 
+// ── Explainability (the "why" behind every score · Resonance Engine Phase 3 · ADR-384) ──
+// A bare score is never shown again (docs/NEXT-GEN-CRM.md "Every insight is a one-tap action").
+// These are SIBLING exports: they leave the numeric/enum return shapes above UNCHANGED (Phase 1/2
+// callers are untouched) and add an ordered, top-N "drivers" array so the surface can render a
+// "why now / top signals" line + a confidence chip. PURE + deterministic + unit-tested: given the
+// same inputs, the same drivers come back in the same priority order. No IO, no copy generation
+// here (the in-voice line is shaped at the surface); these are the structured reasons only.
+
+/** One contributing signal behind a score. `weight` is the driver's pull (higher = stronger), used
+ *  only to ORDER the reasons; the `label` is the plain, surface-ready phrase (no em or en dashes). */
+export interface ScoreReason {
+  /** A stable signal key (e.g. 'lifecycle', 'engagement_depth') for testing + analytics. */
+  signal: string
+  /** The plain, in-voice phrase naming the driver. No dashes. */
+  label: string
+  /** Relative pull (0..1) used to order the drivers, most-decisive first. */
+  weight: number
+}
+
+/** Confidence in a score, from how much signal it rests on. `high` = several strong drivers agree;
+ *  `low` = thin or conflicting signal (a brand-new member, an idle account). Drives the chip. */
+export type ScoreConfidence = 'low' | 'medium' | 'high'
+
+/** A score plus its ordered reasons + a confidence band. The shape the surfaces consume. The
+ *  underlying score keeps its native type (enum churn, number propensity), unchanged from above. */
+export interface ScoreWithReasons<T> {
+  value: T
+  /** Top drivers, most-decisive first (already sorted + capped). */
+  reasons: ScoreReason[]
+  confidence: ScoreConfidence
+}
+
+const DEPTH_LABEL: Record<EngagementDepth, string> = {
+  idle: 'no on-site activity',
+  shallow: 'light on-site activity',
+  moderate: 'steady on-site activity',
+  deep: 'deep, frequent engagement',
+}
+
+const LIFECYCLE_DRIVER: Record<LifecycleStage, string> = {
+  new: 'just joined',
+  activated: 'activated but cooling',
+  engaged: 'showing up regularly',
+  at_risk: 'has started to drift',
+  dormant: 'has gone quiet',
+}
+
+/** Order reasons most-decisive first + keep the top `cap` (default 3). PURE. A stable sort by
+ *  weight desc, then signal name, so the same inputs always yield the same order. */
+function topReasons(reasons: ScoreReason[], cap = 3): ScoreReason[] {
+  return [...reasons]
+    .sort((a, b) => (b.weight !== a.weight ? b.weight - a.weight : a.signal < b.signal ? -1 : a.signal > b.signal ? 1 : 0))
+    .slice(0, cap)
+}
+
+/**
+ * Churn risk WITH its top drivers + confidence. PURE. The numeric/enum verdict is the unchanged
+ * `churnRisk(p)`; this adds the ordered "why". Lifecycle dominates (it sets the band), engagement
+ * depth is the tie-breaker that pushes a wobbly member up or pulls them down, recency (rfm) backs it.
+ * Confidence is `high` for the clear ends (dormant, or healthy+engaged), `low` for a brand-new
+ * account with no depth yet (the thin-signal case), `medium` otherwise.
+ */
+export function explainChurnRisk(p: PredictiveInputs): ScoreWithReasons<ChurnRisk> {
+  const value = churnRisk(p)
+  const reasons: ScoreReason[] = []
+
+  // Lifecycle is the band-setter, so it leads.
+  reasons.push({
+    signal: 'lifecycle',
+    label: LIFECYCLE_DRIVER[p.lifecycle],
+    weight: p.lifecycle === 'dormant' ? 1 : p.lifecycle === 'at_risk' ? 0.8 : 0.5,
+  })
+
+  // Engagement depth: the lever that moves a member within their band.
+  const idleOrShallow = p.engagementDepth === 'idle' || p.engagementDepth === 'shallow'
+  reasons.push({ signal: 'engagement_depth', label: DEPTH_LABEL[p.engagementDepth], weight: idleOrShallow ? 0.7 : 0.4 })
+
+  // Recency, read off the rfm tens place, as supporting signal.
+  const recency = Math.floor(p.rfmScore / 10)
+  if (recency <= 2) reasons.push({ signal: 'recency', label: 'not active recently', weight: 0.6 })
+  else if (recency >= 4) reasons.push({ signal: 'recency', label: 'active in the last week', weight: 0.3 })
+
+  // Confidence: clear at the ends, thin for a brand-new idle account.
+  let confidence: ScoreConfidence = 'medium'
+  if (
+    p.lifecycle === 'dormant' ||
+    (p.lifecycle === 'engaged' && (p.engagementDepth === 'deep' || p.engagementDepth === 'moderate'))
+  ) {
+    confidence = 'high'
+  } else if (p.lifecycle === 'new' && p.engagementDepth === 'idle') {
+    confidence = 'low'
+  }
+
+  return { value, reasons: topReasons(reasons), confidence }
+}
+
+/**
+ * Activation propensity (0-100) WITH its top drivers + confidence. PURE. The number is the
+ * unchanged `activationPropensity(p)`; this names what is lifting (or flattening) it. An
+ * already-activated member is a special, fully-confident case. Otherwise breadth (surfaces),
+ * return frequency (active days), and sessions are the drivers, ordered by their contribution.
+ */
+export function explainActivationPropensity(p: PredictiveInputs): ScoreWithReasons<number> {
+  const value = activationPropensity(p)
+  if (p.activated) {
+    return {
+      value,
+      reasons: [{ signal: 'activated', label: 'already did a first Practice', weight: 1 }],
+      confidence: 'high',
+    }
+  }
+
+  const reasons: ScoreReason[] = []
+  if (p.interactionDays30 >= 3) reasons.push({ signal: 'active_days', label: 'returning often', weight: 0.8 })
+  else if (p.interactionDays30 === 0) reasons.push({ signal: 'active_days', label: 'not returning yet', weight: 0.7 })
+  if (p.surfaces30 >= 3) reasons.push({ signal: 'breadth', label: 'exploring several areas', weight: 0.6 })
+  else if (p.surfaces30 <= 1) reasons.push({ signal: 'breadth', label: 'has only seen one corner', weight: 0.5 })
+  if (p.sessions30 >= 3) reasons.push({ signal: 'sessions', label: 'visiting repeatedly', weight: 0.4 })
+  if (p.tenureDays <= 14) reasons.push({ signal: 'tenure', label: 'still in their first two weeks', weight: 0.35 })
+  if (reasons.length === 0) reasons.push({ signal: 'signal', label: 'too little signal to read yet', weight: 0.2 })
+
+  // Confidence rises with the amount of early signal; a member with no days + no surfaces is thin.
+  const signalCount = (p.interactionDays30 > 0 ? 1 : 0) + (p.surfaces30 > 0 ? 1 : 0) + (p.sessions30 > 0 ? 1 : 0)
+  const confidence: ScoreConfidence = signalCount >= 2 ? 'high' : signalCount === 1 ? 'medium' : 'low'
+
+  return { value, reasons: topReasons(reasons), confidence }
+}
+
+/**
+ * Resonance Health (0-100) WITH its top drivers + confidence. PURE. The number is the unchanged
+ * `resonanceHealth(p)`; this surfaces which of the four rolled-up signals carry it (or drag it).
+ * Each driver's weight is its share of the score (the constant weight times its 0..1 contribution),
+ * so the strongest contributor leads. Confidence is `high` when the inputs agree (all strong or all
+ * weak), `low` when they conflict (e.g. deep engagement but high churn), `medium` otherwise.
+ */
+export function explainResonanceHealth(p: ResonanceHealthInputs): ScoreWithReasons<number> {
+  const value = resonanceHealth(p)
+  const depth = DEPTH_POINTS[p.engagementDepth] ?? 0
+  const rfm = rfmNormalized(p.rfmScore)
+  const wam = p.weeklyActive ? 1 : 0
+  const churn = CHURN_DRAG[p.churnRisk] ?? 0
+
+  const reasons: ScoreReason[] = [
+    { signal: 'engagement_depth', label: DEPTH_LABEL[p.engagementDepth], weight: W_DEPTH * depth },
+    { signal: 'recency_frequency', label: rfm >= 0.5 ? 'recent and frequent' : 'light recency and frequency', weight: W_RFM * rfm },
+    { signal: 'weekly_active', label: wam ? 'weekly active' : 'not weekly active', weight: W_WAM * (wam ? 1 : 0.5) },
+    {
+      signal: 'churn_risk',
+      label: p.churnRisk === 'low' ? 'low churn risk' : p.churnRisk === 'high' ? 'high churn risk' : 'some churn risk',
+      weight: W_CHURN * (1 - churn),
+    },
+  ]
+
+  // Conflict detection: deep engagement yet high churn (or vice versa) is a low-confidence read.
+  const conflicted = (depth >= 0.67 && p.churnRisk === 'high') || (depth <= 0.34 && p.churnRisk === 'low')
+  const allStrong = depth >= 0.67 && rfm >= 0.5 && p.churnRisk === 'low'
+  const allWeak = depth <= 0.34 && rfm < 0.5 && p.churnRisk === 'high'
+  const confidence: ScoreConfidence = conflicted ? 'low' : allStrong || allWeak ? 'high' : 'medium'
+
+  return { value, reasons: topReasons(reasons), confidence }
+}
+
 /** All registry-governed computed traits for one member. */
 export function computeTraits(stats: MemberStats, now: number): ComputedTrait[] {
   return [

@@ -218,3 +218,25 @@ export function getPlaybook(id: string): Playbook | undefined {
 export function isFullyInProduct(p: Playbook): boolean {
   return p.actions.every((a) => a.surface === 'in_product')
 }
+
+// ── Effective autonomy under the per-Space slider (Resonance Engine Phase 3 · ADR-384) ──────────
+// The registry declares each playbook's DESIGN tier; the per-Space autonomy slider decides the
+// EFFECTIVE tier at run time. The single, pure decision both the Today path and the execute path
+// share, so they can never disagree on whether a playbook auto-runs.
+
+/** The effective autonomy tier of a playbook GIVEN whether the Space allows auto-execution. PURE.
+ *  When the Space is `suggest_only` (the default, `autoAllowed === false`), even a designed-`auto`
+ *  playbook is DOWNGRADED to `suggest` (a human approves; nothing auto-executes). When the Space is
+ *  `safe_auto` (`autoAllowed === true`), the design tier stands. `never_auto` is never raised; an
+ *  outbound `suggest` is never lowered. Member-facing/outbound is never auto regardless (the registry
+ *  type already forbids an outbound action inside an `auto` playbook). */
+export function effectiveAutonomyTier(tier: AutonomyTier, autoAllowed: boolean): AutonomyTier {
+  if (tier === 'auto' && !autoAllowed) return 'suggest'
+  return tier
+}
+
+/** True when a playbook would actually AUTO-EXECUTE for a Space with this auto-allowance. PURE.
+ *  Only a designed-`auto` playbook in a `safe_auto` Space auto-runs; everything else is a Suggest. */
+export function willAutoExecute(p: Playbook, autoAllowed: boolean): boolean {
+  return effectiveAutonomyTier(p.autonomyTier, autoAllowed) === 'auto'
+}

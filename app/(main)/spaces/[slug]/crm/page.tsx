@@ -5,7 +5,7 @@ import { Briefcase, CircleDollarSign, ListChecks, Lock, Trophy } from 'lucide-re
 import { DashboardTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities, spaceHasEntitlement, spaceAutonomyLevel } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { getDeals, countOpenTasks, computeMetrics, formatMoney, ensureSpaceStages } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
@@ -18,6 +18,7 @@ import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
 import { SpaceCockpitBand } from './space-cockpit-band'
+import { AutonomyControl } from './autonomy-control'
 
 // PER-SPACE CRM BOARD (CRM-STRATEGY §6/§7, ADR-361 P3). The paid, full-width Dashboard a Space runs:
 // its pipeline (per-segment stages + deals) plus its contacts, scoped to this space_id, with the
@@ -133,6 +134,13 @@ export default async function SpaceCrmBoardPage({
       <Suspense fallback={<CockpitSkeleton />}>
         <SpaceCockpitBand spaceId={space.id} slug={space.slug} />
       </Suspense>
+
+      {/* AUTONOMY SLIDER (Phase 3 · ADR-384): the owner's dial for how much Vera does on its own.
+          Owner/admin only (caps.canManageMembers); the setter re-gates server-side. Fail-closed to
+          suggest_only by default, so nothing auto-executes until the owner explicitly raises it. */}
+      {caps.canManageMembers && (
+        <AutonomyControl slug={space.slug} level={spaceAutonomyLevel(space)} />
+      )}
 
       <ImportContactsForm spaceId={space.id} />
 

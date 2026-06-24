@@ -52,6 +52,56 @@ export function spaceHasEntitlement(space: SpaceLike | null | undefined, key: st
   return spaceEntitlements(space)[key] === true
 }
 
+// ── Per-Space autonomy slider (Resonance Engine Phase 3 · ADR-384) ───────────────────────────
+// How much the playbook engine may DO on its own for a Space. The single source of truth the
+// execute + Today paths consult to decide whether an `auto`-tier playbook actually auto-runs, or is
+// downgraded to a Suggest a human approves. FAIL-CLOSED: the default everywhere (a missing/garbage
+// value, a null Space, the platform root) is `suggest_only` until an owner/operator explicitly
+// raises it, so nothing auto-executes by surprise. It is read off the same `spaces.entitlements`
+// jsonb (key `crm.autonomy`), so a new setting is one jsonb key, not a schema change (ADR-246).
+
+/** The autonomy levels, low to high. `suggest_only` = Vera drafts, a human approves everything (the
+ *  safe default). `safe_auto` = the in-product, reversible `auto` playbooks (e.g. the streak save)
+ *  may run on their own; member-facing sends still stay Suggest (outbound is never auto, ever). */
+export type AutonomyLevel = 'suggest_only' | 'safe_auto'
+
+/** The platform (root) default + the per-Space default: suggest only, until explicitly raised. */
+export const DEFAULT_AUTONOMY: AutonomyLevel = 'suggest_only'
+
+const AUTONOMY_LEVELS: readonly AutonomyLevel[] = ['suggest_only', 'safe_auto']
+
+/** Normalize an arbitrary value to an AutonomyLevel, FAIL-CLOSED to `suggest_only`. PURE. Only an
+ *  exact, known string raises it; anything else (a typo, a number, null) reads as suggest_only. */
+export function asAutonomyLevel(value: unknown): AutonomyLevel {
+  return typeof value === 'string' && (AUTONOMY_LEVELS as readonly string[]).includes(value)
+    ? (value as AutonomyLevel)
+    : DEFAULT_AUTONOMY
+}
+
+/**
+ * The autonomy level for a Space. PURE: reads the `crm.autonomy` key off the entitlements blob.
+ * FAIL-CLOSED: a null Space, a missing key, or a malformed value all read as `suggest_only`. This is
+ * the single gate the execute + Today paths consult; raising it is the only way an `auto` playbook
+ * actually auto-runs for that Space.
+ */
+export function spaceAutonomyLevel(space: SpaceLike | null | undefined): AutonomyLevel {
+  if (!space) return DEFAULT_AUTONOMY
+  const raw = space.entitlements
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return DEFAULT_AUTONOMY
+  return asAutonomyLevel((raw as Record<string, unknown>)['crm.autonomy'])
+}
+
+/**
+ * Whether a Space (or the platform root, when no Space is passed) may AUTO-EXECUTE an `auto`-tier
+ * playbook. PURE. True ONLY when the resolved autonomy level is `safe_auto`. Everything else (the
+ * default, a missing setting, a null Space, the platform root) is false, so the engine downgrades
+ * even `auto` playbooks to Suggest. Member-facing/outbound playbooks are never auto regardless; this
+ * gate only governs the in-product reversible ones.
+ */
+export function autoExecutionAllowed(space: SpaceLike | null | undefined): boolean {
+  return spaceAutonomyLevel(space) === 'safe_auto'
+}
+
 // ── Capabilities (owner + member role -> a capability set) ───────────────────────────────
 
 /** What a person may do on a Space. Derived from owner + their space-member role; consumed by the
