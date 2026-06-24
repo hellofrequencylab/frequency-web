@@ -93,7 +93,7 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
       {
         heading: "Where to start",
         items: [
-          { label: "Lead", href: "/lead", desc: "Host one Circle. We hand you the format" },
+          { label: "Build", href: "/build", desc: "Host one Circle. We hand you the format" },
           { label: "Practice", href: "/practice", desc: "Start where you are, today" },
           { label: "Spread", href: "/spread", desc: "Take a role in building community around you" },
         ],
@@ -135,7 +135,7 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
 
 // Flat list for the marketing footer (every public page, no grouping).
 export const MARKETING_NAV: NavLink[] = [
-  { label: "Lead", href: "/lead" },
+  { label: "Build", href: "/build" },
   { label: "Practice", href: "/practice" },
   { label: "Spread", href: "/spread" },
   { label: "The Lab", href: "/the-lab" },

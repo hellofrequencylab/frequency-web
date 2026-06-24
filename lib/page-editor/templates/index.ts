@@ -4,7 +4,7 @@ import { data as theLab } from './the-lab'
 import { data as theCommunity } from './the-community'
 import { data as theQuest } from './the-quest'
 import { data as pricing } from './pricing'
-import { data as lead } from './lead'
+import { data as build } from './build'
 import { data as practice } from './practice'
 import { data as spread } from './spread'
 
@@ -19,7 +19,7 @@ const TEMPLATES: Record<string, Data> = {
   'the-community': theCommunity,
   'the-quest': theQuest,
   pricing,
-  lead,
+  build,
   practice,
   spread,
 }

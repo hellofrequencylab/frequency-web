@@ -10,27 +10,28 @@ export const revalidate = 3600
 
 export function generateMetadata(): Metadata {
   return {
-    title: 'Lead a Circle',
+    title: 'Build a Circle',
     description:
       'Be the reason your people have somewhere to go. Host one Circle and we hand you the format, the first-night script, and the rails. You do not have to build a community alone.',
-    alternates: { canonical: '/lead' },
+    alternates: { canonical: '/build' },
     openGraph: {
-      title: 'Lead a Circle · Frequency',
+      title: 'Build a Circle · Frequency',
       description:
         'Host one Circle. We hand you the format and you are not alone. Set out the chairs and be the reason your people have somewhere to go.',
-      url: '/lead',
+      url: '/build',
     },
   }
 }
 
-// The /lead landing renders the live published Puck document when an operator has
+// The /build landing renders the live published Puck document when an operator has
 // published one; otherwise it falls back to the git-authored template so the page
 // is live the moment this ships and stays editable/overridable in the editor.
-export default async function LeadPage() {
-  const data = (await getPublishedData('lead')) ?? getTemplate('lead')
+// (Routed at /build, not /lead: the in-app Leadership home already owns /lead.)
+export default async function BuildPage() {
+  const data = (await getPublishedData('build')) ?? getTemplate('build')
   return (
     <>
-      <JsonLd data={breadcrumbSchema([{ name: 'Lead', path: '/lead' }])} />
+      <JsonLd data={breadcrumbSchema([{ name: 'Build', path: '/build' }])} />
       {data && Array.isArray(data.content) && data.content.length > 0 && (
         <Render config={config} data={data} />
       )}

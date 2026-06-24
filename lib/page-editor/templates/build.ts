@@ -1,6 +1,6 @@
 import type { Data } from '@measured/puck'
 
-// /lead. The builder landing, authored from the standardized block library so the
+// /build. The builder landing, authored from the standardized block library so the
 // editor mirrors the live page (ADR-055 / "editor = live"). Audience: the Latent
 // Leader (CONTENT-VOICE §2b). Promise: host one Circle, we hand you the format,
 // you are not alone. First action: start one Circle. Voice rules: plain sentences,

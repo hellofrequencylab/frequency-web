@@ -36,10 +36,10 @@ type Role = {
 const ROLES: Role[] = [
   {
     illustration: 'lead',
-    label: 'Lead',
+    label: 'Build',
     blurb: 'Be the reason your people have somewhere to go. Host one Circle and we hand you the format.',
     cta: 'Start one Circle',
-    href: '/lead',
+    href: '/build',
   },
   {
     illustration: 'practice',

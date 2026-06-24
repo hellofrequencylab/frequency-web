@@ -33,7 +33,7 @@ export const EDITABLE_PAGES = [
   { slug: 'the-community', title: 'The Community', path: '/the-community' },
   { slug: 'the-quest', title: 'The Quest', path: '/the-quest' },
   { slug: 'pricing', title: 'Pricing', path: '/pricing' },
-  { slug: 'lead', title: 'Lead', path: '/lead' },
+  { slug: 'build', title: 'Build', path: '/build' },
   { slug: 'practice', title: 'Practice', path: '/practice' },
   { slug: 'spread', title: 'Spread', path: '/spread' },
 ] as const
