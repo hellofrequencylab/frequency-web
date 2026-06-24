@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import {
   User, UserCheck, Mail, QrCode, Activity, MapPin, Building2,
   Tag, StickyNote, Briefcase, Clock, ScanLine, Sparkles, Users,
-  MessageSquare, Phone, CalendarDays,
+  MessageSquare, Phone, CalendarDays, HeartPulse, TrendingUp,
 } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
@@ -11,6 +11,9 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { resolvePerson } from '@/lib/crm/person'
+import { getMemberScores } from '@/lib/dashboard/scores'
+import { draftContextLine } from '@/lib/dashboard/person-band'
+import { tierLabel, healthTone } from '@/lib/dashboard/verdict'
 import { listInteractionsForPerson, type InteractionChannel } from '@/lib/crm/interactions'
 import { buildTimeline } from '@/lib/crm/timeline'
 import { buildJourney, groupByPhase, type JourneyKind } from '@/lib/crm/journey'
@@ -96,6 +99,17 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
   const channel = member?.acquisition?.channel ?? contact.acquisition?.channel ?? contact.source ?? '–'
   const interactions = person.scans.length + person.events.length
 
+  // ALTITUDE 3 - the Person view (ADR-383): the shared scores + a "where this person is" band.
+  // Both reads are fail-safe (nulls / a deterministic line on any error), so they never break the
+  // page. Scores read from the dashboard matview; the band is drafted via withVoice (deterministic
+  // fallback). The per-signal "why" (explainability) is Phase 3, so the bare scores show here only.
+  const scores = await getMemberScores(contact.profileId)
+  const hasScores = scores.resonanceTier != null || scores.lifecycleStage != null
+  const contextLine = await draftContextLine(
+    (member?.displayName || contact.displayName || contact.email.split('@')[0] || 'This person').trim(),
+    scores,
+  )
+
   return (
     <DetailTemplate
       back={{ href: '/admin/marketing/contacts', label: 'Contacts' }}
@@ -124,6 +138,54 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
         </div>
       }
     >
+      {/* Context band + score row (Altitude 3, ADR-383): the "where this person is" line, then the
+          shared scores as StatCards. The per-signal "why" is Phase 3; the bare scores show here. */}
+      <section>
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-subtle">
+            <Sparkles className="h-3.5 w-3.5" /> Where this person is
+          </p>
+          <p className="mt-1.5 text-sm text-text">{contextLine}</p>
+        </div>
+
+        {hasScores && (
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <StatCard
+              label={
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className={`h-2 w-2 shrink-0 rounded-full ${
+                      scores.resonanceHealth == null
+                        ? 'bg-subtle'
+                        : healthTone(scores.resonanceHealth) === 'success'
+                          ? 'bg-success'
+                          : healthTone(scores.resonanceHealth) === 'warning'
+                            ? 'bg-warning'
+                            : 'bg-danger'
+                    }`}
+                    aria-hidden
+                  />
+                  Resonance Health
+                </span>
+              }
+              value={scores.resonanceHealth == null ? '–' : Math.round(scores.resonanceHealth)}
+              icon={HeartPulse}
+              detail={scores.resonanceTier ? tierLabel(scores.resonanceTier) : undefined}
+            />
+            <StatCard
+              label="Churn risk"
+              value={scores.churnRisk ? scores.churnRisk[0].toUpperCase() + scores.churnRisk.slice(1) : '–'}
+              icon={Activity}
+            />
+            <StatCard
+              label="Activation propensity"
+              value={scores.activationPropensity == null ? '–' : Math.round(scores.activationPropensity)}
+              icon={TrendingUp}
+            />
+          </div>
+        )}
+      </section>
+
       {/* At a glance */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Status" value={member ? 'Member' : 'Lead'} icon={member ? UserCheck : User} />
