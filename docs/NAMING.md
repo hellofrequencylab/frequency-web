@@ -311,3 +311,23 @@ Phase-6 zero-hits grep carves them out:
 - **"task"**: `crew_tasks` IS the canon Task entity: no new entity, no collision.
 - **"live"/"static"**: retired only as the old status set; alive in live-location,
   Next.js static rendering, etc.
+
+## Starter Circles (templates the community remixes)
+
+- **Starter Circle**: the member-facing name for one of the staff-authored Circle
+  blueprints (3 per Pillar) a leader adopts and runs. Operator surfaces call the
+  same records **Circle Templates**. One concept, two audiences.
+- **Remix** (the verb): adopting a Starter Circle, or claiming a sample Circle,
+  into your own. The button reads **Remix**; the subtitle/tooltip reads "Claim
+  this circle, or make it your own." Remixing creates a private DRAFT you own;
+  publishing makes a completely original live Circle (no template badge, no link
+  back). A template's **Remix it** field lists the variations, the ways to remix
+  it, so the verb and the field agree.
+- **Make it yours**: the friendly gloss for Remix (also the practice-template
+  phrase). The modal heading. Not a separate action.
+- **Claim**: kept only inside the Remix subtitle ("Claim this circle..."); no
+  longer a standalone button label. The legacy sample-Circle claim is one surface
+  of Remix.
+- **draft / published**: a Circle lifecycle. `status='draft'` is owner-only
+  (hidden from discovery); publishing flips it to `active`. Creating a Circle
+  makes you a **Host**, which opens the Leadership tab (`/lead`).
