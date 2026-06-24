@@ -108,12 +108,6 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
           { label: 'Nurture', href: '/admin/marketing/nurture' },
           { label: 'Analytics', href: '/admin/marketing/analytics' },
           { label: 'Beta', href: '/admin/marketing/beta' },
-        ],
-      },
-      {
-        heading: 'Pipeline',
-        items: [
-          { label: 'Contacts', href: '/admin/marketing/contacts' },
           { label: 'Referrals', href: '/admin/referrals' },
         ],
       },
