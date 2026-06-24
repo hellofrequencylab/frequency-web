@@ -13,7 +13,7 @@ export async function GET() {
   const cats = await getAllCategories()
 
   const out: string[] = [
-    `# ${SITE_NAME} — full content for language models`,
+    `# ${SITE_NAME}: full content for language models`,
     '',
     `> ${SITE_DESCRIPTION} ${SITE_TAGLINE}. Taking root in ${FOUNDING_PLACE}. Contact: ${CONTACT_EMAIL}.`,
     '',

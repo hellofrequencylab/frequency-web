@@ -12,6 +12,7 @@ import {
   alignField,
 } from '@/lib/page-editor/fields'
 import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from '@/lib/page-editor/layout'
+import { safeHref } from '@/lib/page-editor/richtext'
 
 // Re-export the full helper set so block files can import everything they need
 // from one place (`@/components/page-editor/blocks/kit`).
@@ -143,7 +144,7 @@ export function CtaButton({
           ? 'text-white/80 hover:text-white'
           : 'text-primary-strong hover:underline'
   return (
-    <Link href={href} className={`${base} ${styles}`}>
+    <Link href={safeHref(href) ?? '#'} className={`${base} ${styles}`}>
       {label}
       {withArrow && <ArrowRight className="w-5 h-5" aria-hidden />}
     </Link>
