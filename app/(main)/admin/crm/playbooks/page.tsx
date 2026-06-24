@@ -10,7 +10,7 @@ import { autoExecutionAllowed } from '@/lib/spaces/entitlements'
 import { getPlaybookActivity, type PlaybookRunRow } from '@/lib/playbooks/overview'
 import type { PlaybookRunStatus } from '@/lib/playbooks/runs'
 
-// PLAYBOOKS, the registry of saved Vera plays + their run history (Resonance Engine · ADR-388 ·
+// PLAYBOOKS, the registry of saved Vera plays + their run history (Resonance Engine · ADR-389 ·
 // docs/ADMIN-BUILD-PLAN.md Phase 3a · docs/NEXT-GEN-CRM.md "prediction -> playbook -> action").
 // Composes the AdminTemplate as an Index surface: a StatCard row, the playbook catalog (read from the
 // CODE registry, the source of truth), and the recent run history (read fail-safe from playbook_runs).

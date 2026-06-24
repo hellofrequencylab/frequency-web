@@ -109,14 +109,14 @@ unchanged (Resonance AI group stays `janitor`, Standard CRM stays `host+`/`staff
 
 ---
 
-## Phase 3 — Build the two net-new Resonance surfaces (✅ shipped, ADR-388)
+## Phase 3 — Build the two net-new Resonance surfaces (✅ shipped, ADR-389)
 
 Net-new product work. Ships after the IA cleanup lands so the new items slot into a clean
 domain. Both compose the page-framework templates (never hand-rolled) and read existing
 Resonance Engine tables activated on prod (`playbooks`, `playbook_runs`, `resonance_edges`,
 `resonance_embeddings`, `member_engagement_scores`).
 
-> **Status: ✅ both surfaces shipped (ADR-388).** Read-only v1, additive only, no data-layer
+> **Status: ✅ both surfaces shipped (ADR-389).** Read-only v1, additive only, no data-layer
 > or migration change. Both gate server-side, compose the kit, and degrade to a calm empty
 > state when the prod tables are empty. Nav registered in TWO systems (`sections.ts` +
 > `nav.ts`); `nav-areas.ts` is intentionally NOT touched (these are sub-pages, not top-level

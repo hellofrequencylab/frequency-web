@@ -16,7 +16,7 @@ import {
   type ConnectionParty,
 } from '@/lib/resonance/graph-overview'
 
-// RESONANCE GRAPH, the consent-first relationship + health view (Resonance Engine · ADR-388 ·
+// RESONANCE GRAPH, the consent-first relationship + health view (Resonance Engine · ADR-389 ·
 // docs/ADMIN-BUILD-PLAN.md Phase 3b · docs/NEXT-GEN-CRM.md "The Resonance Graph"). Composes the
 // AdminTemplate as a Dashboard surface: a metric row (consented members, live edges, mean resonance
 // health), then the relationship view as a RANKED, ACCESSIBLE list of the strongest consented

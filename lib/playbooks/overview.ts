@@ -1,4 +1,4 @@
-// The Playbooks SURFACE read layer (Resonance Engine · ADR-388 · docs/ADMIN-BUILD-PLAN.md Phase 3a).
+// The Playbooks SURFACE read layer (Resonance Engine · ADR-389 · docs/ADMIN-BUILD-PLAN.md Phase 3a).
 // The fail-safe reads the /admin/crm/playbooks registry page composes: the run-history rows + the
 // week's run tallies. The playbook CATALOG itself is the code registry (lib/playbooks/registry.ts,
 // the source of truth); this module only reads the RUNTIME signal the registry cannot know: what

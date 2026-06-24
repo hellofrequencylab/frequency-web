@@ -1,4 +1,4 @@
-// The Resonance Graph SURFACE read layer (Resonance Engine · ADR-388 · docs/ADMIN-BUILD-PLAN.md
+// The Resonance Graph SURFACE read layer (Resonance Engine · ADR-389 · docs/ADMIN-BUILD-PLAN.md
 // Phase 3b). The consent-first, fail-safe reads the /admin/crm/graph dashboard composes: the metric
 // row (consented members, live edges, mean resonance health) and the strongest-connections list (a
 // ranked, accessible projection of resonance_edges, NEVER a heavy graph-viz dependency).
