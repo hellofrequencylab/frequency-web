@@ -10,12 +10,11 @@ import { getMenu, getMenuSettings } from '@/lib/menus/read'
 // topic nav). Public (not in proxy.ts PROTECTED_PATHS), statically generated.
 export default async function HelpLayout({ children }: { children: React.ReactNode }) {
   // DB-backed nav megas (lib/menus); fall back to code defaults on any miss.
-  const [categories, index, discoverMenu, exploreMenu, footerMenu, menuTimings] = await Promise.all([
+  const [categories, index, headerMenu, footerMenu, menuTimings] = await Promise.all([
     getAllCategories(),
     getSearchIndex(),
-    getMenu('public_discover'),
-    getMenu('public_explore'),
-    getMenu('marketing_footer'),
+    getMenu('header'),
+    getMenu('footer'),
     getMenuSettings(),
   ])
   const nav = categories.map((c) => ({
@@ -30,7 +29,7 @@ export default async function HelpLayout({ children }: { children: React.ReactNo
 
   return (
     <>
-      <MarketingHeader discoverMenu={discoverMenu} exploreMenu={exploreMenu} menuTimings={menuTimings} />
+      <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} />
       <main className="min-h-screen bg-surface pt-16">
         <div className="mx-auto flex max-w-6xl gap-10 px-4 py-10 lg:px-8">
           <aside className="hidden w-64 shrink-0 lg:block">

@@ -7,6 +7,7 @@ import { menuDb } from './db'
 import { defaultMenu, DEFAULT_MENU_SETTINGS, isPinnedRailItem } from './defaults'
 import { getAdminMenu } from './read'
 import { getMenuConfig } from '@/lib/menu-config'
+import { STAFF_DOMAINS, ACCESS_LEVELS, type StaffDomain, type Access } from '@/lib/core/staff-roles'
 import type {
   MenuAccess,
   MenuMode,
@@ -32,13 +33,7 @@ import type {
 type Result = { ok: true } | { ok: false; error: string }
 type EnsureResult = { ok: true; id: string } | { ok: false; error: string }
 
-const SURFACE_KEYS: readonly MenuSurfaceKey[] = [
-  'public_discover',
-  'public_explore',
-  'admin_subheader',
-  'left_rail',
-  'marketing_footer',
-]
+const SURFACE_KEYS: readonly MenuSurfaceKey[] = ['header', 'left', 'footer', 'profile', 'admin_header']
 const MODE_VALUES: readonly MenuMode[] = ['active', 'ghost', 'hidden']
 const ACCESS_VALUES: readonly MenuAccess[] = [
   'visitor',
@@ -73,6 +68,20 @@ function isMode(v: unknown): v is MenuMode {
 }
 function isAccess(v: unknown): v is MenuAccess {
   return typeof v === 'string' && (ACCESS_VALUES as readonly string[]).includes(v)
+}
+function isStaffDomain(v: unknown): v is StaffDomain {
+  return typeof v === 'string' && (STAFF_DOMAINS as readonly string[]).includes(v)
+}
+function isStaffLevel(v: unknown): v is Access {
+  return typeof v === 'string' && (ACCESS_LEVELS as readonly string[]).includes(v)
+}
+/** Resolve a staff-domain input to a clean column value: a valid domain, or null
+ *  (clears the gate). Unknown strings are rejected to null rather than written. */
+function cleanStaffDomain(v: unknown): string | null {
+  return isStaffDomain(v) ? v : null
+}
+function cleanStaffLevel(v: unknown): string | null {
+  return isStaffLevel(v) ? v : null
 }
 
 /** Clamp to the column CHECK ranges. `null`/`undefined` pass through unchanged. */
@@ -207,7 +216,7 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
     // Left rail: bridge the operator's saved menu_config (order + hidden) onto the
     // default so seeding reproduces the rail they currently see. Best-effort: any read
     // failure or empty config falls through to the plain default.
-    if (surfaceKey === 'left_rail') {
+    if (surfaceKey === 'left') {
       try {
         const config = await getMenuConfig()
         if (config.order.size > 0 || config.hidden.size > 0) {
@@ -236,6 +245,11 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
           grid_col: clampGrid(cat.gridCol) ?? null,
           grid_row: clampGrid(cat.gridRow) ?? null,
           col_span: clampSpan(cat.colSpan) ?? 1,
+          min_access: cat.minAccess ?? 'visitor',
+          staff_domain: cleanStaffDomain(cat.staffDomain),
+          staff_level: cleanStaffLevel(cat.staffLevel),
+          icon: cat.icon ?? null,
+          blurb: cat.blurb ?? null,
         })
         .select('id')
         .limit(1)
@@ -271,6 +285,8 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
       mode: MenuMode
       role_modes: Record<string, MenuMode>
       min_access: MenuAccess
+      staff_domain: string | null
+      staff_level: string | null
     }
     const itemRows: ItemInsert[] = []
     const pushItems = (cats: ResolvedCategory[]) => {
@@ -289,6 +305,8 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
             mode: it.mode,
             role_modes: it.roleModes,
             min_access: it.minAccess,
+            staff_domain: cleanStaffDomain(it.staffDomain),
+            staff_level: cleanStaffLevel(it.staffLevel),
           })
         }
         pushItems(cat.children)
@@ -311,6 +329,8 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
         mode: it.mode,
         role_modes: it.roleModes,
         min_access: it.minAccess,
+        staff_domain: cleanStaffDomain(it.staffDomain),
+        staff_level: cleanStaffLevel(it.staffLevel),
       })
     }
     pushItems(def.categories)
@@ -383,6 +403,11 @@ export type CreateCategoryInput = {
   gridCol?: number | null
   gridRow?: number | null
   colSpan?: number
+  minAccess?: MenuAccess
+  staffDomain?: StaffDomain | null
+  staffLevel?: Access | null
+  icon?: string | null
+  blurb?: string | null
 }
 
 export async function createCategory(input: CreateCategoryInput): Promise<EnsureResult> {
@@ -400,6 +425,11 @@ export async function createCategory(input: CreateCategoryInput): Promise<Ensure
         grid_col: clampGrid(input.gridCol) ?? null,
         grid_row: clampGrid(input.gridRow) ?? null,
         col_span: clampSpan(input.colSpan) ?? 1,
+        min_access: input.minAccess && isAccess(input.minAccess) ? input.minAccess : 'visitor',
+        staff_domain: cleanStaffDomain(input.staffDomain),
+        staff_level: cleanStaffLevel(input.staffLevel),
+        icon: input.icon ?? null,
+        blurb: input.blurb ?? null,
       })
       .select('id')
       .limit(1)
@@ -420,6 +450,11 @@ export type UpdateCategoryPatch = {
   gridCol?: number | null
   gridRow?: number | null
   colSpan?: number
+  minAccess?: MenuAccess
+  staffDomain?: StaffDomain | null
+  staffLevel?: Access | null
+  icon?: string | null
+  blurb?: string | null
 }
 
 export async function updateCategory(id: string, patch: UpdateCategoryPatch): Promise<Result> {
@@ -433,6 +468,11 @@ export async function updateCategory(id: string, patch: UpdateCategoryPatch): Pr
     if ('gridCol' in patch) update.grid_col = clampGrid(patch.gridCol) ?? null
     if ('gridRow' in patch) update.grid_row = clampGrid(patch.gridRow) ?? null
     if (patch.colSpan != null) update.col_span = clampSpan(patch.colSpan)
+    if (patch.minAccess != null && isAccess(patch.minAccess)) update.min_access = patch.minAccess
+    if ('staffDomain' in patch) update.staff_domain = cleanStaffDomain(patch.staffDomain)
+    if ('staffLevel' in patch) update.staff_level = cleanStaffLevel(patch.staffLevel)
+    if ('icon' in patch) update.icon = patch.icon ?? null
+    if ('blurb' in patch) update.blurb = patch.blurb ?? null
     if (Object.keys(update).length === 0) return { ok: true }
 
     const db = adminDb()
@@ -476,6 +516,8 @@ export type CreateItemInput = {
   mode?: MenuMode
   roleModes?: Record<string, MenuMode>
   minAccess?: MenuAccess
+  staffDomain?: StaffDomain | null
+  staffLevel?: Access | null
   ghostTier?: string | null
   ghostMessage?: string | null
 }
@@ -506,6 +548,8 @@ export async function createItem(input: CreateItemInput): Promise<EnsureResult> 
         mode: input.mode ?? 'active',
         role_modes: sanitizeRoleModes(input.roleModes),
         min_access: input.minAccess ?? 'visitor',
+        staff_domain: cleanStaffDomain(input.staffDomain),
+        staff_level: cleanStaffLevel(input.staffLevel),
         ghost_tier: input.ghostTier ?? null,
         ghost_message: input.ghostMessage ?? null,
       })
@@ -534,6 +578,8 @@ export type UpdateItemPatch = {
   mode?: MenuMode
   roleModes?: Record<string, MenuMode>
   minAccess?: MenuAccess
+  staffDomain?: StaffDomain | null
+  staffLevel?: Access | null
   ghostTier?: string | null
   ghostMessage?: string | null
 }
@@ -559,6 +605,8 @@ export async function updateItem(id: string, patch: UpdateItemPatch): Promise<Re
     if (patch.mode != null) update.mode = patch.mode
     if (patch.roleModes != null) update.role_modes = sanitizeRoleModes(patch.roleModes)
     if (patch.minAccess != null) update.min_access = patch.minAccess
+    if ('staffDomain' in patch) update.staff_domain = cleanStaffDomain(patch.staffDomain)
+    if ('staffLevel' in patch) update.staff_level = cleanStaffLevel(patch.staffLevel)
     if ('ghostTier' in patch) update.ghost_tier = patch.ghostTier ?? null
     if ('ghostMessage' in patch) update.ghost_message = patch.ghostMessage ?? null
     if (Object.keys(update).length === 0) return { ok: true }
@@ -584,6 +632,90 @@ export async function deleteItem(id: string): Promise<Result> {
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'deleteItem failed' }
+  }
+}
+
+/** Move a LINK to another container (ADR-390 "put any page anywhere"). Ensures the dest
+ *  menu exists, then re-stamps the item's menu_id, drops it to the dest TOP LEVEL
+ *  (category_id null), and appends it. The operator can then drag it into a group within
+ *  that surface. Janitor-gated. */
+export async function moveItem(id: string, surfaceKey: MenuSurfaceKey): Promise<Result> {
+  try {
+    await requireJanitor()
+    if (!id) return { ok: false, error: 'Missing item id' }
+    if (!isSurface(surfaceKey)) return { ok: false, error: 'Unknown surface' }
+    const ensured = await ensureMenu(surfaceKey)
+    if (!ensured.ok) return { ok: false, error: ensured.error }
+    const db = adminDb()
+    // Append to the end of the dest top level.
+    const existing = await db
+      .from<{ id: string }>('menu_items')
+      .select('id')
+      .eq('menu_id', ensured.id)
+      .is('category_id', null)
+    const position = (existing.data ?? []).length
+    const { error } = await db
+      .from('menu_items')
+      .update({ menu_id: ensured.id, category_id: null, position })
+      .eq('id', id)
+    if (error) return { ok: false, error: error.message }
+    revalidatePath('/', 'layout')
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'moveItem failed' }
+  }
+}
+
+/** Move a CATEGORY (group) and its whole subtree to another container. menu_items carry
+ *  menu_id INDEPENDENTLY of category_id, so every descendant category AND item must be
+ *  re-stamped with the dest menu_id or they orphan (wrong menu_id → invisible). The moved
+ *  root category drops to the dest TOP LEVEL (parent_id null) and appends. Janitor-gated. */
+export async function moveCategory(id: string, surfaceKey: MenuSurfaceKey): Promise<Result> {
+  try {
+    await requireJanitor()
+    if (!id) return { ok: false, error: 'Missing category id' }
+    if (!isSurface(surfaceKey)) return { ok: false, error: 'Unknown surface' }
+    const ensured = await ensureMenu(surfaceKey)
+    if (!ensured.ok) return { ok: false, error: ensured.error }
+    const db = adminDb()
+
+    // Collect the moved category + all descendant categories (BFS over parent_id).
+    const catIds: string[] = [id]
+    let frontier: string[] = [id]
+    while (frontier.length > 0) {
+      const res = await db
+        .from<{ id: string }>('menu_categories')
+        .select('id')
+        .in('parent_id', frontier)
+      const next = (res.data ?? []).map((r) => r.id).filter((cid) => !catIds.includes(cid))
+      catIds.push(...next)
+      frontier = next
+    }
+
+    // Re-stamp menu_id on every category in the subtree and every item under those
+    // categories, so nothing is left pointing at the old menu.
+    const upCats = await db.from('menu_categories').update({ menu_id: ensured.id }).in('id', catIds)
+    if (upCats.error) return { ok: false, error: upCats.error.message }
+    const upItems = await db.from('menu_items').update({ menu_id: ensured.id }).in('category_id', catIds)
+    if (upItems.error) return { ok: false, error: upItems.error.message }
+
+    // Drop the moved ROOT category to the dest top level + append (descendants keep their
+    // parent_id, all now within the re-stamped subtree).
+    const existing = await db
+      .from<{ id: string }>('menu_categories')
+      .select('id')
+      .eq('menu_id', ensured.id)
+      .is('parent_id', null)
+    const position = (existing.data ?? []).filter((r) => r.id !== id).length
+    const { error } = await db
+      .from('menu_categories')
+      .update({ parent_id: null, position })
+      .eq('id', id)
+    if (error) return { ok: false, error: error.message }
+    revalidatePath('/', 'layout')
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'moveCategory failed' }
   }
 }
 

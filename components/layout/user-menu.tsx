@@ -3,9 +3,13 @@
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react'
+import { User, LogOut, ChevronDown } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { defaultMenu } from '@/lib/menus/defaults'
+import { effectiveMode } from '@/components/layout/menu-role'
+import { railIconFor } from '@/components/layout/nav-icons'
+import type { MenuAccess, ResolvedMenu } from '@/lib/menus/types'
 
 export type UserMenuProfile = {
   display_name: string
@@ -44,9 +48,23 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
 
 // ── Authenticated dropdown ────────────────────────────────────────────────────
 
-export function UserMenu({ profile }: { profile: UserMenuProfile | null }) {
+export function UserMenu({
+  profile,
+  menu,
+  viewerRole = 'member',
+}: {
+  profile: UserMenuProfile | null
+  /** The resolved `profile` menu (lib/menus); its active items render between the fixed
+   *  Profile link and Sign out. Falls back to the code default. */
+  menu?: ResolvedMenu
+  /** Viewer token for resolving each item's mode (an authed account menu is 'member'+). */
+  viewerRole?: MenuAccess
+}) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const items = (menu ?? defaultMenu('profile')).rootItems.filter(
+    (it) => effectiveMode(it, viewerRole) !== 'hidden',
+  )
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -95,7 +113,7 @@ export function UserMenu({ profile }: { profile: UserMenuProfile | null }) {
             <p className="text-xs text-subtle truncate">@{profile.handle}</p>
           </div>
 
-          {/* Links */}
+          {/* Profile (fixed, dynamic href) + the editable profile-menu items */}
           <div className="py-1">
             <Link
               href={`/people/${profile.handle}`}
@@ -105,14 +123,20 @@ export function UserMenu({ profile }: { profile: UserMenuProfile | null }) {
               <User className="w-4 h-4 text-subtle" />
               Profile
             </Link>
-            <Link
-              href="/settings"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
-            >
-              <Settings className="w-4 h-4 text-subtle" />
-              Settings
-            </Link>
+            {items.map((it) => {
+              const Icon = railIconFor(it.icon)
+              return (
+                <Link
+                  key={it.id}
+                  href={it.href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
+                >
+                  <Icon className="w-4 h-4 text-subtle" />
+                  {it.label}
+                </Link>
+              )
+            })}
           </div>
 
           {/* Sign out */}
