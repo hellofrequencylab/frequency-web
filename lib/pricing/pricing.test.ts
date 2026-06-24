@@ -38,7 +38,9 @@ describe('space plans', () => {
 
   it('expands plan -> entitlement keys cumulatively', () => {
     expect(planEntitlementKeys('free')).toEqual([])
-    expect(planEntitlementKeys('practitioner')).toEqual(['crm'])
+    // Practitioner gets the CRM + the AI-depth playbooks lever (Phase 6 · ADR-387).
+    expect(planEntitlementKeys('practitioner')).toContain('crm')
+    expect(planEntitlementKeys('practitioner')).toContain('crm.playbooks')
     expect(planEntitlementKeys('business')).toContain('crm')
     expect(planEntitlementKeys('business')).toContain('email')
     // whitelabel includes everything business + org have, plus the whitelabel key
@@ -46,9 +48,24 @@ describe('space plans', () => {
     expect(planEntitlementKeys('whitelabel')).toContain('crm')
   })
 
+  it('the AI-depth keys ride the plan ladder cumulatively (Phase 6 · ADR-387)', () => {
+    // The free wedge is NEVER an entitlement key (every Space gets it).
+    expect(planEntitlementKeys('free')).not.toContain('crm.playbooks')
+    // Practitioner+: governed playbooks; business+: the read-only resonance surface; org+/whitelabel:
+    // the full Resonance Graph + managed matching.
+    expect(planEntitlements('practitioner')['crm.playbooks']).toBe(true)
+    expect(planEntitlements('practitioner')['crm.resonance']).toBeUndefined()
+    expect(planEntitlements('business')['crm.resonance']).toBe(true)
+    expect(planEntitlements('business')['crm.resonance_ai']).toBeUndefined()
+    expect(planEntitlements('organization')['crm.resonance_ai']).toBe(true)
+    expect(planEntitlements('whitelabel')['crm.resonance_ai']).toBe(true)
+    // crm.autonomy (Phase 3) is a per-Space DIAL, never a plan grant.
+    for (const plan of SPACE_PLANS) expect(planEntitlementKeys(plan)).not.toContain('crm.autonomy')
+  })
+
   it('planEntitlements is exactly the { key: true } blob spaceHasEntitlement reads', () => {
     expect(planEntitlements('free')).toEqual({})
-    expect(planEntitlements('practitioner')).toEqual({ crm: true })
+    expect(planEntitlements('practitioner')).toEqual({ crm: true, 'crm.playbooks': true })
     const biz = planEntitlements('business')
     expect(biz.crm).toBe(true)
     expect(biz.email).toBe(true)
