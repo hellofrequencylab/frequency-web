@@ -61,9 +61,11 @@ export function ClaimCircle({
         <button
           type="button"
           onClick={() => setOpen(true)}
+          title="Claim this circle, or make it your own"
+          aria-label="Remix this circle. Claim it, or make it your own."
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
-          <Sparkles className="h-4 w-4" /> Claim this Circle
+          <Sparkles className="h-4 w-4" /> Remix
         </button>
       </div>
 

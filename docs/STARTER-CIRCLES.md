@@ -37,9 +37,9 @@ Name: **Starter Circles** member-facing, **Circle Templates** operator-facing.
 
 ## Lifecycle
 
-1. **Make it yours** → service-role action clones template identity → new `circles` row (`status = 'draft'`, adopter = `host_id`), clones rich content → `circle_profiles`, copies callouts → `editor_notes`.
+1. **Remix** ("Make it yours") → `remixTemplate` clones template identity → new `circles` row (`status = 'draft'`, adopter = `host_id`), clones rich content → `circle_profiles`, copies callouts → `editor_notes`. The adopter's `community_role` is elevated to `host` here (on creation) so `/lead` opens to find and finish the draft. Elevation is upward-only and capped at `host` (`ensureHostOnOwnership`), safe to run as a system effect of the member's own action, unlike the escalation-guarded operator `assignRole`. **Open for confirmation:** elevate on remix (current) vs only on publish.
 2. Adopter edits at `/circles/[slug]/edit` with Vera + instruction boxes live.
-3. **Publish** → `status = 'active'`; the adopter's `community_role` is elevated to `host` if below (opens `/lead`); one-click generates the recurring Circle Meetup + Weekend Gathering events from the stored cadence. The recommended Journey stays a suggestion to start as a Run later.
+3. **Publish** (`publishCircle`) → `status = 'active'` (original, no template badge); Host role re-ensured; best-effort announcement + `circle_start` reward. One-click `generateCircleEvents` creates the first Circle Meetup + Weekend Gathering as dated Events scoped to the Circle (single events for now; recurrence is a follow-up). The recommended Journey stays a suggestion to start as a Run later.
 
 Role-appropriate visibility throughout: drafts owner/guide+ only; active Circles per existing rules; `/lead` is role-scoped (a new Host sees only their own Circle, not guide/mentor networks).
 
@@ -71,7 +71,7 @@ Open question for sign-off: the **demo "claim" flow** (`components/circles/claim
 ## Build stages
 
 1. **Foundation** (done, local): migrations + seed + types + guidance + this doc.
-2. **Actions + Vera**: adopt → draft → publish, role elevation, generate-events, the four Vera paths, callout plumbing.
+2. **Actions + Vera** (done, local): `lib/circles/templates-data.ts` (read layer), `lib/circles/remix.ts` (remix + publish + `ensureHostOnOwnership`), `lib/circles/events.ts` (one-click events), `app/(main)/circles/remix-actions.ts` (authz wrappers), and the full Vera set: `circle-spark` (draft the frame from Q&A or outline), `circle-compose` (fill one section), `circle-edit` (edit-by-instruction patch). Claim relabeled to **Remix** (`components/circles/claim-circle.tsx`) + canon in `NAMING.md`. **Wires in at Stage 4:** outline upload reuses `lib/journeys/extract-text.ts`; the compose/edit apply-to-draft actions live with the builder's autosave.
 3. **Staff admin**: `/admin/circle-templates` index + per-template builder + toggles (nav registration deferred until the reorg settles).
 4. **Member builder**: full-page builder, 4-entry wizard, gallery, then wire into the Circle detail page and `/lead`; execute the gut list in the same change.
 
