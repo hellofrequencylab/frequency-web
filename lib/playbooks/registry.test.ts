@@ -4,6 +4,7 @@ import {
   getPlaybook,
   playbookForChurnRisk,
   playbookForNextBestAction,
+  playbookForFailedPayment,
   isFullyInProduct,
   effectiveAutonomyTier,
   willAutoExecute,
@@ -28,7 +29,8 @@ describe('playbook registry', () => {
       expect(p.name.length).toBeGreaterThan(0)
       expect(p.rationale.length).toBeGreaterThan(0)
       expect(['auto', 'suggest', 'never_auto']).toContain(p.autonomyTier)
-      expect(['next_best_action', 'churn_risk']).toContain(p.trigger.kind)
+      // Phase 5 (ADR-386) adds `failed_payment` (a billing signal) beside the two prediction triggers.
+      expect(['next_best_action', 'churn_risk', 'failed_payment']).toContain(p.trigger.kind)
     }
   })
 
@@ -54,6 +56,28 @@ describe('playbook registry', () => {
       expect(p, `churn_risk "${v}" has no playbook`).toBeDefined()
       expect(p?.trigger).toEqual({ kind: 'churn_risk', value: v })
     }
+  })
+
+  // ── Phase 5 (ADR-386): winback + dunning ───────────────────────────────────
+  it('the winback is value-led (a Gem gift before any price nudge) and suggest, never auto', () => {
+    const wb = playbookForNextBestAction('reengage')
+    expect(wb?.id).toBe('reengage_winback')
+    expect(wb?.autonomyTier).toBe('suggest')
+    // It leads with value: a modest Gem gift sits in the sequence, in-product.
+    const gift = wb?.actions.find((a) => a.tool === 'give_gem_gift')
+    expect(gift?.surface).toBe('in_product')
+    // The outbound note is the member-facing leg (drafted, approved, never auto).
+    expect(wb?.actions.some((a) => a.tool === 'send_playbook_email' && a.surface === 'outbound')).toBe(true)
+  })
+
+  it('dunning is keyed on failed_payment, is suggest, and its member-facing leg is outbound (never auto)', () => {
+    const d = playbookForFailedPayment()
+    expect(d?.id).toBe('failed_payment_dunning')
+    expect(d?.trigger).toEqual({ kind: 'failed_payment' })
+    expect(d?.autonomyTier).toBe('suggest')
+    expect(d?.actions.some((a) => a.tool === 'send_playbook_email' && a.surface === 'outbound')).toBe(true)
+    // No dunning leg is ever auto (outbound reaches a member).
+    expect(d?.autonomyTier).not.toBe('auto')
   })
 
   // ── The fail-closed safety law ─────────────────────────────────────────────

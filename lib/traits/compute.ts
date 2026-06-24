@@ -453,3 +453,84 @@ export function computeTraits(stats: MemberStats, now: number): ComputedTrait[] 
     { key: 'lifecycle_stage', type: 'enum', value: lifecycleStage(stats, now) },
   ]
 }
+
+// ── Gamification fuel + retention signals (Resonance Engine Phase 5 · ADR-386) ────
+// Two NEW pure functions, APPENDED beside the existing ones (never modifying a function
+// above, so a sibling Phase 4 agent that also appends traits merges clean). Both feed the
+// winback + dunning playbooks: `decline_slope` keys the winback (catch a slide before
+// recency alone shows it), `notification_budget` lets the playbooks + send-gate respect a
+// member's own crowding limit. PURE + unit-tested in lib/traits/decline-slope.test.ts.
+
+/** Per-member practice counts in two trailing weekly buckets (the decline-slope input).
+ *  Sourced nightly from practice_logs: this week = days 0 to 6, last week = days 7 to 13. */
+export interface PracticeCadenceStats {
+  /** Practice logs in the trailing 7 days (days 0 to 6). */
+  practiceThisWeek: number
+  /** Practice logs in the week before that (days 7 to 13). */
+  practiceLastWeek: number
+}
+
+/**
+ * Week-over-week DROP in practice frequency, as a fraction of last week, in [0, 1]. PURE +
+ * deterministic. A POSITIVE slope means they are practicing LESS than last week (sliding);
+ * 0 means flat or climbing. This is the leading reengagement signal: a member whose cadence
+ * is falling shows here before plain recency catches them, so a winback fires in the window.
+ *   - last week 0   -> 0 (no baseline to fall from; never divide by zero, never punish a
+ *                       brand-new member who simply had no prior week).
+ *   - this >= last  -> 0 (flat or climbing is not a decline).
+ *   - else          -> (last - this) / last, clamped to [0, 1].
+ * Counts are floored at 0 so a malformed negative can never push the slope out of range.
+ */
+export function declineSlope(s: PracticeCadenceStats): number {
+  const last = Math.max(0, Math.floor(s.practiceLastWeek || 0))
+  const thisWeek = Math.max(0, Math.floor(s.practiceThisWeek || 0))
+  if (last === 0) return 0
+  if (thisWeek >= last) return 0
+  return Math.max(0, Math.min(1, (last - thisWeek) / last))
+}
+
+/** A member's own crowding limits, read from notification preferences (the notification-budget
+ *  input). All optional: a member who set nothing reads as the `standard` budget. */
+export interface NotificationBudgetInputs {
+  /** Hard weekly send cap the member tolerates (0 = they want no outbound; undefined = no cap set). */
+  weeklyCap?: number | null
+  /** The member has quiet hours configured (a narrower window we may reach them). */
+  quietHours?: boolean | null
+  /** Their preferred channel, when set ('email' | 'push' | 'none' | …). 'none' means do not reach out. */
+  preferredChannel?: string | null
+  /** Email is on the hard suppression list (a bounce/complaint/manual block). */
+  suppressed?: boolean | null
+}
+
+export type NotificationBudgetTier = 'generous' | 'standard' | 'sparing' | 'paused'
+
+/**
+ * Band a member's outreach budget into one of four tiers. PURE. FAIL-SAFE toward RESTRAINT:
+ * any signal that the member wants less contact lowers the budget, and the strongest restraint
+ * wins, so a playbook can never read a member as more reachable than they actually are.
+ *   - `paused`   — suppressed, preferred channel 'none', or an explicit weekly cap of 0
+ *                  (they have asked for no outbound; nothing fires).
+ *   - `sparing`  — a low weekly cap (<= 1) OR quiet hours set (reach them lightly, off-hours-aware).
+ *   - `generous` — a high weekly cap (>= 5) and no quiet-hours restraint (they tolerate more).
+ *   - `standard` — everyone else (the default when nothing is set).
+ */
+export function notificationBudgetTier(p: NotificationBudgetInputs): NotificationBudgetTier {
+  const channel = (p.preferredChannel ?? '').trim().toLowerCase()
+  if (p.suppressed === true || channel === 'none') return 'paused'
+  const cap = typeof p.weeklyCap === 'number' && Number.isFinite(p.weeklyCap) ? Math.floor(p.weeklyCap) : null
+  if (cap !== null && cap <= 0) return 'paused'
+  if ((cap !== null && cap <= 1) || p.quietHours === true) return 'sparing'
+  if (cap !== null && cap >= 5) return 'generous'
+  return 'standard'
+}
+
+/** The two Phase 5 retention traits for one member (decline slope + notification budget). */
+export function computeRetentionTraits(
+  cadence: PracticeCadenceStats,
+  budget: NotificationBudgetInputs,
+): ComputedTrait[] {
+  return [
+    { key: 'decline_slope', type: 'number', value: declineSlope(cadence) },
+    { key: 'notification_budget', type: 'enum', value: notificationBudgetTier(budget) },
+  ]
+}

@@ -122,6 +122,20 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
     ],
   },
   {
+    // Resonance Engine Phase 5 (ADR-386): the value-led winback's retroactive Gem gift. A
+    // modest, capped grant via lib/gems (a welcome back, not a bribe). In-product, no email.
+    key: 'give_gem_gift',
+    description:
+      'Gift a member a small handful of Gems as part of a value-led winback (a welcome back, not a bribe). In-product, modest + capped, no member email. Use sparingly so intrinsic motivation is not crowded out.',
+    mode: 'write',
+    confirmLabel: 'Gift these Gems',
+    params: [
+      { name: 'subjectProfileId', type: 'string', required: true, description: 'The member to gift Gems to (their profile id).' },
+      { name: 'amount', type: 'number', required: false, description: 'How many Gems (a small, capped amount; defaults to a modest gift).' },
+      { name: 'playbookId', type: 'string', required: false, description: 'The playbook id that proposed this (audit).' },
+    ],
+  },
+  {
     key: 'send_playbook_email',
     description:
       'DRAFT a member-facing email for a playbook (winback, nudge, invite). This NEVER sends on its own: it passes the consent send-gate and, when allowed, records the DRAFT on the timeline for a human to approve and send. Suggest only.',

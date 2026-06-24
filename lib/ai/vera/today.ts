@@ -41,6 +41,7 @@ import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 import { readBreakerStatus } from '@/lib/playbooks/circuit-breaker'
 import { autoExecutionAllowed } from '@/lib/spaces/entitlements'
 import { getSpaceById } from '@/lib/spaces/store'
+import { structuralRiskBoost, structuralRiskFromCircleTies, type StructuralRisk } from '@/lib/circles/social-fuel'
 
 /** The HARD cap on Today cards. The cap is sacred (docs/NEXT-GEN-CRM.md): overflow goes
  *  to a "Later" shelf, never onto Today. */
@@ -54,6 +55,10 @@ export interface TodayCandidate {
   /** 0-100 activation propensity. */
   activationPropensity: number
   nextBestAction: NextBestAction
+  /** Optional structural-risk band from Circle ties (Resonance Engine Phase 5 · ADR-386). A
+   *  member with no Circle ties (`unanchored`) has no social anchor, so they are tilted up the
+   *  ranking toward a connection move. Omitted = no tilt (Phase 1 to 3 callers unchanged). */
+  structuralRisk?: StructuralRisk
 }
 
 /** A candidate after ranking: it carries its score and the playbook it resolves to. */
@@ -83,18 +88,28 @@ const NBA_WEIGHT: Record<NextBestAction, number> = {
   none: 0,
 }
 
+/** How much a member's structural risk (no Circle ties) tilts the score. Kept SMALL (a 20%
+ *  lift at most) so it nudges an unanchored member up the order toward a connection move
+ *  without overriding the churn x propensity x action core. */
+const STRUCTURAL_TILT = 0.2
+
 /**
  * The composite resonance score. churn_risk x activation_propensity x next_best_action,
  * per the plan. Pure + deterministic. A candidate the model says is sliding (high churn),
  * with room to move (activation propensity), and a concrete next move (a non-`none`
  * action) scores highest. activation_propensity is normalized to 0..1 with a small floor
  * so it lifts rather than zeroes a card whose propensity is 0.
+ *
+ * Phase 5 (ADR-386) folds in a MODEST structural-risk tilt: a member with no Circle ties is
+ * lifted up the order (no social anchor = highest structural risk). It is MULTIPLICATIVE, so a
+ * `none`-action card (score 0) stays 0, and a member with no structuralRisk set is unchanged.
  */
 export function resonanceScore(c: TodayCandidate): number {
   const churn = CHURN_WEIGHT[c.churnRisk]
   const nba = NBA_WEIGHT[c.nextBestAction]
   const prop = 0.25 + 0.75 * (Math.max(0, Math.min(100, c.activationPropensity)) / 100)
-  return churn * prop * nba
+  const tilt = 1 + STRUCTURAL_TILT * (c.structuralRisk ? structuralRiskBoost(c.structuralRisk) : 0)
+  return churn * prop * nba * tilt
 }
 
 /**
@@ -316,6 +331,27 @@ export async function buildTodayCards(opts: { spaceId?: string | null } = {}): P
       byMember.set(r.profile_id, slot)
     }
 
+    // 1b. Circle ties for the candidate members (Resonance Engine Phase 5 · ADR-386). A member
+    //     with zero ties is the highest STRUCTURAL risk (no social anchor), which tilts them up
+    //     the ranking toward a connection move. FAIL-SAFE: if the read errors, the tilt is OMITTED
+    //     for everyone (no structuralRisk set), so a broken read never invents urgency.
+    const candidateIds = [...byMember.keys()]
+    const tiesByMember = new Map<string, number>()
+    let tiesRead = false
+    if (candidateIds.length > 0) {
+      const { data: tieRows, error: tieErr } = await admin
+        .from('memberships')
+        .select('profile_id')
+        .eq('status', 'active')
+        .in('profile_id', candidateIds)
+      if (!tieErr && tieRows) {
+        tiesRead = true
+        for (const r of tieRows as { profile_id: string }[]) {
+          tiesByMember.set(r.profile_id, (tiesByMember.get(r.profile_id) ?? 0) + 1)
+        }
+      }
+    }
+
     const candidates: TodayCandidate[] = []
     for (const [profileId, s] of byMember) {
       if (!s.churn || !s.nba) continue
@@ -324,6 +360,8 @@ export async function buildTodayCards(opts: { spaceId?: string | null } = {}): P
         churnRisk: s.churn,
         activationPropensity: typeof s.prop === 'number' ? s.prop : 0,
         nextBestAction: s.nba,
+        // Only tilt when the ties read succeeded; otherwise leave it unset (no tilt).
+        ...(tiesRead ? { structuralRisk: structuralRiskFromCircleTies(tiesByMember.get(profileId) ?? 0) } : {}),
       })
     }
 

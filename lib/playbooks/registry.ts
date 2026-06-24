@@ -38,6 +38,7 @@ export type PlaybookActionTool =
   | 'save_streak'        // in-product, reversible (auto-eligible)
   | 'tag_contact'        // in-product label, reversible
   | 'move_contact_stage' // in-product CRM stage move, reversible
+  | 'give_gem_gift'      // in-product, member-affecting GIFT: a modest retroactive Gem grant (ADR-386)
   | 'send_playbook_email' // OUTBOUND, member-facing — suggest only, NEVER auto
 
 /** Whether an action reaches a MEMBER (outbound) or stays IN-PRODUCT. The single fact
@@ -55,11 +56,14 @@ export interface PlaybookAction {
   label: string
 }
 
-/** What FIRES a playbook: a next_best_action value, or a churn_risk tier. The two
- *  signals the prediction layer (lib/traits/compute.ts) emits that Phase 1 wires. */
+/** What FIRES a playbook. Phase 1 wired the two prediction signals (next_best_action +
+ *  churn_risk tier); Phase 5 (ADR-386) adds `failed_payment` — a billing webhook signal,
+ *  NOT a prediction trait, so it sits beside the prediction triggers as its own kind. A
+ *  failed-payment trigger keys the dunning sequence. */
 export type PlaybookTrigger =
   | { kind: 'next_best_action'; value: NextBestAction }
   | { kind: 'churn_risk'; value: ChurnRisk }
+  | { kind: 'failed_payment' }
 
 /** A governed action-sequence descriptor — the registry's unit. */
 export interface Playbook {
@@ -95,11 +99,13 @@ export const PLAYBOOK_REGISTRY: readonly Playbook[] = [
   {
     id: 'reengage_winback',
     name: 'Winback',
-    rationale: 'They have gone quiet. Send a value-led, no-shame note before the tie cools.',
+    rationale:
+      'Their practice cadence is falling (high decline_slope) and the model says reengage. Lead with value, not a discount: a Journey in their Pillar, a "your Circle missed you" note, a small Gem gift. A price nudge waits for the end of the sequence.',
     trigger: { kind: 'next_best_action', value: 'reengage' },
     actions: [
       inProduct('tag_contact', 'Tag them as cooling so the next pass knows'),
-      outbound('Draft a warm "we missed you" note'),
+      inProduct('give_gem_gift', 'Gift a small handful of Gems, a welcome back not a bribe'),
+      outbound('Draft a value-led note: a new Journey in their Pillar, or that their Circle missed them'),
     ],
     autonomyTier: 'suggest',
   },
@@ -177,6 +183,24 @@ export const PLAYBOOK_REGISTRY: readonly Playbook[] = [
     actions: [],
     autonomyTier: 'suggest',
   },
+
+  // ── failed_payment (Resonance Engine Phase 5 · ADR-386) ──────────────────────
+  // Dunning: a warm 72h note tied to what they would LOSE (a streak, a Circle), not a
+  // threat. The note is OUTBOUND, so it is suggest-only and passes the send-gate; nothing
+  // auto-sends. Stripe's own Smart Retries + card updater run first (outside this registry);
+  // this is the human-shaped leg, drafted and approved.
+  {
+    id: 'failed_payment_dunning',
+    name: 'Dunning',
+    rationale:
+      'A payment failed. After the automatic retries, send one warm note within 72 hours, framed around what they would lose (their streak, their Circle), never a threat. Suggest only.',
+    trigger: { kind: 'failed_payment' },
+    actions: [
+      inProduct('tag_contact', 'Tag them as a payment that needs a hand'),
+      outbound('Draft a warm 72h note tied to what they would lose, not a threat'),
+    ],
+    autonomyTier: 'suggest',
+  },
 ] as const
 
 // ── Lookups (pure; no IO) ──────────────────────────────────────────────────────
@@ -195,6 +219,10 @@ const BY_CHURN_RISK = new Map<ChurnRisk, Playbook>(
   ]),
 )
 
+const FAILED_PAYMENT_PLAYBOOK: Playbook | undefined = PLAYBOOK_REGISTRY.find(
+  (p) => p.trigger.kind === 'failed_payment',
+)
+
 const BY_ID = new Map<string, Playbook>(PLAYBOOK_REGISTRY.map((p) => [p.id, p]))
 
 /** The playbook bound to a next_best_action value. Total over the enum (every value is
@@ -206,6 +234,12 @@ export function playbookForNextBestAction(value: NextBestAction): Playbook | und
 /** The playbook bound to a churn_risk tier. Total over the enum. */
 export function playbookForChurnRisk(value: ChurnRisk): Playbook | undefined {
   return BY_CHURN_RISK.get(value)
+}
+
+/** The dunning playbook bound to the failed-payment signal (Resonance Engine Phase 5 ·
+ *  ADR-386). A single playbook, not enumerated, so this returns the one or undefined. */
+export function playbookForFailedPayment(): Playbook | undefined {
+  return FAILED_PAYMENT_PLAYBOOK
 }
 
 /** Look up a playbook by its stable id (audit / run lookups). */
