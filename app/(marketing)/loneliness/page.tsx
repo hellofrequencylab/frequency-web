@@ -1,3 +1,4 @@
+// SEO pillar: high-functioning loneliness, third places, belonging. Answer-first.
 import type { Metadata } from 'next'
 import { ArrowRight } from 'lucide-react'
 import {
