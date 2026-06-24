@@ -61,6 +61,11 @@ export type AchievementCriteria =
   | { type: 'manual' }
   // Amplitude milestones (Rewards Economy v2) — lifetime XP totals.
   | { type: 'amplitude';      count: number }
+  // Playbook completions (Resonance Engine Phase 5 · ADR-386): finishing a governed
+  // playbook (a winback, an advocacy ask, an intro) can fire a retroactive milestone, so
+  // the advocate state earns recognition (e.g. `connector` / `facilitator`). Counts
+  // `playbook_runs` rows for this member as subject with status 'done'.
+  | { type: 'playbook_complete'; count: number }
 
 // ---------------------------------------------------------------------------
 // Streak types

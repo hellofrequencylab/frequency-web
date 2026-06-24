@@ -19,6 +19,8 @@ import { buildTimeline } from '@/lib/crm/timeline'
 import { buildJourney, groupByPhase, type JourneyKind } from '@/lib/crm/journey'
 import { InviteButton } from './invite-button'
 import { ConsentToggle, AddNote, EditContactFields } from './contact-actions'
+import { ResonanceSection } from './resonance-section'
+import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
 
@@ -205,6 +207,12 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
           </div>
         )}
       </section>
+
+      {/* Resonance (Altitude 3 tab · ADR-385): the person's top reciprocal, consent-first matches.
+          Its own Suspense so the edge read never blocks the page; fail-safe to a calm empty state. */}
+      <Suspense fallback={null}>
+        <ResonanceSection profileId={contact.profileId} />
+      </Suspense>
 
       {/* At a glance */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

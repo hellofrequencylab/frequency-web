@@ -122,6 +122,20 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
     ],
   },
   {
+    // Resonance Engine Phase 5 (ADR-386): the value-led winback's retroactive Gem gift. A
+    // modest, capped grant via lib/gems (a welcome back, not a bribe). In-product, no email.
+    key: 'give_gem_gift',
+    description:
+      'Gift a member a small handful of Gems as part of a value-led winback (a welcome back, not a bribe). In-product, modest + capped, no member email. Use sparingly so intrinsic motivation is not crowded out.',
+    mode: 'write',
+    confirmLabel: 'Gift these Gems',
+    params: [
+      { name: 'subjectProfileId', type: 'string', required: true, description: 'The member to gift Gems to (their profile id).' },
+      { name: 'amount', type: 'number', required: false, description: 'How many Gems (a small, capped amount; defaults to a modest gift).' },
+      { name: 'playbookId', type: 'string', required: false, description: 'The playbook id that proposed this (audit).' },
+    ],
+  },
+  {
     key: 'send_playbook_email',
     description:
       'DRAFT a member-facing email for a playbook (winback, nudge, invite). This NEVER sends on its own: it passes the consent send-gate and, when allowed, records the DRAFT on the timeline for a human to approve and send. Suggest only.',
@@ -134,6 +148,35 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
       { name: 'subject', type: 'string', required: true, description: 'The email subject line, in voice.' },
       { name: 'body', type: 'string', required: true, description: 'The full drafted email body, in voice. The human reads and approves exactly this.' },
       { name: 'playbookId', type: 'string', required: false, description: 'The playbook id that proposed this (audit).' },
+    ],
+  },
+
+  // ── Resonance Graph (the reciprocal matchmaking layer · ADR-385) ─────────────
+  // Two tools. suggest_resonance_match READS the consenting graph and PROPOSES the top reciprocal
+  // matches (no mutation, no send). send_intro_email is OUTBOUND, suggest-only, and the hardest-gated
+  // tool in the catalog: it passes the consent send-gate AND refuses to send unless BOTH parties have
+  // tapped yes (the double-opt-in record). Nothing sends until both say yes.
+  {
+    key: 'suggest_resonance_match',
+    description:
+      'Suggest the strongest reciprocal resonance matches for a member: people they share a Circle, Journey, practice, or Pillar with who would also gain from meeting them. Read-only and consent-first (only opted-in people appear). Each suggestion carries a plain WHY. This proposes an intro; nothing is sent here.',
+    mode: 'read',
+    params: [
+      { name: 'profileId', type: 'string', required: true, description: 'The member to find matches for (their profile id). They must have opted in to matching.' },
+    ],
+  },
+  {
+    key: 'send_intro_email',
+    description:
+      'DRAFT a warm double-opt-in intro between two members. This is the MOST gated tool: it NEVER sends unless BOTH people have tapped yes on the pairing AND the recipient passes the consent send-gate. Suggest only: Vera drafts, a human approves, and the send is refused outright until both parties have opted in. Every intro shows the plain WHY.',
+    mode: 'write',
+    confirmLabel: 'Send this intro',
+    params: [
+      { name: 'subjectProfileId', type: 'string', required: true, description: 'The recipient of this intro email (their profile id, for the send-gate).' },
+      { name: 'otherProfileId', type: 'string', required: true, description: 'The other party in the pairing (their profile id). Both must have opted in before anything sends.' },
+      { name: 'contactId', type: 'string', required: true, description: 'The CRM contact the touch is recorded against.' },
+      { name: 'subject', type: 'string', required: true, description: 'The intro subject line, in voice.' },
+      { name: 'body', type: 'string', required: true, description: 'The full drafted intro, in voice, including the plain WHY. The human reads and approves exactly this.' },
     ],
   },
 ] as const
