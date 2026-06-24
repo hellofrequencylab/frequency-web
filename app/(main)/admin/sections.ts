@@ -203,6 +203,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       // ── Structure ──
       { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community', section: 'Structure' },
+      { href: '/admin/circle-templates', label: 'Circle Templates', desc: 'Starter Circle blueprints members remix into their own.', Icon: CircleDot, min: 'host', staffDomain: 'community', section: 'Structure' },
       { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure', section: 'Structure' },
       { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure', section: 'Structure' },
       { href: '/admin/channels', label: 'Channels', desc: 'Topical and event channels.', Icon: Radio, min: 'host', staffDomain: 'community', section: 'Structure' },
