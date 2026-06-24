@@ -101,6 +101,7 @@ real charges only begin at Phase 3. Legend: ✅ done · 📋 owner action · ⏳
 - 📋 Supabase **vanity domain** (after verification — it changes the auth callback; update the Google redirect URI + `NEXT_PUBLIC_SUPABASE_URL` in lockstep)
 - 📋 **A2P / SMS** registration (when you want SMS; see [A2P-REGISTRATION.md](A2P-REGISTRATION.md))
 - 📋 **Per-seat billing** ("3 included, +$9/seat") when you need multi-operator Spaces
+- 📋 **CRM admin suite migrations** — the suite shipped this session (ADR-376/377/378/379/380/381: admin person timeline + notes + consent, edit safe fields + bulk consent, Space contact detail + tasks, email/Resend timeline adapters, Twilio SMS rail, funnel analytics, saved segments + email templates). Two new tables are **fail-closed until applied**: `20260730000000_space_segments` and `20260730010000_space_email_templates` (saved segments + email templates simply stay empty until then). The SMS consent table `20260626010000_sms_consent` is the gate for the Twilio rail. **Apply on a Supabase branch + regenerate `lib/database.types.ts` before relying on typed reads.** Everything else in the suite uses existing tables and is live now.
 
 **Rollback:** flipping `billing_live` **OFF** instantly stops all new charges (existing Stripe subscriptions keep running until you cancel them in the Stripe dashboard). The OFF invariant means the whole layer goes inert the moment the switch is off.
 
