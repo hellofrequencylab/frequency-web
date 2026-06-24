@@ -13,10 +13,6 @@ import {
   Settings,
   Zap,
   Search,
-  CreditCard,
-  BellRing,
-  SlidersHorizontal,
-  UserPlus,
   Users,
   UserRound,
   X,
@@ -28,10 +24,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Flame,
-  QrCode,
-  Megaphone,
-  HelpCircle,
-  LifeBuoy,
   Bug,
   Gift,
 } from 'lucide-react'
@@ -61,7 +53,7 @@ import type {
   ResolvedItem,
   ResolvedMenu,
 } from '@/lib/menus/types'
-import { effectiveMode } from '@/components/layout/menu-role'
+import { effectiveMode, canSeeMenuItem, type MenuViewer } from '@/components/layout/menu-role'
 import { GhostLink } from '@/components/layout/ghost-link'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { MemberFooter } from '@/components/layout/member-footer'
@@ -191,9 +183,15 @@ function withHomeProfile(sections: NavSectionGroup[], profileHref: string): NavS
 // rail is a single vertical list with one header level, so a deeper tree reads as one
 // group) — their own items keep their resolved mode. An empty group (everything hidden)
 // is skipped. Returns [] when nothing is visible, so the caller can fall back to the code rail.
-function menuItemToNav(item: ResolvedItem, viewerRole: MenuAccess): MainNavItem | null {
-  const mode = effectiveMode(item, viewerRole)
-  if (mode === 'hidden') return null
+// TWO-AXIS gate (ADR-390): an item shows if the viewer passes EITHER the access floor
+// (effectiveMode) OR the staff capability axis — so admin links folded into the `left`
+// menu stay visible to the right operators (e.g. a Marketer) and hidden from everyone
+// else. A staff-admitted item whose token mode is 'hidden' (its floor is above the
+// viewer's collapsed token) is presented as a normal active link.
+function menuItemToNav(item: ResolvedItem, viewer: MenuViewer): MainNavItem | null {
+  if (!canSeeMenuItem(item, viewer)) return null
+  const tokenMode = effectiveMode(item, viewer.viewerRole)
+  const mode = tokenMode === 'hidden' ? 'active' : tokenMode
   return {
     key: item.id,
     href: item.href,
@@ -209,35 +207,57 @@ function menuItemToNav(item: ResolvedItem, viewerRole: MenuAccess): MainNavItem 
 }
 
 // Collect a category's own items plus all descendants', flattened in tree order, each
-// resolved for the viewer (hidden dropped).
-function flattenCategoryItems(cat: ResolvedCategory, viewerRole: MenuAccess): MainNavItem[] {
+// resolved for the viewer (not-visible dropped).
+function flattenCategoryItems(cat: ResolvedCategory, viewer: MenuViewer): MainNavItem[] {
   const out: MainNavItem[] = []
   for (const it of cat.items) {
-    const nav = menuItemToNav(it, viewerRole)
+    const nav = menuItemToNav(it, viewer)
     if (nav) out.push(nav)
   }
-  for (const child of cat.children) out.push(...flattenCategoryItems(child, viewerRole))
+  for (const child of cat.children) out.push(...flattenCategoryItems(child, viewer))
   return out
 }
 
-function menuToSections(menu: ResolvedMenu, viewerRole: MenuAccess): NavSectionGroup[] {
+function menuToSections(menu: ResolvedMenu, viewer: MenuViewer): NavSectionGroup[] {
   const sections: NavSectionGroup[] = []
 
   // Root items (no category) lead as the headerless home anchor.
   const rootItems: MainNavItem[] = []
   for (const it of menu.rootItems) {
-    const nav = menuItemToNav(it, viewerRole)
+    const nav = menuItemToNav(it, viewer)
     if (nav) rootItems.push(nav)
   }
   if (rootItems.length > 0) sections.push({ label: null, items: rootItems })
 
   // Each top-level category is a labelled section; descendants flatten into it.
   for (const cat of menu.categories) {
-    const items = flattenCategoryItems(cat, viewerRole)
+    const items = flattenCategoryItems(cat, viewer)
     if (items.length > 0) sections.push({ label: cat.label ?? null, items })
   }
 
   return sections
+}
+
+// The ACTIVE admin section for the current route (ADR-390 admin header). The `admin_header`
+// menu's top-level categories are the admin SECTIONS; each owns a subtree of page hrefs.
+// The active section is the one whose subtree has the LONGEST href that prefixes the
+// pathname (so /admin/crm/today resolves to the CRM section). Returns null off-admin or
+// when nothing matches, so the sub-header simply doesn't render.
+function adminSectionForPath(menu: ResolvedMenu, pathname: string): ResolvedCategory | null {
+  let best: { cat: ResolvedCategory; len: number } | null = null
+  const hrefsOf = (cat: ResolvedCategory): string[] => {
+    const out: string[] = []
+    for (const it of cat.items) if (it.href) out.push(it.href)
+    for (const ch of cat.children) out.push(...hrefsOf(ch))
+    return out
+  }
+  for (const section of menu.categories) {
+    for (const href of hrefsOf(section)) {
+      const match = pathname === href || pathname.startsWith(`${href}/`)
+      if (match && href.length > (best?.len ?? 0)) best = { cat: section, len: href.length }
+    }
+  }
+  return best?.cat ?? null
 }
 
 // The Manage sections TELESCOPE: an item the viewer can't reach is hidden (not
@@ -463,17 +483,23 @@ function ProfileCard({
 function AccountDropdown({
   profile,
   profileHref,
-  role,
   themeLabel,
   ThemeIcon,
   cycleTheme,
+  menu,
+  viewerRole,
 }: {
   profile: Profile
   profileHref: string
-  role: CommunityRole
   themeLabel: string
   ThemeIcon: React.ElementType
   cycleTheme: () => void
+  /** The resolved `profile` menu (lib/menus); its active items render as the editable
+   *  account links between the fixed Profile/Invite top and the Report/theme/Sign out
+   *  bottom. Falls back to the code default. */
+  menu?: ResolvedMenu
+  /** Viewer token for resolving each item's mode + gate. */
+  viewerRole: MenuAccess
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -486,7 +512,9 @@ function AccountDropdown({
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [])
 
-  const showCrewLink = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
+  const accountLinks = (menu ?? defaultMenu('profile')).rootItems.filter(
+    (it) => effectiveMode(it, viewerRole) !== 'hidden',
+  )
 
   return (
     <div ref={ref} className="relative">
@@ -513,7 +541,7 @@ function AccountDropdown({
             <p className="text-xs text-subtle truncate">@{profile.handle}</p>
           </div>
 
-          {/* Identity & people links */}
+          {/* People: Profile (fixed, dynamic href) + Invite (fixed event). */}
           <div className="py-1">
             <Link
               href={profileHref}
@@ -522,14 +550,6 @@ function AccountDropdown({
             >
               <User className="w-4 h-4 text-subtle" />
               Profile
-            </Link>
-            <Link
-              href="/friends"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-            >
-              <UserPlus className="w-4 h-4 text-subtle" />
-              Friends
             </Link>
             <button
               type="button"
@@ -541,62 +561,23 @@ function AccountDropdown({
             </button>
           </div>
 
-          {/* Dashboard moved to the mobile right (gamification) drawer; admin
-              lives in the left drawer + desktop rail (mobile-menus pass). This
-              menu stays purely personal. */}
-
-          {/* Account links */}
+          {/* Account links — the editable `profile` menu (ADR-390). Operators add / move /
+              re-gate these in /admin/menu; Report a bug stays a fixed event button. */}
           <div className="border-t border-border py-1">
-            <Link
-              href="/settings"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-            >
-              <SlidersHorizontal className="w-4 h-4 text-subtle" />
-              Account Settings
-            </Link>
-            <Link
-              href="/settings/billing"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-            >
-              <CreditCard className="w-4 h-4 text-subtle" />
-              Billing & Plans
-            </Link>
-            <Link
-              href="/settings/notifications"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-            >
-              <BellRing className="w-4 h-4 text-subtle" />
-              Notifications
-            </Link>
-            <Link
-              href="/codes"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-            >
-              <QrCode className="w-4 h-4 text-subtle" />
-              My code
-            </Link>
-            {showCrewLink && (
-              <Link
-                href="/entry-points"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-              >
-                <Megaphone className="w-4 h-4 text-subtle" />
-                Entry points
-              </Link>
-            )}
-            <Link
-              href="/support"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-            >
-              <LifeBuoy className="w-4 h-4 text-subtle" />
-              Support tickets
-            </Link>
+            {accountLinks.map((it) => {
+              const Icon = railIconFor(it.icon)
+              return (
+                <Link
+                  key={it.id}
+                  href={it.href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+                >
+                  <Icon className="w-4 h-4 text-subtle" />
+                  {it.label}
+                </Link>
+              )
+            })}
             <button
               type="button"
               onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } })) }}
@@ -605,14 +586,6 @@ function AccountDropdown({
               <Bug className="w-4 h-4 text-subtle" />
               Report a bug
             </button>
-            <Link
-              href="/help"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-            >
-              <HelpCircle className="w-4 h-4 text-subtle" />
-              Help
-            </Link>
           </div>
 
           {/* Theme */}
@@ -1317,7 +1290,7 @@ export default function AppShell({
   hideAppNav = false,
   permissions,
   menuAreaKeys,
-  leftRailMenu,
+  leftMenu,
   navAccess,
   staffRole = null,
   demoMode = false,
@@ -1330,9 +1303,9 @@ export default function AppShell({
   webRole = 'none',
   generation = 'balanced',
   occasion = 'none',
-  exploreMenu,
-  discoverMenu,
-  adminMenu,
+  headerMenu,
+  profileMenu,
+  adminHeaderMenu,
   menuViewerRole = 'visitor',
   menuTimings,
 }: {
@@ -1359,11 +1332,11 @@ export default function AppShell({
    *  key list. Used ONLY as a fallback now that `leftRailMenu` (the DB-backed lib/menus
    *  surface) drives the rail; empty / omitted falls back to the full code rail (NAV_AREAS). */
   menuAreaKeys?: string[]
-  /** The resolved `left_rail` menu (server-fetched, DB-backed, lib/menus). When it has
+  /** The resolved `left` menu (server-fetched, DB-backed, lib/menus). When it has real DB
    *  items, it DRIVES the rail's order, grouping, icons, and per-item mode (active / ghost /
    *  hidden) for the viewer. Falls back to the menuAreaKeys / code rail when empty / omitted,
-   *  so the rail can never vanish pre-migration. */
-  leftRailMenu?: ResolvedMenu
+   *  so the rail can never vanish pre-migration. Admin lives here as high-role sections. */
+  leftMenu?: ResolvedMenu
   /** Server-resolved access matrix per nav key — drives matrix-driven nav visibility
    *  (an item shows if the viewer has any access to its surface). */
   navAccess?: Record<string, AccessLevel>
@@ -1392,15 +1365,16 @@ export default function AppShell({
   generation?: string
   /** The active occasion id; sets `data-occasion` on the shell root ('none' = omitted). */
   occasion?: string
-  /** The resolved `public_explore` menu (server-fetched, DB-backed). Drives the in-app
-   *  "Explore Frequency" header mega. Falls back to the code default when omitted. */
-  exploreMenu?: ResolvedMenu
-  /** The resolved `public_discover` menu (unused in-app today, where the left rail owns
-   *  discovery; passed through for parity / a safe fallback). */
-  discoverMenu?: ResolvedMenu
-  /** The resolved `admin_subheader` menu (server-fetched, DB-backed). Drives the admin
-   *  sub-header mega on /admin* routes. Falls back to the code default when omitted. */
-  adminMenu?: ResolvedMenu
+  /** The resolved `header` menu (server-fetched, DB-backed). Drives the in-app header
+   *  mega-menu. Falls back to the code default when omitted. */
+  headerMenu?: ResolvedMenu
+  /** The resolved `profile` menu (server-fetched, DB-backed). Drives the account dropdown's
+   *  editable link list. Falls back to the code default when omitted. */
+  profileMenu?: ResolvedMenu
+  /** The resolved `admin_header` menu (server-fetched, DB-backed). The shell renders ONLY the
+   *  ACTIVE admin section's sub-pages from it as the contextual mega sub-header on /admin*
+   *  routes. Falls back to the code default when omitted. */
+  adminHeaderMenu?: ResolvedMenu
   /** The viewer collapsed to a single MenuAccess token; drives per-item mode (active /
    *  ghost / hidden) in the header + admin megas. */
   menuViewerRole?: MenuAccess
@@ -1422,7 +1396,9 @@ export default function AppShell({
   // area_permissions) rather than the simpler minAccess/mode path, so the rail's access
   // control stays unchanged until an operator seeds it from /admin/menu.
   const dbRailSections =
-    leftRailMenu && !leftRailMenu.isDefault ? menuToSections(leftRailMenu, menuViewerRole) : []
+    leftMenu && !leftMenu.isDefault
+      ? menuToSections(leftMenu, { viewerRole: menuViewerRole, staffRole })
+      : []
   const menuDriven = dbRailSections.length > 0
   const navSections = menuDriven
     ? withHomeProfile(dbRailSections, profileHref)
@@ -1541,16 +1517,27 @@ export default function AppShell({
   // the same page-chrome map the rails use — pages never toggle it.
   const showFooter = !hideAppNav && showLeftRail && effectiveRail !== 'none'
 
-  // Admin secondary nav (mirrors the prior in-content admin mega bar, now promoted to a
-  // FULL-WIDTH sub-header below the main header). Driven by the DB-backed `admin_subheader`
-  // menu (lib/menus), whose top-level categories are the sub-header triggers; MegaBar resolves
-  // each entry's mode for the viewer (menuViewerRole). The menu falls back to the code default
-  // (assembled from ADMIN_NAV) when no DB row exists, so it never drifts pre-migration; the
-  // pages themselves still re-gate server-side. Only on /admin* and never in stripped shells.
+  // Admin contextual sub-header (ADR-390). On /admin* routes the `admin_header` surface drives
+  // a mega bar above the content showing ONLY the ACTIVE section's sub-pages (plus the admin /
+  // Vera search bar). The left rail's admin entries land on a section dashboard; this resolves
+  // which section that is (longest href-prefix) and re-roots the menu to its children so MegaBar
+  // (triggerLevel='category') renders the section's sub-pages as tabs / dropdowns. Off-admin or
+  // for a flat section with no sub-pages, nothing renders. Pages still re-gate server-side.
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
-  const adminMega: ResolvedMenu | null =
-    !hideAppNav && isAdminRoute ? (adminMenu ?? defaultMenu('admin_subheader')) : null
-  // True when the resolved admin menu has at least one top-level section to show.
+  const adminMenuResolved = adminHeaderMenu ?? defaultMenu('admin_header')
+  const adminSection =
+    !hideAppNav && isAdminRoute ? adminSectionForPath(adminMenuResolved, pathname) : null
+  const adminMega: ResolvedMenu | null = adminSection
+    ? {
+        surfaceKey: 'admin_header',
+        label: adminSection.label ?? 'Admin',
+        columns: adminMenuResolved.columns,
+        categories: adminSection.children,
+        rootItems: [],
+        railCards: [],
+        isDefault: adminMenuResolved.isDefault,
+      }
+    : null
   const showAdminMega = !!adminMega && adminMega.categories.length > 0
 
   function cycleTheme() {
@@ -1587,21 +1574,18 @@ export default function AppShell({
             lives in the bottom tab bar, so the wordmark anchors the top-left. */}
         <BrandMark name={brandName} logoUrl={brandLogoUrl} />
 
-        {/* Full-site browse nav ("Explore Frequency") beside the logo — the same
-            component the splash/site uses. Vertically centered on the header line
-            (items-center, not stretch) and at the rail link's color (no dimming), so
-            it reads as a peer of the other header items. Its panel aligns to the page
-            CONTENT COLUMN (panelAlign='content'), reserving the right rail width only
-            when that rail is actually shown. Desktop only. */}
+        {/* The header mega-menu beside the logo — the SAME `header` surface the splash /
+            site use, so the whole product shares one editable site nav. Vertically centered
+            on the header line and at the rail link's color, so it reads as a peer of the
+            other header items. Its panel aligns to the page CONTENT COLUMN, reserving the
+            right rail width only when that rail is shown. Desktop only. */}
         {!hideAppNav && (
           <div className="ml-1 hidden items-center md:flex">
             <PrimaryNav
               variant="light"
-              showDiscover={false}
               panelAlign="content"
               rightRail={showSidebar}
-              discoverMenu={discoverMenu}
-              exploreMenu={exploreMenu}
+              headerMenu={headerMenu}
               viewerRole={menuViewerRole}
               timings={menuTimings}
             />
@@ -1712,22 +1696,23 @@ export default function AppShell({
               <AccountDropdown
                 profile={profile}
                 profileHref={profileHref}
-                role={role}
                 themeLabel={themeLabel}
                 ThemeIcon={ThemeIcon}
                 cycleTheme={cycleTheme}
+                menu={profileMenu}
+                viewerRole={menuViewerRole}
               />
             </div>
           </div>
         </div>
       </header>
 
-      {/* ── Admin sub-header ───────────────────────────────── */}
-      {/* In admin, a SECOND full-width bar opens below the main header. It is in normal
-          flow (so it PUSHES the body down) and sticky under the main header (top-14). Its
-          triggers align to the content column (a left rail-width spacer), and the MegaBar
-          panel slides out from under it with panelAlign='content' (no rightRail — admin has
-          no member right rail), so the slide-out stays in the page content column. */}
+      {/* ── Admin contextual sub-header (ADR-390) ───────────── */}
+      {/* On /admin*, a second full-width bar opens below the main header showing ONLY the
+          active section's sub-pages (the `admin_header` surface, re-rooted to the active
+          section). It is in normal flow (pushes the body down), sticky under the main header
+          (top-14), with the admin / Vera search bar as its panel header. Triggers align to the
+          content column (a left rail-width spacer); the panel slides out with panelAlign='content'. */}
       {showAdminMega && adminMega && (
         <div className="sticky top-14 z-30 hidden border-b border-border bg-surface/95 backdrop-blur-sm md:block">
           <div className="mx-auto flex h-12 max-w-[105rem] items-center gap-8 px-4 sm:px-6 lg:px-8">
@@ -1738,7 +1723,7 @@ export default function AppShell({
                 triggerLevel="category"
                 viewerRole={menuViewerRole}
                 variant="light"
-                ariaLabel="Admin"
+                ariaLabel="Admin section"
                 panelAlign="content"
                 timings={menuTimings}
                 panelHeader={<AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />}

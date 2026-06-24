@@ -146,9 +146,10 @@ export default async function MainLayout({
     space,
     chores,
     staffMember,
-    exploreMenu,
-    adminMenu,
-    leftRailMenu,
+    headerMenu,
+    leftMenu,
+    profileMenu,
+    adminHeaderMenu,
     menuTimings,
   ] = await Promise.all([
     applyViewAs(realRole),
@@ -166,15 +167,15 @@ export default async function MainLayout({
     resolveSpaceForHost(reqHeaders.get('host')).catch(() => null),
     BETA_INDUCTION_ACTIVE ? getProfileChores(profile.id) : Promise.resolve(null),
     getStaffMember().catch(() => null),
-    // DB-backed header menus (lib/menus). getMenu falls back to the code defaults on any
-    // miss/error, so these reads are safe pre-migration and the header never breaks. The
-    // in-app shell uses Explore (the "Explore Frequency" header mega) + the admin sub-header.
-    getMenu('public_explore'),
-    getMenu('admin_subheader'),
-    // The DB-backed in-app LEFT RAIL (lib/menus). Drives the rail's link list, order,
-    // grouping, icons, and per-item mode; falls back to the code defaults on any miss, so
-    // safe pre-migration and the rail never breaks.
-    getMenu('left_rail'),
+    // The standardized menu containers (lib/menus, ADR-390). getMenu falls back to the code
+    // defaults on any miss/error, so these reads are safe pre-migration and no menu ever breaks.
+    // The in-app shell uses: header (the mega-menu), left (the rail — admin section entry points
+    // live here, role-gated), profile (the account dropdown), and admin_header (the contextual
+    // admin mega sub-nav). Footer is fetched by its own layouts.
+    getMenu('header'),
+    getMenu('left'),
+    getMenu('profile'),
+    getMenu('admin_header'),
     getMenuSettings(),
   ])
   const menuAreaKeys = orderedVisibleAreas(menuConfig).map((a) => a.key)
@@ -379,14 +380,15 @@ export default async function MainLayout({
       unreadCount={unreadCount}
       permissions={permissions}
       menuAreaKeys={menuAreaKeys}
-      leftRailMenu={leftRailMenu}
+      leftMenu={leftMenu}
       navAccess={navAccess}
       staffRole={staffRole}
       demoMode={demoMode}
       demoHidden={demoHidden}
       hasDemoContent={hasDemoContent}
-      exploreMenu={exploreMenu}
-      adminMenu={adminMenu}
+      headerMenu={headerMenu}
+      profileMenu={profileMenu}
+      adminHeaderMenu={adminHeaderMenu}
       menuViewerRole={menuViewerRole}
       menuTimings={menuTimings}
     >

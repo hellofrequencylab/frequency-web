@@ -11,11 +11,16 @@ import {
   deleteCategory,
   createItem,
   reorderItems,
+  moveItem as moveItemToSurface,
+  moveCategory as moveCategoryToSurface,
 } from '@/lib/menus/actions'
 import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ItemEditor, GridControls } from './item-editor'
+import { GateControls, type GatePatch } from './gate-controls'
+import { MenuMoveField } from './menu-move-field'
 import { isGridSurface } from './known-routes'
+import type { MenuSurfaceKey } from '@/lib/menus/types'
 import { isPinnedRailItem, PINNED_PROFILE_ID } from '@/lib/menus/defaults'
 
 // The Menu groups + links editor — the `menu-groups` template block, and the BULK of the
@@ -63,7 +68,7 @@ export function MenuGroupsEditor({
   // row in the root bucket, and strip any copy out of the draggable root list (the code
   // default carries it; a seeded menu does not — so handle both).
   const pinnedLead =
-    surfaceKey === 'left_rail'
+    surfaceKey === 'left'
       ? (menu.rootItems.find((i) => isPinnedRailItem(i.id)) ?? {
           id: PINNED_PROFILE_ID,
           label: 'Profile',
@@ -185,6 +190,57 @@ export function MenuGroupsEditor({
         setError(res.error)
         onStatus('Could not save group placement')
       }
+    })
+  }
+
+  // Save a category's two-axis access gate (ADR-390). Optimistic, mirrors saveCategoryGrid.
+  function saveCategoryGate(catId: string, patch: GatePatch) {
+    setError(null)
+    onStatus('Saving group access')
+    setMenu((m) => ({
+      ...m,
+      categories: patchCategory(m.categories, catId, {
+        ...(patch.minAccess != null ? { minAccess: patch.minAccess } : {}),
+        ...('staffDomain' in patch ? { staffDomain: patch.staffDomain ?? undefined } : {}),
+        ...('staffLevel' in patch ? { staffLevel: patch.staffLevel ?? undefined } : {}),
+      }),
+    }))
+    startTransition(async () => {
+      const res = await updateCategory(catId, patch)
+      if (res.ok) onStatus('Group access saved')
+      else {
+        setError(res.error)
+        onStatus('Could not save group access')
+      }
+    })
+  }
+
+  // Move a LINK to another container (ADR-390). Optimistically drop it from this surface
+  // (it reappears at the top of the destination), then run the server action.
+  function moveItemTo(itemId: string, dest: MenuSurfaceKey) {
+    setError(null)
+    onStatus('Moving link')
+    setMenu((m) => ({
+      ...m,
+      rootItems: m.rootItems.filter((i) => i.id !== itemId),
+      categories: removeItemFrom(m.categories, itemId),
+    }))
+    startTransition(async () => {
+      const res = await moveItemToSurface(itemId, dest)
+      onStatus(res.ok ? 'Link moved' : 'Could not move link')
+      if (!res.ok) setError(res.error)
+    })
+  }
+
+  // Move a GROUP (and its subtree) to another container. Optimistically remove it here.
+  function moveCategoryTo(catId: string, dest: MenuSurfaceKey) {
+    setError(null)
+    onStatus('Moving group')
+    setMenu((m) => ({ ...m, categories: removeCategoryFrom(m.categories, catId) }))
+    startTransition(async () => {
+      const res = await moveCategoryToSurface(catId, dest)
+      onStatus(res.ok ? 'Group moved' : 'Could not move group')
+      if (!res.ok) setError(res.error)
     })
   }
 
@@ -372,6 +428,8 @@ export function MenuGroupsEditor({
         patchItem={(id, patch) => setMenu((m) => patchRootItem(m, id, patch))}
         deleteItem={(id) => setMenu((m) => ({ ...m, rootItems: m.rootItems.filter((i) => i.id !== id) }))}
         onStatus={onStatus}
+        surfaceKey={surfaceKey}
+        onMoveItem={moveItemTo}
       />
 
       {flatCategories.length === 0 ? (
@@ -405,6 +463,9 @@ export function MenuGroupsEditor({
                 onAddItem={() => addItem(cat.id)}
                 onDelete={() => removeCategory(cat.id, cat.label)}
                 onSaveGrid={(p) => saveCategoryGrid(cat.id, p)}
+                onSaveGate={(p) => saveCategoryGate(cat.id, p)}
+                surfaceKey={surfaceKey}
+                onMove={(dest) => moveCategoryTo(cat.id, dest)}
               />
               <Bucket
                 items={cat.items}
@@ -426,6 +487,8 @@ export function MenuGroupsEditor({
                   }))
                 }
                 onStatus={onStatus}
+                surfaceKey={surfaceKey}
+                onMoveItem={moveItemTo}
               />
             </li>
           ))}
@@ -456,6 +519,8 @@ function Bucket({
   patchItem,
   deleteItem,
   onStatus,
+  surfaceKey,
+  onMoveItem,
 }: {
   title?: string
   hint?: string
@@ -476,6 +541,9 @@ function Bucket({
   patchItem: (id: string, patch: Partial<ResolvedItem>) => void
   deleteItem: (id: string) => void
   onStatus: (msg: string) => void
+  /** Current surface + cross-container move handler (ADR-390), threaded to each ItemEditor. */
+  surfaceKey: MenuSurfaceKey
+  onMoveItem: (itemId: string, dest: MenuSurfaceKey) => void
 }) {
   // Inert drag handlers for the pinned lead (it is never draggable).
   const noDrag = {
@@ -522,6 +590,8 @@ function Bucket({
             onStatus={onStatus}
             onChanged={(patch) => patchItem(item.id, patch)}
             onDeleted={() => deleteItem(item.id)}
+            surfaceKey={surfaceKey}
+            onMove={(dest) => onMoveItem(item.id, dest)}
           />
         ))}
       </ul>
@@ -550,6 +620,9 @@ function CategoryHeader({
   onAddItem,
   onDelete,
   onSaveGrid,
+  onSaveGate,
+  surfaceKey,
+  onMove,
 }: {
   cat: ResolvedCategoryLite
   isPending: boolean
@@ -560,6 +633,11 @@ function CategoryHeader({
   onAddItem: () => void
   onDelete: () => void
   onSaveGrid: (patch: { gridCol?: number | null; gridRow?: number | null; colSpan?: number }) => void
+  /** Save the section's two-axis access gate (ADR-390). */
+  onSaveGate: (patch: GatePatch) => void
+  /** Current surface + cross-container move handler (ADR-390). */
+  surfaceKey: MenuSurfaceKey
+  onMove: (dest: MenuSurfaceKey) => void
 }) {
   const [label, setLabel] = useState(cat.label ?? '')
   return (
@@ -619,6 +697,22 @@ function CategoryHeader({
           onSave={onSaveGrid}
         />
       )}
+      {/* Section access gate (ADR-390): floor + optional staff domain for the whole group. */}
+      <div>
+        <p className="mb-1.5 text-xs font-semibold text-subtle">Who can see this group</p>
+        <GateControls
+          minAccess={cat.minAccess}
+          staffDomain={cat.staffDomain}
+          staffLevel={cat.staffLevel}
+          disabled={isPending}
+          onSave={onSaveGate}
+        />
+      </div>
+
+      {/* Move this whole group (and its links) to another container (ADR-390). */}
+      <div className="border-t border-border pt-3">
+        <MenuMoveField current={surfaceKey} onMove={onMove} disabled={isPending} label="Move group to" />
+      </div>
     </div>
   )
 }
@@ -680,6 +774,15 @@ function removeCategoryFrom(cats: ResolvedCategoryLite[], id: string): ResolvedC
   return cats
     .filter((c) => c.id !== id)
     .map((c) => ({ ...c, children: removeCategoryFrom(c.children, id) }))
+}
+
+// Strip a single item from anywhere in the category tree (used by the cross-container move).
+function removeItemFrom(cats: ResolvedCategoryLite[], itemId: string): ResolvedCategoryLite[] {
+  return cats.map((c) => ({
+    ...c,
+    items: c.items.filter((i) => i.id !== itemId),
+    children: removeItemFrom(c.children, itemId),
+  }))
 }
 
 function patchRootItem(

@@ -5,17 +5,23 @@
 import type { MenuAccess, MenuMode, MenuSurfaceKey } from '@/lib/menus/types'
 
 // Which surfaces render as a true grid (so column / row / span placement is meaningful)
-// vs. a linear list. The left rail and the marketing footer are linear lists, so their
-// grid-placement controls are hidden (point 4); the three mega-menu surfaces are grids.
-const GRID_SURFACES: readonly MenuSurfaceKey[] = [
-  'public_discover',
-  'public_explore',
-  'admin_subheader',
-]
+// vs. a linear list. The left rail, footer, and profile menu are linear lists, so their
+// grid-placement controls are hidden (point 4); the mega-menus (header + admin header) are grids.
+const GRID_SURFACES: readonly MenuSurfaceKey[] = ['header', 'admin_header']
 
 /** Does this surface lay items out on a grid (vs. a linear list)? */
 export function isGridSurface(surfaceKey: MenuSurfaceKey): boolean {
   return (GRID_SURFACES as readonly string[]).includes(surfaceKey)
+}
+
+// Client-safe surface labels for the "Move to…" control (lib/menus/read.ts is server-only,
+// so client editors can't import MENU_SURFACES from there). Keep in sync with MENU_SURFACES.
+export const MENU_SURFACE_LABELS: Record<MenuSurfaceKey, string> = {
+  header: 'Header menu',
+  left: 'Left menu',
+  footer: 'Footer menu',
+  profile: 'Profile menu',
+  admin_header: 'Admin header',
 }
 
 // A curated set of known in-app routes offered as a <datalist> in the link-target
