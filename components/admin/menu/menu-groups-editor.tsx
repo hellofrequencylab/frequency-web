@@ -5,7 +5,7 @@ import { FolderPlus, Plus, Trash2 } from 'lucide-react'
 import type { ResolvedItem, ResolvedMenu } from '@/lib/menus/types'
 import {
   ensureMenu,
-  materializeMenu,
+  syncMenuFromDefaults,
   createCategory,
   updateCategory,
   deleteCategory,
@@ -95,30 +95,32 @@ export function MenuGroupsEditor({
     return res.id
   }
 
-  // The menu can be the code DEFAULT (synthetic ids): a surface never customized, or one whose
-  // DB row is empty so the reader falls back to defaults. Per-item edits need REAL rows, so on
-  // open we materialize the defaults into the DB once and adopt the real menu. This is what makes
-  // a never-touched surface (e.g. the left rail) actually manageable instead of a dead default.
-  // This is the SINGLE place materialize runs (see the COUPLING note above).
-  const materializedRef = useRef(false)
+  // On open we SYNC the surface with the code defaults (ADR-390). This does two jobs in one:
+  //   1. An empty/never-customized surface gets seeded into REAL editable rows (per-item edits
+  //      need real rows, not synthetic default ids).
+  //   2. An already-saved surface gets any GENUINELY-NEW code pages injected automatically —
+  //      pages added in code since this menu was seeded — into their matching group, with their
+  //      own role-gating. It preserves every edit and never resurrects a page you deleted (the
+  //      sync tracks which defaults it has already seen). So new pages "just appear" here.
+  // Runs once per surface mount; this is the SINGLE place the sync runs (see the COUPLING note).
+  const syncedRef = useRef(false)
   useEffect(() => {
-    if (!menu.isDefault || materializedRef.current) return
-    materializedRef.current = true
+    if (syncedRef.current) return
+    syncedRef.current = true
     setError(null)
     onStatus('Loading the current menu…')
     startTransition(async () => {
-      const res = await materializeMenu(surfaceKey)
+      const res = await syncMenuFromDefaults(surfaceKey)
       if (res.ok) {
         setMenu(res.menu)
-        onStatus('Loaded. Edit anything below.')
+        onStatus('Loaded. New pages are added automatically.')
       } else {
-        materializedRef.current = false
+        syncedRef.current = false
         setError(res.error)
         onStatus('Could not load this menu')
       }
     })
     // Runs once per surface mount (the block is keyed by surface, so a re-scope remounts it).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surfaceKey])
 
   // ── Flatten the nested category tree to a render list (depth for indentation) ──
