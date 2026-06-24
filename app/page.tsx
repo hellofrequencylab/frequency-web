@@ -134,10 +134,9 @@ export default async function RootPage({
   const referrer = await getReferrer()
   // DB-backed nav megas for the splash header (lib/menus); fall back to code defaults on any
   // miss, so safe pre-migration. The splash is always a logged-out 'visitor' surface.
-  const [discoverMenu, exploreMenu, footerMenu, menuTimings] = await Promise.all([
-    getMenu('public_discover'),
-    getMenu('public_explore'),
-    getMenu('marketing_footer'),
+  const [headerMenu, footerMenu, menuTimings] = await Promise.all([
+    getMenu('header'),
+    getMenu('footer'),
     getMenuSettings(),
   ])
   // The live-proof band (counts, events, posts) streams in its own <Suspense> inside Splash,
@@ -145,8 +144,7 @@ export default async function RootPage({
   return (
     <Splash
       referrer={referrer}
-      discoverMenu={discoverMenu}
-      exploreMenu={exploreMenu}
+      headerMenu={headerMenu}
       footerMenu={footerMenu}
       menuTimings={menuTimings}
     />
@@ -158,14 +156,12 @@ export default async function RootPage({
 //   and the Quest closes the feature arc before the CTA.
 function Splash({
   referrer,
-  discoverMenu,
-  exploreMenu,
+  headerMenu,
   footerMenu,
   menuTimings,
 }: {
   referrer: { displayName: string; handle: string; avatarUrl: string | null } | null
-  discoverMenu?: ResolvedMenu
-  exploreMenu?: ResolvedMenu
+  headerMenu?: ResolvedMenu
   footerMenu?: ResolvedMenu
   menuTimings?: MenuSettings
 }) {
@@ -173,8 +169,7 @@ function Splash({
     <>
       <MarketingHeader
         overHero
-        discoverMenu={discoverMenu}
-        exploreMenu={exploreMenu}
+        headerMenu={headerMenu}
         menuTimings={menuTimings}
       />
 

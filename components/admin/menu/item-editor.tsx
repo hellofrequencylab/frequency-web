@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { ChevronDown, ChevronRight, GripVertical, Lock, Trash2 } from 'lucide-react'
-import type { ResolvedItem } from '@/lib/menus/types'
+import type { ResolvedItem, MenuSurfaceKey } from '@/lib/menus/types'
 import { updateItem, deleteItem, type UpdateItemPatch } from '@/lib/menus/actions'
 import { LinkTargetField } from './link-target-field'
 import { RoleModeMatrix } from './role-mode-matrix'
 import { OnOffToggle } from './on-off-toggle'
 import { GateControls } from './gate-controls'
+import { MenuMoveField } from './menu-move-field'
 
 // One editable menu link. Collapsed it shows the label + an on/off toggle + drag handle;
 // expanded it edits the subheading, link target, grid placement (grid surfaces only),
@@ -26,12 +27,18 @@ export function ItemEditor({
   isDragging,
   isGrid = true,
   pinned = false,
+  surfaceKey,
+  onMove,
 }: {
   item: ResolvedItem
   /** Patch the local copy after a successful save so the parent stays in sync. */
   onChanged: (patch: Partial<ResolvedItem>) => void
   onDeleted: () => void
   onStatus: (msg: string) => void
+  /** This item's current surface; drives the "Move to…" options (excludes itself). */
+  surfaceKey?: MenuSurfaceKey
+  /** Move this link to another container (ADR-390). Omitted for the fixed Profile pin. */
+  onMove?: (dest: MenuSurfaceKey) => void
   /** Native HTML5 drag handlers wired by the parent list. */
   dragHandlers: {
     draggable: boolean
@@ -307,6 +314,13 @@ export function ItemEditor({
             disabled={isPending}
             onChange={(next) => save({ roleModes: next }, { roleModes: next })}
           />
+
+          {/* Move this link to another container (ADR-390 — "put any page anywhere"). */}
+          {onMove && surfaceKey && !pinned && (
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+              <MenuMoveField current={surfaceKey} onMove={onMove} disabled={isPending} />
+            </div>
+          )}
         </div>
       )}
     </li>

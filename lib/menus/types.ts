@@ -17,13 +17,13 @@
 
 import type { StaffDomain, Access } from '@/lib/core/staff-roles'
 
-/** The five menu surfaces the system can drive. */
-export type MenuSurfaceKey =
-  | 'public_discover'
-  | 'public_explore'
-  | 'admin_subheader'
-  | 'left_rail'
-  | 'marketing_footer'
+/** The four standardized menu containers the whole site composes (ADR-390):
+ *  - header  — the mega-menu for general site navigation (pages + categories)
+ *  - left    — the in-app left rail (the "user menu" in the feed); admin lives here, role-gated
+ *  - footer  — the site footer
+ *  - profile — the account / profile dropdown
+ *  Any page/link is assignable to any container; visibility is role-gated. */
+export type MenuSurfaceKey = 'header' | 'left' | 'footer' | 'profile'
 
 /** How an item / rail card presents. 'ghost' = shown muted (upsell / preview),
  *  'hidden' = removed for that viewer. Mirrors the DB CHECK constraint. */

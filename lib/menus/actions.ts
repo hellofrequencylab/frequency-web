@@ -33,13 +33,7 @@ import type {
 type Result = { ok: true } | { ok: false; error: string }
 type EnsureResult = { ok: true; id: string } | { ok: false; error: string }
 
-const SURFACE_KEYS: readonly MenuSurfaceKey[] = [
-  'public_discover',
-  'public_explore',
-  'admin_subheader',
-  'left_rail',
-  'marketing_footer',
-]
+const SURFACE_KEYS: readonly MenuSurfaceKey[] = ['header', 'left', 'footer', 'profile']
 const MODE_VALUES: readonly MenuMode[] = ['active', 'ghost', 'hidden']
 const ACCESS_VALUES: readonly MenuAccess[] = [
   'visitor',
@@ -222,7 +216,7 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
     // Left rail: bridge the operator's saved menu_config (order + hidden) onto the
     // default so seeding reproduces the rail they currently see. Best-effort: any read
     // failure or empty config falls through to the plain default.
-    if (surfaceKey === 'left_rail') {
+    if (surfaceKey === 'left') {
       try {
         const config = await getMenuConfig()
         if (config.order.size > 0 || config.hidden.size > 0) {
@@ -638,6 +632,90 @@ export async function deleteItem(id: string): Promise<Result> {
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'deleteItem failed' }
+  }
+}
+
+/** Move a LINK to another container (ADR-390 "put any page anywhere"). Ensures the dest
+ *  menu exists, then re-stamps the item's menu_id, drops it to the dest TOP LEVEL
+ *  (category_id null), and appends it. The operator can then drag it into a group within
+ *  that surface. Janitor-gated. */
+export async function moveItem(id: string, surfaceKey: MenuSurfaceKey): Promise<Result> {
+  try {
+    await requireJanitor()
+    if (!id) return { ok: false, error: 'Missing item id' }
+    if (!isSurface(surfaceKey)) return { ok: false, error: 'Unknown surface' }
+    const ensured = await ensureMenu(surfaceKey)
+    if (!ensured.ok) return { ok: false, error: ensured.error }
+    const db = adminDb()
+    // Append to the end of the dest top level.
+    const existing = await db
+      .from<{ id: string }>('menu_items')
+      .select('id')
+      .eq('menu_id', ensured.id)
+      .is('category_id', null)
+    const position = (existing.data ?? []).length
+    const { error } = await db
+      .from('menu_items')
+      .update({ menu_id: ensured.id, category_id: null, position })
+      .eq('id', id)
+    if (error) return { ok: false, error: error.message }
+    revalidatePath('/', 'layout')
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'moveItem failed' }
+  }
+}
+
+/** Move a CATEGORY (group) and its whole subtree to another container. menu_items carry
+ *  menu_id INDEPENDENTLY of category_id, so every descendant category AND item must be
+ *  re-stamped with the dest menu_id or they orphan (wrong menu_id → invisible). The moved
+ *  root category drops to the dest TOP LEVEL (parent_id null) and appends. Janitor-gated. */
+export async function moveCategory(id: string, surfaceKey: MenuSurfaceKey): Promise<Result> {
+  try {
+    await requireJanitor()
+    if (!id) return { ok: false, error: 'Missing category id' }
+    if (!isSurface(surfaceKey)) return { ok: false, error: 'Unknown surface' }
+    const ensured = await ensureMenu(surfaceKey)
+    if (!ensured.ok) return { ok: false, error: ensured.error }
+    const db = adminDb()
+
+    // Collect the moved category + all descendant categories (BFS over parent_id).
+    const catIds: string[] = [id]
+    let frontier: string[] = [id]
+    while (frontier.length > 0) {
+      const res = await db
+        .from<{ id: string }>('menu_categories')
+        .select('id')
+        .in('parent_id', frontier)
+      const next = (res.data ?? []).map((r) => r.id).filter((cid) => !catIds.includes(cid))
+      catIds.push(...next)
+      frontier = next
+    }
+
+    // Re-stamp menu_id on every category in the subtree and every item under those
+    // categories, so nothing is left pointing at the old menu.
+    const upCats = await db.from('menu_categories').update({ menu_id: ensured.id }).in('id', catIds)
+    if (upCats.error) return { ok: false, error: upCats.error.message }
+    const upItems = await db.from('menu_items').update({ menu_id: ensured.id }).in('category_id', catIds)
+    if (upItems.error) return { ok: false, error: upItems.error.message }
+
+    // Drop the moved ROOT category to the dest top level + append (descendants keep their
+    // parent_id, all now within the re-stamped subtree).
+    const existing = await db
+      .from<{ id: string }>('menu_categories')
+      .select('id')
+      .eq('menu_id', ensured.id)
+      .is('parent_id', null)
+    const position = (existing.data ?? []).filter((r) => r.id !== id).length
+    const { error } = await db
+      .from('menu_categories')
+      .update({ parent_id: null, position })
+      .eq('id', id)
+    if (error) return { ok: false, error: error.message }
+    revalidatePath('/', 'layout')
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'moveCategory failed' }
   }
 }
 

@@ -30,13 +30,12 @@ function toStaffLevel(v: string | null | undefined): Access | undefined {
   return v && (ACCESS_LEVELS as readonly string[]).includes(v) ? (v as Access) : undefined
 }
 
-/** The five surfaces with human labels, drives the editor's surface picker. */
+/** The four standardized containers with human labels; drives the editor's surface picker. */
 export const MENU_SURFACES: { key: MenuSurfaceKey; label: string }[] = [
-  { key: 'public_discover', label: 'Discover (public header)' },
-  { key: 'public_explore', label: 'Explore Frequency (public header)' },
-  { key: 'admin_subheader', label: 'Admin subheader' },
-  { key: 'left_rail', label: 'In-app left rail' },
-  { key: 'marketing_footer', label: 'Marketing footer' },
+  { key: 'header', label: 'Header menu (mega)' },
+  { key: 'left', label: 'Left menu (in-app rail)' },
+  { key: 'footer', label: 'Footer menu' },
+  { key: 'profile', label: 'Profile menu' },
 ]
 
 // ── Raw row shapes (untyped DB) ───────────────────────────────────────────────

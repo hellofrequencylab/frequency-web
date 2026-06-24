@@ -10,7 +10,7 @@
 // They therefore stay in lock-step on the same surface, exactly like /practices threads its facets
 // through `x-search` to the practices-library module.
 //
-// Fail-safe: an unset or unknown `surface` defaults to the FIRST surface (public_discover), so a
+// Fail-safe: an unset or unknown `surface` defaults to the FIRST surface (header), so a
 // block always has a surface to edit and binding these blocks on a route with no picker is harmless.
 
 import { headers } from 'next/headers'
@@ -19,14 +19,14 @@ import type { MenuSurfaceKey } from './types'
 
 /** The surfaces the picker offers, in display order. The first is the default when none is set. */
 const SURFACE_KEYS = MENU_SURFACES.map((s) => s.key)
-const DEFAULT_SURFACE: MenuSurfaceKey = SURFACE_KEYS[0] ?? 'public_discover'
+const DEFAULT_SURFACE: MenuSurfaceKey = SURFACE_KEYS[0] ?? 'header'
 
 function isSurfaceKey(v: string | null | undefined): v is MenuSurfaceKey {
   return !!v && (SURFACE_KEYS as readonly string[]).includes(v)
 }
 
 /** Resolve the active menu surface for THIS request from the `surface` query param the proxy
- *  stamps onto `x-search`. Defaults to the first surface (public_discover) when unset or unknown. */
+ *  stamps onto `x-search`. Defaults to the first surface (header) when unset or unknown. */
 export async function activeMenuSurface(): Promise<MenuSurfaceKey> {
   const search = (await headers()).get('x-search') ?? ''
   const raw = new URLSearchParams(search).get('surface')

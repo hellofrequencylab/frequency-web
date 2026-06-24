@@ -19,13 +19,11 @@ import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 // renders. The public header is always a logged-out 'visitor' for menu purposes.
 export function MarketingHeader({
   overHero = false,
-  discoverMenu,
-  exploreMenu,
+  headerMenu,
   menuTimings,
 }: {
   overHero?: boolean
-  discoverMenu?: ResolvedMenu
-  exploreMenu?: ResolvedMenu
+  headerMenu?: ResolvedMenu
   menuTimings?: MenuSettings
 }) {
   const [scrolled, setScrolled] = useState(false)
@@ -56,12 +54,11 @@ export function MarketingHeader({
         />
       </Link>
 
-      {/* Unified primary nav (Discover + About dropdowns) */}
+      {/* Header mega-menu (Discover + Explore dropdowns, from the `header` surface) */}
       <PrimaryNav
         variant={light ? 'light' : 'dark'}
         className="ml-3"
-        discoverMenu={discoverMenu}
-        exploreMenu={exploreMenu}
+        headerMenu={headerMenu}
         viewerRole="visitor"
         timings={menuTimings}
       />
