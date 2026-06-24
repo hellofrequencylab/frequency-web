@@ -23,10 +23,11 @@ import { logAdminAction } from '@/lib/admin/audit'
 import { CIRCLE_TEMPLATES_FLAG, type CalloutAnchor } from '@/lib/circles/templates'
 import type { PillarSlug } from '@/lib/pillars'
 
-// circle_templates is not in the generated DB types pre-apply (see file header).
+// Untyped admin handle — the repo-wide service-role convention (ADR-246).
+// circle_templates is now in the generated types; can move to the typed client
+// in the team's coordinated cast-cleanup pass.
 function db(): SupabaseClient {
-  // eslint-disable-next-line no-restricted-syntax -- table not in generated types pre-apply (see header)
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 const PILLARS: readonly PillarSlug[] = ['mind', 'body', 'spirit', 'expression']

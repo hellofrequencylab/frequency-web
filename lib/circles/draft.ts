@@ -19,14 +19,11 @@ import type { CircleSparkDraft } from '@/lib/ai/circle-spark'
 import { stampCircleSpaceId } from './store'
 import { ensureHostOnOwnership } from './remix'
 
-// circle_profiles is a net-new table, absent from the generated DB types until
-// its migration is applied and types are regenerated. This is the "genuinely
-// untyped" case the ADR-246 lint rule sanctions; drop the handle and use the
-// typed client once the table lands in the generated types (mirrors
-// lib/circles/templates-data.ts).
+// Untyped admin handle — the repo-wide service-role convention (ADR-246).
+// circle_profiles is now in the generated types; can move to the typed client
+// in the team's coordinated cast-cleanup pass.
 function db(): SupabaseClient {
-  // eslint-disable-next-line no-restricted-syntax -- table not in generated types pre-apply (see note above)
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 const PILLARS: readonly PillarSlug[] = ['mind', 'body', 'spirit', 'expression']

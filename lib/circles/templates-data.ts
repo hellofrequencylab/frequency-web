@@ -15,13 +15,12 @@ import {
   CIRCLE_TEMPLATES_FLAG,
 } from './templates'
 
-// circle_templates / circle_profiles are net-new tables, absent from the
-// generated DB types until their migration is applied and types are regenerated.
-// This is the "genuinely untyped" case the ADR-246 lint rule sanctions; drop the
-// handle and use the typed client once the tables land in the generated types.
+// Untyped admin handle — the repo-wide service-role convention (ADR-246).
+// circle_templates / circle_profiles are now in the generated types (regenerated
+// with this migration); can move to the typed client in the team's coordinated
+// cast-cleanup pass.
 function db(): SupabaseClient {
-  // eslint-disable-next-line no-restricted-syntax -- tables not in generated types pre-apply (see note above)
-  return createAdminClient() as unknown as SupabaseClient
+  return createAdminClient()
 }
 
 const PILLARS: readonly PillarSlug[] = ['mind', 'body', 'spirit', 'expression']

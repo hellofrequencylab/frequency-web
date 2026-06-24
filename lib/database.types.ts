@@ -836,6 +836,140 @@ export type Database = {
           },
         ]
       }
+      circle_profiles: {
+        Row: {
+          agreements: Json
+          circle_id: string
+          editor_notes: Json
+          format: string | null
+          gathering: Json
+          meetup: Json
+          pillars_inside: Json
+          recommended_journey_pillar: string | null
+          remix_options: Json
+          size_label: string | null
+          thread: string | null
+          updated_at: string
+        }
+        Insert: {
+          agreements?: Json
+          circle_id: string
+          editor_notes?: Json
+          format?: string | null
+          gathering?: Json
+          meetup?: Json
+          pillars_inside?: Json
+          recommended_journey_pillar?: string | null
+          remix_options?: Json
+          size_label?: string | null
+          thread?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agreements?: Json
+          circle_id?: string
+          editor_notes?: Json
+          format?: string | null
+          gathering?: Json
+          meetup?: Json
+          pillars_inside?: Json
+          recommended_journey_pillar?: string | null
+          remix_options?: Json
+          size_label?: string | null
+          thread?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_profiles_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: true
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_templates: {
+        Row: {
+          about: string | null
+          agreements: Json
+          audience: string
+          callouts: Json
+          card: string
+          created_at: string
+          display_order: number
+          format: string | null
+          gathering: Json
+          id: string
+          identity: string
+          image_url: string | null
+          is_active: boolean
+          meetup: Json
+          name: string
+          one_liner: string
+          pillars_inside: Json
+          primary_pillar: string
+          recommended_journey_pillar: string | null
+          remix_options: Json
+          size_label: string | null
+          slug: string
+          thread: string | null
+          updated_at: string
+        }
+        Insert: {
+          about?: string | null
+          agreements?: Json
+          audience: string
+          callouts?: Json
+          card: string
+          created_at?: string
+          display_order?: number
+          format?: string | null
+          gathering?: Json
+          id?: string
+          identity: string
+          image_url?: string | null
+          is_active?: boolean
+          meetup?: Json
+          name: string
+          one_liner: string
+          pillars_inside?: Json
+          primary_pillar: string
+          recommended_journey_pillar?: string | null
+          remix_options?: Json
+          size_label?: string | null
+          slug: string
+          thread?: string | null
+          updated_at?: string
+        }
+        Update: {
+          about?: string | null
+          agreements?: Json
+          audience?: string
+          callouts?: Json
+          card?: string
+          created_at?: string
+          display_order?: number
+          format?: string | null
+          gathering?: Json
+          id?: string
+          identity?: string
+          image_url?: string | null
+          is_active?: boolean
+          meetup?: Json
+          name?: string
+          one_liner?: string
+          pillars_inside?: Json
+          primary_pillar?: string
+          recommended_journey_pillar?: string | null
+          remix_options?: Json
+          size_label?: string | null
+          slug?: string
+          thread?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       circles: {
         Row: {
           about: string | null
@@ -854,6 +988,8 @@ export type Database = {
           member_count: number
           name: string
           neighborhood: string | null
+          origin_template_id: string | null
+          primary_pillar: string | null
           resonance_public: boolean
           sidebar_order: Json | null
           slug: string
@@ -880,6 +1016,8 @@ export type Database = {
           member_count?: number
           name: string
           neighborhood?: string | null
+          origin_template_id?: string | null
+          primary_pillar?: string | null
           resonance_public?: boolean
           sidebar_order?: Json | null
           slug: string
@@ -906,6 +1044,8 @@ export type Database = {
           member_count?: number
           name?: string
           neighborhood?: string | null
+          origin_template_id?: string | null
+          primary_pillar?: string | null
           resonance_public?: boolean
           sidebar_order?: Json | null
           slug?: string
@@ -928,6 +1068,13 @@ export type Database = {
             columns: ["hub_id"]
             isOneToOne: false
             referencedRelation: "hubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circles_origin_template_id_fkey"
+            columns: ["origin_template_id"]
+            isOneToOne: false
+            referencedRelation: "circle_templates"
             referencedColumns: ["id"]
           },
           {
@@ -11166,7 +11313,7 @@ export type Database = {
         | "mentor"
         | "admin"
         | "janitor"
-      group_status: "forming" | "active" | "inactive" | "archived"
+      group_status: "forming" | "active" | "inactive" | "archived" | "draft"
       membership_status: "active" | "pending" | "inactive"
       post_type: "feed" | "blog" | "announcement" | "recap" | "note" | "system"
       post_visibility: "public" | "region" | "cluster" | "group"
