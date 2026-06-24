@@ -3,7 +3,6 @@
 // client; the action layer enforces authz). Mirrors the create + claim flows
 // (app/(main)/admin/actions.ts createCircle, circles/[slug]/claim-actions.ts).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/utils'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -74,10 +73,9 @@ export async function remixTemplate(input: { templateId: string; profileId: stri
   // The rich content travels into the 1:1 profile. The template's own callouts
   // become edit-mode notes; the standard guidance library is layered in by the
   // editor at render time. circle_profiles is not in the generated types yet.
-  // circle_profiles is a net-new table, absent from the generated DB types until
-  // its migration is applied (ADR-246 sanctions an untyped handle here).
-  // eslint-disable-next-line no-restricted-syntax -- table not in generated types pre-apply
-  await (admin as unknown as SupabaseClient).from('circle_profiles').insert({
+  // circle_profiles is now in the generated types; the typed client + payload
+  // cast (as never, for the jsonb columns) is the sanctioned ADR-246 pattern.
+  await admin.from('circle_profiles').insert({
     circle_id: circleId,
     pillars_inside: template.pillarsInside,
     meetup: template.meetup,
@@ -89,7 +87,7 @@ export async function remixTemplate(input: { templateId: string; profileId: stri
     recommended_journey_pillar: template.recommendedJourneyPillar,
     remix_options: template.remixOptions,
     editor_notes: template.callouts,
-  })
+  } as never)
 
   // The adopter is a member of their own draft, as host.
   await admin
