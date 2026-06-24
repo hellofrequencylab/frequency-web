@@ -5,17 +5,22 @@ import { Briefcase, CircleDollarSign, ListChecks, Lock, Trophy } from 'lucide-re
 import { DashboardTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities, spaceHasEntitlement, spaceAutonomyLevel, spaceAiDepth } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { getDeals, countOpenTasks, computeMetrics, formatMoney, ensureSpaceStages } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SpacePipeline } from '@/components/spaces/crm/space-pipeline'
+import { CrmFunnelPanel } from '@/components/spaces/crm/crm-funnel-panel'
 import { SpaceContacts } from '@/components/spaces/crm/space-contacts'
 import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail'
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
+import { SpaceCockpitBand } from './space-cockpit-band'
+import { AutonomyControl } from './autonomy-control'
+import { AiDepthUpsell } from './ai-depth-upsell'
+import { SpaceResonanceSection } from './space-resonance-section'
 
 // PER-SPACE CRM BOARD (CRM-STRATEGY §6/§7, ADR-361 P3). The paid, full-width Dashboard a Space runs:
 // its pipeline (per-segment stages + deals) plus its contacts, scoped to this space_id, with the
@@ -123,10 +128,59 @@ export default async function SpaceCrmBoardPage({
       }
       width="wide"
     >
+      {/* RESONANCE COCKPIT BAND (Phase 2 · ADR-383): the verdict line + four Space-scoped health
+          StatCards + the Space who-needs-attention worklist, ABOVE the existing pipeline / funnel /
+          tasks (which stay intact). Its own Suspense so the cockpit reads never block the board, and
+          every read is fail-safe (zeros / empty). Gated by the same canUseCrm check that gates the
+          whole board (entitlement + owner/admin). */}
+      <Suspense fallback={<CockpitSkeleton />}>
+        <SpaceCockpitBand spaceId={space.id} slug={space.slug} />
+      </Suspense>
+
+      {/* AUTONOMY SLIDER (Phase 3 · ADR-384): the owner's dial for how much Vera does on its own.
+          Owner/admin only (caps.canManageMembers); the setter re-gates server-side. Fail-closed to
+          suggest_only by default, so nothing auto-executes until the owner explicitly raises it. */}
+      {caps.canManageMembers && (
+        <AutonomyControl slug={space.slug} level={spaceAutonomyLevel(space)} />
+      )}
+
+      {/* ── AI-DEPTH UPSELL (Phase 6 · ADR-387) — self-contained, safe to add/remove ──────────────
+          A tasteful, in-context nudge shown ONLY when a free / lower Space reaches its soft AI-depth
+          ceiling (it is actually using the engine and is ready for the deeper, governed automation).
+          DISPLAY-ONLY: it links to the Space's own billing surface and never charges or changes a
+          plan. Owner/admin only (caps.canManageMembers); fail-safe to rendering nothing on any read
+          error or when already at the top rung. Its own Suspense so the usage read never blocks the
+          board. Kept a self-contained block so a sibling Phase 4 section can sit beside it cleanly.
+          ──────────────────────────────────────────────────────────────────────────────────────── */}
+      {caps.canManageMembers && (
+        <Suspense fallback={null}>
+          <AiDepthUpsell
+            slug={space.slug}
+            spaceId={space.id}
+            tier={spaceAiDepth(space)}
+            plan={space.plan}
+          />
+        </Suspense>
+      )}
+      {/* ── END AI-DEPTH UPSELL (Phase 6 · ADR-387) ─────────────────────────────────────────────── */}
+
       <ImportContactsForm spaceId={space.id} />
 
       <Suspense fallback={<BoardSkeleton />}>
         <SpacePipeline spaceId={space.id} />
+      </Suspense>
+
+      {/* Funnel analytics (ADR-381): a read-only conversion + engagement view. Behind its own Suspense
+          so the funnel read never blocks the pipeline / tasks / contacts above and below it. */}
+      <Suspense fallback={<FunnelSkeleton />}>
+        <CrmFunnelPanel spaceId={space.id} />
+      </Suspense>
+
+      {/* Resonance Graph (Phase 4 · ADR-385): "people close by with your vibe", the Space-scoped
+          reciprocal match suggestions. ADDED as a section (the page above is unchanged); its own
+          Suspense so the edge reads never block the board, and every read is fail-safe (empty). */}
+      <Suspense fallback={<ListSkeleton />}>
+        <SpaceResonanceSection spaceId={space.id} />
       </Suspense>
 
       <div className="grid gap-6 @3xl:grid-cols-2">
@@ -230,6 +284,19 @@ function StatsSkeleton() {
   )
 }
 
+function CockpitSkeleton() {
+  return (
+    <section className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
+        ))}
+      </div>
+      <div className="h-40 animate-pulse rounded-2xl bg-surface-elevated/50" />
+    </section>
+  )
+}
+
 function BoardSkeleton() {
   return (
     <section>
@@ -239,6 +306,20 @@ function BoardSkeleton() {
           <div key={i} className="h-40 w-64 shrink-0 animate-pulse rounded-2xl bg-surface-elevated/50" />
         ))}
       </div>
+    </section>
+  )
+}
+
+function FunnelSkeleton() {
+  return (
+    <section>
+      <SectionHeader title="Funnel" />
+      <div className="mb-4 grid grid-cols-2 gap-3 @2xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
+        ))}
+      </div>
+      <div className="h-44 animate-pulse rounded-2xl bg-surface-elevated/50" />
     </section>
   )
 }

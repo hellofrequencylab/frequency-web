@@ -110,6 +110,10 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'lead',             href: '/lead',             label: 'Leadership', section: 'Admin', defaultAccess: 'host',    surface: 'lead' },
   { key: 'admin-programs',   href: '/admin/programs',   label: 'Programs',   section: 'Admin', defaultAccess: 'host',    staffDomain: 'community',  surface: 'platformManage' },
   { key: 'admin-growth',     href: '/admin/growth',     label: 'Growth',     section: 'Admin', defaultAccess: 'host',    staffDomain: 'marketing', surface: 'growthStudio' },
+  // Resonance CRM (ADR-382 to 387): the Vera-driven CRM domain. THIS is the entry that puts it in the
+  // left rail (the rail reads NAV_AREAS only; sections.ts + nav.ts feed the dashboard switcher + the
+  // sub-header, not the rail). Gated 'janitor' to match the cockpit's per-member-prediction sensitivity.
+  { key: 'admin-crm',        href: '/admin/crm',        label: 'Resonance CRM', section: 'Admin', defaultAccess: 'janitor', surface: 'platformManage' },
   { key: 'admin-vera-ai',    href: '/admin/vera-ai',    label: 'Vera AI',    section: 'Admin', defaultAccess: 'janitor', staffDomain: 'insights',  surface: 'platformManage' },
   { key: 'admin-operations', href: '/admin/operations', label: 'Operations', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'platform',  surface: 'platformManage' },
   { key: 'admin-qr',         href: '/admin/qr',         label: 'QR Studio',  section: 'Admin', defaultAccess: 'admin',   staffDomain: 'qr',        surface: 'platformManage' },

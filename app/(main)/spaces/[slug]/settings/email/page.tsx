@@ -8,6 +8,8 @@ import { resolveSpaceManageAccess, getSpaceCapabilities, spaceHasEntitlement } f
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { isSpaceEmailEnabled } from '@/lib/spaces/email-toggle'
 import { listAudienceTags } from '@/lib/spaces/audiences'
+import { listSpaceSegments } from '@/lib/spaces/segments'
+import { listSpaceEmailTemplates } from '@/lib/spaces/email-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { EmailEnableCard } from '@/components/spaces/email/email-enable-card'
@@ -92,9 +94,14 @@ export default async function SpaceEmailPage({
     )
   }
 
-  const [emailOn, tags] = await Promise.all([
+  // RENDER is already gated on canManage || staffViewing above, so these per-Space reads (each
+  // space_id-scoped + fail-safe) only run for an authorized viewer. Segments + templates (ADR-380) feed
+  // the composer's audience + template pickers.
+  const [emailOn, tags, segments, templates] = await Promise.all([
     isSpaceEmailEnabled(space.id),
     listAudienceTags(space.id),
+    listSpaceSegments(space.id),
+    listSpaceEmailTemplates(space.id),
   ])
 
   return (
@@ -118,6 +125,13 @@ export default async function SpaceEmailPage({
             spaceId={space.id}
             slug={space.slug}
             tags={tags}
+            segments={segments.map((s) => ({ id: s.id, name: s.name }))}
+            templates={templates.map((t) => ({
+              id: t.id,
+              name: t.name,
+              subject: t.subject,
+              body: t.body,
+            }))}
             canSend={emailOn}
             readOnly={staffViewing}
           />

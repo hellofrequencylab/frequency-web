@@ -127,6 +127,31 @@ export async function hasSmsConsent(profileId: string): Promise<boolean> {
 }
 
 /**
+ * The phone number a member is currently `opted_in` on, or null when they are not
+ * opted in (or on any error — fail-closed). The latest sms_consent row per member
+ * wins; we only return its phone when that latest row is `opted_in`, so a member who
+ * texted STOP (latest row `opted_out`) yields null and nothing can be addressed to
+ * them. Read through the untyped admin client (sms_consent is not in the generated
+ * types yet, ADR-246).
+ */
+export async function consentedSmsPhone(profileId: string): Promise<string | null> {
+  try {
+    const { data } = await untypedDb()
+      .from('sms_consent')
+      .select('status, phone')
+      .eq('profile_id', profileId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (!data) return null
+    const row = data as { status: string; phone: string | null }
+    return row.status === 'opted_in' && row.phone ? row.phone : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Pure: is `hour` (0-23, the member's LOCAL hour) inside the inclusive-start,
  * exclusive-end quiet-hours window? Handles a normal same-day window (8 <= h < 21).
  * Unit-testable; the resolver derives `hour` from the member's home_timezone.
@@ -162,6 +187,13 @@ export interface SendSmsArgs {
   body: string
   /** The member's home timezone for the quiet-hours check (e.g. profiles.home_timezone). */
   timeZone?: string | null
+  /**
+   * The destination phone (E.164). Optional: when omitted, the send path resolves the
+   * member's consented number from the sms_consent ledger, so a caller never has to
+   * carry the phone around. A send is refused if neither this nor a consented number
+   * is available (fail-closed).
+   */
+  to?: string | null
 }
 
 /**
@@ -202,13 +234,22 @@ export async function sendSms(args: SendSmsArgs): Promise<SmsGateDecision> {
 
     const decision = evaluateSmsGate({ provisioned, consentOptedIn, prefEnabled, insideQuietHours })
 
-    // The send path lives here, BELOW the gate, and only when allowed. It is
-    // intentionally not implemented yet — the legal track must land first. Until
-    // then `allowed` is unreachable in practice (provisioned is false).
+    // The send path lives here, BELOW the gate, and only when allowed. It runs only
+    // once the legal track is live (env flags set) AND every per-member gate passed.
     if (!decision.allowed) return decision
 
-    // TODO(SMS legal track): send via the Twilio Messaging Service
-    // (TWILIO_MESSAGING_SERVICE_SID) once A2P 10DLC clears. No provider call today.
+    // Resolve the destination: an explicit `to`, else the member's consented number.
+    // If neither exists we cannot address the message, so refuse rather than guess
+    // (fail-closed; consentOptedIn was true, so a consented number should exist).
+    const to = (args.to && args.to.trim()) || (await consentedSmsPhone(args.profileId))
+    if (!to) return { allowed: false, reason: 'no_consent', gated: true }
+
+    // Send via the durable outbox (kind 'sms'), drained by /api/cron/process-queue,
+    // which calls the Twilio Messaging Service (TWILIO_MESSAGING_SERVICE_SID) and
+    // records the contact_interaction. Dynamic import breaks the sms ⇄ sms-send cycle
+    // (sms-send imports isSmsProvisioned from here) and keeps this module IO-light.
+    const { enqueueSms } = await import('@/lib/comms/sms-send')
+    await enqueueSms({ to, body: args.body, profileId: args.profileId })
     return decision
   } catch {
     return { allowed: false, reason: 'pref_off', gated: true }

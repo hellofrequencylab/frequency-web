@@ -49,3 +49,47 @@ export function verifyResendSignature(
     return false
   }
 }
+
+// ── Twilio webhook (X-Twilio-Signature) verification, no `twilio` dependency ──
+//
+// Twilio's documented scheme (ADR-256): build the signed string by taking the FULL
+// request URL (scheme + host + path + query, exactly as Twilio called it) and, for a
+// form-encoded POST, appending each POST parameter's key immediately followed by its
+// value, with the parameters sorted alphabetically by key and NO separators between
+// them. HMAC-SHA1 that string with the account auth token as the key, base64-encode
+// it, and compare to the X-Twilio-Signature header. Pure + unit-testable.
+
+/**
+ * Build the exact string Twilio signs: `url` + each sorted `key+value` concatenated.
+ * Sorting is by the raw key (Twilio uses a simple alphabetical sort of param names).
+ */
+export function buildTwilioSignedString(url: string, params: Record<string, string>): string {
+  const keys = Object.keys(params).sort()
+  let signed = url
+  for (const key of keys) signed += key + params[key]
+  return signed
+}
+
+/**
+ * Verify an X-Twilio-Signature header. `url` is the full URL Twilio POSTed to (must
+ * match what you configured in the Twilio console, including scheme + host), `params`
+ * is the parsed form body, and `signatureHeader` is the base64 signature Twilio sent.
+ * Returns false on any error or mismatch (fail-closed). Constant-time comparison.
+ */
+export function verifyTwilioSignature(
+  authToken: string,
+  url: string,
+  params: Record<string, string>,
+  signatureHeader: string | null | undefined,
+): boolean {
+  if (!authToken || !signatureHeader) return false
+  try {
+    const signed = buildTwilioSignedString(url, params)
+    const expected = crypto.createHmac('sha1', authToken).update(Buffer.from(signed, 'utf8')).digest('base64')
+    const expectedBuf = Buffer.from(expected)
+    const sigBuf = Buffer.from(signatureHeader)
+    return sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf)
+  } catch {
+    return false
+  }
+}

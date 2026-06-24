@@ -49,8 +49,8 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
       {
         heading: 'People',
         items: [
-          { label: 'Members', href: '/admin/members' },
-          { label: 'Connections', href: '/admin/connections' },
+          { label: 'Member Roster', href: '/admin/members' },
+          { label: 'Connection Settings', href: '/admin/connections' },
           { label: 'Personas', href: '/admin/personas' },
           { label: 'Segments', href: '/admin/segments' },
         ],
@@ -108,14 +108,36 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
           { label: 'Nurture', href: '/admin/marketing/nurture' },
           { label: 'Analytics', href: '/admin/marketing/analytics' },
           { label: 'Beta', href: '/admin/marketing/beta' },
+          { label: 'Referrals', href: '/admin/referrals' },
+        ],
+      },
+    ],
+  },
+  {
+    // Resonance CRM (ADR-382 to 387): the Vera-driven, prediction-powered CRM. The section root is
+    // the platform cockpit; the sub-pages are the loop (Today), the member drill-down, and the records.
+    // Gated 'janitor' to match the pages, which gate on requireAdmin('janitor') because the per-member
+    // predictions are sensitive (the cockpit / Today / Members all read member_traits + scores).
+    href: '/admin/crm',
+    label: 'Resonance CRM',
+    min: 'janitor',
+    groups: [
+      {
+        heading: 'Engine',
+        items: [
+          { label: 'Cockpit', href: '/admin/crm' },
+          { label: 'Today', href: '/admin/crm/today' },
+          { label: 'Member Intelligence', href: '/admin/crm/members' },
+          { label: 'Playbooks', href: '/admin/crm/playbooks' },
+          { label: 'Resonance Graph', href: '/admin/crm/graph' },
         ],
       },
       {
-        heading: 'Pipeline',
+        heading: 'Records',
         items: [
-          { label: 'Contacts', href: '/admin/marketing/contacts' },
-          { label: 'CRM', href: '/admin/crm/contacts' },
-          { label: 'Referrals', href: '/admin/referrals' },
+          { label: 'Contacts', href: '/admin/crm/contacts' },
+          { label: 'Deals', href: '/admin/crm/deals' },
+          { label: 'All Contacts', href: '/admin/marketing/contacts' },
         ],
       },
     ],

@@ -24,6 +24,8 @@ import {
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { shouldSend } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
+import { sendSms } from '@/lib/comms/sms'
+import { recordContactInteraction } from '@/lib/crm/interactions'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { log } from '@/lib/log'
 
@@ -138,13 +140,14 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
     const profileIds = rsvpRows.map((r) => r.profile_id)
     const { data: profiles } = await admin
       .from('profiles')
-      .select('id, display_name, auth_user_id')
+      .select('id, display_name, auth_user_id, home_timezone')
       .in('id', profileIds)
 
     type ProfileRow = {
       id: string
       display_name: string
       auth_user_id: string | null
+      home_timezone: string | null
     }
     const profileMap = new Map<string, ProfileRow>()
     for (const p of (profiles ?? []) as ProfileRow[]) profileMap.set(p.id, p)
@@ -229,6 +232,36 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
         url:   `/events/${ev.slug}`,
         tag:   `event-${ev.id}-${lead}`,
       }, 'events')
+
+      // SMS reminder leg (ADR-256). sendSms runs the FULL per-member gate
+      // (provisioning -> consent -> SMS prefs -> quiet hours), so it sends nothing
+      // until the A2P legal track is live AND the member opted in. Best-effort: never
+      // blocks the reminder run; records an outbound 'sms' touch only when allowed.
+      try {
+        const smsBody = ev.location
+          ? `Frequency: ${ev.title} is ${formatRelative(lead)}. ${ev.location}. Reply STOP to opt out.`
+          : `Frequency: ${ev.title} is ${formatRelative(lead)}. Reply STOP to opt out.`
+        const decision = await sendSms({
+          profileId: profile.id,
+          category: 'events',
+          body: smsBody,
+          timeZone: profile.home_timezone,
+        })
+        if (decision.allowed) {
+          await recordContactInteraction({
+            ownerProfileId: profile.id,
+            subjectKind: 'profile',
+            subjectId: profile.id,
+            channel: 'sms',
+            direction: 'outbound',
+            summary: smsBody,
+            source: 'engagement',
+            metadata: { kind: 'event_reminder', event_id: ev.id, lead },
+          })
+        }
+      } catch (e) {
+        console.error('[event-reminders sms]', e)
+      }
 
       await stampReminder(rsvp.id, sentColumn)
 

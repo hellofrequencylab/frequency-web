@@ -96,6 +96,17 @@ vi.mock('@/lib/unsubscribe-tokens', () => ({
     `${baseUrl}/unsubscribe?s=${spaceId}&e=${encodeURIComponent(email)}&t=tok`,
 }))
 
+// CRM timeline recorder mock (ADR-378): capture the outbound touch the send loop logs per accepted
+// send so we can assert it is owner-scoped + idempotent, without reaching the contact_interactions
+// table (which the in-memory admin client below does not back).
+const interactionCalls: { input: Record<string, unknown>; spaceId?: string | null }[] = []
+vi.mock('@/lib/crm/interactions', () => ({
+  recordContactInteraction: async (input: Record<string, unknown>, spaceId?: string | null) => {
+    interactionCalls.push({ input, spaceId })
+    return { id: 'int-1' }
+  },
+}))
+
 // ── In-memory admin client: spaces.email_enabled, outreach_sends, the today-count query ──────────
 const db = {
   // space_id -> email_enabled
@@ -229,6 +240,7 @@ beforeEach(() => {
   db.enabled.clear()
   db.outreach.length = 0
   db.spaceUpdates.length = 0
+  interactionCalls.length = 0
   // Space A starts ENABLED for the happy-path send tests; specific tests toggle it off.
   db.enabled.set('space-A', true)
 })
@@ -389,6 +401,74 @@ describe('sendSpaceCampaign: happy path + headers', () => {
     expect('error' in r).toBe(false)
     if (!('error' in r)) expect(r.data).toEqual({ sent: 0, suppressed: 0, failed: 2 })
     expect(db.outreach.every((o) => o.status === 'failed')).toBe(true)
+  })
+})
+
+describe('sendSpaceCampaign: CRM timeline write (ADR-378, owner-scoped + idempotent)', () => {
+  it('logs an outbound email touch only for a recipient that maps to a contact, owner = Space owner', async () => {
+    const r = await sendSpaceCampaign('space-A', {
+      campaignId: 'camp-7',
+      subject: 'Spring sessions',
+      html: '<p>x</p>',
+      recipients: [{ email: 'a@b.com', contactId: 'contact-1' }, { email: 'c@d.com' }],
+    })
+    expect('error' in r).toBe(false)
+    // Only the recipient WITH a contactId is logged (the bare-email one has no subject to scope to).
+    expect(interactionCalls).toHaveLength(1)
+    expect(interactionCalls[0]!.input).toMatchObject({
+      ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
+      subjectKind: 'contact',
+      subjectId: 'contact-1',
+      channel: 'email',
+      direction: 'outbound',
+      summary: 'Spring sessions',
+      source: 'engagement',
+      idempotencyKey: 'campaign:camp-7:contact-1',
+    })
+    expect(interactionCalls[0]!.spaceId).toBe('space-A')
+  })
+
+  it('uses no idempotency key for a one-off send (no campaign id)', async () => {
+    const r = await sendSpaceCampaign('space-A', {
+      subject: 'Hi',
+      html: '<p>x</p>',
+      recipients: [{ email: 'a@b.com', contactId: 'contact-1' }],
+    })
+    expect('error' in r).toBe(false)
+    expect(interactionCalls).toHaveLength(1)
+    expect(interactionCalls[0]!.input.idempotencyKey).toBeNull()
+  })
+
+  it('logs NOTHING for a suppressed or failed recipient (only accepted sends)', async () => {
+    globalSuppressed.add('skip@b.com')
+    throwOnSend = false
+    const r = await sendSpaceCampaign('space-A', {
+      campaignId: 'camp-8',
+      subject: 'Hi',
+      html: '<p>x</p>',
+      recipients: [{ email: 'skip@b.com', contactId: 'contact-skip' }, { email: 'real@b.com', contactId: 'contact-real' }],
+    })
+    expect('error' in r).toBe(false)
+    expect(interactionCalls.map((c) => c.input.subjectId)).toEqual(['contact-real'])
+  })
+
+  it('logs NOTHING when the Space has no owner (ungated platform Space, no sentinel)', async () => {
+    resolvedSpace = {
+      id: 'space-A',
+      slug: 'river-studio',
+      name: 'River Studio',
+      brandName: 'River Studio',
+      ownerProfileId: null,
+      entitlements: { email: true },
+    }
+    const r = await sendSpaceCampaign('space-A', {
+      campaignId: 'camp-9',
+      subject: 'Hi',
+      html: '<p>x</p>',
+      recipients: [{ email: 'a@b.com', contactId: 'contact-1' }],
+    })
+    expect('error' in r).toBe(false)
+    expect(interactionCalls).toHaveLength(0)
   })
 })
 

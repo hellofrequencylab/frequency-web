@@ -51,16 +51,25 @@ export function asSpacePlan(raw: string | null | undefined): SpacePlan {
 // white-label adds branding removal. The keys here are the EXISTING entitlement keys (e.g. 'crm' is
 // the one the Space CRM board already gates on, ADR-361 P3) — adding a capability is one key, never a
 // schema change.
+//
+// AI-DEPTH (Resonance Engine Phase 6 · ADR-387). The paid DEPTH of the engine rides the SAME ladder:
+//   • crm.playbooks    — Practitioner+ (governed auto-execution of safe playbooks + advanced segments)
+//   • crm.resonance    — Business+ (the read-only resonance surface)
+//   • crm.resonance_ai — Organization+ (the full Resonance Graph + managed matching, the top rung)
+// The FREE WEDGE (Today suggest-only + summaries + read-only scoring) is NEVER a key here: every
+// Space gets it whether or not a plan grants anything. So `free` stays empty and a missing depth key
+// reads as the wedge (fail-closed in spaceAiDepth). `crm.autonomy` (Phase 3) is a per-Space DIAL, not
+// a plan grant, so it is deliberately NOT in this map.
 const PLAN_ENTITLEMENT_KEYS: Record<SpacePlan, readonly string[]> = {
   free: [],
-  practitioner: ['crm'],
-  business: ['crm', 'email', 'automation', 'team', 'multi_pipeline'],
+  practitioner: ['crm', 'crm.playbooks'],
+  business: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'crm.playbooks', 'crm.resonance'],
   // Nonprofit (verified mission orgs) + Partner (comped, hosting a program) get the full business
   // toolset minus white-label branding. Per-feature tunable in /admin/pricing.
-  nonprofit: ['crm', 'email', 'automation', 'team', 'multi_pipeline'],
-  partner: ['crm', 'email', 'automation', 'team', 'multi_pipeline'],
-  organization: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting'],
-  whitelabel: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting', 'whitelabel'],
+  nonprofit: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'crm.playbooks', 'crm.resonance'],
+  partner: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'crm.playbooks', 'crm.resonance'],
+  organization: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting', 'crm.playbooks', 'crm.resonance', 'crm.resonance_ai'],
+  whitelabel: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting', 'whitelabel', 'crm.playbooks', 'crm.resonance', 'crm.resonance_ai'],
 }
 
 /** The `spaces.entitlements` keys a plan unlocks (default map; code source of truth). PURE —

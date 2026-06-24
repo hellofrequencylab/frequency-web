@@ -30,12 +30,50 @@ export interface AudienceRecipient {
   email: string
 }
 
+/** A resonance/engagement-depth facet value (the advanced segment facets, Resonance Engine Phase 6 ·
+ *  ADR-387). Each is a coarse, member-traits-derived band a Space can target once it has the advanced
+ *  segments lever (`crm.playbooks`). Read off the nightly `member_traits` feature store when the trait
+ *  join lands; today they are ACCEPTED + STORED but do not yet narrow (the consent-facet precedent). */
+
+/** How deeply a member is engaged with the Space (the `engagement_depth` trait, banded). */
+export const ENGAGEMENT_DEPTH_VALUES = ['shallow', 'moderate', 'deep'] as const
+export type EngagementDepth = (typeof ENGAGEMENT_DEPTH_VALUES)[number]
+
+/** The member's resonance tier (the Resonance Health roll-up, banded green/amber/red). */
+export const RESONANCE_TIER_VALUES = ['resonant', 'cooling', 'at_risk'] as const
+export type ResonanceTier = (typeof RESONANCE_TIER_VALUES)[number]
+
+/** The member's predicted churn-risk band (from the `churn_risk` prediction). */
+export const CHURN_RISK_VALUES = ['low', 'medium', 'high'] as const
+export type ChurnRiskBand = (typeof CHURN_RISK_VALUES)[number]
+
 /** The audience selection. `tag` (when a non-empty string) narrows to contacts carrying that tag;
  *  omitted / null / empty = every contact in the Space. Additive: new facets (a saved segment, a
- *  consent filter) become new optional fields, never a signature change. */
+ *  consent filter, the resonance/engagement-depth facets) become new optional fields, never a
+ *  signature change, so every existing resolveAudience / AudienceFilter caller is unchanged. */
 export interface AudienceFilter {
   /** A freeform tag to filter by (network_contact_tags). Null / omitted = all of the Space's contacts. */
   tag?: string | null
+  /** A saved segment to resolve from (space_segments, ADR-380). When set, resolveAudience loads the
+   *  segment's stored AudienceFilter-shaped `definition` and resolves from THAT (fail-safe to
+   *  "everyone" if the segment is missing / cross-space). Null / omitted = no segment. */
+  segmentId?: string | null
+  /** Consent scope (ADR-380). 'subscribed' would narrow to consented contacts; 'all' / omitted keeps
+   *  the current behavior (every matching contact). Reserved for a future consent join: today the v1
+   *  contacts read carries no per-Space consent column, so this is accepted + stored but does not yet
+   *  narrow, keeping the change purely additive. */
+  consent?: 'subscribed' | 'all'
+  /** ADVANCED FACET (Phase 6 · ADR-387): the member's engagement-depth band, from `member_traits`.
+   *  Null / omitted = no depth filter. Surfaced only for Spaces with the advanced-segments lever
+   *  (`crm.playbooks`); the grammar always accepts it (additive, never a throw). Reserved for the
+   *  member_traits join, like `consent` today. */
+  engagementDepth?: EngagementDepth | null
+  /** ADVANCED FACET (Phase 6 · ADR-387): the member's resonance tier (resonant / cooling / at_risk),
+   *  from the Resonance Health roll-up. Null / omitted = no resonance filter. Reserved for the join. */
+  resonanceTier?: ResonanceTier | null
+  /** ADVANCED FACET (Phase 6 · ADR-387): the member's predicted churn-risk band. Null / omitted = no
+   *  churn-risk filter. The literal "members about to go quiet" target. Reserved for the join. */
+  churnRisk?: ChurnRiskBand | null
 }
 
 // Hard cap so a malformed/hostile Space can never resolve an unbounded recipient list in one pass.
@@ -56,6 +94,53 @@ export function normalizeTag(raw: unknown): string | null {
  *  empty / malformed contact email never becomes a recipient. */
 function looksLikeEmail(email: unknown): email is string {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+}
+
+/** Normalize an arbitrary value to a known member among `allowed`, or null. Pure, fail-safe: any
+ *  unknown / non-string value reads as "no filter" (null), so a malformed advanced facet never
+ *  narrows to nobody and never throws. Shared by the resonance / engagement-depth normalizers below. */
+function normalizeEnum<T extends string>(raw: unknown, allowed: readonly T[]): T | null {
+  return typeof raw === 'string' && (allowed as readonly string[]).includes(raw) ? (raw as T) : null
+}
+
+/** A normalized engagement-depth facet, or null (no filter). Pure, fail-safe. */
+export function normalizeEngagementDepth(raw: unknown): EngagementDepth | null {
+  return normalizeEnum(raw, ENGAGEMENT_DEPTH_VALUES)
+}
+
+/** A normalized resonance-tier facet, or null (no filter). Pure, fail-safe. */
+export function normalizeResonanceTier(raw: unknown): ResonanceTier | null {
+  return normalizeEnum(raw, RESONANCE_TIER_VALUES)
+}
+
+/** A normalized churn-risk facet, or null (no filter). Pure, fail-safe. */
+export function normalizeChurnRisk(raw: unknown): ChurnRiskBand | null {
+  return normalizeEnum(raw, CHURN_RISK_VALUES)
+}
+
+/** Coerce a stored segment `definition` jsonb into a safe AudienceFilter, reading ONLY the known
+ *  facets and DROPPING any nested segmentId (a segment never references another segment, so a stored
+ *  definition can never chain into an infinite resolve). Pure: an absent / malformed definition reads
+ *  as "everyone" ({}), which is the fail-safe posture. The advanced facets (Phase 6) are read from
+ *  BOTH the camelCase (the app shape) and the snake_case (a likely stored shape) key so a definition
+ *  saved either way resolves identically. */
+export function definitionToFilter(raw: unknown): AudienceFilter {
+  if (!raw || typeof raw !== 'object') return {}
+  const d = raw as Record<string, unknown>
+  const filter: AudienceFilter = {}
+  const tag = normalizeTag(d.tag)
+  if (tag) filter.tag = tag
+  if (d.consent === 'subscribed' || d.consent === 'all') filter.consent = d.consent
+  // Advanced resonance / engagement-depth facets (Phase 6 · ADR-387). Each is dropped unless it is a
+  // recognized band (fail-safe to no filter), so a garbage stored facet can never narrow to nobody.
+  const engagementDepth = normalizeEngagementDepth(d.engagementDepth ?? d.engagement_depth)
+  if (engagementDepth) filter.engagementDepth = engagementDepth
+  const resonanceTier = normalizeResonanceTier(d.resonanceTier ?? d.resonance_tier)
+  if (resonanceTier) filter.resonanceTier = resonanceTier
+  const churnRisk = normalizeChurnRisk(d.churnRisk ?? d.churn_risk)
+  if (churnRisk) filter.churnRisk = churnRisk
+  // Intentionally NO segmentId: a segment definition never nests another segment.
+  return filter
 }
 
 // ── IO: the untyped admin-client seams (tables not in generated types yet, ADR-246) ────────────
@@ -128,6 +213,44 @@ async function readSpaceContacts(spaceId: string): Promise<{ id: string; email: 
   }
 }
 
+/** A saved segment's stored `definition` for THIS Space (space_segments, ADR-380), as a safe
+ *  AudienceFilter. Reads through the untyped admin client (table not in the generated types yet,
+ *  ADR-246), PINNED to space_id so a cross-space segment id resolves to null -> "everyone" (the
+ *  fail-safe). Single-row read filters BOTH id AND space_id so a cross-space id leaks nothing.
+ *  FAIL-SAFE to {} (everyone) on any error / missing row. */
+async function readSegmentFilter(spaceId: string, segmentId: string): Promise<AudienceFilter> {
+  if (!spaceId || !segmentId) return {}
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (
+            col: string,
+            val: string,
+          ) => {
+            eq: (
+              col: string,
+              val: string,
+            ) => {
+              maybeSingle: () => Promise<{ data: { definition: unknown } | null; error: unknown }>
+            }
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .from('space_segments')
+      .select('definition')
+      .eq('id', segmentId)
+      .eq('space_id', spaceId)
+      .maybeSingle()
+    if (error || !data) return {}
+    return definitionToFilter(data.definition)
+  } catch {
+    return {}
+  }
+}
+
 // ── PUBLIC: resolve + count (the recipients the send seam consumes) ─────────────────────────────
 
 /**
@@ -143,7 +266,14 @@ export async function resolveAudience(
   filter: AudienceFilter = {},
 ): Promise<AudienceRecipient[]> {
   if (!spaceId) return []
-  const tag = normalizeTag(filter.tag)
+
+  // A saved segment resolves from its STORED definition (ADR-380): load it (fail-safe to "everyone"
+  // if the segment is missing / cross-space) and resolve through the EXISTING tag logic. When no
+  // segmentId is given this is a pure no-op, so existing call sites are unchanged.
+  const effective = filter.segmentId
+    ? await readSegmentFilter(spaceId, filter.segmentId)
+    : filter
+  const tag = normalizeTag(effective.tag)
 
   const contacts = await readSpaceContacts(spaceId)
   if (contacts.length === 0) return []

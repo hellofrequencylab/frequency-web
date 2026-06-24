@@ -27,6 +27,8 @@ import { sendRawEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { isSuppressed, suppress } from '@/lib/suppression'
 import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { recordContactInteraction } from '@/lib/crm/interactions'
+import { mapResendEventToInteraction, resendIdempotencyKey, type ResendTimelineEventType } from './email-timeline'
 
 // ── Tunables (documented v1 values) ─────────────────────────────────────────────────────────────
 
@@ -377,6 +379,32 @@ export async function sendSpaceCampaign(
           status: 'sent',
           resendId: id,
         })
+        // CRM TIMELINE (ADR-378): log the outbound touch on the unified contact_interactions timeline,
+        // owner-scoped to the Space's owner. STRICTLY owner+subject scoped — only when this recipient
+        // maps to a contacts row (rec.contactId) AND the Space has a known owner; an ungated platform
+        // Space (ownerProfileId null) records NOTHING (no platform-owner sentinel). Exactly-once on
+        // campaign:<campaignId>:<contactId> when a campaign id is present (a re-send folds to a no-op);
+        // a one-off send carries no key. Best-effort + fail-safe: a logging failure never breaks a send.
+        if (rec.contactId && space.ownerProfileId) {
+          try {
+            await recordContactInteraction(
+              {
+                ownerProfileId: space.ownerProfileId,
+                subjectKind: 'contact',
+                subjectId: rec.contactId,
+                channel: 'email',
+                direction: 'outbound',
+                summary: subject,
+                source: 'engagement',
+                metadata: { provider: 'resend', resend_id: id, campaign_id: input.campaignId ?? null },
+                idempotencyKey: input.campaignId ? `campaign:${input.campaignId}:${rec.contactId}` : null,
+              },
+              spaceId,
+            )
+          } catch {
+            // swallow — the email already sent; the timeline row is best-effort.
+          }
+        }
       } else {
         failed++
         await recordSend({
@@ -457,5 +485,115 @@ export async function handleSpaceSendWebhook(
       err instanceof Error ? err.message : String(err),
     )
     return false
+  }
+}
+
+/** Resolve a contact id for an email on the CRM hub (lowercased exact match). Service-role read,
+ *  FAIL-SAFE to null on any miss/error. authz-delegated: read-only resolve at the webhook seam. */
+async function resolveContactIdByEmail(email: string): Promise<string | null> {
+  const addr = normalizeEmail(email)
+  if (!addr) return null
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: { id?: string } | null }> }
+        }
+      }
+    }
+    const { data } = await db.from('contacts').select('id').eq('email', addr).maybeSingle()
+    return typeof data?.id === 'string' && data.id.length ? data.id : null
+  } catch {
+    return null
+  }
+}
+
+/** Read a Space's owner_profile_id directly (untyped — the column is loosely projected, ADR-246).
+ *  FAIL-SAFE to null on any miss/error, so a blip records nothing rather than mis-attributing. */
+async function readSpaceOwner(spaceId: string): Promise<string | null> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => {
+            maybeSingle: () => Promise<{ data: { owner_profile_id?: string | null } | null }>
+          }
+        }
+      }
+    }
+    const { data } = await db.from('spaces').select('owner_profile_id').eq('id', spaceId).maybeSingle()
+    return typeof data?.owner_profile_id === 'string' && data.owner_profile_id.length ? data.owner_profile_id : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Project a Resend engagement / deliverability event onto the CRM timeline (ADR-378). Called by the
+ * Resend webhook for opened / clicked / bounced / complained, IN ADDITION to the existing global +
+ * Space-suppression handling, so those flows are unchanged. STRICTLY owner+subject scoped: it only
+ * records when (a) an outreach_sends row owns this resend id (so this is a SPACE send, not a platform
+ * email), (b) the Space has a known owner, and (c) the recipient resolves to a contacts row. A pure
+ * platform email (no Space send) records NOTHING — there is no platform-owner sentinel. Exactly-once on
+ * resend:<email_id>:<type>, so a redelivered webhook folds to a no-op. Best-effort + fail-safe: any
+ * error is swallowed (logged) and never thrown back into the webhook.
+ */
+export async function handleSpaceSendEngagement(
+  resendId: string | null | undefined,
+  eventType: ResendTimelineEventType,
+): Promise<void> {
+  if (!resendId) return
+  const shape = mapResendEventToInteraction(eventType)
+  if (!shape) return
+  const idempotencyKey = resendIdempotencyKey(resendId, eventType)
+  if (!idempotencyKey) return
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => {
+            maybeSingle: () => Promise<{
+              data: { space_id: string; contact_id: string | null; email: string } | null
+            }>
+          }
+        }
+      }
+    }
+    const { data: row } = await db
+      .from('outreach_sends')
+      .select('space_id, contact_id, email')
+      .eq('resend_id', resendId)
+      .maybeSingle()
+    // No Space send owns this id -> a pure platform email. Owner + subject are unknown, so DO NOTHING.
+    if (!row) return
+
+    const ownerProfileId = await readSpaceOwner(row.space_id)
+    if (!ownerProfileId) return // an ungated platform Space: never invent an owner.
+
+    const contactId =
+      typeof row.contact_id === 'string' && row.contact_id.length
+        ? row.contact_id
+        : await resolveContactIdByEmail(row.email)
+    if (!contactId) return // recipient never mapped to a contacts row -> no subject to scope to.
+
+    await recordContactInteraction(
+      {
+        ownerProfileId,
+        subjectKind: 'contact',
+        subjectId: contactId,
+        channel: 'email',
+        direction: shape.direction,
+        summary: shape.summary,
+        source: 'resend',
+        metadata: { provider: 'resend', resend_id: resendId, event: eventType },
+        idempotencyKey,
+      },
+      row.space_id,
+    )
+  } catch (err) {
+    console.error(
+      '[spaces/email] handleSpaceSendEngagement failed:',
+      err instanceof Error ? err.message : String(err),
+    )
   }
 }

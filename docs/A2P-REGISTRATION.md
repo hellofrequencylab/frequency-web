@@ -180,9 +180,15 @@ Notes:
 - Even with all flags set, a send still has to pass the per-member gates (consent ledger →
   `notification_preferences` → quiet hours, `evaluateSmsGate`). The env flags only unblock
   the registration gate, not consent.
-- The provider send call is **intentionally not written yet** in `lib/comms/sms.ts` (the
-  legal track lands first; see the `TODO(SMS legal track)` there). Wiring it is part of
-  Phase 5, not this packet.
+- The provider send call **is now wired** (ADR-376): `lib/comms/sms-send.ts` POSTs to the
+  Twilio Messages API and `lib/comms/sms.ts` `sendSms()` enqueues through it once the gate
+  allows. It stays **fully fail-closed** — `sendRawSms` no-ops while `isSmsProvisioned()` is
+  false — so setting these flags is the only step that turns texts on. The live path also
+  needs `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` (the bottom group above); optionally
+  `TWILIO_WEBHOOK_URL` (the public URL Twilio signs, for proxy setups) and
+  `SMS_VERIFICATION_SECRET` (keys the opt-in verification-code hash; falls back to the auth
+  token). **Apply the `sms_consent` migration `20260626010000` on a branch + regen types
+  before flipping the flags** — the consent reads/writes assume that table.
 
 ## 6. Pre-submission checklist
 

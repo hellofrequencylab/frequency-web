@@ -8,7 +8,10 @@ import {
   computeTraits,
   computeBehavioralTraits,
   computePredictiveTraits,
+  computeResonanceTraits,
+  computeRetentionTraits,
   predictiveInputs,
+  resonanceHealthInputs,
   type ComputedTrait,
   type MemberStats,
   type InteractionStats,
@@ -27,6 +30,12 @@ interface StatsRow {
   distinct_active_days_30: number | null
   verified_practices_7d: number | null
   event_count_30d: number | null
+  // Resonance Engine Phase 5 (ADR-386): the prior week's verified practices, the baseline the
+  // decline_slope reads against. Optional — the stats RPC may not expose it yet, in which case
+  // it is undefined and the slope reads 0 (no decline), exactly the Phase 3 "wired but 0 for now"
+  // pattern (the unsubscribe term in the circuit breaker). When the RPC adds the column, the
+  // slope lights up with no code change here.
+  verified_practices_prev_7d?: number | null
 }
 
 interface InteractionStatsRow {
@@ -106,11 +115,41 @@ export async function refreshMemberTraits(now: Date = new Date()): Promise<{ mem
       for (const c of computePredictiveTraits(predictiveInputs(stats, istats, nowMs))) {
         upserts.push(toRow(id, c, computedAt))
       }
+      // Resonance Health (ADR-383) — the one shared dashboard score, rolled up from the
+      // engagement/RFM/WAM/churn traits this same member just computed (no extra source).
+      for (const c of computeResonanceTraits(resonanceHealthInputs(stats, istats, nowMs))) {
+        upserts.push(toRow(id, c, computedAt))
+      }
+      // Retention signals (ADR-386) — decline_slope (week-over-week practice drop) +
+      // notification_budget. The prior-week practice count rides the stats RPC when present
+      // (else 0 -> slope 0, the "wired but 0 for now" pattern). The budget defaults to
+      // `standard` here: the nightly batch does not pull per-member notification preferences,
+      // so the playbooks read a member's live budget at action time; this trait is the calm
+      // default. Both are PURE (lib/traits/compute.ts) + unit-tested.
+      const cadence = {
+        practiceThisWeek: er.verified_practices_7d ?? 0,
+        practiceLastWeek: er.verified_practices_prev_7d ?? 0,
+      }
+      for (const c of computeRetentionTraits(cadence, {})) {
+        upserts.push(toRow(id, c, computedAt))
+      }
     }
   }
 
   if (upserts.length) {
     await db.from('member_traits').upsert(upserts, { onConflict: 'profile_id,trait_key' })
   }
+
+  // Refresh the dashboard read layer (ADR-383) so the cockpit aggregates reflect tonight's
+  // scores. Fail-safe: a missing matview / RPC (pre-migration) is swallowed, so a deploy
+  // before the migration applies still completes the trait refresh, just with a stale (or
+  // empty) dashboard until the matview exists. CONCURRENTLY so reads never block on it.
+  try {
+    // The wrapper RPC isn't in the generated types yet (ADR-246), so cast for the call.
+    await (db as unknown as { rpc: (fn: string) => Promise<unknown> }).rpc('refresh_member_engagement_scores')
+  } catch {
+    /* dashboard matview absent or refresh failed; the cockpit degrades to its last snapshot. */
+  }
+
   return { members: rows.length, traits: upserts.length }
 }

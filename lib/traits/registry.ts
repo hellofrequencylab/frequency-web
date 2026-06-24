@@ -373,6 +373,31 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     derivation: 'banded from interaction_days_30 + dwell_minutes_30',
   },
 
+  // ── Resonance Health (the one shared score · Resonance Engine Phase 2 · ADR-383) ──
+  // ONE governed 0-100 health number every dashboard altitude shares, so the platform,
+  // a Space, and a person all speak the same language. A weighted rollup of the existing
+  // computed + predicted traits (engagement_depth + rfm_score + wam_status + churn_risk),
+  // computed PURELY in lib/traits/compute.ts and unit-tested. The per-signal "why" (the
+  // explainability path) is Phase 3; here we emit only the number + its tier. No new data,
+  // no new gate: it reads traits that already exist.
+  {
+    key: 'resonance_health',
+    label: 'Resonance Health',
+    description: 'A single 0 to 100 health score for a member, rolling up engagement depth, RFM, weekly-active status, and predicted churn risk. The one number the dashboard shares across platform, Space, and person.',
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'weighted rollup of engagement_depth + rfm_score + wam_status + churn_risk (lib/traits/compute.ts resonanceHealth)',
+  },
+  {
+    key: 'resonance_tier',
+    label: 'Resonance tier',
+    description: 'The banded Resonance Health: Resonant (green, healthy), Cooling (amber, slipping), or At risk (red, needs you). The legend the dashboard colors by.',
+    kind: 'computed', category: 'engagement', type: 'enum',
+    values: ['resonant', 'cooling', 'at_risk'],
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'banded from resonance_health (lib/traits/compute.ts resonanceTier)',
+  },
+
   // ── Predicted features (the prediction layer · PI.3 / ADR-166) ───────────────
   // Forward-looking inferences from the feature store. Heuristic v1 (rules over the
   // computed traits); a model/Claude-graded path slots in behind the same keys later.
@@ -401,6 +426,45 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
     values: ['reengage', 'activate', 'join_circle', 'deepen', 'invite', 'none'],
     derivation: 'priority ladder over lifecycle + activation + engagement_depth (PI.3)',
+  },
+
+  // ── Gamification fuel + retention signals (Resonance Engine Phase 5 · ADR-386) ──
+  // Two retention-shaped signals the winback + dunning playbooks key on. APPENDED here
+  // (additive, the declare-before-it-exists law); the compute lives in lib/traits/compute.ts
+  // as NEW pure functions beside the existing ones, so a sibling Phase 4 agent that also
+  // appends traits merges clean. No new data source: both read aggregates the feature store
+  // (and notification preferences) already hold.
+  {
+    key: 'decline_slope',
+    label: 'Decline slope',
+    description: "The week-over-week drop in practice frequency (this week's logs vs last week's). Positive means they are practicing less than they were. The leading signal that someone is sliding before recency alone shows it, so a winback fires in the right window.",
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'practice_logs in days 0 to 6 vs days 7 to 13, as a fraction of the prior week (lib/traits/compute.ts declineSlope)',
+  },
+  {
+    key: 'notification_budget',
+    label: 'Notification budget',
+    description: 'How much we may reach a member this week without crowding them: a banded budget from their own frequency cap, quiet hours, and preferred channel. The send-gate and the playbooks read it so a winback never piles onto someone already at their limit.',
+    kind: 'computed', category: 'engagement', type: 'enum',
+    values: ['generous', 'standard', 'sparing', 'paused'],
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'banded from weekly send cap + quiet hours + preferred channel in notification preferences (lib/traits/compute.ts notificationBudgetTier)',
+  },
+  // ── Resonance Graph (the reciprocal matchmaking layer · Resonance Engine Phase 4 · ADR-385) ──
+  // How many reciprocal resonance matches a member currently has (the strongest, not-expired edges
+  // in resonance_edges). A density signal for the cockpit ("Resonance density", the moat metric) and
+  // a cue on the Person view. Computed nightly from the edge table AFTER the trait refresh recomputes
+  // receptiveness. Declared here BEFORE it is computed (the "nothing exists without a declaration"
+  // law). The EDGES themselves are sensitive-class (they pair two people); this COUNT is a derived,
+  // non-identifying aggregate, so it is none-class like the other computed counts.
+  {
+    key: 'resonance_match_count',
+    label: 'Resonance matches',
+    description: 'How many reciprocal, consent-first resonance matches a member currently has (their strongest, not-expired edges in the Resonance Graph). A density cue, never the matches themselves.',
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'count of this member\'s non-expired resonance_edges (lib/resonance/edges.ts), recomputed nightly after the edge refresh',
   },
 ] as const
 
