@@ -221,7 +221,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
     key: 'growth',
     label: 'Growth',
-    blurb: 'The growth engine at a glance. Jump into Acquisition, CRM, or Marketing.',
+    blurb: 'The growth engine at a glance. Jump into Acquisition or Marketing.',
     href: '/admin/growth',
     Icon: TrendingUp,
     min: 'host',
@@ -231,7 +231,6 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       // Roll-up: the three operational growth areas. The dashboard reads their KPIs;
       // these point into each one's own home (resolved to its own domain, not Growth).
       { href: '/admin/growth?tab=acquisition', label: 'Acquisition', desc: 'How people first arrive and where to grow next.', Icon: Rocket, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
-      { href: '/admin/growth?tab=crm', label: 'CRM', desc: 'Contacts, relationships, and the deal pipeline.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
       { href: '/admin/growth?tab=marketing', label: 'Marketing', desc: 'Campaigns, funnels, automations, and outbound.', Icon: Megaphone, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
     ],
   },
@@ -262,8 +261,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     // Promoted to a PRIMARY domain (was folded under Growth) so the Resonance Engine
     // (ADR-382 to 387) has its own first-class admin home. Rooted at the cockpit; gated
     // 'janitor' to match the pages (per-member predictions are sensitive). Marketing staff
-    // still reach the deal board + contacts via the Growth > CRM workspace tab (groupLinks
-    // filters per-link), so nothing regresses for them.
+    // reach the deal board and contacts directly from this CRM domain (now a primary
+    // left-rail entry, ADR-382), so the old Growth > CRM roll-up is removed as a duplicate.
     key: 'crm',
     label: 'Resonance CRM',
     blurb: 'The Vera-driven CRM. The cockpit, the daily action queue, member intelligence, contacts, and the pipeline.',
