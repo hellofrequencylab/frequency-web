@@ -2,11 +2,12 @@
 // table, owner_kind discriminator. Checkout/settlement live in ./checkout.ts.
 // Server-only (admin client behind app-code authz, like lib/marketplace.ts).
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ENTITY_ID } from '@/lib/finance/record'
 import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus } from './types'
 
-function db() {
+function db(): SupabaseClient {
   return createAdminClient()
 }
 

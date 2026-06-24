@@ -2,11 +2,12 @@
 // SECURITY DEFINER and consent-gated server-side; callers pass no coordinates back
 // to the client beyond a coarse band. Used by the Housing surfaces (PR-followup).
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rowToListing } from './index'
 import type { HousingDetail, HousingListing, HousingType, RoommateMatch } from './types'
 
-function db() {
+function db(): SupabaseClient {
   return createAdminClient()
 }
 

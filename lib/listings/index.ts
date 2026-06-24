@@ -2,11 +2,12 @@
 // existing lib/marketplace.ts style: flat reads/writes via the admin client behind
 // app-code authz; RLS governs direct reads. Per-vertical attributes in ./housing.ts.
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ENTITY_ID } from '@/lib/finance/record'
 import type { Listing, ListingStatus, ListingVertical } from './types'
 
-function db() {
+function db(): SupabaseClient {
   return createAdminClient()
 }
 

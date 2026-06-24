@@ -8,6 +8,7 @@
 // Server-only. Flag-gated by payoutsLive() like every other billing path.
 
 import type Stripe from 'stripe'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from '@/lib/billing/stripe'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { spaceTakeRateCents } from '@/lib/billing/fees'
@@ -15,7 +16,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import type { CheckoutInput } from './types'
 
-function db() {
+function db(): SupabaseClient {
   return createAdminClient()
 }
 
