@@ -57,7 +57,6 @@ import {
   Rocket,
   Layers,
   Contact,
-  ContactRound,
   Briefcase,
   Menu,
   GraduationCap,
@@ -279,10 +278,10 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/crm/today', label: 'Today', desc: "Vera's daily queue: the people and one-tap actions that matter now.", Icon: ClipboardList, min: 'janitor', section: 'Resonance' },
       { href: '/admin/crm/members', label: 'Member Intelligence', desc: 'Health-scored drill-down: resonance, churn risk, and the why, by tier and lifecycle.', Icon: Users, min: 'janitor', section: 'Resonance' },
       // ── Pipeline (the deal board) ──
+      { href: '/admin/crm/deals', label: 'Deals', desc: 'The pipeline board: every deal by stage, with quick add and one-tap stage moves.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
       { href: '/admin/crm/deals/new', label: 'New deal', desc: 'Add a deal to the pipeline.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
       // ── Contacts ──
-      { href: '/admin/crm/contacts', label: 'Contacts', desc: 'Leads, customers, and members as one record.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Contacts' },
-      { href: '/connections', label: 'Profiles & contacts', desc: 'People, contacts, and relationships.', Icon: ContactRound, min: 'host', staffDomain: 'profiles', section: 'Contacts' },
+      { href: '/admin/crm/contacts', label: 'Contacts', desc: 'The scoped roster: your people, the launch point for a message, profile, or deal.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Contacts' },
       // ── Audiences ──
       { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Audiences' },
     ],
