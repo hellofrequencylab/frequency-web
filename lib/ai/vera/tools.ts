@@ -81,6 +81,61 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
     confirmLabel: 'Join this circle',
     params: [{ name: 'circle', type: 'string', required: true, description: 'The slug (preferred) or name of the circle to join.' }],
   },
+
+  // ── Resonance Engine playbook actions (ADR-382) ──────────────────────────────
+  // The governed write tools a Playbook (lib/playbooks/registry.ts) may invoke. Each
+  // records a touch on the CRM timeline via lib/crm/interactions.ts with
+  // source:'playbook' + metadata.playbook_id (idempotent). Three are in-product +
+  // reversible; send_playbook_email is OUTBOUND, so it DRAFTS only — it passes the
+  // send-gate and NEVER auto-sends (suggest-by-default, the brand-fatal-otherwise rule).
+  {
+    key: 'save_streak',
+    description:
+      "Save a member's practice streak with a freeze. In-product and reversible (an Undo restores it), so it is the auto-eligible playbook for a streak about to break.",
+    mode: 'write',
+    confirmLabel: 'Save their streak',
+    params: [
+      { name: 'subjectProfileId', type: 'string', required: true, description: 'The member whose streak to save (their profile id).' },
+      { name: 'playbookId', type: 'string', required: false, description: 'The playbook id that proposed this (for the timeline + run audit).' },
+    ],
+  },
+  {
+    key: 'tag_contact',
+    description: 'Add a short label to a CRM contact (e.g. "cooling", "ready-to-deepen"). In-product, reversible, no member touch.',
+    mode: 'write',
+    confirmLabel: 'Tag this contact',
+    params: [
+      { name: 'contactId', type: 'string', required: true, description: 'The contact to tag.' },
+      { name: 'tag', type: 'string', required: true, description: 'The label to add.' },
+      { name: 'playbookId', type: 'string', required: false, description: 'The playbook id that proposed this (audit).' },
+    ],
+  },
+  {
+    key: 'move_contact_stage',
+    description: 'Move a CRM contact to a lifecycle stage (e.g. "advocate"). In-product, reversible, no member touch.',
+    mode: 'write',
+    confirmLabel: 'Move this contact',
+    params: [
+      { name: 'contactId', type: 'string', required: true, description: 'The contact to move.' },
+      { name: 'stage', type: 'string', required: true, description: 'The stage label to set.' },
+      { name: 'playbookId', type: 'string', required: false, description: 'The playbook id that proposed this (audit).' },
+    ],
+  },
+  {
+    key: 'send_playbook_email',
+    description:
+      'DRAFT a member-facing email for a playbook (winback, nudge, invite). This NEVER sends on its own: it passes the consent send-gate and, when allowed, records the DRAFT on the timeline for a human to approve and send. Suggest only.',
+    mode: 'write',
+    confirmLabel: 'Approve and send this email',
+    params: [
+      { name: 'subjectProfileId', type: 'string', required: true, description: 'The member this email is for (their profile id, for the send-gate).' },
+      { name: 'contactId', type: 'string', required: true, description: 'The CRM contact the touch is recorded against.' },
+      { name: 'category', type: 'string', required: true, description: 'lifecycle | marketing (governs which consent the send-gate checks).' },
+      { name: 'subject', type: 'string', required: true, description: 'The email subject line, in voice.' },
+      { name: 'body', type: 'string', required: true, description: 'The full drafted email body, in voice. The human reads and approves exactly this.' },
+      { name: 'playbookId', type: 'string', required: false, description: 'The playbook id that proposed this (audit).' },
+    ],
+  },
 ] as const
 
 const BY_KEY = new Map(VERA_TOOLS.map((t) => [t.key, t]))
