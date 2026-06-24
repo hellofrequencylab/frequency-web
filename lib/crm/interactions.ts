@@ -20,12 +20,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export type InteractionChannel = 'email' | 'sms' | 'call' | 'in_person' | 'event' | 'note' | 'system'
 export type InteractionDirection = 'inbound' | 'outbound' | 'internal'
 export type InteractionSubjectKind = 'contact' | 'network_contact' | 'profile'
-export type InteractionSource = 'manual' | 'engagement' | 'resend' | 'twilio' | 'crm_activity' | 'ai' | 'system'
+// `playbook` (ADR-382): a touch a Resonance Engine playbook recorded through the governed
+// Vera allow-list (a streak save, a tag, a stage move, a drafted email). Additive.
+export type InteractionSource = 'manual' | 'engagement' | 'resend' | 'twilio' | 'crm_activity' | 'ai' | 'playbook' | 'system'
 
 const CHANNELS: readonly InteractionChannel[] = ['email', 'sms', 'call', 'in_person', 'event', 'note', 'system']
 const DIRECTIONS: readonly InteractionDirection[] = ['inbound', 'outbound', 'internal']
 const SUBJECT_KINDS: readonly InteractionSubjectKind[] = ['contact', 'network_contact', 'profile']
-const SOURCES: readonly InteractionSource[] = ['manual', 'engagement', 'resend', 'twilio', 'crm_activity', 'ai', 'system']
+const SOURCES: readonly InteractionSource[] = ['manual', 'engagement', 'resend', 'twilio', 'crm_activity', 'ai', 'playbook', 'system']
 
 // Generous caps so a hostile/automated write can never store an unbounded blob.
 const MAX_SUMMARY_LEN = 280
