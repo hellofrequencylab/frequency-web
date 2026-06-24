@@ -20,6 +20,7 @@ import { getPlaybook } from '@/lib/playbooks/registry'
 import { recordPlaybookRun, type PlaybookSubjectKind } from '@/lib/playbooks/runs'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { isPlaybookPaused } from '@/lib/playbooks/circuit-breaker'
+import { processGamificationEvent } from '@/lib/achievements'
 
 export interface TodayActionResult {
   ok: boolean
@@ -110,6 +111,18 @@ export async function runPlaybookAction(input: {
     status: 'done',
     outcome: primary.tool,
   })
+
+  // A finished playbook can fire a retroactive milestone for the member it touched (the
+  // advocate-state recognition path, Resonance Engine Phase 5 · ADR-386). Best-effort and
+  // swallowed: a missed milestone must never break the operator's action. Only when the card
+  // carries a member behind the contact.
+  if (input.subjectProfileId) {
+    processGamificationEvent({
+      type: 'playbook_complete',
+      profileId: input.subjectProfileId,
+      playbookId: input.playbookId,
+    }).catch(() => {})
+  }
 
   revalidatePath('/admin/crm/today')
   return { ok: true }

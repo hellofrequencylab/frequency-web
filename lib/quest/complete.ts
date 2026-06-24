@@ -21,6 +21,7 @@ import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
 import { evaluateJourneyCompletion } from '@/lib/quest/completion'
 import { grantJourneyBadgeOnCompletion, grantStoreItem } from '@/lib/awards/cosmetics'
 import { QUEST } from '@/lib/gamification'
+import { celebrateInCircleFeed } from '@/lib/circles/social-fuel'
 
 export interface CompleteJourneyResult {
   completed: boolean
@@ -225,6 +226,28 @@ export async function tryCompleteJourney(
     if (finishedCount >= 3) {
       certificate = await grantCertificate(admin, profileId, season)
     }
+
+    // Social fuel (Resonance Engine Phase 5 · ADR-386): fire the milestone into the member's
+    // CIRCLE feeds as peer recognition (crowd-in), not a private modal. Best-effort + swallowed:
+    // a missed shoutout never affects the completion. Master-rank gets its own line when this
+    // finish newly raised them to Master; otherwise the Journey-finished celebration.
+    void (async () => {
+      try {
+        const { data: who } = await admin.from('profiles').select('handle').eq('id', profileId).maybeSingle()
+        const handle = (who as { handle: string | null } | null)?.handle
+        if (!handle) return
+        const { data: jr } = await admin.from('journey_plans').select('title').eq('id', journeyId).maybeSingle()
+        const detail = (jr as { title: string | null } | null)?.title ?? null
+        const becameMaster = newRank === 'master' && raisedSeason === 'master' && currentSeason !== 'master'
+        await celebrateInCircleFeed(profileId, {
+          handle,
+          kind: becameMaster ? 'master_rank' : 'journey_finished',
+          detail: becameMaster ? null : detail,
+        })
+      } catch {
+        /* a missed celebration never breaks the completion */
+      }
+    })()
 
     return { completed: true, rank: newRank, zaps: QUEST.JOURNEY_FINISH_ZAPS, gems: bonus, certificate }
   } catch (err) {
