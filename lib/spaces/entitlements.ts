@@ -102,6 +102,113 @@ export function autoExecutionAllowed(space: SpaceLike | null | undefined): boole
   return spaceAutonomyLevel(space) === 'safe_auto'
 }
 
+// ── AI-depth capability ladder (Resonance Engine Phase 6 · ADR-387) ──────────────────────────
+// What DEPTH of the Resonance Engine a Space's plan unlocks, surfaced contextually at the ceiling.
+// Three additive entitlement keys read off the SAME `spaces.entitlements` jsonb (no schema change,
+// ADR-246), each DEFAULT-DENY through the existing spaceHasEntitlement primitive:
+//   • crm.playbooks    — governed AUTO-EXECUTION of safe playbooks + larger action volume + the
+//                        advanced (resonance / engagement-depth) segment facets. Practitioner+.
+//   • crm.resonance    — read-only resonance scoring beyond the free wedge (the Resonance tab, the
+//                        match shortlist as suggestions). The mid rung.
+//   • crm.resonance_ai — predictive churn/advocacy ALERTS + the full Resonance Graph + managed
+//                        matching. The top rung.
+//
+// THE WEDGE IS NEVER PAYWALLED. A Space with NONE of these keys still gets the free wedge: Vera
+// Today in suggest-only, summaries, and read-only scoring. So a missing key NEVER locks a member
+// out of the loop. It only withholds the deeper, operator-facing automation. This is the
+// resonate-not-extract posture: the value that helps a member is free; the leverage that scales an
+// operator is the paid lever.
+//
+// FAIL-CLOSED: a null Space, a missing key, or a malformed blob all read as the free wedge (no
+// depth). `crm.autonomy` (Phase 3 · ADR-384) is INTACT and orthogonal: it is the per-Space dial for
+// HOW MUCH the engine acts on its own; these keys are WHAT DEPTH the plan unlocks. Auto-execution
+// requires BOTH (the depth key crm.playbooks AND the autonomy level safe_auto).
+
+/** The AI-depth ladder, low to high. `wedge` is the free, never-paywalled floor (Today suggest-only
+ *  + summaries + read-only scoring). `playbooks` adds governed auto-execution + advanced segments.
+ *  `resonance` adds the read-only resonance surface. `resonance_ai` adds predictive alerts + the full
+ *  Resonance Graph + managed matching. */
+export type AiDepthTier = 'wedge' | 'playbooks' | 'resonance' | 'resonance_ai'
+
+/** The free floor every Space gets, with or without an AI-depth entitlement. Never paywalled. */
+export const FREE_AI_DEPTH: AiDepthTier = 'wedge'
+
+/** The AI-depth entitlement keys, in ladder order (low to high). Each is one `spaces.entitlements`
+ *  jsonb key, read DEFAULT-DENY by spaceHasEntitlement. */
+export const AI_DEPTH_KEYS = {
+  /** Governed auto-execution of safe playbooks + larger volume + advanced segment facets. */
+  playbooks: 'crm.playbooks',
+  /** Read-only resonance scoring + the match shortlist beyond the free wedge. */
+  resonance: 'crm.resonance',
+  /** Predictive alerts + the full Resonance Graph + managed matching (the top rung). */
+  resonanceAi: 'crm.resonance_ai',
+} as const
+
+/** Every AI-depth capability key (the values), for iteration / validation. */
+export const AI_DEPTH_CAPABILITY_KEYS: readonly string[] = [
+  AI_DEPTH_KEYS.playbooks,
+  AI_DEPTH_KEYS.resonance,
+  AI_DEPTH_KEYS.resonanceAi,
+]
+
+/** The numeric rank of each AI-depth tier on the ladder (the free wedge is the floor at 0). */
+const AI_DEPTH_RANK: Record<AiDepthTier, number> = {
+  wedge: 0,
+  playbooks: 1,
+  resonance: 2,
+  resonance_ai: 3,
+}
+
+/**
+ * The AI-depth tier a Space's plan unlocks. PURE: reads the three depth keys off the entitlements
+ * blob through the existing DEFAULT-DENY primitive. FAIL-CLOSED: a null Space, no keys, or a
+ * malformed blob all read as the free `wedge` (never a lockout, never an over-grant). The TOP key
+ * present wins, so a Space with `crm.resonance_ai` reads `resonance_ai` even if the lower keys are
+ * absent (the plan map sets them cumulatively, but the reader does not depend on that).
+ */
+export function spaceAiDepth(space: SpaceLike | null | undefined): AiDepthTier {
+  if (spaceHasEntitlement(space, AI_DEPTH_KEYS.resonanceAi)) return 'resonance_ai'
+  if (spaceHasEntitlement(space, AI_DEPTH_KEYS.resonance)) return 'resonance'
+  if (spaceHasEntitlement(space, AI_DEPTH_KEYS.playbooks)) return 'playbooks'
+  return FREE_AI_DEPTH
+}
+
+/** Does a Space reach AT LEAST an AI-depth tier? PURE, fail-closed. The free `wedge` is always met
+ *  (it is the floor every Space gets), so `spaceMeetsAiDepth(space, 'wedge')` is always true. */
+export function spaceMeetsAiDepth(space: SpaceLike | null | undefined, min: AiDepthTier): boolean {
+  return AI_DEPTH_RANK[spaceAiDepth(space)] >= AI_DEPTH_RANK[min]
+}
+
+/** May a Space run GOVERNED AUTO-EXECUTION of safe playbooks (the Practitioner+ lever)? PURE,
+ *  fail-closed. This is the DEPTH half only: it requires the `crm.playbooks` entitlement. The
+ *  AUTONOMY half (Phase 3 · ADR-384, `autoExecutionAllowed`) still gates HOW MUCH actually runs;
+ *  auto-execution needs BOTH (this AND `safe_auto`). The free wedge never reaches this. */
+export function spaceCanRunPlaybooks(space: SpaceLike | null | undefined): boolean {
+  return spaceHasEntitlement(space, AI_DEPTH_KEYS.playbooks)
+}
+
+/** May a Space see the read-only RESONANCE surface (the Resonance tab + the match shortlist as
+ *  suggestions), beyond the free wedge's read-only scoring? PURE, fail-closed. The top rung
+ *  (`crm.resonance_ai`) implies it. */
+export function spaceCanSeeResonance(space: SpaceLike | null | undefined): boolean {
+  return spaceMeetsAiDepth(space, 'resonance')
+}
+
+/** May a Space use the FULL Resonance Graph + predictive alerts + managed matching (the top rung)?
+ *  PURE, fail-closed. Requires the `crm.resonance_ai` entitlement. */
+export function spaceCanUseResonanceAi(space: SpaceLike | null | undefined): boolean {
+  return spaceHasEntitlement(space, AI_DEPTH_KEYS.resonanceAi)
+}
+
+/** May a Space use the ADVANCED (resonance / engagement-depth) segment facets in its audience
+ *  builder, beyond the free tag/consent facets? PURE, fail-closed. Rides the `crm.playbooks` lever
+ *  (advanced segments are part of the Practitioner+ depth, per the tier ladder). The audience
+ *  grammar still ACCEPTS the facets for everyone (additive, never a throw); this gates whether the
+ *  builder SURFACES them as a paid capability. */
+export function spaceCanUseAdvancedSegments(space: SpaceLike | null | undefined): boolean {
+  return spaceCanRunPlaybooks(space)
+}
+
 // ── Capabilities (owner + member role -> a capability set) ───────────────────────────────
 
 /** What a person may do on a Space. Derived from owner + their space-member role; consumed by the

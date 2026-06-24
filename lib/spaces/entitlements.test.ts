@@ -13,6 +13,14 @@ import {
   autoExecutionAllowed,
   asAutonomyLevel,
   DEFAULT_AUTONOMY,
+  spaceAiDepth,
+  spaceMeetsAiDepth,
+  spaceCanRunPlaybooks,
+  spaceCanSeeResonance,
+  spaceCanUseResonanceAi,
+  spaceCanUseAdvancedSegments,
+  FREE_AI_DEPTH,
+  AI_DEPTH_KEYS,
   type SpaceLike,
 } from './entitlements'
 
@@ -82,6 +90,68 @@ describe('autonomy slider (FAIL-CLOSED to suggest_only · ADR-384)', () => {
     expect(asAutonomyLevel('suggest_only')).toBe('suggest_only')
     expect(asAutonomyLevel('nope')).toBe('suggest_only')
     expect(asAutonomyLevel(undefined)).toBe('suggest_only')
+  })
+})
+
+describe('AI-depth ladder (FAIL-CLOSED to the free wedge · ADR-387)', () => {
+  it('the wedge is the free floor: no keys reads as wedge, and the wedge is never paywalled', () => {
+    expect(FREE_AI_DEPTH).toBe('wedge')
+    expect(spaceAiDepth(null)).toBe('wedge')
+    expect(spaceAiDepth(undefined)).toBe('wedge')
+    expect(spaceAiDepth({})).toBe('wedge')
+    expect(spaceAiDepth({ entitlements: { crm: true } })).toBe('wedge')
+    // The wedge is always met (the floor every Space gets).
+    expect(spaceMeetsAiDepth(null, 'wedge')).toBe(true)
+    expect(spaceMeetsAiDepth({}, 'wedge')).toBe(true)
+  })
+
+  it('reads each rung off the entitlements blob (default-deny)', () => {
+    const playbooks: SpaceLike = { entitlements: { [AI_DEPTH_KEYS.playbooks]: true } }
+    expect(spaceAiDepth(playbooks)).toBe('playbooks')
+    expect(spaceCanRunPlaybooks(playbooks)).toBe(true)
+    expect(spaceCanUseAdvancedSegments(playbooks)).toBe(true)
+    expect(spaceCanSeeResonance(playbooks)).toBe(false)
+    expect(spaceCanUseResonanceAi(playbooks)).toBe(false)
+
+    const resonance: SpaceLike = { entitlements: { [AI_DEPTH_KEYS.resonance]: true } }
+    expect(spaceAiDepth(resonance)).toBe('resonance')
+    expect(spaceCanSeeResonance(resonance)).toBe(true)
+    expect(spaceCanUseResonanceAi(resonance)).toBe(false)
+
+    const top: SpaceLike = { entitlements: { [AI_DEPTH_KEYS.resonanceAi]: true } }
+    expect(spaceAiDepth(top)).toBe('resonance_ai')
+    expect(spaceCanUseResonanceAi(top)).toBe(true)
+    // The top rung implies the read-only resonance surface even without the mid key.
+    expect(spaceCanSeeResonance(top)).toBe(true)
+  })
+
+  it('the top key present wins regardless of the lower keys', () => {
+    const all: SpaceLike = {
+      entitlements: {
+        [AI_DEPTH_KEYS.playbooks]: true,
+        [AI_DEPTH_KEYS.resonance]: true,
+        [AI_DEPTH_KEYS.resonanceAi]: true,
+      },
+    }
+    expect(spaceAiDepth(all)).toBe('resonance_ai')
+    expect(spaceMeetsAiDepth(all, 'playbooks')).toBe(true)
+    expect(spaceMeetsAiDepth(all, 'resonance')).toBe(true)
+    expect(spaceMeetsAiDepth(all, 'resonance_ai')).toBe(true)
+  })
+
+  it('FAIL-CLOSED: a non-true value never grants depth (default-deny)', () => {
+    expect(spaceCanRunPlaybooks({ entitlements: { [AI_DEPTH_KEYS.playbooks]: 'yes' } })).toBe(false)
+    expect(spaceCanUseResonanceAi({ entitlements: { [AI_DEPTH_KEYS.resonanceAi]: 1 } })).toBe(false)
+    expect(spaceAiDepth({ entitlements: ['crm.playbooks'] })).toBe('wedge')
+  })
+
+  it('the autonomy slider is orthogonal: a depth key never raises autonomy and vice versa', () => {
+    // A Space with the playbooks depth key but no autonomy setting still reads suggest_only: depth
+    // (WHAT) and autonomy (HOW MUCH) are independent gates; auto-execution needs both.
+    const playbooksOnly: SpaceLike = { entitlements: { [AI_DEPTH_KEYS.playbooks]: true } }
+    expect(spaceCanRunPlaybooks(playbooksOnly)).toBe(true)
+    expect(spaceAutonomyLevel(playbooksOnly)).toBe('suggest_only')
+    expect(autoExecutionAllowed(playbooksOnly)).toBe(false)
   })
 })
 

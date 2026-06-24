@@ -55,6 +55,15 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   space_team: { axis: 'plan', minEntitlement: 'business', enabled: true },
   space_whitelabel: { axis: 'plan', minEntitlement: 'whitelabel', enabled: true },
   space_multi_pipeline: { axis: 'plan', minEntitlement: 'business', enabled: true },
+
+  // §5 space AI-depth (Resonance Engine Phase 6 · ADR-387). The paid DEPTH of the engine, on the
+  // same plan ladder. The free wedge (Today suggest-only + summaries + read-only scoring) is NEVER a
+  // gate, so it has no entry here. Practitioner+ unlocks governed playbooks + advanced segments; the
+  // top rung (organization+) unlocks the full Resonance Graph + managed matching. While billing is
+  // OFF, featureAllowed short-circuits to true and these never bind (today's behavior).
+  space_crm_playbooks: { axis: 'plan', minEntitlement: 'practitioner', enabled: true },
+  space_crm_resonance: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  space_crm_resonance_ai: { axis: 'plan', minEntitlement: 'organization', enabled: true },
 }
 
 export type FeatureKey = keyof typeof FEATURE_GATES | (string & {})

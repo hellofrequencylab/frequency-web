@@ -122,6 +122,9 @@ import {
   listAudienceTags,
   normalizeTag,
   definitionToFilter,
+  normalizeEngagementDepth,
+  normalizeResonanceTier,
+  normalizeChurnRisk,
 } from './audiences'
 
 beforeEach(() => {
@@ -161,6 +164,53 @@ describe('definitionToFilter (pure, ADR-380)', () => {
     expect(definitionToFilter({ tag: '   ' })).toEqual({})
     expect(definitionToFilter(null)).toEqual({})
     expect(definitionToFilter('nope')).toEqual({})
+  })
+})
+
+describe('advanced resonance / engagement-depth facets (Phase 6 · ADR-387)', () => {
+  it('the facet normalizers keep known bands and fail-safe to null for anything else', () => {
+    expect(normalizeEngagementDepth('deep')).toBe('deep')
+    expect(normalizeEngagementDepth('moderate')).toBe('moderate')
+    expect(normalizeEngagementDepth('nope')).toBeNull()
+    expect(normalizeEngagementDepth(3)).toBeNull()
+    expect(normalizeEngagementDepth(undefined)).toBeNull()
+
+    expect(normalizeResonanceTier('at_risk')).toBe('at_risk')
+    expect(normalizeResonanceTier('resonant')).toBe('resonant')
+    expect(normalizeResonanceTier('green')).toBeNull()
+
+    expect(normalizeChurnRisk('high')).toBe('high')
+    expect(normalizeChurnRisk('low')).toBe('low')
+    expect(normalizeChurnRisk('0.8')).toBeNull()
+  })
+
+  it('definitionToFilter reads the advanced facets from camelCase AND snake_case', () => {
+    expect(
+      definitionToFilter({ engagementDepth: 'deep', resonanceTier: 'cooling', churnRisk: 'high' }),
+    ).toEqual({ engagementDepth: 'deep', resonanceTier: 'cooling', churnRisk: 'high' })
+    // A stored snake_case definition resolves identically (forward-compat with the segment store).
+    expect(
+      definitionToFilter({ engagement_depth: 'shallow', resonance_tier: 'at_risk', churn_risk: 'medium' }),
+    ).toEqual({ engagementDepth: 'shallow', resonanceTier: 'at_risk', churnRisk: 'medium' })
+  })
+
+  it('drops a garbage advanced facet (fail-safe to no filter, never narrows to nobody)', () => {
+    expect(definitionToFilter({ engagementDepth: 'banana', tag: 'vip' })).toEqual({ tag: 'vip' })
+    expect(definitionToFilter({ resonanceTier: 9, churnRisk: null })).toEqual({})
+  })
+
+  it('ADDITIVE: an existing tag/consent-only definition is byte-for-byte unchanged', () => {
+    expect(definitionToFilter({ tag: 'vip', consent: 'all' })).toEqual({ tag: 'vip', consent: 'all' })
+  })
+
+  it('the advanced facets do NOT yet narrow resolveAudience (reserved for the trait join, like consent)', async () => {
+    // Mirrors the consent-facet precedent: the facet is accepted + stored but the v1 contacts read has
+    // no member_traits join yet, so the audience is unchanged. This keeps the grammar extension purely
+    // additive and never breaks an existing caller.
+    seedContact('c1', 'a@x.com')
+    seedContact('c2', 'b@x.com')
+    const out = await resolveAudience('space-A', { churnRisk: 'high', resonanceTier: 'at_risk' })
+    expect(out.map((r) => r.contactId).sort()).toEqual(['c1', 'c2'])
   })
 })
 

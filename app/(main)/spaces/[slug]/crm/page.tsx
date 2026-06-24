@@ -5,7 +5,7 @@ import { Briefcase, CircleDollarSign, ListChecks, Lock, Trophy } from 'lucide-re
 import { DashboardTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { getSpaceCapabilities, spaceHasEntitlement, spaceAutonomyLevel } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities, spaceHasEntitlement, spaceAutonomyLevel, spaceAiDepth } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { getDeals, countOpenTasks, computeMetrics, formatMoney, ensureSpaceStages } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
@@ -19,6 +19,7 @@ import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
 import { SpaceCockpitBand } from './space-cockpit-band'
 import { AutonomyControl } from './autonomy-control'
+import { AiDepthUpsell } from './ai-depth-upsell'
 import { SpaceResonanceSection } from './space-resonance-section'
 
 // PER-SPACE CRM BOARD (CRM-STRATEGY §6/§7, ADR-361 P3). The paid, full-width Dashboard a Space runs:
@@ -142,6 +143,26 @@ export default async function SpaceCrmBoardPage({
       {caps.canManageMembers && (
         <AutonomyControl slug={space.slug} level={spaceAutonomyLevel(space)} />
       )}
+
+      {/* ── AI-DEPTH UPSELL (Phase 6 · ADR-387) — self-contained, safe to add/remove ──────────────
+          A tasteful, in-context nudge shown ONLY when a free / lower Space reaches its soft AI-depth
+          ceiling (it is actually using the engine and is ready for the deeper, governed automation).
+          DISPLAY-ONLY: it links to the Space's own billing surface and never charges or changes a
+          plan. Owner/admin only (caps.canManageMembers); fail-safe to rendering nothing on any read
+          error or when already at the top rung. Its own Suspense so the usage read never blocks the
+          board. Kept a self-contained block so a sibling Phase 4 section can sit beside it cleanly.
+          ──────────────────────────────────────────────────────────────────────────────────────── */}
+      {caps.canManageMembers && (
+        <Suspense fallback={null}>
+          <AiDepthUpsell
+            slug={space.slug}
+            spaceId={space.id}
+            tier={spaceAiDepth(space)}
+            plan={space.plan}
+          />
+        </Suspense>
+      )}
+      {/* ── END AI-DEPTH UPSELL (Phase 6 · ADR-387) ─────────────────────────────────────────────── */}
 
       <ImportContactsForm spaceId={space.id} />
 
