@@ -17,13 +17,16 @@
 
 import type { StaffDomain, Access } from '@/lib/core/staff-roles'
 
-/** The four standardized menu containers the whole site composes (ADR-390):
- *  - header  — the mega-menu for general site navigation (pages + categories)
- *  - left    — the in-app left rail (the "user menu" in the feed); admin lives here, role-gated
- *  - footer  — the site footer
- *  - profile — the account / profile dropdown
+/** The standardized menu containers the whole site composes (ADR-390):
+ *  - header        — the mega-menu for general site navigation (pages + categories)
+ *  - left          — the in-app left rail (the "user menu" in the feed); admin section
+ *                    entry points live here, role-gated
+ *  - footer        — the site footer
+ *  - profile       — the account / profile dropdown
+ *  - admin_header  — the contextual admin mega sub-header: shows the ACTIVE admin section's
+ *                    sub-pages above the content area (with the admin/Vera search bar)
  *  Any page/link is assignable to any container; visibility is role-gated. */
-export type MenuSurfaceKey = 'header' | 'left' | 'footer' | 'profile'
+export type MenuSurfaceKey = 'header' | 'left' | 'footer' | 'profile' | 'admin_header'
 
 /** How an item / rail card presents. 'ghost' = shown muted (upsell / preview),
  *  'hidden' = removed for that viewer. Mirrors the DB CHECK constraint. */

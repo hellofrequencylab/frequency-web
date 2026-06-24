@@ -10,6 +10,7 @@
 
 import { PUBLIC_MEGA_NAV, MARKETING_NAV, type MegaNavGroup } from '@/lib/site'
 import { NAV_AREAS } from '@/lib/nav-areas'
+import { ADMIN_NAV, type AdminNavSection } from '@/lib/admin/nav'
 import type {
   MenuAccess,
   MenuSettings,
@@ -86,6 +87,8 @@ function surfaceLabel(surfaceKey: MenuSurfaceKey): string {
       return 'Footer menu'
     case 'profile':
       return 'Profile menu'
+    case 'admin_header':
+      return 'Admin header'
   }
 }
 
@@ -263,6 +266,53 @@ function footerMenu(): ResolvedMenu {
   }
 }
 
+// ── admin_header, from ADMIN_NAV (the contextual admin mega sub-nav) ──────────
+// Each AdminNavSection is a TOP-LEVEL category; its `groups` become CHILD categories
+// (the sub-page tabs / dropdowns), each group's links the items. The shell renders ONLY
+// the ACTIVE section's children as the mega sub-header (contextual to the route), with
+// the admin/Vera search bar. The section gate (min + staffDomain) rides onto the category
+// AND its items (ADR-390), so the sub-nav matches each page's own gate.
+function adminHeaderMenu(): ResolvedMenu {
+  const categories: ResolvedCategory[] = ADMIN_NAV.map((section: AdminNavSection, si: number) => {
+    const access = toAccess(section.min)
+    const staffDomain = section.staffDomain
+    const catId = `default:admin_header:cat:${si}`
+    const gate = { minAccess: access, staffDomain }
+
+    // The section's own landing link (where the left-rail click lands).
+    const sectionItem = item(`${catId}:item:0`, section.label, section.href, 0, {
+      minAccess: access,
+      staffDomain,
+    })
+
+    if (!section.groups || section.groups.length === 0) {
+      return category(catId, section.label, si, [sectionItem], [], gate)
+    }
+
+    const children: ResolvedCategory[] = section.groups.map((group, gi) => {
+      const items = group.items.map((link, li) =>
+        item(`${catId}:child:${gi}:item:${li}`, link.label, link.href, li, {
+          minAccess: access,
+          staffDomain,
+        }),
+      )
+      return category(`${catId}:child:${gi}`, group.heading, gi, items, [], gate)
+    })
+
+    return category(catId, section.label, si, [sectionItem], children, gate)
+  })
+
+  return {
+    surfaceKey: 'admin_header',
+    label: surfaceLabel('admin_header'),
+    columns: 6,
+    categories,
+    rootItems: [],
+    railCards: [],
+    isDefault: true,
+  }
+}
+
 // ── profile, the account dropdown's editable links ───────────────────────────
 // The renderer FRAMES this menu with Profile (the dynamic /people/<handle> link) and
 // Invite at the top, and Report-a-bug / theme / Sign out at the bottom, as fixed chrome
@@ -306,5 +356,7 @@ export function defaultMenu(surfaceKey: MenuSurfaceKey): ResolvedMenu {
       return footerMenu()
     case 'profile':
       return profileMenu()
+    case 'admin_header':
+      return adminHeaderMenu()
   }
 }

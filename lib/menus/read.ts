@@ -36,6 +36,7 @@ export const MENU_SURFACES: { key: MenuSurfaceKey; label: string }[] = [
   { key: 'left', label: 'Left menu (in-app rail)' },
   { key: 'footer', label: 'Footer menu' },
   { key: 'profile', label: 'Profile menu' },
+  { key: 'admin_header', label: 'Admin header (mega sub-nav)' },
 ]
 
 // ── Raw row shapes (untyped DB) ───────────────────────────────────────────────

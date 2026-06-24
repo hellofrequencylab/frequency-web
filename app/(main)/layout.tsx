@@ -149,6 +149,7 @@ export default async function MainLayout({
     headerMenu,
     leftMenu,
     profileMenu,
+    adminHeaderMenu,
     menuTimings,
   ] = await Promise.all([
     applyViewAs(realRole),
@@ -166,13 +167,15 @@ export default async function MainLayout({
     resolveSpaceForHost(reqHeaders.get('host')).catch(() => null),
     BETA_INDUCTION_ACTIVE ? getProfileChores(profile.id) : Promise.resolve(null),
     getStaffMember().catch(() => null),
-    // The four standardized menu containers (lib/menus, ADR-390). getMenu falls back to the
-    // code defaults on any miss/error, so these reads are safe pre-migration and no menu ever
-    // breaks. The in-app shell uses: header (the mega-menu), left (the rail — admin lives here,
-    // role-gated), and profile (the account dropdown). Footer is fetched by its own layouts.
+    // The standardized menu containers (lib/menus, ADR-390). getMenu falls back to the code
+    // defaults on any miss/error, so these reads are safe pre-migration and no menu ever breaks.
+    // The in-app shell uses: header (the mega-menu), left (the rail — admin section entry points
+    // live here, role-gated), profile (the account dropdown), and admin_header (the contextual
+    // admin mega sub-nav). Footer is fetched by its own layouts.
     getMenu('header'),
     getMenu('left'),
     getMenu('profile'),
+    getMenu('admin_header'),
     getMenuSettings(),
   ])
   const menuAreaKeys = orderedVisibleAreas(menuConfig).map((a) => a.key)
@@ -385,6 +388,7 @@ export default async function MainLayout({
       hasDemoContent={hasDemoContent}
       headerMenu={headerMenu}
       profileMenu={profileMenu}
+      adminHeaderMenu={adminHeaderMenu}
       menuViewerRole={menuViewerRole}
       menuTimings={menuTimings}
     >

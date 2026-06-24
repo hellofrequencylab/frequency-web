@@ -33,7 +33,7 @@ import type {
 type Result = { ok: true } | { ok: false; error: string }
 type EnsureResult = { ok: true; id: string } | { ok: false; error: string }
 
-const SURFACE_KEYS: readonly MenuSurfaceKey[] = ['header', 'left', 'footer', 'profile']
+const SURFACE_KEYS: readonly MenuSurfaceKey[] = ['header', 'left', 'footer', 'profile', 'admin_header']
 const MODE_VALUES: readonly MenuMode[] = ['active', 'ghost', 'hidden']
 const ACCESS_VALUES: readonly MenuAccess[] = [
   'visitor',
