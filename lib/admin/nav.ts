@@ -128,6 +128,8 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
           { label: 'Cockpit', href: '/admin/crm' },
           { label: 'Today', href: '/admin/crm/today' },
           { label: 'Member Intelligence', href: '/admin/crm/members' },
+          { label: 'Playbooks', href: '/admin/crm/playbooks' },
+          { label: 'Resonance Graph', href: '/admin/crm/graph' },
         ],
       },
       {

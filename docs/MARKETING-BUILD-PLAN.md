@@ -88,7 +88,7 @@ Grouped by funnel role. Audit vs `app/(marketing)/`, `app/discover/`, `app/(help
 
 | Page | Route | Status | Job |
 |---|---|---|---|
-| **Pricing** | `/pricing` | 🛠 re-author | NORMAL pricing page (not a seed campaign). Member featured. Every section listed + detailed; unbuilt ones "Coming Soon" (see §Pricing) |
+| **Pricing** | `/pricing` | ✅ re-authored (ADR-388) | NORMAL pricing page (not a seed campaign). Member featured. Every section listed + detailed; unbuilt ones "Coming Soon" (see §Pricing) |
 | **Beta / waitlist** | `/beta`, `/beta/confirm` | ✅ keep | Founding-cohort intake, double opt-in (until GA) |
 | **Sign in** | `/sign-in` | ✅ keep | Magic link + Google |
 

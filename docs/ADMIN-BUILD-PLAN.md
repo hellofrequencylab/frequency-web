@@ -109,39 +109,50 @@ unchanged (Resonance AI group stays `janitor`, Standard CRM stays `host+`/`staff
 
 ---
 
-## Phase 3 — Build the two net-new Resonance surfaces (L, one PR each)
+## Phase 3 — Build the two net-new Resonance surfaces (✅ shipped, ADR-389)
 
 Net-new product work. Ships after the IA cleanup lands so the new items slot into a clean
 domain. Both compose the page-framework templates (never hand-rolled) and read existing
 Resonance Engine tables activated on prod (`playbooks`, `playbook_runs`, `resonance_edges`,
 `resonance_embeddings`, `member_engagement_scores`).
 
-### 3a. Playbooks — `/admin/crm/playbooks` (gate: janitor)
+> **Status: ✅ both surfaces shipped (ADR-389).** Read-only v1, additive only, no data-layer
+> or migration change. Both gate server-side, compose the kit, and degrade to a calm empty
+> state when the prod tables are empty. Nav registered in TWO systems (`sections.ts` +
+> `nav.ts`); `nav-areas.ts` is intentionally NOT touched (these are sub-pages, not top-level
+> rail domains — the rail already carries the Resonance CRM domain root from Phase 0).
+
+### 3a. Playbooks — `/admin/crm/playbooks` (gate: janitor) ✅
 
 Saved Vera actions and automations: the registry of repeatable plays (winback, activation
 nudge, leader-recruit) with run history and the autonomy slider (suggest_only default).
 
-- **Template:** Index (a collection to browse) for the registry; Detail (context band +
-  tabs) for one playbook (definition · runs · settings).
-- **Data:** `playbooks` (registry) + `playbook_runs` (history). Read-only first; "run now"
-  and toggle autonomy behind the circuit breaker.
-- **Nav:** register in all three systems under CRM › Resonance AI.
+- **Template:** ✅ Index (`AdminTemplate` + `AdminSection`): a StatCard row (total playbooks,
+  runs this week, autonomy mode, circuit-breaker state), the catalog, and the run history.
+  A single Index page (no per-playbook Detail route in v1; the registry is small + read-only).
+- **Data:** ✅ catalog from the CODE registry (`lib/playbooks/registry.ts`, the source of
+  truth) + run history from `playbook_runs` (new fail-safe read `lib/playbooks/overview.ts`).
+  Read-only; "run now" + the autonomy slider stay behind the existing governed execute path.
+- **Nav:** ✅ registered under CRM › Resonance in `sections.ts` + `nav.ts`.
 
-### 3b. Resonance Graph — `/admin/crm/graph` (gate: janitor + staff:insights)
+### 3b. Resonance Graph — `/admin/crm/graph` (gate: janitor + staff:insights) ✅
 
 The consent-first relationship/health graph: who is connected to whom, health-scored,
 double-opt-in only. Reads `resonance_edges` + `resonance_embeddings` (pgvector neighbors)
 + `member_engagement_scores`.
 
-- **Template:** Dashboard (metric-led) with the graph as the lead panel; per-node drill to
+- **Template:** ✅ Dashboard (`AdminTemplate` metric row): consented members, live edges,
+  mean Resonance Health, then a ranked, ACCESSIBLE list of the strongest consented
+  connections (semantic-token strength meter, no graph-viz dependency); per-node drill to
   Member Intelligence.
-- **Consent:** never render an edge without double-opt-in (`resonance_consent`); the empty
-  state explains the consent gate, never fabricates edges.
-- **Nav:** register in all three systems under CRM › Resonance AI.
+- **Consent:** ✅ never renders an edge without double-opt-in; the read re-checks
+  `resonance_consent` on BOTH ends as defense-in-depth and drops any edge where either side
+  is not currently opted in. The empty state explains the consent gate, never fabricates edges.
+- **Nav:** ✅ registered under CRM › Resonance in `sections.ts` + `nav.ts`.
 
-**Acceptance per surface:** route gates server-side (`requireAdmin('janitor')`); composes a
-kit template; registered in all three nav systems; empty states pass the voice check; no
-hardcoded hex; tsc + eslint + tests green.
+**Acceptance per surface:** ✅ route gates server-side (`requireAdmin('janitor')`); composes a
+kit template; registered in the two sub-page nav systems; empty states pass the voice check; no
+hardcoded hex; tsc + eslint + tests + `pnpm build` green.
 
 ---
 
