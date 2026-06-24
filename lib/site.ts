@@ -91,6 +91,14 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
     // Interests), so the two menus stay distinct rather than duplicate each other.
     sections: [
       {
+        heading: "Where to start",
+        items: [
+          { label: "Lead", href: "/lead", desc: "Host one Circle. We hand you the format" },
+          { label: "Practice", href: "/practice", desc: "Start where you are, today" },
+          { label: "Spread", href: "/spread", desc: "Take a role in building community around you" },
+        ],
+      },
+      {
         heading: "The Lab",
         items: [
           { label: "The Lab", href: "/the-lab", desc: "The ideas and research behind Frequency" },
@@ -127,6 +135,9 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
 
 // Flat list for the marketing footer (every public page, no grouping).
 export const MARKETING_NAV: NavLink[] = [
+  { label: "Lead", href: "/lead" },
+  { label: "Practice", href: "/practice" },
+  { label: "Spread", href: "/spread" },
   { label: "The Lab", href: "/the-lab" },
   { label: "The Community", href: "/the-community" },
   { label: "The Quest", href: "/the-quest" },
