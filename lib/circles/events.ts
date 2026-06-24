@@ -3,6 +3,11 @@
 // Circle, mirroring lib/journeys/runs.ts setPhaseEvent. Single events for now;
 // the Host can set them to recur in the event editor. Server-only (admin client;
 // the action layer checks Host ownership).
+//
+// authz-delegated: generateCircleEvents is caller-trusted (ADR-274). Its only
+// caller, generateCircleEventsAction (app/(main)/circles/remix-actions.ts),
+// loads the circle and throws unless circle.host_id === the caller before
+// invoking, so the Host-ownership gate lives at the call site.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
