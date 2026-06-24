@@ -427,6 +427,22 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     values: ['reengage', 'activate', 'join_circle', 'deepen', 'invite', 'none'],
     derivation: 'priority ladder over lifecycle + activation + engagement_depth (PI.3)',
   },
+
+  // ── Resonance Graph (the reciprocal matchmaking layer · Resonance Engine Phase 4 · ADR-385) ──
+  // How many reciprocal resonance matches a member currently has (the strongest, not-expired edges
+  // in resonance_edges). A density signal for the cockpit ("Resonance density", the moat metric) and
+  // a cue on the Person view. Computed nightly from the edge table AFTER the trait refresh recomputes
+  // receptiveness. Declared here BEFORE it is computed (the "nothing exists without a declaration"
+  // law). The EDGES themselves are sensitive-class (they pair two people); this COUNT is a derived,
+  // non-identifying aggregate, so it is none-class like the other computed counts.
+  {
+    key: 'resonance_match_count',
+    label: 'Resonance matches',
+    description: 'How many reciprocal, consent-first resonance matches a member currently has (their strongest, not-expired edges in the Resonance Graph). A density cue, never the matches themselves.',
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'count of this member\'s non-expired resonance_edges (lib/resonance/edges.ts), recomputed nightly after the edge refresh',
+  },
 ] as const
 
 const BY_KEY = new Map(TRAIT_REGISTRY.map((t) => [t.key, t]))
