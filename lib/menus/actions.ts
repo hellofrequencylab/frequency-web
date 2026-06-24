@@ -357,6 +357,11 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
       if (insCards.error) return { ok: false, error: insCards.error.message }
     }
 
+    // Baseline the auto-sync set: every default href this menu now contains. The auto-sync
+    // pass (syncMenuFromDefaults) uses this so only NEWLY-added code pages get injected later,
+    // and deliberately-removed ones are never resurrected.
+    await db.from('menus').update({ synced_default_keys: leafHrefs(def) }).eq('id', menuId)
+
     revalidatePath('/', 'layout')
     return { ok: true }
   } catch (err) {
@@ -376,6 +381,165 @@ export async function materializeMenu(
   if (!seeded.ok) return seeded
   const menu = await getAdminMenu(surfaceKey)
   return { ok: true, menu }
+}
+
+// ── Auto-sync new code pages into a saved menu (ADR-390) ──────────────────────
+// A saved menu is a snapshot; a nav page added in code later won't be in it. The sync
+// pass injects only GENUINELY-NEW default pages (not in the menu AND not previously
+// seen), preserving edits and never resurrecting a deleted page. Identity = href.
+
+/** Every leaf href in a menu (root items + all nested category items). */
+function leafHrefs(menu: ResolvedMenu): string[] {
+  const out: string[] = []
+  const add = (items: ResolvedItem[]) => {
+    for (const it of items) if (it.href) out.push(it.href)
+  }
+  add(menu.rootItems)
+  const walk = (cats: ResolvedCategory[]) => {
+    for (const c of cats) {
+      add(c.items)
+      walk(c.children)
+    }
+  }
+  walk(menu.categories)
+  return out
+}
+
+type DefaultLeaf = { item: ResolvedItem; categoryLabel: string | null }
+/** Flatten a menu's items with the label of their immediate parent category (null = root). */
+function defaultLeaves(menu: ResolvedMenu): DefaultLeaf[] {
+  const out: DefaultLeaf[] = []
+  for (const it of menu.rootItems) out.push({ item: it, categoryLabel: null })
+  const walk = (cats: ResolvedCategory[]) => {
+    for (const c of cats) {
+      for (const it of c.items) out.push({ item: it, categoryLabel: c.label ?? null })
+      walk(c.children)
+    }
+  }
+  walk(menu.categories)
+  return out
+}
+
+/** Find a TOP-LEVEL category by label in a menu, creating it (appended) if absent. A null
+ *  label resolves to the root bucket (category_id null). */
+async function ensureCategoryByLabel(
+  db: ReturnType<typeof adminDb>,
+  menuId: string,
+  label: string | null,
+): Promise<string | null> {
+  if (label == null) return null
+  const found = await db
+    .from<{ id: string }>('menu_categories')
+    .select('id')
+    .eq('menu_id', menuId)
+    .is('parent_id', null)
+    .eq('label', label)
+    .limit(1)
+  const hit = (found.data ?? [])[0]?.id
+  if (hit) return hit
+  const siblings = await db
+    .from<{ id: string }>('menu_categories')
+    .select('id')
+    .eq('menu_id', menuId)
+    .is('parent_id', null)
+  const ins = await db
+    .from<{ id: string }>('menu_categories')
+    .insert({ menu_id: menuId, parent_id: null, label, position: (siblings.data ?? []).length })
+    .select('id')
+    .limit(1)
+  return (ins.data ?? [])[0]?.id ?? null
+}
+
+/** Append position for a new item in a bucket (root or a category). */
+async function nextItemPosition(
+  db: ReturnType<typeof adminDb>,
+  menuId: string,
+  categoryId: string | null,
+): Promise<number> {
+  const base = db.from<{ id: string }>('menu_items').select('id').eq('menu_id', menuId)
+  const res = await (categoryId == null ? base.is('category_id', null) : base.eq('category_id', categoryId))
+  return (res.data ?? []).length
+}
+
+/** Sync a surface with the code defaults: SEED it if empty, otherwise inject only the
+ *  default pages that are genuinely new (absent from the menu AND not previously synced),
+ *  into their matching group with their own role-gating. Preserves edits; never deletes;
+ *  never resurrects a removed page (its href stays in synced_default_keys). Janitor-gated.
+ *  Returns the freshly-assembled menu. */
+export async function syncMenuFromDefaults(
+  surfaceKey: MenuSurfaceKey,
+): Promise<{ ok: true; menu: ResolvedMenu } | { ok: false; error: string }> {
+  try {
+    await requireJanitor()
+    if (!isSurface(surfaceKey)) return { ok: false, error: 'Unknown surface' }
+
+    const def = defaultMenu(surfaceKey)
+    const existing = await getAdminMenu(surfaceKey)
+
+    // Empty surface → seed everything (existing behavior; seed records the baseline).
+    if (existing.isDefault) {
+      const seeded = await seedMenuFromDefaults(surfaceKey)
+      if (!seeded.ok) return seeded
+      return { ok: true, menu: await getAdminMenu(surfaceKey) }
+    }
+
+    const ensured = await ensureMenu(surfaceKey)
+    if (!ensured.ok) return ensured
+    const menuId = ensured.id
+    const db = adminDb()
+
+    const row = await db
+      .from<{ synced_default_keys: string[] | null }>('menus')
+      .select('synced_default_keys')
+      .eq('id', menuId)
+      .limit(1)
+    const seen: string[] = (row.data ?? [])[0]?.synced_default_keys ?? []
+    const seenSet = new Set(seen)
+    const present = new Set(leafHrefs(existing))
+
+    // First sync of a pre-existing menu (no baseline yet) → trust the current state and
+    // inject nothing; only record the baseline so FUTURE additions are detectable.
+    const toInject =
+      seen.length === 0
+        ? []
+        : defaultLeaves(def).filter(
+            (l) => !!l.item.href && !present.has(l.item.href) && !seenSet.has(l.item.href),
+          )
+
+    for (const leaf of toInject) {
+      const categoryId = await ensureCategoryByLabel(db, menuId, leaf.categoryLabel)
+      const position = await nextItemPosition(db, menuId, categoryId)
+      const ins = await db.from('menu_items').insert({
+        menu_id: menuId,
+        category_id: categoryId,
+        label: leaf.item.label,
+        href: leaf.item.href,
+        subheading: leaf.item.subheading ?? null,
+        icon: leaf.item.icon ?? null,
+        position,
+        col_span: 1,
+        mode: leaf.item.mode ?? 'active',
+        role_modes: leaf.item.roleModes ?? {},
+        min_access: leaf.item.minAccess ?? 'visitor',
+        staff_domain: cleanStaffDomain(leaf.item.staffDomain),
+        staff_level: cleanStaffLevel(leaf.item.staffLevel),
+      })
+      if (ins.error) return { ok: false, error: ins.error.message }
+    }
+
+    // Baseline = everything currently in the defaults (so removed pages stay removed and only
+    // the NEXT new page is injected). Write only when it actually changes.
+    const newSeen = Array.from(new Set([...seen, ...leafHrefs(def)]))
+    if (toInject.length > 0 || newSeen.length !== seen.length) {
+      const upd = await db.from('menus').update({ synced_default_keys: newSeen }).eq('id', menuId)
+      if (upd.error) return { ok: false, error: upd.error.message }
+    }
+    if (toInject.length > 0) revalidatePath('/', 'layout')
+
+    return { ok: true, menu: await getAdminMenu(surfaceKey) }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'syncMenuFromDefaults failed' }
+  }
 }
 
 /** Set a menu's column count (clamped 1..12). */
