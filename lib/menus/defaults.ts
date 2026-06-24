@@ -142,16 +142,30 @@ function category(
   }
 }
 
-// ── header, from PUBLIC_MEGA_NAV (Discover + Explore as the two dropdowns) ─────
+// ── header, from PUBLIC_MEGA_NAV (the six primary pages as flat tabs) ──────────
 // One header menu whose TOP-LEVEL categories are the mega-menu triggers (MegaBar at
-// triggerLevel='category'). Each PUBLIC_MEGA_NAV panel (index 0 = Discover, 1 =
-// Explore) becomes a top-level category; each of its MegaNavGroups becomes a CHILD
-// category (a column inside that trigger's panel), with the group's links as items.
-// The panel's `featured` tile is dropped: rail cards are menu-level (shared across all
-// triggers), so a per-panel featured card has no clean home under one merged menu.
+// triggerLevel='category'). Each PUBLIC_MEGA_NAV panel becomes a top-level category.
+// A FLAT panel (a `label` + `href`, today's shape: Home, The Community, The Quest,
+// The Lab, Spaces, About) becomes a category with NO children and exactly ONE landing
+// item, which MegaBar renders as a plain nav link (hasPanel === false). A panel WITH
+// `sections` still becomes a disclosure trigger whose child categories are its columns,
+// so the header can grow mega panels back later without a renderer change. The panel's
+// `featured` tile is dropped: rail cards are menu-level, so a per-panel featured card
+// has no clean home under one merged menu.
 function headerMenu(): ResolvedMenu {
   const categories: ResolvedCategory[] = PUBLIC_MEGA_NAV.map((panel, pi) => {
-    const children: ResolvedCategory[] = (panel?.sections ?? []).map(
+    const sections = panel?.sections ?? []
+    // Flat tab: a single landing item carries the href; MegaBar renders it as a link.
+    if (sections.length === 0) {
+      const landing = item(
+        `default:header:cat:${pi}:item:0`,
+        panel?.label ?? `Menu ${pi + 1}`,
+        panel?.href ?? '#',
+        0,
+      )
+      return category(`default:header:cat:${pi}`, panel?.label ?? `Menu ${pi + 1}`, pi, [landing])
+    }
+    const children: ResolvedCategory[] = sections.map(
       (group: MegaNavGroup, gi: number) => {
         const items = group.items.map((it, ii) =>
           item(`default:header:cat:${pi}:child:${gi}:item:${ii}`, it.label, it.href, ii, {

@@ -1,144 +1,303 @@
 import type { Data } from '@measured/puck'
+import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 
-// The Quest, rebuilt from the standardized block library so the editor mirrors the
-// live page (ADR-055 / "editor = live"). Bespoke coded bits approximated: the four
-// season-rank cards → a numbered FeatureGrid; the PillarNav triptych (nav chrome) →
-// omitted. Icons mapped to the editor's curated 16-icon set. Review on the preview.
-// Ranks updated to completion-based model (ADR-283): Ghost/Initiate/Adept/Master.
+// ─────────────────────────────────────────────────────────────────────────────
+// THE QUEST — the explainer for the game. Built to the exemplar shape in
+// the-community.ts: one shared `L` layout literal, an alternating tone beat with
+// `Statement` interstitials between movements, exactly ONE dark `ink` beat near
+// the end, and a single closing CTA (Join the Beta) as the only button.
+//
+// What this page does: opens on PURPOSE, not mechanics. The Quest is meditation
+// and movement dressed as a game, on purpose, so people actually do the thing.
+// Then it shows the real shape: a thirteen-week season of three Journeys (Mind,
+// Body, Spirit), each capped by an Expression Challenge; the Practices you log;
+// the Mindless timer; the Zaps that roll into Gems and into the Vault; the ranks
+// you earn by finishing.
+//
+// Canon rendered verbatim (docs/NAMING.md): a Quest is one season (13 weeks),
+// three Journeys run in order (Mind, Body, Spirit, ~4 weeks each), each capped by
+// an Expression Challenge (Expression is NOT a fourth Journey). Practices are
+// real-world acts. Mindless is the one timer, modes Be Still / Get Moving. Zaps
+// roll into Gems FLAT at 5:1 at season end, spent in the Vault. Ranks are
+// Ghost / Initiate / Adept / Master by Journeys finished (0/1/2/3). Never
+// "points," never "cohort," never a leaderboard. No em dashes, sentence-case
+// headings, honest at day zero (no member counts, no invented numbers).
+//
+// ONE primary CTA: Join the Beta, from BETA_CTA_LABEL / BETA_CTA_HREF. The
+// closing CallToAction is the only button on the page.
+// ─────────────────────────────────────────────────────────────────────────────
+
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
 
 export const data: Data = {
   root: {},
   content: [
+    // ── Hero ── the one big promise, no button. Purpose first: the game exists so
+    // the good habits actually stick. ──────────────────────────────────────────
     {
       type: 'Hero',
       props: {
-        id: 'tq-hero', variant: 'image',
+        id: 'tq-hero',
+        variant: 'image',
         eyebrow: 'The Quest',
-        title: 'Showing up should count.', titleAccent: '',
-        subtitle: 'Most apps reward the time you lose to them. The Quest rewards the time you give back to real people. Real life is the high score, and you climb it by becoming someone your community misses.',
-        image: '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg', focal: 'center',
+        title: 'We made the good habits a game so people actually do them.',
+        titleAccent: 'a game',
+        subtitle:
+          'Yes, a lot of it is meditation and movement. We know how that lands. So we built a game around it, because a streak you want to keep beats a resolution you forget by February.',
+        image: '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg',
+        focal: 'center',
         minHeight: 'screen',
-        ctaPrimaryLabel: 'Join the Beta', ctaPrimaryHref: '/beta',
-        ctaSecondaryLabel: '', ctaSecondaryHref: '', note: '',
-        tone: 'surface', width: 'default', align: 'center', layout: L,
+        ctaPrimaryLabel: '',
+        ctaPrimaryHref: '',
+        ctaSecondaryLabel: '',
+        ctaSecondaryHref: '',
+        note: '',
+        tone: 'surface',
+        width: 'default',
+        align: 'center',
+        layout: L,
       },
     },
+
+    // ── Why a game ── the purpose, said plainly. The honesty wink lives here. ───
     {
       type: 'Heading',
       props: {
-        id: 'tq-premise-h', eyebrow: 'The premise',
-        title: 'Most games waste your life. This one builds it.', titleAccent: '',
-        kicker: 'The reward loop, pointed at the things that actually matter.',
-        size: 'default', tone: 'canvas', width: 'default', align: 'left', layout: L,
+        id: 'tq-why-h',
+        eyebrow: 'Why a game',
+        title: 'The point is the life, not the score.',
+        titleAccent: 'the life',
+        kicker: 'A game is just the trick that gets you to keep showing up.',
+        size: 'default',
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
     {
       type: 'Text',
       props: {
-        id: 'tq-premise-b',
-        body: "We know what a good game does to a person: it pulls you back, gives you something to climb, makes progress feel inevitable. The trouble is that almost every game spends that pull on nothing. The Quest spends it on the opposite. It points the whole loop at the things that genuinely make a life: showing up, being missed, holding the door for the next person.\n\nYou don't grind points. You build a reputation in a real place, with real people, who notice when you're there and feel it when you're not. The score is just a mirror held up to that.",
-        size: 'lg', tone: 'canvas', width: 'default', align: 'left', layout: L,
+        id: 'tq-why-b',
+        body: 'A good game knows how to pull you back: something to climb, progress you can see, a reason to return tomorrow. Almost every game spends that pull on nothing. The Quest spends it on the things that actually build a life. Sit for ten minutes. Take the walk. Show up to the Circle on Tuesday.\n\nWe are not shy about it: a lot of the work is meditation and movement, the stuff people mean to do and never quite get to. The game is how we close that gap. You do the real thing, the game keeps score of it, and the score is just a mirror held up to a life you are actually living.',
+        size: 'lg',
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
     {
       type: 'Statement',
-      props: { id: 'tq-stmt-1', text: 'Not points to grind. A person to become.', accent: 'A person to become.', tone: 'surface', layout: L },
+      props: {
+        id: 'tq-stmt-1',
+        text: 'A streak you want to keep beats a resolution you forget.',
+        accent: 'want to keep',
+        tone: 'surface',
+        layout: L,
+      },
     },
+
+    // ── SeasonTimeline ── the real shape of a Quest: thirteen weeks, three
+    // Journeys (Mind, Body, Spirit), each capped by an Expression Challenge. ────
+    {
+      type: 'SeasonTimeline',
+      props: {
+        id: 'tq-season',
+        eyebrow: 'A Quest, up close',
+        title: 'A season is thirteen weeks.',
+        titleAccent: 'thirteen weeks',
+        kicker: 'Three Journeys, run in order, each capped by an Expression Challenge.',
+        legs: [
+          {
+            pillar: 'Mind',
+            weeks: '~4 weeks',
+            blurb: 'Meditation, breathwork, and the quiet practices that settle a nervous system. The first leg of the season.',
+          },
+          {
+            pillar: 'Body',
+            weeks: '~4 weeks',
+            blurb: 'Movement, strength, cold and heat. The practices you feel the next morning.',
+          },
+          {
+            pillar: 'Spirit',
+            weeks: '~4 weeks',
+            blurb: 'Ceremony, sound, and human relating. The work you do shoulder to shoulder.',
+          },
+        ],
+        capstoneLabel: 'Expression Challenge',
+        capstoneNote: 'Expression is not a fourth Journey. It is the Challenge that closes each leg: make something, share it with your people, and finish the Journey. Three Journeys, three Challenges, one season.',
+        tone: 'canvas',
+        width: 'wide',
+        align: 'left',
+        layout: L,
+      },
+    },
+
+    // ── Practices ── the atomic real-world act. What you actually log. ──────────
     {
       type: 'MediaText',
       props: {
-        id: 'tq-currencies', image: '/images/site/PHOTO-2020-10-07-14-38-02.jpeg',
+        id: 'tq-practices',
+        image: '/images/site/PHOTO-2020-10-07-14-38-02.jpeg',
         alt: 'A Frequency circle gathered close together, laughing in golden afternoon light',
-        eyebrow: 'Two currencies', title: 'Zaps in person. Gems on platform.', titleAccent: '',
-        kicker: 'One for the room. One for the thread that keeps it warm.',
-        body: 'Zaps are earned in the flesh. You show up to the sunrise circle, you host the sauna night, you bring a stranger who becomes a regular. Zaps are the weight of being there, the part no screen can fake.\n\nGems are earned on the platform: the small acts that keep a Circle alive between gatherings. A welcome to the newcomer, an event that fills the calendar, the photo that pulls everyone back. Both flow to the same place: a path you can feel under your feet.',
-        side: 'left', imgAspect: 'landscape', focal: 'center', ctaLabel: '', ctaHref: '',
-        tone: 'canvas', width: 'default', align: 'left', layout: L,
+        eyebrow: 'Practices',
+        title: 'Small real acts, one at a time.',
+        titleAccent: 'small real acts',
+        kicker: 'A Practice is the smallest unit of the game: one real thing you did.',
+        body: 'A Practice is a single real-world act. Sit for ten minutes. Take the cold plunge. Walk while you call your mother. Each Journey is built from a handful of them, and you log them as you go.\n\nPractices come in three weights: light, standard, and heavy. A two-minute breath is light. A long Saturday hike is heavy. The heavier the act, the more it pays, so the game leans you toward the things that take a little more of you.',
+        side: 'left',
+        imgAspect: 'landscape',
+        focal: 'center',
+        ctaLabel: '',
+        ctaHref: '',
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
+    // ── Mindless ── the timer that runs a sit or a session. Two modes only. ────
+    {
+      type: 'MediaText',
+      props: {
+        id: 'tq-mindless',
+        image: '/images/site/PHOTO-2020-09-09-16-38-27.jpeg',
+        alt: 'A quiet moment of stillness in soft natural light',
+        eyebrow: 'Mindless',
+        title: 'Get out of your head, and into your life.',
+        titleAccent: 'into your life',
+        kicker: 'One timer, two modes. The screen exists only to let you put the phone down.',
+        body: 'Mindless is the timer you run a Practice on. It has two modes. **Be Still** is the quiet sit: meditate, breathe, journal, or just log the minutes. **Get Moving** is the moving one: walk, run, yoga, strength, stretch, play.\n\nYou tune out to start, tune back in when you are done, and the time you gave counts. That is the whole design. The point of the screen is to make it easy to stop looking at the screen.',
+        side: 'right',
+        imgAspect: 'portrait',
+        focal: 'center',
+        ctaLabel: '',
+        ctaHref: '',
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
     {
+      type: 'Statement',
+      props: {
+        id: 'tq-stmt-2',
+        text: 'You do the real thing. The game just keeps score of it.',
+        accent: 'the real thing',
+        tone: 'surface',
+        layout: L,
+      },
+    },
+
+    // ── QuestLoop ── show up, earn Zaps, roll into Gems at 5:1, spend in the
+    // Vault. The economy, in four honest steps. ────────────────────────────────
+    {
+      type: 'QuestLoop',
+      props: {
+        id: 'tq-loop',
+        eyebrow: 'The loop',
+        title: 'Show up. That is the whole game.',
+        titleAccent: 'Show up',
+        kicker: 'Real acts earn Zaps. At season end they roll into Gems you can spend.',
+        stages: [
+          { label: 'Show up', blurb: 'Log a Practice, finish a Challenge, take on a Task. In person counts most.' },
+          { label: 'Earn Zaps', blurb: 'Every real act pays Zaps. No leaderboard to climb, no streak to perform for a crowd.' },
+          { label: 'Roll into Gems', blurb: 'At season end your Zaps convert to Gems at a flat five to one.' },
+          { label: 'Spend in the Vault', blurb: 'Gems are yours to spend in the Vault, the member treasury where rewards live.' },
+        ],
+        ratioNote: 'The rate is fixed and flat: five Zaps become one Gem at the close of every season. The game is free, the same for everyone, and you only ever earn it by turning up. No points, no pay to win.',
+        tone: 'canvas',
+        width: 'wide',
+        align: 'left',
+        layout: L,
+      },
+    },
+
+    // ── Ranks ── earned by finishing, not by score. Ghost to Master. ───────────
+    {
       type: 'Heading',
       props: {
-        id: 'tq-earn-h', eyebrow: 'What you earn', title: 'Earned by being there.', titleAccent: '',
-        kicker: 'Two ways to move, both pointed at real connection.',
-        size: 'default', tone: 'surface', width: 'default', align: 'left', layout: L,
+        id: 'tq-ranks-h',
+        eyebrow: 'Season ranks',
+        title: 'You rank up by finishing, not by farming.',
+        titleAccent: 'finishing',
+        kicker: 'Your rank is simply how many Journeys you finished this season.',
+        size: 'default',
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
     {
       type: 'FeatureGrid',
       props: {
-        id: 'tq-earn-grid', eyebrow: '', title: '', titleAccent: '', style: 'icon', columns: '2',
+        id: 'tq-ranks-grid',
+        eyebrow: '',
+        title: '',
+        titleAccent: '',
+        style: 'number',
+        columns: '2',
         items: [
-          { icon: 'Zap', image: '', title: 'Zaps', body: 'In-person gratitude. Earned when you show up, host, or bring someone new into the room. The currency of presence.', href: '' },
-          { icon: 'Sparkles', image: '', title: 'Gems', body: 'On-platform care. Earned by welcoming newcomers, filling the calendar, and keeping the thread warm between gatherings.', href: '' },
+          { icon: 'Compass', image: '', title: 'Ghost', body: 'You just arrived. Nobody knows your name yet, and that is exactly where everyone starts.', href: '' },
+          { icon: 'Star', image: '', title: 'Initiate', body: 'One Journey finished. The practice is real now, not just an intention.', href: '' },
+          { icon: 'Flame', image: '', title: 'Adept', body: 'Two Journeys finished. You know how to see something through and you keep showing up anyway.', href: '' },
+          { icon: 'Sparkles', image: '', title: 'Master', body: 'All three finished. Mind, Body, Spirit: you walked the whole season and capped each one.', href: '' },
         ],
-        tone: 'surface', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'Heading',
-      props: {
-        id: 'tq-ranks-h', eyebrow: 'Season ranks', title: 'Ranks you earn by finishing.', titleAccent: '',
-        kicker: 'Not a leaderboard. A record of how many Journeys you completed this season.',
-        size: 'default', tone: 'canvas', width: 'default', align: 'left', layout: L,
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
     {
       type: 'Text',
       props: {
         id: 'tq-ranks-b',
-        body: 'Each season has three Journeys: Mind, Body, Spirit. Finish one and you become an Initiate. Finish two and you are Adept. Finish all three and you reach Master. There is no points threshold to cross, no leaderboard to beat. You just do the work, and the rank follows. Ranks reset each season so every season is a fresh start.',
-        size: 'lg', tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'FeatureGrid',
-      props: {
-        id: 'tq-ranks-grid', eyebrow: '', title: '', titleAccent: '', style: 'number', columns: '2',
-        items: [
-          { icon: 'Ghost', image: '', title: 'Ghost · Just arrived', body: 'You found the room. Nobody knows your name yet, and that is exactly where everyone starts.', href: '' },
-          { icon: 'Footprints', image: '', title: 'Initiate · One Journey done', body: 'You finished your first Journey. The practice is real now, not just an intention.', href: '' },
-          { icon: 'Flame', image: '', title: 'Adept · Two Journeys done', body: 'Two down. You know what it takes to see something through, and you keep showing up anyway.', href: '' },
-          { icon: 'Star', image: '', title: 'Master · Three Journeys done', body: 'You finished the season. Mind, body, spirit: you moved through all three and came out changed.', href: '' },
-        ],
-        tone: 'canvas', width: 'default', align: 'left', layout: L,
+        body: 'There is no threshold to cross and no one to beat. Finish one Journey and you are an Initiate. Finish two and you are Adept. Finish all three and you reach Master. The rank just follows the work. Every season resets, so each one is a fresh start and nobody is ever too far ahead to catch.',
+        size: 'lg',
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
     {
       type: 'Statement',
-      props: { id: 'tq-stmt-2', text: 'You level up by finishing the work.', accent: 'finishing the work.', tone: 'surface', layout: L },
+      props: {
+        id: 'tq-stmt-3',
+        text: 'Not points to grind. A person to become.',
+        accent: 'A person to become.',
+        tone: 'canvas',
+        layout: L,
+      },
     },
+
+    // ── The single dark beat ── why the game is pointed where it is. Exactly one
+    // ink section, near the end, before the close. ─────────────────────────────
     {
       type: 'MediaText',
       props: {
-        id: 'tq-quests', image: '/images/site/PHOTO-2020-10-17-13-49-14.jpeg',
-        alt: 'A Frequency music circle gathered on a cliffside at golden hour',
-        eyebrow: 'Quests', title: 'Three Journeys. One season.', titleAccent: '',
-        kicker: 'Mind, body, spirit: each one a focused track, each one capped by an Expression Challenge.',
-        body: "Each season of The Quest gives you three Journeys to walk: one for the mind, one for the body, one for the spirit. Each runs for about four weeks, and each closes with an Expression Challenge where you share what you practiced with your community.\n\nFinish all three and you are Master for the season. Trophies and Gems follow each completion. Then the season resets, the next one opens, and you begin again.",
-        side: 'right', imgAspect: 'landscape', focal: 'center', ctaLabel: '', ctaHref: '',
-        tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'Heading',
-      props: {
-        id: 'tq-rewards-h', eyebrow: 'What it rewards', title: 'Pointed at the right things.', titleAccent: '',
-        kicker: 'Every mechanic answers to one rule: does this build real community?',
-        size: 'default', tone: 'surface', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'FeatureGrid',
-      props: {
-        id: 'tq-rewards-grid', eyebrow: '', title: '', titleAccent: '', style: 'icon', columns: '3',
-        items: [
-          { icon: 'MapPin', image: '', title: 'Presence over scrolling', body: 'The biggest rewards live off the screen. Zaps come from being in the room, so the Quest pulls you toward people, never deeper into a feed.', href: '' },
-          { icon: 'Handshake', image: '', title: 'Generosity over grinding', body: 'You rise by bringing others in and holding the door, not by farming points. The path rewards the people who make the room warmer.', href: '' },
-          { icon: 'Compass', image: '', title: 'Rhythm over streaks', body: "Ranks reset each season so nobody is ever too far ahead to catch. It's a fresh climb, an open invitation, not a ladder you missed.", href: '' },
-        ],
-        tone: 'surface', width: 'default', align: 'left', layout: L,
+        id: 'tq-why-it-matters',
+        image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
+        alt: 'People dancing together with arms raised at golden hour, faces lit and joyful',
+        eyebrow: 'Why it points here',
+        title: 'Most games waste your life. This one builds it.',
+        titleAccent: 'builds it',
+        kicker: '',
+        body: "Every mechanic in the Quest answers to one rule: does this pull you toward real people, or deeper into a screen? The biggest rewards live off the phone, because Zaps come from being in the room. Ranks reset each season so it stays an open invitation, never a ladder you missed.\n\nWe are not building a better way to scroll. We are using the only thing screens are good at, the pull, and aiming it at the door, the Circle, and the practice you have been meaning to start.",
+        side: 'right',
+        imgAspect: 'landscape',
+        focal: 'center',
+        ctaLabel: '',
+        ctaHref: '',
+        tone: 'ink',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
     {
@@ -146,50 +305,34 @@ export const data: Data = {
       props: {
         id: 'tq-marquee',
         items: [
-          { text: 'Show up' }, { text: 'Earn zaps' }, { text: 'Finish a Journey' },
-          { text: 'Earn a Trophy' }, { text: 'Bring someone new' }, { text: 'Reach Master' },
+          { text: 'Sit for ten' },
+          { text: 'Take the walk' },
+          { text: 'Earn Zaps' },
+          { text: 'Finish a Journey' },
+          { text: 'Roll into Gems' },
+          { text: 'Reach Master' },
         ],
         layout: L,
       },
     },
-    {
-      type: 'MediaText',
-      props: {
-        id: 'tq-membership', image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
-        alt: 'People dancing together with arms raised at golden hour, faces lit and joyful',
-        eyebrow: 'Why it matters', title: 'Membership turns on the Quest.', titleAccent: '', kicker: '',
-        body: "The Quest is the part of membership that pulls you off the screen and into the room. It's the engine that turns a good intention into a standing habit, and a standing habit into the people who know your name.\n\nThe community is free, forever. The Quest, and the rooms it fills, is what membership keeps open. You're not buying points. You're funding the place where showing up gets to count.",
-        side: 'right', imgAspect: 'landscape', focal: 'center', ctaLabel: '', ctaHref: '',
-        tone: 'ink', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'Statement',
-      props: { id: 'tq-stmt-3', text: 'Real life is the high score.', accent: 'high score.', tone: 'ink', layout: L },
-    },
-    {
-      type: 'Heading',
-      props: {
-        id: 'tq-start-h', eyebrow: 'Where it starts', title: 'Your first season begins now.', titleAccent: '',
-        kicker: 'The founding cohort is climbing it together in North County San Diego.',
-        size: 'default', tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'Text',
-      props: {
-        id: 'tq-start-b',
-        body: 'Every player starts as a Ghost. Join the beta and you start your first season alongside the founding members, the people shaping what these Journeys even mean. Pick a practice, log it, earn your first Zap, and watch the path light up. Finish a Journey and you earn a Trophy. Finish three and you reach Master. All it takes is a Circle and a standing time. Season one is open.',
-        size: 'lg', tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
+
+    // ── Close ── the one and only CTA on the page: Join the Beta. ───────────────
     {
       type: 'CallToAction',
       props: {
-        id: 'tq-cta', eyebrow: '', heading: 'Start your first season.', headingAccent: '',
-        body: "Pick a Circle, show up, and earn your first zap. The high score is a life you're actually living.",
-        ctaPrimaryLabel: 'Join the Beta', ctaPrimaryHref: '/beta', ctaSecondaryLabel: '', ctaSecondaryHref: '',
-        tone: 'ink', width: 'default', align: 'center', layout: L,
+        id: 'tq-cta',
+        eyebrow: '',
+        heading: 'Start your first season.',
+        headingAccent: 'first season',
+        body: 'Every player starts as a Ghost. Pick a Practice, log it, earn your first Zap, and watch the season open up. All it takes is a Circle and a standing time.',
+        ctaPrimaryLabel: BETA_CTA_LABEL,
+        ctaPrimaryHref: BETA_CTA_HREF,
+        ctaSecondaryLabel: '',
+        ctaSecondaryHref: '',
+        tone: 'ink',
+        width: 'default',
+        align: 'center',
+        layout: L,
       },
     },
   ],

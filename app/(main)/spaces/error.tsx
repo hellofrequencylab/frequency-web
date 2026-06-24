@@ -20,7 +20,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
               Try again
             </Button>
             <Button asChild>
-              <Link href="/spaces">Back to spaces</Link>
+              <Link href="/spaces/directory">Back to spaces</Link>
             </Button>
           </div>
         }

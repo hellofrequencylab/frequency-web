@@ -140,6 +140,6 @@ export async function updateSpaceProfile(
 
   // Refresh the profile (band subtitle + about module) and the directory (tagline card).
   revalidatePath(`/spaces/${space.slug}`, 'layout')
-  revalidatePath('/spaces')
+  revalidatePath('/spaces/directory')
   return ok()
 }
