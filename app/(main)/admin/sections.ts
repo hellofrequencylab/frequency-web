@@ -207,7 +207,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure', section: 'Structure' },
       { href: '/admin/channels', label: 'Channels', desc: 'Topical and event channels.', Icon: Radio, min: 'host', staffDomain: 'community', section: 'Structure' },
       // ── People & access ──
-      { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor', staffDomain: 'members', section: 'People & access' },
+      { href: '/admin/members', label: 'Member Roster', desc: 'The platform census: every member, subscriber, and beta account.', Icon: Users, min: 'janitor', staffDomain: 'members', section: 'People & access' },
       { href: '/admin/roles', label: 'Roles & permissions', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor', section: 'People & access' },
       { href: '/admin/personas', label: 'Partner verification', desc: 'Vet and verify partner persona claims.', Icon: BadgeCheck, min: 'janitor', staffDomain: 'profiles', section: 'People & access' },
       // ── Activity ──
@@ -277,7 +277,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       // ── Resonance Engine: the cockpit, the daily loop, and member intelligence. ──
       { href: '/admin/crm', label: 'Cockpit', desc: 'The dashboard: resonance health, the funnel, and who needs attention now.', Icon: LayoutDashboard, min: 'janitor', section: 'Resonance', exact: true },
       { href: '/admin/crm/today', label: 'Today', desc: "Vera's daily queue: the people and one-tap actions that matter now.", Icon: ClipboardList, min: 'janitor', section: 'Resonance' },
-      { href: '/admin/crm/members', label: 'Members', desc: 'Drill into any member: scores, the why behind them, and the full timeline.', Icon: Users, min: 'janitor', section: 'Resonance' },
+      { href: '/admin/crm/members', label: 'Member Intelligence', desc: 'Health-scored drill-down: resonance, churn risk, and the why, by tier and lifecycle.', Icon: Users, min: 'janitor', section: 'Resonance' },
       // ── Pipeline (the deal board) ──
       { href: '/admin/crm/deals/new', label: 'New deal', desc: 'Add a deal to the pipeline.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
       // ── Contacts ──
