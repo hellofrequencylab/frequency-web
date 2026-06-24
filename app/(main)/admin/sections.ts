@@ -64,6 +64,7 @@ import {
   Share2,
   Palette,
   LayoutPanelLeft,
+  Workflow,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
@@ -276,6 +277,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/crm', label: 'Cockpit', desc: 'The dashboard: resonance health, the funnel, and who needs attention now.', Icon: LayoutDashboard, min: 'janitor', section: 'Resonance', exact: true },
       { href: '/admin/crm/today', label: 'Today', desc: "Vera's daily queue: the people and one-tap actions that matter now.", Icon: ClipboardList, min: 'janitor', section: 'Resonance' },
       { href: '/admin/crm/members', label: 'Member Intelligence', desc: 'Health-scored drill-down: resonance, churn risk, and the why, by tier and lifecycle.', Icon: Users, min: 'janitor', section: 'Resonance' },
+      { href: '/admin/crm/playbooks', label: 'Playbooks', desc: "The saved Vera plays: each prediction's governed, reversible action, the autonomy grade, and the run history.", Icon: Workflow, min: 'janitor', section: 'Resonance' },
+      { href: '/admin/crm/graph', label: 'Resonance Graph', desc: 'The consent-first relationship view: the strongest double opt-in connections and graph health.', Icon: Network, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Resonance' },
       // ── Pipeline (the deal board) ──
       { href: '/admin/crm/deals', label: 'Deals', desc: 'The pipeline board: every deal by stage, with quick add and one-tap stage moves.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
       { href: '/admin/crm/deals/new', label: 'New deal', desc: 'Add a deal to the pipeline.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
