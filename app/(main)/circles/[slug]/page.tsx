@@ -520,12 +520,17 @@ export default async function CirclePage({
                     </div>
                   )
                 )}
-                <FeedList
-                  circleIds={[circle.id]} showPublicLayer={false}
-                  myProfileId={myProfileId}
-                  viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
-                  emptyMessage="No posts yet. Be the first to share something."
-                />
+                {/* The feed query is the heaviest read on the page; stream it behind Suspense so the
+                    circle header + rail paint first (mirrors /feed). fallback={null} matches the
+                    page's other Suspense blocks. */}
+                <Suspense fallback={null}>
+                  <FeedList
+                    circleIds={[circle.id]} showPublicLayer={false}
+                    myProfileId={myProfileId}
+                    viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
+                    emptyMessage="No posts yet. Be the first to share something."
+                  />
+                </Suspense>
               </section>
             </TeaserGate>
           </div>

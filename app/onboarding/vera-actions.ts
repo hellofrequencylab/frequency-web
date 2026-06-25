@@ -14,6 +14,11 @@ import { joinCircle } from '@/app/(main)/circles/actions'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { ConciergeStage, ProposedToolCall } from '@/lib/ai/vera/concierge'
 
+// The tools a MEMBER may run from their own confirm path. Each self-scopes its write to the
+// caller (memory, own profile, an intro post in their voice). join_circle is handled separately
+// above. Everything else in executeConfirmedTool is an operator-scoped playbook tool.
+const MEMBER_CONFIRMABLE_TOOLS = new Set(['remember_fact', 'set_profile_field', 'draft_intro'])
+
 async function callerProfileId(): Promise<string | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -88,6 +93,15 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   // join_circle is an app-level action (capacity checks + rewards + redirect), so it's
   // handled here rather than in the lib executor.
   if (tool === 'join_circle') return joinCircleForMember(String(args.circle ?? ''))
+
+  // The member-facing confirm path may run ONLY the small set of member-SAFE, self-scoped
+  // tools. executeConfirmedTool ALSO dispatches the operator-only Resonance Engine playbook
+  // tools (tag_contact, move_contact_stage, give_gem_gift, save_streak, send_playbook_email,
+  // send_intro_email) which treat `profileId` as an AUTHORIZED OPERATOR and act on arbitrary
+  // member/contact ids — those are reachable only from the janitor-gated operator path. Without
+  // this allow-list, any signed-in member could POST a crafted `tool` to mint themselves Gems or
+  // mutate any CRM contact. The member-safe writes all self-scope to `profileId`.
+  if (!MEMBER_CONFIRMABLE_TOOLS.has(tool)) return { ok: false, error: 'That action is not available here.' }
 
   const result = await executeConfirmedTool(profileId, tool, args)
   // A confirmed intro lands as a real feed post — show it on the next feed paint.

@@ -30,7 +30,9 @@ export function RsvpBottomBar({
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur lg:hidden">
+      {/* Sit ABOVE the mobile tab bar (md:hidden, height 3.5rem + safe-area) on phones so the
+          two fixed bars don't stack; drop to the screen bottom at md+ where the tab bar is gone. */}
+      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur md:bottom-0 lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             {statusLine && <p className="truncate text-sm font-medium text-text">{statusLine}</p>}

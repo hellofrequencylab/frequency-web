@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { ClipboardList, GraduationCap, BookOpen, ArrowUpRight } from 'lucide-react'
+import { ClipboardList, GraduationCap, BookOpen, ArrowUpRight, Send } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
+import { atLeastRole } from '@/lib/core/roles'
 import { SectionHeader } from '@/components/ui/section-header'
 
 // Leadership dashboard layout module (/lead, per-route module engine): the "Leadership
@@ -35,6 +36,16 @@ export async function LeadTools(): Promise<React.ReactElement | null> {
           title="Role training"
           desc="The advancement curriculum for your role. Materials to start and run a circle well."
         />
+        {/* Outreach is host+ (it self-guards and redirects below that), so only surface the link
+            to stewards who can actually use it — otherwise it dead-ends back to the feed. */}
+        {atLeastRole(me.community_role, 'host') && (
+          <ToolCard
+            href="/outreach"
+            Icon={Send}
+            title="Outreach"
+            desc="Message the members you steward, scoped to your circle, hub, or nexus."
+          />
+        )}
       </div>
     </section>
   )

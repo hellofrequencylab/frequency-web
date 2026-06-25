@@ -65,6 +65,17 @@ type Filters = {
 
 type NearbyCircle = CircleCardData & { distanceLabel: string }
 
+// The directory fetch cap — bounds the `profiles` scan so the page can't pull an
+// unbounded table into memory (mirrors the /circles index cap). Filtering is client-side
+// over this set; raise it or add pagination when the community outgrows it.
+const DIRECTORY_FETCH_LIMIT = 500
+
+// How many member cards to actually RENDER. The fetch is bounded at 500, but painting
+// hundreds of card subtrees is what stutters scroll on low-end phones — so we render a
+// page-sized slice and tell the member to narrow with search/filters for the rest. This
+// caps first-paint DOM (and, since avatars lazy-load, below-fold image requests too).
+const VISIBLE_LIMIT = 48
+
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
@@ -207,6 +218,10 @@ export default async function CommunityPage({
     // Vera (is_system) is FULLY VISIBLE here by owner decision (ADR-231 update):
     // she gets a member card like anyone else; her chip reads Moderator.
     .order('display_name', { ascending: true })
+    // Bound the scan so the directory can't load an unbounded `profiles` table into memory
+    // (mirrors /circles). Filtering below is client-side over this capped set; pagination +
+    // a "showing first N" notice is the follow-up when the community outgrows the cap.
+    .limit(DIRECTORY_FETCH_LIMIT)
 
   // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
   if (!(await demoModeEnabled()) || (await viewerHidesDemo())) query = query.eq('is_demo', false)
@@ -512,21 +527,28 @@ export default async function CommunityPage({
               description="Try widening or clearing a filter to see more of the community."
             />
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {filtered.map((p) => (
-                <ContactCard
-                  key={p.id}
-                  handle={p.handle}
-                  displayName={p.display_name}
-                  avatarUrl={p.avatar_url}
-                  role={p.is_system ? 'moderator' : ((p.community_role ?? 'member') as CommunityRole)}
-                  location={p.nexus_regions?.name ?? null}
-                  online={isOnline(p.last_seen_at)}
-                  isDemo={p.is_demo}
-                  band={bandByProfileId.get(p.id)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {filtered.slice(0, VISIBLE_LIMIT).map((p) => (
+                  <ContactCard
+                    key={p.id}
+                    handle={p.handle}
+                    displayName={p.display_name}
+                    avatarUrl={p.avatar_url}
+                    role={p.is_system ? 'moderator' : ((p.community_role ?? 'member') as CommunityRole)}
+                    location={p.nexus_regions?.name ?? null}
+                    online={isOnline(p.last_seen_at)}
+                    isDemo={p.is_demo}
+                    band={bandByProfileId.get(p.id)}
+                  />
+                ))}
+              </div>
+              {filtered.length > VISIBLE_LIMIT && (
+                <p className="mt-4 text-center text-sm text-muted">
+                  Showing the first {VISIBLE_LIMIT} of {filtered.length} members. Narrow with search or the filters above to find someone.
+                </p>
+              )}
+            </>
           )}
         </div>
 

@@ -19,6 +19,7 @@ type DispatchType = 'post' | 'poll' | 'challenge' | 'article'
 type DispatchRow = {
   id: string
   title: string
+  body: string | null
   excerpt: string | null
   dispatch_type: DispatchType
   audience_scope: 'circle' | 'hub' | 'nexus'
@@ -76,7 +77,9 @@ function DispatchForm({
      role === 'guide'  && hubs.length > 0    ? 'hub'   : 'circle')
 
   const [title,        setTitle]        = useState(initial?.title ?? '')
-  const [body,         setBody]         = useState('')
+  // Seed the body from the existing dispatch on Edit (the textarea is `required`, so an
+  // empty seed left Save disabled and any save overwrote the original with blank).
+  const [body,         setBody]         = useState(initial?.body ?? '')
   const [dispatchType, setDispatchType] = useState<DispatchType>(initial?.dispatch_type ?? 'post')
   const [scope,        setScope]        = useState<'circle' | 'hub' | 'nexus'>(defaultScope as 'circle' | 'hub' | 'nexus')
   const [audId,        setAudId]        = useState(initial?.audience_id ?? '')

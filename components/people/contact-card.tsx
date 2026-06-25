@@ -50,6 +50,7 @@ export function ContactCard({
             alt={displayName}
             width={72}
             height={72}
+            sizes="72px"
             className="h-18 w-18 rounded-full object-cover ring-2 ring-surface-elevated"
           />
         ) : (
