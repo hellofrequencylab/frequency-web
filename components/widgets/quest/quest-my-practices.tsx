@@ -28,7 +28,7 @@ export async function QuestMyPractices() {
           return (
             <li key={p.id}>
               <Link
-                href={`/practices/${p.id}`}
+                href={`/practices/${p.slug ?? p.id}`}
                 className="group flex items-center gap-3 rounded-2xl bg-surface-elevated/60 p-3 transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
               >
                 <div className="min-w-0 flex-1">

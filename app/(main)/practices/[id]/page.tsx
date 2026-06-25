@@ -31,7 +31,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params
   const p = await getRankedPractice(id)
   if (!p) return { title: 'Practice' }
-  return { title: p.title, description: p.summary ?? p.description ?? undefined }
+  return {
+    title: p.title,
+    description: p.summary ?? p.description ?? undefined,
+    alternates: { canonical: `/practices/${p.slug ?? p.id}` },
+  }
 }
 
 // The body's "How to do it" bullets, for the claim wizard's starting steps.

@@ -188,7 +188,7 @@ export async function PracticesLibrary() {
               return (
                 <li key={p.id}>
                   <EntityCard
-                    href={`/practices/${p.id}`}
+                    href={`/practices/${p.slug ?? p.id}`}
                     anchor={
                       p.header_image ? (
                         // eslint-disable-next-line @next/next/no-img-element
