@@ -8541,3 +8541,18 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 **Rationale.** A single column-gap token keeps every user page's columns visually uniform and breathing, matching the admin reference. Presentational only (Tailwind classes), no behavior change.
 
 **Consequences.** `components/layout/app-shell.tsx`, `components/admin/admin-rail-drawer-column.tsx`, `app/(main)/circles/[slug]/page.tsx`. The underlying double-rail on detail pages (an inner rail plus the global member rail) is a separate follow-up — the gap is now 40px but two right columns can still co-exist. No migration.
+
+## ADR-405: Circle page rail layout — operator default + host override, no new schema
+
+**Status:** Accepted (2026-06-25). The circle detail page's right-rail layout (order + visibility of its blocks) is controlled at two levels: a network-wide operator default and a per-circle host override, resolved host → operator → coded default.
+
+**Context.** The circle page right rail already reordered from `circles.sidebar_order` (host-chosen, order-only, ADR-181), but the editor was stale (5 of ~9 blocks, no show/hide) and there was no operator-level default. The owner wanted control of the individual circle page at both levels: a network default they set as operator, and a per-circle override each host can set.
+
+**Decision.** A layout is `{ order: string[], hidden: string[] }`. Resolution (`lib/circles/rail-layout.ts` `resolveRailOrder`) is **host override ?? operator default ?? coded default**, with any block that actually built but the layout doesn't name appended (visible) so a newly added rail block never disappears. One block manifest (`RAIL_BLOCKS`) is the single source of truth for keys + labels, shared by the render and both editors.
+1. **Host override** rides on the existing `circles.sidebar_order` (jsonb), widened from `string[]` to the `{order,hidden}` object; `coerceLayout` reads both shapes, so legacy rows keep working. Saved via the re-gated `saveSidebarOrder` (circle.editSettings).
+2. **Operator default** is a single `platform_settings` row (key `circle_rail_layout`, JSON), read by `getOperatorRailLayout` and written by the janitor-only `saveCircleRailDefault`. Mounted on `/admin/circles` for janitors.
+3. One shared client editor (`RailLayoutEditor`, drag-reorder + eye toggle) backs both surfaces; the old `SidebarWidgetEditor` is removed.
+
+**Rationale.** Reusing `sidebar_order` (jsonb) + `platform_settings` means **no migration** and no new table — the lowest-risk path to two-level control. Capability gating still wins: the render only orders blocks that built for the viewer, so a layout can't surface a manager-only block to a visitor. The pure `rail-layout.ts` (type-only import from `lib/pillars`-style pattern) keeps server code out of the client editors.
+
+**Consequences.** New: `lib/circles/rail-layout.ts`, `lib/circles/rail-layout-store.ts`, `components/circles/rail-layout-editor.tsx`, `app/(main)/admin/circles/layout-actions.ts`. Changed: `app/(main)/circles/[slug]/page.tsx` (render), `app/(main)/circles/admin-actions.ts` (`saveSidebarOrder` now takes `{order,hidden}`), `components/admin/modules/circle-rail-module.tsx`, `app/(main)/admin/circles/page.tsx`. Removed: `components/circles/sidebar-widget-editor.tsx`. No migration.

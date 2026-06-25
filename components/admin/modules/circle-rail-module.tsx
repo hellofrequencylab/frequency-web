@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { SidebarWidgetEditor } from '@/components/circles/sidebar-widget-editor'
-import { getCircleAdminData } from '@/app/(main)/circles/admin-actions'
+import { RailLayoutEditor } from '@/components/circles/rail-layout-editor'
+import { coerceLayout } from '@/lib/circles/rail-layout'
+import { getCircleAdminData, saveSidebarOrder } from '@/app/(main)/circles/admin-actions'
 
 // In-place "Rail layout" admin module. Self-loads via getCircleAdminData (which returns
-// null unless the caller holds circle.editSettings) and renders the drag-and-drop
-// reorder for the circle's right-rail blocks. Mirrors CircleQuestModule's self-loading,
-// so a viewer who can't manage this circle sees nothing here.
+// null unless the caller holds circle.editSettings) and renders the reorder + show/hide
+// editor for THIS circle's right-rail blocks — the per-circle override of the operator
+// default. Mirrors CircleQuestModule's self-loading, so a viewer who can't manage this
+// circle sees nothing here.
 
 type CircleData = NonNullable<Awaited<ReturnType<typeof getCircleAdminData>>>
 
@@ -42,10 +44,17 @@ export function CircleRailModule() {
     <section className="space-y-3">
       <header className="space-y-1">
         <h3 className="text-sm font-bold text-text">Rail layout</h3>
-        <p className="text-sm text-muted">Drag to reorder the blocks in this circle&apos;s right rail.</p>
+        <p className="text-sm text-muted">
+          Arrange or hide the blocks in this circle&apos;s right rail. Leave it untouched to follow the
+          network default.
+        </p>
       </header>
 
-      <SidebarWidgetEditor circleId={data.id} slug={data.slug} order={data.sidebar_order} />
+      <RailLayoutEditor
+        initial={coerceLayout(data.sidebar_order)}
+        save={saveSidebarOrder.bind(null, data.id, data.slug)}
+        description="Drag to reorder. Toggle the eye to hide a block from this circle."
+      />
     </section>
   )
 }
