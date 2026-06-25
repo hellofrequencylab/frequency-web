@@ -151,68 +151,83 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
   const { type, interest, sort = 'nearest', q, channel } = params
   const supabase = await createClient()
 
-  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, heroImage, ctaLabel, ctaHref } = await resolvePageContent(
-    '/circles',
-    CONTENT_FALLBACK,
-  )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  let myCircleIds: string[] = []
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, community_role, current_season_zaps, lifetime_gems, current_streak')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-    const p = profile as { id: string } | null
-    if (p) {
+  // The genuinely-independent reads overlap in one Promise.all so the page's DB round-trips
+  // run concurrently instead of in series — same client, same bindings, same output. Two
+  // invariants are preserved: the auth chain stays SERIAL within its own closure (memberships
+  // needs the resolved profile id), and the circles read keeps its demo gating BEFORE the query
+  // executes, so the facet/sort/myCircles-first tail downstream is byte-for-byte identical.
+  const [
+    { title, description, heroImage, ctaLabel, ctaHref },
+    { user, myCircleIds },
+    rawCircles,
+    interests,
+    domains,
+    starterTemplates,
+  ] = await Promise.all([
+    // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+    resolvePageContent('/circles', CONTENT_FALLBACK),
+    // Auth → my active circle ids (getUser → profiles → memberships, serial within this closure).
+    (async (): Promise<{ user: { id: string } | null; myCircleIds: string[] }> => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return { user: null, myCircleIds: [] }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, community_role, current_season_zaps, lifetime_gems, current_streak')
+        .eq('auth_user_id', user.id)
+        .maybeSingle()
+      const p = profile as { id: string } | null
+      if (!p) return { user, myCircleIds: [] }
       const { data: mems } = await supabase
         .from('memberships')
         .select('circle_id')
         .eq('profile_id', p.id)
         .eq('status', 'active')
-      myCircleIds = (mems ?? []).map((m) => m.circle_id as string)
-    }
-  }
+      return { user, myCircleIds: (mems ?? []).map((m) => m.circle_id as string) }
+    })(),
+    // Circles — the discovery set, demo-gated BEFORE the query runs.
+    (async (): Promise<CircleRow[]> => {
+      let circlesQuery = supabase
+        .from('circles')
+        .select(
+          `id, name, slug, about, type, member_count, member_cap, status, created_at,
+           latitude, longitude, neighborhood, image_url, is_demo, featured_at, topical_channel_id,
+           channel:topical_channels!topical_channel_id ( name, pillar_id ),
+           hub:hubs!hub_id (
+             id, name, slug,
+             nexus:nexuses!nexus_id ( id, name, slug, outpost:outposts!outpost_id ( name ) )
+           )`,
+        )
+        .neq('status', 'archived')
+        .order('name', { ascending: true })
+        .limit(CIRCLES_FETCH_LIMIT)
+      // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
+      if (!(await demoModeEnabled()) || (await viewerHidesDemo())) circlesQuery = circlesQuery.eq('is_demo', false)
+      const { data } = await circlesQuery
+      return (data ?? []) as unknown as CircleRow[]
+    })(),
+    // Interest browse rail (all topical channels).
+    (async (): Promise<CircleInterest[]> => {
+      const { data } = await supabase.from('topical_channels').select('id, name, category').order('name')
+      return (data ?? []) as CircleInterest[]
+    })(),
+    // Channels (Pillars) drive the table-of-contents filter.
+    (async (): Promise<{ id: string; slug: string; name: string; display_order: number }[]> => {
+      const { data } = await supabase
+        .from('pillars')
+        .select('id, slug, name, display_order')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+      return (data ?? []) as { id: string; slug: string; name: string; display_order: number }[]
+    })(),
+    // Starter Circles — staff blueprints, gated by the master flag.
+    (async (): Promise<Awaited<ReturnType<typeof getActiveTemplates>>> =>
+      (await templatesEnabled()) ? getActiveTemplates() : [])(),
+  ])
 
-  let circlesQuery = supabase
-    .from('circles')
-    .select(
-      `id, name, slug, about, type, member_count, member_cap, status, created_at,
-       latitude, longitude, neighborhood, image_url, is_demo, featured_at, topical_channel_id,
-       channel:topical_channels!topical_channel_id ( name, pillar_id ),
-       hub:hubs!hub_id (
-         id, name, slug,
-         nexus:nexuses!nexus_id ( id, name, slug, outpost:outposts!outpost_id ( name ) )
-       )`,
-    )
-    .neq('status', 'archived')
-    .order('name', { ascending: true })
-    .limit(CIRCLES_FETCH_LIMIT)
-  // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
-  if (!(await demoModeEnabled()) || (await viewerHidesDemo())) circlesQuery = circlesQuery.eq('is_demo', false)
-  const { data: rawCircles } = await circlesQuery
-
-  const all = (rawCircles ?? []) as unknown as CircleRow[]
+  const all = rawCircles
   const hitFetchCap = all.length === CIRCLES_FETCH_LIMIT
-
-  const { data: interestRows } = await supabase
-    .from('topical_channels')
-    .select('id, name, category')
-    .order('name')
-  const interests = (interestRows ?? []) as CircleInterest[]
-
-  // Channels (Pillars) drive the table-of-contents filter.
-  const { data: domainRows } = await supabase
-    .from('pillars')
-    .select('id, slug, name, display_order')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-  const domains = (domainRows ?? []) as { id: string; slug: string; name: string; display_order: number }[]
   const domainCount = new Map<string, number>()
   for (const c of all) {
     const d = c.channel?.pillar_id
@@ -247,7 +262,6 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
   // Starter Circles — staff blueprints surfaced as virtual, claim-able circles. Gated by
   // the master flag; they honor the same facets as real circles. The card id is synthetic
   // and links to /circles/starter/<slug>, never to a live circle.
-  const starterTemplates = (await templatesEnabled()) ? await getActiveTemplates() : []
   const starterSeeds: StarterSeed[] = starterTemplates.map((t) => ({
     id: t.id,
     slug: t.slug,
