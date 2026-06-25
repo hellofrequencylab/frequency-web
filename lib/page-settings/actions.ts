@@ -10,7 +10,8 @@ import { isSafeRoute } from '@/lib/layout/page-chrome'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { normalizeSeoForPane, type SeoFields, type SeoPane } from './seo'
 import { normalizeStatus, type StatusFields } from './status'
-import { parseLayout, moduleAssignments, isLayoutScopeKey, isModuleRole, type LayoutConfig, type ModuleRole, type SlotConfig } from './layout'
+import { parseLayout, moduleAssignments, isLayoutScopeKey, isModuleRole, hasLayoutConfig, type LayoutConfig, type ModuleRole, type SlotConfig } from './layout'
+import { defaultLayoutFor } from './default-layouts'
 import { moduleIdsForScope, moduleMeta } from '@/lib/widgets/modules'
 import { isTemplateId, templateMeta, slotIds, defaultSlotId, DEFAULT_TEMPLATE, type TemplateId } from '@/lib/widgets/templates'
 
@@ -208,7 +209,10 @@ export async function getPageLayoutForEditor(key: string, spaceId?: string | nul
     }
   }
   const { data } = await q.select('layout').eq('space_id', ctx.spaceId).eq('route', key).maybeSingle()
-  return build(parseLayout(data?.layout ?? null))
+  // Nothing saved at this level → open the editor on the route's coded default (so it matches what
+  // the page renders), else the registry default. A saved config at this level always wins.
+  const saved = parseLayout(data?.layout ?? null)
+  return build(hasLayoutConfig(saved) ? saved : defaultLayoutFor(key) ?? saved)
 }
 
 /** Save the layout at a SCOPE KEY: the interior template, which modules sit in each slot, in

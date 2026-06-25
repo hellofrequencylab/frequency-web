@@ -68,6 +68,15 @@ import { LeadCoLeaders } from '@/components/widgets/lead/lead-coleaders'
 import { LeadDispatches } from '@/components/widgets/lead/lead-dispatches'
 import { LeadRecognition } from '@/components/widgets/lead/lead-recognition'
 import { LeadTools } from '@/components/widgets/lead/lead-tools'
+import { CircleFeed } from '@/components/widgets/circles/circle-feed'
+import { CircleMembers } from '@/components/widgets/circles/circle-members'
+import { CircleHealth } from '@/components/widgets/circles/circle-health'
+import { CircleMomentumBlock } from '@/components/widgets/circles/circle-momentum'
+import { CirclePracticeBlock } from '@/components/widgets/circles/circle-practice'
+import { CircleEvents } from '@/components/widgets/circles/circle-events'
+import { CircleMapBlock } from '@/components/widgets/circles/circle-map'
+import { CircleInvite } from '@/components/widgets/circles/circle-invite'
+import { CircleJourneyRun } from '@/components/widgets/circles/circle-journey-run'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -162,6 +171,15 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'lead-dispatches': LeadDispatches,
   'lead-recognition': LeadRecognition,
   'lead-tools': LeadTools,
+  'circle-feed': CircleFeed,
+  'circle-members': CircleMembers,
+  'circle-health': CircleHealth,
+  'circle-momentum': CircleMomentumBlock,
+  'circle-practice': CirclePracticeBlock,
+  'circle-events': CircleEvents,
+  'circle-map': CircleMapBlock,
+  'circle-invite': CircleInvite,
+  'circle-journey-run': CircleJourneyRun,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {

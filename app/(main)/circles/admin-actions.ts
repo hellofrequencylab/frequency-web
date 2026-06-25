@@ -11,7 +11,6 @@ import {
   type CircleChallenge,
 } from '@/lib/circles/challenges'
 import { slugify } from '@/lib/utils'
-import { sanitizeLayout, type RailLayout } from '@/lib/circles/rail-layout'
 import type { Database } from '@/lib/database.types'
 
 /** A small {id, title, href} entry for one of the circle's adopted Quest items. */
@@ -117,23 +116,9 @@ async function getCircleQuestAdoptions(circleId: string): Promise<CircleQuestAdo
  *  (so the module renders no chrome for someone who can't manage this circle). */
 export async function getCircleAdminData(slug: string) {
   const admin = createAdminClient()
-  // sidebar_order isn't in the generated types yet (added by a fresh migration) —
-  // read it via the untyped client and project it onto the typed select.
-  const { data: circle } = await (admin as unknown as {
-    from: (t: string) => {
-      select: (s: string) => {
-        eq: (c: string, v: string) => {
-          maybeSingle: () => Promise<{
-            data:
-              | (Database['public']['Tables']['circles']['Row'] & { sidebar_order: unknown })
-              | null
-          }>
-        }
-      }
-    }
-  })
+  const { data: circle } = await admin
     .from('circles')
-    .select('id, slug, name, about, type, member_cap, status, image_url, sidebar_order')
+    .select('id, slug, name, about, type, member_cap, status, image_url')
     .eq('slug', slug)
     .maybeSingle()
   if (!circle) return null
@@ -160,8 +145,6 @@ export async function getCircleAdminData(slug: string) {
     member_cap: circle.member_cap,
     status: circle.status,
     image_url: circle.image_url,
-    // Raw stored layout (legacy string[] or the {order,hidden} object); the editor coerces it.
-    sidebar_order: circle.sidebar_order ?? null,
     practice_library: practice_library.map((p) => ({ id: p.id, title: p.title })),
     active_practice_id: activePractice?.id ?? null,
     adoptedJourneys: adoptions.journeys,
@@ -324,40 +307,14 @@ export async function removeCircleCover(id: string, slug: string) {
   revalidatePath('/circles')
 }
 
-// The admin client is typed against generated types that don't yet know about
-// circles.sidebar_order (a fresh migration). Cast to an untyped update surface so we
-// can write the new column without a type error — the capability gate above is the
-// authority either way.
+// The admin client's generated types don't cover every write surface used below; cast to an
+// untyped update surface for those, with the capability gate above as the real authority.
 type UntypedUpdate = {
   from: (t: string) => {
     update: (v: Record<string, unknown>) => {
       eq: (c: string, val: string) => Promise<{ error: { message: string } | null }>
     }
   }
-}
-
-/** Persist this circle's host-chosen rail layout ({order, hidden}) — the per-circle
- *  override of the operator default. Re-checks circle.editSettings; sanitizeLayout drops
- *  anything that isn't a known block key. Returns {error} for the editor instead of throwing. */
-export async function saveSidebarOrder(
-  id: string,
-  slug: string,
-  layout: RailLayout,
-): Promise<{ error?: string }> {
-  const caps = await getCircleCapabilities(id)
-  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
-
-  const clean = sanitizeLayout(layout)
-
-  const admin = createAdminClient()
-  const { error } = await (admin as unknown as UntypedUpdate)
-    .from('circles')
-    .update({ sidebar_order: clean })
-    .eq('id', id)
-  if (error) return { error: error.message }
-
-  revalidatePath(`/circles/${slug}`)
-  return {}
 }
 
 /** Rename a circle's permalink. Slugifies the input, rejects empty, and ensures the
