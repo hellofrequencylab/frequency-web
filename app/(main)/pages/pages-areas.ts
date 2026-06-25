@@ -8,10 +8,8 @@
 export type PagesArea =
   | 'in-app-member'
   | 'in-app-focus'
-  | 'beta-splash'
+  | 'splash-funnels'
   | 'marketing'
-  | 'splash-pages'
-// | 'splash-funnels' // Phase 4: audience splash funnels — append here when it lands.
 
 export interface PagesAreaDef {
   id: PagesArea
@@ -21,10 +19,8 @@ export interface PagesAreaDef {
 export const PAGES_AREAS: readonly PagesAreaDef[] = [
   { id: 'in-app-member', label: 'In-app pages / Member' },
   { id: 'in-app-focus', label: 'In-app pages / Focus surfaces' },
-  { id: 'beta-splash', label: 'Beta splash' },
+  { id: 'splash-funnels', label: 'Splash funnels' },
   { id: 'marketing', label: 'Marketing pages' },
-  { id: 'splash-pages', label: 'Splash pages' },
-  // { id: 'splash-funnels', label: 'Splash funnels' }, // Phase 4 — non-breaking append.
 ]
 
 /** The cookie name holding the operator's saved area order for the Pages workspace. */

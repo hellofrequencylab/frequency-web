@@ -16,7 +16,8 @@ export default async function BuildSequencePage({ params }: { params: Promise<{ 
   const { slug } = await params
   // The default flow has its own live-preview editor; never build it as a version.
   if (slug === DEFAULT_SEQUENCE) redirect('/pages/splash')
-  const sequence = await resolveSequence(slug)
+  // preview: load the funnel's real content even when it's an unpublished draft.
+  const sequence = await resolveSequence(slug, { preview: true })
   const isCustom = !listSequences().some((s) => s.slug === slug)
 
   return (

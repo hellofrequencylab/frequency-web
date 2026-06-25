@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { cookies } from 'next/headers'
-import { ExternalLink, Pencil, Rocket, ArrowRight, Sparkles } from 'lucide-react'
+import { ExternalLink, Pencil, ArrowRight, Sparkles } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { isJanitor } from '@/lib/core/roles'
 import { EDITABLE_PAGES, listPages, type PageRow } from '@/lib/page-editor/data'
@@ -8,7 +8,6 @@ import { MANAGED_ROUTES } from '@/lib/layout/page-chrome'
 import { listAllSequences } from '@/lib/onboarding/resolve-sequence'
 import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
-import { EmptyState } from '@/components/ui/empty-state'
 import { pagesCookie, sanitizePagesOrder, type PagesArea } from './pages-areas'
 
 export const dynamic = 'force-dynamic'
@@ -74,32 +73,6 @@ function InAppSection({ area, label }: { area: 'Member' | 'Focus surfaces'; labe
   )
 }
 
-// ── Beta splash — the front door, edited live. ──
-function BetaSplashSection() {
-  return (
-    <section>
-      <Link
-        href="/pages/splash"
-        className="group flex max-w-3xl items-center gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 p-5 shadow-sm transition-colors hover:border-primary"
-      >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary">
-          <Sparkles className="h-5 w-5" aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-base font-bold text-text">Beta splash</span>
-          <span className="block text-sm leading-relaxed text-muted">
-            The induction every new member walks through. Edit every beat and watch the real flow update live.
-          </span>
-        </span>
-        <ArrowRight
-          className="h-4 w-4 shrink-0 text-primary-strong transition-transform group-hover:translate-x-0.5"
-          aria-hidden
-        />
-      </Link>
-    </section>
-  )
-}
-
 // ── Marketing pages — the public, editor-backed site. ──
 // Home is now a normal Puck-editable row (it ships from EDITABLE_PAGES): Edit opens the
 // visual editor at /edit/home, View opens the live homepage. No more "coded page" row.
@@ -152,16 +125,13 @@ function MarketingSection({ pages }: { pages: Record<string, PageRow> }) {
   )
 }
 
-// ── Splash pages — audience-targeted versions of the induction. ──
-function SplashPagesSection({
-  versions,
-}: {
-  versions: { slug: string; audience: string }[]
-}) {
+// ── Splash funnels — the onboarding front door. One card into the library, plus a
+//    live count and a shortcut to the template every funnel is built from. ──
+function SplashFunnelsSection({ customCount }: { customCount: number }) {
   return (
     <section>
       <SectionHeader
-        title="Splash pages"
+        title="Splash funnels"
         action={
           <Link
             href="/pages/sequences"
@@ -171,61 +141,37 @@ function SplashPagesSection({
           </Link>
         }
       />
-      {versions.length === 0 ? (
-        <div className="max-w-3xl">
-          <EmptyState
-            title="No audience versions yet"
-            description="Every new member walks the default flow (edit it in Beta splash above). Build a version for a specific audience in the splash page manager."
-            action={
-              <Link
-                href="/pages/sequences"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong transition-colors hover:text-primary-hover"
-              >
-                Open the splash page manager <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            }
-          />
-        </div>
-      ) : (
-        <div className={`max-w-3xl ${TABLE_WRAP}`}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className={HEAD_ROW}>
-                <th className={TH}>Audience</th>
-                <th className={TH}>Link</th>
-                <th className={`${TH} text-right`}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {versions.map((seq) => (
-                <tr key={seq.slug} className={BODY_ROW}>
-                  <td className="px-4 py-3 font-medium text-text">
-                    <span className="inline-flex items-center gap-2">
-                      <Rocket className="h-3.5 w-3.5 shrink-0 text-primary-strong" /> {seq.audience}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-subtle">/onboarding/beta?seq={seq.slug}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-3">
-                      <a
-                        href={`/onboarding/beta?seq=${seq.slug}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={VIEW_LINK}
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" /> View
-                      </a>
-                      <Link href={`/pages/sequences/${seq.slug}/build`} className={EDIT_BTN}>
-                        <Pencil className="h-3.5 w-3.5" /> Edit
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <Link
+        href="/pages/sequences"
+        className="group flex max-w-3xl items-center gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 p-5 shadow-sm transition-colors hover:border-primary"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary">
+          <Sparkles className="h-5 w-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-bold text-text">Splash Funnels</span>
+          <span className="block text-sm leading-relaxed text-muted">
+            The induction every new member walks through. Start from the template, tune a
+            funnel for a specific audience, and watch the real flow update live.
+          </span>
+          <span className="mt-1.5 block text-xs font-medium text-subtle">
+            {customCount === 0
+              ? 'Just the template so far'
+              : `${customCount} custom ${customCount === 1 ? 'funnel' : 'funnels'} plus the template`}
+          </span>
+        </span>
+        <ArrowRight
+          className="h-4 w-4 shrink-0 text-primary-strong transition-transform group-hover:translate-x-0.5"
+          aria-hidden
+        />
+      </Link>
+      <p className="mt-2 max-w-3xl text-xs text-subtle">
+        Editing the{' '}
+        <Link href="/pages/splash" className="font-semibold text-primary-strong hover:underline">
+          Splash Funnel template
+        </Link>{' '}
+        updates the default flow and every new funnel built from it.
+      </p>
     </section>
   )
 }
@@ -240,9 +186,9 @@ export default async function PagesDirectory() {
   const janitor = isJanitor(webRole)
 
   const pages = janitor ? await listPages() : {}
-  const splashVersions = janitor
-    ? (await listAllSequences()).filter((s) => s.source === 'custom')
-    : []
+  const customFunnelCount = janitor
+    ? (await listAllSequences()).filter((s) => s.source === 'custom').length
+    : 0
 
   // The operator's saved area order (the page-admin dock writes the cookie), read during
   // server render so the workspace never reflows. Non-janitors only ever see the in-app
@@ -251,15 +197,14 @@ export default async function PagesDirectory() {
   const sections: Record<PagesArea, React.ReactNode> = {
     'in-app-member': <InAppSection area="Member" label="Member" />,
     'in-app-focus': <InAppSection area="Focus surfaces" label="Focus surfaces" />,
-    'beta-splash': janitor ? <BetaSplashSection /> : null,
+    'splash-funnels': janitor ? <SplashFunnelsSection customCount={customFunnelCount} /> : null,
     marketing: janitor ? <MarketingSection pages={pages} /> : null,
-    'splash-pages': janitor ? <SplashPagesSection versions={splashVersions} /> : null,
   }
 
   return (
     <DashboardTemplate
       title="Pages"
-      description="Find any page and open it ready to edit. In-app pages open in place with edit mode on. The public marketing pages and the beta induction open in their own editors and go live when you publish."
+      description="Find any page and open it ready to edit. In-app pages open in place with edit mode on. The public marketing pages and the Splash Funnels open in their own editors and go live when you publish."
       width="wide"
     >
       {order.map((id) => {
