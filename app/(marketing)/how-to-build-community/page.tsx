@@ -172,8 +172,8 @@ export default function HowToBuildCommunityPage() {
 
       {/* Imagery: a real gathering, not a crowd. The builder is the reader. */}
       <ZigZag
-        img="/images/site/PHOTO-2020-10-17-13-49-14.jpeg"
-        alt="A small song circle sitting together with guitars on a cliff above the sea"
+        img="/images/site/group-of-friends.jpg"
+        alt="A few friends hanging out together under a shade tent on a sunny afternoon"
         eyebrow="A Circle, up close"
         title="A few people, a standing time, a spot they can find."
         kicker="No stage, no guru out front. Just regulars who keep coming back."
@@ -183,10 +183,9 @@ export default function HowToBuildCommunityPage() {
         tone="canvas"
       >
         <p>
-          This is a song Circle that meets on the same cliff, week after week. Nobody
-          here built a community. One person picked a thing, named a time, and held
-          the door open more than once. That is the whole move, and the people who
-          care about the same thing are the ones who show up.
+          These are friends, not a following. One of them picked a thing, named a
+          time, and kept showing up for it, and the people who cared about the same
+          thing showed up too. That is the whole move.
         </p>
         <p>
           You do not have to be the loudest person in the room or the one with all the
@@ -229,8 +228,8 @@ export default function HowToBuildCommunityPage() {
 
       {/* The rails: a real Circle photo, the "we hand you the format" beat. */}
       <ZigZag
-        img="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
-        alt="A breathwork circle lying in a ring on the floor with eyes closed"
+        img="/images/site/adult-play.jpg"
+        alt="A small group on an oceanfront deck, one person upside down in a handstand while the others cheer"
         eyebrow="The rails"
         title="What do I do if I have never run a group before?"
         kicker="You set out the chairs. The format does the rest."
@@ -242,8 +241,8 @@ export default function HowToBuildCommunityPage() {
         <p>
           You do not start from a blank page. A Circle on Frequency comes with the
           rails: a format, a first-night script, a standing rhythm, and backup when
-          you need it. This breathwork Circle runs the same shape every week, so the
-          host is never improvising the night.
+          you need it. The Circle runs the same shape every week, so the host is never
+          improvising the night.
         </p>
         <p>
           You do not need to be a natural leader. You need to set out the chairs and

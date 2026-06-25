@@ -23,7 +23,7 @@ const DESCRIPTION =
   'High-functioning loneliness is feeling alone while your life looks fine on paper. Here is what it is, why it happens to capable adults, and a few small ways to find real-world connection again.'
 
 // The hero photo, fed to the Article schema below for richer-result eligibility.
-const HERO_IMAGE = '/images/site/moonlight-1.jpg'
+const HERO_IMAGE = '/images/site/sunset-surf.jpg'
 
 export function generateMetadata(): Metadata {
   return {
@@ -89,7 +89,7 @@ export default function LonelinessPage() {
 
       <PhotoHero
         image={HERO_IMAGE}
-        alt="A small group holding each other in a close standing embrace at dusk"
+        alt="Two friends standing at a railing at dusk, watching a pink sunset over the ocean"
         focal="object-center"
         eyebrow="Belonging"
         title="Lonely but not alone"
@@ -242,8 +242,8 @@ export default function LonelinessPage() {
           or read how the community works (the-community). Both link within the
           cluster. */}
       <ZigZag
-        img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
-        alt="A person resting quietly on the floor after a group practice, calm and at ease"
+        img="/images/site/community-dinner.jpg"
+        alt="A backyard dinner at night, friends gathered around a long table under string lights"
         imgPosition="center"
         imgAspect="landscape"
         reverse

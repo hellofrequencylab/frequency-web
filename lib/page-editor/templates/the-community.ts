@@ -58,7 +58,7 @@ export const data: Data = {
         titleAccent: 'something you build',
         subtitle:
           "Frequency is for people who want to build community where they live. A few neighbors, a standing time, and a room that misses you when you're gone.",
-        image: '/images/site/meditation-circle.jpg',
+        image: '/images/site/PHOTO-2020-10-07-14-38-04.jpeg',
         focal: 'center',
         minHeight: 'screen',
         ctaPrimaryLabel: BETA_CTA_LABEL,
@@ -219,8 +219,8 @@ export const data: Data = {
       type: 'MediaText',
       props: {
         id: 'tc-channels',
-        image: '/images/site/kundalini-group-outdoor.jpg',
-        alt: 'A Frequency group practicing kundalini together on a neighborhood lawn at golden hour',
+        image: '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg',
+        alt: 'A Frequency group spinning hula hoops together on the beach at golden hour',
         eyebrow: 'Channels and Runs',
         title: 'Find your people. Walk it together.',
         titleAccent: 'together',
@@ -265,8 +265,8 @@ export const data: Data = {
       type: 'MediaText',
       props: {
         id: 'tc-guru',
-        image: '/images/site/song-circle.jpg',
-        alt: 'A Frequency song circle playing guitars together on an oceanfront overlook at golden hour',
+        image: '/images/site/outdoor-group.jpg',
+        alt: 'Frequency members hanging out together on rugs under a shade tent, nobody at the front',
         eyebrow: 'Why it lasts',
         title: 'Guru-free. By design.',
         titleAccent: 'Guru-free',

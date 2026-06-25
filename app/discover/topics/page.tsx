@@ -59,8 +59,8 @@ export default async function DiscoverTopicsPage() {
       />
 
       <PhotoHero
-        image="/images/site/sound-healing.jpg"
-        alt="A woman kneeling behind a ring of crystal singing bowls on the beach, smiling"
+        image="/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg"
+        alt="A group spinning hula hoops together on the beach at golden hour"
         focal="object-center"
         eyebrow="Explore by Channel"
         title={<>Find what you <span className="text-primary">practice</span></>}
@@ -123,8 +123,8 @@ export default async function DiscoverTopicsPage() {
       {/* ── Sensory beat: the Channel becomes a room ────────────── */}
       <ZigZag
         tone="canvas"
-        img="/images/site/kirtan-song-circle.jpg"
-        alt="A song Circle at golden hour, guitars in hand, faces lit warm in shallow focus"
+        img="/images/site/PHOTO-2020-10-07-14-38-02.jpeg"
+        alt="Friends catching one another mid-play on the beach, laughing at golden hour"
         imgAspect="landscape"
         imgPosition="center"
         reverse

@@ -52,8 +52,8 @@ export const data: Data = {
   root: {},
   content: [
     // ── Hero ── image variant, the one big promise, no button (the hero leads; the
-    // CTA system waits for the mid and the close). Image: a group in prayer pose on
-    // a lawn at golden hour, a real gathering, not a crowd. ──────────────────────
+    // CTA system waits for the mid and the close). Image: a group dancing together
+    // outdoors at golden hour, hands in the air, a real gathering, not a crowd. ───
     {
       type: 'Hero',
       props: {
@@ -64,7 +64,7 @@ export const data: Data = {
         titleAccent: 'Tuesday',
         subtitle:
           "Frequency is community you build where you live. A few neighbors, a standing time, and a room that misses you when you're gone. The first rooms start now.",
-        image: '/images/site/outdoor-yoga.jpg',
+        image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
         focal: 'center',
         minHeight: 'screen',
         ctaPrimaryLabel: '',
@@ -153,13 +153,14 @@ export const data: Data = {
     },
 
     // ── The structure ── Pillar > Channel > Circle, on canon, with the Quest in one
-    // line. Image: people singing together, an intimate Channel made real. ───────
+    // line. Image: friends lifting and catching each other in play, a Channel made
+    // real, people literally holding each other up. ─────────────────────────────
     {
       type: 'MediaText',
       props: {
         id: 'home-structure',
-        image: '/images/site/group-singing.jpg',
-        alt: 'A small group of people singing together in a living room',
+        image: '/images/site/PHOTO-2020-10-07-14-38-02.jpeg',
+        alt: 'Friends lifting and catching one another in a burst of play on the beach',
         eyebrow: 'How it fits together',
         title: 'Pillar, Channel, Circle.',
         titleAccent: 'Circle',
