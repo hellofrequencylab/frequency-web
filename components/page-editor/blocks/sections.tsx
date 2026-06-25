@@ -22,7 +22,17 @@ import {
 } from './kit'
 import { toneBg, isInk } from '@/lib/page-editor/fields'
 import { focalField, focalClass } from '@/lib/page-editor/image-controls'
-import { imgField } from '@/lib/page-editor/fields'
+import {
+  imgField,
+  emphasisField,
+  emphasisDefault,
+  emphasisClasses,
+  cardStyleField,
+  cardStyleDefault,
+  cardStyleClass,
+  type EmphasisValue,
+  type CardStyleValue,
+} from '@/lib/page-editor/fields'
 import { SiteImage } from '@/components/marketing/site-image'
 import { PhotoHero } from '@/components/marketing/marketing-ui'
 
@@ -216,6 +226,7 @@ export function CallToActionSection({
   tone,
   align,
   layout,
+  emphasis,
 }: {
   eyebrow?: string
   heading: React.ReactNode
@@ -227,9 +238,11 @@ export function CallToActionSection({
   tone?: string
   align?: string
   layout?: LayoutValue
+  emphasis?: EmphasisValue
 }) {
   const ink = isInk(tone)
   const centered = align === 'center'
+  const { scale: emphScale, accent: emphAccent } = emphasisClasses(emphasis)
 
   // Dark ink variant: full-bleed with light-strip seams + amber glow (matches BetaCTA).
   if (ink) {
@@ -242,7 +255,7 @@ export function CallToActionSection({
         <div className="amber-glow absolute inset-0 pointer-events-none" />
         <div className={`relative max-w-2xl mx-auto ${centered ? 'text-center' : ''}`}>
           {eyebrow && <Eyebrow ink>{eyebrow}</Eyebrow>}
-          <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">
+          <h2 className={`font-display uppercase mb-6 ${emphScale} ${emphAccent || 'text-on-ink'}`}>
             {heading}
           </h2>
           {body && (
@@ -275,7 +288,7 @@ export function CallToActionSection({
     >
       <div className={`max-w-2xl mx-auto ${centered ? 'text-center' : ''}`}>
         {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-        <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-6">{heading}</h2>
+        <h2 className={`font-display uppercase mb-6 ${emphScale} ${emphAccent || 'text-text'}`}>{heading}</h2>
         {body && <p className="text-xl text-muted mb-9 leading-relaxed">{body}</p>}
         <div className={`flex flex-wrap gap-3 ${centered ? 'justify-center' : ''}`}>
           {ctaPrimaryLabel && ctaPrimaryHref && (
@@ -311,6 +324,7 @@ export function QuoteSection({
   align,
   width,
   layout,
+  cardStyle,
 }: {
   variant: QuoteVariant
   quote?: string
@@ -322,6 +336,7 @@ export function QuoteSection({
   align?: string
   width?: string
   layout?: LayoutValue
+  cardStyle?: CardStyleValue
 }) {
   const ink = isInk(tone)
   const centered = align !== 'left'
@@ -363,7 +378,11 @@ export function QuoteSection({
   // ── testimonial variant ────────────────────────────────────────────────────
   return (
     <Band tone={tone} width={width} align={align} layout={layout}>
-      <figure className={`flex flex-col gap-6 ${centered ? 'items-center text-center' : ''}`}>
+      <figure
+        className={`flex flex-col gap-6 p-8 sm:p-10 ${cardStyleClass(cardStyle, ink)} ${
+          centered ? 'items-center text-center' : ''
+        }`}
+      >
         <blockquote
           className={`font-display uppercase text-2xl sm:text-3xl lg:text-4xl leading-[1.1] text-balance ${
             ink ? 'text-on-ink' : 'text-text'
@@ -413,10 +432,10 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
           { label: 'Minimal (text only)', value: 'minimal' },
         ],
       },
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Title' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Title' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
-      subtitle: { type: 'text', label: 'Subtitle / kicker (optional)' },
+      subtitle: { type: 'textarea', label: 'Subtitle / kicker (optional)' },
       image: imgField,
       focal: focalField,
       minHeight: {
@@ -431,7 +450,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
       ctaPrimaryHref: { type: 'text', label: 'Primary CTA URL' },
       ctaSecondaryLabel: { type: 'text', label: 'Secondary CTA label (optional)' },
       ctaSecondaryHref: { type: 'text', label: 'Secondary CTA URL (optional)' },
-      note: { type: 'text', label: 'Fine-print note (optional)' },
+      note: { type: 'textarea', label: 'Fine-print note (optional)' },
       ...blockFields(),
     },
     defaultProps: {
@@ -494,14 +513,15 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
   CallToAction: {
     label: 'Call to Action',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      heading: { type: 'text', label: 'Heading' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      heading: { type: 'textarea', label: 'Heading' },
       headingAccent: { type: 'text', label: 'Accent word (optional)' },
       body: { type: 'textarea', label: 'Body (optional)' },
       ctaPrimaryLabel: { type: 'text', label: 'Primary CTA label' },
       ctaPrimaryHref: { type: 'text', label: 'Primary CTA URL' },
       ctaSecondaryLabel: { type: 'text', label: 'Secondary CTA label (optional)' },
       ctaSecondaryHref: { type: 'text', label: 'Secondary CTA URL (optional)' },
+      emphasis: emphasisField,
       ...blockFields(),
     },
     defaultProps: {
@@ -513,6 +533,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
       ctaPrimaryHref: '/beta',
       ctaSecondaryLabel: '',
       ctaSecondaryHref: '',
+      emphasis: emphasisDefault,
       ...blockLayoutDefaults,
       tone: 'ink',
       align: 'center',
@@ -529,6 +550,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
       tone,
       align,
       layout,
+      emphasis,
     }) => (
       <CallToActionSection
         eyebrow={eyebrow || undefined}
@@ -541,6 +563,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
         tone={tone}
         align={align}
         layout={layout as LayoutValue}
+        emphasis={emphasis as EmphasisValue}
       />
     ),
   },
@@ -562,6 +585,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
       attribution: { type: 'text', label: 'Attribution / name' },
       role: { type: 'text', label: 'Role / title (testimonial only)' },
       avatar: { ...imgField, label: 'Avatar photo (testimonial only)' },
+      cardStyle: cardStyleField,
       ...blockFields(),
     },
     defaultProps: {
@@ -571,6 +595,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
       attribution: 'Community member',
       role: '',
       avatar: '',
+      cardStyle: cardStyleDefault,
       ...blockLayoutDefaults,
       tone: 'canvas',
       align: 'center',
@@ -586,6 +611,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
       align,
       width,
       layout,
+      cardStyle,
     }) => (
       <QuoteSection
         variant={(variant as QuoteVariant) ?? 'pull'}
@@ -598,6 +624,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
         align={align}
         width={width}
         layout={layout as LayoutValue}
+        cardStyle={cardStyle as CardStyleValue}
       />
     ),
   },

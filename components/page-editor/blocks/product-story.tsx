@@ -20,7 +20,6 @@ import { ArrowRight } from 'lucide-react'
 import {
   Band,
   Eyebrow,
-  DisplayHeading,
   Kicker,
   CtaButton,
   blockFields,
@@ -34,6 +33,20 @@ import {
   type LayoutValue,
   type ComponentConfig,
 } from './kit'
+import {
+  emphasisField,
+  emphasisDefault,
+  emphasisClasses,
+  cardStyleField,
+  cardStyleDefault,
+  cardStyleClass,
+  densityField,
+  densityDefault,
+  densityClasses,
+  type EmphasisValue,
+  type CardStyleValue,
+  type DensityValue,
+} from '@/lib/page-editor/fields'
 import { richParagraphs } from '@/lib/page-editor/richtext'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 
@@ -90,6 +103,9 @@ export function SeasonTimelineBlock({
   legs,
   capstoneLabel,
   capstoneNote,
+  emphasis,
+  cardStyle,
+  density,
   ink,
 }: {
   eyebrow?: string
@@ -99,19 +115,29 @@ export function SeasonTimelineBlock({
   legs?: JourneyLeg[]
   capstoneLabel?: string
   capstoneNote?: string
+  emphasis?: EmphasisValue
+  cardStyle?: CardStyleValue
+  density?: DensityValue
   ink?: boolean
 }) {
   const shown = (legs || []).slice(0, 3)
   const headingColor = ink ? 'text-on-ink' : 'text-text'
   const bodyColor = ink ? 'text-on-ink-muted' : 'text-muted'
   const subColor = ink ? 'text-on-ink-subtle' : 'text-subtle'
+  const { scale, accent } = emphasisClasses(emphasis)
+  const { gap, pad } = densityClasses(density)
+  const legCard = cardStyleClass(cardStyle, ink)
 
   return (
     <div>
       {(eyebrow || title || kicker) && (
         <div className="mb-10">
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {title && <DisplayHeading ink={ink}>{accentize(title, titleAccent)}</DisplayHeading>}
+          {title && (
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || headingColor}`}>
+              {accentize(title, titleAccent)}
+            </h2>
+          )}
           {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
         </div>
       )}
@@ -119,15 +145,13 @@ export function SeasonTimelineBlock({
       <MockFrame ink={ink}>
         {/* The track: three Journey legs in sequence, each ending in a capstone
             node, rendered as a vector rail (token colors only). */}
-        <ol className="grid gap-5 sm:grid-cols-3">
+        <ol className={`grid sm:grid-cols-3 ${gap}`}>
           {shown.map((leg, i) => {
             const a = pillarAccent(leg.pillar)
             return (
               <li
                 key={i}
-                className={`relative flex flex-col rounded-2xl p-5 ${
-                  ink ? 'bg-white/5 border border-white/10' : 'bg-surface border border-border'
-                }`}
+                className={`relative flex flex-col ${pad} ${legCard}`}
               >
                 <div className="flex items-center gap-2 mb-3">
                   <span className={`font-display text-3xl leading-none ${a.text}`}>{i + 1}</span>
@@ -185,6 +209,8 @@ export function CircleFirstNightBlock({
   cardTitle,
   rows,
   footnote,
+  emphasis,
+  density,
   ink,
 }: {
   eyebrow?: string
@@ -195,18 +221,26 @@ export function CircleFirstNightBlock({
   cardTitle?: string
   rows?: RunRow[]
   footnote?: string
+  emphasis?: EmphasisValue
+  density?: DensityValue
   ink?: boolean
 }) {
   const headingColor = ink ? 'text-on-ink' : 'text-text'
   const bodyColor = ink ? 'text-on-ink-muted' : 'text-muted'
   const subColor = ink ? 'text-on-ink-subtle' : 'text-subtle'
+  const { scale, accent } = emphasisClasses(emphasis)
+  const { gap, pad } = densityClasses(density)
 
   return (
     <div className="grid md:grid-cols-2 gap-10 lg:gap-16 items-center">
       {/* Text column */}
       <div>
         {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-        {title && <DisplayHeading ink={ink}>{accentize(title, titleAccent)}</DisplayHeading>}
+        {title && (
+          <h2 className={`font-display uppercase text-balance ${scale} ${accent || headingColor}`}>
+            {accentize(title, titleAccent)}
+          </h2>
+        )}
         {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
         {footnote && (
           <p className={`mt-6 text-base leading-relaxed ${bodyColor}`}>{footnote}</p>
@@ -240,11 +274,11 @@ export function CircleFirstNightBlock({
           </svg>
         </div>
 
-        <ol className="space-y-3">
+        <ol className={`flex flex-col ${gap}`}>
           {(rows || []).map((row, i) => (
             <li
               key={i}
-              className={`flex gap-4 rounded-xl px-4 py-3 ${
+              className={`flex gap-4 rounded-xl ${pad} ${
                 ink ? 'bg-white/5' : 'bg-surface border border-border'
               }`}
             >
@@ -280,6 +314,9 @@ export function RolesPathBlock({
   kicker,
   rungs,
   safetyNet,
+  emphasis,
+  cardStyle,
+  density,
   ink,
 }: {
   eyebrow?: string
@@ -288,32 +325,40 @@ export function RolesPathBlock({
   kicker?: string
   rungs?: RoleRung[]
   safetyNet?: string
+  emphasis?: EmphasisValue
+  cardStyle?: CardStyleValue
+  density?: DensityValue
   ink?: boolean
 }) {
   const shown = (rungs || []).slice(0, 5)
   const headingColor = ink ? 'text-on-ink' : 'text-text'
   const bodyColor = ink ? 'text-on-ink-muted' : 'text-muted'
+  const { scale, accent } = emphasisClasses(emphasis)
+  const { gap, pad } = densityClasses(density)
+  const rungCard = cardStyleClass(cardStyle, ink)
 
   return (
     <div>
       {(eyebrow || title || kicker) && (
         <div className="mb-10">
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {title && <DisplayHeading ink={ink}>{accentize(title, titleAccent)}</DisplayHeading>}
+          {title && (
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || headingColor}`}>
+              {accentize(title, titleAccent)}
+            </h2>
+          )}
           {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
         </div>
       )}
 
       {/* The ladder: connected rungs, each a step up, with a forward arrow rail. */}
-      <ol className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <ol className={`grid sm:grid-cols-3 lg:grid-cols-5 ${gap}`}>
         {shown.map((rung, i) => {
           const last = i === shown.length - 1
           return (
             <li
               key={i}
-              className={`relative flex flex-col rounded-2xl p-5 ${
-                ink ? 'bg-white/5 border border-white/10' : 'bg-surface border border-border shadow-sm'
-              }`}
+              className={`relative flex flex-col ${pad} ${rungCard}`}
             >
               <div className="flex items-center gap-2 mb-2">
                 <span
@@ -370,6 +415,9 @@ export function QuestLoopBlock({
   kicker,
   stages,
   ratioNote,
+  emphasis,
+  cardStyle,
+  density,
   ink,
 }: {
   eyebrow?: string
@@ -378,33 +426,41 @@ export function QuestLoopBlock({
   kicker?: string
   stages?: LoopStage[]
   ratioNote?: string
+  emphasis?: EmphasisValue
+  cardStyle?: CardStyleValue
+  density?: DensityValue
   ink?: boolean
 }) {
   const shown = (stages || []).slice(0, 4)
   const headingColor = ink ? 'text-on-ink' : 'text-text'
   const bodyColor = ink ? 'text-on-ink-muted' : 'text-muted'
+  const { scale, accent } = emphasisClasses(emphasis)
+  const { gap, pad } = densityClasses(density)
+  const stageCard = cardStyleClass(cardStyle, ink)
 
   return (
     <div>
       {(eyebrow || title || kicker) && (
         <div className="mb-10">
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {title && <DisplayHeading ink={ink}>{accentize(title, titleAccent)}</DisplayHeading>}
+          {title && (
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || headingColor}`}>
+              {accentize(title, titleAccent)}
+            </h2>
+          )}
           {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
         </div>
       )}
 
       {/* The loop: stages chained left to right with arrows, then a closing note
           carrying the 5:1 rule. */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
+      <div className={`flex flex-col sm:flex-row sm:items-stretch ${gap}`}>
         {shown.map((stage, i) => {
           const last = i === shown.length - 1
           return (
             <div key={i} className="flex flex-col sm:flex-row sm:items-stretch sm:flex-1">
               <div
-                className={`flex-1 flex flex-col rounded-2xl p-6 ${
-                  ink ? 'bg-white/5 border border-white/10' : 'bg-surface border border-border shadow-sm'
-                }`}
+                className={`flex-1 flex flex-col ${pad} ${stageCard}`}
               >
                 <span className={`font-display text-4xl leading-none mb-3 ${ink ? 'text-primary' : 'text-primary-strong'}`}>
                   {String(i + 1).padStart(2, '0')}
@@ -453,6 +509,8 @@ export function BackTheBuildBlock({
   ctaLabel,
   ctaHref,
   secondaryNote,
+  emphasis,
+  cardStyle,
   layout,
 }: {
   eyebrow?: string
@@ -463,9 +521,14 @@ export function BackTheBuildBlock({
   ctaLabel?: string
   ctaHref?: string
   secondaryNote?: string
+  emphasis?: EmphasisValue
+  cardStyle?: CardStyleValue
   layout?: LayoutValue
 }) {
   const shown = (tiers || []).slice(0, 4)
+  const { scale, accent } = emphasisClasses(emphasis)
+  // This band is always dark, so resolve card surfaces with ink = true.
+  const tierCard = cardStyleClass(cardStyle, true)
   return (
     <section
       className={`relative bg-slat px-6 ${padClass(layout) ?? 'py-24 sm:py-28'} overflow-hidden ${visClass(layout)}`}
@@ -475,7 +538,11 @@ export function BackTheBuildBlock({
       <div className="relative max-w-5xl mx-auto">
         <div className="text-center max-w-2xl mx-auto">
           {eyebrow && <Eyebrow ink>{eyebrow}</Eyebrow>}
-          {title && <DisplayHeading ink>{accentize(title, titleAccent)}</DisplayHeading>}
+          {title && (
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || 'text-on-ink'}`}>
+              {accentize(title, titleAccent)}
+            </h2>
+          )}
           {body && (
             <div className="mt-6 text-lg leading-relaxed space-y-4 text-on-ink-muted">
               {richParagraphs(body)}
@@ -486,7 +553,7 @@ export function BackTheBuildBlock({
         {shown.length > 0 && (
           <ul className="mt-12 grid gap-5 sm:grid-cols-3">
             {shown.map((tier, i) => (
-              <li key={i} className="flex flex-col rounded-3xl border border-white/10 bg-white/5 p-7">
+              <li key={i} className={`flex flex-col p-7 ${tierCard}`}>
                 {tier.amount && (
                   <span className="font-display uppercase text-primary text-3xl leading-none mb-2">{tier.amount}</span>
                 )}
@@ -519,10 +586,10 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
   SeasonTimeline: {
     label: 'Season timeline',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Heading (optional)' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
-      kicker: { type: 'text', label: 'Italic kicker (optional)' },
+      kicker: { type: 'textarea', label: 'Italic kicker (optional)' },
       legs: {
         type: 'array',
         label: 'Journeys (3: Mind, Body, Spirit)',
@@ -543,6 +610,9 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
       },
       capstoneLabel: { type: 'text', label: 'Capstone label' },
       capstoneNote: { type: 'textarea', label: 'Capstone note (optional)' },
+      emphasis: emphasisField,
+      cardStyle: cardStyleField,
+      density: densityField,
       ...blockFields(),
     },
     defaultProps: {
@@ -569,9 +639,12 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
       ],
       capstoneLabel: 'Expression Challenge',
       capstoneNote: 'Expression is not a fourth Journey. It is the Challenge that closes each one: make something, share it, and finish the leg.',
+      emphasis: emphasisDefault,
+      cardStyle: cardStyleDefault,
+      density: densityDefault,
       ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, title, titleAccent, kicker, legs, capstoneLabel, capstoneNote, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, titleAccent, kicker, legs, capstoneLabel, capstoneNote, emphasis, cardStyle, density, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <SeasonTimelineBlock
           eyebrow={(eyebrow as string) || undefined}
@@ -581,6 +654,9 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
           legs={legs as JourneyLeg[]}
           capstoneLabel={(capstoneLabel as string) || undefined}
           capstoneNote={(capstoneNote as string) || undefined}
+          emphasis={emphasis as EmphasisValue}
+          cardStyle={cardStyle as CardStyleValue}
+          density={density as DensityValue}
           ink={isInk(tone as string)}
         />
       </Band>
@@ -591,23 +667,25 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
   CircleFirstNight: {
     label: 'Circle first night',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Heading (optional)' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
-      kicker: { type: 'text', label: 'Italic kicker (optional)' },
+      kicker: { type: 'textarea', label: 'Italic kicker (optional)' },
       footnote: { type: 'textarea', label: 'Supporting paragraph (optional)' },
-      cardLabel: { type: 'text', label: 'Card eyebrow (e.g. Weekly Run)' },
-      cardTitle: { type: 'text', label: 'Card title (e.g. Tuesday, 6:30pm)' },
+      cardLabel: { type: 'textarea', label: 'Card eyebrow (e.g. Weekly Run)' },
+      cardTitle: { type: 'textarea', label: 'Card title (e.g. Tuesday, 6:30pm)' },
       rows: {
         type: 'array',
         label: 'Run sheet rows',
         arrayFields: {
           time: { type: 'text', label: 'Time (e.g. 0:00)' },
-          title: { type: 'text', label: 'What happens' },
-          note: { type: 'text', label: 'Note (optional)' },
+          title: { type: 'textarea', label: 'What happens' },
+          note: { type: 'textarea', label: 'Note (optional)' },
         },
         getItemSummary: (item: RunRow) => item.title || 'Row',
       },
+      emphasis: emphasisField,
+      density: densityField,
       ...blockFields(),
     },
     defaultProps: {
@@ -624,10 +702,12 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
         { time: '0:30', title: 'The practice', note: 'You do the thing together: sit, move, or make.' },
         { time: '1:00', title: 'Share and close', note: 'A short round, then plans for next week.' },
       ],
+      emphasis: emphasisDefault,
+      density: densityDefault,
       ...blockLayoutDefaults,
       width: 'wide',
     },
-    render: ({ eyebrow, title, titleAccent, kicker, footnote, cardLabel, cardTitle, rows, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, titleAccent, kicker, footnote, cardLabel, cardTitle, rows, emphasis, density, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <CircleFirstNightBlock
           eyebrow={(eyebrow as string) || undefined}
@@ -638,6 +718,8 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
           cardLabel={(cardLabel as string) || undefined}
           cardTitle={(cardTitle as string) || undefined}
           rows={rows as RunRow[]}
+          emphasis={emphasis as EmphasisValue}
+          density={density as DensityValue}
           ink={isInk(tone as string)}
         />
       </Band>
@@ -648,10 +730,10 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
   RolesPath: {
     label: 'Roles path',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Heading (optional)' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
-      kicker: { type: 'text', label: 'Italic kicker (optional)' },
+      kicker: { type: 'textarea', label: 'Italic kicker (optional)' },
       rungs: {
         type: 'array',
         label: 'Rungs (Member to Mentor)',
@@ -662,6 +744,9 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
         getItemSummary: (item: RoleRung) => item.name || 'Rung',
       },
       safetyNet: { type: 'textarea', label: 'Safety-net line' },
+      emphasis: emphasisField,
+      cardStyle: cardStyleField,
+      density: densityField,
       ...blockFields(),
     },
     defaultProps: {
@@ -677,9 +762,12 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
         { name: 'Mentor', blurb: 'You keep the Guides steady across a whole local community.' },
       ],
       safetyNet: 'Nobody gets handed a room and left to sink. Whatever rung you take, the rung above it is there for backup: a Guide for every Host, a Mentor for every Guide. You can step up exactly as far as feels right, and step back any time.',
+      emphasis: emphasisDefault,
+      cardStyle: cardStyleDefault,
+      density: densityDefault,
       ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, title, titleAccent, kicker, rungs, safetyNet, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, titleAccent, kicker, rungs, safetyNet, emphasis, cardStyle, density, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <RolesPathBlock
           eyebrow={(eyebrow as string) || undefined}
@@ -688,6 +776,9 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
           kicker={(kicker as string) || undefined}
           rungs={rungs as RoleRung[]}
           safetyNet={(safetyNet as string) || undefined}
+          emphasis={emphasis as EmphasisValue}
+          cardStyle={cardStyle as CardStyleValue}
+          density={density as DensityValue}
           ink={isInk(tone as string)}
         />
       </Band>
@@ -698,20 +789,23 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
   QuestLoop: {
     label: 'Quest loop',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Heading (optional)' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
-      kicker: { type: 'text', label: 'Italic kicker (optional)' },
+      kicker: { type: 'textarea', label: 'Italic kicker (optional)' },
       stages: {
         type: 'array',
         label: 'Stages (show up to Vault)',
         arrayFields: {
-          label: { type: 'text', label: 'Stage label' },
+          label: { type: 'textarea', label: 'Stage label' },
           blurb: { type: 'textarea', label: 'Blurb' },
         },
         getItemSummary: (item: LoopStage) => item.label || 'Stage',
       },
       ratioNote: { type: 'textarea', label: 'Closing note (the 5:1 rule)' },
+      emphasis: emphasisField,
+      cardStyle: cardStyleField,
+      density: densityField,
       ...blockFields(),
     },
     defaultProps: {
@@ -726,10 +820,13 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
         { label: 'Spend in the Vault', blurb: 'Gems are yours to spend in the Vault, the member treasury.' },
       ],
       ratioNote: 'The rate is fixed and flat: five Zaps become one Gem at the close of every season. The game is free, the same for everyone, and you only ever earn it by turning up.',
+      emphasis: emphasisDefault,
+      cardStyle: cardStyleDefault,
+      density: densityDefault,
       ...blockLayoutDefaults,
       width: 'wide',
     },
-    render: ({ eyebrow, title, titleAccent, kicker, stages, ratioNote, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, titleAccent, kicker, stages, ratioNote, emphasis, cardStyle, density, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <QuestLoopBlock
           eyebrow={(eyebrow as string) || undefined}
@@ -738,6 +835,9 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
           kicker={(kicker as string) || undefined}
           stages={stages as LoopStage[]}
           ratioNote={(ratioNote as string) || undefined}
+          emphasis={emphasis as EmphasisValue}
+          cardStyle={cardStyle as CardStyleValue}
+          density={density as DensityValue}
           ink={isInk(tone as string)}
         />
       </Band>
@@ -748,8 +848,8 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
   BackTheBuild: {
     label: 'Back the build',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Heading' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
       body: { type: 'textarea', label: 'Vision (**bold**, *italic*, [link](/path))' },
       tiers: {
@@ -764,7 +864,9 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
       },
       ctaLabel: { type: 'text', label: 'CTA label' },
       ctaHref: { type: 'text', label: 'CTA link' },
-      secondaryNote: { type: 'text', label: 'Note under CTA (optional)' },
+      secondaryNote: { type: 'textarea', label: 'Note under CTA (optional)' },
+      emphasis: emphasisField,
+      cardStyle: cardStyleField,
       layout: layoutField,
     },
     defaultProps: {
@@ -780,9 +882,12 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
       ctaLabel: BETA_CTA_LABEL,
       ctaHref: BETA_CTA_HREF,
       secondaryNote: 'No money changes hands yet. Join the Beta and we will bring you in as the build takes shape.',
+      emphasis: emphasisDefault,
+      // Default to the founding band's original look: bordered ink card, rounded-3xl.
+      cardStyle: { style: 'border', radius: 'lg' } as CardStyleValue,
       layout: layoutDefault,
     },
-    render: ({ eyebrow, title, titleAccent, body, tiers, ctaLabel, ctaHref, secondaryNote, layout }) => (
+    render: ({ eyebrow, title, titleAccent, body, tiers, ctaLabel, ctaHref, secondaryNote, emphasis, cardStyle, layout }) => (
       <BackTheBuildBlock
         eyebrow={(eyebrow as string) || undefined}
         title={(title as string) || undefined}
@@ -792,6 +897,8 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
         ctaLabel={(ctaLabel as string) || undefined}
         ctaHref={(ctaHref as string) || undefined}
         secondaryNote={(secondaryNote as string) || undefined}
+        emphasis={emphasis as EmphasisValue}
+        cardStyle={cardStyle as CardStyleValue}
         layout={layout as LayoutValue}
       />
     ),

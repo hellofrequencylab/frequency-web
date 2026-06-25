@@ -12,7 +12,6 @@
 import {
   Band,
   Eyebrow,
-  DisplayHeading,
   CtaButton,
   blockFields,
   blockLayoutDefaults,
@@ -27,6 +26,20 @@ import {
   type LayoutValue,
   type ComponentConfig,
 } from './kit'
+import {
+  emphasisField,
+  emphasisDefault,
+  emphasisClasses,
+  cardStyleField,
+  cardStyleDefault,
+  cardStyleClass,
+  densityField,
+  densityDefault,
+  densityClasses,
+  type EmphasisValue,
+  type CardStyleValue,
+  type DensityValue,
+} from '@/lib/page-editor/fields'
 import { richParagraphs } from '@/lib/page-editor/richtext'
 import {
   Illustration,
@@ -76,18 +89,24 @@ export function RolePickerBlock({
   titleAccent,
   cards,
   ink,
+  emphasis,
+  cardStyle,
+  density,
 }: {
   eyebrow?: string
   title?: string
   titleAccent?: string
   cards?: RoleCard[]
   ink?: boolean
+  emphasis?: EmphasisValue
+  cardStyle?: CardStyleValue
+  density?: DensityValue
 }) {
   const shown = (cards || []).slice(0, 4)
   const cols = ROLE_COLS[Math.min(Math.max(shown.length, 2), 4)] ?? ROLE_COLS[3]
-  const cardBase = `flex flex-col rounded-3xl border p-7 ${
-    ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'
-  }`
+  const { scale, accent } = emphasisClasses(emphasis)
+  const { gap, pad } = densityClasses(density)
+  const cardBase = `flex flex-col ${pad} ${cardStyleClass(cardStyle, ink)}`
   const headingColor = ink ? 'text-on-ink' : 'text-text'
   const bodyColor = ink ? 'text-on-ink-muted' : 'text-muted'
 
@@ -96,10 +115,14 @@ export function RolePickerBlock({
       {(eyebrow || title) && (
         <div className="mb-10 text-center">
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {title && <DisplayHeading ink={ink}>{accentize(title, titleAccent)}</DisplayHeading>}
+          {title && (
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+              {accentize(title, titleAccent)}
+            </h2>
+          )}
         </div>
       )}
-      <div className={`grid grid-cols-1 ${cols} gap-6`}>
+      <div className={`grid grid-cols-1 ${cols} ${gap}`}>
         {shown.map((card, i) => (
           <article key={i} className={cardBase}>
             <div className="h-28 mb-5 flex items-center justify-center">
@@ -138,6 +161,7 @@ export function IllustratedFeatureBlock({
   ctaHref,
   tone,
   layout,
+  emphasis,
 }: {
   illustration?: string
   side?: 'left' | 'right'
@@ -149,10 +173,12 @@ export function IllustratedFeatureBlock({
   ctaHref?: string
   tone?: string
   layout?: LayoutValue
+  emphasis?: EmphasisValue
 }) {
   const ink = isInk(tone)
   const reverse = side === 'right'
   const bodyColor = ink ? 'text-on-ink-muted' : 'text-muted'
+  const { scale, accent } = emphasisClasses(emphasis)
 
   return (
     <section className={`px-6 ${padClass(layout) ?? 'py-16 sm:py-20'} ${toneBg(tone)} ${visClass(layout)}`}>
@@ -175,7 +201,9 @@ export function IllustratedFeatureBlock({
         <div>
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
           {title && (
-            <DisplayHeading ink={ink}>{accentize(title, titleAccent)}</DisplayHeading>
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+              {accentize(title, titleAccent)}
+            </h2>
           )}
           {body && (
             <div className={`mt-5 text-lg leading-relaxed space-y-4 ${bodyColor}`}>
@@ -202,20 +230,23 @@ export function ManifestoBlock({
   accent,
   tone,
   layout,
+  emphasis,
 }: {
   text?: string
   accent?: string
   tone?: string
   layout?: LayoutValue
+  emphasis?: EmphasisValue
 }) {
   const ink = isInk(tone)
+  const { scale, accent: accentClass } = emphasisClasses(emphasis)
+  // Emphasis accent recolors the whole statement; fall back to the band's
+  // default ink/text colour when the accent tone is 'none'. The accent *word*
+  // (via accentize) still carries the brand primary on top of this base.
+  const textColor = accentClass || (ink ? 'text-on-ink' : 'text-text')
   return (
     <section className={`px-6 ${padClass(layout) ?? 'py-28 sm:py-36'} ${toneBg(tone)} ${visClass(layout)}`}>
-      <p
-        className={`max-w-4xl mx-auto font-display uppercase text-balance text-4xl sm:text-6xl lg:text-7xl leading-[1.02] ${
-          ink ? 'text-on-ink' : 'text-text'
-        }`}
-      >
+      <p className={`max-w-4xl mx-auto font-display uppercase text-balance ${scale} ${textColor}`}>
         {accentize(text, accent)}
       </p>
     </section>
@@ -231,14 +262,14 @@ export const marketingComponents: Record<string, ComponentConfig> = {
   RolePicker: {
     label: 'Role picker',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Heading (optional)' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
       cards: {
         type: 'array',
         label: 'Cards (2 to 4)',
         arrayFields: {
-          label: { type: 'text', label: 'Label' },
+          label: { type: 'textarea', label: 'Label' },
           blurb: { type: 'textarea', label: 'Blurb' },
           illustration: illustrationField,
           ctaLabel: { type: 'text', label: 'Button label' },
@@ -246,6 +277,9 @@ export const marketingComponents: Record<string, ComponentConfig> = {
         },
         getItemSummary: (item: RoleCard) => item.label || 'Card',
       },
+      emphasis: emphasisField,
+      cardStyle: cardStyleField,
+      density: densityField,
       ...blockFields(),
     },
     defaultProps: {
@@ -275,10 +309,13 @@ export const marketingComponents: Record<string, ComponentConfig> = {
           ctaHref: '/start/spread',
         },
       ],
+      emphasis: emphasisDefault,
+      cardStyle: cardStyleDefault,
+      density: densityDefault,
       ...blockLayoutDefaults,
       align: 'center',
     },
-    render: ({ eyebrow, title, titleAccent, cards, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, titleAccent, cards, emphasis, cardStyle, density, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <RolePickerBlock
           eyebrow={(eyebrow as string) || undefined}
@@ -286,6 +323,9 @@ export const marketingComponents: Record<string, ComponentConfig> = {
           titleAccent={(titleAccent as string) || undefined}
           cards={cards as RoleCard[]}
           ink={isInk(tone as string)}
+          emphasis={emphasis as EmphasisValue}
+          cardStyle={cardStyle as CardStyleValue}
+          density={density as DensityValue}
         />
       </Band>
     ),
@@ -304,12 +344,13 @@ export const marketingComponents: Record<string, ComponentConfig> = {
           { label: 'Right', value: 'right' },
         ],
       },
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Title' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Title' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
       body: { type: 'textarea', label: 'Body (**bold**, *italic*, [link](/path))' },
       ctaLabel: { type: 'text', label: 'CTA label (optional)' },
       ctaHref: { type: 'text', label: 'CTA link (optional)' },
+      emphasis: emphasisField,
       tone: toneField,
       layout: layoutField,
     },
@@ -322,10 +363,11 @@ export const marketingComponents: Record<string, ComponentConfig> = {
       body: 'A Circle is a handful of people who meet, week after week. No app to scroll. Just a time, a place, and the people who show up.',
       ctaLabel: '',
       ctaHref: '',
+      emphasis: emphasisDefault,
       tone: 'surface',
       layout: layoutDefault,
     },
-    render: ({ illustration, side, eyebrow, title, titleAccent, body, ctaLabel, ctaHref, tone, layout }) => (
+    render: ({ illustration, side, eyebrow, title, titleAccent, body, ctaLabel, ctaHref, emphasis, tone, layout }) => (
       <IllustratedFeatureBlock
         illustration={illustration as string}
         side={side as 'left' | 'right'}
@@ -335,6 +377,7 @@ export const marketingComponents: Record<string, ComponentConfig> = {
         body={(body as string) || undefined}
         ctaLabel={(ctaLabel as string) || undefined}
         ctaHref={(ctaHref as string) || undefined}
+        emphasis={emphasis as EmphasisValue}
         tone={tone as string}
         layout={layout as LayoutValue}
       />
@@ -347,19 +390,22 @@ export const marketingComponents: Record<string, ComponentConfig> = {
     fields: {
       text: { type: 'textarea', label: 'Statement' },
       accent: { type: 'text', label: 'Accent word (optional)' },
+      emphasis: emphasisField,
       tone: toneField,
       layout: layoutField,
     },
     defaultProps: {
       text: 'The answer to the loneliest era in history is a folding chair with your name on it.',
       accent: 'folding chair',
+      emphasis: { scale: 'lg', accent: 'none' },
       tone: 'ink',
       layout: layoutDefault,
     },
-    render: ({ text, accent, tone, layout }) => (
+    render: ({ text, accent, emphasis, tone, layout }) => (
       <ManifestoBlock
         text={(text as string) || undefined}
         accent={(accent as string) || undefined}
+        emphasis={emphasis as EmphasisValue}
         tone={(tone === 'none' ? 'surface' : tone) as string}
         layout={layout as LayoutValue}
       />
