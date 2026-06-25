@@ -105,7 +105,15 @@ export default async function RoommatesPage() {
           icon={Users}
           variant="no-results"
           title="No matches yet."
-          description="Save your preferences above, and turn on resonance matching in your settings so we can compare you with roommate hosts. Matches are private to you."
+          description="Save your preferences above, then turn on Resonance matching so we can compare you with roommate hosts. Matches are private to you."
+          action={
+            <Link
+              href="/settings/connections"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden /> Turn on Resonance matching
+            </Link>
+          }
         />
       ) : (
         <div className="@container">

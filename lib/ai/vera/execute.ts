@@ -311,8 +311,8 @@ async function sendIntroEmail(operatorId: string, args: Record<string, unknown>)
   if (!UUID_RE.test(otherProfileId)) return { ok: false, error: 'That other member id does not look right.' }
   if (!UUID_RE.test(contactId)) return { ok: false, error: 'That contact id does not look right.' }
   if (subjectProfileId === otherProfileId) return { ok: false, error: 'An intro needs two different people.' }
-  const subject = String(args.subject ?? '').replace(/[ -]/g, '').trim().slice(0, 200)
-  const body = String(args.body ?? '').replace(/[ --]/g, '').trim().slice(0, 5000)
+  const subject = String(args.subject ?? '').replace(/[ -]/g, '').trim().slice(0, 200)
+  const body = String(args.body ?? '').replace(/[ -]/g, '').trim().slice(0, 5000)
   if (!subject || !body) return { ok: false, error: 'The intro needs a subject and a body.' }
 
   // GATE 1 (the consent-first heart of the Resonance Graph): nothing sends until BOTH tap yes.

@@ -58,6 +58,24 @@ import {
 } from '@/lib/marketplace/visibility'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { viewerRoleFor } from '@/components/layout/menu-role'
+import { MarketingHeader } from '@/components/layout/marketing-header'
+import { MarketingFooter } from '@/components/layout/marketing-footer'
+
+// A logged-out visitor is normally sent back to the splash, but a NETWORKED Space profile
+// (/spaces/<slug> + its public tabs) is public + crawlable (SEO/AIO) — those render in the
+// public chrome instead. The in-app /spaces index routes (directory, new) and the owner
+// sub-surfaces (settings, edit) stay members-only. The space layout itself self-resolves
+// visibility (network only; private/missing → notFound) and emits its own canonical/OG/JSON-LD.
+const SPACES_NON_PROFILE = new Set(['directory', 'new'])
+function isAnonSpaceProfile(p: string | null): boolean {
+  if (!p) return false
+  const m = /^\/spaces\/([^/]+)(?:\/([^/]+))?$/.exec(p)
+  if (!m) return false
+  const [, slug, tab] = m
+  if (SPACES_NON_PROFILE.has(slug)) return false
+  if (tab === 'settings' || tab === 'edit') return false
+  return true
+}
 
 // Per-route SEO overrides (ADR-268): an operator sets a route's title / description /
 // share-image in the on-page Page panel; this applies them as the (main) layout's metadata
@@ -102,7 +120,27 @@ export default async function MainLayout({
 
   // Logged-out visitors hitting an in-app URL go back to the splash (not the
   // sign-in form) — the splash is the front door for anyone who hasn't signed up.
-  if (!user) redirect('/')
+  // EXCEPTION: a public networked Space profile is crawlable + shareable, so render it
+  // in the public marketing chrome (logo header + footer) rather than the member shell
+  // (there is no profile to build the shell from). The space layout walls private/missing.
+  if (!user) {
+    const anonPath = (await headers()).get('x-pathname')
+    if (isAnonSpaceProfile(anonPath)) {
+      const [headerMenu, footerMenu, menuTimings] = await Promise.all([
+        getMenu('header'),
+        getMenu('footer'),
+        getMenuSettings(),
+      ])
+      return (
+        <>
+          <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={false} />
+          <main className="min-h-screen bg-surface pt-16">{children}</main>
+          <MarketingFooter menu={footerMenu} />
+        </>
+      )
+    }
+    redirect('/')
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
