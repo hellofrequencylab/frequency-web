@@ -188,7 +188,9 @@ export default async function SpaceProfileLayout({
               logoUrl: space.brandLogoUrl,
             }),
             breadcrumbSchema([
-              { name: 'Spaces', path: '/spaces/directory' },
+              // The crawlable breadcrumb parent is the PUBLIC /spaces page, not the in-app
+              // /spaces/directory (which the back link below uses for signed-in navigation).
+              { name: 'Spaces', path: '/spaces' },
               { name: brandName, path: `/spaces/${space.slug}` },
             ]),
           ]}

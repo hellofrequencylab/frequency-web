@@ -119,7 +119,7 @@ export default function BetaPage() {
         </ol>
         <p className="mt-10 text-center text-sm text-muted">
           Curious first?{' '}
-          <Link href="/how-it-works" className="font-semibold text-primary-strong hover:underline">
+          <Link href="/the-community" className="font-semibold text-primary-strong hover:underline">
             See how it works
           </Link>{' '}
           ·{' '}
@@ -127,7 +127,7 @@ export default function BetaPage() {
             View pricing
           </Link>{' '}
           ·{' '}
-          <Link href="/how-it-works" className="font-semibold text-primary-strong hover:underline">
+          <Link href="/the-community" className="font-semibold text-primary-strong hover:underline">
             Take the tour
           </Link>
         </p>

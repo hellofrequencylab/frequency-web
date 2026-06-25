@@ -297,7 +297,7 @@ export default function HowToBuildCommunityPage() {
           reason your people have somewhere to go.
         </Body>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Button href="/build">
+          <Button href="/the-community">
             Host your first Circle <ArrowRight className="h-5 w-5" />
           </Button>
           <Button href="/spaces" variant="secondary">
