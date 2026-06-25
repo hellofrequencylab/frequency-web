@@ -7,11 +7,11 @@ import {
   Body,
   Steps,
   PullQuote,
+  ZigZag,
   FaqList,
   BetaCTA,
   Button,
 } from '@/components/marketing/marketing-ui'
-import { Illustration } from '@/components/marketing/illustrations'
 import { JsonLd } from '@/components/json-ld'
 import {
   articleSchema,
@@ -46,7 +46,7 @@ export function generateMetadata(): Metadata {
 const STEPS = [
   {
     title: 'Pick one thing',
-    body: 'Choose a single shared interest: a walk, a book, a meal, a craft. Narrow beats broad. People join a thing, not a vague idea of community.',
+    body: 'Choose a single shared interest: a walk, a book, a meal, a sit. Narrow beats broad. People join a thing, not a vague idea of community.',
   },
   {
     title: 'Set a time and place',
@@ -68,6 +68,10 @@ const FAQ = [
     a: 'Pick one shared interest, set a regular time and place, keep the first group small, and commit to meeting again. You do not need a venue, a budget, or a big audience. You need one thing, a standing rhythm, and the willingness to host the same small group more than once.',
   },
   {
+    q: 'I want to bring people together but I do not know how. Where do I start?',
+    a: 'Start with one small Circle, not a whole community. Pick something you already care about, name a standing day and place, and invite a few people near you. You do not need a plan for everything. You need one regular night, and a format you can run without inventing it. Frequency hands you that format, the first-night script, and a person to call.',
+  },
+  {
     q: 'How many people do I need to start?',
     a: 'You can start with three or four. Small is a feature, not a failure: a handful of people who keep coming back beats a big launch that never meets again. Protect the rhythm at small numbers and the group fills in over time.',
   },
@@ -78,6 +82,10 @@ const FAQ = [
   {
     q: 'Do I need a venue or a budget to build community?',
     a: 'No. A living room, a park, a coffee shop, or a video call all work. The thing that matters is that the same people can find the same spot on a regular rhythm. Cost and venue are details; consistency is the whole point.',
+  },
+  {
+    q: 'Do I have to do this alone?',
+    a: 'No. On Frequency you host one Circle on a path that goes Member, Crew, Host, Guide, Mentor, and every rung has the one above it for backup. You hold the room; a Guide looks after the Hosts nearby. You bring the people and the willingness to show up, and the structure carries the rest.',
   },
   {
     q: 'How do I keep a community group going long-term?',
@@ -117,7 +125,7 @@ export default function HowToBuildCommunityPage() {
       <PageHero
         eyebrow="Build"
         title="How to start a community group (and keep it going)"
-        subtitle="You do not have to build a whole community. You have to host one small group, on a regular rhythm, and keep showing up. Here is the short version."
+        subtitle="You do not have to build a whole community. You have to host one small group, on a regular rhythm, and keep showing up. Here is the short version, plus the rails so you are never out front alone."
       />
 
       {/* Answer-first opening. */}
@@ -133,10 +141,60 @@ export default function HowToBuildCommunityPage() {
           A community is just a small group that meets again, then again, until the
           people in it would notice if it stopped.
         </Body>
-        <div className="mx-auto mt-4 max-w-sm">
-          <Illustration name="lead" className="h-40" />
-        </div>
       </Section>
+
+      {/* Imagery: a real neighborhood gathering, not a crowd. */}
+      <ZigZag
+        img="/images/site/community-1.jpg"
+        alt="A small neighborhood gathering of people sitting together outdoors"
+        eyebrow="What this looks like"
+        title="It starts smaller than you think."
+        kicker="A few neighbors and a standing time, not a movement and a logo."
+        imgAspect="landscape"
+        focal="center"
+        tone="surface"
+      >
+        <p>
+          This is a few neighbors who picked one night and kept it. No big launch,
+          no audience, no plan for everything. One person set the day, held the door
+          open more than once, and the rest filled in over time.
+        </p>
+        <p>
+          That is the whole shape of it, and you can do the same this week. You bring
+          the people and the willingness to show up. We hand you a format you can run
+          without inventing it. See how it fits together on{' '}
+          <a className="text-primary-strong font-semibold hover:underline" href="/the-community">
+            the community
+          </a>
+          .
+        </p>
+      </ZigZag>
+
+      {/* Imagery: a real gathering, not a crowd. The builder is the reader. */}
+      <ZigZag
+        img="/images/site/PHOTO-2020-10-17-13-49-14.jpeg"
+        alt="A small song circle sitting together with guitars on a cliff above the sea"
+        eyebrow="A Circle, up close"
+        title="A few people, a standing time, a spot they can find."
+        kicker="No stage, no guru out front. Just regulars who keep coming back."
+        imgAspect="landscape"
+        focal="center"
+        reverse
+        tone="canvas"
+      >
+        <p>
+          This is a song Circle that meets on the same cliff, week after week. Nobody
+          here built a community. One person picked a thing, named a time, and held
+          the door open more than once. That is the whole move, and the people who
+          care about the same thing are the ones who show up.
+        </p>
+        <p>
+          You do not have to be the loudest person in the room or the one with all the
+          answers. You have to be the reason there is a room. The format and the
+          first-night plan come from us, so you are running a clear night instead of
+          inventing one.
+        </p>
+      </ZigZag>
 
       <PullQuote tone="surface">
         You do not have to build a community.{' '}
@@ -169,24 +227,57 @@ export default function HowToBuildCommunityPage() {
         </Body>
       </Section>
 
-      <Section tone="surface">
+      {/* The rails: a real Circle photo, the "we hand you the format" beat. */}
+      <ZigZag
+        img="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
+        alt="A breathwork circle lying in a ring on the floor with eyes closed"
+        eyebrow="The rails"
+        title="What do I do if I have never run a group before?"
+        kicker="You set out the chairs. The format does the rest."
+        imgAspect="landscape"
+        focal="center"
+        reverse
+        tone="surface"
+      >
+        <p>
+          You do not start from a blank page. A Circle on Frequency comes with the
+          rails: a format, a first-night script, a standing rhythm, and backup when
+          you need it. This breathwork Circle runs the same shape every week, so the
+          host is never improvising the night.
+        </p>
+        <p>
+          You do not need to be a natural leader. You need to set out the chairs and
+          be the reason your people have somewhere to go. Browse the kinds of Circles
+          people are running on{' '}
+          <a className="text-primary-strong font-semibold hover:underline" href="/discover">
+            discover
+          </a>
+          .
+        </p>
+      </ZigZag>
+
+      {/* The ladder. Leaderful, not leader-dependent. */}
+      <Section tone="canvas">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
           Do I have to do this alone?
         </h2>
         <Lead>
-          No, and you should not. The point of a framework is that you are not
-          starting from a blank page or carrying the night by yourself.
+          No, and you should not. You step up exactly as far as you want, and every
+          rung has the one above it for backup.
         </Lead>
         <Body>
-          A Circle on Frequency comes with the rails: a format, a first-night
-          script, a regular rhythm, and backup when you need it. You bring the
-          people and the willingness to host; the structure handles the rest. You do
-          not need to be a natural leader. You need to set out the chairs and be the
-          reason your people have somewhere to go.
+          The path goes Member, then Crew, then Host, then Guide, then Mentor. You
+          show up to a Circle as a Member. You learn the format as Crew. You hold one
+          Circle as a Host, with the script and the backup handed to you. A Guide
+          looks after the Hosts nearby, so nobody runs a room alone, and a Mentor
+          keeps the Guides steady across a whole local community. Take whichever rung
+          feels right, and step back any time.
         </Body>
-        <div className="mx-auto mt-2 max-w-sm">
-          <Illustration name="circle" className="h-40" />
-        </div>
+        <Body>
+          That is the point of the structure: it is leaderful, not leader-dependent.
+          Take any one person out and it keeps running, because the people and the
+          rhythm were the thing all along.
+        </Body>
       </Section>
 
       <PullQuote tone="surface">
@@ -194,23 +285,24 @@ export default function HowToBuildCommunityPage() {
         <span className="text-primary">They die from chaos and burnout.</span>
       </PullQuote>
 
-      {/* Soft CTA into the product (Build pillar). */}
+      {/* Builder CTA into the product (Build pillar). */}
       <Section tone="surface">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
-          Where to start
+          Where do I start?
         </h2>
         <Body>
-          Frequency hands community builders the format, the first-night script, and
-          the rails, so hosting one Circle is a clear next step instead of a blank
-          page. Set out the chairs once, and you are the reason your people have
-          somewhere to go.
+          Pick what you practice, find a few people near you, and hold the door open
+          for one Circle. Frequency hands community builders the format, the
+          first-night script, and the rails, so hosting one Circle is a clear next
+          step instead of a blank page. Set out the chairs once, and you are the
+          reason your people have somewhere to go.
         </Body>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Button href="/build">
             Host your first Circle <ArrowRight className="h-5 w-5" />
           </Button>
-          <Button href="/discover" variant="secondary">
-            See how Circles work
+          <Button href="/spaces" variant="secondary">
+            Bring a group you already gather
           </Button>
         </div>
       </Section>

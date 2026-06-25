@@ -1,25 +1,29 @@
-// SEO pillar: high-functioning loneliness, third places, belonging. Answer-first.
+// SEO pillar: high-functioning loneliness, third places, "lonely but not alone".
+// Answer-first. Pain-first. Speaks to the Seeker (CONTENT-VOICE §2a).
 import type { Metadata } from 'next'
 import { ArrowRight } from 'lucide-react'
 import {
-  PageHero,
+  PhotoHero,
   Section,
   Lead,
   Body,
   PullQuote,
+  ZigZag,
   FaqList,
   BetaCTA,
   Button,
 } from '@/components/marketing/marketing-ui'
-import { Illustration } from '@/components/marketing/illustrations'
 import { JsonLd } from '@/components/json-ld'
 import { articleSchema, faqSchema, breadcrumbSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
-const TITLE = 'High-functioning loneliness: when you look fine but feel alone'
+const TITLE = 'High-functioning loneliness: lonely but not alone'
 const DESCRIPTION =
   'High-functioning loneliness is feeling alone while your life looks fine on paper. Here is what it is, why it happens to capable adults, and a few small ways to find real-world connection again.'
+
+// The hero photo, fed to the Article schema below for richer-result eligibility.
+const HERO_IMAGE = '/images/site/moonlight-1.jpg'
 
 export function generateMetadata(): Metadata {
   return {
@@ -42,6 +46,10 @@ const FAQ = [
   {
     q: 'What is high-functioning loneliness?',
     a: 'High-functioning loneliness is feeling alone while your outer life looks fine. You have a job, plans, and a full phone, but no one you would call on a Tuesday night. The function is real and so is the loneliness; they just live side by side.',
+  },
+  {
+    q: 'Can you be lonely but not alone?',
+    a: 'Yes. You can be surrounded all day and still feel unseen, because loneliness is about being known, not about how many people are in the room. A packed calendar and a quiet ache can be true at the same time. That gap is the whole experience of being lonely but not alone.',
   },
   {
     q: 'Why do I feel lonely when I have plenty of friends?',
@@ -71,21 +79,29 @@ export default function LonelinessPage() {
             description: DESCRIPTION,
             path: '/loneliness',
             published: '2026-06-24',
-            updated: '2026-06-24',
+            updated: '2026-06-25',
+            image: HERO_IMAGE,
           }),
           faqSchema(FAQ.map((f) => ({ q: f.q, a: f.a }))),
           breadcrumbSchema([{ name: 'Loneliness', path: '/loneliness' }]),
         ]}
       />
 
-      <PageHero
+      <PhotoHero
+        image={HERO_IMAGE}
+        alt="A small group holding each other in a close standing embrace at dusk"
+        focal="object-center"
         eyebrow="Belonging"
-        title="High-functioning loneliness: when you look fine but feel alone"
-        subtitle="A hundred contacts. No one to call on a Tuesday. If your life looks full and still feels empty, you are not broken and you are not alone in it."
-      />
+        title="Lonely but not alone"
+        subtitle="A hundred contacts. No one to call on a Tuesday. If your life looks full and still feels empty, you are not broken and you are not the only one."
+      >
+        <Button href="/discover">
+          See what&apos;s happening near you <ArrowRight className="h-5 w-5" />
+        </Button>
+      </PhotoHero>
 
       {/* Answer-first: the direct answer in the first two sentences. */}
-      <Section tone="canvas" pad="pt-4 pb-16 sm:pt-6 sm:pb-20">
+      <Section tone="canvas" pad="pt-14 pb-16 sm:pt-16 sm:pb-20">
         <Lead>
           High-functioning loneliness is feeling alone while your outer life
           looks fine. You hold down a job, keep plans, and answer texts, and you
@@ -93,13 +109,10 @@ export default function LonelinessPage() {
         </Lead>
         <Body>
           The function is real. So is the loneliness. They sit next to each other,
-          which is exactly why it is so easy to miss and so hard to admit. Nothing
-          on the surface says anything is wrong. The fix is not trying harder at
-          your life. It is a handful of people you keep showing up for.
+          which is exactly why it is so easy to miss and so hard to say out loud.
+          Nothing on the surface looks wrong. The fix is not trying harder at your
+          life. It is a few people you keep showing up for.
         </Body>
-        <div className="mx-auto mt-4 max-w-sm">
-          <Illustration name="belonging" className="h-40" />
-        </div>
       </Section>
 
       <PullQuote tone="surface">
@@ -127,6 +140,23 @@ export default function LonelinessPage() {
 
       <Section tone="canvas">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
+          Can you be lonely but not alone?
+        </h2>
+        <Lead>
+          Yes. You can be surrounded all day and still feel unseen, because
+          loneliness is about being known, not about how full the room is.
+        </Lead>
+        <Body>
+          This is the part that makes people feel a little crazy. By every visible
+          measure you are connected: coworkers, group chats, a busy weekend. And
+          the ache is still there, because none of it adds up to one person who
+          knows the unedited version of your week. Being lonely in a crowd is not a
+          contradiction. It is the most common kind there is.
+        </Body>
+      </Section>
+
+      <Section tone="surface">
+        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
           Why do I feel lonely when I have friends?
         </h2>
         <Lead>
@@ -142,7 +172,7 @@ export default function LonelinessPage() {
         </Body>
       </Section>
 
-      <Section tone="surface">
+      <Section tone="canvas">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
           What is a third place, and why does it matter?
         </h2>
@@ -157,12 +187,9 @@ export default function LonelinessPage() {
           on-ramps to friendship go with them, and making friends starts to feel
           like a project instead of a side effect.
         </Body>
-        <div className="mx-auto mt-2 max-w-sm">
-          <Illustration name="community" className="h-40" />
-        </div>
       </Section>
 
-      <Section tone="canvas">
+      <Section tone="surface">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
           How do I actually feel less alone?
         </h2>
@@ -178,43 +205,70 @@ export default function LonelinessPage() {
           become a familiar face, and the fifth time is when a familiar face starts
           to become a friend.
         </Body>
-        <Body>
-          That is the whole idea behind a Circle: a small group around something you
-          care about, meeting on a set rhythm, so the same handful of people keep
-          ending up in the same room. You do not have to be interesting or
-          outgoing. You have to come back.
-        </Body>
       </Section>
 
-      <PullQuote tone="surface">
+      <PullQuote tone="canvas">
         You do not need more people in the room.{' '}
         <span className="text-primary">You need a few you keep coming back to.</span>
       </PullQuote>
 
-      {/* Soft CTA into the product. Two honest doors: do something today (Practice)
-          or look around first (Discover). */}
-      <Section tone="surface">
-        <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
-          Where to start
-        </h2>
-        <Body>
-          Frequency is built around exactly this: small groups that meet in person
-          on a regular rhythm, plus simple practices you can do on your own in the
-          meantime. You can start today, alone, in five minutes, or browse what is
-          already happening and find a room to walk into.
-        </Body>
+      {/* How Frequency helps. The answer made concrete, with a real photo and an
+          internal link into the community pillar (SEO clustering). */}
+      <ZigZag
+        img="/images/site/community-1.jpg"
+        alt="A small group sitting together on a sunlit lawn, settled into easy conversation"
+        imgPosition="center"
+        imgAspect="landscape"
+        eyebrow="How Frequency helps"
+        title="A few real people, a standing time"
+        kicker="The opposite of lonely is not a crowd. It is a standing plan with the same faces."
+        cta={{ label: 'See how the community works', href: '/the-community' }}
+      >
+        <p>
+          A Circle is a small group around something you care about that meets on a
+          set rhythm, so the same handful of people keep ending up in the same room.
+          A walk, a supper table, a book, a sit. That regular run-in is the thing
+          that turns strangers into regulars.
+        </p>
+        <p>
+          You do not have to be interesting or outgoing. You do not have to arrive
+          with friends. You pick what you practice, find a few people near you, and
+          come back. We hand you the format, the rhythm, and a room that meets again
+          next week.
+        </p>
+      </ZigZag>
+
+      {/* Soft CTA into the product. Two honest doors: look around first (Discover)
+          or read how the community works (the-community). Both link within the
+          cluster. */}
+      <ZigZag
+        img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
+        alt="A person resting quietly on the floor after a group practice, calm and at ease"
+        imgPosition="center"
+        imgAspect="landscape"
+        reverse
+        tone="canvas"
+        eyebrow="Where to start"
+        title="Start small, then show up twice"
+        kicker="You do not have to fix your whole life this week. You have to walk into one room."
+      >
+        <p>
+          The easiest first step is to look at what is already happening near you:
+          the Circles meeting this week, the events you could just walk into. Pick
+          one that meets again, go once, and go back. Nothing more than that.
+        </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Button href="/practice">
-            Start a practice today <ArrowRight className="h-5 w-5" />
+          <Button href="/discover">
+            See what&apos;s happening near you <ArrowRight className="h-5 w-5" />
           </Button>
-          <Button href="/discover" variant="secondary">
-            See what&apos;s happening near you
+          <Button href="/the-community" variant="secondary">
+            How the community works
           </Button>
         </div>
-      </Section>
+      </ZigZag>
 
       {/* FAQ: answer-first pairs, mirrored into FAQPage schema above. */}
-      <Section tone="canvas">
+      <Section tone="surface">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
           Common questions
         </h2>
