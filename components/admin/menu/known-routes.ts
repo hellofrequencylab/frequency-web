@@ -42,6 +42,10 @@ export const KNOWN_ROUTES: { href: string; label: string }[] = [
   { href: '/spaces/directory', label: 'Spaces (directory)' },
   { href: '/programs', label: 'Programs' },
   { href: '/market', label: 'Market' },
+  { href: '/marketplace/housing', label: 'Housing' },
+  { href: '/marketplace/makers', label: 'Makers' },
+  { href: '/shop', label: 'Shop' },
+  { href: '/orders', label: 'My orders' },
   { href: '/crew', label: 'Crew' },
   { href: '/lead', label: 'Lead' },
   { href: '/network', label: 'Network' },
@@ -60,6 +64,9 @@ export const KNOWN_ROUTES: { href: string; label: string }[] = [
   { href: '/admin/roles', label: 'Admin: Roles & permissions' },
   { href: '/admin/menu', label: 'Admin: Menu manager' },
   { href: '/admin/insights', label: 'Admin: Insights' },
+  { href: '/admin/marketplace', label: 'Admin: Marketplace' },
+  { href: '/admin/marketplace/orders', label: 'Admin: Marketplace orders' },
+  { href: '/admin/marketplace/reports', label: 'Admin: Marketplace reports' },
 ]
 
 // The MenuAccess ladder in display order, with human labels (NAMING canon). 'visitor'
