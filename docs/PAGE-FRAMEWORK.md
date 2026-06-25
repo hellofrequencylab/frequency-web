@@ -162,7 +162,8 @@ widgets that show up when assigned… without rebuilding every page."*
 > (`@lg:`/`@2xl:`), not the viewport. Prefer those over `sm:`/`md:` for a block's internal grid
 > so it stays portable across main/side/column slots. **Assign per route:** open the page's on-page
 > **Layout** settings (pick an interior layout/grid, drop each module into a slot, set order +
-> visibility, stored per route); or render `<PageModules route="…" />` on a page (live on `/lead`,
+> visibility, stored per route); or render `<PageModules route="…" />` on a page (live on `/lead`
+> — a 10-block leadership dashboard (ADR-403); `/pages` — the operator workspace (ADR-402);
 > `/crew` My Quest, `/journeys`, and `/admin/content/journeys`). This is the page's interior column,
 > **not** the app shell rail (that stays operator-managed in `/admin/page-layout` /
 > `page_chrome_overrides`, ADR-259/260). **`quest-tasks` is a PARKED module** (Phase 0.5.11): its
