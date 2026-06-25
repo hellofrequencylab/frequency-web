@@ -4,46 +4,70 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { createListing, setListingStatus, deleteListing, listingOwnerId } from '@/lib/listings'
-import type { ListingVertical } from '@/lib/listings/types'
+import { upsertHousingDetail } from '@/lib/listings/housing'
+import type { HousingType, ListingStatus, RoomType } from '@/lib/listings/types'
 
-// Server actions for the connect-only listings surface. Auth via getMyProfileId();
-// writes go through lib/listings (admin client). Mirrors app/(main)/market/actions.ts.
+// Housing actions (connect-only, ADR-39Y/148). General goods live on /market
+// (lib/marketplace.ts); these write the shared `listings` base + the housing
+// extension. Auth via getMyProfileId(); writes go through lib/listings (admin
+// client behind app-code authz: only the owner edits their own listing).
 
-export async function createListingAction(formData: FormData): Promise<void> {
+const HOUSING_TYPES: readonly HousingType[] = ['rental', 'roommate', 'sublet']
+const ROOM_TYPES: readonly RoomType[] = ['private_room', 'shared_room', 'entire_place']
+
+function posNum(v: FormDataEntryValue | null): number | null {
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+export async function createHousingListingAction(formData: FormData): Promise<void> {
   const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in?next=/marketplace/new')
+  if (!profileId) redirect('/sign-in?next=/marketplace/housing/new')
 
-  const vertical = (String(formData.get('vertical') ?? 'market') as ListingVertical)
   const title = String(formData.get('title') ?? '').trim()
   if (!title) return
 
-  const kind = String(formData.get('kind') ?? '').trim()
-  const category = kind && kind !== 'offer' ? kind : null
+  const listingType = String(formData.get('listing_type') ?? 'rental') as HousingType
+  if (!HOUSING_TYPES.includes(listingType)) return
+
+  const roomTypeRaw = String(formData.get('room_type') ?? '')
+  const roomType = (ROOM_TYPES as readonly string[]).includes(roomTypeRaw) ? (roomTypeRaw as RoomType) : null
+
+  const rentDollars = posNum(formData.get('rent'))
 
   const listing = await createListing(profileId, {
-    vertical,
+    vertical: 'housing',
     title,
     description: (formData.get('description') as string) || null,
-    priceNote: (formData.get('price_note') as string) || null,
-    category,
     city: (formData.get('city') as string) || null,
+    neighborhood: (formData.get('neighborhood') as string) || null,
+    priceNote: rentDollars ? `$${rentDollars}/mo` : null,
   })
   if (!listing) return
 
-  revalidatePath('/marketplace')
-  redirect('/marketplace')
+  await upsertHousingDetail(listing.id, {
+    listingType,
+    rentCents: rentDollars ? Math.round(rentDollars * 100) : null,
+    bedrooms: posNum(formData.get('bedrooms')),
+    roomType,
+  })
+
+  revalidatePath('/marketplace/housing')
+  redirect(`/marketplace/housing/${listing.id}`)
 }
 
-export async function setListingStatusAction(id: string, status: 'active' | 'claimed' | 'closed'): Promise<void> {
+export async function setListingStatusAction(id: string, status: ListingStatus): Promise<void> {
   const profileId = await getMyProfileId()
   if (!profileId || (await listingOwnerId(id)) !== profileId) return
   await setListingStatus(id, status)
-  revalidatePath('/marketplace')
+  revalidatePath('/marketplace/housing')
+  revalidatePath(`/marketplace/housing/${id}`)
 }
 
 export async function deleteListingAction(id: string): Promise<void> {
   const profileId = await getMyProfileId()
   if (!profileId || (await listingOwnerId(id)) !== profileId) return
   await deleteListing(id)
-  revalidatePath('/marketplace')
+  revalidatePath('/marketplace/housing')
+  redirect('/marketplace/housing')
 }

@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { getMyProfileId } from '@/lib/auth'
 import { listListings } from '@/lib/listings'
 import { ListingCard } from '@/components/marketplace/listing-card'
+import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 
 // Housing — rentals + roommates (connect-only). Member-only surface (high-trust).
 // Resonance-based roommate matching + geo browse arrive with the housing detail
@@ -75,6 +76,7 @@ export default async function HousingPage() {
           List housing
         </Link>
       }
+      toolbar={<MarketplaceFacets active="housing" />}
     >
       <Suspense fallback={<GridSkeleton />}>
         <HousingGrid />

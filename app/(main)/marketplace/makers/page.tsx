@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { getMyProfileId } from '@/lib/auth'
 import { listMakerProducts } from '@/lib/commerce/products'
 import { ProductCard } from '@/components/marketplace/product-card'
+import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 
 // Makers — the Etsy-like market (commerce core, owner_kind='profile'). Index of
 // member products. Selling needs a payouts-ready Connect account; buying needs nothing.
@@ -69,6 +70,7 @@ export default async function MakersPage({
           </Link>
         ) : undefined
       }
+      toolbar={<MarketplaceFacets active="makers" />}
     >
       <Suspense key={q ?? ''} fallback={<GridSkeleton />}>
         <MakersGrid q={q} />
