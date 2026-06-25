@@ -23,7 +23,6 @@ import {
 } from '@/lib/page-editor/image-controls'
 import {
   Eyebrow,
-  DisplayHeading,
   accentize,
   toneField,
   alignField,
@@ -40,7 +39,21 @@ import {
   type LayoutValue,
   type ComponentConfig,
 } from './kit'
-import { imgField } from '@/lib/page-editor/fields'
+import {
+  imgField,
+  emphasisField,
+  emphasisDefault,
+  emphasisClasses,
+  cardStyleField,
+  cardStyleDefault,
+  cardStyleClass,
+  densityField,
+  densityDefault,
+  densityClasses,
+  type EmphasisValue,
+  type CardStyleValue,
+  type DensityValue,
+} from '@/lib/page-editor/fields'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. MediaText — alternating image + text row (standardizes the old ZigZag)
@@ -165,50 +178,60 @@ export function GalleryMediaBlock({
   items,
   columns,
   tileAspect,
-  radius,
   tone,
   width,
   align,
   pad,
   vis,
+  emphasis,
+  cardStyle,
+  density,
 }: {
   eyebrow?: string
   heading?: string
   items: { image?: string; title?: string; body?: string }[]
   columns?: string
   tileAspect?: string
-  radius?: string
   tone?: string
   width?: string
   align?: string
   pad?: string
   vis?: string
+  emphasis?: EmphasisValue
+  cardStyle?: CardStyleValue
+  density?: DensityValue
 }) {
   const ink = isInk(tone)
   const cols = GALLERY_COLS[columns ?? '2'] ?? GALLERY_COLS['2']
-  const tileRadius = radiusClass(radius, 'rounded-2xl')
+  // `cardStyle` owns each tile's treatment + corner radius. Emphasis sizes and
+  // accents the heading; density drives the grid gap and each tile's inner
+  // caption padding.
+  const { scale, accent } = emphasisClasses(emphasis)
+  const tileClass = cardStyleClass(cardStyle, ink)
+  const { gap, pad: itemPad } = densityClasses(density)
   return (
     <section className={`px-6 ${pad ?? 'py-16 sm:py-20'} ${toneBg(tone)} ${vis ?? ''}`}>
       <div className={`${widthClass(width)} mx-auto ${alignClass(align)}`}>
         {(eyebrow || heading) && (
           <div className="mb-8">
             {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-            {heading && <DisplayHeading ink={ink}>{heading}</DisplayHeading>}
+            {heading && (
+              <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+                {heading}
+              </h2>
+            )}
           </div>
         )}
-        <div className={`grid grid-cols-1 ${cols} gap-5 text-left`}>
+        <div className={`grid grid-cols-1 ${cols} ${gap} text-left`}>
           {(items || []).map((f, i) => (
-            <article
-              key={i}
-              className={`${tileRadius} overflow-hidden border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface'}`}
-            >
+            <article key={i} className={`overflow-hidden ${tileClass}`}>
               <SiteImage
                 src={f.image || '/images/site/lab-pool.jpg'}
                 alt={f.title || ''}
                 aspect={tileAspect ?? '16/10'}
                 sizes="(min-width: 640px) 40rem, 100vw"
               />
-              <div className="p-6">
+              <div className={itemPad}>
                 {f.title && <h3 className={`text-xl font-bold mb-1.5 ${ink ? 'text-on-ink' : 'text-text'}`}>{f.title}</h3>}
                 {f.body && <p className={`text-base leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{f.body}</p>}
               </div>
@@ -248,10 +271,10 @@ export const mediaComponents: Record<string, ComponentConfig> = {
     fields: {
       image: imgField,
       alt: { type: 'text', label: 'Alt text' },
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
-      kicker: { type: 'text', label: 'Italic kicker (optional)' },
+      kicker: { type: 'textarea', label: 'Italic kicker (optional)' },
       body: { type: 'textarea', label: 'Body (**bold**, *italic*, [link](/path))' },
       side: {
         type: 'radio',
@@ -335,7 +358,7 @@ export const mediaComponents: Record<string, ComponentConfig> = {
       size: { ...sizeField, label: 'Width' },
       radius: radiusField,
       shadow: shadowField,
-      caption: { type: 'text', label: 'Caption (optional)' },
+      caption: { type: 'textarea', label: 'Caption (optional)' },
       // Width is the image's own `size`; expose Background + Align for parity.
       tone: toneField,
       align: alignField,
@@ -375,13 +398,13 @@ export const mediaComponents: Record<string, ComponentConfig> = {
   Gallery: {
     label: 'Gallery',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      heading: { type: 'text', label: 'Heading (optional)' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      heading: { type: 'textarea', label: 'Heading (optional)' },
       items: {
         type: 'array',
         arrayFields: {
           image: imgField,
-          title: { type: 'text', label: 'Title (optional)' },
+          title: { type: 'textarea', label: 'Title (optional)' },
           body: { type: 'textarea', label: 'Caption (optional)' },
         },
         getItemSummary: (i: { title?: string }) => i.title || 'Tile',
@@ -406,7 +429,9 @@ export const mediaComponents: Record<string, ComponentConfig> = {
           { label: 'Portrait (4:5)', value: '4/5' },
         ],
       },
-      radius: radiusField,
+      emphasis: emphasisField,
+      cardStyle: cardStyleField,
+      density: densityField,
       ...blockFields(),
     },
     defaultProps: {
@@ -415,17 +440,21 @@ export const mediaComponents: Record<string, ComponentConfig> = {
       items: [],
       columns: '2',
       tileAspect: '16/10',
-      radius: 'md',
+      emphasis: emphasisDefault,
+      cardStyle: cardStyleDefault,
+      density: densityDefault,
       ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, heading, items, columns, tileAspect, radius, tone, width, align, layout }) => (
+    render: ({ eyebrow, heading, items, columns, tileAspect, emphasis, cardStyle, density, tone, width, align, layout }) => (
       <GalleryMediaBlock
         eyebrow={(eyebrow as string) || undefined}
         heading={(heading as string) || undefined}
         items={(items as { image?: string; title?: string; body?: string }[]) || []}
         columns={columns as string}
         tileAspect={tileAspect as string}
-        radius={radius as string}
+        emphasis={emphasis as EmphasisValue}
+        cardStyle={cardStyle as CardStyleValue}
+        density={density as DensityValue}
         tone={tone as string}
         width={width as string}
         align={align as string}

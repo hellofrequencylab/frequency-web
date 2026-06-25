@@ -18,7 +18,7 @@ import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from
 export const dynamicComponents: Record<string, ComponentConfig> = {
   LiveStats: {
     label: 'Live stat counts',
-    fields: { eyebrow: { type: 'text' }, heading: { type: 'text' }, layout: layoutField },
+    fields: { eyebrow: { type: 'textarea' }, heading: { type: 'textarea' }, layout: layoutField },
     defaultProps: { eyebrow: 'Not a someday idea', heading: 'It’s already happening.', layout: layoutDefault },
     render: ({ eyebrow, heading, layout, puck }) => (
       <LiveStatsBlock
@@ -46,7 +46,7 @@ export const dynamicComponents: Record<string, ComponentConfig> = {
 
   LivePosts: {
     label: 'Community posts (live)',
-    fields: { heading: { type: 'text' }, layout: layoutField },
+    fields: { heading: { type: 'textarea' }, layout: layoutField },
     defaultProps: { heading: 'People showing up for each other', layout: layoutDefault },
     render: ({ heading, layout, puck }) => (
       <LivePostsBlock

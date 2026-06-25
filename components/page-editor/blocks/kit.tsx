@@ -10,6 +10,10 @@ import {
   toneField,
   widthField,
   alignField,
+  emphasisField,
+  emphasisDefault,
+  emphasisClasses,
+  type EmphasisValue,
 } from '@/lib/page-editor/fields'
 import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from '@/lib/page-editor/layout'
 import { safeHref } from '@/lib/page-editor/richtext'
@@ -37,7 +41,8 @@ export { toneBg, isInk, widthClass, alignClass }
 // ─────────────────────────────────────────────────────────────────────────────
 
 export { accentize, toneField, widthField, alignField, layoutField, layoutDefault, padClass, visClass }
-export type { LayoutValue }
+export { emphasisField, emphasisDefault, emphasisClasses }
+export type { LayoutValue, EmphasisValue }
 export type { ComponentConfig }
 
 // The standard "adjust" field set, trailing on a content block. Spread into a
@@ -185,18 +190,11 @@ export const headingComponents: Record<string, ComponentConfig> = {
   Heading: {
     label: 'Heading',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
-      kicker: { type: 'text', label: 'Italic kicker (optional)' },
-      size: {
-        type: 'select',
-        label: 'Size',
-        options: [
-          { label: 'Default', value: 'default' },
-          { label: 'Large', value: 'lg' },
-        ],
-      },
+      kicker: { type: 'textarea', label: 'Italic kicker (optional)' },
+      emphasis: emphasisField,
       ...blockFields(),
     },
     defaultProps: {
@@ -204,19 +202,23 @@ export const headingComponents: Record<string, ComponentConfig> = {
       title: 'Section heading',
       titleAccent: '',
       kicker: '',
-      size: 'default',
+      emphasis: emphasisDefault,
       ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, title, titleAccent, kicker, size, tone, width, align, layout }) => (
-      <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
-        <HeadingBlock
-          eyebrow={eyebrow || undefined}
-          title={accentize(title, titleAccent)}
-          kicker={kicker || undefined}
-          ink={isInk(tone)}
-          size={size as 'default' | 'lg'}
-        />
-      </Band>
-    ),
+    render: ({ eyebrow, title, titleAccent, kicker, emphasis, tone, width, align, layout }) => {
+      const ink = isInk(tone)
+      const { scale, accent } = emphasisClasses(emphasis as EmphasisValue)
+      return (
+        <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
+          {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
+          <h2
+            className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}
+          >
+            {accentize(title, titleAccent)}
+          </h2>
+          {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
+        </Band>
+      )
+    },
   },
 }
