@@ -22,6 +22,8 @@
 | A4 | **Config / env switches** | 🧑 | Much of AI/comms/payout stack inert without them. | Set `ANTHROPIC_API_KEY` + flip `platform_flags.ai_enabled`; `RESEND_WEBHOOK_SECRET`; VAPID push keys; `NEXT_PUBLIC_SITE_URL`/app URLs; OAuth redirect URLs; enable auth leaked-password protection + secret-scanning push-protection. |
 | A5 | **Submit sitemap** | 🧑 | `app/sitemap.ts` is live + now includes partners. | Submit to Google Search Console + Bing; verify `frequencylocal.com`. |
 | A6 | **`spatial_ref_sys` RLS advisory** | 🧑 | PostGIS system reference table flagged (RLS off). | Known/expected — do **not** blanket-enable (would break PostGIS). Acknowledge + ignore, or add a read-only policy if desired. |
+| A7 | **Apply the 2026-06-25 security migrations to prod** | 🧑 | The full-site survey ([`AUDIT-2026-06-25.md`](AUDIT-2026-06-25.md)) shipped three migrations: `20260817000100` (revoke the `dashboard_*_summary` IDOR grant — a **live**, PostGREST-reachable hole until applied), `20260817000000` (fix the always-false Space DB gates), `20260817000200` (listings `WITH CHECK`). | Apply via Supabase MCP / dashboard and record it (as ADR-371 did); the repo files don't retroactively change the live grant/predicate. |
+| A8 | **Decide Spaces-SEO + Resonance-launch directions** | 🔴 | Two built-but-blocked features from the survey: networked `/spaces/<slug>` is anon-redirected yet sitemap-advertised (#8); the Resonance Engine has no member opt-in entry point so it dead-ends (#5). | **Product calls** — see [`AUDIT-2026-06-25.md`](AUDIT-2026-06-25.md) Owner-gated #2/#3 before either is wired. |
 
 ## B. 🟡 In-repo — I can build (working down this list)
 
@@ -58,6 +60,13 @@ PRs #770–#788, all merged to `main`:
 - #781 Home live-proof band streams (B1) · #782 db-tests workflow (B2) · #783 partner nav (B4)
 - #784 QR DNS-rebind hardening (B6) · #785 registry-driven rail (ADR-278, B3)
 - #786 public `/discover/practices` (ADR-279, B9) · #787 types regenerated · #788 A+ roadmap
+
+**Full-site survey (2026-06-25, [`AUDIT-2026-06-25.md`](AUDIT-2026-06-25.md)):** 12-slice
+fan-out audit + adversarial verify. 8 confirmed HIGH defects (0 refuted), 10 medium, 15 low.
+Fixed in-repo: Vera member privilege-escalation, `deactivateMember` janitor gate, cron
+constant-time compare, broadcast-editor body loss, `/network` unbounded scan, circle-feed
+streaming, retired-link redirect hops, canonical breadcrumb + meta length, three security
+migrations. Deferred to owner: A7 (apply migrations), A8 (Spaces-SEO + Resonance launch).
 
 **In flight (this PR):**
 - **Gem-store redemption fix (ADR-280)** — `redeemItem` no longer charges Gems for items it can't deliver; the `membership-1mo`/`3mo` credit SKUs are refused + deactivated; perks read "Recorded ✓". The full undeveloped-trail sweep (2026-06-15) is folded into **[`A-PLUS-ROADMAP.md`](A-PLUS-ROADMAP.md) §9** — that section is now the catch-all for every dormant seam.

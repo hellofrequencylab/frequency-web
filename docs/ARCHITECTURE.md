@@ -175,13 +175,17 @@ the new utility doesn't show up (the cache can serve a stale stylesheet).
 ## Local development
 
 ```
-npm run dev        # Turbopack dev server
-npx tsc --noEmit   # type check (the project's main correctness gate)
-npx eslint <paths> # lint
+pnpm dev           # Turbopack dev server
+pnpm exec tsc --noEmit   # type check (a primary correctness gate)
+pnpm lint          # eslint
+pnpm test          # vitest (run once)
+pnpm check:authz   # authz-contract gate (admin-client server actions must self-guard)
 ```
 
-There is **no test framework** in this repo. `tsc` + `eslint` + manual
-verification are the only safety nets; change shared code carefully.
+The safety nets are `tsc` + `eslint` + **vitest** (2,200+ unit tests under
+`test/` and co-located `*.test.ts`) + the `check:authz` contract gate, all run by
+the `ci` workflow on every PR. A pgTAP RLS/RPC suite (`pnpm test:rls`) runs via the
+manual `db-tests` workflow. Change shared code carefully and keep the suite green.
 
 ## Database / migrations
 
