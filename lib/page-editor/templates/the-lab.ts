@@ -1,27 +1,39 @@
 import type { Data } from '@measured/puck'
-import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
+import {
+  BETA_CTA_LABEL,
+  BETA_CTA_HREF,
+  BETA_CTA_SECONDARY_LABEL,
+  FOUNDING_PLACE,
+} from '@/lib/site'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THE LAB — the vision template. Built on the EXEMPLAR shape in
+// THE LAB — the VISION template. Built on the EXEMPLAR shape in
 // templates/the-community.ts: one shared `L` layout literal, an alternating tone
-// beat, Statement interstitials between movements, exactly one dark (`ink`) beat
-// near the end, then the close.
+// beat (surface → canvas → surface …), Statement interstitials between movements,
+// exactly one dark (`ink`) beat near the end, then the close.
 //
-// What this page does: paints the third space the communities are growing toward,
-// framed clearly as where we are HEADED, not a place open today. Building as an
-// instrument, told in concrete sensory detail (light, sound, materials, heat,
-// cold, water), no wellness jargon. Then the BackTheBuild band carries the vision
-// plus the founding ask on one scroll, with a light "bring it to your city" thread.
+// What this page does: paints the Frequency Lab as the third place the community
+// is growing toward, the house it earns together. It is scrupulously HONEST that
+// the Lab is NOT open yet (CONTENT-VOICE §7: "the first Lab does not exist yet").
+// So the whole page is framed as what we're building, never a door you can walk
+// through today. The sensory tour is written as "picture it / the plan / what
+// we're building," never present-tense "you sit in the sauna." Then the growth
+// path (Circle → Hub → Nexus → Outpost → Lab) shows the Lab is the end of a real
+// ladder, and the BackTheBuild close carries the founding ask plus the honest
+// "not yet, here's the path."
 //
-// CTA RULE for The Lab (the one page allowed a second primary action): the page's
-// primary CTA is Back the Build, carried by the closing BackTheBuild band; the one
-// quiet secondary is Join the Beta (BETA_CTA_LABEL/BETA_CTA_HREF). The hero leads
-// with the narrative and carries no button; we never stack buttons.
+// CTA RULE for The Lab: the primary action is Back the Build, carried by the
+// closing BackTheBuild band, framed around JOINING/BUILDING the community that
+// brings the Lab, never "come visit." The one quiet secondary is the member path
+// (BETA_CTA_SECONDARY_LABEL/HREF), carried in the note under the button. The hero
+// leads with the narrative and carries no button; we never stack buttons.
 //
-// Canon: the Frequency Lab is the standalone third space; the Circle is the unit;
-// the community always comes first, the Lab is where it gets a body. No member
-// counts, no leaderboards, no invented numbers. No em dashes. Sentence-case
-// headings.
+// Canon (docs/NAMING.md): the Frequency Lab is the standalone for-profit venue;
+// an Outpost is the brick-and-mortar HQ of a Nexus and the seed toward a Lab;
+// Circles meet in homes and public spaces, never Outposts. Community structure is
+// Circle → Hub → Nexus, with the Outpost as a Nexus's home base. The community
+// always comes first; the Lab is where it gets a body. No member counts, no
+// leaderboards, no invented numbers. No em dashes. Sentence-case headings.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
@@ -29,19 +41,20 @@ const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as 
 export const data: Data = {
   root: {},
   content: [
-    // ── Hero ── image variant, the dream stated plainly as where we are headed,
-    // no button (the narrative leads; the founding ask waits for the close). ─────
+    // ── Hero ── image variant, the vision stated plainly as where we are headed,
+    // no button (the narrative leads; the founding ask waits for the close). The
+    // subtitle is unambiguous: it does not exist yet, we're building the first. ──
     {
       type: 'Hero',
       props: {
         id: 'tl-hero',
         variant: 'image',
-        eyebrow: 'The Lab',
-        title: 'A third space with a front door.',
-        titleAccent: 'front door',
+        eyebrow: 'The Frequency Lab',
+        title: 'The third place the community is building toward.',
+        titleAccent: 'building toward',
         subtitle:
-          'Not home, not work. A real room you can walk into: dark wood, warm light, steam and cold water, somewhere to switch off in person. We are building the first one now.',
-        image: '/images/site/lab-thermal.jpg',
+          "Not home, not work. A real room you can walk into: dark wood, warm light, steam and cold water, a cafe, and somewhere to switch off in person. It doesn't exist yet. The community is the thing that builds it, and the first one starts where that community is strongest.",
+        image: '/images/site/lab-concept.jpg',
         focal: 'center',
         minHeight: 'screen',
         ctaPrimaryLabel: '',
@@ -56,16 +69,16 @@ export const data: Data = {
       },
     },
 
-    // ── The premise ── say it plainly: a feed cannot hold a room. The Lab is the
-    // body the community grows toward, named as a plan, not a place open today. ──
+    // ── The premise ── say it plainly: a feed has no doors. The Lab is the body
+    // the community grows toward, named as a plan, not a place open today. ───────
     {
       type: 'Heading',
       props: {
         id: 'tl-premise-h',
-        eyebrow: 'The premise',
-        title: 'A community needs a body.',
-        titleAccent: 'body',
-        kicker: 'The app is the thread. The Lab is where it lands.',
+        eyebrow: 'Why a building',
+        title: 'The feed has no doors.',
+        titleAccent: 'no doors',
+        kicker: 'The app is the thread. The Lab is the room we want it to land in.',
         size: 'default',
         tone: 'canvas',
         width: 'default',
@@ -77,39 +90,39 @@ export const data: Data = {
       type: 'Text',
       props: {
         id: 'tl-premise-b',
-        body: "A feed can keep people warm between meetings. It can't hold a sound bath, a cold plunge, or the hour after when nobody wants to leave. The Lab is the room those things happen in: a place built to be felt, not scrolled.\n\nWe are honest about where this stands. The Lab is not open yet. It is the place the community is growing toward, and the first one is being designed and built right now. Light, sound, temperature, and the people in the room are all tuned to do one thing: bring you back to yourself, then back to each other.",
+        body: "A feed can keep people warm between meetings. It can't hold a sound bath, a cold plunge, or the hour after when nobody wants to leave. Those things need a room with a front door, and a feed has no doors.\n\nSo here is the honest version. The Frequency Lab is not open yet. There is no address to give you. It is the third place the community is building toward, and the first one is being designed now. We are showing you the plan so you can help build it, not booking you a session.",
         size: 'lg',
         tone: 'canvas',
         width: 'default',
         align: 'left',
-        layout: L,
+        layout: { spaceTop: 'none', spaceBottom: 'default', visibility: 'all' },
       },
     },
     {
       type: 'Statement',
       props: {
         id: 'tl-stmt-1',
-        text: 'Not a gym. Not a cafe. Not a studio. All of it, on purpose.',
-        accent: 'All of it',
+        text: 'Not a gym. Not a cafe. Not a studio. The plan is all of it, under one roof.',
+        accent: 'all of it',
         tone: 'surface',
         layout: L,
       },
     },
 
-    // ── Sensory tour 1 ── movement studios. Building as instrument: wood, plants,
-    // sound that wraps the room. Concrete detail, no wellness jargon. ────────────
+    // ── What a Lab is ── define the thing plainly before the sensory tour, so the
+    // tour reads as the rooms inside a known plan, not a place that exists. ──────
     {
       type: 'MediaText',
       props: {
-        id: 'tl-studios',
-        image: '/images/site/lab-concept.jpg',
-        alt: 'A warm, plant-filled movement studio inside The Lab, lit for an evening class',
-        eyebrow: 'Movement studios',
-        title: 'Rooms built to move you.',
-        titleAccent: 'move you',
-        kicker: 'Step in off the street and the noise drops away.',
-        body: 'Wood underfoot, plants in the corners, and sound that wraps the whole room. Breathwork at sunrise, strength through the day, dance once the lights go low. The floor is sprung, the light is low and warm, and the speakers sit where you feel the bass in your chest, not your ears.\n\nThe schedule is shaped by the community, not a franchise playbook. The practices people show up for are the ones that stay on the board.',
-        side: 'left',
+        id: 'tl-what',
+        image: '/images/site/lab-storefront.jpg',
+        alt: 'A concept render of the planned Frequency Lab street front at dusk, warm light behind the glass',
+        eyebrow: 'What a Lab is',
+        title: 'One building, tuned for showing up in person.',
+        titleAccent: 'in person',
+        kicker: 'Think third place, not gym membership.',
+        body: "A Frequency Lab is one standalone building designed around a single idea: give a local community somewhere real to be together. Movement rooms, a thermal circuit, a cold pool, a cafe and storefront, and a lounge built for the lingering most places try to prevent.\n\nIt is the for-profit venue at the top of the structure. When a Lab exists, it becomes the home base for the Outpost nearby. The pictures here are concept renders of that plan, so you can see what we mean by a room you'd actually want to live near.",
+        side: 'right',
         imgAspect: 'landscape',
         focal: 'center',
         ctaLabel: '',
@@ -121,25 +134,51 @@ export const data: Data = {
       },
     },
 
+    // ── Sensory tour 1 ── movement studios. Building as instrument: wood, plants,
+    // sound that wraps the room. Concrete detail, framed as the plan ("picture",
+    // "designed to"), no wellness jargon, no present-tense "you do this here." ───
+    {
+      type: 'MediaText',
+      props: {
+        id: 'tl-studios',
+        image: '/images/site/lab-concept.jpg',
+        alt: 'A concept render of a warm, plant-filled movement studio inside the planned Lab, lit for an evening class',
+        eyebrow: 'The plan: movement studios',
+        title: 'Rooms designed to move you.',
+        titleAccent: 'move you',
+        kicker: 'Picture stepping in off the street and the noise dropping away.',
+        body: 'Wood underfoot, plants in the corners, and sound that wraps the whole room. Breathwork at sunrise, strength through the day, dance once the lights go low. The floors would be sprung, the light low and warm, the speakers set where you feel the bass in your chest, not your ears.\n\nThe schedule gets shaped by the community, not a franchise playbook. The practices people show up for would be the ones that stay on the board.',
+        side: 'left',
+        imgAspect: 'landscape',
+        focal: 'center',
+        ctaLabel: '',
+        ctaHref: '',
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
     // ── Sensory tour 2 ── the thermal circuit. Heat then cold then quiet. Cedar,
-    // steam, still water. The loop the regulars build a week around. ────────────
+    // steam, still water. Framed as the loop we want to build. ──────────────────
     {
       type: 'MediaText',
       props: {
         id: 'tl-thermal',
         image: '/images/site/lab-thermal.jpg',
-        alt: 'The cedar sauna and thermal circuit at The Lab, glowing in amber light',
-        eyebrow: 'The thermal circuit',
+        alt: 'A concept render of the cedar sauna and thermal circuit planned for the Lab, glowing in amber light',
+        eyebrow: 'The plan: a thermal circuit',
         title: 'Heat, then cold, then quiet.',
         titleAccent: 'cold',
         kicker: 'Cedar that smells like a forest at the back of your throat.',
-        body: 'Sit in the sauna until the room goes amber and the mind goes quiet. Steam thick enough to soften your shoulders. This is the first half of the loop, the part that opens you up before the cold snaps you back.\n\nTwenty minutes in here can reset a whole day. It is the ritual the regulars build their week around.',
+        body: 'The first half of the loop is the sauna: steam thick enough to soften your shoulders, hot enough that the room goes amber and the mind goes quiet. It is the part that opens you up before the cold snaps you back.\n\nThis is the kind of twenty minutes that can reset a whole day. We want it to be the loop a community builds a week around.',
         side: 'right',
         imgAspect: 'portrait',
         focal: 'center',
         ctaLabel: '',
         ctaHref: '',
-        tone: 'canvas',
+        tone: 'surface',
         width: 'default',
         align: 'left',
         layout: L,
@@ -153,39 +192,14 @@ export const data: Data = {
       props: {
         id: 'tl-pool',
         image: '/images/site/lab-pool.jpg',
-        alt: 'The cold plunge pool at The Lab, still water under low light',
-        eyebrow: 'The cold pool',
+        alt: 'A concept render of the cold plunge pool planned for the Lab, still water under low light',
+        eyebrow: 'The plan: a cold pool',
         title: 'Shock it all loose.',
         titleAccent: 'loose',
         kicker: 'Straight from the cedar into still, cold water.',
-        body: 'The contrast is the medicine. One sharp breath in, then the noise in your head goes flat and clean. You come up grinning at a stranger across the water before you have even said hello.\n\nDo it alone and it is a habit. Do it with your Circle and it becomes the thing you text each other about at six in the morning.',
+        body: 'The contrast is the medicine. One sharp breath in, then the noise in your head goes flat and clean, and you come up grinning at a stranger across the water before you have even said hello.\n\nDo it alone and it is a habit. Do it with your Circle and it becomes the thing you text each other about at six in the morning. That is the version of this room we are after.',
         side: 'left',
         imgAspect: 'landscape',
-        focal: 'center',
-        ctaLabel: '',
-        ctaHref: '',
-        tone: 'surface',
-        width: 'default',
-        align: 'left',
-        layout: L,
-      },
-    },
-
-    // ── Sensory tour 4 ── the connection bar. Where the talking happens. No
-    // alcohol agenda, just lingering that turns strangers into regulars. ────────
-    {
-      type: 'MediaText',
-      props: {
-        id: 'tl-bar',
-        image: '/images/site/lab-lounge.jpg',
-        alt: 'The connection bar lounge at The Lab: dark wood, warm light, soft seating',
-        eyebrow: 'The connection bar',
-        title: 'Where the talking happens.',
-        titleAccent: 'talking',
-        kicker: 'Land at the bar with a coffee and somebody you met an hour ago.',
-        body: 'No alcohol agenda. A coffee, a tea, an adaptogen tonic, and the kind of lingering most places are designed to prevent. Low light, soft seats, and a counter long enough that nobody has to stand alone.\n\nThis is the third place between the studio and the door, where strangers quietly become the people you came for.',
-        side: 'right',
-        imgAspect: 'portrait',
         focal: 'center',
         ctaLabel: '',
         ctaHref: '',
@@ -196,25 +210,51 @@ export const data: Data = {
       },
     },
 
+    // ── Sensory tour 4 ── the cafe and connection bar. Where the talking happens.
+    // No alcohol agenda, just the lingering that turns strangers into regulars. ──
+    {
+      type: 'MediaText',
+      props: {
+        id: 'tl-bar',
+        image: '/images/site/lab-lounge.jpg',
+        alt: 'A concept render of the cafe and lounge planned for the Lab: dark wood, warm light, soft seating',
+        eyebrow: 'The plan: a cafe and lounge',
+        title: 'Where the talking happens.',
+        titleAccent: 'talking',
+        kicker: 'Picture landing at the counter with a coffee and somebody you met an hour ago.',
+        body: 'No alcohol agenda. A coffee, a tea, an adaptogen tonic, and the kind of lingering most places are designed to prevent. Low light, soft seats, and a counter long enough that nobody has to stand alone.\n\nThis is the storefront and the third place between the studio and the door, the room where strangers quietly become the people you came for.',
+        side: 'right',
+        imgAspect: 'portrait',
+        focal: 'center',
+        ctaLabel: '',
+        ctaHref: '',
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
     // ── Inside ── quick-scan grid of the rooms under one roof, tuned room by room.
+    // Headline names it as the plan, and the cards stay future-framed. ──────────
     {
       type: 'FeatureGrid',
       props: {
         id: 'tl-inside',
-        eyebrow: 'Inside',
+        eyebrow: 'Inside the plan',
         title: 'One building, tuned room by room.',
         titleAccent: 'room by room',
         style: 'icon',
         columns: '2',
         items: [
-          { icon: 'Flame', image: '', title: 'Movement studios', body: 'Sprung floors, warm light, sound that wraps the room. Programmed to calm you down, not chase a mirror.', href: '' },
+          { icon: 'Flame', image: '', title: 'Movement studios', body: 'Sprung floors, warm light, sound that wraps the room. Built to calm you down, not chase a mirror.', href: '' },
           { icon: 'Sun', image: '', title: 'The thermal circuit', body: 'Cedar sauna and steam, hot enough to quiet the mind. The first half of the loop that resets you to baseline.', href: '' },
-          { icon: 'Leaf', image: '', title: 'The cold pool', body: 'A plunge that shocks everything loose. Alone it is a habit, with your Circle it is a ritual.', href: '' },
-          { icon: 'Coffee', image: '', title: 'The connection bar', body: 'No alcohol agenda. Adaptogens, coffee, tea, and the lingering that turns strangers into regulars.', href: '' },
-          { icon: 'Sparkles', image: '', title: 'The events floor', body: 'Sound baths, talks, ceremony, celebration. A flexible room built to hold a crowd that already knows each other.', href: '' },
-          { icon: 'Users', image: '', title: 'Where Circles meet', body: 'The groups you find in the app get a front door here. The feed brings you, the room takes over.', href: '' },
+          { icon: 'Leaf', image: '', title: 'The cold pool', body: 'A plunge to shock everything loose. Alone it is a habit, with your Circle it is a ritual.', href: '' },
+          { icon: 'Coffee', image: '', title: 'The cafe and lounge', body: 'No alcohol agenda. Adaptogens, coffee, tea, and the lingering that turns strangers into regulars.', href: '' },
+          { icon: 'Sparkles', image: '', title: 'The events floor', body: 'Sound baths, talks, ceremony, celebration. A flexible room to hold a crowd that already knows each other.', href: '' },
+          { icon: 'Users', image: '', title: 'A front door for Circles', body: 'The groups you find in the app would get a room here. The feed brings you, the building takes over.', href: '' },
         ],
-        tone: 'surface',
+        tone: 'canvas',
         width: 'default',
         align: 'left',
         layout: L,
@@ -224,26 +264,78 @@ export const data: Data = {
       type: 'Statement',
       props: {
         id: 'tl-stmt-2',
-        text: 'The community comes first. The Lab is where it gets a body.',
-        accent: 'gets a body',
-        tone: 'canvas',
+        text: 'The community comes first. The Lab is the house it earns together.',
+        accent: 'earns together',
+        tone: 'surface',
         layout: L,
       },
     },
 
-    // ── The single dark beat ── where it begins. The first room, in one
-    // neighborhood, built to be repeatable so it can open in your city next. ────
+    // ── A place beat ── the sunset/atmosphere image, tying the venue to a real
+    // landscape and the founding place, still honest about pre-launch. ──────────
     {
       type: 'MediaText',
       props: {
-        id: 'tl-begins',
+        id: 'tl-place',
+        image: '/images/site/sunset.jpg',
+        alt: 'A wide, calm sunset over the coast near where the first community is taking root',
+        eyebrow: 'Where it starts',
+        title: 'The first one starts where the community is strongest.',
+        titleAccent: 'strongest',
+        kicker: `The community is already taking root in ${FOUNDING_PLACE}.`,
+        body: `A Lab does not get dropped into a town and hope people come. It is the opposite. By the time a place is ready for one, the Circles are already meeting, the rituals are already forming, and the regulars already know each other by name.\n\nThat is why the first Lab starts in ${FOUNDING_PLACE}: not because the building is ready, but because the community is becoming strong enough to hold one. The room follows the people, never the other way around.`,
+        side: 'left',
+        imgAspect: 'landscape',
+        focal: 'center',
+        ctaLabel: '',
+        ctaHref: '',
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
+    // ── How it grows ── the real ladder, on canon: Circle → Hub → Nexus →
+    // Outpost → Lab. This is the spine of the "not yet, here's the path" frame:
+    // the Lab is the END of a structure that starts with one Circle. ────────────
+    {
+      type: 'FeatureGrid',
+      props: {
+        id: 'tl-path',
+        eyebrow: 'How it grows',
+        title: 'A Lab is the end of a path that starts with one Circle.',
+        titleAccent: 'one Circle',
+        style: 'number',
+        columns: '3',
+        items: [
+          { icon: 'Users', image: '', title: 'Circles', body: 'A few people, a standing time, a room someone holds open. They meet in homes and public spaces. This is where everything starts.', href: '' },
+          { icon: 'Compass', image: '', title: 'Hubs', body: 'Circles nearby cluster into a Hub. Now there are enough people in one area to share a calendar and back each other up.', href: '' },
+          { icon: 'MapPin', image: '', title: 'A Nexus', body: 'Hubs grow into a Nexus, a whole local community. This is the scale that can support a place of its own.', href: '' },
+          { icon: 'Star', image: '', title: 'An Outpost', body: 'A Nexus plants an Outpost, its brick-and-mortar home base. The seed of a Lab, and proof the room has people to fill it.', href: '' },
+          { icon: 'Flame', image: '', title: 'A Frequency Lab', body: 'When a Nexus is strong enough, the Outpost grows into a full Lab, with the building, the heat, the cold, and the cafe.', href: '' },
+          { icon: 'Handshake', image: '', title: 'Then the next city', body: 'The first Lab is built to be repeatable, so the version that works can open where your community is strong enough next.', href: '' },
+        ],
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
+    // ── The single dark beat ── the honest "not yet" stated head-on, in ink: no
+    // address, no opening date, just a real path and an honest invitation. ──────
+    {
+      type: 'MediaText',
+      props: {
+        id: 'tl-honest',
         image: '/images/site/lab-storefront.jpg',
-        alt: 'The street front of the first Frequency Lab at dusk, warm light behind the glass',
-        eyebrow: 'Where it begins',
-        title: 'The first room, then the next city.',
-        titleAccent: 'next city',
+        alt: 'A concept render of the first Frequency Lab street front at night, warm light behind the glass, doors not yet open',
+        eyebrow: 'The honest part',
+        title: 'Not yet. Here is the path.',
+        titleAccent: 'the path',
         kicker: `Founded in ${FOUNDING_PLACE}, built to travel.`,
-        body: `The first Lab is a prototype: one room, in one neighborhood, shaped by the people it serves. By the time a place is ready for a Lab, the community is already there. The Circles are meeting, the rituals are forming, the regulars know each other by name.\n\nIt is built from day one to be repeatable, so the version that works in ${FOUNDING_PLACE} can open in your city next. If you want to bring one home, that thread starts the same way everything here does: with a Circle near you.`,
+        body: `There is no Lab to visit today. No address, no opening night on the calendar. We could fake a countdown, but that is exactly the kind of thing this place exists to be the opposite of.\n\nWhat is real is the path. The first room is being designed now, and it gets built the same way everything here does: a Circle near you, then a Hub, then a Nexus strong enough to hold a Lab. If you want a third place in your town, the honest first step is not waiting for a door. It is helping open one.`,
         side: 'right',
         imgAspect: 'landscape',
         focal: 'center',
@@ -260,20 +352,21 @@ export const data: Data = {
       props: {
         id: 'tl-marquee',
         items: [
-          { text: 'Move' },
-          { text: 'Sweat' },
-          { text: 'Plunge' },
-          { text: 'Linger' },
-          { text: 'Gather' },
-          { text: 'Belong' },
+          { text: 'Start a Circle' },
+          { text: 'Grow a Hub' },
+          { text: 'Build a Nexus' },
+          { text: 'Plant an Outpost' },
+          { text: 'Earn the Lab' },
+          { text: 'Then the next city' },
         ],
         layout: L,
       },
     },
 
     // ── Close ── BackTheBuild: the vision and the founding ask on one scroll. The
-    // page's primary CTA is Back the Build; the one quiet secondary is Join the
-    // Beta, carried in the note under the button. Renders its own dark band. ─────
+    // primary CTA (Back the build) is framed around BUILDING the community that
+    // brings the Lab, never "visit." The one quiet secondary is the member path,
+    // carried in the note under the button. Renders its own dark band. ──────────
     {
       type: 'BackTheBuild',
       props: {
@@ -281,15 +374,15 @@ export const data: Data = {
         eyebrow: 'Back the build',
         title: 'Help build the first room.',
         titleAccent: 'first room',
-        body: `The Lab is being built by the people who will use it. No investor playbook, just a community putting the first room together in ${FOUNDING_PLACE}, then handing the blueprint to the next city.\n\nBack the build and you are not buying a membership. You are putting your name on the wall of the place this all begins.`,
+        body: `The Lab is being built by the people who will use it. No investor playbook, just a community putting the first room together in ${FOUNDING_PLACE}, then handing the blueprint to the next city.\n\nBack the build and you are not buying a session at a place that does not exist yet. You are starting the Circle, growing the community, and putting your name on the wall of the house this all earns.`,
         tiers: [
-          { amount: 'Founding', name: 'Member', blurb: 'Your name among the first, and a seat saved for opening night.' },
-          { amount: 'Founding', name: 'Circle', blurb: 'Bring your Circle in together and help shape the room.' },
+          { amount: 'Founding', name: 'Member', blurb: 'Your name among the first, and a seat saved for opening night when it comes.' },
+          { amount: 'Founding', name: 'Circle', blurb: 'Bring your Circle in together and help shape the room from the start.' },
           { amount: 'Founding', name: 'Patron', blurb: 'Hold the door open for the neighbors who come after you.' },
         ],
-        ctaLabel: 'Back the build',
+        ctaLabel: BETA_CTA_LABEL,
         ctaHref: BETA_CTA_HREF,
-        secondaryNote: `Not ready to back it yet? ${BETA_CTA_LABEL} and we will bring you in as the build takes shape.`,
+        secondaryNote: `Not ready to lead one? You can ${BETA_CTA_SECONDARY_LABEL.replace(/^or /, '')}, and we will bring you in as the build takes shape.`,
         layout: L,
       },
     },

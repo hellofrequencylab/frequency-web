@@ -196,7 +196,7 @@ export default async function RootPage({
   if (data) {
     return (
       <>
-        <MarketingHeader overHero headerMenu={headerMenu} menuTimings={menuTimings} />
+        <MarketingHeader overHero isAuth={!!user} headerMenu={headerMenu} menuTimings={menuTimings} />
         <Render config={config} data={data} />
         <MarketingFooter menu={footerMenu} />
       </>
@@ -208,6 +208,7 @@ export default async function RootPage({
   return (
     <Splash
       referrer={referrer}
+      isAuth={!!user}
       headerMenu={headerMenu}
       footerMenu={footerMenu}
       menuTimings={menuTimings}
@@ -221,11 +222,13 @@ export default async function RootPage({
 //   the honest "we are early" beat → the short FAQ → one CTA into /start.
 function Splash({
   referrer,
+  isAuth = false,
   headerMenu,
   footerMenu,
   menuTimings,
 }: {
   referrer: { displayName: string; handle: string; avatarUrl: string | null } | null
+  isAuth?: boolean
   headerMenu?: ResolvedMenu
   footerMenu?: ResolvedMenu
   menuTimings?: MenuSettings
@@ -234,6 +237,7 @@ function Splash({
     <>
       <MarketingHeader
         overHero
+        isAuth={isAuth}
         headerMenu={headerMenu}
         menuTimings={menuTimings}
       />
