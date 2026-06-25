@@ -1,9 +1,9 @@
 ---
 title: Search
-description: Find people, circles, and more across Frequency.
+description: Find people, circles, places, and more across Frequency.
 category: connecting
 order: 4
-updated: 2026-06-03
+updated: 2026-06-25
 audience: member
 featureKeys: [search]
 status: published
@@ -14,6 +14,7 @@ Search helps you jump straight to what you're looking for instead of browsing fo
 ## What you can find
 
 - **People**: members by name or handle.
+- **Places**: jump straight to a part of Frequency by name, like the Marketplace, Housing, or the Shop. Matching places lead the results in a **Go to** group.
 - **Circles**: groups by name or topic.
 - Other content across the community.
 

@@ -351,6 +351,10 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/appearance', label: 'Theme Studio', desc: 'Brand themes, palettes, and seasonal looks. Edit and assign without code.', Icon: Palette, min: 'janitor', section: 'Platform' },
       { href: '/admin/spaces', label: 'Spaces', desc: 'White-label tenants: set each Space its theme and brand, view its live profile, or open the owner settings.', Icon: Building2, min: 'janitor', section: 'Platform' },
       { href: '/admin/page-layout', label: 'Page layout', desc: "Frame each route's right rail: Global, Scoped, or full-width Focus.", Icon: LayoutPanelLeft, min: 'janitor', section: 'Platform' },
+      // ── Commerce (the Marketplace: General market + Housing / Makers / Shop) ──
+      { href: '/admin/marketplace', label: 'Marketplace', desc: 'Listings, the shop catalog, and area visibility across General, Housing, Makers, and Shop.', Icon: ShoppingBag, min: 'admin', staffDomain: 'platform', section: 'Commerce' },
+      { href: '/admin/marketplace/orders', label: 'Marketplace orders', desc: 'Every order across makers and the shop, with one-tap refunds.', Icon: CreditCard, min: 'admin', staffDomain: 'platform', section: 'Commerce' },
+      { href: '/admin/marketplace/reports', label: 'Marketplace reports', desc: 'The moderation queue for reported listings and sellers.', Icon: ShieldAlert, min: 'admin', staffDomain: 'platform', section: 'Commerce' },
       // ── System ──
       { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor', section: 'System' },
       { href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', Icon: ScrollText, min: 'admin', section: 'System' },

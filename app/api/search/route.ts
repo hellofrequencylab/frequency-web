@@ -4,6 +4,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { connectionsOwnerId } from '@/lib/connections/access'
 import { searchVisibleLeads } from '@/lib/crm/people-search'
 import { rateLimitOk, clientIp, tooMany } from '@/lib/rate-limit'
+import { getViewerHats } from '@/lib/core/viewer-hats'
+import { accessTo } from '@/lib/core/access-matrix'
+import { matchDestinations } from '@/lib/search/destinations'
 
 // Live search for the in-app search overlay (components/search/search-overlay.tsx).
 // Returns a small slice of people / posts / events / leads for a query as JSON, so
@@ -15,7 +18,7 @@ import { rateLimitOk, clientIp, tooMany } from '@/lib/rate-limit'
 // locality — gated by lib/crm/visibility. Only stewards/staff have or can see these,
 // so we resolve the viewer through connectionsOwnerId() and skip the query otherwise.
 
-const EMPTY = { people: [], posts: [], events: [], leads: [] }
+const EMPTY = { people: [], posts: [], events: [], leads: [], pages: [] }
 
 export async function GET(request: Request) {
   if (!(await rateLimitOk('search', clientIp(request), 60, '60 s'))) return tooMany()
@@ -33,6 +36,15 @@ export async function GET(request: Request) {
 
   // Stewards (host+) / staff can also see leads — their own captures and network shares.
   const stewardId = await connectionsOwnerId()
+
+  // Navigable destinations matching the query, gated by the access matrix so a member
+  // never sees admin tools (and a visitor never sees member-only pages). Resolved from
+  // the live viewer's hats — the same projection the shell uses.
+  const hats = await getViewerHats()
+  const pages = matchDestinations(q)
+    .filter((d) => !d.surface || accessTo(d.surface, hats) !== 'none')
+    .slice(0, 6)
+    .map((d) => ({ href: d.href, label: d.label, group: d.group }))
 
   const admin = createAdminClient()
   const [peopleRes, postsRes, eventsRes, leads] = await Promise.all([
@@ -60,6 +72,7 @@ export async function GET(request: Request) {
   ])
 
   return NextResponse.json({
+    pages,
     people: peopleRes.data ?? [],
     posts: postsRes.data ?? [],
     events: eventsRes.data ?? [],
