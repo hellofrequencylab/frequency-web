@@ -13,7 +13,7 @@ import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 import { staffCan, type StaffRole, type StaffDomain } from '@/lib/core/staff-roles'
 // The vertical registry contributes nav areas (e.g. Marketplace). Type-only on the way
 // back (verticals imports NavArea as a type), so this is a one-way runtime dependency.
-import { verticalNavPlacements } from '@/lib/verticals'
+import { verticalNavPlacements, type NavPlacement } from '@/lib/verticals'
 
 // Access levels, lowest → highest. 'visitor' = everyone (even logged-out); the
 // rest map onto the community-role ladder.
@@ -133,11 +133,25 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
 // descriptor declares the area; nothing here changes.
 function composeNavAreas(): NavArea[] {
   const areas: NavArea[] = [...BASE_NAV_AREAS]
-  for (const { area, after } of verticalNavPlacements()) {
-    if (areas.some((a) => a.key === area.key)) continue // a base literal already provides it
-    const at = after ? areas.findIndex((a) => a.key === after) : -1
-    if (at >= 0) areas.splice(at + 1, 0, area)
-    else areas.push(area)
+  // Defense-in-depth (incident 2026-06-24): NAV_AREAS is computed at module load and read by
+  // the shared app shell on EVERY route, so a malformed/throwing vertical placement must never
+  // be fatal. A bad placement is skipped; the rest of the nav still composes.
+  let placements: NavPlacement[] = []
+  try {
+    placements = verticalNavPlacements()
+  } catch {
+    placements = []
+  }
+  for (const { area, after } of placements) {
+    try {
+      if (!area?.key) continue
+      if (areas.some((a) => a.key === area.key)) continue // a base literal already provides it
+      const at = after ? areas.findIndex((a) => a.key === after) : -1
+      if (at >= 0) areas.splice(at + 1, 0, area)
+      else areas.push(area)
+    } catch {
+      /* skip a single bad placement, keep the rest of the nav */
+    }
   }
   return areas
 }
