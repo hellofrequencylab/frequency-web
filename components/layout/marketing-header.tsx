@@ -63,6 +63,7 @@ export function MarketingHeader({
         className="ml-3"
         headerMenu={headerMenu}
         viewerRole="visitor"
+        isAuth={isAuth}
         timings={menuTimings}
       />
 
