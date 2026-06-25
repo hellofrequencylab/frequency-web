@@ -909,6 +909,30 @@ export async function reorderItems(
   }
 }
 
+/** Bulk position / parent update for drag-and-drop reordering of category BOXES.
+ *  Mirrors reorderItems: each update sets a new position; parent_id is optional (for
+ *  nesting a box under another). Used by the visual "Arrange" board. */
+export async function reorderCategories(
+  updates: { id: string; position: number; parent_id?: string | null }[],
+): Promise<Result> {
+  try {
+    await requireJanitor()
+    if (!Array.isArray(updates) || updates.length === 0) return { ok: true }
+    const db = adminDb()
+    for (const u of updates) {
+      if (!u?.id) continue
+      const update: Record<string, unknown> = { position: Math.trunc(u.position ?? 0) }
+      if ('parent_id' in u) update.parent_id = u.parent_id ?? null
+      const { error } = await db.from('menu_categories').update(update).eq('id', u.id)
+      if (error) return { ok: false, error: error.message }
+    }
+    revalidatePath('/', 'layout')
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'reorderCategories failed' }
+  }
+}
+
 // ── Rail cards ──────────────────────────────────────────────────────────────
 
 export type CreateRailCardInput = {

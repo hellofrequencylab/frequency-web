@@ -49,6 +49,13 @@ import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 import { FOUNDER_COACH } from '@/lib/onboarding/founder-config'
 import { getActiveTraining } from '@/lib/onboarding/training'
 import { atLeastRole, asWebRole, isStaff } from '@/lib/core/roles'
+import { staffCan } from '@/lib/core/staff-roles'
+import {
+  marketplaceVisibility,
+  MARKET_AREAS,
+  AREA_NAV_KEY,
+  AREA_PREFIX,
+} from '@/lib/marketplace/visibility'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { viewerRoleFor } from '@/components/layout/menu-role'
 
@@ -349,6 +356,30 @@ export default async function MainLayout({
   } catch {
     /* vertical-filtering failure → default skin, no filtering */
   }
+
+  // Marketplace visibility (operator-controlled, per area). An area switched OFF is hidden
+  // from regular members — its nav/footer entry is dropped AND the page itself is gated —
+  // while operators still see it to build it. Mirrors the Space nav-hide above + the
+  // safe-route redirect earlier. FAIL-OPEN: any read error leaves the marketplace visible.
+  // The redirect is decided inside the try but THROWN outside it, so a caught error can
+  // never swallow Next's redirect signal.
+  const isMarketOperator =
+    !previewVisitor && !previewingDown && (isStaff(pageWebRole) || staffCan(staffRole, 'platform', 'read'))
+  let marketAreaHidden = false
+  try {
+    if (!isMarketOperator) {
+      const vis = await marketplaceVisibility()
+      for (const area of MARKET_AREAS) {
+        if (vis[area]) continue
+        navAccess[AREA_NAV_KEY[area]] = 'none'
+        const prefix = AREA_PREFIX[area]
+        if (reqPath && (reqPath === prefix || reqPath.startsWith(prefix + '/'))) marketAreaHidden = true
+      }
+    }
+  } catch {
+    /* visibility read failed → leave the marketplace fully visible (fail-open) */
+  }
+  if (marketAreaHidden) redirect('/feed')
 
   // Resolve the member's theme for the in-app shell: the personal `fxtheme` cookie (skin /
   // generation / occasion) over the Space default over the system default. The per-request

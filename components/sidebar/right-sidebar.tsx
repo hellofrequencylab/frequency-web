@@ -13,6 +13,7 @@ import { getMemberSignature } from '@/lib/frequency-signature-data'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getMemberActivity } from '@/lib/practice-activity'
 import { ActivityChart } from '@/components/widgets/practices/activity-chart'
+import { ReportButton } from '@/components/support/report-button'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -196,6 +197,12 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1 space-y-4 pt-1 pb-6">
+        {/* Report a bug / get help — pinned to the very TOP of the right rail. The shared
+            support sheet (same `open-support` event as the account menu + footer). */}
+        <ReportButton
+          variant="ghost"
+          className="w-full justify-start border border-border bg-surface hover:bg-surface-elevated"
+        />
         {/* Site-wide demo notice — pinned ABOVE the Quest box when demo content is
             present (it self-hides otherwise). */}
         <DemoNotice />
