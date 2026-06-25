@@ -233,7 +233,15 @@ export function SettingsDrawer({
       <PageContentModule />
     ) : null
 
-  const hasContent = hasSettings || !!questModule || !!contentModule || isOperator
+  // The generic "Page" group (Basics title/header, Status & visibility, SEO, Layout) is for
+  // operator CONTENT pages. An entity-detail page (a Circle, Hub, Event, channel, profile…) owns
+  // its identity through its OWN settings block above (name, cover, status…), so the generic
+  // Basics/Status/SEO there is just noise — drop it on every entity scope. (Entity PROFILES at
+  // /spaces/* are a different, module-driven scope and keep their Layout editor.)
+  const isEntityScope = scopeKindForPath(pathname) !== null
+  const showPageSettings = isOperator && !isEntityScope
+
+  const hasContent = hasSettings || !!questModule || !!contentModule || showPageSettings
 
   // Nothing to manage here: render nothing (no trigger lives in this component —
   // PageAdminBar dispatches `open-settings`; with no content the drawer stays closed,
@@ -338,11 +346,13 @@ export function SettingsDrawer({
               </div>
             )}
 
-            {/* The operator page-globals group, set apart by a hairline. */}
-            {isOperator && (hasSettings || !!questModule || !!contentModule) && (
+            {/* The operator page-globals group, set apart by a hairline. Suppressed on entity
+                scopes (a Circle, Event, profile…), whose own settings block above already owns
+                the page's identity. */}
+            {showPageSettings && (hasSettings || !!questModule || !!contentModule) && (
               <hr className="border-border" />
             )}
-            {isOperator && <PageSettingsModule />}
+            {showPageSettings && <PageSettingsModule />}
           </div>
         </div>
       </div>

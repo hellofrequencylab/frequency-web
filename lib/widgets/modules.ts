@@ -109,6 +109,12 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'entity-community', label: 'Community', description: 'The Circles the entity runs.' },
   { id: 'entity-team', label: 'Team', description: 'The people behind the entity.' },
   { id: 'entity-cta', label: 'Book', description: 'The primary action — book a session at an open time.' },
+
+  // ── Pages workspace blocks (/pages) — the operator's "find any page and edit it" surface ──
+  { id: 'pages-in-app-member', label: 'In-app pages / Member', description: 'Every member-facing page, opened in place with edit mode on.' },
+  { id: 'pages-in-app-focus', label: 'In-app pages / Focus surfaces', description: 'The focused in-app surfaces (boards, timers, scanner), opened in place with edit mode on.' },
+  { id: 'pages-splash-funnels', label: 'Splash funnels', description: 'A card into the Splash Funnels library: the onboarding front door and its audience funnels (janitor only).' },
+  { id: 'pages-marketing', label: 'Marketing pages', description: 'The public, editor-backed marketing pages with their publish status (janitor only).' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
@@ -239,6 +245,17 @@ const SPACE_MODULE_IDS = [
   'entity-cta',
 ] as const
 
+// The Pages workspace (/pages), in default render order — the one place to find any page and
+// open it ready to edit. The two in-app blocks render for every operator (admin+); the splash
+// and marketing blocks self-gate to janitor, so a Site Admin sees only the in-app areas. Order
+// here is the default stack when no layout is saved; operators rearrange them in the Layout editor.
+const PAGES_MODULE_IDS = [
+  'pages-in-app-member',
+  'pages-in-app-focus',
+  'pages-splash-funnels',
+  'pages-marketing',
+] as const
+
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section
  *  ('/seg/*'), or an exact route. Add a route's set here when you convert its page to
  *  `<PageModules>` (and list it in lib/widgets/module-routes.ts). */
@@ -262,6 +279,7 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   // Section scope: every entity profile tab (/spaces/<slug>/<tab>) shares one family module set;
   // the shell narrows it to the active tab's blocks via the `moduleIds` override (ADR-294).
   '/spaces/*': SPACE_MODULE_IDS,
+  '/pages': PAGES_MODULE_IDS,
 }
 
 // The scope keys that can carry a module set for `key`, MOST-SPECIFIC FIRST: an exact route
