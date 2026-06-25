@@ -31,7 +31,10 @@ const SECTION_ICON: Record<PageSettingSection['id'], LucideIcon> = {
   layout: LayoutGrid,
 }
 
-export function PageSettingsModule({ spaceId }: { spaceId?: string } = {}) {
+export function PageSettingsModule({
+  spaceId,
+  hideBasics = false,
+}: { spaceId?: string; hideBasics?: boolean } = {}) {
   const pathname = usePathname()
 
   // Admin routes get the trimmed Page settings: Subtitle + Layout only.
@@ -71,7 +74,13 @@ export function PageSettingsModule({ spaceId }: { spaceId?: string } = {}) {
 
   // Layout is only meaningful where the page renders <PageModules>; everywhere else,
   // drop it so Settings shows just the Basics + Status + SEO controls that actually apply.
-  const sections = PAGE_SETTING_SECTIONS.filter((s) => s.id !== 'layout' || isModuleRoute(pathname))
+  // `hideBasics` drops the Basics pane (title + header image) on pages that ALSO render the
+  // richer "Page content" editor (headline/description/hero/CTA) — the two overlap, so showing
+  // both is the redundancy this removes. Status / SEO / Layout stay (they don't overlap).
+  const sections = PAGE_SETTING_SECTIONS.filter(
+    (s) =>
+      (s.id !== 'layout' || isModuleRoute(pathname)) && !(hideBasics && s.id === 'basics'),
+  )
 
   return (
     <div className="min-w-0">
