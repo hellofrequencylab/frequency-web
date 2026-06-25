@@ -197,7 +197,9 @@ export default async function SpaceProfileLayout({
         />
       )}
       <DetailTemplate
-        back={{ href: '/spaces/directory', label: 'Spaces' }}
+        // A signed-in member returns to the in-app directory; a logged-out visitor (the public
+        // crawlable view) returns to the public /spaces page, which they can actually reach.
+        back={{ href: viewerProfileId ? '/spaces/directory' : '/spaces', label: 'Spaces' }}
         title={brandName}
         band={
           <ProfileHeroCard
