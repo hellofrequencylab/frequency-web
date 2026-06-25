@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Home, Plus } from 'lucide-react'
+import { Home, Plus, Users } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -9,6 +9,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { listListings } from '@/lib/listings'
 import { ListingCard } from '@/components/marketplace/listing-card'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
 // Housing — rentals + roommates (connect-only). Member-only surface (high-trust).
 // Resonance-based roommate matching + geo browse arrive with the housing detail
@@ -71,13 +72,20 @@ export default async function HousingPage() {
       title="Housing"
       description="Find a place, or a roommate who actually fits. Listings stay local, and contact is a message away."
       action={
-        <Link href="/marketplace/housing/new" className={buttonClasses('primary', 'md')}>
-          <Plus className="h-4 w-4" aria-hidden />
-          List housing
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/marketplace/housing/roommates" className={buttonClasses('secondary', 'sm')}>
+            <Users className="h-4 w-4" aria-hidden />
+            Find a roommate
+          </Link>
+          <Link href="/marketplace/housing/new" className={buttonClasses('primary', 'md')}>
+            <Plus className="h-4 w-4" aria-hidden />
+            List housing
+          </Link>
+        </div>
       }
       toolbar={<MarketplaceFacets active="housing" />}
     >
+      <MarketplaceHiddenBanner area="housing" />
       <Suspense fallback={<GridSkeleton />}>
         <HousingGrid />
       </Suspense>

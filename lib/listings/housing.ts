@@ -137,6 +137,32 @@ export async function matchRoommates(
   }))
 }
 
+export interface SeekerProfile {
+  active: boolean
+  budgetMinCents: number | null
+  budgetMaxCents: number | null
+  moveInFrom: string | null
+  searchCity: string | null
+}
+
+/** The caller's seeker profile (to prefill the roommate-match form), or null. */
+export async function getSeekerProfile(profileId: string): Promise<SeekerProfile | null> {
+  const { data } = await db()
+    .from('housing_seeker_profiles')
+    .select('active, budget_min_cents, budget_max_cents, move_in_from, search_city')
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  if (!data) return null
+  const r = data as Record<string, unknown>
+  return {
+    active: !!r.active,
+    budgetMinCents: (r.budget_min_cents as number) ?? null,
+    budgetMaxCents: (r.budget_max_cents as number) ?? null,
+    moveInFrom: (r.move_in_from as string) ?? null,
+    searchCity: (r.search_city as string) ?? null,
+  }
+}
+
 export async function upsertSeekerProfile(
   profileId: string,
   input: {

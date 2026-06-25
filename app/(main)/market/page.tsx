@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { NewListingButton } from '@/components/studio/market/new-listing-button'
 import { MarketGrid, type GridListing } from '@/components/market/market-grid'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 
 // Coded defaults for the operator-editable header content (ADR-180).
@@ -83,6 +84,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         </div>
       }
     >
+      <MarketplaceHiddenBanner area="market" />
       {grid.length === 0 ? (
         <EmptyState
           icon={Store}

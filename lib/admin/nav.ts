@@ -188,6 +188,27 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
     ],
   },
   {
+    href: '/admin/marketplace',
+    label: 'Marketplace',
+    min: 'admin',
+    staffDomain: 'platform',
+    groups: [
+      {
+        heading: 'Catalog',
+        items: [
+          { label: 'Shop catalog', href: '/admin/marketplace' },
+        ],
+      },
+      {
+        heading: 'Activity',
+        items: [
+          { label: 'Orders', href: '/admin/marketplace/orders' },
+          { label: 'Reports', href: '/admin/marketplace/reports' },
+        ],
+      },
+    ],
+  },
+  {
     href: '/admin/qr',
     label: 'QR Studio',
     min: 'admin',

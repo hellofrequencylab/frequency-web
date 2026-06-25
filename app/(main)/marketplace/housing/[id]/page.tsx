@@ -7,6 +7,7 @@ import { getHousingDetail } from '@/lib/listings/housing'
 import { relativeTime } from '@/lib/utils'
 import { DetailTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
+import { ReportButton } from '@/components/marketplace/report-button'
 import { setListingStatusAction, deleteListingAction } from '../../actions'
 
 export const dynamic = 'force-dynamic'
@@ -112,9 +113,12 @@ export default async function HousingDetailPage({ params }: { params: Promise<{ 
         </div>
 
         {!isOwner && (
-          <p className="mt-3 px-1 text-xs text-subtle">
-            No payment happens in the app. Message {firstName} to arrange a viewing and the rest offline.
-          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1">
+            <p className="text-xs text-subtle">
+              No payment happens in the app. Message {firstName} to arrange a viewing and the rest offline.
+            </p>
+            <ReportButton targetKind="listing" targetId={listing.id} />
+          </div>
         )}
 
         {isOwner && (

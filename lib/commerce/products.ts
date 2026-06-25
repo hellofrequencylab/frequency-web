@@ -108,3 +108,68 @@ export async function createProduct(input: ProductInput): Promise<CommerceProduc
 export async function setProductStatus(id: string, status: ProductStatus): Promise<void> {
   await db().from('commerce_products').update({ status }).eq('id', id)
 }
+
+/** A maker's own catalog (all statuses), newest first — for their storefront manager. */
+export async function listMyMakerProducts(profileId: string): Promise<CommerceProduct[]> {
+  const { data } = await db()
+    .from('commerce_products')
+    .select(PRODUCT_COLS)
+    .eq('owner_kind', 'profile')
+    .eq('owner_profile_id', profileId)
+    .order('created_at', { ascending: false })
+  return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
+}
+
+/** The first-party catalog (all statuses) — the operator Shop manager. */
+export async function listPlatformCatalog(): Promise<CommerceProduct[]> {
+  const { data } = await db()
+    .from('commerce_products')
+    .select(PRODUCT_COLS)
+    .eq('owner_kind', 'platform')
+    .order('created_at', { ascending: false })
+  return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
+}
+
+/** Every Space-owned product (operator oversight of Space storefronts), newest first. */
+export async function listSpaceCatalog(): Promise<CommerceProduct[]> {
+  const { data } = await db()
+    .from('commerce_products')
+    .select(PRODUCT_COLS)
+    .eq('owner_kind', 'space')
+    .order('created_at', { ascending: false })
+  return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
+}
+
+export interface ProductPatch {
+  title?: string
+  description?: string | null
+  priceCents?: number
+  category?: string | null
+  stock?: number | null
+  images?: string[]
+}
+
+/** Edit a product's fields. Caller (server action) has authorized the owner/operator. */
+export async function updateProduct(id: string, patch: ProductPatch): Promise<void> {
+  const update: Record<string, unknown> = {}
+  if (patch.title !== undefined) update.title = patch.title.trim().slice(0, 200) || 'Untitled'
+  if (patch.description !== undefined) update.description = patch.description ?? null
+  if (patch.priceCents !== undefined && Number.isFinite(patch.priceCents) && patch.priceCents >= 0) {
+    update.price_cents = Math.round(patch.priceCents)
+  }
+  if (patch.category !== undefined) update.category = patch.category ?? null
+  if (patch.stock !== undefined) update.stock = patch.stock ?? null
+  if (patch.images !== undefined) update.images = (patch.images ?? []).slice(0, 8)
+  if (Object.keys(update).length === 0) return
+  await db().from('commerce_products').update(update).eq('id', id)
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  await db().from('commerce_products').delete().eq('id', id)
+}
+
+/** Ownership gate for app-code authz: the profile that owns this product (or null). */
+export async function productOwnerProfileId(id: string): Promise<string | null> {
+  const { data } = await db().from('commerce_products').select('owner_profile_id').eq('id', id).maybeSingle()
+  return (data as { owner_profile_id?: string } | null)?.owner_profile_id ?? null
+}

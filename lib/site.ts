@@ -90,6 +90,7 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
       { label: "Discover", href: "/discover", desc: "Everything happening near you" },
       { label: "Circles", href: "/discover/circles", desc: "Small groups around an interest" },
       { label: "Events", href: "/discover/events", desc: "Gatherings you can show up to" },
+      { label: "Marketplace", href: "/market", desc: "Goods, housing, and makers nearby" },
       { label: "Partners", href: "/discover/partners", desc: "The studios and hosts we work with" },
     ],
   },
