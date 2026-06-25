@@ -52,6 +52,13 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  // Server Action request bodies default to 1MB, which silently rejects image uploads
+  // before they reach the action — our hero/cover uploaders accept up to 8MB
+  // (uploadPageHero, uploadCircleCover). Raise the limit so the framework lets those
+  // through and the action's own size check is the real gate.
+  experimental: {
+    serverActions: { bodySizeLimit: '10mb' },
+  },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
   serverExternalPackages: ['@resvg/resvg-wasm', 'pdf-parse', 'mammoth'],
