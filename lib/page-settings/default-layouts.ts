@@ -11,18 +11,22 @@ import { layoutScopeChain, type LayoutConfig } from './layout'
 // Circles (/circles/<slug>): a two-column body — the feed leads MAIN, the info-rail blocks fill
 // SIDE — matching the hand-built layout the module engine replaces.
 const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
+  // The operator-approved circle layout (the configuration set on MoFlow Encinitas, adopted as the
+  // template for every circle): the feed + upcoming events lead MAIN; the info-rail (map first, then
+  // practice · members · health · momentum · invite · journey-run) fills SIDE. header-side leaves a
+  // header slot free for future top-of-page blocks.
   '/circles/*': {
-    template: 'main-side',
+    template: 'header-side',
     slots: {
-      main: { order: ['circle-feed'], hidden: [], roles: {} },
+      header: { order: [], hidden: [], roles: {} },
+      main: { order: ['circle-feed', 'circle-events'], hidden: [], roles: {} },
       side: {
         order: [
+          'circle-map',
+          'circle-practice',
           'circle-members',
           'circle-health',
           'circle-momentum',
-          'circle-practice',
-          'circle-events',
-          'circle-map',
           'circle-invite',
           'circle-journey-run',
         ],
