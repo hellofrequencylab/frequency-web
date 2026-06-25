@@ -11,6 +11,7 @@ import {
   type CircleChallenge,
 } from '@/lib/circles/challenges'
 import { slugify } from '@/lib/utils'
+import { sanitizeLayout, type RailLayout } from '@/lib/circles/rail-layout'
 import type { Database } from '@/lib/database.types'
 
 /** A small {id, title, href} entry for one of the circle's adopted Quest items. */
@@ -105,9 +106,6 @@ async function getCircleQuestAdoptions(circleId: string): Promise<CircleQuestAdo
   return { journeys, practices, challenges }
 }
 
-// Known rail block keys — the editor and the saved order are constrained to these.
-const SIDEBAR_KEYS = ['members', 'health', 'practice', 'events', 'invite'] as const
-
 // In-place "Circle settings" admin module (EMBEDDED-ADMIN.md / ADR-133, Phase-2
 // pilot). Both the read and the write re-resolve the per-circle capability set via
 // getCircleCapabilities — the dock's role-gated visibility is UX only; THIS is the
@@ -127,7 +125,7 @@ export async function getCircleAdminData(slug: string) {
         eq: (c: string, v: string) => {
           maybeSingle: () => Promise<{
             data:
-              | (Database['public']['Tables']['circles']['Row'] & { sidebar_order: string[] | null })
+              | (Database['public']['Tables']['circles']['Row'] & { sidebar_order: unknown })
               | null
           }>
         }
@@ -162,7 +160,8 @@ export async function getCircleAdminData(slug: string) {
     member_cap: circle.member_cap,
     status: circle.status,
     image_url: circle.image_url,
-    sidebar_order: (circle.sidebar_order ?? null) as string[] | null,
+    // Raw stored layout (legacy string[] or the {order,hidden} object); the editor coerces it.
+    sidebar_order: circle.sidebar_order ?? null,
     practice_library: practice_library.map((p) => ({ id: p.id, title: p.title })),
     active_practice_id: activePractice?.id ?? null,
     adoptedJourneys: adoptions.journeys,
@@ -337,27 +336,28 @@ type UntypedUpdate = {
   }
 }
 
-/** Persist the host-chosen order of the right-rail blocks. Re-checks
- *  circle.editSettings; rejects anything that isn't an array of known block keys. */
-export async function saveSidebarOrder(id: string, slug: string, order: string[]) {
+/** Persist this circle's host-chosen rail layout ({order, hidden}) — the per-circle
+ *  override of the operator default. Re-checks circle.editSettings; sanitizeLayout drops
+ *  anything that isn't a known block key. Returns {error} for the editor instead of throwing. */
+export async function saveSidebarOrder(
+  id: string,
+  slug: string,
+  layout: RailLayout,
+): Promise<{ error?: string }> {
   const caps = await getCircleCapabilities(id)
-  if (!caps.has('circle.editSettings')) throw new Error('Unauthorized')
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
 
-  if (
-    !Array.isArray(order) ||
-    order.some((k) => typeof k !== 'string' || !SIDEBAR_KEYS.includes(k as (typeof SIDEBAR_KEYS)[number]))
-  ) {
-    throw new Error('Invalid sidebar order')
-  }
+  const clean = sanitizeLayout(layout)
 
   const admin = createAdminClient()
   const { error } = await (admin as unknown as UntypedUpdate)
     .from('circles')
-    .update({ sidebar_order: order })
+    .update({ sidebar_order: clean })
     .eq('id', id)
-  if (error) throw new Error(error.message)
+  if (error) return { error: error.message }
 
   revalidatePath(`/circles/${slug}`)
+  return {}
 }
 
 /** Rename a circle's permalink. Slugifies the input, rejects empty, and ensures the
