@@ -71,15 +71,15 @@ export const circlesComponents: Record<string, ComponentConfig> = {
     },
   },
 
-  // The faceted command bar: search, Channel facet, type pills, sort. Self-contained,
-  // URL-driven client island (CirclesToolbar).
+  // The compact command bar: search, format toggle, sort. Self-contained, URL-driven
+  // client island (CirclesToolbar). Channel category lives in the pillar pills above.
   CirclesToolbar: {
     label: 'Circles · Search, filter & sort',
     fields: {},
     render: ({ puck }) => {
       const d = indexFrom(puck)
       if (!d) return <EditorStub label="Search, filter & sort bar" />
-      return <CirclesToolbar interests={d.interests} />
+      return <CirclesToolbar />
     },
   },
 
