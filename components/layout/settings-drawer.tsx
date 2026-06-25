@@ -352,7 +352,7 @@ export function SettingsDrawer({
             {showPageSettings && (hasSettings || !!questModule || !!contentModule) && (
               <hr className="border-border" />
             )}
-            {showPageSettings && <PageSettingsModule />}
+            {showPageSettings && <PageSettingsModule hideBasics={!!contentModule} />}
           </div>
         </div>
       </div>
