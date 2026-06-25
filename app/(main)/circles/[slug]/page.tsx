@@ -27,6 +27,7 @@ import { CircleCover } from '@/components/circles/circle-cover'
 // '/circles/*' scope, exactly like the Practices detail page.
 import { PageModules } from '@/components/widgets/page-modules'
 import { setCircleContext } from '@/lib/circles/active-circle'
+import { circleTextOverride, resolveCircleText } from '@/lib/circles/circle-text'
 import type { CircleDetail, MemberRow } from '@/lib/circles/detail-types'
 
 // ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
@@ -92,7 +93,7 @@ export default async function CirclePage({
     .from('circles')
     .select(
       `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public,
-       latitude, longitude, neighborhood, city,
+       latitude, longitude, neighborhood, city, sidebar_order,
        host:profiles!host_id ( id, display_name, handle, avatar_url ),
        hub:hubs!hub_id (
          id, name, slug,
@@ -238,6 +239,11 @@ export default async function CirclePage({
       }))
     : []
 
+  // The movable Page-text block's copy: this circle's override, else the network default ('' when
+  // neither is set → the block renders nothing). One platform_settings read (request-memoized) only
+  // when there's no per-circle override.
+  const layoutText = await resolveCircleText(circleTextOverride(circle.sidebar_order))
+
   // Stamp the resolved per-viewer context into the request-scoped holder so the circle's body
   // modules (components/widgets/circles/*) read it without prop-drilling — then <PageModules>
   // renders them in the operator-arranged layout (default: feed in MAIN, info-rail in SIDE).
@@ -256,6 +262,7 @@ export default async function CirclePage({
     newThisWeek,
     circlePractice,
     runnableJourneys,
+    layoutText,
   })
 
   return (

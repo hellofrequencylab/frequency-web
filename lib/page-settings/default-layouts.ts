@@ -13,12 +13,13 @@ import { layoutScopeChain, type LayoutConfig } from './layout'
 const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
   // The operator-approved circle layout (the configuration set on MoFlow Encinitas, adopted as the
   // template for every circle): the feed + upcoming events lead MAIN; the info-rail (map first, then
-  // practice · members · health · momentum · invite · journey-run) fills SIDE. header-side leaves a
-  // header slot free for future top-of-page blocks.
+  // practice · members · health · momentum · invite · journey-run) fills SIDE. The movable Page text
+  // block leads the header slot (empty by default → renders nothing until a circle or the network
+  // default sets text); operators can move it anywhere from the Layout editor.
   '/circles/*': {
     template: 'header-side',
     slots: {
-      header: { order: [], hidden: [], roles: {} },
+      header: { order: ['circle-text'], hidden: [], roles: {} },
       main: { order: ['circle-feed', 'circle-events'], hidden: [], roles: {} },
       side: {
         order: [

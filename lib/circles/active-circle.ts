@@ -35,6 +35,8 @@ export interface CircleDetailContext {
   circlePractice: CirclePractice | null
   /** Journeys the host can start a run of (empty for non-managers). */
   runnableJourneys: RunnableJourney[]
+  /** The resolved movable Page-text block copy (per-circle override ?? network default); '' = none. */
+  layoutText: string
 }
 
 interface Holder {
