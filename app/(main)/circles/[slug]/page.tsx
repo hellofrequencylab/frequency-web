@@ -485,7 +485,7 @@ export default async function CirclePage({
 
         {/* ── Two-column body (event / social-profile layout): the circle's
                 conversation on the left (2/3), its info rail on the right (1/3). */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-10">
           {/* LEFT — the circle's conversation + announcements. */}
           <div className="lg:col-span-2">
             <TeaserGate

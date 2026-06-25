@@ -55,6 +55,19 @@ import { EntityPractices } from '@/components/widgets/entity/entity-practices'
 import { EntityCommunity } from '@/components/widgets/entity/entity-community'
 import { EntityTeam } from '@/components/widgets/entity/entity-team'
 import { EntityCta } from '@/components/widgets/entity/entity-cta'
+import { PagesInAppMember, PagesInAppFocus } from '@/components/widgets/pages/pages-in-app'
+import { PagesSplashFunnels } from '@/components/widgets/pages/pages-splash-funnels'
+import { PagesMarketing } from '@/components/widgets/pages/pages-marketing'
+import { LeadStats } from '@/components/widgets/lead/lead-stats'
+import { LeadAttention } from '@/components/widgets/lead/lead-attention'
+import { LeadCircles } from '@/components/widgets/lead/lead-circles'
+import { LeadNetworks } from '@/components/widgets/lead/lead-networks'
+import { LeadEvents } from '@/components/widgets/lead/lead-events'
+import { LeadJourneys } from '@/components/widgets/lead/lead-journeys'
+import { LeadCoLeaders } from '@/components/widgets/lead/lead-coleaders'
+import { LeadDispatches } from '@/components/widgets/lead/lead-dispatches'
+import { LeadRecognition } from '@/components/widgets/lead/lead-recognition'
+import { LeadTools } from '@/components/widgets/lead/lead-tools'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -133,6 +146,22 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'entity-community': EntityCommunity,
   'entity-team': EntityTeam,
   'entity-cta': EntityCta,
+  // Pages workspace (/pages) — the operator's find-any-page-and-edit-it surface.
+  'pages-in-app-member': PagesInAppMember,
+  'pages-in-app-focus': PagesInAppFocus,
+  'pages-splash-funnels': PagesSplashFunnels,
+  'pages-marketing': PagesMarketing,
+  // Leadership dashboard (/lead) — a leader's consolidated home.
+  'lead-stats': LeadStats,
+  'lead-attention': LeadAttention,
+  'lead-circles': LeadCircles,
+  'lead-networks': LeadNetworks,
+  'lead-events': LeadEvents,
+  'lead-journeys': LeadJourneys,
+  'lead-coleaders': LeadCoLeaders,
+  'lead-dispatches': LeadDispatches,
+  'lead-recognition': LeadRecognition,
+  'lead-tools': LeadTools,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {

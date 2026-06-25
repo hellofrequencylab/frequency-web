@@ -21,7 +21,7 @@ export const metadata = {
 export default async function LeadershipCrewTasksPage() {
   const { profileId } = await requireLeadFloor()
 
-  const hosted = await getLedCircles('host', profileId)
+  const hosted = await getLedCircles(profileId)
   const circles: HostedCircleTasks[] = await Promise.all(
     hosted.map(async (c) => ({ id: c.id, name: c.name, tasks: await listCircleTasks(c.id) })),
   )
