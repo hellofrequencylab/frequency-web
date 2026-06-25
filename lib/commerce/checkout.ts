@@ -195,6 +195,23 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
   }[]
 
   for (const row of rows) {
+    // Enforce inventory for this paid order: decrement_commerce_stock_atomic
+    // (migration 20260819000000) locks each tracked-stock product, subtracts this
+    // order's quantities, and is idempotent per order (a retried/concurrent settle
+    // no-ops). Untracked products (stock null) are skipped and stay unlimited.
+    // Untyped handle (same pattern as lib/rewards/gifts.ts): the RPC is new and not
+    // yet in the generated Database types, so widen to the un-parametrised client.
+    // Drop after `supabase gen types` is re-run.
+    const rpc = db() as unknown as { rpc: SupabaseClient['rpc'] }
+    const { error: stockError } = await rpc.rpc('decrement_commerce_stock_atomic', { _order: row.id })
+    if (stockError) {
+      // The order is already paid + settled; the RPC raises typed P0001 'out_of_stock'
+      // only when stock raced below the sold quantity. We fail SOFT (log, do not throw)
+      // so the ledger record + paid flip are never blocked. Operators reconcile oversell
+      // out of band; idempotency means a webhook retry re-runs safely once stock is fixed.
+      console.error('[commerce] stock decrement failed', { orderId: row.id, error: stockError.message })
+    }
+
     const revenue = row.owner_kind === 'platform' ? row.amount_cents : row.platform_fee_cents
     await recordFinancialTransaction({
       entityId: row.entity_id,
