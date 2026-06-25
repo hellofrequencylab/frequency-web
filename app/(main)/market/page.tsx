@@ -6,6 +6,7 @@ import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NewListingButton } from '@/components/studio/market/new-listing-button'
 import { MarketGrid, type GridListing } from '@/components/market/market-grid'
+import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 
 // Coded defaults for the operator-editable header content (ADR-180).
@@ -70,13 +71,16 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         ) : undefined
       }
       toolbar={
-        <UnderlineTabs
-          activeHref={activeKind ? `/market?kind=${activeKind}` : '/market'}
-          tabs={[
-            { href: '/market', label: 'All' },
-            ...LISTING_KINDS.map((k) => ({ href: `/market?kind=${k.key}`, label: k.label })),
-          ]}
-        />
+        <div className="space-y-3">
+          <MarketplaceFacets active="all" />
+          <UnderlineTabs
+            activeHref={activeKind ? `/market?kind=${activeKind}` : '/market'}
+            tabs={[
+              { href: '/market', label: 'All' },
+              ...LISTING_KINDS.map((k) => ({ href: `/market?kind=${k.key}`, label: k.label })),
+            ]}
+          />
+        </div>
       }
     >
       {grid.length === 0 ? (

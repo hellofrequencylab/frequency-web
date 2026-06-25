@@ -8,9 +8,10 @@ import type { Vertical } from './registry'
 export const maker: Vertical = {
   id: 'maker',
   entity: 'labs',
-  // DORMANT until the commerce_* migrations are applied to prod and a signed-in session is
-  // verified (guardrail after the 2026-06-24 outage). Flip to true to go live.
-  enabled: false,
+  // LIVE (2026-06-25): the commerce_* schema is applied to prod and the access matrix
+  // registers the 'maker' surface. Browse + list work today; checkout settles once
+  // billing is enabled (Connect destination charge, same path as tips/tickets).
+  enabled: true,
   nav: [
     {
       after: 'housing',

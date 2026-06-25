@@ -12,9 +12,10 @@ import type { Vertical } from './registry'
 export const shop: Vertical = {
   id: 'shop',
   entity: 'labs',
-  // DORMANT until the commerce_* migrations are applied to prod and a signed-in session is
-  // verified (guardrail after the 2026-06-24 outage). Flip to true to go live.
-  enabled: false,
+  // LIVE (2026-06-25): the commerce_* schema is applied to prod and the access matrix
+  // registers the 'shop' surface. First-party catalog browses today; checkout settles
+  // once billing is enabled (platform PaymentIntent, full amount = labs/commerce).
+  enabled: true,
   nav: [
     {
       after: 'maker',

@@ -63,6 +63,39 @@ export async function getListing(id: string): Promise<Listing | null> {
   return data ? rowToListing(data as Record<string, unknown>) : null
 }
 
+export interface ListingOwner {
+  id: string
+  displayName: string
+  handle: string
+  avatarUrl: string | null
+}
+
+/** A listing joined with its owner profile (for the detail page's contact handoff).
+ *  Connect-only: contact is a DM to the owner, never an in-app payment (ADR-148). */
+export async function getListingWithOwner(
+  id: string,
+): Promise<(Listing & { owner: ListingOwner | null }) | null> {
+  const { data } = await db()
+    .from('listings')
+    .select(`${LISTING_COLS}, owner:profiles!owner_profile_id(id, display_name, handle, avatar_url)`)
+    .eq('id', id)
+    .maybeSingle()
+  if (!data) return null
+  const r = data as Record<string, unknown>
+  const raw = (Array.isArray(r.owner) ? r.owner[0] : r.owner) as Record<string, unknown> | null
+  return {
+    ...rowToListing(r),
+    owner: raw
+      ? {
+          id: raw.id as string,
+          displayName: (raw.display_name as string) ?? 'A member',
+          handle: raw.handle as string,
+          avatarUrl: (raw.avatar_url as string) ?? null,
+        }
+      : null,
+  }
+}
+
 export interface ListingInput {
   vertical: ListingVertical
   title: string

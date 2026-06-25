@@ -37,26 +37,39 @@ describe('access-matrix is crash-proof (incident 2026-06-24)', () => {
   })
 })
 
-describe('dormant verticals do not mount into the shared shell', () => {
-  it('housing / maker / shop are registered but enabled:false', () => {
+// Activation (2026-06-25): housing/maker/shop went live once their schema reached prod.
+// The crash-safety block above is what makes activation safe — these surfaces are
+// registered, so mounting them into NAV_AREAS cannot throw in the shared shell. This
+// block locks in that the activation actually happened (no silent regression to dormant).
+describe('activated marketplace verticals mount into the shared shell', () => {
+  it('housing / maker / shop are registered and enabled', () => {
     for (const id of ['housing', 'maker', 'shop']) {
       const v = VERTICALS.find((x) => x.id === id)
       expect(v, `${id} should be registered`).toBeDefined()
-      expect(v?.enabled, `${id} should be dormant`).toBe(false)
+      expect(v?.enabled, `${id} should be active`).toBe(true)
     }
   })
 
-  it('NAV_AREAS contains no dormant vertical (shell is byte-unchanged), but keeps market', () => {
+  it('NAV_AREAS includes the marketplace verticals alongside market', () => {
     const keys = NAV_AREAS.map((a) => a.key)
-    expect(keys).not.toContain('housing')
-    expect(keys).not.toContain('maker')
-    expect(keys).not.toContain('shop')
     expect(keys).toContain('market')
+    expect(keys).toContain('housing')
+    expect(keys).toContain('maker')
+    expect(keys).toContain('shop')
   })
 
-  it('verticalNavPlacements only emits enabled verticals', () => {
+  it('every marketplace surface in NAV_AREAS still resolves without throwing (the shell path)', () => {
+    const member = { loggedIn: true, role: 'member' as const }
+    for (const a of NAV_AREAS) {
+      if (a.surface) expect(() => accessTo(a.surface as Surface, member)).not.toThrow()
+    }
+  })
+
+  it('verticalNavPlacements emits every active vertical', () => {
     const keys = verticalNavPlacements().map((p) => p.area.key)
     expect(keys).toContain('market')
-    expect(keys).not.toContain('housing')
+    expect(keys).toContain('housing')
+    expect(keys).toContain('maker')
+    expect(keys).toContain('shop')
   })
 })

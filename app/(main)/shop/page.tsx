@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { listShopProducts } from '@/lib/commerce/products'
 import { ProductCard } from '@/components/marketplace/product-card'
+import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 
 // Shop — first-party Frequency retail (commerce core, owner_kind='platform').
 // Frequency is the seller. Distinct from the Vault (Gems).
@@ -52,6 +53,7 @@ export default function ShopPage() {
     <IndexTemplate
       title="Shop"
       description="Frequency merch, event passes, and retreats. Wear it, gift it, show up."
+      toolbar={<MarketplaceFacets active="shop" />}
     >
       <Suspense fallback={<GridSkeleton />}>
         <ShopGrid />
