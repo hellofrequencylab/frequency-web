@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Users, Activity, TrendingUp, Zap, Flame, MapPin, Settings } from 'lucide-react'
+import { Users, Zap, Flame, MapPin, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
@@ -26,6 +26,7 @@ import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { ModuleCard } from '@/components/modules/module-card'
 import { isoDaysAgo } from '@/lib/utils'
+import { getCircleEarnedZaps } from '@/lib/circles/earned'
 import { type CommunityRole } from '@/lib/community-roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { CircleCover } from '@/components/circles/circle-cover'
@@ -131,36 +132,9 @@ export default async function CirclePage({
 
   const members = (rawMembers ?? []) as unknown as MemberRow[]
 
-  // Circle health metrics
+  // Member ids — used below for the circle's engagement signals (only read for a viewer
+  // who can see the health panel).
   const memberProfileIds = members.map((m) => m.profile?.id).filter(Boolean)
-  let healthScore = { avgZaps: 0, totalZaps: 0, activeStreaks: 0, totalAchievements: 0, newThisWeek: 0 }
-
-  if (memberProfileIds.length > 0) {
-    const [{ data: memberProfiles }, { data: recentJoins }] = await Promise.all([
-      admin.from('profiles')
-        .select('current_season_zaps, current_streak, achievement_count')
-        .in('id', memberProfileIds),
-      admin.from('memberships')
-        .select('id')
-        .eq('circle_id', circle.id)
-        .eq('status', 'active')
-        .gte('joined_at', isoDaysAgo(7)),
-    ])
-
-    const profiles = (memberProfiles ?? []) as Array<{
-      current_season_zaps: number | null
-      current_streak: number | null
-      achievement_count: number | null
-    }>
-    const totalZaps = profiles.reduce((s, p) => s + (p.current_season_zaps ?? 0), 0)
-    healthScore = {
-      avgZaps: profiles.length > 0 ? Math.round(totalZaps / profiles.length) : 0,
-      totalZaps,
-      activeStreaks: profiles.filter(p => (p.current_streak ?? 0) > 0).length,
-      totalAchievements: profiles.reduce((s, p) => s + (p.achievement_count ?? 0), 0),
-      newThisWeek: recentJoins?.length ?? 0,
-    }
-  }
 
   // Current user
   const {
@@ -200,6 +174,33 @@ export default async function CirclePage({
   // The health rail below lights for managers (capability) OR in-scope Insight.
   const insight = insightAffordance(insightAccess)
   const showsHealth = canManage || insight.visible
+
+  // Circle health — honest, circle-scoped signals only. "Zaps earned here" is what was
+  // earned THROUGH this circle (its practice logs + Expression-at-Circle), never members'
+  // personal season totals; streaks + new-this-week are the circle's own member activity.
+  // All gated behind showsHealth so non-managers never trigger the reads.
+  let circleEarnedZaps = 0
+  let activeStreaks = 0
+  let newThisWeek = 0
+  if (showsHealth) {
+    const [earned, { data: streakRows }, { data: recentJoins }] = await Promise.all([
+      getCircleEarnedZaps(circle.id),
+      memberProfileIds.length > 0
+        ? admin.from('profiles').select('current_streak').in('id', memberProfileIds)
+        : Promise.resolve({ data: [] as { current_streak: number | null }[] }),
+      admin
+        .from('memberships')
+        .select('id')
+        .eq('circle_id', circle.id)
+        .eq('status', 'active')
+        .gte('joined_at', isoDaysAgo(7)),
+    ])
+    circleEarnedZaps = earned
+    activeStreaks = ((streakRows ?? []) as { current_streak: number | null }[]).filter(
+      (p) => (p.current_streak ?? 0) > 0,
+    ).length
+    newThisWeek = recentJoins?.length ?? 0
+  }
 
   // This week's practice (host-assigned). Library only needed for the host picker.
   const [circlePractice, practiceLibrary] = await Promise.all([
@@ -248,15 +249,13 @@ export default async function CirclePage({
     ),
   }
 
-  if (showsHealth && healthScore.totalZaps > 0) {
+  if (showsHealth && circleEarnedZaps > 0) {
     railMap.health = (
       <ModuleCard title={insight.visible ? insight.label : 'Circle health'}>
         <div className="grid grid-cols-2 gap-2">
-          <HealthStat label="Avg zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
-          <HealthStat label="Total zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
-          <HealthStat label="Active streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
-          <HealthStat label="Badges earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
-          <HealthStat label="New this week" value={String(healthScore.newThisWeek)} Icon={Users} />
+          <HealthStat label="Zaps earned here" value={circleEarnedZaps.toLocaleString()} Icon={Zap} />
+          <HealthStat label="Active streaks" value={String(activeStreaks)} Icon={Flame} />
+          <HealthStat label="New this week" value={String(newThisWeek)} Icon={Users} />
         </div>
       </ModuleCard>
     )
