@@ -33,41 +33,48 @@ function EditorStub({ label }: { label: string }) {
   )
 }
 
+// The Channel (Pillar) quick-filter tags: "All" + every Channel, the active one filled in
+// its Pillar tint. Shared by the standalone block and the find-near-me row. The count rides
+// only when there's at least one circle, so empty Channels still show as plain category tags.
+function ChannelPills({ links }: { links: CirclesIndexData['channelLinks'] }) {
+  return (
+    <nav className="-mx-1 flex flex-wrap items-center gap-2 px-1" aria-label="Filter circles by Channel">
+      {links.map((link) => {
+        // The Channel slug rides in the href (?channel=<slug>); "All" has none.
+        const slug = link.href.includes('channel=') ? link.href.split('channel=')[1] : null
+        const activeClass = slug ? pillarTint(slug) : 'bg-primary text-on-primary'
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            aria-current={link.active ? 'page' : undefined}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+              link.active ? activeClass : 'bg-surface-elevated text-muted hover:bg-surface hover:text-text'
+            }`}
+          >
+            {link.label}
+            {link.count > 0 && (
+              <span className={`text-xs tabular-nums ${link.active ? 'opacity-70' : 'text-subtle'}`}>
+                {link.count}
+              </span>
+            )}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
 export const circlesComponents: Record<string, ComponentConfig> = {
-  // Pillar/Channel quick-filter: a Meetup-style category strip. "All" + each Channel as
-  // a pill carrying its circle count, the active one filled in its Pillar tint.
+  // Pillar/Channel quick-filter as a standalone block (kept for operators who want the tags
+  // on their own row). The default layout instead shows them beside the find-near-me button.
   CirclesChannelNav: {
     label: 'Circles · Channel filter chips',
     fields: {},
     render: ({ puck }) => {
       const d = indexFrom(puck)
       if (!d) return <EditorStub label="Channel filter chips" />
-      return (
-        <nav className="-mx-1 flex flex-wrap gap-2 px-1" aria-label="Filter circles by Channel">
-          {d.channelLinks.map((link) => {
-            // The Channel slug rides in the href (?channel=<slug>); "All" has none.
-            const slug = link.href.includes('channel=') ? link.href.split('channel=')[1] : null
-            const activeClass = slug ? pillarTint(slug) : 'bg-primary text-on-primary'
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={link.active ? 'page' : undefined}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-                  link.active
-                    ? activeClass
-                    : 'bg-surface-elevated text-muted hover:bg-surface hover:text-text'
-                }`}
-              >
-                {link.label}
-                <span className={`text-xs tabular-nums ${link.active ? 'opacity-70' : 'text-subtle'}`}>
-                  {link.count}
-                </span>
-              </Link>
-            )
-          })}
-        </nav>
-      )
+      return <ChannelPills links={d.channelLinks} />
     },
   },
 
@@ -83,21 +90,24 @@ export const circlesComponents: Record<string, ComponentConfig> = {
     },
   },
 
-  // The map: a "find near me" button that expands an in-page map of nearby circles +
-  // Starter pins. Whole thing lives in one MapZone (it shares React context), so it is
-  // necessarily one block. Renders nothing when there's nothing to place.
+  // The discovery row: the "find near me" button with the Channel tags to its right, plus the
+  // in-page map it expands (nearby circles + Starter pins). The map lives in one MapZone (it
+  // shares React context). Extra top space separates it from the search row above. When there's
+  // nothing to map, the row is just the Channel tags.
   CirclesMap: {
-    label: 'Circles · Map',
+    label: 'Circles · Find near me & Channels',
     fields: {},
     render: ({ puck }) => {
       const d = indexFrom(puck)
-      if (!d) return <EditorStub label="Circles map" />
-      if (!d.showMap) return <></>
+      if (!d) return <EditorStub label="Find near me + Channel tags" />
+      const pills = <ChannelPills links={d.channelLinks} />
+      if (!d.showMap) return <div className="mt-8">{pills}</div>
 
       return (
         <MapZone circles={d.locatable} starterSeeds={d.starterSeeds}>
-          <div className="mb-4">
+          <div className="mt-8 mb-4 flex flex-wrap items-center gap-x-4 gap-y-3">
             <FindNearMeButton />
+            {pills}
           </div>
           <MapBanner />
         </MapZone>
