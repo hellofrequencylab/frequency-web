@@ -1,13 +1,14 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Users, MapPin, Settings } from 'lucide-react'
+import { Users, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
+import { EditCircleButton } from '@/components/circles/edit-circle-button'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
 import { insightAffordance } from '@/lib/core/scoped-surface-ui'
@@ -335,14 +336,7 @@ export default async function CirclePage({
           <>
             {canManage && <CircleHostMenu circleId={circle.id} />}
 
-            {canManage && (
-              <Link
-                href={`/circles/${circle.slug}/settings`}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-              >
-                <Settings className="h-4 w-4" /> Settings
-              </Link>
-            )}
+            {canManage && <EditCircleButton />}
 
             {isMember && !isHost && (
               <form action={leaveCircle.bind(null, circle.id)}>
