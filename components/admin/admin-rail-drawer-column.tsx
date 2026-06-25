@@ -14,17 +14,18 @@ import { SettingsDrawer, type SettingsDrawerState } from '@/components/layout/se
 // over the info rail, not in the shell's separate far-right column (which left it sitting
 // BESIDE the rail). The shell skips its own drawer mount on admin routes (no double drawer).
 //
-// At rest the column is the info-rail footprint (xl: w-72 = the 18rem rail + the 2rem gap,
-// which equals the drawer's rest width, so opening at xl is a pure slide with no reflow; lg:
-// w-0, since the rail itself is xl+). When the drawer opens it reports its live width up here
-// (onStateChange); this column grows to match and the admin center `flex-1` compresses. The
-// width transition is dropped mid-drag so the column tracks the pointer 1:1.
+// At rest the column is the info-rail footprint (xl: w-[18.5rem] = the 16rem rail + a 2.5rem
+// gap, matching the shell's lg:gap-10 column gap so the admin content↔rail gap equals the
+// content↔left-menu gap and the page reads uniform; lg: w-0, since the rail itself is xl+).
+// When the drawer opens it reports its live width up here (onStateChange); this column grows to
+// match and the admin center `flex-1` compresses. The width transition is dropped mid-drag so
+// the column tracks the pointer 1:1.
 export function AdminRailDrawerColumn({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<SettingsDrawerState>({ open: false, width: 288, resizing: false })
 
   return (
     <div
-      className={`relative hidden w-0 shrink-0 justify-end lg:flex xl:w-72 ${
+      className={`relative hidden w-0 shrink-0 justify-end lg:flex xl:w-[18.5rem] ${
         settings.resizing ? '' : 'transition-[width] duration-200 ease-out motion-reduce:transition-none'
       }`}
       // Open: take the live drawer width (overriding the rest w-0/xl:w-72). Closed: fall back

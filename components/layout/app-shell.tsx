@@ -1738,7 +1738,7 @@ export default function AppShell({
               settings drawer — mounted in the right-rail slot — can read the viewer's
               role / staffRole / webRole gates alongside the page body. */}
           <PageAdminProvider value={{ role: gateRole, staffRole, webRole }}>
-          <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-3.5rem)]">
+          <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 lg:gap-10 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-3.5rem)]">
 
             {/* Left nav — NEVER scrolls out of view. Pinned under the header
                 (sticky top-14) with its window ending exactly where the fixed
