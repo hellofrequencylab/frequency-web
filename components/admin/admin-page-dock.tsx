@@ -13,6 +13,8 @@ import {
   type DashScope,
 } from '@/app/(main)/admin/dash-sections'
 import { setAdminDashOrder } from '@/app/(main)/admin/dash-order-actions'
+import { PAGES_AREAS, pagesCookie, sanitizePagesOrder, type PagesArea } from '@/app/(main)/pages/pages-areas'
+import { setPagesSectionsOrder } from '@/app/(main)/pages/pages-order-actions'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
 
@@ -77,6 +79,7 @@ export function AdminPageDock({
             </div>
 
             {scope && <SectionSorter scope={scope} />}
+            {pathname === '/pages' && <PagesSectionSorter />}
           </div>
         </div>
       </div>
@@ -170,6 +173,83 @@ function SectionSorter({ scope }: { scope: DashScope }) {
         type="button"
         onClick={() => {
           const next = defs.map((d) => d.id)
+          setOrder(next)
+          save(next)
+        }}
+        className="mt-1.5 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+      >
+        <RotateCcw className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        Reset to default order
+      </button>
+    </div>
+  )
+}
+
+// ── Sort areas — the twin of SectionSorter, for the /pages workspace. ──
+// Drag a card to reorder the Pages workspace's areas; the order saves on drop and the
+// page re-renders in the new order. Reset restores the default. The editor hydrates
+// from the single per-operator cookie (the page already rendered in it server-side).
+
+function PagesSectionSorter() {
+  const [order, setOrder] = useState<PagesArea[]>(() => PAGES_AREAS.map((a) => a.id))
+  const [isPending, startTransition] = useTransition()
+  const dragId = useRef<PagesArea | null>(null)
+  const labelOf = (id: PagesArea) => PAGES_AREAS.find((a) => a.id === id)?.label ?? id
+
+  // Sync the editor to the saved order (the page already rendered in it server-side).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOrder(sanitizePagesOrder(readCookie(pagesCookie())))
+  }, [])
+
+  function save(next: PagesArea[]) {
+    startTransition(() => setPagesSectionsOrder(next))
+  }
+
+  function moveOver(overId: PagesArea) {
+    const from = dragId.current
+    if (!from || from === overId) return
+    setOrder((cur) => {
+      const next = cur.filter((id) => id !== from)
+      next.splice(next.indexOf(overId), 0, from)
+      return next
+    })
+  }
+
+  return (
+    <div className="mt-3 border-t border-border/60 px-0 pt-2.5">
+      <div className="flex items-baseline justify-between px-2 pb-1.5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Sort areas</p>
+        <span className="text-xs text-subtle">{isPending ? 'Saving…' : 'Drag to reorder'}</span>
+      </div>
+      <ul className="space-y-1">
+        {order.map((id) => (
+          <li
+            key={id}
+            draggable
+            onDragStart={(e) => {
+              dragId.current = id
+              e.dataTransfer.effectAllowed = 'move'
+            }}
+            onDragOver={(e) => {
+              e.preventDefault()
+              moveOver(id)
+            }}
+            onDragEnd={() => {
+              dragId.current = null
+              save(order)
+            }}
+            className="flex cursor-grab items-center gap-2 rounded-xl border border-border bg-surface px-2.5 py-2 text-sm font-medium text-text active:cursor-grabbing"
+          >
+            <GripVertical className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+            {labelOf(id)}
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={() => {
+          const next = PAGES_AREAS.map((a) => a.id)
           setOrder(next)
           save(next)
         }}
