@@ -90,6 +90,7 @@ export function EventForm({
   eventId,
   currentScopeName,
   backHref,
+  defaultGroupId,
 }: {
   groups: Group[]
   /** When set (with `eventId`), the form prefills and edits the event. */
@@ -100,13 +101,16 @@ export function EventForm({
   currentScopeName?: string
   /** Where the Cancel link returns to (defaults to /events). */
   backHref?: string
+  /** Pre-selected scope on create (from the `?circle=` deep link, already validated to one
+   *  of the caller's own circles by the page). Falls back to the first group. */
+  defaultGroupId?: string
 }) {
   const isEdit = !!eventId
   const [isPending, startTransition] = useTransition()
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
-  const [scopeId, setScopeId] = useState(initial?.scopeId ?? groups[0]?.id ?? '')
+  const [scopeId, setScopeId] = useState(initial?.scopeId ?? defaultGroupId ?? groups[0]?.id ?? '')
   const [startsAt, setStartsAt] = useState(initial?.startsAt ?? '')
   const [endsAt, setEndsAt] = useState(initial?.endsAt ?? '')
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none')

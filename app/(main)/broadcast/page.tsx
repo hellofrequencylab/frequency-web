@@ -52,7 +52,12 @@ export function generateMetadata() {
   return pageContentMetadata('/broadcast', CONTENT_FALLBACK)
 }
 
-export default async function BroadcastPage() {
+export default async function BroadcastPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ compose?: string; scope?: string }>
+}) {
+  const { compose, scope: scopeParam } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
@@ -171,7 +176,7 @@ export default async function BroadcastPage() {
         (showCompose || (ctaLabel && ctaHref)) ? (
           <div className="flex items-center gap-2">
             {showCompose && (
-              <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} canGlobal={role === 'janitor'} />
+              <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} canGlobal={role === 'janitor'} defaultOpen={compose === 'true'} initialScopeId={scopeParam} />
             )}
             {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
             {ctaLabel && ctaHref && (
