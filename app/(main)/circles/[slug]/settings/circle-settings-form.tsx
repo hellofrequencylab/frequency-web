@@ -5,8 +5,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Archive, Check } from 'lucide-react'
 import { archiveCircle, updateCircleSettings } from '@/app/(main)/admin/actions'
+import { uploadCircleCover, removeCircleCover } from '@/app/(main)/circles/admin-actions'
 import { DangerModal } from '@/components/admin/danger-modal'
-import { ImageUpload } from '@/components/ui/image-upload'
+import { InlineCover } from '@/components/admin/inline/inline-cover'
 
 export interface CircleSettingsInitial {
   name: string
@@ -104,14 +105,19 @@ export function CircleSettingsForm({
       </div>
 
       <div className="sm:col-span-2">
-        <ImageUpload
-          label="Cover image"
+        <span className={lbl}>Cover image</span>
+        {/* Server-side upload (uploadCircleCover, admin client) so it never trips storage RLS — the
+            client-side uploader did. onChange tracks the URL so this form's Save persists the latest. */}
+        <InlineCover
           value={imageUrl || null}
+          alt={name || 'Circle cover'}
+          canEdit
+          forceEdit
+          upload={uploadCircleCover.bind(null, circleId, slug)}
+          remove={removeCircleCover.bind(null, circleId, slug)}
           onChange={(url) => setImageUrl(url ?? '')}
-          folder="circle-covers"
-          hint="Shown on the circle's card and header."
-          disabled={pending}
         />
+        <p className="text-2xs text-muted">Shown on the circle&apos;s card and header.</p>
       </div>
 
       <div>

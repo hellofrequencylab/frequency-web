@@ -18,6 +18,7 @@ export function InlineCover({
   upload,
   remove,
   forceEdit = false,
+  onChange,
 }: {
   value: string | null
   alt: string
@@ -27,6 +28,9 @@ export function InlineCover({
   /** Show the edit controls without requiring page Edit Mode — for surfaces that
    *  are themselves an explicit editor (e.g. the Settings panel hero). */
   forceEdit?: boolean
+  /** Optional notify-up after a successful upload (the new URL) or remove (null) — for a parent
+   *  form that ALSO persists the URL on its own Save and needs to track the latest value. */
+  onChange?: (url: string | null) => void
 }) {
   const { editing } = useEditMode()
   const showEdit = (editing || forceEdit) && canEdit
@@ -47,7 +51,10 @@ export function InlineCover({
     startTransition(async () => {
       const res = await upload(fd)
       if ('error' in res) setErr(res.error)
-      else setUrl(res.url)
+      else {
+        setUrl(res.url)
+        onChange?.(res.url)
+      }
     })
   }
 
@@ -56,6 +63,7 @@ export function InlineCover({
     startTransition(async () => {
       await remove()
       setUrl(null)
+      onChange?.(null)
     })
   }
 
