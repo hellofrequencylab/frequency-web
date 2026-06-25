@@ -29,9 +29,9 @@ const csp = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   // connect-src is the exfiltration gate — every runtime fetch/XHR/WS target is listed:
-  // Supabase (REST + realtime), GA, Vercel insights/live, OpenFreeMap tiles (maplibre),
-  // Photon (address geocoding), ipapi (IP geo).
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://photon.komoot.io https://ipapi.co",
+  // Supabase (REST + realtime), GA (incl. GA4's region-routed /g/collect endpoint), Vercel
+  // insights/live, OpenFreeMap tiles (maplibre), Photon (address geocoding), ipapi (IP geo).
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://photon.komoot.io https://ipapi.co",
   "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com",
   "media-src 'self' blob: https:",
   "worker-src 'self' blob:",
