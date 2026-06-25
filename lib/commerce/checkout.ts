@@ -199,11 +199,7 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // (migration 20260819000000) locks each tracked-stock product, subtracts this
     // order's quantities, and is idempotent per order (a retried/concurrent settle
     // no-ops). Untracked products (stock null) are skipped and stay unlimited.
-    // Untyped handle (same pattern as lib/rewards/gifts.ts): the RPC is new and not
-    // yet in the generated Database types, so widen to the un-parametrised client.
-    // Drop after `supabase gen types` is re-run.
-    const rpc = db() as unknown as { rpc: SupabaseClient['rpc'] }
-    const { error: stockError } = await rpc.rpc('decrement_commerce_stock_atomic', { _order: row.id })
+    const { error: stockError } = await db().rpc('decrement_commerce_stock_atomic', { _order: row.id })
     if (stockError) {
       // The order is already paid + settled; the RPC raises typed P0001 'out_of_stock'
       // only when stock raced below the sold quantity. We fail SOFT (log, do not throw)

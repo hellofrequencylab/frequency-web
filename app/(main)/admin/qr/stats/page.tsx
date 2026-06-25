@@ -23,9 +23,7 @@ export default async function QrStatsPage() {
 
   const [{ data: statsPayload }, { data: codes }, { count: nodeCount }, { data: events }, { data: challenges }, { data: acq }] =
     await Promise.all([
-      (db as unknown as {
-        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: QrStatsRpcPayload | null }>
-      }).rpc('qr_stats_summary', { p_days: 30 }),
+      db.rpc('qr_stats_summary', { p_days: 30 }),
       db.from('qr_codes').select('id, slug, title, purpose, owner_profile_id'),
       db.from('nodes').select('id', { count: 'exact', head: true }),
       db.from('engagement_events').select('event_type').in('event_type', ['qr.referral_signup', 'qr.gift_zap']),
@@ -33,7 +31,7 @@ export default async function QrStatsPage() {
       db.from('profiles').select('acquisition').not('acquisition', 'is', null),
     ])
 
-  const { summary, locations } = scanSummaryFromRpc(statsPayload)
+  const { summary, locations } = scanSummaryFromRpc(statsPayload as QrStatsRpcPayload | null)
 
   // Funnel (the in-app actions a scan drives).
   const referralSignups = (events ?? []).filter((e) => e.event_type === 'qr.referral_signup').length
