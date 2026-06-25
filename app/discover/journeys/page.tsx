@@ -53,8 +53,8 @@ export default async function DiscoverJourneysPage() {
       />
 
       <PhotoHero
-        image="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
-        alt="A Frequency member resting in savasana beside a hand-lettered “you are beautiful” sign"
+        image="/images/site/yoga-in-the-grass.jpg"
+        alt="A large group practicing cat-cow on yoga mats across a lawn at golden hour, palms behind them"
         focal="object-center"
         eyebrow="Practice, together"
         title={<>Pick a <span className="text-primary">Journey</span></>}
@@ -127,9 +127,9 @@ export default async function DiscoverJourneysPage() {
           {/* ── Why a Journey ───────────────────────────────────── */}
           <ZigZag
             tone="canvas"
-            img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
-            alt="A large Frequency community practicing yoga together on a lawn at golden hour"
-            imgAspect="natural"
+            img="/images/site/downward-dog.jpg"
+            alt="A group holding downward dog on yoga mats on a lawn under a tall palm, ocean town behind them"
+            imgAspect="portrait"
             eyebrow="Why a Journey"
             title="Small practices, kept up, with company"
             kicker="A rhythm you can hold, and people holding it with you."

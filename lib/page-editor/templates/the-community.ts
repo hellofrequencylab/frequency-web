@@ -46,7 +46,7 @@ export const data: Data = {
   root: {},
   content: [
     // ── Hero ── image variant, the one big promise, and the first place to act.
-    // Image is the calm breathwork-circle (a real, small gathering), not a crowd:
+    // Image is a calm sunrise meditation Circle (a real gathering), not a crowd:
     // the builder, not the party-goer, is the reader. ───────────────────────────
     {
       type: 'Hero',
@@ -58,7 +58,7 @@ export const data: Data = {
         titleAccent: 'something you build',
         subtitle:
           "Frequency is for people who want to build community where they live. A few neighbors, a standing time, and a room that misses you when you're gone.",
-        image: '/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg',
+        image: '/images/site/meditation-circle.jpg',
         focal: 'center',
         minHeight: 'screen',
         ctaPrimaryLabel: BETA_CTA_LABEL,
@@ -219,8 +219,8 @@ export const data: Data = {
       type: 'MediaText',
       props: {
         id: 'tc-channels',
-        image: '/images/site/community-1.jpg',
-        alt: 'A Frequency community practicing yoga together on a neighborhood lawn',
+        image: '/images/site/kundalini-group-outdoor.jpg',
+        alt: 'A Frequency group practicing kundalini together on a neighborhood lawn at golden hour',
         eyebrow: 'Channels and Runs',
         title: 'Find your people. Walk it together.',
         titleAccent: 'together',
@@ -265,8 +265,8 @@ export const data: Data = {
       type: 'MediaText',
       props: {
         id: 'tc-guru',
-        image: '/images/site/PHOTO-2020-10-17-13-49-14.jpeg',
-        alt: 'A Frequency music circle gathered on a cliffside at golden hour',
+        image: '/images/site/song-circle.jpg',
+        alt: 'A Frequency song circle playing guitars together on an oceanfront overlook at golden hour',
         eyebrow: 'Why it lasts',
         title: 'Guru-free. By design.',
         titleAccent: 'Guru-free',
