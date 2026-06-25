@@ -28,6 +28,8 @@ import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 
@@ -86,12 +88,13 @@ export default async function TheLabPage() {
   const published = await getPublishedData('the-lab')
   const template = getTemplate('the-lab')
   const data = isRenderable(published) ? published : isRenderable(template) ? template : null
+  const live = data ? await getLiveData(createAdminClient()).catch(() => null) : null
   return (
     <>
       <JsonLd
         data={breadcrumbSchema([{ name: 'The Lab', path: '/the-lab' }])}
       />
-      {data ? <Render config={config} data={data} /> : <LegacyTheLab />}
+      {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheLab />}
     </>
   )
 }
