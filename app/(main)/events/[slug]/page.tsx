@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
@@ -6,6 +7,7 @@ import Link from 'next/link'
 import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { SITE_NAME } from '@/lib/site'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton, RefundTicketButton, type TicketTierView } from './ticket-button'
@@ -96,6 +98,62 @@ function formatFull(iso: string) {
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+// ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
+// for any future anon carve). Resolves the event through the admin client only — no
+// auth round-trip — reading just the card fields. Visibility is NOT re-checked here:
+// metadata never leaks more than the public title/cover, and the page body still
+// enforces the ADR-202 gate.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const admin = createAdminClient()
+  const { data: ev } = await admin
+    .from('events')
+    .select('title, description, location, starts_at, cover_image_path')
+    .eq('slug', slug)
+    .maybeSingle()
+  if (!ev) return { title: 'Event not found' }
+  const event = ev as {
+    title: string
+    description: string | null
+    location: string | null
+    starts_at: string
+    cover_image_path: string | null
+  }
+
+  const where = event.location ? ` at ${event.location}` : ''
+  const full =
+    event.description ??
+    `${event.title}: a Frequency community event${where}. Sign in to RSVP.`
+  // Search snippets truncate around 155 chars — keep the meta description tight
+  // (matches the discover detail pages).
+  const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
+  const ogTitle = `${event.title} · ${SITE_NAME}`
+
+  const coverUrl = event.cover_image_path
+    ? admin.storage.from('event-media').getPublicUrl(event.cover_image_path).data.publicUrl
+    : null
+
+  return {
+    title: event.title,
+    description,
+    openGraph: {
+      title: ogTitle,
+      description,
+      type: 'article',
+      ...(coverUrl ? { images: [{ url: coverUrl }] } : {}),
+    },
+    twitter: {
+      card: coverUrl ? 'summary_large_image' : 'summary',
+      title: ogTitle,
+      description,
+    },
+  }
 }
 
 export default async function EventDetailPage({

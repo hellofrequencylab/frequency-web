@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { Users, Zap, Flame, MapPin, Settings } from 'lucide-react'
@@ -27,6 +28,7 @@ import { DetailTemplate } from '@/components/templates/detail-template'
 import { ModuleCard } from '@/components/modules/module-card'
 import { isoDaysAgo } from '@/lib/utils'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
+import { SITE_NAME } from '@/lib/site'
 import { coerceLayout, resolveRailOrder } from '@/lib/circles/rail-layout'
 import { getOperatorRailLayout } from '@/lib/circles/rail-layout-store'
 import { type CommunityRole } from '@/lib/community-roles'
@@ -86,6 +88,56 @@ type MemberRow = {
     current_season_rank: string | null
     current_streak: number
     achievement_count: number
+  }
+}
+
+// ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
+// for any future anon carve). Admin client only — no auth round-trip — reading just
+// the card fields, with the same archived filter the page body applies.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const admin = createAdminClient()
+  const { data: c } = await admin
+    .from('circles')
+    .select('name, about, city, image_url')
+    .eq('slug', slug)
+    .neq('status', 'archived')
+    .maybeSingle()
+  if (!c) return { title: 'Circle not found' }
+  const circle = c as {
+    name: string
+    about: string | null
+    city: string | null
+    image_url: string | null
+  }
+
+  const where = circle.city ? ` in ${circle.city}` : ''
+  const full =
+    circle.about ??
+    `${circle.name} is a Frequency circle${where}. Join to meet your neighbors and show up in person.`
+  // Search snippets truncate around 155 chars — keep the meta description tight
+  // (matches the discover detail pages).
+  const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
+  const ogTitle = `${circle.name} · ${SITE_NAME}`
+  const coverUrl = circle.image_url
+
+  return {
+    title: circle.name,
+    description,
+    openGraph: {
+      title: ogTitle,
+      description,
+      ...(coverUrl ? { images: [{ url: coverUrl }] } : {}),
+    },
+    twitter: {
+      card: coverUrl ? 'summary_large_image' : 'summary',
+      title: ogTitle,
+      description,
+    },
   }
 }
 

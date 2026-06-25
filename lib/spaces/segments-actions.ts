@@ -11,7 +11,6 @@
 import { revalidatePath } from 'next/cache'
 import {
   createSpaceSegment as createSpaceSegmentImpl,
-  updateSpaceSegment as updateSpaceSegmentImpl,
   deleteSpaceSegment as deleteSpaceSegmentImpl,
 } from '@/lib/spaces/segments'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
@@ -31,19 +30,6 @@ export async function createSpaceSegment(
   definition: AudienceFilter,
 ): Promise<ActionResult<{ id: string }>> {
   const res = await createSpaceSegmentImpl(spaceId, name, definition)
-  if (!('error' in res)) revalidateEmail(slug)
-  return res
-}
-
-/** Rename / redefine a segment. Gated on canEditProfile (see the implementation). */
-export async function updateSpaceSegment(
-  spaceId: string,
-  slug: string,
-  id: string,
-  name: string,
-  definition: AudienceFilter,
-): Promise<ActionResult> {
-  const res = await updateSpaceSegmentImpl(spaceId, id, name, definition)
   if (!('error' in res)) revalidateEmail(slug)
   return res
 }

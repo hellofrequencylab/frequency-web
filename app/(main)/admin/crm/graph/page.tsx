@@ -39,8 +39,6 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-const MEMBER_INTEL = '/admin/crm/members'
-
 export default async function ResonanceGraphPage() {
   await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
 
@@ -170,7 +168,7 @@ function PartyLink({ party }: { party: ConnectionParty }) {
   if (!party.contactId) return <span className="min-w-0 truncate">{name}</span>
   return (
     <Link
-      href={`${MEMBER_INTEL}?tier=resonant`}
+      href={`/admin/marketing/contacts/${party.contactId}`}
       className="group inline-flex min-w-0 items-center gap-0.5 truncate text-text transition-colors hover:text-primary-strong"
     >
       {name}

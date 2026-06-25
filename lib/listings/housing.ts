@@ -4,8 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { rowToListing } from './index'
-import type { HousingDetail, HousingListing, HousingType, RoommateMatch } from './types'
+import type { HousingDetail, HousingType, RoommateMatch } from './types'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -70,53 +69,6 @@ export async function upsertHousingDetail(listingId: string, input: HousingDetai
 export async function getHousingDetail(listingId: string): Promise<HousingDetail | null> {
   const { data } = await db().from('housing_listings').select('*').eq('listing_id', listingId).maybeSingle()
   return data ? rowToHousingDetail(data as Record<string, unknown>) : null
-}
-
-/** Active housing listings joined with their detail. Fail-safe to []. */
-export async function listHousingListings(opts: { limit?: number } = {}): Promise<HousingListing[]> {
-  const { data } = await db()
-    .from('listings')
-    .select(
-      'id, vertical, owner_profile_id, entity_id, title, description, status, images, price_note, category, neighborhood, city, latitude, longitude, circle_id, is_demo, created_at, updated_at, housing_listings(*)',
-    )
-    .eq('vertical', 'housing')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(Math.min(Math.max(opts.limit ?? 40, 1), 100))
-  const rows = (data ?? []) as Record<string, unknown>[]
-  return rows
-    .map((r) => {
-      const detail = Array.isArray(r.housing_listings) ? r.housing_listings[0] : r.housing_listings
-      if (!detail) return null
-      return { ...rowToListing(r), housing: rowToHousingDetail(detail as Record<string, unknown>) }
-    })
-    .filter((x): x is HousingListing => x != null)
-}
-
-export interface RentalNearOpts {
-  lat: number
-  lng: number
-  maxRentCents?: number | null
-  limit?: number
-}
-
-export async function listRentalsNear(opts: RentalNearOpts): Promise<
-  { listingId: string; title: string; rentCents: number | null; roomType: string | null; city: string | null; distanceBand: string }[]
-> {
-  const { data } = await db().rpc('housing_rentals_near', {
-    _lat: opts.lat,
-    _lng: opts.lng,
-    _max_rent_cents: opts.maxRentCents ?? null,
-    _limit: opts.limit ?? 40,
-  })
-  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
-    listingId: r.listing_id as string,
-    title: r.title as string,
-    rentCents: (r.rent_cents as number) ?? null,
-    roomType: (r.room_type as string) ?? null,
-    city: (r.city as string) ?? null,
-    distanceBand: r.distance_band as string,
-  }))
 }
 
 /** Roommate compatibility for the caller, via housing_match_candidates (consent-gated).
