@@ -197,6 +197,7 @@ export default async function CirclesPage({
       id: `starter-${t.slug}`, name: t.name, slug: t.slug, about: t.card || t.oneLiner,
       type: 'in-person' as const, member_count: 0, member_cap: 0, status: 'active',
       context: PILLAR_LABELS[t.primaryPillar], imageUrl: t.imageUrl, isStarter: true,
+      primaryPillar: t.primaryPillar,
     }))
 
   // Members first, then the Starters to claim, then the rest of discovery.

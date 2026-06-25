@@ -4,6 +4,7 @@ import { DetailTemplate } from '@/components/templates/detail-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StarterBadge } from '@/components/ui/starter-badge'
 import { StarterClaim } from '@/components/circles/starter-claim'
+import { TemplateCover } from '@/components/circles/template-art'
 import { getTemplateBySlug, templatesEnabled } from '@/lib/circles/templates-data'
 import { PILLAR_SLUGS, type PillarSlug } from '@/lib/pillars'
 import { pageContentMetadata } from '@/lib/page-content'
@@ -44,6 +45,18 @@ export default async function StarterCirclePreview({
   return (
     <DetailTemplate
       back={{ href: '/circles', label: 'Circles' }}
+      hero={
+        <div className="relative h-40 w-full overflow-hidden rounded-2xl border border-border sm:h-52">
+          <TemplateCover
+            imageUrl={t.imageUrl}
+            name={t.name}
+            slug={t.slug}
+            primaryPillar={t.primaryPillar}
+            sizes="(max-width: 1024px) 100vw, 768px"
+            priority
+          />
+        </div>
+      }
       title={t.name}
       badges={
         <span className="flex items-center gap-1.5">
