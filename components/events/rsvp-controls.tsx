@@ -447,6 +447,12 @@ function PlusOneNames({
   setNames: (n: string[]) => void
   onSave: (n: string[]) => void
 }) {
+  // Stable per-row ids so the inputs key on identity, not array index — removing a guest
+  // mid-list then reuses the correct DOM node/caret instead of shifting values up a row.
+  // Kept in lockstep with `names` (both only mutate through the handlers below). Keys are
+  // React-internal (never serialized to the DOM), so the SSR/client id difference is harmless.
+  const [ids, setIds] = useState<string[]>(() => names.map(() => crypto.randomUUID()))
+
   const update = (i: number, value: string) => {
     const next = [...names]
     next[i] = value
@@ -455,18 +461,20 @@ function PlusOneNames({
   const remove = (i: number) => {
     const next = names.filter((_, idx) => idx !== i)
     setNames(next)
+    setIds(ids.filter((_, idx) => idx !== i))
     onSave(next)
   }
   const add = () => {
     if (names.length >= MAX_PLUS_ONES) return
     setNames([...names, ''])
+    setIds([...ids, crypto.randomUUID()])
   }
 
   return (
     <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
       <p className="text-xs font-medium text-muted">Who are you bringing? The host needs names.</p>
       {names.map((name, i) => (
-        <div key={i} className="flex items-center gap-2">
+        <div key={ids[i] ?? i} className="flex items-center gap-2">
           <input
             type="text"
             value={name}

@@ -40,6 +40,7 @@ export function OnlineMembersCard({ members }: { members: OnlineMember[] }) {
                       alt={m.displayName}
                       width={32}
                       height={32}
+                      sizes="32px"
                       className="h-8 w-8 rounded-full object-cover"
                     />
                   ) : (
