@@ -1,31 +1,59 @@
 import type { Data } from '@measured/puck'
+import {
+  BETA_CTA_LABEL,
+  BETA_CTA_HREF,
+  BETA_CTA_SECONDARY_LABEL,
+  BETA_CTA_SECONDARY_HREF,
+} from '@/lib/site'
 
-// Pricing, authored as a NORMAL pricing page (not a seed/beta/founder campaign).
-// Member is the featured (free, forever) card. Every section is listed AND detailed:
-// Membership (people), For Spaces (practitioners/businesses/orgs), and Add-ons.
-// Anything not yet purchasable is shown in full with a "Coming soon" (or "Invite only")
-// badge and a disabled, non-clickable CTA. Prices are the GA defaults from
-// lib/pricing/settings.ts (PRICING_DEFAULTS). Billing is gated OFF by the `billing_live`
-// master flag, so nothing charges today; the page is honest about that without countdowns
-// or fake scarcity. Built from the standardized block library ("editor = live", ADR-055):
-// three Tiers blocks, a "what membership funds" section (Heading + FeatureGrid + Statement),
-// a risk-reversal strip, a roles-are-earned note, and an Accordion FAQ. No em/en dashes.
+// ─────────────────────────────────────────────────────────────────────────────
+// PRICING — the honest, warm version. Copies THE COMMUNITY's shape and rhythm.
+//
+// The one idea: membership keeps the room open. Paying is how you hold the door
+// for the next person (pay-it-forward / circulation, per The Community), never how
+// you buy features or a place at the front. Member is free, forever, and featured.
+// Crew is the paid member tier (docs/NAMING.md: "Crew = paid"). Prices below are the
+// GA defaults (lib/pricing/settings.ts, PRICING_DEFAULTS) and are NOT to be edited.
+//
+// HOW TO READ THIS FILE (the contract, same as the-community.ts):
+//  • One `const L` layout literal, reused on every block so the spacing rhythm is
+//    consistent. Override per-block only with intent.
+//  • Honest at day zero: billing is gated OFF by the `billing_live` master flag, so
+//    nothing charges today. Plans that are built-but-not-yet-buyable show their REAL
+//    price with a "Coming soon" (or "Invite only") badge and a disabled CTA. No
+//    countdowns, no fake scarcity.
+//  • Tone beat alternates (surface → canvas → surface …) with a `Statement`
+//    interstitial and exactly ONE dark (`ink`) beat at the close.
+//  • Compose ONLY from registered blocks (lib/page-editor/config.tsx). Canon terms
+//    render verbatim (Member, Crew, Circle, Zaps, Gems, Vault, Vera). No em dashes.
+//    Sentence-case headings. Contractions always. Never narrate the reader's feelings.
+//  • CTA SYSTEM: the primary action is the shared BETA_CTA (label/href from
+//    @/lib/site), with ONE quiet secondary text link beside it. The free Member tier
+//    cards keep their own "Start free" entry into the game; the page-level asks (hero
+//    and the ink close) carry the shared beta CTA so Pricing speaks the same language
+//    as the rest of the site.
+// ─────────────────────────────────────────────────────────────────────────────
+
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
 
 export const data: Data = {
   root: {},
   content: [
+    // ── Hero ── the one idea: being a Member is free, and paying keeps the room
+    // open for the next person. Shared beta CTA primary, quiet member link beside
+    // it. The note carries honest billing status, not urgency. ───────────────────
     {
       type: 'Hero',
       props: {
         id: 'pr-hero', variant: 'image',
         eyebrow: 'Pricing',
-        title: 'Start free. Stay as long as you like.', titleAccent: 'free',
-        subtitle: 'Being a Member is free, forever. Browse Circles and Events, show up, earn Zaps, and meet Vera. Paid plans add more when you want them, and what you pay keeps the room open for the next person.',
+        title: 'Free to show up. Paid to hold the door.', titleAccent: 'hold the door',
+        subtitle: "Being a Member is free, forever. Browse Circles and Events, show up, earn Zaps, and meet Vera. When you pay, you're not buying extras. You're keeping the room open for the next person who walks in.",
         image: '/images/site/lab-lounge.jpg', focal: 'center',
         minHeight: 'screen',
-        ctaPrimaryLabel: 'Start free', ctaPrimaryHref: '/sign-in',
-        ctaSecondaryLabel: '', ctaSecondaryHref: '', note: 'No card today. Leave anytime.',
+        ctaPrimaryLabel: BETA_CTA_LABEL, ctaPrimaryHref: BETA_CTA_HREF,
+        ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL, ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
+        note: 'No card today. Leave anytime.',
         tone: 'surface', width: 'default', align: 'center', layout: L,
       },
     },
@@ -37,11 +65,11 @@ export const data: Data = {
         id: 'pr-membership',
         eyebrow: 'Membership',
         title: 'For people.', titleAccent: '',
-        kicker: 'Free to join. Upgrade when you want more, or give more when you can.',
+        kicker: 'Free to join. Pay when you want more, or pay so someone else can join too.',
         items: [
           {
             name: 'Member', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
-            tagline: 'The free tier. Show up and see what is here.',
+            tagline: 'The free tier. Show up and see who is here.',
             highlight: 'featured', badge: 'none',
             features: [
               { text: 'Browse Circles, Events, and Channels' },
@@ -54,7 +82,7 @@ export const data: Data = {
           {
             name: 'Crew', price: '$9', strikePrice: '', cadence: '/mo',
             priceNote: 'Or $90 a year. Two months free on annual.',
-            tagline: 'The full community and the full game.',
+            tagline: 'The full community and the full game. Your dues keep the lights on.',
             highlight: 'normal', badge: 'comingSoon',
             features: [
               { text: 'Everything in Member' },
@@ -249,7 +277,7 @@ export const data: Data = {
       props: {
         id: 'pr-funds-h', eyebrow: 'Where it goes',
         title: 'What your membership funds.', titleAccent: '',
-        kicker: 'Access, not extraction. Real rooms cost real money to keep open.',
+        kicker: 'Access, not extraction. A real room costs real money to keep open, so here is where the money goes.',
         size: 'default', tone: 'canvas', width: 'default', align: 'left', layout: { spaceTop: 'default', spaceBottom: 'none', visibility: 'all' },
       },
     },
@@ -258,7 +286,7 @@ export const data: Data = {
       props: {
         id: 'pr-funds-grid', eyebrow: '', title: '', titleAccent: '', style: 'icon', columns: '3',
         items: [
-          { icon: 'Sun', image: '', title: 'The room’s lights', body: 'Power, heat, and water for the spaces where Circles meet.', href: '' },
+          { icon: 'Sun', image: '', title: "The room's lights", body: 'Power, heat, and water for the spaces where Circles meet.', href: '' },
           { icon: 'Shield', image: '', title: 'Insurance', body: 'The boring, necessary coverage that lets a real room open its doors.', href: '' },
           { icon: 'Flame', image: '', title: 'The thermal circuit', body: 'The sauna, the cold pool, and the connection bar at The Lab.', href: '' },
         ],
@@ -314,18 +342,22 @@ export const data: Data = {
           { q: 'What is the difference between Member, Crew, and Supporter?', a: 'Member is the free tier. Crew adds the full community and the full game, with Gems, Vault cash-in, unlimited Vera, and the leaderboard, for $9 a month or $90 a year. Supporter adds everything in Crew plus funding a member who cannot pay yet, for $24 a month or $240 a year.' },
           { q: 'What about refunds?', a: 'There is nothing to refund today, since nothing is charged. When paid plans go live, we will publish clear billing and refund terms before you ever enter a card, and you can cancel at any time.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },
-          { q: 'Where does the money go?', a: 'Into keeping the room open. A membership sustains the physical spaces, the lights, the insurance, the thermal circuit, and the community that gathers in them. People who pay more cover neighbors who cannot pay yet.' },
+          { q: 'Where does the money go?', a: 'Into keeping the room open. A membership sustains the physical spaces, the lights, the insurance, the thermal circuit, and the community that gathers in them. People who pay more hold the door for neighbors who cannot pay yet, so connection keeps circulating instead of sitting behind a paywall.' },
         ],
         tone: 'canvas', width: 'default', align: 'left', layout: L,
       },
     },
 
+    // ── Close ── the single ink beat. Shared beta CTA, quiet member link beside
+    // it. The promise is the whole page in one line: show up free, hold the door
+    // when you can. ──────────────────────────────────────────────────────────────
     {
       type: 'CallToAction',
       props: {
-        id: 'pr-cta', eyebrow: '', heading: 'Pull up a chair.', headingAccent: '',
-        body: 'Being a Member is free. No card today, leave anytime. Find your people and help keep the room open.',
-        ctaPrimaryLabel: 'Start free', ctaPrimaryHref: '/sign-in', ctaSecondaryLabel: 'Browse Discover', ctaSecondaryHref: '/discover',
+        id: 'pr-cta', eyebrow: '', heading: 'Pull up a chair.', headingAccent: 'chair',
+        body: 'Being a Member is free. No card today, leave anytime. Find your people, and when you can, hold the door open for the next person.',
+        ctaPrimaryLabel: BETA_CTA_LABEL, ctaPrimaryHref: BETA_CTA_HREF,
+        ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL, ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
         tone: 'ink', width: 'default', align: 'center', layout: L,
       },
     },

@@ -1611,19 +1611,8 @@ export default function AppShell({
               hide/show seeded demo content for themselves; sized to match Search. */}
           {demoMode && hasDemoContent && <DemoToggle initialHidden={demoHidden} />}
 
-          {/* Report a bug — Beta only (shown while demo mode is on). Opens the same
-              support sheet as the account menu's "Report a bug", via the shared event. */}
-          {demoMode && (
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } }))}
-              title="Report a bug"
-              className="hidden sm:flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning-bg/40 px-3 py-1.5 text-sm font-medium text-warning hover:bg-warning-bg/70 transition-colors"
-            >
-              <Bug className="w-4 h-4" />
-              <span className="hidden md:inline">Report a bug</span>
-            </button>
-          )}
+          {/* "Report a bug" lives at the TOP of the right rail now (see right-sidebar.tsx),
+              not in the header. The account menu keeps its own "Report a bug" entry below. */}
 
           {/* Search pill — opens the live overlay. Desktop */}
           <button

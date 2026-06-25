@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, CalendarDays } from 'lucide-react'
@@ -28,7 +27,6 @@ import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HRE
 import { resolvePageContent } from '@/lib/page-content'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { communityHref } from '@/lib/community-href'
-import { getJanitor } from '@/lib/page-editor/guard'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
@@ -140,33 +138,16 @@ const HOME_FAQ = [
   },
 ]
 
-export default async function RootPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ preview?: string }>
-}) {
+export default async function RootPage() {
+  // Home ("/") shows the splash for EVERYONE, signed in or out (owner directive): the
+  // marketing/home page is the brand front door, and a member's feed lives at /feed
+  // (reached from the in-app logo / Community). We no longer bounce logged-in members
+  // off "/" to their feed, so the "Home" nav tab lands on the splash as expected. We
+  // still read `user` so the marketing header + splash render the signed-in chrome.
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  // Logged-in users get their feed — except a janitor with `?preview`, who can
-  // preview the public splash (e.g. via the Pages directory "View" link). A
-  // signed-in user who hasn't finished beta onboarding is NOT bounced to /feed
-  // (which would loop them back into the induction); they can browse home freely.
-  if (user) {
-    const { preview } = await searchParams
-    const canPreview = preview !== undefined && (await getJanitor())
-    if (!canPreview) {
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('meta')
-        .eq('auth_user_id', user.id)
-        .maybeSingle()
-      const onboarded = !!(prof?.meta as { onboarding_completed?: boolean } | null)?.onboarding_completed
-      if (onboarded) redirect('/feed')
-    }
-  }
 
   // `home` is editable in the visual editor (see EDITABLE_PAGES in
   // lib/page-editor/data): the render chain is getPublishedData('home') ->
@@ -196,7 +177,7 @@ export default async function RootPage({
   if (data) {
     return (
       <>
-        <MarketingHeader overHero headerMenu={headerMenu} menuTimings={menuTimings} />
+        <MarketingHeader overHero isAuth={!!user} headerMenu={headerMenu} menuTimings={menuTimings} />
         <Render config={config} data={data} />
         <MarketingFooter menu={footerMenu} />
       </>
@@ -208,6 +189,7 @@ export default async function RootPage({
   return (
     <Splash
       referrer={referrer}
+      isAuth={!!user}
       headerMenu={headerMenu}
       footerMenu={footerMenu}
       menuTimings={menuTimings}
@@ -221,11 +203,13 @@ export default async function RootPage({
 //   the honest "we are early" beat → the short FAQ → one CTA into /start.
 function Splash({
   referrer,
+  isAuth = false,
   headerMenu,
   footerMenu,
   menuTimings,
 }: {
   referrer: { displayName: string; handle: string; avatarUrl: string | null } | null
+  isAuth?: boolean
   headerMenu?: ResolvedMenu
   footerMenu?: ResolvedMenu
   menuTimings?: MenuSettings
@@ -234,6 +218,7 @@ function Splash({
     <>
       <MarketingHeader
         overHero
+        isAuth={isAuth}
         headerMenu={headerMenu}
         menuTimings={menuTimings}
       />

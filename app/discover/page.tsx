@@ -42,19 +42,19 @@ import {
 const DISCOVER_FAQS = [
   {
     q: 'What is Frequency?',
-    a: 'Frequency is a community platform that connects neighborhoods into real-world community. You join a local circle of up to 50 people, show up for in-person events near you, and build lasting friendships with people who live close by.',
+    a: 'Frequency connects neighborhoods into real-world community. You join a local Circle of up to 50 people, show up for in-person events near you, and build lasting friendships with people who live close by.',
   },
   {
     q: 'Is Frequency free to join?',
-    a: 'Yes. Creating an account, joining a circle, and RSVPing to events is free.',
+    a: 'Yes. Creating an account, joining a Circle, and RSVPing to events is free.',
   },
   {
     q: 'What is a circle?',
-    a: 'A circle is a small local group of up to 50 people centered on a shared topic, like Movement, Spirituality, or Creative practice. Small enough to know everyone, big enough to always have plans.',
+    a: 'A Circle is a small local group of up to 50 people built around a shared Channel, like Movement, Spirituality, or Creative. Small enough to know everyone, big enough to always have plans.',
   },
   {
     q: 'Do I need an account to browse?',
-    a: 'No. You can browse circles, topics, and upcoming events without signing up. You only need a free account to join a circle, RSVP to an event, see exact venue details, or post.',
+    a: 'No. You can browse Circles, Channels, and upcoming events without signing up. You only need a free account to join a Circle, RSVP to an event, see exact venue details, or post.',
   },
   {
     q: 'How is my location handled?',
@@ -65,19 +65,19 @@ const DISCOVER_FAQS = [
 export const metadata: Metadata = {
   title: 'Discover the community',
   description:
-    'Browse local circles, upcoming real-world events, and topics across the Frequency community. Find your people and show up in person.',
+    'Browse local circles, real-world events, and channels across the Frequency community. Find your people and show up in person.',
   alternates: { canonical: '/discover' },
   openGraph: {
     title: `Discover the community · ${SITE_NAME}`,
     description:
-      'Browse local circles, upcoming real-world events, and topics across the Frequency community.',
+      'Browse local circles, real-world events, and channels across the Frequency community.',
     url: '/discover',
   },
   twitter: {
     card: 'summary_large_image',
     title: `Discover the community · ${SITE_NAME}`,
     description:
-      'Browse local circles, upcoming real-world events, and topics across the Frequency community.',
+      'Browse local circles, real-world events, and channels across the Frequency community.',
   },
 }
 
@@ -122,11 +122,12 @@ export default async function DiscoverHubPage() {
 
       {/* ── Hero ──────────────────────────────────────────────── */}
       <PhotoHero
-        image="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
-        alt="A large Frequency yoga gathering on a lawn at golden hour in North County San Diego"
+        image="/images/site/breathwork-circle.jpg"
+        alt="A large breathwork circle seated outdoors, arms raised overhead, at golden hour above the ocean in North County San Diego"
+        focal="object-[50%_40%]"
         eyebrow="Discover Frequency"
         title="Real community, near you"
-        subtitle="Somewhere close to you, your people are already meeting this week. A standing time, a handful of regulars, a seat that gets noticed when it's empty. Browse the circles, events, and topics freely; sign up free to join a circle, RSVP, or post."
+        subtitle="Somewhere close to you, your people are already meeting this week. A standing time, a handful of regulars, a seat that gets noticed when it's empty. Browse the Circles, events, and Channels for free; sign up to join one, RSVP, or post."
       >
         {counts.members >= SOCIAL_PROOF_FLOOR ? (
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/80">
@@ -138,15 +139,15 @@ export default async function DiscoverHubPage() {
           </div>
         ) : (
           <p className="text-sm text-white/80">
-            Forming now in {FOUNDING_PLACE}: explore the first circles, topics, and events below.
+            Forming now in {FOUNDING_PLACE}: explore the first Circles, Channels, and events below.
           </p>
         )}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Button href={BETA_CTA_HREF}>
             {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
           </Button>
-          <Link href="/sign-in" className="text-sm font-semibold text-white/80 hover:text-white transition-colors">
-            or browse free →
+          <Link href="/discover/circles" className="text-sm font-semibold text-white/80 hover:text-white transition-colors">
+            or just browse, no account needed →
           </Link>
         </div>
       </PhotoHero>
@@ -166,8 +167,8 @@ export default async function DiscoverHubPage() {
               kicker="Every dot is neighbors already gathering."
             />
             <p className="mt-5 text-lg text-muted leading-relaxed">
-              Start with the map. Each marker is a real circle taking root nearby, close
-              enough to walk to, small enough to be missed in if you don&apos;t come.
+              Start with the map. Each marker is a real Circle taking root nearby. Close
+              enough to walk to, small enough that you&apos;re missed when you don&apos;t come.
             </p>
           </div>
           {cityClusters.length > 0 ? (
@@ -186,7 +187,7 @@ export default async function DiscoverHubPage() {
             <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-marketing-canvas p-8 text-center">
               <p className="mb-1 text-lg font-semibold text-text">We&apos;re starting in {FOUNDING_PLACE}.</p>
               <p className="mb-5 text-sm text-muted leading-relaxed">
-                The first circles are forming now. Be one of the first in your neighborhood.
+                The first Circles are forming now. Be one of the first in your neighborhood.
               </p>
               <Button href={BETA_CTA_HREF}>
                 {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
@@ -196,10 +197,10 @@ export default async function DiscoverHubPage() {
         </div>
       </section>
 
-      {/* ── Topics ────────────────────────────────────────────── */}
+      {/* ── Channels ──────────────────────────────────────────── */}
       {channels.length > 0 && (
         <section className="relative overflow-hidden bg-marketing-canvas px-6 py-20 sm:py-24">
-          {/* A loose constellation of people, the network a topic opens onto. */}
+          {/* A loose constellation of people, the network a Channel opens onto. */}
           <CircleConstellation
             aria-hidden
             className="pointer-events-none absolute top-12 right-0 w-72 max-w-none text-primary opacity-[0.06]"
@@ -207,13 +208,13 @@ export default async function DiscoverHubPage() {
           <div className="relative max-w-4xl mx-auto">
             <div className="text-center max-w-2xl mx-auto">
               <SectionHeading
-                eyebrow="Explore by topic"
+                eyebrow="Explore by Channel"
                 title={<>Find what you <span className="text-primary">practice</span></>}
                 kicker="The thing you already love is a doorway to a room of people."
               />
               <p className="mt-5 text-lg text-muted leading-relaxed">
-                Movement, spirituality, creative practice. Pick the one that&apos;s calling you,
-                and on the other side of it is a circle living it near you this week.
+                Movement, spirituality, creative. Pick the Channel that&apos;s calling you,
+                and on the other side of it is a Circle living it near you this week.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -223,7 +224,7 @@ export default async function DiscoverHubPage() {
             </div>
             <div className="text-center mt-8">
               <Link href="/discover/topics" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline">
-                Browse all topics <ArrowRight className="w-4 h-4" />
+                Browse all Channels <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -268,7 +269,7 @@ export default async function DiscoverHubPage() {
       {/* ── Featured circles ──────────────────────────────────── */}
       {circles.length > 0 && (
         <section className="relative overflow-hidden bg-marketing-canvas px-6 py-20 sm:py-24">
-          {/* Ripple rings: a circle widening out, the core motif for this beat. */}
+          {/* Ripple rings: a Circle widening out, the core motif for this beat. */}
           <RippleRings
             aria-hidden
             className="pointer-events-none absolute -bottom-16 -left-16 w-96 max-w-none text-primary opacity-[0.06]"
@@ -299,29 +300,30 @@ export default async function DiscoverHubPage() {
         </section>
       )}
 
-      {/* ── Tender accent ─────────────────────────────────────── */}
+      {/* ── Human accent ──────────────────────────────────────── */}
       <ZigZag
         tone="surface"
-        img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
-        alt="A Frequency member resting in savasana beside a hand-lettered “you are beautiful” sign"
+        img="/images/site/community-dinner.jpg"
+        alt="A long-table outdoor dinner at night under string lights and a patio heater, friends gathered around the lit table"
         imgAspect="landscape"
+        imgPosition="center"
         eyebrow="Why we show up"
-        title="You are beautiful"
-        kicker="And you were never meant to do this alone."
+        title="Somewhere that keeps a seat for you"
+        kicker="Not an audience. A few people who know your name."
       >
         <p>
-          Frequency is built on a simple belief: people are happier, healthier, and more
-          themselves when they belong to a community that knows them. Not an audience. A few
-          faces that light up when you walk in.
+          Frequency runs on a plain idea: people are steadier, healthier, and more themselves
+          when they belong to a group that knows them. Not a follower count. A handful of faces
+          that light up when you walk in.
         </p>
         <p>
-          Every circle and every event here is an invitation to be seen. To trade the scroll
-          for a real morning on the grass, beside neighbors who notice the week you go quiet
-          and text to ask if you&apos;re alright.
+          Every Circle and every event here is a standing invitation to show up in person. To
+          trade the scroll for a real morning on the grass, next to neighbors who notice the
+          week you go quiet and text to ask if you&apos;re alright.
         </p>
         <p>
-          That is the relief waiting on the other side of a browse: somewhere physical to
-          belong, close enough to walk to, with people who keep a seat warm for you.
+          That&apos;s what&apos;s waiting on the other side of a browse: somewhere to belong,
+          close enough to walk to, with people who keep a seat warm for you.
         </p>
       </ZigZag>
 
@@ -340,7 +342,7 @@ export default async function DiscoverHubPage() {
             <InlineBetaCapture
               source="discover_posts"
               heading="Join to see more"
-              body="Get an invite to the beta: the full feed, events, and your local circle. No spam, just an invite when a spot opens."
+              body="Get an invite to the beta: the full feed, events, and your local Circle. No spam, just an invite when a spot opens."
             />
           </div>
         </section>
@@ -364,7 +366,7 @@ export default async function DiscoverHubPage() {
       {/* ── Final CTA ─────────────────────────────────────────── */}
       <BetaCTA
         heading="Ready to find your people?"
-        body="Frequency is free to join. Sign up, find a circle near you, and start showing up this week."
+        body="Frequency is free to join. Sign up, find a Circle near you, and start showing up this week."
       />
     </>
   )

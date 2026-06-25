@@ -489,3 +489,104 @@ export function howToSchema(howTo: {
   }
 }
 
+// ── Product / Offer (maker, shop, Space storefront) ─────────────────────────────
+// One crawlable Product per sellable item — the AEO node an answer engine cites for
+// "where can I buy X". Price in major units, 2dp, currency upper-cased (mirrors Event).
+
+export function productSchema(p: {
+  title: string
+  description?: string | null
+  image?: string | null
+  priceCents: number
+  currency?: string | null
+  inStock?: boolean
+  sellerName?: string | null
+  /** Canonical app path, e.g. `/shop/tote` or `/marketplace/makers/<id>`. */
+  path: string
+}) {
+  const url = abs(p.path)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: p.title,
+    ...(p.description ? { description: p.description } : {}),
+    image: [...(p.image ? [p.image] : []), abs('/opengraph-image')],
+    url,
+    ...(p.sellerName ? { brand: { '@type': 'Brand', name: p.sellerName } } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: (p.priceCents / 100).toFixed(2),
+      priceCurrency: (p.currency ?? 'usd').toUpperCase(),
+      availability: p.inStock === false ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+      url,
+      ...(p.sellerName ? { seller: { '@type': 'Organization', name: p.sellerName } } : {}),
+    },
+  }
+}
+
+export function productListSchema(products: { title: string; path: string }[], listName: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: products.length,
+    itemListElement: products.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: abs(p.path),
+      name: p.title,
+    })),
+  }
+}
+
+// ── Housing (Accommodation) ─────────────────────────────────────────────────────
+// A rental/roommate listing as schema.org/Accommodation. CITY-LEVEL location only
+// (addressLocality), never street/coords — same privacy contract as Event (ADR-186).
+
+const ROOM_TYPE_SCHEMA: Record<string, string> = {
+  private_room: 'Room',
+  shared_room: 'Room',
+  entire_place: 'Apartment',
+}
+
+export function housingListingSchema(h: {
+  title: string
+  description?: string | null
+  image?: string | null
+  city?: string | null
+  rentCents?: number | null
+  bedrooms?: number | null
+  roomType?: string | null
+  /** Canonical app path, e.g. `/marketplace/housing/<id>`. */
+  path: string
+}) {
+  const url = abs(h.path)
+  return {
+    '@context': 'https://schema.org',
+    '@type': h.roomType ? ROOM_TYPE_SCHEMA[h.roomType] ?? 'Accommodation' : 'Accommodation',
+    name: h.title,
+    ...(h.description ? { description: h.description } : {}),
+    image: [...(h.image ? [h.image] : []), abs('/opengraph-image')],
+    url,
+    ...(typeof h.bedrooms === 'number' ? { numberOfBedrooms: h.bedrooms } : {}),
+    ...(h.city
+      ? { address: { '@type': 'PostalAddress', addressLocality: h.city } }
+      : { address: { '@type': 'PostalAddress', addressLocality: 'Shared with members' } }),
+    ...(h.rentCents && h.rentCents > 0
+      ? {
+          offers: {
+            '@type': 'Offer',
+            priceCurrency: 'USD',
+            priceSpecification: {
+              '@type': 'UnitPriceSpecification',
+              price: (h.rentCents / 100).toFixed(2),
+              priceCurrency: 'USD',
+              unitCode: 'MON',
+            },
+            url,
+          },
+        }
+      : {}),
+  }
+}
+

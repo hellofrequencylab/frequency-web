@@ -1,6 +1,7 @@
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
+import { createClient } from '@/lib/supabase/server'
 
 // Shared chrome for the public marketing content pages (/the-lab, /how-it-works,
 // /about). Solid light header (these are content pages, not a dark hero). The
@@ -13,9 +14,13 @@ export default async function MarketingLayout({ children }: { children: React.Re
     getMenu('footer'),
     getMenuSettings(),
   ])
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   return (
     <>
-      <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} />
+      <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={!!user} />
       <main className="min-h-screen bg-surface pt-16">{children}</main>
       <MarketingFooter menu={footerMenu} />
     </>

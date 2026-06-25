@@ -90,6 +90,7 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
       { label: "Discover", href: "/discover", desc: "Everything happening near you" },
       { label: "Circles", href: "/discover/circles", desc: "Small groups around an interest" },
       { label: "Events", href: "/discover/events", desc: "Gatherings you can show up to" },
+      { label: "Marketplace", href: "/market", desc: "Goods, housing, and makers nearby" },
       { label: "Partners", href: "/discover/partners", desc: "The studios and hosts we work with" },
     ],
   },
@@ -124,15 +125,26 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
 // Flat list for the marketing footer — the same six primary pages, same order.
 export const MARKETING_NAV: NavLink[] = PRIMARY_NAV;
 
-// Primary acquisition CTA. The beta is OPEN — clicking "Join the Beta" opens the
-// beta induction SEQUENCE directly (/onboarding/beta). Signed-out visitors get the
-// sequence's cinematic welcome with sign-in embedded (app/onboarding/beta/welcome.tsx),
-// not a cold sign-in form; after auth the route renders the full induction. The /beta
+// Primary acquisition CTA. The label is builder-framed ("Start a Circle") to speak
+// to the Latent Leader, the reader the whole growth model runs on (CONTENT-VOICE
+// §2b/§7b); the quiet secondary ("or just join as a member") is the lighter path
+// for the Seeker. The beta is OPEN — clicking the primary opens the beta induction
+// SEQUENCE directly (/onboarding/beta). Signed-out visitors get the sequence's
+// cinematic welcome with sign-in embedded (app/onboarding/beta/welcome.tsx), not a
+// cold sign-in form; after auth the route renders the full induction. The /beta
 // marketing + waitlist page (BetaForm → requestBetaAccess) is kept intact for the
 // future gated weekly-cohort phase, when AI-driven admission re-introduces the lead
-// capture.
-export const BETA_CTA_LABEL = "Join the Beta";
+// capture. NOTE: changing BETA_CTA_LABEL re-labels every shared CTA site-wide (nav,
+// hero, mid-page, close); page templates that bake the literal into a published DB
+// doc need a re-publish to pick it up (see docs/DOCS-PROTOCOL.md + page-editor).
+export const BETA_CTA_LABEL = "Start a Circle";
 export const BETA_CTA_HREF = "/onboarding/beta";
+
+// The lighter secondary path, paired beside the primary as a quiet text link (never
+// a second button). For the Seeker who is not ready to host; routes into the same
+// open induction, which branches by intent.
+export const BETA_CTA_SECONDARY_LABEL = "or just join as a member";
+export const BETA_CTA_SECONDARY_HREF = BETA_CTA_HREF;
 
 // Org footer line. Donations / 501(c)(3) framework deferred — no fundraising
 // language on the public site yet (see frequency-site-plan + org-status spec).

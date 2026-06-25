@@ -1,16 +1,16 @@
 import type { Metadata } from 'next'
 import { ArrowRight } from 'lucide-react'
 import {
-  PageHero,
+  PhotoHero,
   Section,
   Lead,
   Body,
   PullQuote,
+  ZigZag,
   FaqList,
   BetaCTA,
   Button,
 } from '@/components/marketing/marketing-ui'
-import { Illustration } from '@/components/marketing/illustrations'
 import { JsonLd } from '@/components/json-ld'
 import { articleSchema, faqSchema, breadcrumbSchema } from '@/lib/jsonld'
 
@@ -18,7 +18,10 @@ export const revalidate = 3600
 
 const TITLE = 'How to quit doomscrolling: replace the feed, do not just delete it'
 const DESCRIPTION =
-  'The trick to quitting doomscrolling is replacing the feed with something real, not just deleting the app. Here is why willpower fails, and a small, repeatable thing to reach for instead.'
+  'You quit doomscrolling by replacing the feed with somewhere to be, not by deleting the app and hoping willpower holds. Here is why deleting it never sticks, and the small, real thing to reach for instead.'
+
+// Hero photo doubles as the Article image (AI Overviews are multimodal, §8b).
+const HERO_IMAGE = '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg'
 
 export function generateMetadata(): Metadata {
   return {
@@ -28,7 +31,7 @@ export function generateMetadata(): Metadata {
     openGraph: {
       title: 'How to quit doomscrolling · Frequency',
       description:
-        'Deleting the app rarely sticks because the feed is filling a real gap. Replace the scroll with five real minutes, and it gets easier.',
+        'Deleting the app rarely sticks, because the feed is filling a real gap. You beat the feed by replacing it with somewhere to be.',
       url: '/life-after-the-feed',
     },
   }
@@ -39,23 +42,27 @@ export function generateMetadata(): Metadata {
 const FAQ = [
   {
     q: 'How do I stop doomscrolling?',
-    a: 'Replace the scroll instead of just trying to resist it. Pick one small real-world thing to reach for when you would normally open the app, like a five-minute walk or a short sit, and put it where the phone used to be. You quit a habit by swapping it, not by white-knuckling it.',
+    a: 'Replace the feed instead of trying to resist it. Pick one real thing to reach for when you would normally open the app, and aim for the kind that has other people in it: a standing weekly meetup, a walking group, a Circle. You quit a habit by swapping it for something better, not by white-knuckling an empty evening.',
   },
   {
     q: 'Why is it so hard to put my phone down?',
-    a: 'Because the feed is filling a real gap, usually boredom, stress, or the quiet of an empty evening. The phone is the easiest thing in reach. Until something real is easier to reach for, willpower alone keeps losing to the app that was designed to be hard to close.',
+    a: 'Because the feed is filling a real gap, usually boredom, stress, or the quiet of an empty evening, and the phone is the easiest thing in reach. Until something real is easier to reach for, willpower keeps losing to an app built to be hard to close. The fix is a better thing to reach for, not more discipline.',
   },
   {
     q: 'Does deleting social media apps actually work?',
-    a: 'Deleting an app helps for a few days and then usually slips, because nothing took its place. The version that sticks pairs removing the app with adding a small, real thing to do instead. Subtraction without replacement tends to snap back.',
+    a: 'Deleting an app helps for a few days and then usually slips, because nothing took its place. The version that sticks pairs removing the app with adding a real thing to do instead, ideally one with people in it who notice when you do not show up. Subtraction without replacement snaps back.',
   },
   {
     q: 'What should I do instead of scrolling?',
-    a: 'Something small, real, and close at hand: a short walk, a five-minute sit, a few pages of a book, a text to a real friend, ten minutes outside. The bar is low on purpose. The point is to have an easy alternative ready before the urge hits.',
+    a: 'Start small and real: a five-minute walk, a few pages, a text to a friend, ten minutes outside. Then add the bigger fix, a standing time to be around the same people each week, so the empty evening that sends you to the feed has somewhere else to go.',
+  },
+  {
+    q: 'What is a real-life replacement for social media?',
+    a: 'A standing, in-person thing that meets on a rhythm: a weekly walk, a supper club, a Circle. The feed gives you contact without anyone noticing you. A room that meets every week gives you the opposite, the same faces who clock when you are gone. That is the part scrolling never delivers.',
   },
   {
     q: 'How long does it take to break the scrolling habit?',
-    a: 'It varies, but you usually feel a difference within a week of swapping the habit rather than just cutting it. The first few days are the hardest; once reaching for the real thing becomes the default, the pull of the feed quietly loses its grip.',
+    a: 'You usually feel a difference within a week of swapping the habit rather than just cutting it. The first few days are the hardest. Once you have a real place to be, reaching for it becomes the default and the pull of the feed quietly loses its grip.',
   },
 ]
 
@@ -70,6 +77,7 @@ export default function LifeAfterTheFeedPage() {
             path: '/life-after-the-feed',
             published: '2026-06-24',
             updated: '2026-06-24',
+            image: HERO_IMAGE,
           }),
           faqSchema(FAQ.map((f) => ({ q: f.q, a: f.a }))),
           breadcrumbSchema([
@@ -78,57 +86,82 @@ export default function LifeAfterTheFeedPage() {
         ]}
       />
 
-      <PageHero
+      <PhotoHero
+        image={HERO_IMAGE}
+        alt="People dancing together at a real-life gathering"
         eyebrow="Life after the feed"
         title="How to quit doomscrolling: replace the feed, do not just delete it"
-        subtitle="You already know the scroll is not good for you. Deleting the app and white-knuckling it rarely sticks. Here is what works instead."
+        subtitle="You already know the scroll is not good for you. Deleting the app and white-knuckling it rarely sticks. The thing that works is having somewhere to be."
+        focal="object-center"
       />
 
       {/* Answer-first opening. */}
-      <Section tone="canvas" pad="pt-4 pb-16 sm:pt-6 sm:pb-20">
+      <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
         <Lead>
-          The trick to quitting doomscrolling is to replace the feed, not just
-          delete it. Pick one small real thing to reach for when you would normally
-          open the app, and put it where the phone used to be.
+          You quit doomscrolling by replacing the feed, not by deleting it. The
+          feed is filling a real gap, so the way out is to put something real in
+          that gap: a small thing to reach for in the moment, and somewhere to be
+          that actually misses you when you skip it.
         </Lead>
         <Body>
-          Willpower loses to a feed built to be hard to close. The way out is not
-          more discipline; it is an easier alternative sitting right there when the
-          urge shows up. Subtract the app and add a real five minutes, and the swap
-          does the work resistance never could.
+          Willpower loses to a feed built to be hard to close. More discipline is
+          not the answer; an easier, better alternative is. Swap the empty evening
+          for a standing time with real people, and the swap does the work
+          resistance never could. The rest of this page is how.
         </Body>
-        <div className="mx-auto mt-4 max-w-sm">
-          <Illustration name="feed" className="h-40" />
-        </div>
       </Section>
 
       <PullQuote tone="surface">
         You will not out-willpower the feed.{' '}
-        <span className="text-primary">You replace it with something real.</span>
+        <span className="text-primary">You replace it with somewhere to be.</span>
       </PullQuote>
 
       {/* One concept per section. */}
       <Section tone="surface">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
-          Why is the feed so hard to put down?
+          Why can&rsquo;t I stop doomscrolling?
         </h2>
         <Lead>
-          Because it is filling a real gap, and it is the easiest thing in reach.
-          The phone answers boredom, stress, and the quiet of an empty evening in
-          one tap.
+          Because the feed is filling a real gap, and it is the easiest thing in
+          reach. The phone answers boredom, stress, and the quiet of an empty
+          evening in one tap.
         </Lead>
         <Body>
-          The apps are designed to never quite end, so there is no natural stopping
-          point and the next thing is always one swipe away. Blaming yourself misses
-          the point. You are not weak; you are up against software built by teams
-          whose whole job is to keep you scrolling. The way to win is to make the
-          real thing easier than the app, not to try harder against it.
+          The apps are built to never quite end, so there is no natural stopping
+          point and the next thing is always one swipe away. Blaming yourself
+          misses the point. You are not weak. You are up against software made by
+          teams whose whole job is to keep you scrolling. The way to win is to make
+          the real thing easier to reach for than the app, not to try harder
+          against it.
         </Body>
       </Section>
 
-      <Section tone="canvas">
+      <ZigZag
+        img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
+        alt="A large group of people gathered together on a lawn"
+        imgAspect="landscape"
+        imgPosition="center"
+        eyebrow="What you are actually missing"
+        title="The feed gives you contact. It just never gives you a room."
+        kicker="A thousand faces a day, and not one that notices when you are gone."
+        tone="canvas"
+      >
+        <p>
+          The scroll hands you endless people and zero presence. You can watch a
+          hundred lives go by and still close the app feeling like nobody clocked
+          you were there. That is the trade the feed makes: contact without
+          belonging.
+        </p>
+        <p>
+          A room is the opposite. Show up to the same handful of people every week
+          and your absence starts to leave a hole. That is the thing the scroll
+          cannot fake, and the thing that finally makes the phone easy to put down.
+        </p>
+      </ZigZag>
+
+      <Section tone="surface">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
-          Why does deleting the app not stick?
+          Why doesn&rsquo;t deleting the app work?
         </h2>
         <Lead>
           Because nothing takes its place. Subtraction without replacement snaps
@@ -137,60 +170,83 @@ export default function LifeAfterTheFeedPage() {
         <Body>
           Delete the app and the gap it was filling is still there: the same idle
           minutes, the same wired evenings, now with nothing to reach for. So you
-          reinstall it, or you find another feed. The version that lasts pairs taking
-          the app away with adding a small, real thing in the exact moments you used
-          to scroll. The habit needs somewhere to go.
+          reinstall it, or you find another feed. The version that lasts pairs
+          taking the app away with adding a real thing to do, ideally one with
+          people in it. The habit needs somewhere to go.
         </Body>
-        <div className="mx-auto mt-2 max-w-sm">
-          <Illustration name="mindless" className="h-40" />
-        </div>
       </Section>
 
-      <Section tone="surface">
+      <Section tone="canvas">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
-          What should I reach for instead?
+          What should I do instead of scrolling?
         </h2>
         <Lead>
-          Something small, real, and close at hand: a five-minute walk, a short sit,
-          a few pages, a text to a real friend, ten minutes outside.
+          Start small and real, then add a standing time with people. A
+          five-minute walk in the moment, and a weekly thing to be part of over
+          time.
         </Lead>
         <Body>
-          Keep the bar low on purpose. The goal is not a perfect new routine; it is
-          one easy alternative ready before the urge hits. That is what the Mindless
-          timer is for: open it, set five minutes, and do one plain thing instead of
-          scrolling. Get out of your head and into your life, one short stretch at a
-          time, until reaching for the real thing becomes the default.
+          For the urge itself, keep the bar low: a short walk, a few pages, a text
+          to a friend, ten minutes outside. Have one easy alternative ready before
+          the urge hits. But the real fix is bigger than any single moment. The
+          evenings that send you to the feed are the ones with nothing in them. Put
+          a standing plan in one of them, the same people, the same time each week,
+          and the empty hours that fed the scroll quietly fill up on their own.
         </Body>
       </Section>
 
       <PullQuote tone="surface">
         Five real minutes beats an hour of the scroll.{' '}
-        <span className="text-primary">Put it where the phone used to be.</span>
+        <span className="text-primary">A standing Thursday beats them both.</span>
       </PullQuote>
 
-      {/* Soft CTA into the product (Practice: Mindless + Practices). */}
-      <Section tone="surface">
+      <ZigZag
+        img="/images/site/sunset.jpg"
+        alt="A calm beach at sunset"
+        imgAspect="landscape"
+        imgPosition="center"
+        eyebrow="What it looks like to replace it"
+        title="What does a real week look like instead?"
+        kicker="One standing time, a few faces, and a reason to put the phone down."
+        tone="surface"
+        reverse
+      >
+        <p>
+          A Circle is a small group around something you care about that meets on a
+          set rhythm. A walk, a sit, a supper table, a book. Same handful of people,
+          same time each week. You do not have to be interesting or outgoing. You
+          have to keep turning up.
+        </p>
+        <p>
+          That is the whole replacement. Instead of the phone filling the quiet,
+          there is a Thursday with your name on it. You can browse the Circles and
+          events already meeting, or read how the community actually works first.
+        </p>
+      </ZigZag>
+
+      {/* Soft CTA into the product. */}
+      <Section tone="canvas">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5">
-          Where to start
+          Where do I start?
         </h2>
         <Body>
-          Frequency gives you the small real thing to reach for: the Mindless timer
-          for a five-minute sit or walk, and a library of simple Practices you can do
-          on your own before your coffee. Start today, in five minutes, and let the
-          swap do the work.
+          You do not have to swear off your phone today. Start by giving one empty
+          evening somewhere better to go. Find a Circle near you, or read how
+          Frequency works before you jump in. The feed will still be there. So will
+          you, just somewhere real.
         </Body>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Button href="/practice">
-            Try a five-minute practice <ArrowRight className="h-5 w-5" />
+          <Button href="/discover">
+            Find a Circle near you <ArrowRight className="h-5 w-5" />
           </Button>
-          <Button href="/discover" variant="secondary">
-            Browse the Practices
+          <Button href="/the-community" variant="secondary">
+            See how the community works
           </Button>
         </div>
       </Section>
 
       {/* FAQ. */}
-      <Section tone="canvas">
+      <Section tone="surface">
         <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-7">
           Common questions
         </h2>
@@ -198,8 +254,8 @@ export default function LifeAfterTheFeedPage() {
       </Section>
 
       <BetaCTA
-        heading="Trade the scroll for five real minutes."
-        body="The Mindless timer and a shelf of simple Practices give the habit somewhere to go. Join the Beta and start today."
+        heading="Trade the scroll for somewhere to be."
+        body="A Circle is a few neighbors and a standing time, so the empty evening that fed the feed has somewhere else to go. Join the Beta and find yours."
       />
     </>
   )

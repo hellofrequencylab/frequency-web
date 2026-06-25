@@ -19,19 +19,19 @@ import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Journeys',
   description:
-    'Browse guided practice Journeys on Frequency: ordered sets of small daily practices you run for a season, alone or with your circle.',
+    'Browse Journeys on Frequency: a Journey is part of The Quest, an ordered set of small daily Practices you run for a season. Start solo, or run it with your Circle.',
   alternates: { canonical: '/discover/journeys' },
   openGraph: {
     title: `Journeys · ${SITE_NAME}`,
     description:
-      'Guided practice Journeys: ordered sets of small daily practices you run for a season.',
+      'A Journey is an ordered set of small daily Practices you run for a season, solo or with your Circle.',
     url: '/discover/journeys',
   },
   twitter: {
     card: 'summary_large_image',
     title: `Journeys · ${SITE_NAME}`,
     description:
-      'Guided practice Journeys: ordered sets of small daily practices you run for a season.',
+      'A Journey is an ordered set of small daily Practices you run for a season, solo or with your Circle.',
   },
 }
 
@@ -53,14 +53,24 @@ export default async function DiscoverJourneysPage() {
       />
 
       <PhotoHero
-        image="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
-        alt="A Frequency member resting in savasana beside a hand-lettered “you are beautiful” sign"
+        image="/images/site/yoga-in-the-grass.jpg"
+        alt="A large group practicing cat-cow on yoga mats across a lawn at golden hour, palms behind them"
         focal="object-center"
         eyebrow="Practice, together"
         title={<>Pick a <span className="text-primary">Journey</span></>}
-        subtitle="A Journey is a short, ordered set of daily practices you run for a season. The first one takes under five minutes. Do it alone, or run it with your circle and finish the season together. Free to start, two words to belong."
+        subtitle="A Journey is part of The Quest: a short, ordered set of small daily Practices you run for a season. The first one takes under five minutes, before your coffee. Do it solo, or run it with your Circle and finish the season together. Free to start."
       >
-        <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <Button href={BETA_CTA_HREF}>
+            {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
+          </Button>
+          <Link
+            href="/discover/circles"
+            className="text-sm font-semibold text-white/80 hover:text-white transition-colors"
+          >
+            or just browse, no account needed →
+          </Link>
+        </div>
       </PhotoHero>
 
       {journeys.length === 0 ? (
@@ -74,12 +84,12 @@ export default async function DiscoverJourneysPage() {
             <SectionHeading
               eyebrow="Founding chapter"
               title={<>The first Journeys are <span className="text-primary">being mapped</span></>}
-              kicker="Every Journey starts as one person's daily practice, written down."
+              kicker="Every Journey starts as one person's daily Practice, written down."
             />
             <p className="mt-6 text-lg text-muted leading-relaxed">
               The library is quiet for now. Join the beta and you can build the first ones:
-              a handful of small practices, ordered, with a five-minute way in. Share it, and
-              your circle can run it beside you.
+              a handful of small Practices, in order, with a five-minute way in. Share one, and
+              your Circle can run it beside you.
             </p>
             <div className="mt-9">
               <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
@@ -99,10 +109,10 @@ export default async function DiscoverJourneysPage() {
                 <SectionHeading
                   eyebrow="The library"
                   title={<>What you can <span className="text-primary">practice</span></>}
-                  kicker="Pick one, start small, and let it become a rhythm."
+                  kicker="Pick one, start small, and keep it up for a season."
                 />
                 <p className="mt-5 text-lg text-muted leading-relaxed">
-                  Each Journey is a few practices in order, with an honest time ask and a
+                  Each Journey is a few Practices in order, with an honest time ask and a
                   forgiving finish line. Find the one that sounds like your mornings.
                 </p>
               </div>
@@ -117,9 +127,9 @@ export default async function DiscoverJourneysPage() {
           {/* ── Why a Journey ───────────────────────────────────── */}
           <ZigZag
             tone="canvas"
-            img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
-            alt="A large Frequency community practicing yoga together on a lawn at golden hour"
-            imgAspect="natural"
+            img="/images/site/downward-dog.jpg"
+            alt="A group holding downward dog on yoga mats on a lawn under a tall palm, ocean town behind them"
+            imgAspect="portrait"
             eyebrow="Why a Journey"
             title="Small practices, kept up, with company"
             kicker="A rhythm you can hold, and people holding it with you."
@@ -128,11 +138,12 @@ export default async function DiscoverJourneysPage() {
               The hard part of any practice is not the first day. It is the tenth, the one
               where nobody would notice if you skipped. A Journey is built for that day: small
               enough to keep, ordered so you always know the next step, forgiving enough that a
-              few hard weeks will not end your run.
+              few hard weeks won&apos;t undo your streak.
             </p>
             <p>
-              And when your circle runs the same Journey, the tenth day has witnesses. You show
-              up because they did, and the rhythm stops being willpower and starts being us.
+              And when your Circle runs the same Journey together, the tenth day has witnesses.
+              You show up because they did, and keeping it up stops being willpower and starts
+              being us.
             </p>
           </ZigZag>
 
@@ -159,7 +170,7 @@ export default async function DiscoverJourneysPage() {
 
       <BetaCTA
         heading="Start your first Journey"
-        body="Join the North County San Diego beta: adopt a Journey, run it with your circle, and finish the season together."
+        body="Join the North County San Diego beta: adopt a Journey, run it with your Circle, and finish the season together."
       />
     </>
   )
