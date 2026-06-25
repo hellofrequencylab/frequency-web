@@ -41,6 +41,13 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
   const full = circle.member_count >= circle.member_cap
   const memberLabel = `${circle.member_count} ${circle.member_count === 1 ? 'member' : 'members'}`
   const place = circle.context ?? (circle.type === 'in-person' ? 'In person' : 'Online')
+  // Capacity meter — the Meetup-style "filling up" signal. Starters carry no real
+  // membership (cap 0), so they skip it.
+  const cap = circle.member_cap
+  const hasCap = !circle.isStarter && cap > 0
+  const pct = hasCap ? Math.min(100, Math.round((circle.member_count / cap) * 100)) : 0
+  const spotsLeft = hasCap ? Math.max(0, cap - circle.member_count) : 0
+  const nearlyFull = hasCap && !full && circle.member_count / cap >= 0.8
   // Starters are virtual: they open a claim-able preview, never the live circle, and
   // carry no membership of their own.
   const href = circle.isStarter ? `/circles/starter/${circle.slug}` : `/circles/${circle.slug}`
@@ -88,22 +95,49 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
       }
       description={circle.about ?? undefined}
       meta={
-        <>
-          {circle.isStarter ? (
+        circle.isStarter ? (
+          <>
             <span className="flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
               Ready to start
             </span>
-          ) : (
-            <span className="flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {memberLabel}
+            <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
+              In person
             </span>
-          )}
-          <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
-            {circle.type === 'in-person' ? 'In person' : 'Online'}
-          </span>
-        </>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center gap-1 font-medium text-muted">
+              <Users className="h-3 w-3" />
+              {hasCap ? `${circle.member_count} of ${cap}` : memberLabel}
+            </span>
+            <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
+              {circle.type === 'in-person' ? 'In person' : 'Online'}
+            </span>
+            {hasCap &&
+              (full ? (
+                <span className="font-semibold text-danger">Full</span>
+              ) : nearlyFull ? (
+                <span className="font-semibold text-warning">Almost full</span>
+              ) : (
+                <span className="text-subtle">
+                  {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
+                </span>
+              ))}
+            {hasCap && (
+              <div className="mt-1 w-full">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
+                  <div
+                    className={`h-full rounded-full transition-[width] ${
+                      full ? 'bg-danger' : nearlyFull ? 'bg-warning' : 'bg-primary'
+                    }`}
+                    style={{ width: `${Math.max(6, pct)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        )
       }
       action={
         circle.isStarter ? (
