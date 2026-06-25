@@ -64,6 +64,9 @@ import { LeadCircles } from '@/components/widgets/lead/lead-circles'
 import { LeadNetworks } from '@/components/widgets/lead/lead-networks'
 import { LeadEvents } from '@/components/widgets/lead/lead-events'
 import { LeadJourneys } from '@/components/widgets/lead/lead-journeys'
+import { LeadCoLeaders } from '@/components/widgets/lead/lead-coleaders'
+import { LeadDispatches } from '@/components/widgets/lead/lead-dispatches'
+import { LeadRecognition } from '@/components/widgets/lead/lead-recognition'
 import { LeadTools } from '@/components/widgets/lead/lead-tools'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
@@ -155,6 +158,9 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'lead-networks': LeadNetworks,
   'lead-events': LeadEvents,
   'lead-journeys': LeadJourneys,
+  'lead-coleaders': LeadCoLeaders,
+  'lead-dispatches': LeadDispatches,
+  'lead-recognition': LeadRecognition,
   'lead-tools': LeadTools,
 }
 
