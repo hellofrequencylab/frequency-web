@@ -7,6 +7,31 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
+## 🔎 Audit-backlog clearance — 2026-06-25 (merged #1086)
+
+The full deferred backlog from [`AUDIT-2026-06-25.md`](AUDIT-2026-06-25.md) was designed as 10
+blueprints (parallel agent fan-out), applied in themed, individually-validated batches, and
+**merged (#1086, squash `500e67e`)**. Gate green per batch: `tsc` · `eslint` · `vitest` (2,286) ·
+`check:authz`. **Shipped:** commerce inventory enforcement (no oversell), campaign double-opt-in,
+bounded `qr_stats_summary` RPC, `/circles` + `/network` read parallelization, `/practices/<slug>`
+links + canonical, nightly resonance embeddings, and Batch 1 (CRM drill links · moderation N+1 →
+grouped fetch · event/circle share-card metadata · dead-export removal). **Two RPCs applied + verified
+on prod** (`azsqfeonabsbmemvddqd`): `decrement_commerce_stock_atomic`, `qr_stats_summary` — both
+`SECURITY DEFINER`, `service_role`-only, zero new security advisors.
+
+**Remaining follow-ups this pass surfaced (none blocking; ranked):**
+
+| Pri | Item | Why / where |
+|---|---|---|
+| **P-SEC** | **Caller-row double-fetch dedup** — collapse the duplicate caller read | Owner-gated: touches the shared `cache()`-wrapped auth boundary used app-wide for a single-row-SELECT upside. `lib/auth.ts` caller resolution. |
+| **P-DX** | **Re-run `supabase gen types`** + drop the two untyped RPC casts | `decrement_commerce_stock_atomic` / `qr_stats_summary` are reached via `as unknown as { rpc … }` until `lib/database.types.ts` is regenerated. Mechanical cleanup. `lib/commerce/checkout.ts`, `app/(main)/admin/qr/stats/page.tsx`. |
+| **P-PERF** | **QR Studio + per-Space QR settings still load `qr_scans` unbounded** | The stats page is fixed; the Studio (`app/(main)/admin/qr/page.tsx`) + per-Space QR settings have the same full-table smell. Reuse the `qr_stats_summary` group-by pattern. |
+| **P-COMMERCE** | **Variant-level stock not enforced** | `commerce_variants.stock` + `order_items.variant_id` are untouched — only `commerce_products.stock` decrements. Extend the RPC if/when variants sell. |
+| **P-UX** | **Fast-fail stock pre-check in `createCommerceCheckout`** | The atomic RPC is the oversell source of truth, but a pre-check avoids charging a buyer then failing soft at settle. `lib/commerce/checkout.ts`. |
+| **P-SCALE** | **Real pagination on `/network` + `/circles`** | Both render a capped slice with a "showing first N" notice; true pagination/infinite-scroll is the follow-up when the community outgrows the 500 fetch cap. |
+| **P-SEO** | **CSP `connect-src` GA4 regional collect endpoint** | Dormant until GA4 is configured; add the endpoint when analytics goes live. |
+| 🔵 opt | **Resonance: run embeddings BEFORE edges for same-night effect** | Embeddings currently run after edges (tonight's edges use last night's embeddings — converges over nights). A product call, not a bug. |
+
 ## 🟢 CRM contacts import + go-live owner actions (2026-06-23)
 
 Two threads finished their **build** this session and now sit on **owner / external setup only (no more
