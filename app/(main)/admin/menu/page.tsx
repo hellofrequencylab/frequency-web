@@ -1,7 +1,9 @@
-import { Menu } from 'lucide-react'
+import Link from 'next/link'
+import { Menu, LayoutGrid } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
+import { buttonClasses } from '@/components/ui/button'
 import { resolvePageContent } from '@/lib/page-content'
 
 export const dynamic = 'force-dynamic'
@@ -39,6 +41,12 @@ export default async function AdminMenuPage() {
       description={description}
       width="wide"
     >
+      <div className="mb-5">
+        <Link href="/admin/menu/arrange" className={buttonClasses('secondary', 'sm')}>
+          <LayoutGrid className="h-4 w-4" aria-hidden />
+          Visual arranger
+        </Link>
+      </div>
       <PageModules route="/admin/menu" />
     </AdminTemplate>
   )
