@@ -127,6 +127,19 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'lead-dispatches', label: 'Messages & dispatches', description: 'The recent announcements and dispatches going out to your circles.' },
   { id: 'lead-recognition', label: 'People to celebrate', description: 'Members in your circles worth thanking or promoting.' },
   { id: 'lead-tools', label: 'Leadership tools', description: 'Crew tasks, Leader Training, and your role training in one place.' },
+
+  // ── Circle detail blocks (/circles/<slug>) — the arrangeable body of one circle: the feed
+  // (MAIN by default) plus the info-rail blocks (SIDE). Each self-fetches from the request-scoped
+  // circle context (lib/circles/active-circle.ts) and self-hides when it doesn't apply.
+  { id: 'circle-feed', label: 'Circle feed', description: "The circle's conversation: the composer (for members) and the post stream." },
+  { id: 'circle-members', label: 'Members', description: 'The active members of this circle, host first.' },
+  { id: 'circle-health', label: 'Circle health', description: 'Live signals for managers: Zaps earned here, active streaks, new members this week.' },
+  { id: 'circle-momentum', label: 'Momentum', description: "The circle's weekly vital signs; hides when there's no signal." },
+  { id: 'circle-practice', label: "This week's practice", description: 'The host-assigned practice, with a log button for members.' },
+  { id: 'circle-events', label: 'Upcoming events', description: 'The next gatherings for this circle.' },
+  { id: 'circle-map', label: 'Venue map', description: "A map of the circle's public meeting place; hides when there's no location." },
+  { id: 'circle-invite', label: 'Invite a friend', description: 'Invite tools for the host (manager only).' },
+  { id: 'circle-journey-run', label: 'Start a journey run', description: 'Start a Journey cohort for the circle (manager only).' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
@@ -281,6 +294,21 @@ const PAGES_MODULE_IDS = [
   'pages-marketing',
 ] as const
 
+// Every circle DETAIL page (/circles/<slug>) shares one layout, keyed at the '/circles/*' section
+// scope — the arrangeable body in default render order (feed leads, then the info-rail blocks). The
+// page header (cover · title · badges · Join/Settings) stays fixed; only the body is arrangeable.
+const CIRCLE_DETAIL_MODULE_IDS = [
+  'circle-feed',
+  'circle-members',
+  'circle-health',
+  'circle-momentum',
+  'circle-practice',
+  'circle-events',
+  'circle-map',
+  'circle-invite',
+  'circle-journey-run',
+] as const
+
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section
  *  ('/seg/*'), or an exact route. Add a route's set here when you convert its page to
  *  `<PageModules>` (and list it in lib/widgets/module-routes.ts). */
@@ -305,6 +333,8 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   // the shell narrows it to the active tab's blocks via the `moduleIds` override (ADR-294).
   '/spaces/*': SPACE_MODULE_IDS,
   '/pages': PAGES_MODULE_IDS,
+  // Section scope: every circle detail page (/circles/<slug>) shares one layout.
+  '/circles/*': CIRCLE_DETAIL_MODULE_IDS,
 }
 
 // The scope keys that can carry a module set for `key`, MOST-SPECIFIC FIRST: an exact route

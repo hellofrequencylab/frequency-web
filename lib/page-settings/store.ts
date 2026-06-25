@@ -1,7 +1,8 @@
 import { cache } from 'react'
 import { isSafeRoute } from '@/lib/layout/page-chrome'
 import { loadRootSpaceId } from '@/lib/spaces/store'
-import { parseLayout, layoutScopeChain, pickLayoutConfig, spaceCacheKey, type LayoutConfig } from './layout'
+import { parseLayout, layoutScopeChain, pickLayoutConfig, hasLayoutConfig, spaceCacheKey, type LayoutConfig } from './layout'
+import { defaultLayoutFor } from './default-layouts'
 
 // The per-route page settings reader. Like loadChromeOverrides: a service-role read so it
 // works regardless of the caller's RLS context, REQUEST-CACHED (React.cache), and FAIL-SAFE —
@@ -99,7 +100,10 @@ const loadLayoutForRouteCached = cache(
       if (error || !data) return empty
       const byKey: Record<string, LayoutConfig> = {}
       for (const row of data) byKey[row.route] = parseLayout(row.layout)
-      return pickLayoutConfig(chain, byKey)
+      const picked = pickLayoutConfig(chain, byKey)
+      // Nothing saved at any level → the route's coded default (e.g. the circle two-column body),
+      // else the registry default (Single). A saved config at any scope always wins.
+      return hasLayoutConfig(picked) ? picked : defaultLayoutFor(route) ?? picked
     } catch {
       return empty
     }

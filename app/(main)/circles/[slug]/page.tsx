@@ -1,95 +1,32 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
 import Link from 'next/link'
-import { Users, Zap, Flame, MapPin, Settings } from 'lucide-react'
+import { Users, MapPin, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
-import { TeaserGate } from '@/components/teaser-gate'
-import { teaserAllowed, TEASER_PREVIEW_SECONDS } from '@/lib/teaser'
-import { Composer } from '@/components/feed/composer'
-import { FeedList } from '@/components/feed/feed-list'
-import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
-import { HostInviteButton } from '@/components/circles/host-invite-button'
-import { HostInviteEmail } from '@/components/circles/host-invite-email'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
-import { CircleMembersList } from '@/components/circles/circle-members-list'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
 import { insightAffordance } from '@/lib/core/scoped-surface-ui'
 import { getCircleActivePractice, listPublicPractices } from '@/lib/practices'
 import { listPublicPlans } from '@/lib/journey-plans'
-import { StartRunButton } from '@/components/journey/v2/start-run-button'
-import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { DetailTemplate } from '@/components/templates/detail-template'
-import { ModuleCard } from '@/components/modules/module-card'
 import { isoDaysAgo } from '@/lib/utils'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
 import { SITE_NAME } from '@/lib/site'
-import { coerceLayout, resolveRailOrder } from '@/lib/circles/rail-layout'
-import { getOperatorRailLayout } from '@/lib/circles/rail-layout-store'
-import { type CommunityRole } from '@/lib/community-roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { CircleCover } from '@/components/circles/circle-cover'
-import { GroupMapSection } from '@/components/connections/group-map-section'
-import { CircleMomentum } from '@/components/connections/circle-momentum'
-
-type CircleDetail = {
-  id: string
-  name: string
-  slug: string
-  about: string | null
-  image_url: string | null
-  type: 'in-person' | 'online'
-  member_count: number
-  member_cap: number
-  status: string
-  is_demo: boolean
-  resonance_public: boolean
-  // Stored rail layout: legacy string[] or the {order,hidden} object (coerceLayout handles both).
-  sidebar_order: unknown
-  latitude: number | null
-  longitude: number | null
-  neighborhood: string | null
-  city: string | null
-  host: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
-  hub: {
-    id: string
-    name: string
-    slug: string
-    nexus: {
-      id: string
-      name: string
-      slug: string
-      outpost: {
-        id: string
-        name: string
-        region: { name: string } | null
-      } | null
-    } | null
-  } | null
-}
-
-type MemberRow = {
-  id: string
-  volunteer_role: CommunityRole | null
-  joined_at: string
-  profile: {
-    id: string
-    display_name: string
-    handle: string
-    avatar_url: string | null
-    community_role: CommunityRole
-    /** Entitlement tier — drives endorsement (PB.1i: flair keys off the tier, not the role). */
-    membership_tier: string | null
-    current_season_rank: string | null
-    current_streak: number
-    achievement_count: number
-  }
-}
+// The circle BODY (feed + info-rail) is now the page-settings module engine (ADR-270/294): the
+// page resolves all the per-viewer data once, stamps it into the request-scoped circle context,
+// and <PageModules> renders the arrangeable blocks (components/widgets/circles/*) — so operators
+// arrange the circle page from Settings → Layout, shared across every /circles/<slug> via the
+// '/circles/*' scope, exactly like the Practices detail page.
+import { PageModules } from '@/components/widgets/page-modules'
+import { setCircleContext } from '@/lib/circles/active-circle'
+import type { CircleDetail, MemberRow } from '@/lib/circles/detail-types'
 
 // ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
 // for any future anon carve). Admin client only — no auth round-trip — reading just
@@ -153,7 +90,7 @@ export default async function CirclePage({
   const { data: rawCircle } = await admin
     .from('circles')
     .select(
-      `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public, sidebar_order,
+      `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public,
        latitude, longitude, neighborhood, city,
        host:profiles!host_id ( id, display_name, handle, avatar_url ),
        hub:hubs!hub_id (
@@ -289,124 +226,36 @@ export default async function CirclePage({
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ')
 
-  // Right-rail blocks, keyed. Build only the blocks this viewer should see, then
-  // render them in circle.sidebar_order (host-chosen). Gating + content unchanged.
-  const railMap: Record<string, React.ReactNode> = {
-    members: (
-      <ModuleCard title="Members" badge={String(sorted.length)}>
-        <CircleMembersList
-          members={sorted}
-          hostId={circle.host?.id ?? null}
-          myProfileId={myProfileId}
-          isMember={isMember}
-        />
-      </ModuleCard>
-    ),
-  }
+  // Journeys the host can start a run of (ADR-252) — only loaded for a manager (the
+  // journey-run block self-gates to managers, so a visitor never triggers this read).
+  const runnableJourneys = canManage
+    ? (await listPublicPlans()).slice(0, 50).map((p) => ({
+        id: p.id,
+        title: p.title,
+        slug: p.slug,
+        emoji: p.emoji ?? null,
+      }))
+    : []
 
-  if (showsHealth && circleEarnedZaps > 0) {
-    railMap.health = (
-      <ModuleCard title={insight.visible ? insight.label : 'Circle health'}>
-        <div className="grid grid-cols-2 gap-2">
-          <HealthStat label="Zaps earned here" value={circleEarnedZaps.toLocaleString()} Icon={Zap} />
-          <HealthStat label="Active streaks" value={String(activeStreaks)} Icon={Flame} />
-          <HealthStat label="New this week" value={String(newThisWeek)} Icon={Users} />
-        </div>
-      </ModuleCard>
-    )
-  }
-
-  if (circlePractice || canManage) {
-    railMap.practice = (
-      <ModuleCard title="This week's practice">
-        {circlePractice ? (
-          <>
-            <p className="font-medium text-text">{circlePractice.title}</p>
-            {circlePractice.description && (
-              <p className="mt-0.5 text-sm text-muted">{circlePractice.description}</p>
-            )}
-            {isMember && (
-              <div className="mt-3">
-                <LogPracticeButton practiceId={circlePractice.id} circleId={circle.id} />
-              </div>
-            )}
-          </>
-        ) : (
-          <p className="text-sm text-muted">No practice set yet.</p>
-        )}
-      </ModuleCard>
-    )
-  }
-
-  railMap.events = (
-    <ModuleCard title="Upcoming events">
-      <UpcomingEventsWidget scopeIds={[circle.id]} />
-    </ModuleCard>
-  )
-
-  // Live venue map (ADR-186, Connection Layer P4). Self-gates on the admin maps
-  // toggle + a public circle location, and only plots PUBLIC venue coordinates —
-  // never a member's home. Suspense fallback={null} so it never blocks the page.
-  railMap.map = (
-    <Suspense fallback={null}>
-      <GroupMapSection
-        circle={{
-          id: circle.id,
-          name: circle.name,
-          latitude: circle.latitude,
-          longitude: circle.longitude,
-          neighborhood: circle.neighborhood,
-          city: circle.city,
-        }}
-      />
-    </Suspense>
-  )
-
-  // Circle vital signs — aggregate momentum counts (ADR-186, P6). Self-gates to
-  // nothing when there's no signal; Suspense fallback={null} so it never blocks.
-  railMap.momentum = (
-    <Suspense fallback={null}>
-      <CircleMomentum circleId={circle.id} />
-    </Suspense>
-  )
-
-  if (canManage) {
-    railMap.invite = (
-      <ModuleCard title="Invite a friend">
-        <p className="mb-3 text-xs leading-relaxed text-muted">
-          Bring someone into {circle.name}. (Edit the circle itself from
-          {' '}<span className="font-medium text-text">Settings</span> at the top.)
-        </p>
-        <HostInviteButton circleId={circle.id} />
-        <div className="mt-2">
-          <HostInviteEmail circleId={circle.id} />
-        </div>
-      </ModuleCard>
-    )
-
-    // Start a journey run for the circle (ADR-252) — the cohort moves through it together.
-    const runnableJourneys = (await listPublicPlans()).slice(0, 50).map((p) => ({
-      id: p.id,
-      title: p.title,
-      slug: p.slug,
-      emoji: p.emoji ?? null,
-    }))
-    railMap.journeyRun = (
-      <ModuleCard title="Start a journey run">
-        <StartRunButton circleId={circle.id} journeys={runnableJourneys} />
-      </ModuleCard>
-    )
-  }
-
-  // Rail order + visibility: this circle's host override wins, else the operator network
-  // default, else the coded default. resolveRailOrder drops hidden blocks and appends any
-  // block that built but the layout doesn't mention, so a freshly-added block never goes missing.
-  const railKeys = resolveRailOrder(
-    Object.keys(railMap),
-    coerceLayout(circle.sidebar_order),
-    await getOperatorRailLayout(),
-  )
-  const railBlocks = railKeys.map((k) => <div key={k}>{railMap[k]}</div>)
+  // Stamp the resolved per-viewer context into the request-scoped holder so the circle's body
+  // modules (components/widgets/circles/*) read it without prop-drilling — then <PageModules>
+  // renders them in the operator-arranged layout (default: feed in MAIN, info-rail in SIDE).
+  setCircleContext({
+    circle,
+    members: sorted,
+    myProfileId,
+    isMember,
+    isHost,
+    isCrew,
+    canManage,
+    showsHealth,
+    insightLabel: insight.visible ? insight.label : null,
+    circleEarnedZaps,
+    activeStreaks,
+    newThisWeek,
+    circlePractice,
+    runnableJourneys,
+  })
 
   return (
     <div>
@@ -531,82 +380,18 @@ export default async function CirclePage({
           </>
         }
       >
-        {/* ── About (boxless, collapsible) ───────────── */}
+        {/* ── About (boxless, collapsible) — part of the fixed identity, above the body. */}
         {circle.about && (
           <div className="mb-6">
             <CollapsibleAbout text={circle.about} />
           </div>
         )}
 
-        {/* ── Two-column body (event / social-profile layout): the circle's
-                conversation on the left (2/3), its info rail on the right (1/3). */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-10">
-          {/* LEFT — the circle's conversation + announcements. */}
-          <div className="lg:col-span-2">
-            <TeaserGate
-              allowed={teaserAllowed({ role: isCrew ? 'crew' : 'member', hasAccess: isMember })}
-              resourceKey={`circle:${circle.id}`}
-              previewSeconds={TEASER_PREVIEW_SECONDS}
-              title="Crew unlocks the full circle"
-              body="Take a look around. Crew members can post, join the conversation, and connect with everyone here."
-            >
-              <section>
-                <div className="mb-4">
-                  <h2 className="text-sm font-bold text-text">Circle feed</h2>
-                  <p className="mt-0.5 text-xs leading-relaxed text-muted">
-                    {canManage
-                      ? 'Post to your circle. Toggle Announce to broadcast to the wider hub.'
-                      : 'Conversation and event announcements for everyone in this circle.'}
-                  </p>
-                </div>
-                {isMember ? (
-                  <Composer
-                    scopeId={circle.id}
-                    visibility="group"
-                    placeholder={`Share something with ${circle.name}…`}
-                    canAnnounce={canManage}
-                  />
-                ) : (
-                  myProfileId && (
-                    <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
-                      <p className="text-xs leading-relaxed text-muted">
-                        Join this circle to post and follow it from your feed.
-                      </p>
-                    </div>
-                  )
-                )}
-                {/* The feed query is the heaviest read on the page; stream it behind Suspense so the
-                    circle header + rail paint first (mirrors /feed). fallback={null} matches the
-                    page's other Suspense blocks. */}
-                <Suspense fallback={null}>
-                  <FeedList
-                    circleIds={[circle.id]} showPublicLayer={false}
-                    myProfileId={myProfileId}
-                    viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
-                    emptyMessage="No posts yet. Be the first to share something."
-                  />
-                </Suspense>
-              </section>
-            </TeaserGate>
-          </div>
-
-          {/* RIGHT — the circle's info rail. Each block is keyed; the host can
-                reorder them via Settings (circle.sidebar_order). We render in saved
-                order, filtered to the blocks this viewer actually sees, then append
-                any new block missing from the saved order so it never disappears. */}
-          <aside className="space-y-8">{railBlocks}</aside>
-        </div>
+        {/* ── The arrangeable body: feed + info-rail as layout modules, shared across every
+                /circles/<slug> via the '/circles/*' scope (default: feed MAIN, rail SIDE).
+                Operators rearrange it from Settings → Layout. */}
+        <PageModules route={`/circles/${circle.slug}`} />
       </DetailTemplate>
-    </div>
-  )
-}
-
-function HealthStat({ label, value, Icon }: { label: string; value: string; Icon: React.ElementType }) {
-  return (
-    <div className="rounded-2xl bg-surface-elevated/60 px-3 py-2.5 text-center">
-      <Icon className="w-3.5 h-3.5 text-subtle mx-auto mb-1" />
-      <div className="text-lg font-bold text-text leading-none tabular-nums">{value}</div>
-      <div className="text-xs text-subtle mt-1">{label}</div>
     </div>
   )
 }

@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react'
 import { usePathname } from 'next/navigation'
-import { X } from 'lucide-react'
+import { X, LayoutGrid } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
+import { isModuleRoute } from '@/lib/widgets/module-routes'
+import { LayoutEditor } from '@/components/admin/page-settings/layout-editor'
 import { CircleQuestModule } from '@/components/admin/modules/circle-quest-module'
-import { CircleRailModule } from '@/components/admin/modules/circle-rail-module'
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
 import { modulesForScopeKind, type ScopeKind } from '@/lib/admin/modules/registry'
@@ -241,7 +242,13 @@ export function SettingsDrawer({
   const isEntityScope = scopeKindForPath(pathname) !== null
   const showPageSettings = isOperator && !isEntityScope
 
-  const hasContent = hasSettings || !!questModule || !!contentModule || showPageSettings
+  // The circle DETAIL page is module-driven (the body renders <PageModules>), so operators get the
+  // Layout editor here even though the generic Page group is suppressed on entity scopes. It edits
+  // the network-wide '/circles/*' layout (This section) or one circle (This page), so it is
+  // OPERATOR-only — a host arranges nothing; the rail-reorder box it replaces is gone (ADR-406).
+  const showCircleLayout = isCircle && isOperator && isModuleRoute(pathname)
+
+  const hasContent = hasSettings || !!questModule || !!contentModule || showPageSettings || showCircleLayout
 
   // Nothing to manage here: render nothing (no trigger lives in this component —
   // PageAdminBar dispatches `open-settings`; with no content the drawer stays closed,
@@ -332,9 +339,18 @@ export function SettingsDrawer({
               <div className="space-y-6">
                 {settingsBlock}
                 {questModule && <div className="min-w-0">{questModule}</div>}
-                <div className="min-w-0">
-                  <CircleRailModule />
-                </div>
+                {showCircleLayout && (
+                  <div className="min-w-0">
+                    <div className="mb-1 flex items-center gap-2">
+                      <LayoutGrid className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                      <span className="text-sm font-semibold text-text">Layout</span>
+                    </div>
+                    <p className="mb-2 text-xs text-muted">
+                      Choose which blocks show inside the circle page and their order. Tunes the page, never the app shell.
+                    </p>
+                    <LayoutEditor />
+                  </div>
+                )}
               </div>
             )}
 

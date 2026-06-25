@@ -25,7 +25,7 @@ export const MODULE_ROUTES: readonly string[] = [
 // Section roots whose DIRECT children each render <PageModules> against ONE shared '/seg/*'
 // layout — e.g. every /practices/<id> detail page. The section root itself (/practices) is its
 // own MODULE_ROUTES entry; grandchildren (e.g. /practices/<id>/edit) are bespoke and excluded.
-const MODULE_SECTIONS: readonly string[] = ['/practices']
+const MODULE_SECTIONS: readonly string[] = ['/practices', '/circles']
 
 // The entity-profile family (ENTITY-SPACES-BUILD §B.1): every tab at /spaces/<slug>/<tab> renders
 // <PageModules> against the shared '/spaces/*' module set. It is TWO segments deep (slug + tab) and
