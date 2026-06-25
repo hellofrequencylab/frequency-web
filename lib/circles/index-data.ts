@@ -339,17 +339,16 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
   }
   const nexuses = [...nexusMap.values()].sort((a, b) => b.count - a.count).slice(0, 8)
 
-  // Table-of-contents filter: All + each Channel (with a circle count).
+  // Channel quick-filter: All + EVERY active Channel (Pillar), so the full set of tags
+  // always shows as the taxonomy — Mind / Body / Spirit / Expression — even at count 0.
   const channelLinks: ChannelLink[] = [
     { href: '/circles', label: 'All', count: all.length, active: !channel },
-    ...domains
-      .filter((d) => (domainCount.get(d.id) ?? 0) > 0)
-      .map((d) => ({
-        href: `/circles?channel=${d.slug}`,
-        label: d.name,
-        count: domainCount.get(d.id) ?? 0,
-        active: channel === d.slug,
-      })),
+    ...domains.map((d) => ({
+      href: `/circles?channel=${d.slug}`,
+      label: d.name,
+      count: domainCount.get(d.id) ?? 0,
+      active: channel === d.slug,
+    })),
   ]
 
   return {
