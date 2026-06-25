@@ -123,6 +123,9 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'lead-networks', label: 'Your networks', description: 'The hubs you guide and the nexuses you mentor.' },
   { id: 'lead-events', label: 'Upcoming events', description: 'The gatherings coming up across the circles you lead.' },
   { id: 'lead-journeys', label: 'Your Journeys', description: 'The Journeys you authored and the active runs in your circles.' },
+  { id: 'lead-coleaders', label: 'Your co-leaders', description: 'The people who help lead each of your circles, so the load is shared.' },
+  { id: 'lead-dispatches', label: 'Messages & dispatches', description: 'The recent announcements and dispatches going out to your circles.' },
+  { id: 'lead-recognition', label: 'People to celebrate', description: 'Members in your circles worth thanking or promoting.' },
   { id: 'lead-tools', label: 'Leadership tools', description: 'Crew tasks, Leader Training, and your role training in one place.' },
 ] as const
 
@@ -140,9 +143,12 @@ const LEAD_MODULE_IDS = [
   'lead-stats',
   'lead-attention',
   'lead-circles',
+  'lead-coleaders',
   'lead-networks',
   'lead-events',
+  'lead-dispatches',
   'lead-journeys',
+  'lead-recognition',
   'lead-tools',
 ] as const
 
