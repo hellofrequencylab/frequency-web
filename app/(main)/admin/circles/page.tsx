@@ -1,8 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
+import { getJanitor } from '@/lib/page-editor/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { CirclesClient } from './circles-client'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
+import { RailLayoutEditor } from '@/components/circles/rail-layout-editor'
+import { getOperatorRailLayout } from '@/lib/circles/rail-layout-store'
+import { saveCircleRailDefault } from './layout-actions'
 
 export default async function AdminCirclesPage({
   searchParams,
@@ -12,6 +16,10 @@ export default async function AdminCirclesPage({
   const { edit } = await searchParams
   const { profileId, role } = await requireAdmin('host', { staff: 'community' })
   const admin = createAdminClient()
+
+  // The network-wide rail layout default is a janitor-only control (matches saveCircleRailDefault).
+  const janitor = await getJanitor()
+  const railDefault = janitor ? await getOperatorRailLayout() : null
 
   // Fetch circles scoped to role
   type CircleRow = {
@@ -118,6 +126,27 @@ export default async function AdminCirclesPage({
       <AdminSection>
         <CirclesClient circles={circles} hubs={hubs} hosts={hostProfiles ?? []} initialEditId={edit ?? null} />
       </AdminSection>
+
+      {/* Janitor-only: the default right-rail layout every circle page inherits. A host can
+          override it per circle from that circle's Settings. */}
+      {janitor && (
+        <AdminSection>
+          <div className="max-w-xl space-y-3">
+            <header className="space-y-1">
+              <h2 className="text-sm font-bold text-text">Circle page layout (network default)</h2>
+              <p className="text-sm text-muted">
+                Set the default order and visibility of the right-rail blocks for every circle page.
+                Each circle&rsquo;s host can override this from their own Settings.
+              </p>
+            </header>
+            <RailLayoutEditor
+              initial={railDefault}
+              save={saveCircleRailDefault}
+              description="Drag to reorder. Toggle the eye to hide a block by default."
+            />
+          </div>
+        </AdminSection>
+      )}
     </AdminTemplate>
   )
 }

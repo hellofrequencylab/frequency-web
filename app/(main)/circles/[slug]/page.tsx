@@ -27,6 +27,8 @@ import { DetailTemplate } from '@/components/templates/detail-template'
 import { ModuleCard } from '@/components/modules/module-card'
 import { isoDaysAgo } from '@/lib/utils'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
+import { coerceLayout, resolveRailOrder } from '@/lib/circles/rail-layout'
+import { getOperatorRailLayout } from '@/lib/circles/rail-layout-store'
 import { type CommunityRole } from '@/lib/community-roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { CircleCover } from '@/components/circles/circle-cover'
@@ -45,7 +47,8 @@ type CircleDetail = {
   status: string
   is_demo: boolean
   resonance_public: boolean
-  sidebar_order: string[] | null
+  // Stored rail layout: legacy string[] or the {order,hidden} object (coerceLayout handles both).
+  sidebar_order: unknown
   latitude: number | null
   longitude: number | null
   neighborhood: string | null
@@ -343,14 +346,14 @@ export default async function CirclePage({
     )
   }
 
-  const DEFAULT_RAIL_ORDER = ['members', 'health', 'momentum', 'field', 'practice', 'events', 'map', 'invite', 'journeyRun']
-  const savedOrder = circle.sidebar_order ?? DEFAULT_RAIL_ORDER
-  // Saved order first (only keys present in the map), then any new map keys the
-  // saved order doesn't mention — so a freshly-added block never goes missing.
-  const railKeys = [
-    ...savedOrder.filter((k) => k in railMap),
-    ...Object.keys(railMap).filter((k) => !savedOrder.includes(k)),
-  ]
+  // Rail order + visibility: this circle's host override wins, else the operator network
+  // default, else the coded default. resolveRailOrder drops hidden blocks and appends any
+  // block that built but the layout doesn't mention, so a freshly-added block never goes missing.
+  const railKeys = resolveRailOrder(
+    Object.keys(railMap),
+    coerceLayout(circle.sidebar_order),
+    await getOperatorRailLayout(),
+  )
   const railBlocks = railKeys.map((k) => <div key={k}>{railMap[k]}</div>)
 
   return (
