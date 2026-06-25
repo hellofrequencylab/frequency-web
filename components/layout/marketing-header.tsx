@@ -21,10 +21,13 @@ export function MarketingHeader({
   overHero = false,
   headerMenu,
   menuTimings,
+  isAuth = false,
 }: {
   overHero?: boolean
   headerMenu?: ResolvedMenu
   menuTimings?: MenuSettings
+  /** When the viewer is signed in, the logo points into the app (/feed) instead of the splash. */
+  isAuth?: boolean
 }) {
   const [scrolled, setScrolled] = useState(false)
 
@@ -43,8 +46,8 @@ export function MarketingHeader({
         light ? 'bg-surface/90 backdrop-blur-md border-b border-border' : 'bg-transparent'
       }`}
     >
-      {/* Logo */}
-      <Link href="/" className="shrink-0">
+      {/* Logo — into the app when signed in, to the splash when not. */}
+      <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
         <Image
           src="/frequency-logo.png"
           alt="Frequency"

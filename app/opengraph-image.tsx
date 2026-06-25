@@ -42,6 +42,11 @@ export default async function Image() {
   );
   const heroSrc = `data:image/jpeg;base64,${heroData.toString("base64")}`;
 
+  const markData = await readFile(
+    join(process.cwd(), "public/images/Frequency-Logo-Round-Icon-white.png"),
+  );
+  const markSrc = `data:image/png;base64,${markData.toString("base64")}`;
+
   const glyphs = `${wordmark}${tagline}`;
   const [black, bold] = await Promise.all([
     loadNunito(900, glyphs),
@@ -90,6 +95,13 @@ export default async function Image() {
             backgroundImage:
               "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.45) 38%, rgba(0,0,0,0.78) 72%, rgba(0,0,0,0.96) 100%)",
           }}
+        />
+        <img
+          src={markSrc}
+          alt=""
+          width={104}
+          height={104}
+          style={{ position: "absolute", top: 64, left: 72, width: 104, height: 104 }}
         />
         <div
           style={{
