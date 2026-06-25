@@ -95,21 +95,21 @@ const HOME_ROLES: HomeRole[] = [
     label: 'Build',
     blurb: 'Be the reason your people have somewhere to go. Host one Circle and we hand you the format.',
     cta: 'Start one Circle',
-    href: '/build',
+    href: '/the-community',
   },
   {
     illustration: 'practice',
     label: 'Practice',
     blurb: 'Start where you are, today. Practices, Journeys, and the Mindless timer, all on your own.',
     cta: 'Do one practice today',
-    href: '/practice',
+    href: '/the-quest',
   },
   {
     illustration: 'spread',
     label: 'Spread',
     blurb: 'Take a small role in building community around you. Bring one person, host once, or share the idea.',
     cta: 'Bring one person',
-    href: '/spread',
+    href: '/the-community',
   },
 ]
 
