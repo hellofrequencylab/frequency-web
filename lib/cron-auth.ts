@@ -10,9 +10,20 @@
 // In development we allow an unset secret so local cron runs work without
 // configuration; the moment a secret IS set, it is enforced everywhere.
 
+import { timingSafeEqual } from 'crypto'
 import { NextResponse } from 'next/server'
 
 const CRON_SECRET = process.env.CRON_SECRET
+
+/** Constant-time string compare (mirrors lib/webhook-verify.ts). A plain `!==` on the
+ *  bearer leaks how far it matched via timing; this does not. Different lengths short-
+ *  circuit (length is not the secret), equal lengths compare in constant time. */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a)
+  const bb = Buffer.from(b)
+  if (ab.length !== bb.length) return false
+  return timingSafeEqual(ab, bb)
+}
 
 /**
  * Returns a 401 response if the request is not an authorized cron call,
@@ -31,7 +42,7 @@ export function rejectUnauthorizedCron(req: Request): NextResponse | null {
   }
 
   const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${CRON_SECRET}`) {
+  if (!authHeader || !safeEqual(authHeader, `Bearer ${CRON_SECRET}`)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

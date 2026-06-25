@@ -31,9 +31,6 @@ import {
   getGlobalCapabilities,
 } from '@/lib/core/load-capabilities'
 
-// Role-ladder comparison — single source in lib/core/roles.
-const hasRole = atLeastRole
-
 // Community-surface mutations accept community host+ OR a staff role with the
 // 'community' capability (ADR-127). Sensitive mutations (member/role management)
 // deliberately keep the plain community-role gate below.
@@ -106,8 +103,12 @@ export async function assignRole(profileId: string, role: CommunityRole) {
 }
 
 export async function deactivateMember(profileId: string) {
+  // Deactivating an account is a platform-wide staff action (ADR-127), NOT a steward
+  // power: gate on the STAFF axis (janitor) exactly like its siblings reactivate /
+  // delete / sendMagicLink. The prior community-`host` gate let a host of a single
+  // circle disable ANY account platform-wide via a crafted profileId.
   const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
   const admin = createAdminClient()
   const { error } = await admin.from('profiles').update({ is_active: false }).eq('id', profileId)
   if (error) throw new Error(error.message)
