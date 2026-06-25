@@ -9,6 +9,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { listListings } from '@/lib/listings'
 import { ListingCard } from '@/components/marketplace/listing-card'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
 // Housing — rentals + roommates (connect-only). Member-only surface (high-trust).
 // Resonance-based roommate matching + geo browse arrive with the housing detail
@@ -84,6 +85,7 @@ export default async function HousingPage() {
       }
       toolbar={<MarketplaceFacets active="housing" />}
     >
+      <MarketplaceHiddenBanner area="housing" />
       <Suspense fallback={<GridSkeleton />}>
         <HousingGrid />
       </Suspense>

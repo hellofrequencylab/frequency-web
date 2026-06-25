@@ -8403,3 +8403,19 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 **Rationale.** Compose the existing seams (Admin templates, `requireAdmin`/`authorizeAction`, the menu registries, `DataTable`/`StatCard`/`EmptyState`) rather than invent new patterns, so the marketplace admin reads like the rest of `/admin`. The buy/refund paths reuse the audited `lib/billing` + `lib/commerce/checkout` money rails; nothing here changes the charge model.
 
 **Consequences.** `tsc` + `eslint` clean; 45 marketplace/access/rail tests green. Billing-off behavior is honest throughout (listing works; checkout + refund fail-safe to a friendly message). Known follow-ups: order/report rows show ids rather than joined buyer/target names (operator can still act); refund surfaces no inline error yet (unreachable while billing is off — no paid orders exist). Roommate matching needs the member to have opted into resonance + saved a seeker profile, by design (consent-gated).
+
+## ADR-396: Per-area marketplace visibility — an operator on/off so areas can be built privately
+
+**Status:** Accepted (2026-06-25). Each marketplace area (General / Housing / Makers / Shop) has an operator on/off switch. OFF = invisible to members (dropped from nav, footer, menus, AND the page is gated) while operators still see and edit it. Toggled at `/admin/marketplace`.
+
+**Context.** Beyond per-item drafts (a product is `draft` until published), the owner wanted to rework a whole *area* without members seeing a half-built feature, then publish. The honest version of "invisible" includes hiding the nav entry, which lives in the shared app shell — the surface that caused the 2026-06-24 outage — so it had to be done with the same defensiveness.
+
+**Decision.**
+1. **Backed by `platform_flags`** (`marketplace_<area>_published`), read through `lib/marketplace/visibility.ts` (`marketplaceVisibility`, React-`cache`d). **Fail-open:** a missing row or read error reads as PUBLISHED, so a transient DB hiccup never blanks a live area. No migration (the kv table exists).
+2. **Shell gate reuses the existing patterns.** The `(main)` layout already hides nav by setting `navAccess[key]='none'` (the Space block) and already redirects off-limits routes. For a non-operator, an unpublished area's nav key is set to `'none'` (drops it from rail + footer) and a request under its route prefix redirects to `/feed`. The whole block is `try/catch` fail-open, and the **redirect is thrown OUTSIDE the try** so a caught error can never swallow Next's redirect signal. Operator detection respects view-as (a steward previewing down sees the member view).
+3. **Operator who's an operator** = platform staff (`web_role` admin/janitor) or the `platform` staff domain — the same gate as the marketplace admin. They see hidden areas with a `MarketplaceHiddenBanner` ("hidden from members") on each area's root page.
+4. **Toggle UI** is an "Area visibility" section on `/admin/marketplace`; each switch calls `setAreaVisibilityAction` → `setPlatformFlag` (audited via `platform_flag_events`). The flag is read per request, so the change takes effect on the next navigation.
+
+**Rationale.** Extending the shell's *own* established nav-hide + redirect idioms (rather than inventing a new mechanism) keeps the blast radius tiny and the failure mode safe; fail-open guarantees the worst case is "an area the operator wanted hidden stays visible," never a crash or a blanked app.
+
+**Consequences.** `tsc` + `eslint` clean; the 40 resilience/access tests stay green (the shell change is runtime, not in `NAV_AREAS`/`accessTo`). Defaults preserve today's state (everything published). One extra cached flag read per non-operator request. The public marketing mega-nav link to `/market` is not flag-gated (a hidden General area redirects a visitor who follows it); gating the static marketing nav is a minor follow-up.

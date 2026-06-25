@@ -7,6 +7,8 @@ import { authorizeAction } from '@/lib/admin/guard'
 import { createProduct, setProductStatus, updateProduct, deleteProduct } from '@/lib/commerce/products'
 import { refundCommerceOrder } from '@/lib/commerce/checkout'
 import { setReportStatus, type ReportStatus } from '@/lib/commerce/reports'
+import { setPlatformFlag } from '@/lib/platform-flags'
+import { areaFlagKey, type MarketArea } from '@/lib/marketplace/visibility'
 import type { ProductStatus } from '@/lib/commerce/types'
 
 // Operator actions for the Marketplace admin (Shop catalog, orders, T&S). Platform-staff
@@ -79,4 +81,14 @@ export async function moderateReportAction(id: string, status: ReportStatus): Pr
   await requireOperator()
   await setReportStatus(id, status)
   revalidatePath('/admin/marketplace/reports')
+}
+
+/** Publish / hide a whole marketplace area. Hidden = invisible to members (nav + page),
+ *  still visible + editable by operators. Audited via setPlatformFlag. */
+export async function setAreaVisibilityAction(area: MarketArea, published: boolean): Promise<void> {
+  await requireOperator()
+  const profile = await getCallerProfile()
+  await setPlatformFlag(areaFlagKey(area), published, { changedBy: profile?.id ?? null, source: 'admin' })
+  revalidatePath('/admin/marketplace')
+  // The shell reads the flag per request, so nav/pages pick it up on the next navigation.
 }

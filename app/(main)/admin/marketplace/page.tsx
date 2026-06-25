@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Store, ShoppingCart, Receipt, Flag, Plus } from 'lucide-react'
+import { Store, ShoppingCart, Receipt, Flag, Plus, Eye, EyeOff } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
@@ -8,8 +8,14 @@ import { buttonClasses } from '@/components/ui/button'
 import { listPlatformCatalog, listSpaceCatalog } from '@/lib/commerce/products'
 import { orderStatusCounts } from '@/lib/commerce/orders'
 import { reportStatusCounts } from '@/lib/commerce/reports'
+import { marketplaceVisibility, MARKET_AREAS, AREA_LABEL } from '@/lib/marketplace/visibility'
 import type { CommerceProduct } from '@/lib/commerce/types'
-import { createShopProductAction, setCatalogStatusAction, deleteCatalogProductAction } from './actions'
+import {
+  createShopProductAction,
+  setCatalogStatusAction,
+  deleteCatalogProductAction,
+  setAreaVisibilityAction,
+} from './actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Marketplace · Admin' }
@@ -59,11 +65,12 @@ function CatalogRow({ p, oversight = false }: { p: CommerceProduct; oversight?: 
 export default async function MarketplaceAdminPage() {
   await requireAdmin('admin', { staff: 'platform' })
 
-  const [catalog, spaceCatalog, orderCounts, reportCounts] = await Promise.all([
+  const [catalog, spaceCatalog, orderCounts, reportCounts, visibility] = await Promise.all([
     listPlatformCatalog(),
     listSpaceCatalog(),
     orderStatusCounts(),
     reportStatusCounts(),
+    marketplaceVisibility(),
   ])
   const liveCount = catalog.filter((p) => p.status === 'active').length
   const ordersDone = (orderCounts.paid ?? 0) + (orderCounts.fulfilled ?? 0)
@@ -93,6 +100,39 @@ export default async function MarketplaceAdminPage() {
         <StatCard label="Orders" value={ordersDone} icon={Receipt} href="/admin/marketplace/orders" />
         <StatCard label="Open reports" value={openReports} icon={Flag} href="/admin/marketplace/reports" />
       </div>
+
+      <AdminSection
+        title="Area visibility"
+        description="Switch an area OFF to work on it privately. A hidden area vanishes from members' nav and pages; you and other operators still see and edit it."
+      >
+        <div className="space-y-2">
+          {MARKET_AREAS.map((area) => {
+            const published = visibility[area]
+            return (
+              <div key={area} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+                <div className="flex items-center gap-2">
+                  {published ? (
+                    <Eye className="h-4 w-4 text-primary" aria-hidden />
+                  ) : (
+                    <EyeOff className="h-4 w-4 text-subtle" aria-hidden />
+                  )}
+                  <span className="font-medium text-text">{AREA_LABEL[area]}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${published ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted'}`}
+                  >
+                    {published ? 'Published' : 'Hidden'}
+                  </span>
+                </div>
+                <form action={setAreaVisibilityAction.bind(null, area, !published)}>
+                  <button type="submit" className={buttonClasses(published ? 'ghost' : 'primary', 'sm')}>
+                    {published ? 'Hide' : 'Publish'}
+                  </button>
+                </form>
+              </div>
+            )
+          })}
+        </div>
+      </AdminSection>
 
       <AdminSection title="Add a Shop product" description="First-party merch, passes, or retreats. Saved as a draft; publish to go live.">
         <form action={createShopProductAction} className="space-y-3">
