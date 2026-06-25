@@ -10,7 +10,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -70,6 +70,17 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     slot: 'basics',
     surface: 'sidebar',
     order: 10,
+  },
+  {
+    id: 'circle.text',
+    label: 'Page text',
+    desc: 'A free text block you can place anywhere on the page from Layout. Supports bold, italic, and links.',
+    Icon: Type,
+    scopes: ['circle'],
+    requiredCapability: 'circle.editSettings',
+    slot: 'basics',
+    surface: 'sidebar',
+    order: 15,
   },
   {
     id: 'hub.settings',

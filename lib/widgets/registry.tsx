@@ -77,6 +77,7 @@ import { CircleEvents } from '@/components/widgets/circles/circle-events'
 import { CircleMapBlock } from '@/components/widgets/circles/circle-map'
 import { CircleInvite } from '@/components/widgets/circles/circle-invite'
 import { CircleJourneyRun } from '@/components/widgets/circles/circle-journey-run'
+import { CircleText } from '@/components/widgets/circles/circle-text'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -180,6 +181,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'circle-map': CircleMapBlock,
   'circle-invite': CircleInvite,
   'circle-journey-run': CircleJourneyRun,
+  'circle-text': CircleText,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {

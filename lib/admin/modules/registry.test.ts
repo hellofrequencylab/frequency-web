@@ -82,7 +82,7 @@ describe('admin module registry', () => {
   // ADR-250 step 1: registry-driven selection by scope kind (the page admin dock has no
   // resolved caps; it selects by kind and each module self-gates server-side).
   it('selects modules by scope kind, filtered by surface, ordered', () => {
-    expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual(['circle.settings'])
+    expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual(['circle.settings', 'circle.text'])
     expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual(['event.settings'])
     // person.settings was retired (covered by Edit Profile), so profile has no sidebar module.
     expect(modulesForScopeKind('profile', 'sidebar').map((m) => m.id)).toEqual([])

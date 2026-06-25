@@ -31,6 +31,8 @@ export type CircleDetail = {
       outpost: { id: string; name: string; region: { name: string } | null } | null
     } | null
   } | null
+  /** Raw jsonb holding the per-circle Page-text override ({ text }); freed for this use by ADR-406. */
+  sidebar_order?: unknown
 }
 
 export type MemberRow = {

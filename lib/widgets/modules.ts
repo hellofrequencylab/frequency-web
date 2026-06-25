@@ -140,6 +140,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'circle-map', label: 'Venue map', description: "A map of the circle's public meeting place; hides when there's no location." },
   { id: 'circle-invite', label: 'Invite a friend', description: 'Invite tools for the host (manager only).' },
   { id: 'circle-journey-run', label: 'Start a journey run', description: 'Start a Journey cohort for the circle (manager only).' },
+  { id: 'circle-text', label: 'Page text', description: 'A free rich-text note you can place anywhere on the page. Set per circle, with a network default.' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
@@ -307,6 +308,7 @@ const CIRCLE_DETAIL_MODULE_IDS = [
   'circle-map',
   'circle-invite',
   'circle-journey-run',
+  'circle-text',
 ] as const
 
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section

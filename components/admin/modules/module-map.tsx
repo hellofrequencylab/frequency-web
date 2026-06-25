@@ -2,6 +2,7 @@
 
 import type { ComponentType } from 'react'
 import { CircleSettingsModule } from './circle-settings-module'
+import { CircleTextModule } from './circle-text-module'
 import { HubSettingsModule } from './hub-settings-module'
 import { NexusSettingsModule } from './nexus-settings-module'
 import { EventSettingsModule } from './event-settings-module'
@@ -17,6 +18,7 @@ import { ChannelSettingsModule } from './channel-settings-module'
 
 export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'circle.settings': CircleSettingsModule,
+  'circle.text': CircleTextModule,
   'hub.settings': HubSettingsModule,
   'nexus.settings': NexusSettingsModule,
   'event.settings': EventSettingsModule,
