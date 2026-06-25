@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { ResonanceMatches } from '@/components/connections/resonance-matches'
 import { bucketFriendships, type FriendshipRpcRow, type FriendEntry } from '@/lib/friendships-map'
 import { getMyOrbit, getNearMisses } from '@/lib/connections/resonance'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
@@ -138,6 +140,13 @@ async function PeopleMode({
           </p>
         </div>
       )}
+
+      {/* The member's own Resonance Engine matches (ADR-385) — consent-gated, self-fetching, and
+          Suspense-isolated so its reads never block the friends list. Shows the opt-in invite until
+          the member turns matching on in settings. */}
+      <Suspense fallback={null}>
+        <ResonanceMatches />
+      </Suspense>
 
       <IntroduceForm friends={friendOptions} rewardGems={settings.rewardIntroduction} />
       {incoming.length > 0 && (
