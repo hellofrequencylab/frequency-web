@@ -15,7 +15,7 @@ export default async function AdminDispatchesPage({ searchParams }: { searchPara
   let dispatchQuery = admin
     .from('dispatches')
     .select(`
-      id, title, excerpt, dispatch_type, audience_scope, audience_id, status, published_at, scheduled_for, created_at,
+      id, title, body, excerpt, dispatch_type, audience_scope, audience_id, status, published_at, scheduled_for, created_at,
       linked_task:crew_tasks!linked_task_id ( id, name )
     `)
     .order('created_at', { ascending: false })
@@ -79,6 +79,7 @@ export default async function AdminDispatchesPage({ searchParams }: { searchPara
           dispatches={(dispatches ?? []) as unknown as Array<{
             id: string
             title: string
+            body: string | null
             excerpt: string | null
             dispatch_type: 'post' | 'poll' | 'challenge' | 'article'
             audience_scope: 'circle' | 'hub' | 'nexus'
