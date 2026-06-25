@@ -6,6 +6,8 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { FeaturedBadge } from '@/components/ui/featured-badge'
 import { StarterBadge } from '@/components/ui/starter-badge'
+import { TemplateHeaderArt } from '@/components/circles/template-art'
+import type { PillarSlug } from '@/lib/pillars'
 
 export type CircleCardData = {
   id: string
@@ -27,6 +29,9 @@ export type CircleCardData = {
    *  to the /circles/starter/<slug> preview and offers Claim, not Join — it is not
    *  a real circle with members. */
   isStarter?: boolean
+  /** Primary Pillar — lets a Starter card fall back to the drawn header art (themed
+   *  by Pillar) when it has no uploaded cover photo. */
+  primaryPillar?: PillarSlug
 }
 
 // Circle card — renders through the shared EntityCard so circles read identically
@@ -62,6 +67,8 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
             className="object-cover"
           />
+        ) : circle.isStarter && circle.primaryPillar ? (
+          <TemplateHeaderArt slug={circle.slug} primaryPillar={circle.primaryPillar} />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
             <Users className="h-9 w-9" />

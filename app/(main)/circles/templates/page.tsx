@@ -5,6 +5,7 @@ import { IndexTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { TemplateCover } from '@/components/circles/template-art'
 import { getCallerProfile } from '@/lib/auth'
 import { PILLAR_SLUGS, type PillarSlug } from '@/lib/pillars'
 import { getActiveTemplates, templatesEnabled } from '@/lib/circles/templates-data'
@@ -98,6 +99,14 @@ export default async function StarterCirclesPage() {
                     <EntityCard
                       key={t.id}
                       href={`/circles/templates#${t.slug}`}
+                      cover={
+                        <TemplateCover
+                          imageUrl={t.imageUrl}
+                          name={t.name}
+                          slug={t.slug}
+                          primaryPillar={t.primaryPillar}
+                        />
+                      }
                       title={t.name}
                       context={PILLAR_LABELS[t.primaryPillar]}
                       description={t.card || t.oneLiner}
