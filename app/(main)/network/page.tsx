@@ -65,6 +65,11 @@ type Filters = {
 
 type NearbyCircle = CircleCardData & { distanceLabel: string }
 
+// The directory fetch cap — bounds the `profiles` scan so the page can't pull an
+// unbounded table into memory (mirrors the /circles index cap). Filtering is client-side
+// over this set; raise it or add pagination when the community outgrows it.
+const DIRECTORY_FETCH_LIMIT = 500
+
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
@@ -207,6 +212,10 @@ export default async function CommunityPage({
     // Vera (is_system) is FULLY VISIBLE here by owner decision (ADR-231 update):
     // she gets a member card like anyone else; her chip reads Moderator.
     .order('display_name', { ascending: true })
+    // Bound the scan so the directory can't load an unbounded `profiles` table into memory
+    // (mirrors /circles). Filtering below is client-side over this capped set; pagination +
+    // a "showing first N" notice is the follow-up when the community outgrows the cap.
+    .limit(DIRECTORY_FETCH_LIMIT)
 
   // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
   if (!(await demoModeEnabled()) || (await viewerHidesDemo())) query = query.eq('is_demo', false)
