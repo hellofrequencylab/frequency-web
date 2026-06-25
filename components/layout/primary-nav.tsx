@@ -27,6 +27,7 @@ export function PrimaryNav({
   headerMenu,
   viewerRole = 'visitor',
   timings,
+  isAuth = false,
 }: {
   variant?: Variant
   className?: string
@@ -40,6 +41,9 @@ export function PrimaryNav({
   viewerRole?: MenuAccess
   /** Mega-menu interaction timings from the global Menu Manager settings. */
   timings?: MenuSettings
+  /** Whether the viewer is signed in — drives the Home⇄Feed toggle on the marketing
+   *  header (which passes a fixed 'visitor' viewerRole). Defaults false. */
+  isAuth?: boolean
 }) {
   const header = headerMenu ?? defaultMenu('header')
 
@@ -55,6 +59,7 @@ export function PrimaryNav({
       rightRail={rightRail}
       cardGutters
       timings={timings}
+      isAuth={isAuth}
     />
   )
 }

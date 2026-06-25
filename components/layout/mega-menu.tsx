@@ -175,6 +175,7 @@ export function MegaBar({
   cardGutters = false,
   timings,
   panelHeader,
+  isAuth = false,
 }: {
   /** The DB-backed (or code-default) menus this bar renders, in trigger order. */
   menus: ResolvedMenu[]
@@ -208,6 +209,10 @@ export function MegaBar({
   /** Optional node rendered at the TOP of the panel body (content align only), e.g. the admin
    *  search bar, so the menu can be searched while it stays open. */
   panelHeader?: React.ReactNode
+  /** Whether the viewer is signed in. Drives the Home⇄Feed toggle on the marketing header,
+   *  which renders with a fixed 'visitor' viewerRole (so viewerRole alone can't tell). The
+   *  in-app/site headers pass a real viewerRole, so they don't need this. */
+  isAuth?: boolean
 }) {
   const pathname = usePathname()
   const [active, setActive] = useState<string | null>(null)
@@ -518,14 +523,25 @@ export function MegaBar({
                 t.rootItems.some((i) => routeActive(pathname, i.href)))
 
           if (!hasPanel) {
+            // The "Home" trigger (href '/') is a Home⇄Feed toggle for signed-in members
+            // (owner directive): on the feed it offers "Home", everywhere else it offers
+            // "Feed", so one button bounces between the brand home and the member's feed.
+            // A visitor (no feed) keeps a plain "Home".
+            let href = t.href ?? '#'
+            let label = t.label
+            if (t.href === '/' && (isAuth || viewerRole !== 'visitor')) {
+              const onFeed = pathname === '/feed' || pathname.startsWith('/feed/')
+              href = onFeed ? '/' : '/feed'
+              label = onFeed ? 'Home' : 'Feed'
+            }
             return (
               <Link
                 key={t.key}
-                href={t.href ?? '#'}
-                aria-current={t.href && routeActive(pathname, t.href) ? 'page' : undefined}
+                href={href}
+                aria-current={routeActive(pathname, href) ? 'page' : undefined}
                 className={triggerClass(variant, highlighted)}
               >
-                {t.label}
+                {label}
               </Link>
             )
           }

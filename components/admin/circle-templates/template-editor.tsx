@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Loader2, Save, Plus, Trash2 } from 'lucide-react'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { ImageUpload } from '@/components/ui/image-upload'
+import { TemplateHeaderArt } from '@/components/circles/template-art'
 import { Banner } from '@/components/admin/status'
 import { isError } from '@/lib/action-result'
 import type { CircleTemplate, CalloutAnchor } from '@/lib/circles/templates'
@@ -92,6 +94,7 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [imageUrl, setImageUrl] = useState(template.imageUrl ?? '')
   const [callouts, setCallouts] = useState<CalloutDraft[]>(
     template.callouts.map((c) => ({ anchor: c.anchor, title: c.title, body: c.body })),
   )
@@ -183,9 +186,28 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
           <Label htmlFor="about">About (optional, fuller intro)</Label>
           <Textarea id="about" name="about" rows={3} defaultValue={template.about ?? ''} />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="image_url">Image URL (optional)</Label>
-          <Input id="image_url" name="image_url" defaultValue={template.imageUrl ?? ''} placeholder="https://…" />
+        <div className="space-y-2">
+          {/* Persisted with the rest of the form on Save. ImageUpload is controlled,
+              so a hidden field carries the value into updateTemplate's FormData. */}
+          <input type="hidden" name="image_url" value={imageUrl} />
+          <ImageUpload
+            label="Header image (optional)"
+            value={imageUrl || null}
+            onChange={(url) => setImageUrl(url ?? '')}
+            folder="circle-templates"
+            hint="Upload a photo or paste a URL. Leave it empty to use the drawn header below."
+            disabled={pending}
+          />
+          {!imageUrl && (
+            <div className="space-y-1.5">
+              <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">
+                Drawn header (used when no image is set)
+              </span>
+              <div className="relative h-24 w-full overflow-hidden rounded-xl border border-border">
+                <TemplateHeaderArt slug={template.slug} primaryPillar={template.primaryPillar} />
+              </div>
+            </div>
+          )}
         </div>
       </FormSection>
 
