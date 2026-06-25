@@ -2,7 +2,7 @@ import type { ComponentConfig } from '@measured/puck'
 import Link from 'next/link'
 import { Users, Compass, Sparkles } from 'lucide-react'
 import type { CirclesIndexData } from '@/lib/circles/index-data'
-import { PageContents } from '@/components/templates/page-contents'
+import { pillarTint } from '@/lib/pillars-style'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard } from '@/components/circles/circle-card'
@@ -34,14 +34,40 @@ function EditorStub({ label }: { label: string }) {
 }
 
 export const circlesComponents: Record<string, ComponentConfig> = {
-  // Pillar/Channel table-of-contents chips.
+  // Pillar/Channel quick-filter: a Meetup-style category strip. "All" + each Channel as
+  // a pill carrying its circle count, the active one filled in its Pillar tint.
   CirclesChannelNav: {
     label: 'Circles · Channel filter chips',
     fields: {},
     render: ({ puck }) => {
       const d = indexFrom(puck)
       if (!d) return <EditorStub label="Channel filter chips" />
-      return <PageContents links={d.channelLinks} divider={false} />
+      return (
+        <nav className="-mx-1 flex flex-wrap gap-2 px-1" aria-label="Filter circles by Channel">
+          {d.channelLinks.map((link) => {
+            // The Channel slug rides in the href (?channel=<slug>); "All" has none.
+            const slug = link.href.includes('channel=') ? link.href.split('channel=')[1] : null
+            const activeClass = slug ? pillarTint(slug) : 'bg-primary text-on-primary'
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={link.active ? 'page' : undefined}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                  link.active
+                    ? activeClass
+                    : 'bg-surface-elevated text-muted hover:bg-surface hover:text-text'
+                }`}
+              >
+                {link.label}
+                <span className={`text-xs tabular-nums ${link.active ? 'opacity-70' : 'text-subtle'}`}>
+                  {link.count}
+                </span>
+              </Link>
+            )
+          })}
+        </nav>
+      )
     },
   },
 
@@ -91,8 +117,13 @@ export const circlesComponents: Record<string, ComponentConfig> = {
       if (featured.length === 0) return <></>
 
       return (
-        <section>
-          <SectionHeader title={(heading as string) || 'Featured circles'} />
+        <section className="rounded-3xl border border-primary-bg bg-gradient-to-br from-primary-bg/40 via-surface to-signal-bg/30 p-5 sm:p-6 dark:from-primary-bg/15 dark:via-surface dark:to-signal-bg/10">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <h2 className="text-sm font-bold text-text">{(heading as string) || 'Featured circles'}</h2>
+          </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((card) => (
               <CircleCard key={card.id} circle={card} isMember={d.myCircleIds.includes(card.id)} />
