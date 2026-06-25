@@ -122,8 +122,9 @@ export default async function DiscoverHubPage() {
 
       {/* ── Hero ──────────────────────────────────────────────── */}
       <PhotoHero
-        image="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
-        alt="A Frequency gathering on a lawn at golden hour in North County San Diego"
+        image="/images/site/breathwork-circle.jpg"
+        alt="A large breathwork circle seated outdoors, arms raised overhead, at golden hour above the ocean in North County San Diego"
+        focal="object-[50%_40%]"
         eyebrow="Discover Frequency"
         title="Real community, near you"
         subtitle="Somewhere close to you, your people are already meeting this week. A standing time, a handful of regulars, a seat that gets noticed when it's empty. Browse the Circles, events, and Channels for free; sign up to join one, RSVP, or post."
@@ -302,9 +303,10 @@ export default async function DiscoverHubPage() {
       {/* ── Human accent ──────────────────────────────────────── */}
       <ZigZag
         tone="surface"
-        img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
-        alt="A Frequency member resting in savasana beside a hand-lettered “you are beautiful” sign"
+        img="/images/site/community-dinner.jpg"
+        alt="A long-table outdoor dinner at night under string lights and a patio heater, friends gathered around the lit table"
         imgAspect="landscape"
+        imgPosition="center"
         eyebrow="Why we show up"
         title="Somewhere that keeps a seat for you"
         kicker="Not an audience. A few people who know your name."

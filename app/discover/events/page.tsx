@@ -56,8 +56,8 @@ export default async function DiscoverEventsPage() {
       />
 
       <PhotoHero
-        image="/images/site/63978107-8b40-4ce2-8eaf-01a2f6f35cb9.jpg"
-        alt="People on the beach at golden hour, arms raised in celebration by the ocean"
+        image="/images/site/adult-playground-parachute.jpg"
+        alt="A group on a bluff lawn at dusk holding the edges of a rainbow parachute, the ocean behind them"
         focal="object-center"
         eyebrow="Coming up"
         title={<>Show up <span className="text-primary">this week</span></>}
@@ -127,8 +127,8 @@ export default async function DiscoverEventsPage() {
           {/* ── Sensory beat — what an event actually feels like ── */}
           <ZigZag
             tone="canvas"
-            img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
-            alt="A large Frequency community practicing yoga together on a lawn at golden hour"
+            img="/images/site/adult-play.jpg"
+            alt="An outdoor class on a beach overlook, one person mid-handstand, the ocean behind"
             imgAspect="natural"
             eyebrow="Why in person"
             title="The room does what the feed can't"

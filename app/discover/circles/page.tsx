@@ -60,8 +60,8 @@ export default async function DiscoverCirclesPage() {
       />
 
       <PhotoHero
-        image="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
-        alt="A group gathered outdoors at golden hour, arms thrown open mid-breathwork"
+        image="/images/site/meditation-circle-outdoor.jpg"
+        alt="A seated meditation Circle on a concrete overlook under soft overcast light, blankets out and a neighborhood spread out behind them"
         focal="object-center"
         eyebrow="Find your people"
         title={<>Circles forming <span className="text-primary">now</span></>}
@@ -131,8 +131,8 @@ export default async function DiscoverCirclesPage() {
       {/* ── How Circles grow ────────────────────────────────────── */}
       <ZigZag
         tone="ink"
-        img="/images/site/PHOTO-2020-10-17-13-49-14.jpeg"
-        alt="A music circle gathered on a cliffside above the ocean at golden hour"
+        img="/images/site/breathwork-circle-friends.jpg"
+        alt="A group standing in a clear ring on a foggy ocean overlook, with one person in the center"
         imgAspect="natural"
         eyebrow="How Circles grow"
         title="A Circle divides to stay close"
@@ -157,8 +157,8 @@ export default async function DiscoverCirclesPage() {
       {/* ── Sensory beat: the third time ────────────────────────── */}
       <ZigZag
         tone="surface"
-        img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
-        alt="A Frequency member resting on the grass beside a hand-lettered “you are beautiful” sign after practice"
+        img="/images/site/group-of-friends.jpg"
+        alt="Ten friends smiling together, squeezed onto a bench after practice, mats and water bottles at their feet"
         imgAspect="landscape"
         imgPosition="center"
         reverse
