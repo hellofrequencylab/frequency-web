@@ -101,11 +101,11 @@ export const circlesComponents: Record<string, ComponentConfig> = {
       const d = indexFrom(puck)
       if (!d) return <EditorStub label="Find near me + Channel tags" />
       const pills = <ChannelPills links={d.channelLinks} />
-      if (!d.showMap) return <div className="mt-8">{pills}</div>
+      if (!d.showMap) return <div className="mt-4">{pills}</div>
 
       return (
         <MapZone circles={d.locatable} starterSeeds={d.starterSeeds}>
-          <div className="mt-8 mb-4 flex flex-wrap items-center gap-x-4 gap-y-3">
+          <div className="mt-4 mb-4 flex flex-wrap items-center gap-x-4 gap-y-3">
             <FindNearMeButton />
             {pills}
           </div>
