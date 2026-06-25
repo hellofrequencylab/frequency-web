@@ -122,6 +122,7 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // staff (staffDomain 'platform'), so only Admin + Janitor see it. Telescopes like the rest of
   // the Admin section (hidden, not ghosted, for everyone below).
   { key: 'admin-spaces',     href: '/admin/spaces',     label: 'Spaces',     section: 'Admin', defaultAccess: 'admin',   staffDomain: 'platform',  surface: 'platformManage' },
+  { key: 'admin-marketplace', href: '/admin/marketplace', label: 'Marketplace', section: 'Admin', defaultAccess: 'admin', staffDomain: 'platform', surface: 'platformManage' },
   // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
   // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".
 ] as const

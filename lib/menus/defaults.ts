@@ -340,16 +340,21 @@ function adminHeaderMenu(): ResolvedMenu {
 function profileMenu(): ResolvedMenu {
   const rootItems = [
     item('default:profile:root:item:0', 'Friends', '/friends', 0, { icon: 'UserPlus' }),
-    item('default:profile:root:item:1', 'Settings', '/settings', 1, { icon: 'SlidersHorizontal' }),
-    item('default:profile:root:item:2', 'Billing & Plans', '/settings/billing', 2, { icon: 'CreditCard' }),
-    item('default:profile:root:item:3', 'Notifications', '/settings/notifications', 3, { icon: 'BellRing' }),
-    item('default:profile:root:item:4', 'My code', '/codes', 4, { icon: 'QrCode' }),
-    item('default:profile:root:item:5', 'Entry points', '/entry-points', 5, {
+    item('default:profile:root:item:orders', 'My orders', '/orders', 1, { icon: 'Receipt', minAccess: 'member' }),
+    item('default:profile:root:item:storefront', 'My storefront', '/marketplace/makers/manage', 2, {
+      icon: 'Store',
+      minAccess: 'member',
+    }),
+    item('default:profile:root:item:1', 'Settings', '/settings', 3, { icon: 'SlidersHorizontal' }),
+    item('default:profile:root:item:2', 'Billing & Plans', '/settings/billing', 4, { icon: 'CreditCard' }),
+    item('default:profile:root:item:3', 'Notifications', '/settings/notifications', 5, { icon: 'BellRing' }),
+    item('default:profile:root:item:4', 'My code', '/codes', 6, { icon: 'QrCode' }),
+    item('default:profile:root:item:5', 'Entry points', '/entry-points', 7, {
       icon: 'Megaphone',
       minAccess: 'crew',
     }),
-    item('default:profile:root:item:6', 'Support tickets', '/support', 6, { icon: 'LifeBuoy' }),
-    item('default:profile:root:item:7', 'Help', '/help', 7, { icon: 'HelpCircle' }),
+    item('default:profile:root:item:6', 'Support tickets', '/support', 8, { icon: 'LifeBuoy' }),
+    item('default:profile:root:item:7', 'Help', '/help', 9, { icon: 'HelpCircle' }),
   ]
   return {
     surfaceKey: 'profile',

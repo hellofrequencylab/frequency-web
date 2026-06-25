@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { getProduct } from '@/lib/commerce/products'
 import { DetailTemplate } from '@/components/templates'
+import { ReportButton } from '@/components/marketplace/report-button'
 import { BuyButton } from '../../buy-button'
 
 export const dynamic = 'force-dynamic'
@@ -59,10 +60,13 @@ export default async function MakerProductPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
-        {!isOwner && !soldOut && (
-          <p className="mt-3 px-1 text-xs text-subtle">
-            Checkout is secure on Stripe. The maker gets paid directly; the platform fee stays low.
-          </p>
+        {!isOwner && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1">
+            <p className="text-xs text-subtle">
+              {soldOut ? 'This piece is sold out.' : 'Checkout is secure on Stripe. The maker gets paid directly; the platform fee stays low.'}
+            </p>
+            <ReportButton targetKind="product" targetId={product.id} />
+          </div>
         )}
       </DetailTemplate>
     </div>

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { createListing, setListingStatus, deleteListing, listingOwnerId } from '@/lib/listings'
-import { upsertHousingDetail } from '@/lib/listings/housing'
+import { upsertHousingDetail, upsertSeekerProfile } from '@/lib/listings/housing'
 import type { HousingType, ListingStatus, RoomType } from '@/lib/listings/types'
 
 // Housing actions (connect-only, ADR-39Y/148). General goods live on /market
@@ -70,4 +70,25 @@ export async function deleteListingAction(id: string): Promise<void> {
   await deleteListing(id)
   revalidatePath('/marketplace/housing')
   redirect('/marketplace/housing')
+}
+
+/** Save the caller's roommate seeker profile (what they're looking for). The matching
+ *  itself runs server-side via a consent-gated RPC; this is the seeker half. */
+export async function saveSeekerProfileAction(formData: FormData): Promise<void> {
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in?next=/marketplace/housing/roommates')
+
+  const dollarsToCents = (k: string): number | null => {
+    const n = Number(formData.get(k))
+    return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null
+  }
+
+  await upsertSeekerProfile(profileId, {
+    active: formData.get('active') !== null,
+    budgetMinCents: dollarsToCents('budget_min'),
+    budgetMaxCents: dollarsToCents('budget_max'),
+    searchCity: (formData.get('city') as string)?.trim() || null,
+    moveInFrom: (formData.get('move_in') as string) || null,
+  })
+  revalidatePath('/marketplace/housing/roommates')
 }

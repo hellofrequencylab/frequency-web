@@ -31,13 +31,16 @@ the person and arrange the rest offline.
 - Open **Housing** to browse rentals, sublets, and rooms with a roommate.
 - **List housing** with the type, the rent, and the basics. Contact stays in messages, like
   the rest of the Marketplace.
-- Roommate listings can suggest members the resonance engine thinks you'd click with, using the
-  same matching that powers introductions. It is opt-in, so you stay in control.
+- **Find a roommate** opens roommate matches. Tell us your budget and city, and the resonance
+  engine suggests members it thinks you'd click with, the same matching that powers
+  introductions. It is opt-in, so you stay in control.
 
 ## Makers and Shop
 
-- **Makers** is where members sell what they make. Open a storefront to list your first piece.
+- **Makers** is where members sell what they make. Open a storefront to list your first piece;
+  manage your shelf and set up payouts from **My storefront**.
 - **Shop** is Frequency's own store for merch, event passes, and retreats.
+- Anything you buy shows up under **My orders** in your account menu.
 
 ## Making contact
 
