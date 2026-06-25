@@ -43,9 +43,12 @@ describe('moduleIdsForScope', () => {
       'lead-stats',
       'lead-attention',
       'lead-circles',
+      'lead-coleaders',
       'lead-networks',
       'lead-events',
+      'lead-dispatches',
       'lead-journeys',
+      'lead-recognition',
       'lead-tools',
     ])
   })
