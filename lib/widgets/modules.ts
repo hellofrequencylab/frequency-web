@@ -115,17 +115,36 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'pages-in-app-focus', label: 'In-app pages / Focus surfaces', description: 'The focused in-app surfaces (boards, timers, scanner), opened in place with edit mode on.' },
   { id: 'pages-splash-funnels', label: 'Splash funnels', description: 'A card into the Splash Funnels library: the onboarding front door and its audience funnels (janitor only).' },
   { id: 'pages-marketing', label: 'Marketing pages', description: 'The public, editor-backed marketing pages with their publish status (janitor only).' },
+
+  // ── Leadership dashboard blocks (/lead) — a leader's consolidated home for what they steward ──
+  { id: 'lead-stats', label: 'Leader stats', description: 'A glance at what you lead: circles, members reached, upcoming events, and networks.' },
+  { id: 'lead-attention', label: 'What needs you', description: 'A short ranked list of the most useful next moves across your circles and events.' },
+  { id: 'lead-circles', label: 'Circles you host', description: 'Every circle you host, guide, or mentor, with members and what is coming up.' },
+  { id: 'lead-networks', label: 'Your networks', description: 'The hubs you guide and the nexuses you mentor.' },
+  { id: 'lead-events', label: 'Upcoming events', description: 'The gatherings coming up across the circles you lead.' },
+  { id: 'lead-journeys', label: 'Your Journeys', description: 'The Journeys you authored and the active runs in your circles.' },
+  { id: 'lead-tools', label: 'Leadership tools', description: 'Crew tasks, Leader Training, and your role training in one place.' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
 // The generic blocks any page can carry — the default everywhere ('*').
 const COMMUNITY_MODULE_IDS = ['community-pulse', 'newest-members', 'popular-channels', 'top-circles'] as const
 
-// The Leadership dashboard (/lead) renders <PageModules route="/lead"> and intentionally shows
-// the generic community blocks as its footer. It gets its OWN explicit set (rather than falling
-// through to '*') so the Layout editor's offering on that page is deliberate, not an accidental
-// inherit — /lead is listed in lib/widgets/module-routes.ts, so the editor appears there.
-const LEAD_MODULE_IDS = COMMUNITY_MODULE_IDS
+// The Leadership dashboard (/lead) — a community leader's consolidated home for everything they
+// steward, in default render order. Each block self-fetches scoped to the caller and self-hides
+// when empty (except lead-circles, the anchor, which shows its aspirational empty state). The
+// generic community blocks are intentionally NOT here anymore: /lead is about what YOU lead, not
+// the global community. Editable order/template via the on-page Settings → Layout panel (/lead is
+// in lib/widgets/module-routes.ts).
+const LEAD_MODULE_IDS = [
+  'lead-stats',
+  'lead-attention',
+  'lead-circles',
+  'lead-networks',
+  'lead-events',
+  'lead-journeys',
+  'lead-tools',
+] as const
 
 // My Quest's own blocks, in default render order (the order they appear when no layout is
 // saved — unplaced modules append to the template's first slot in this order).

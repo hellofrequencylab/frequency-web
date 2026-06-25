@@ -35,11 +35,19 @@ describe('moduleIdsForScope', () => {
     expect(p).toContain('practices-library')
   })
 
-  it('/lead has its own explicit set (the deliberate community-blocks footer)', () => {
-    // Phase 0.5a: /lead is no longer an accidental fallback — it declares its own set so the
-    // Layout editor's offering there is intentional. Its set is the community blocks.
+  it('/lead has its own explicit Leadership-dashboard set (not the global blocks)', () => {
+    // /lead is the leader's consolidated home: it declares its OWN block set (the leadership
+    // dashboard), not the generic community footer, so the Layout editor offers the leader blocks.
     expect(moduleIdsForScope('/lead')).toBe(ROUTE_MODULE_IDS['/lead'])
-    expect(moduleIdsForScope('/lead')).toEqual(GLOBAL)
+    expect(moduleIdsForScope('/lead')).toEqual([
+      'lead-stats',
+      'lead-attention',
+      'lead-circles',
+      'lead-networks',
+      'lead-events',
+      'lead-journeys',
+      'lead-tools',
+    ])
   })
 
   it('an unconverted route falls back through its section to the global set', () => {
