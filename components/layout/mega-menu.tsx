@@ -172,6 +172,7 @@ export function MegaBar({
   className = '',
   panelAlign = 'viewport',
   rightRail = false,
+  cardGutters = false,
   timings,
   panelHeader,
 }: {
@@ -199,6 +200,11 @@ export function MegaBar({
   /** Only meaningful with panelAlign='content': reserve the right rail width (lg+) so the
    *  card stops at the right rail, like the member shell. Omit where there is no right rail. */
   rightRail?: boolean
+  /** Frame the panel as a fixed `columns`-wide grid: dropdown content always begins at
+   *  COLUMN 2 (never flush-left), and columns 1 + last are reserved as gutters for the
+   *  optional left/right rail cards. The header uses this; skipped under explicit grid
+   *  placement (gridCol/gridRow), where the operator controls exact placement. */
+  cardGutters?: boolean
   /** Optional node rendered at the TOP of the panel body (content align only), e.g. the admin
    *  search bar, so the menu can be searched while it stays open. */
   panelHeader?: React.ReactNode
@@ -437,20 +443,47 @@ export function MegaBar({
     const useGrid = hasGridPlacement(activeTrigger)
     const leftCards = activeTrigger.railCards.filter((c) => c.side === 'left')
     const rightCards = activeTrigger.railCards.filter((c) => c.side !== 'left')
-    const columns = activeTrigger.categories.map((c) => renderCategory(c, useGrid)).filter(Boolean)
+    const categoryColumns = activeTrigger.categories.map((c) => renderCategory(c, useGrid)).filter(Boolean)
     const looseItems = activeTrigger.rootItems.map(renderItem).filter(Boolean)
+    const colCount = activeTrigger.columns
 
-    const grid = (
-      <div
-        className={useGrid ? 'grid gap-x-10 gap-y-6' : 'flex flex-wrap gap-x-10 gap-y-6'}
-        style={useGrid ? { gridTemplateColumns: `repeat(${activeTrigger.columns}, minmax(0, 1fr))` } : undefined}
-      >
-        {columns}
+    const content = (
+      <>
+        {categoryColumns}
         {looseItems.length > 0 && (
           <div className="min-w-[10rem]">
             <div className="space-y-0.5">{looseItems}</div>
           </div>
         )}
+      </>
+    )
+
+    // Gutter layout (owner directive): a fixed colCount-wide grid where the dropdown
+    // content always begins at COLUMN 2 (never flush-left), and columns 1 + colCount are
+    // reserved as gutters for the optional left/right rail cards. Skipped under explicit
+    // grid placement (gridCol/gridRow), where the operator controls exact placement, and
+    // when colCount is too small to leave a center band.
+    if (cardGutters && !useGrid && colCount >= 3) {
+      return (
+        <div
+          className="grid w-full gap-x-10 gap-y-6"
+          style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+        >
+          <div style={{ gridColumn: '1' }}>{leftCards.map(renderRailCard)}</div>
+          <div className="flex flex-wrap gap-x-10 gap-y-6" style={{ gridColumn: `2 / ${colCount}` }}>
+            {content}
+          </div>
+          <div style={{ gridColumn: `${colCount}` }}>{rightCards.map(renderRailCard)}</div>
+        </div>
+      )
+    }
+
+    const grid = (
+      <div
+        className={useGrid ? 'grid gap-x-10 gap-y-6' : 'flex flex-wrap gap-x-10 gap-y-6'}
+        style={useGrid ? { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` } : undefined}
+      >
+        {content}
       </div>
     )
 
