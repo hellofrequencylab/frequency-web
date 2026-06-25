@@ -146,3 +146,118 @@ export async function embeddingLayerAvailable(): Promise<boolean> {
     return false
   }
 }
+
+// ── Per-member signal assembly + the nightly batch (wired into app/api/cron/refresh-traits) ──────
+// The cron seeds/refreshes one embedding per opted-in member AFTER the resonance edges step. Best-
+// effort + FAIL-SAFE by construction: a no-op when AI is off or the table/extension is absent, and
+// every read here degrades to empty rather than throwing, so the trait refresh always completes.
+
+/** Build ONE person's ResonanceContentSignal from the graph Frequency already has: the Pillar names
+ *  behind their adopted practices, their Journey plan titles, and their practice titles. Mirrors the
+ *  traversal in lib/resonance/candidates.ts (loadAnchorEdges) but resolves human NAMES, since the
+ *  embedding is over text. FAIL-SAFE: empty arrays on any error (embedPerson then no-ops on empty). */
+export async function buildPersonSignal(profileId: string): Promise<ResonanceContentSignal> {
+  const empty: ResonanceContentSignal = { pillars: [], journeys: [], practices: [] }
+  if (!profileId) return empty
+  try {
+    const admin = createAdminClient()
+    const [journeyRows, practiceRows] = await Promise.all([
+      admin.from('journey_enrollments').select('plan_id').eq('profile_id', profileId),
+      admin.from('member_practices').select('practice_id').eq('profile_id', profileId).eq('active', true),
+    ])
+    const planIds = [...new Set(((journeyRows.data ?? []) as { plan_id: string }[]).map((r) => r.plan_id))]
+    const practiceIds = [...new Set(((practiceRows.data ?? []) as { practice_id: string }[]).map((r) => r.practice_id))]
+
+    // Resolve the names. Each branch is independently fail-safe (empty on error).
+    const [journeys, { practiceTitles, pillarIds }] = await Promise.all([
+      (async (): Promise<string[]> => {
+        if (planIds.length === 0) return []
+        const { data } = await admin.from('journey_plans').select('title').in('id', planIds)
+        return ((data ?? []) as { title: string | null }[]).map((r) => r.title ?? '').filter(Boolean)
+      })(),
+      (async (): Promise<{ practiceTitles: string[]; pillarIds: string[] }> => {
+        if (practiceIds.length === 0) return { practiceTitles: [], pillarIds: [] }
+        const { data } = await admin.from('practices').select('title, domain_id').in('id', practiceIds)
+        const rows = (data ?? []) as { title: string | null; domain_id: string | null }[]
+        return {
+          practiceTitles: rows.map((r) => r.title ?? '').filter(Boolean),
+          pillarIds: [...new Set(rows.map((r) => r.domain_id).filter((x): x is string => !!x))],
+        }
+      })(),
+    ])
+
+    let pillars: string[] = []
+    if (pillarIds.length > 0) {
+      const { data } = await admin.from('pillars').select('name').in('id', pillarIds)
+      pillars = ((data ?? []) as { name: string | null }[]).map((r) => r.name ?? '').filter(Boolean)
+    }
+
+    return { pillars, journeys, practices: practiceTitles }
+  } catch {
+    return empty
+  }
+}
+
+/** Whether the embedding table is REACHABLE (exists), regardless of row count. The WRITE path needs
+ *  this, NOT embeddingLayerAvailable() (which needs an existing row and so would deadlock cold-start
+ *  seeding). FAIL-SAFE: false on any error or absence (the pre-migration / no-pgvector state). */
+export async function resonanceLayerWritable(): Promise<boolean> {
+  try {
+    const admin = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string, opts: { head: boolean; count: 'exact' }) => {
+          limit: (n: number) => Promise<{ error: unknown }>
+        }
+      }
+    }
+    const { error } = await admin.from('resonance_embeddings').select('profile_id', { head: true, count: 'exact' }).limit(0)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+/**
+ * The nightly resonance-embedding batch. For each opted-in member (resonance_consent.opted_in),
+ * builds their ResonanceContentSignal and upserts an embedding via embedPerson. Bounded, sequential,
+ * best-effort + FAIL-SAFE: a no-op when AI is off (no spend) or the table/extension is absent
+ * (pre-migration), and any per-member or batch error is swallowed so it NEVER breaks the trait
+ * refresh. Returns counts for logging.
+ *
+ * authz-delegated: platform-wide nightly write, no per-caller scope by design (like the trait /
+ * edge refresh). Consent is enforced here (only opted_in members are embedded).
+ */
+export async function refreshResonanceEmbeddings(opts: { limitMembers?: number } = {}): Promise<{ members: number; embedded: number }> {
+  let members = 0
+  let embedded = 0
+  try {
+    // Kill switch + table-reachable gate: skip cleanly (no spend, no error) when either is off.
+    if (!(await aiAvailable())) return { members: 0, embedded: 0 }
+    if (!(await resonanceLayerWritable())) return { members: 0, embedded: 0 }
+
+    const limitMembers = Math.max(1, Math.min(2000, opts.limitMembers ?? 500))
+    const admin = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: boolean) => { limit: (n: number) => Promise<{ data: { profile_id: string }[] | null; error: unknown }> }
+        }
+      }
+    }
+    const { data: optedIn, error } = await admin
+      .from('resonance_consent')
+      .select('profile_id')
+      .eq('opted_in', true)
+      .limit(limitMembers)
+    if (error || !optedIn || optedIn.length === 0) return { members: 0, embedded: 0 }
+
+    for (const { profile_id: pid } of optedIn) {
+      members += 1
+      const signal = await buildPersonSignal(pid)
+      const ok = await embedPerson(pid, signal) // FAIL-SAFE: no-op on empty signal / absent table.
+      if (ok) embedded += 1
+    }
+    return { members, embedded }
+  } catch {
+    return { members, embedded }
+  }
+}

@@ -91,6 +91,23 @@ vi.mock('@/lib/suppression', () => ({
   },
 }))
 
+// Contact-consent mock (campaign double-opt-in). Mirrors the real canEmailContact: it composes the
+// SAME global + this-Space suppression sets used above with a per-address marketing consent_state
+// (default 'subscribed' so the happy-path recipients send; a test sets 'unknown'/'unsubscribed' to
+// exercise the new opt-in gate). Pure + deterministic; no DB read.
+const contactConsent = new Map<string, 'subscribed' | 'unsubscribed' | 'unknown'>() // key: lowercased email
+vi.mock('@/lib/crm/contact-consent', () => ({
+  canEmailContact: async (email: string, purpose: 'transactional' | 'marketing', spaceId?: string) => {
+    const e = email.trim().toLowerCase()
+    const suppressed = globalSuppressed.has(e) || (!!spaceId && spaceSuppressed.has(`${spaceId}:${e}`))
+    if (suppressed) return { allowed: false, reason: 'suppressed' }
+    const state = contactConsent.get(e) ?? 'subscribed'
+    if (state === 'unsubscribed') return { allowed: false, reason: 'unsubscribed' }
+    if (purpose === 'marketing' && state !== 'subscribed') return { allowed: false, reason: 'not_opted_in' }
+    return { allowed: true, reason: 'ok' }
+  },
+}))
+
 vi.mock('@/lib/unsubscribe-tokens', () => ({
   buildSpaceUnsubscribeUrl: ({ baseUrl, spaceId, email }: { baseUrl: string; spaceId: string; email: string }) =>
     `${baseUrl}/unsubscribe?s=${spaceId}&e=${encodeURIComponent(email)}&t=tok`,
@@ -236,6 +253,7 @@ beforeEach(() => {
   throwOnSend = false
   globalSuppressed.clear()
   spaceSuppressed.clear()
+  contactConsent.clear()
   suppressCalls.length = 0
   db.enabled.clear()
   db.outreach.length = 0
@@ -496,6 +514,23 @@ describe('sendSpaceCampaign: suppression filtering (space + global)', () => {
     expect('error' in r).toBe(false)
     if (!('error' in r)) expect(r.data).toEqual({ sent: 1, suppressed: 0, failed: 0 })
     expect(sends.map((s) => s.to)).toEqual(['a@b.com'])
+  })
+
+  it('SKIPS an unknown (never opted-in) contact for a marketing campaign', async () => {
+    contactConsent.set('a@b.com', 'unknown')
+    const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com', 'c@d.com') })
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 1, suppressed: 1, failed: 0 })
+    expect(sends.map((s) => s.to)).toEqual(['c@d.com'])
+    expect(db.outreach.find((o) => o.email === 'a@b.com')!.status).toBe('suppressed')
+  })
+
+  it('SKIPS an explicitly unsubscribed contact', async () => {
+    contactConsent.set('a@b.com', 'unsubscribed')
+    const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 0, suppressed: 1, failed: 0 })
+    expect(sends).toHaveLength(0)
   })
 })
 

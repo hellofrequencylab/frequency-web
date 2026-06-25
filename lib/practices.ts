@@ -501,7 +501,17 @@ export async function getMemberPractices(profileId: string): Promise<Practice[]>
 
 /** A single practice with its popularity stats + display taxonomy, for the detail
  *  page. Reads the server-only ranking view (admin client bypasses RLS). */
-export async function getRankedPractice(id: string): Promise<RankedPractice | null> {
+export async function getRankedPractice(slugOrId: string): Promise<RankedPractice | null> {
+  // The practices_ranked VIEW does not expose `slug` (RANKED_COLS strips it; selecting it
+  // empties the view). Resolve a slug to its id against the practices table first, then read
+  // the ranking view by id. A uuid is used directly, so old uuid URLs keep resolving.
+  let id = slugOrId
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId)) {
+    const { data: row } = await db().from('practices').select('id').eq('slug', slugOrId).maybeSingle()
+    const resolved = (row as { id: string } | null)?.id
+    if (!resolved) return null
+    id = resolved
+  }
   const { data } = await db()
     .from('practices_ranked')
     .select(`${RANKED_COLS}, adopters, logs_30d, logs_total, score`)

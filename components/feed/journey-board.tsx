@@ -261,7 +261,7 @@ export function JourneyBoard({
             {partials.map(({ practice, secondsDone, secondsTarget }) => (
               <li key={`partial-${practice.id}`} className="flex items-center justify-between gap-3">
                 <Link
-                  href={`/practices/${practice.id}`}
+                  href={`/practices/${practice.slug ?? practice.id}`}
                   className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
                 >
                   {practice.title}
@@ -282,7 +282,7 @@ export function JourneyBoard({
             {practices.map((practice) => (
               <li key={practice.id} className="flex items-center justify-between gap-3">
                 <Link
-                  href={`/practices/${practice.id}`}
+                  href={`/practices/${practice.slug ?? practice.id}`}
                   className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
                 >
                   {practice.title}

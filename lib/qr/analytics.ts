@@ -112,6 +112,63 @@ export function summarizeScans(scans: ScanRow[], days = 30, now = new Date()): S
   }
 }
 
+// ── Stats-page RPC mapping (qr-stats-rpc) ─────────────────────────────────────
+// The /admin/qr/stats page no longer loads every qr_scans row — it calls the
+// qr_stats_summary RPC (bounded, server-side group-by) and rehydrates the SAME
+// ScanSummary + ScanLocation[] shapes via this pure mapper, so all downstream
+// page logic (top codes, scan->signup conversion, the daily chart) is unchanged.
+
+/** Raw jsonb returned by public.qr_stats_summary (numbers may arrive as number|null). */
+export interface QrStatsRpcPayload {
+  total: number | null
+  unique: number | null
+  by_medium: { qr: number | null; nfc: number | null } | null
+  daily: { date: string; count: number | null }[] | null
+  per_code: { code_id: string; total: number | null; unique: number | null }[] | null
+  locations: {
+    key: string
+    city: string | null
+    country: string | null
+    lat: number | null
+    lng: number | null
+    scans: number | null
+  }[] | null
+}
+
+const rpcNum = (v: number | null | undefined): number =>
+  typeof v === 'number' && Number.isFinite(v) ? v : 0
+
+/** Rebuild the page's ScanSummary + ScanLocation[] from the qr_stats_summary payload.
+ *  Pure (no DB); FAIL-SAFE — a null/partial payload yields empty, well-typed shapes. */
+export function scanSummaryFromRpc(
+  payload: QrStatsRpcPayload | null | undefined,
+): { summary: ScanSummary; locations: ScanLocation[] } {
+  const p = payload ?? null
+  const summary: ScanSummary = {
+    total: rpcNum(p?.total),
+    unique: rpcNum(p?.unique),
+    byMedium: { qr: rpcNum(p?.by_medium?.qr), nfc: rpcNum(p?.by_medium?.nfc) },
+    daily: (p?.daily ?? []).map((d) => ({ date: d.date, count: rpcNum(d.count) })),
+    perCode: new Map(
+      (p?.per_code ?? []).map((c) => [
+        c.code_id,
+        { codeId: c.code_id, total: rpcNum(c.total), unique: rpcNum(c.unique) } satisfies CodeScanStat,
+      ]),
+    ),
+  }
+  const locations: ScanLocation[] = (p?.locations ?? [])
+    .filter((l) => typeof l.lat === 'number' && typeof l.lng === 'number')
+    .map((l) => ({
+      key: l.key,
+      city: l.city ?? 'Unknown',
+      country: l.country ?? null,
+      lat: l.lat as number,
+      lng: l.lng as number,
+      scans: rpcNum(l.scans),
+    }))
+  return { summary, locations }
+}
+
 // ── Per-page rollup (PX.3) ────────────────────────────────────────────────────
 // The Settings-panel summary for one page's codes (qr_codes.page_path, ADR-179):
 // the same scan rows the Studio dashboards aggregate, scoped to a folder and

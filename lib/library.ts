@@ -104,7 +104,7 @@ export const typeLabel = (t: ContentType) => TYPE_LABEL[t]
 /** A link to the underlying content. Programs render inline in the Library (no
  *  detail route yet), so they have no external href. */
 export function hrefFor(item: { contentType: ContentType; slug: string }): string | null {
-  if (item.contentType === 'practice') return '/practices'
+  if (item.contentType === 'practice') return item.slug ? `/practices/${item.slug}` : '/practices'
   if (item.contentType === 'journey') return `/journeys/${item.slug}`
   return null
 }

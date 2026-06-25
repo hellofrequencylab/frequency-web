@@ -63,15 +63,6 @@ export async function listShopProducts(opts: { limit?: number } = {}): Promise<C
   return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
 }
 
-export async function listSpaceProducts(spaceId: string): Promise<CommerceProduct[]> {
-  const { data } = await db()
-    .from('commerce_products')
-    .select(PRODUCT_COLS)
-    .eq('owner_space_id', spaceId)
-    .order('created_at', { ascending: false })
-  return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
-}
-
 export async function getProduct(id: string): Promise<CommerceProduct | null> {
   const { data } = await db().from('commerce_products').select(PRODUCT_COLS).eq('id', id).maybeSingle()
   return data ? rowToProduct(data as Record<string, unknown>) : null

@@ -24,9 +24,10 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { sendRawEmail, listUnsubscribeHeaders } from '@/lib/email'
-import { isSuppressed, suppress } from '@/lib/suppression'
+import { suppress } from '@/lib/suppression'
 import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { canEmailContact } from '@/lib/crm/contact-consent'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { mapResendEventToInteraction, resendIdempotencyKey, type ResendTimelineEventType } from './email-timeline'
 
@@ -334,8 +335,13 @@ export async function sendSpaceCampaign(
     // Stop once the day's live total reaches the cap (counts concurrent senders too).
     if (liveSentToday >= DAILY_SEND_CAP) break
 
-    // (d) SUPPRESSION: skip a recipient suppressed globally OR for this Space; log it, do not send.
-    if (await isSuppressed(rec.email, spaceId)) {
+    // (d) CONSENT + SUPPRESSION (campaign double-opt-in, enforced): canEmailContact composes the
+    // GLOBAL + this-Space suppression list AND the contact's marketing consent_state, then runs the
+    // pure policy. A campaign is a MARKETING send, so a contact must be explicitly `subscribed`:
+    // an `unsubscribed`, hard-suppressed, OR `unknown` (never opted in) address is SKIPPED, logged as
+    // 'suppressed' (it never touched the provider, so it does not consume the daily budget), and never
+    // sent. FAIL-CLOSED: canEmailContact denies on any read error, so a lookup blip skips the send.
+    if (!(await canEmailContact(rec.email, 'marketing', spaceId)).allowed) {
       suppressed++
       await recordSend({
         spaceId,

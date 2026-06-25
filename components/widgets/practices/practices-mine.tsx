@@ -50,7 +50,7 @@ function MineRow({
   return (
     <li>
       <RowCard
-        href={`/practices/${p.id}`}
+        href={`/practices/${p.slug ?? p.id}`}
         title={p.title}
         badge={p.domain_id && byId.has(p.domain_id) ? <PillarBadge name={byId.get(p.domain_id)!.name} /> : undefined}
         description={p.summary ?? p.description ?? undefined}
@@ -59,7 +59,7 @@ function MineRow({
           <PracticeRowActions
             practiceId={p.id}
             title={p.title}
-            href={`/practices/${p.id}`}
+            href={`/practices/${p.slug ?? p.id}`}
             loggedToday={loggedToday}
             timerKind={p.timer_kind}
             mindlessMode={p.mindless_mode}

@@ -83,16 +83,20 @@ export default async function ModerationPage() {
   }
 
   // For member-targeted reports, also fetch prior report count so the mod
-  // can see "this member has been reported N times" inline.
+  // can see "this member has been reported N times" inline. One grouped
+  // query (was N+1: one count query per reported member) — fetch every
+  // member-targeted report row for these members and tally in a Map.
   const memberPriorCounts: Record<string, number> = {}
   if (memberIds.length > 0) {
-    for (const mid of memberIds) {
-      const { count } = await admin
-        .from('reports')
-        .select('id', { count: 'exact', head: true })
-        .eq('target_type', 'member')
-        .eq('target_id', mid)
-      memberPriorCounts[mid] = count ?? 0
+    const { data: priorRows } = await admin
+      .from('reports')
+      .select('target_id')
+      .eq('target_type', 'member')
+      .in('target_id', memberIds)
+    for (const mid of memberIds) memberPriorCounts[mid] = 0
+    for (const row of priorRows ?? []) {
+      const tid = (row as { target_id: string }).target_id
+      memberPriorCounts[tid] = (memberPriorCounts[tid] ?? 0) + 1
     }
   }
 

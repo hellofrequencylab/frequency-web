@@ -111,8 +111,45 @@ export default async function CommunityPage({
 
   const admin = createAdminClient()
 
+  // Kick the independent reads off immediately and await each at its point of use, so the
+  // round-trips OVERLAP without reordering any downstream logic. All five are independent of
+  // one another — the page header, the viewer profile (name + proximity home), the connection
+  // settings/prefs pair, the steward id, and the demo-gated 500-row directory + circle vocab.
+  // In particular the heavy directory fetch is now in flight DURING the membersNear proximity
+  // RPC instead of waiting behind it. None of this changes what any read returns, so the
+  // facet/filter/nearby-first ordering tail below is byte-for-byte unchanged.
+  const contentPromise = resolvePageContent('/network', CONTENT_FALLBACK)
+  const viewerPromise = admin
+    .from('profiles')
+    .select('display_name, home_lat, home_lng')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  const settingsPromise = Promise.all([getConnectionSettings(), getMyConnectionPrefs()])
+  const stewardPromise = connectionsOwnerId()
+  const directoryPromise = (async () => {
+    let query = admin
+      .from('profiles')
+      .select('id, display_name, handle, avatar_url, community_role, is_system, last_seen_at, is_demo, entity_types, nexus_regions!nexus_region_id ( name )')
+      .eq('is_active', true)
+      // Vera (is_system) is FULLY VISIBLE here by owner decision (ADR-231 update):
+      // she gets a member card like anyone else; her chip reads Moderator.
+      .order('display_name', { ascending: true })
+      // Bound the scan so the directory can't load an unbounded `profiles` table into memory
+      // (mirrors /circles). Filtering below is client-side over this capped set; pagination +
+      // a "showing first N" notice is the follow-up when the community outgrows the cap.
+      .limit(DIRECTORY_FETCH_LIMIT)
+    // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
+    if (!(await demoModeEnabled()) || (await viewerHidesDemo())) query = query.eq('is_demo', false)
+    // The directory + the circle vocabulary together (circles power the city → members
+    // resolution; the memberships join still honours any circle/city filter from the URL).
+    return Promise.all([
+      query,
+      admin.from('circles').select('id, name, city, status').in('status', ['forming', 'active']).order('name'),
+    ])
+  })()
+
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, ctaLabel, ctaHref } = await resolvePageContent('/network', CONTENT_FALLBACK)
+  const { title, description, ctaLabel, ctaHref } = await contentPromise
 
   // Geolocation / city-autocomplete search → nearest REAL circles (the
   // circles_near RPC hard-excludes demo content). Only runs when a place is set.
@@ -154,12 +191,9 @@ export default async function CommunityPage({
     }
   }
 
-  // Get viewer's display name (Invite modal) + home location (proximity ordering).
-  const { data: viewer } = await admin
-    .from('profiles')
-    .select('display_name, home_lat, home_lng')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
+  // Viewer's display name (Invite modal) + home location (proximity ordering), from the read
+  // kicked off above.
+  const { data: viewer } = await viewerPromise
   const viewerName = (viewer?.display_name as string | undefined) ?? 'A friend'
 
   // Proximity default ordering (ADR-186, privacy-safe). When proximity is enabled
@@ -168,10 +202,7 @@ export default async function CommunityPage({
   // coarse band ("Nearby", "Your area"). The members_near RPC returns a band only —
   // never a distance — so we never invent one. Resolved here; applied to `filtered`
   // (post-filter) below, so search / Online-now / scope all keep working.
-  const [connectionSettings, myPrefs] = await Promise.all([
-    getConnectionSettings(),
-    getMyConnectionPrefs(),
-  ])
+  const [connectionSettings, myPrefs] = await settingsPromise
   let proxLat: number | null = null
   let proxLng: number | null = null
   if (nearParam) {
@@ -205,38 +236,15 @@ export default async function CommunityPage({
   // Non-member people the viewer is entitled to find: their own captures, plus
   // (as a steward) network-shared captures from stewards in their own locality.
   // Only stewards/staff have or can see these, so gate on connectionsOwnerId().
-  const stewardId = await connectionsOwnerId()
+  const stewardId = await stewardPromise
   let metLeads: LeadHit[] = []
   if (qFilter?.trim() && stewardId) {
     metLeads = await searchVisibleLeads(stewardId, qFilter.trim(), { includeNetwork: true, limit: 12 })
   }
 
-  let query = admin
-    .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role, is_system, last_seen_at, is_demo, entity_types, nexus_regions!nexus_region_id ( name )')
-    .eq('is_active', true)
-    // Vera (is_system) is FULLY VISIBLE here by owner decision (ADR-231 update):
-    // she gets a member card like anyone else; her chip reads Moderator.
-    .order('display_name', { ascending: true })
-    // Bound the scan so the directory can't load an unbounded `profiles` table into memory
-    // (mirrors /circles). Filtering below is client-side over this capped set; pagination +
-    // a "showing first N" notice is the follow-up when the community outgrows the cap.
-    .limit(DIRECTORY_FETCH_LIMIT)
-
-  // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
-  if (!(await demoModeEnabled()) || (await viewerHidesDemo())) query = query.eq('is_demo', false)
-
-  // Fetch the directory and the circle vocabulary in parallel. (Circles power the
-  // city → members resolution; the region/city facet chips are gone, but the
-  // memberships join still honours any circle/city filter carried in the URL.)
-  const [{ data: profiles }, { data: circles }] = await Promise.all([
-    query,
-    admin
-      .from('circles')
-      .select('id, name, city, status')
-      .in('status', ['forming', 'active'])
-      .order('name'),
-  ])
+  // The demo-gated directory + circle vocabulary, from the read kicked off above (in flight
+  // during the proximity RPC rather than waiting behind it).
+  const [{ data: profiles }, { data: circles }] = await directoryPromise
 
   const circleList = (circles ?? []) as { id: string; name: string; city: string | null }[]
 
