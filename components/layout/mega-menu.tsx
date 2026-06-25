@@ -518,14 +518,25 @@ export function MegaBar({
                 t.rootItems.some((i) => routeActive(pathname, i.href)))
 
           if (!hasPanel) {
+            // The "Home" trigger (href '/') is a Home⇄Feed toggle for signed-in members
+            // (owner directive): on the feed it offers "Home", everywhere else it offers
+            // "Feed", so one button bounces between the brand home and the member's feed.
+            // A visitor (no feed) keeps a plain "Home".
+            let href = t.href ?? '#'
+            let label = t.label
+            if (t.href === '/' && viewerRole !== 'visitor') {
+              const onFeed = pathname === '/feed' || pathname.startsWith('/feed/')
+              href = onFeed ? '/' : '/feed'
+              label = onFeed ? 'Home' : 'Feed'
+            }
             return (
               <Link
                 key={t.key}
-                href={t.href ?? '#'}
-                aria-current={t.href && routeActive(pathname, t.href) ? 'page' : undefined}
+                href={href}
+                aria-current={routeActive(pathname, href) ? 'page' : undefined}
                 className={triggerClass(variant, highlighted)}
               >
-                {t.label}
+                {label}
               </Link>
             )
           }
