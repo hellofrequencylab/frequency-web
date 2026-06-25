@@ -53,7 +53,6 @@ export function PrimaryNav({
       className={`hidden md:block ${className}`}
       panelAlign={panelAlign}
       rightRail={rightRail}
-      cardGutters
       timings={timings}
     />
   )

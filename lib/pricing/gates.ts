@@ -55,9 +55,6 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   space_team: { axis: 'plan', minEntitlement: 'business', enabled: true },
   space_whitelabel: { axis: 'plan', minEntitlement: 'whitelabel', enabled: true },
   space_multi_pipeline: { axis: 'plan', minEntitlement: 'business', enabled: true },
-  // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell;
-  // the plan only buys the rake down + features). A per-Space toggle decides ON/OFF.
-  space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },
 
   // §5 space AI-depth (Resonance Engine Phase 6 · ADR-387). The paid DEPTH of the engine, on the
   // same plan ladder. The free wedge (Today suggest-only + summaries + read-only scoring) is NEVER a
