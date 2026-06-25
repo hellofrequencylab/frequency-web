@@ -1,26 +1,42 @@
 import type { Data } from '@measured/puck'
-import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import {
+  BETA_CTA_LABEL,
+  BETA_CTA_HREF,
+  BETA_CTA_SECONDARY_LABEL,
+  BETA_CTA_SECONDARY_HREF,
+} from '@/lib/site'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SPACES — "claim your space on Frequency". For operators who already run a group
-// (practitioners, nonprofits, businesses, partners) and want to bring it onto
-// Frequency. The promise that does the heavy lifting: your members always join
-// free. We never charge the people who walk through your door. We only ask the
-// operator to cover operator capacity.
+// SPACES — "call in the community builders". For the organizer who already
+// gathers people, or wants to, and wants to run THEIR OWN community on
+// Frequency's rails. The owner's brief, answered most directly: "Call in all the
+// community builders. This is a space where we can all exist together and support
+// each other." The promise that does the heavy lifting: you bring your people,
+// and your people join free. We never charge the people who walk through your
+// door. We only ask the builder to cover the room.
 //
 // HOW THIS FILE IS BUILT (copies the-community.ts shape + section rhythm):
-//  • One `const L` layout literal reused on every block.
-//  • Alternating tone beat (surface → canvas → surface …), Statement interstitials
-//    between movements, exactly ONE dark `ink` beat near the end, then the close.
+//  • One `const L` layout literal reused on every block (`...L` or inline) so the
+//    spacing rhythm is consistent. Override per block only with intent.
+//  • Section rhythm = an alternating beat of tones (surface → canvas → surface …),
+//    a `Statement` interstitial between movements, exactly ONE dark `ink` beat near
+//    the end, then the ink close.
+//  • Storyline: who it's for (you already gather people, or want to) → what you get
+//    (the format, the tools, Circles, Runs, events, your people join free) → how it
+//    works (the simple deal + three steps) → the welcome (you're not building alone;
+//    we hand you the rails and the backup).
 //  • Compose ONLY from registered blocks (lib/page-editor/config.tsx). Canon terms
-//    verbatim (Circle, Run, Channel, Member → Crew → Host → Guide → Mentor). No em
-//    dashes, sentence-case headings, honest at day zero.
+//    verbatim (Circle, Channel, Pillar, Journey, Run; Member → Crew → Host → Guide →
+//    Mentor). No em dashes. Sentence-case headings. Contractions always.
+//  • Honest at day zero: no invented member counts, no logos, no fake numbers.
 //  • Pricing stays a simple "what it costs and what your members get", NOT the full
 //    table. The full table lives on /pricing; this page links there as the quiet
 //    secondary door.
-//  • ONE primary CTA: Join the Beta (BETA_CTA_LABEL/BETA_CTA_HREF). The closing
-//    CallToAction is the only button, framed as "claim your space". The Hero carries
-//    one quiet secondary link to /pricing; never two buttons stacked.
+//  • CTA SYSTEM: the primary action is BETA_CTA_LABEL ("Start a Circle") and appears
+//    at THREE moments — the hero, a mid-page CallToAction after the how-it-works
+//    steps (highest intent), and the ink close. Each primary carries ONE quiet
+//    secondary text link (BETA_CTA_SECONDARY_*). Never stack two buttons; a secondary
+//    text link is not a button. The hero's `note` carries honest founding status.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
@@ -28,26 +44,27 @@ const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as 
 export const data: Data = {
   root: {},
   content: [
-    // ── Hero ── the promise. One primary door (Join the Beta) and one quiet
-    // secondary link to the full pricing. Latent Leader / operator reader. ────────
+    // ── Hero ── the summons. The builder, not the party-goer, is the reader. Image
+    // is a real hosted gathering under a shade tent. One primary door (Start a
+    // Circle) and one quiet secondary link for the not-yet-ready Seeker. ──────────
     {
       type: 'Hero',
       props: {
         id: 'sp-hero',
         variant: 'image',
         eyebrow: 'Spaces',
-        title: 'Bring your people to Frequency. They join free.',
-        titleAccent: 'free',
+        title: 'Bring your people. They join free. You hold the room.',
+        titleAccent: 'They join free',
         subtitle:
-          'If you already run a studio, a nonprofit, a class, or a group of regulars, claim a Space on Frequency. Your members never pay to walk through your door. You only cover what it costs to run the room.',
-        image: '/images/site/lab-storefront.jpg',
+          "If you already gather people, or you've been meaning to, this is where you run your own community on rails that work. Your people join free. You cover the room, and we hand you the format and the backup.",
+        image: '/images/site/outdoor-group.jpg',
         focal: 'center',
         minHeight: 'screen',
         ctaPrimaryLabel: BETA_CTA_LABEL,
         ctaPrimaryHref: BETA_CTA_HREF,
-        ctaSecondaryLabel: 'See what a Space costs',
-        ctaSecondaryHref: '/pricing',
-        note: 'No card today. Nothing charges while we are in beta.',
+        ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
+        ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
+        note: "We're just opening. The first builders set the tone.",
         tone: 'surface',
         width: 'default',
         align: 'center',
@@ -55,15 +72,16 @@ export const data: Data = {
       },
     },
 
-    // ── The core principle, said plainly. This is the whole pitch. ───────────────
+    // ── Name the reader ── who this is for, said plainly. The builder narrative as
+    // CONTENT, never a gate: you don't apply, you start. ─────────────────────────
     {
       type: 'Heading',
       props: {
-        id: 'sp-principle-h',
-        eyebrow: 'The deal',
-        title: 'We never charge your members.',
-        titleAccent: 'never',
-        kicker: 'You cover operator capacity. The people who show up join for free.',
+        id: 'sp-reader-h',
+        eyebrow: 'Who this is for',
+        title: 'For the people who gather people.',
+        titleAccent: 'gather people',
+        kicker: "You already do this, or you've felt the pull. You just want rails under it.",
         size: 'default',
         tone: 'canvas',
         width: 'default',
@@ -74,32 +92,32 @@ export const data: Data = {
     {
       type: 'Text',
       props: {
-        id: 'sp-principle-b',
-        body: 'Most platforms tax the room. They put a turnstile in front of your people and skim a cut every time someone walks in. We do the opposite. Being a Member of Frequency is free, forever, and that includes everyone you bring.\n\nWhat we ask is simple: you cover operator capacity, the cost of running your Space and its tools. Your members keep their free seat. You keep your group. Nobody at your door pays a tax to belong.',
+        id: 'sp-reader-b',
+        body: "Maybe you teach a class, run a studio, hold a weekly walk, or keep a table that the same faces find every week. Maybe you've tried to start something and it fizzled. Either way, you're the one who shows up early and sets out the chairs.\n\nFrequency is for you. You don't have to build a community from scratch, and you don't have to do it alone. Bring the people you already have, or the few you want to call in, and we hand you a format, the tools, and a hand on your shoulder. This is a place where builders exist together and back each other up.",
         size: 'lg',
         tone: 'canvas',
         width: 'default',
         align: 'left',
-        layout: L,
+        layout: { spaceTop: 'none', spaceBottom: 'default', visibility: 'all' },
       },
     },
     {
       type: 'Statement',
       props: {
         id: 'sp-stmt-1',
-        text: 'You run the room. We never put a turnstile in front of your people.',
+        text: "You run the room. We never put a turnstile in front of your people.",
         accent: 'turnstile',
         tone: 'surface',
         layout: L,
       },
     },
 
-    // ── Who a Space is for: the four doors. ──────────────────────────────────────
+    // ── Who claims a Space: the four doors. Same builder, four starting points. ───
     {
       type: 'FeatureGrid',
       props: {
         id: 'sp-doors',
-        eyebrow: 'Who claims a Space',
+        eyebrow: 'Where builders come from',
         title: 'Four ways in.',
         titleAccent: 'Four',
         style: 'icon',
@@ -116,14 +134,14 @@ export const data: Data = {
             icon: 'Heart',
             image: '',
             title: 'Nonprofits',
-            body: 'You already gather a community around a cause. Give it a home where members never hit a paywall.',
+            body: "You already gather people around a cause. Give them a home where nobody hits a paywall to belong.",
             href: '',
           },
           {
             icon: 'Coffee',
             image: '',
             title: 'Businesses',
-            body: 'You have a studio, a cafe, or a space and a crowd of regulars. Turn them into a Space they belong to.',
+            body: "You've got a studio, a cafe, or a room and a crowd of regulars. Turn them into people who belong somewhere.",
             href: '',
           },
           {
@@ -141,20 +159,21 @@ export const data: Data = {
       },
     },
 
-    // ── What you get: the operator tooling, in plain terms. ──────────────────────
+    // ── What you get ── the format, the tools, on canon. Channels find your people;
+    // a Circle running a Journey together is a Run; gatherings become Events. ─────
     {
       type: 'MediaText',
       props: {
-        id: 'sp-bring',
-        image: '/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg',
-        alt: 'A Frequency group gathered together outdoors',
-        eyebrow: 'Bring it across',
-        title: 'Your group, on rails that already work.',
+        id: 'sp-get',
+        image: '/images/site/hula-hoop-beach.jpg',
+        alt: 'A woman hula-hooping on the beach',
+        eyebrow: 'What you get',
+        title: "Your group, on rails that already work.",
         titleAccent: 'already work',
-        kicker: 'You do not start over. You move in.',
-        body: 'A Space gives your group a front door inside Discover, so the people looking for what you do can actually find you. Your regulars become Members, your gatherings become Events, and your weekly group becomes a Run that walks a Journey together.\n\nThe format, the script, and the backup come with it. You set out the chairs. We hand you the structure so the room runs itself.',
+        kicker: "You don't start over. You move in.",
+        body: "A Channel ties you to the people near you who care about the same thing, so the ones looking for what you do can actually find you. Your weekly group becomes a Run, your Circle walking a Journey together with a standing time and the same faces. Your gatherings become Events on a calendar people show up to.\n\nThe format, the script, and the backup come with it. You set out the chairs. We hand you the structure so the room runs itself, and your people keep showing up.",
         side: 'left',
-        imgAspect: 'landscape',
+        imgAspect: 'portrait',
         focal: 'center',
         ctaLabel: '',
         ctaHref: '',
@@ -165,15 +184,16 @@ export const data: Data = {
       },
     },
 
-    // ── Simple "what it costs and what your members get". NOT the full table. ─────
+    // ── How it works ── the simple deal said plainly: members free, you cover the
+    // room. NOT the full table; /pricing is the quiet door. ──────────────────────
     {
       type: 'Heading',
       props: {
-        id: 'sp-cost-h',
-        eyebrow: 'What it costs',
-        title: 'Simple math.',
-        titleAccent: 'Simple',
-        kicker: 'One line for your members. One line for you.',
+        id: 'sp-deal-h',
+        eyebrow: 'How it works',
+        title: 'We never charge your people.',
+        titleAccent: 'never',
+        kicker: 'One line for the people you bring. One line for you.',
         size: 'default',
         tone: 'canvas',
         width: 'default',
@@ -184,7 +204,7 @@ export const data: Data = {
     {
       type: 'FeatureGrid',
       props: {
-        id: 'sp-cost-grid',
+        id: 'sp-deal-grid',
         eyebrow: '',
         title: '',
         titleAccent: '',
@@ -194,7 +214,7 @@ export const data: Data = {
           {
             icon: '',
             image: '',
-            title: 'Your members: free',
+            title: 'Your people: free',
             body: 'Everyone you bring joins as a Member at no cost. Browse, show up, earn Zaps, meet Vera. No card, no paywall, no catch.',
             href: '',
           },
@@ -202,7 +222,7 @@ export const data: Data = {
             icon: '',
             image: '',
             title: 'You: cover the room',
-            body: 'You pay a flat operator plan to run your Space and its tools. Plans start free and grow with you, from a solo practitioner to a full team.',
+            body: 'You pay a flat plan to run your room and its tools. Plans start free and grow with you, from a solo practitioner to a full team.',
             href: '',
           },
         ],
@@ -215,8 +235,8 @@ export const data: Data = {
     {
       type: 'Text',
       props: {
-        id: 'sp-cost-note',
-        body: 'That is the whole shape of it. Operator plans run from a free listing to larger team and white-label tiers, each at a flat monthly price with a small cut only on what you sell. The full breakdown lives on the [pricing page](/pricing). Billing is not turned on yet, so nothing charges today.',
+        id: 'sp-deal-note',
+        body: "That's the whole shape of it. Plans run from a free listing to larger team tiers, each at a flat monthly price with a small cut only on what you sell. The full breakdown lives on the [pricing page](/pricing). Billing isn't turned on yet, so nothing charges today.",
         size: 'base',
         tone: 'surface',
         width: 'default',
@@ -224,29 +244,102 @@ export const data: Data = {
         layout: L,
       },
     },
+
+    // ── Three steps ── make "claim a Space" concrete. The builder leaves knowing
+    // exactly what to do. "We hand you the format" lives inside step three. ──────
+    {
+      type: 'FeatureGrid',
+      props: {
+        id: 'sp-how-steps',
+        eyebrow: 'How you start',
+        title: "Three steps and your room is open.",
+        titleAccent: 'your room is open',
+        style: 'number',
+        columns: '3',
+        items: [
+          { icon: 'Compass', image: '', title: 'Pick what you gather around', body: "A class, a walk, a supper table, a sit. That's your Channel.", href: '' },
+          { icon: 'Users', image: '', title: 'Bring your people', body: "The regulars you have, or a few you want to call in. That's your Circle.", href: '' },
+          { icon: 'CalendarDays', image: '', title: 'Hold the door, same time each week', body: 'We hand you the format, the script, and the backup.', href: '' },
+        ],
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
+    // ── Mid-page CTA ── the highest-intent moment: they've seen what they get, the
+    // deal, and the three steps. Ask here, not just at the bottom. Not ink (the
+    // single dark beat is the welcome, below). ──────────────────────────────────
+    {
+      type: 'CallToAction',
+      props: {
+        id: 'sp-cta-mid',
+        eyebrow: '',
+        heading: 'Open your room.',
+        headingAccent: 'your room',
+        body: "You've seen what you get, the deal, and the three steps. The first builders are setting the tone now.",
+        ctaPrimaryLabel: BETA_CTA_LABEL,
+        ctaPrimaryHref: BETA_CTA_HREF,
+        ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
+        ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
+        tone: 'surface',
+        width: 'default',
+        align: 'center',
+        layout: L,
+      },
+    },
+
+    // ── The safety net ── the welcome that answers the builder's real fear. Member →
+    // Crew → Host → Guide → Mentor, with "you're never out front alone". ─────────
+    {
+      type: 'RolesPath',
+      props: {
+        id: 'sp-roles',
+        eyebrow: 'You are not building alone',
+        title: 'You are never out front alone.',
+        titleAccent: 'never',
+        kicker: 'Step up as far as you want. Every rung has the one above it for backup.',
+        rungs: [
+          { name: 'Member', blurb: "Your people show up to a Circle. That's the whole entry fee." },
+          { name: 'Crew', blurb: "They're in for the season, learning the format and lending a hand." },
+          { name: 'Host', blurb: 'You hold a Circle through a Run. The script and the backup come with it.' },
+          { name: 'Guide', blurb: 'You look after the Hosts nearby, so no one runs a room alone.' },
+          { name: 'Mentor', blurb: 'You keep the Guides steady across a whole local community.' },
+        ],
+        safetyNet:
+          'Nobody gets handed a room and left to sink. Whatever rung you take, the rung above it is there for backup: a Guide for every Host, a Mentor for every Guide. Step up exactly as far as feels right, and step back any time.',
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
     {
       type: 'Statement',
       props: {
         id: 'sp-stmt-2',
         text: 'Access, not extraction. We keep the door open instead of standing in it.',
         accent: 'extraction',
-        tone: 'canvas',
+        tone: 'surface',
         layout: L,
       },
     },
 
-    // ── The single dark beat ── why we run it this way, near the end. ────────────
+    // ── The single dark beat ── why we run it this way. Exactly one ink section,
+    // near the end, before the ink close. Atmospheric sunset image. ─────────────
     {
       type: 'MediaText',
       props: {
         id: 'sp-why',
-        image: '/images/site/PHOTO-2020-10-17-13-49-14.jpeg',
-        alt: 'A Frequency gathering on a cliffside at golden hour',
+        image: '/images/site/sunset.jpg',
+        alt: 'A wide open sky at sunset over the coast',
         eyebrow: 'Why we do it this way',
         title: 'The room belongs to the people in it.',
         titleAccent: 'people in it',
         kicker: '',
-        body: 'A community that taxes its own members slowly stops being a community. We have all watched it happen. So Frequency keeps membership free and asks the operators who run the rooms to cover the rooms.\n\nThat keeps the math honest. Your people belong because they show up, not because they paid at the door. And when you grow, the rails grow with you, never against you.',
+        body: "A community that taxes its own members slowly stops being a community. We've all watched it happen. So Frequency keeps membership free and asks the builders who run the rooms to cover the rooms.\n\nThat keeps the math honest. Your people belong because they show up, not because they paid at the door. And when you grow, the rails grow with you, never against you.",
         side: 'right',
         imgAspect: 'landscape',
         focal: 'center',
@@ -263,30 +356,30 @@ export const data: Data = {
       props: {
         id: 'sp-marquee',
         items: [
-          { text: 'Claim your Space' },
-          { text: 'Members join free' },
+          { text: 'Bring your people' },
+          { text: 'They join free' },
           { text: 'Cover the room, not the people' },
-          { text: 'Show up in Discover' },
           { text: 'Run one Circle' },
+          { text: "You're never out front alone" },
           { text: 'Keep your group' },
         ],
         layout: L,
       },
     },
 
-    // ── Close ── the one and only button: Join the Beta, framed as claim your Space.
+    // ── Close ── the ink CTA. Primary action plus the quiet member path. ─────────
     {
       type: 'CallToAction',
       props: {
         id: 'sp-cta',
         eyebrow: '',
-        heading: 'Claim your Space.',
-        headingAccent: 'Space',
-        body: 'Bring your group to Frequency and keep it free for every person who walks in. Join the beta and we will set your Space up with you.',
+        heading: 'Call in your people.',
+        headingAccent: 'your people',
+        body: "Bring the people you have, or the few you want to gather, and keep it free for every one of them. Start a Circle and we'll set your room up with you.",
         ctaPrimaryLabel: BETA_CTA_LABEL,
         ctaPrimaryHref: BETA_CTA_HREF,
-        ctaSecondaryLabel: '',
-        ctaSecondaryHref: '',
+        ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
+        ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
         tone: 'ink',
         width: 'default',
         align: 'center',
