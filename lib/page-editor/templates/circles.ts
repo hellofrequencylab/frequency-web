@@ -9,7 +9,9 @@ import type { Data } from '@measured/puck'
 export const data: Data = {
   root: {},
   content: [
-    { type: 'CirclesChannelNav', props: { id: 'circles-channel-nav' } },
+    // Search row, then the find-near-me + Channel tags row (CirclesMap), then results.
+    // The Channel tags ride alongside the find-near-me button now, so there's no standalone
+    // CirclesChannelNav block here (operators can still add one from the editor if they want).
     { type: 'CirclesToolbar', props: { id: 'circles-toolbar' } },
     { type: 'CirclesMap', props: { id: 'circles-map' } },
     { type: 'CirclesFeatured', props: { id: 'circles-featured', heading: 'Featured circles' } },
