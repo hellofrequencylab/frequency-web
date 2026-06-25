@@ -151,7 +151,7 @@ export default function HowToBuildCommunityPage() {
         title="It starts smaller than you think."
         kicker="A few neighbors and a standing time, not a movement and a logo."
         imgAspect="landscape"
-        focal="center"
+        imgPosition="center"
         tone="surface"
       >
         <p>
@@ -178,7 +178,7 @@ export default function HowToBuildCommunityPage() {
         title="A few people, a standing time, a spot they can find."
         kicker="No stage, no guru out front. Just regulars who keep coming back."
         imgAspect="landscape"
-        focal="center"
+        imgPosition="center"
         reverse
         tone="canvas"
       >
@@ -235,7 +235,7 @@ export default function HowToBuildCommunityPage() {
         title="What do I do if I have never run a group before?"
         kicker="You set out the chairs. The format does the rest."
         imgAspect="landscape"
-        focal="center"
+        imgPosition="center"
         reverse
         tone="surface"
       >
