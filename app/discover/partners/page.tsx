@@ -11,7 +11,7 @@ export const revalidate = 3600
 
 const TITLE = 'Local partners'
 const DESCRIPTION =
-  'Local businesses in the Frequency community. Find them, see member offers, and show up in person. A directory of the shops, studios, and makers near you.'
+  'The shops, studios, and makers in the Frequency community. Find one near you, see what they offer members, and show up in person.'
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -39,7 +39,7 @@ export default async function PublicPartnersPage() {
       {/* Public SEO surface: no operator admin bar (that's a member-app control). */}
       <IndexTemplate title={TITLE} description={DESCRIPTION} adminBar={false}>
         {partners.length === 0 ? (
-          <p className="text-muted">No partners listed yet. Check back soon.</p>
+          <p className="text-muted">No partners near you yet. The first ones are still signing on, so check back soon.</p>
         ) : (
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {partners.map((p) => (
