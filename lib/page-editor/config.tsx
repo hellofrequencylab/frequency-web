@@ -18,6 +18,7 @@ import { primitivesComponents } from '@/components/page-editor/blocks/primitives
 import { dynamicComponents } from '@/components/page-editor/blocks/dynamic'
 import { marketingComponents } from '@/components/page-editor/blocks/marketing'
 import { productStoryComponents } from '@/components/page-editor/blocks/product-story'
+import { circlesComponents } from '@/components/page-editor/blocks/circles'
 
 export const config: Config = {
   components: {
@@ -29,6 +30,7 @@ export const config: Config = {
     ...marketingComponents,
     ...productStoryComponents,
     ...dynamicComponents,
+    ...circlesComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -55,6 +57,17 @@ export const config: Config = {
     dynamic: {
       title: 'Dynamic',
       components: ['LiveStats', 'LiveEvents', 'LivePosts'],
+    },
+    circles: {
+      title: 'Circles index',
+      components: [
+        'CirclesChannelNav',
+        'CirclesToolbar',
+        'CirclesMap',
+        'CirclesFeatured',
+        'CirclesGrid',
+        'CirclesBrowse',
+      ],
     },
   },
 }

@@ -7,6 +7,7 @@ import { data as theLab } from './the-lab'
 import { data as theCommunity } from './the-community'
 import { data as theQuest } from './the-quest'
 import { data as pricing } from './pricing'
+import { data as circles } from './circles'
 
 // Starter documents that re-create each editable page's content using the
 // STANDARDIZED block library. They seed the editor when a page has no usable
@@ -27,6 +28,7 @@ const TEMPLATES: Record<string, Data> = {
   'the-community': theCommunity,
   'the-quest': theQuest,
   pricing,
+  circles,
 }
 
 export function getTemplate(slug: string): Data | null {
