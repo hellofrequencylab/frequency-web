@@ -11,7 +11,7 @@ export const revalidate = 3600
 
 const TITLE = 'Practices'
 const DESCRIPTION =
-  'The Frequency practice library, small, repeatable real-world acts that build a life and a community. Browse practices by what you want to grow, then do them with people near you.'
+  "A Practice is one small real-world act you can actually keep up. Five minutes before your coffee, 30 seconds of cold water, a walk with no phone. Browse them by Pillar, then do them with people near you."
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -44,7 +44,7 @@ export default async function PublicPracticesPage() {
         {pillars.length > 0 && <PillarChips pillars={pillars} active="all" />}
 
         {practices.length === 0 ? (
-          <p className="text-muted">The library is filling in. Check back soon.</p>
+          <p className="text-muted">The library&apos;s still filling in. Check back in a few days.</p>
         ) : (
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {practices.map((p) => (
