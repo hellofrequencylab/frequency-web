@@ -81,17 +81,21 @@ export async function savePageContent(route: string, fd: FormData): Promise<Acti
   if (!isEditableRoute(route)) return fail('That page isn’t editable.')
   const title = ((fd.get('title') as string) ?? '').trim().slice(0, MAX_TITLE) || null
   const description = ((fd.get('description') as string) ?? '').trim().slice(0, MAX_DESCRIPTION) || null
-  const hero_image = cleanLink(fd.get('hero_image'))
   const cta_href = cleanLink(fd.get('cta_href'))
-  if (hero_image === 'invalid' || cta_href === 'invalid') {
+  if (cta_href === 'invalid') {
     return fail('Links must start with “/” or “http(s)://”.')
   }
   const cta_label = ((fd.get('cta_label') as string) ?? '').trim().slice(0, MAX_CTA_LABEL) || null
+  // NOTE: hero_image is intentionally omitted. The hero is managed on its own by
+  // uploadPageHero/removePageHero (the InlineCover) and there is no hero_image field in
+  // this form — including it here would read null and WIPE a just-uploaded hero. Omitting
+  // it from the upsert preserves the existing value on conflict (PostgREST only SETs the
+  // columns present in the payload).
   const db = createAdminClient()
   const { error } = await db
     .from('page_content')
     .upsert({
-      route, title, description, hero_image, cta_label, cta_href,
+      route, title, description, cta_label, cta_href,
       updated_by: me.id, updated_at: new Date().toISOString(),
     })
   if (error) return fail(error.message)
