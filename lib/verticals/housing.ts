@@ -7,9 +7,10 @@ import type { Vertical } from './registry'
 export const housing: Vertical = {
   id: 'housing',
   entity: 'shared',
-  // DORMANT until the housing_* migrations are applied to prod and a signed-in session is
-  // verified (guardrail after the 2026-06-24 outage). Flip to true to go live.
-  enabled: false,
+  // LIVE (2026-06-25): the listings + housing_* schema is applied to prod and the access
+  // matrix registers the 'housing' surface, so accessTo cannot throw in the shared shell
+  // (the 2026-06-24 outage guardrail). Connect-only, so it works with billing off.
+  enabled: true,
   nav: [
     {
       after: 'market',
