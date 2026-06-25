@@ -114,6 +114,11 @@ export function railFor(pathname: string): Rail {
   // its own operator info rail on the right, so the member right rail is suppressed.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return 'none'
 
+  // The Pages workspace (/pages and its editors) is an operator surface like /admin: keep the
+  // left menu, drop the member community right rail. It is module-driven, so its operator chrome
+  // is the on-page Settings → Layout panel, not the member rail.
+  if (pathname === '/pages' || pathname.startsWith('/pages/')) return 'none'
+
   // Full-viewport takeovers (the practice timer, the scanner, the auth gate, print) are
   // the ONLY other routes without the right rail — they read with zero app chrome.
   const isTakeover = FULL_TAKEOVER_PREFIXES.some(

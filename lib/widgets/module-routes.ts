@@ -19,6 +19,7 @@ export const MODULE_ROUTES: readonly string[] = [
   '/library/review',
   '/practices',
   '/programs',
+  '/pages',
 ]
 
 // Section roots whose DIRECT children each render <PageModules> against ONE shared '/seg/*'
