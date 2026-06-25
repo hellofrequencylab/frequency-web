@@ -60,8 +60,8 @@ export default async function DiscoverCirclesPage() {
       />
 
       <PhotoHero
-        image="/images/site/meditation-circle-outdoor.jpg"
-        alt="A seated meditation Circle on a concrete overlook under soft overcast light, blankets out and a neighborhood spread out behind them"
+        image="/images/site/PHOTO-2020-10-07-14-38-04.jpeg"
+        alt="A group of friends dancing together on the beach at golden hour"
         focal="object-center"
         eyebrow="Find your people"
         title={<>Circles forming <span className="text-primary">now</span></>}
@@ -131,8 +131,8 @@ export default async function DiscoverCirclesPage() {
       {/* ── How Circles grow ────────────────────────────────────── */}
       <ZigZag
         tone="ink"
-        img="/images/site/breathwork-circle-friends.jpg"
-        alt="A group standing in a clear ring on a foggy ocean overlook, with one person in the center"
+        img="/images/site/hula-hoop-party.jpg"
+        alt="A handful of friends spinning hula hoops together on a lawn at golden hour"
         imgAspect="natural"
         eyebrow="How Circles grow"
         title="A Circle divides to stay close"

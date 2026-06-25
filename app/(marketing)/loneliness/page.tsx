@@ -242,8 +242,8 @@ export default function LonelinessPage() {
           or read how the community works (the-community). Both link within the
           cluster. */}
       <ZigZag
-        img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
-        alt="A person resting quietly on the floor after a group practice, calm and at ease"
+        img="/images/site/community-dinner.jpg"
+        alt="A backyard dinner at night, friends gathered around a long table under string lights"
         imgPosition="center"
         imgAspect="landscape"
         reverse

@@ -122,9 +122,9 @@ export default async function DiscoverHubPage() {
 
       {/* ── Hero ──────────────────────────────────────────────── */}
       <PhotoHero
-        image="/images/site/breathwork-circle.jpg"
-        alt="A large breathwork circle seated outdoors, arms raised overhead, at golden hour above the ocean in North County San Diego"
-        focal="object-[50%_40%]"
+        image="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
+        alt="A group dancing together outdoors at golden hour, hands in the air, above the ocean in North County San Diego"
+        focal="object-center"
         eyebrow="Discover Frequency"
         title="Real community, near you"
         subtitle="Somewhere close to you, your people are already meeting this week. A standing time, a handful of regulars, a seat that gets noticed when it's empty. Browse the Circles, events, and Channels for free; sign up to join one, RSVP, or post."

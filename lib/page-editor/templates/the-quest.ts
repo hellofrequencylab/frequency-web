@@ -183,13 +183,14 @@ export const data: Data = {
       },
     },
 
-    // ── Mindless ── the one timer; two modes only. Portrait practice shot. ──────
+    // ── Mindless ── the one timer; two modes only. Portrait shot: a quiet moment,
+    // phones down, watching the sun go down together. ───────────────────────────
     {
       type: 'MediaText',
       props: {
         id: 'tq-mindless',
-        image: '/images/site/breathwork.jpg',
-        alt: 'A group on a lawn with arms open, one person leading a breathwork practice',
+        image: '/images/site/nature-viewing-sunset.jpg',
+        alt: 'A few people standing at a railing, watching a pink sunset over the ocean',
         eyebrow: 'Mindless',
         title: 'Get out of your head, and into your life.',
         titleAccent: 'into your life',

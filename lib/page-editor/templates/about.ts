@@ -248,8 +248,8 @@ export const data: Data = {
       type: 'MediaText',
       props: {
         id: 'ab-call',
-        image: '/images/site/mens-group.jpg',
-        alt: 'A group of men gathered around a fire at night with their arms raised',
+        image: '/images/site/63978107-8b40-4ce2-8eaf-01a2f6f35cb9.jpg',
+        alt: 'A group on the beach celebrating together, arms raised at golden hour',
         eyebrow: 'The invitation',
         title: "If you're the one who gathers people, this is for you.",
         titleAccent: 'gathers people',
