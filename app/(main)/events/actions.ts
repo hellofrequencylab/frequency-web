@@ -12,6 +12,7 @@ import { awardGems } from '@/lib/gems'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
+import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { stampEventSpaceId } from '@/lib/events/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
@@ -88,7 +89,12 @@ export async function createEvent(formData: FormData) {
   const title = (formData.get('title') as string | null)?.trim()
   const description = (formData.get('description') as string | null)?.trim() || null
   const location = (formData.get('location') as string | null)?.trim() || null
-  const scopeId = formData.get('scopeId') as string | null
+  // Scope: a circle event belongs to one of the creator's circles; a PUBLIC event
+  // (any Crew member, with or without a circle) is a standalone local event placed in
+  // the creator's region (resolved below, like the poster-scan flow).
+  const scopeType = (formData.get('scopeType') as string | null) === 'public' ? 'public' : 'circle'
+  const isPublic = scopeType === 'public'
+  const formScopeId = formData.get('scopeId') as string | null
   const startsAt = formData.get('startsAt') as string | null
   const endsAt = (formData.get('endsAt') as string | null) || null
 
@@ -108,7 +114,10 @@ export async function createEvent(formData: FormData) {
   const capacity = Number.isFinite(capacityParsed) && capacityParsed > 0 ? capacityParsed : null
 
   const visibilityRaw = (formData.get('visibility') as string | null) || 'circle_only'
-  const visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
+  let visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
+  // A public (circle-less) event can't be circle_only — there is no circle to scope it to —
+  // so fall it back to public.
+  if (isPublic && visibility === 'circle_only') visibility = 'public'
 
   const category = (formData.get('category') as string | null)?.trim() || 'gathering'
 
@@ -120,7 +129,9 @@ export async function createEvent(formData: FormData) {
   // Additional gallery images (ordered storage paths in the same bucket).
   const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
 
-  if (!title || !scopeId || !startsAt) return
+  if (!title || !startsAt) return
+  // A circle event must name a circle; a public event resolves its scope below.
+  if (!isPublic && !formScopeId) return
   // An end before the start is never valid — drop the bad write rather than store a
   // negative-duration event (the form should also block it, this is the server guard).
   if (endsAt && new Date(endsAt) < new Date(startsAt)) return
@@ -132,6 +143,11 @@ export async function createEvent(formData: FormData) {
 
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
+
+  // Resolve the scope: a circle event uses the chosen circle; a public event is placed in
+  // the creator's region (the same resolver the poster-scan flow uses).
+  const scopeId = isPublic ? await resolveRegionScopeId(myProfileId) : formScopeId
+  if (!scopeId) return
 
   const admin = createAdminClient()
 
@@ -160,7 +176,7 @@ export async function createEvent(formData: FormData) {
       description,
       location,
       scope_id: scopeId,
-      scope_type: 'circle',   // always circle-scoped now
+      scope_type: scopeType,   // 'circle' (a circle's event) or 'public' (a standalone local event)
       starts_at: startsIso,
       ends_at: endsIso,
       host_id: myProfileId,

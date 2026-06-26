@@ -109,17 +109,24 @@ export function EventForm({
   defaultGroupId?: string
 }) {
   const isEdit = !!eventId
+  // Sentinel scope for a standalone PUBLIC event (any Crew member — no circle needed).
+  // createEvent reads scopeType='public' and places it in the creator's region.
+  const PUBLIC_SCOPE = '__public__'
   const [isPending, startTransition] = useTransition()
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
-  const [scopeId, setScopeId] = useState(initial?.scopeId ?? defaultGroupId ?? groups[0]?.id ?? '')
+  const [scopeId, setScopeId] = useState(
+    initial?.scopeId ?? defaultGroupId ?? groups[0]?.id ?? (isEdit ? '' : PUBLIC_SCOPE),
+  )
   const [startsAt, setStartsAt] = useState(initial?.startsAt ?? '')
   const [endsAt, setEndsAt] = useState(initial?.endsAt ?? '')
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none')
   const [recurrenceUntil, setRecurrenceUntil] = useState('')
   const [capacity, setCapacity] = useState(initial?.capacity ?? '')
-  const [visibility, setVisibility] = useState(initial?.visibility ?? 'circle_only')
+  const [visibility, setVisibility] = useState(
+    initial?.visibility ?? (groups.length === 0 && !isEdit ? 'public' : 'circle_only'),
+  )
   const [category, setCategory] = useState(initial?.category ?? 'gathering')
   const [energyTag, setEnergyTag] = useState(initial?.energyTag ?? '')
   const [attendanceMode, setAttendanceMode] = useState<'in_person' | 'online' | 'hybrid'>(
@@ -147,8 +154,9 @@ export function EventForm({
     fd.set('galleryImagePaths', JSON.stringify(galleryImagePaths))
     fd.set('description', description.trim())
     fd.set('location', location.trim())
-    fd.set('scopeId', scopeId)
-    fd.set('scopeType', 'group')
+    const isPublicScope = scopeId === PUBLIC_SCOPE
+    fd.set('scopeType', isPublicScope ? 'public' : 'circle')
+    fd.set('scopeId', isPublicScope ? '' : scopeId)
     fd.set('startsAt', startsAt)
     if (endsAt) fd.set('endsAt', endsAt)
     // Recurrence is a create-time decision (it materialises occurrences); editing it later
@@ -223,31 +231,38 @@ export function EventForm({
         disabled={isPending}
       />
 
-      {/* Group */}
+      {/* Where it lives — a public local event, or one of your circles. Any Crew member
+          can create a public event; a circle option appears for each circle you're in. */}
       <div className="space-y-1.5">
         <Label className="text-sm text-text">
-          Group {!isEdit && <span className="text-danger">*</span>}
+          Where does it live? {!isEdit && <span className="text-danger">*</span>}
         </Label>
         {isEdit ? (
           <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-sm text-muted">
             {currentScopeName ?? 'This circle'}
           </p>
-        ) : groups.length === 0 ? (
-          <p className="text-sm text-muted">You must be in a group to create an event.</p>
         ) : (
-          <select
-            value={scopeId}
-            onChange={(e) => setScopeId(e.target.value)}
-            required
-            disabled={isPending}
-            className={fieldClasses}
-          >
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
+          <>
+            <select
+              value={scopeId}
+              onChange={(e) => setScopeId(e.target.value)}
+              required
+              disabled={isPending}
+              className={fieldClasses}
+            >
+              <option value={PUBLIC_SCOPE}>Public · a local event</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  In {g.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-2xs text-muted">
+              {scopeId === PUBLIC_SCOPE
+                ? 'A standalone event in your area, open to anyone nearby.'
+                : 'Scoped to this circle.'}
+            </p>
+          </>
         )}
       </div>
 
@@ -531,7 +546,7 @@ export function EventForm({
       <div className="flex items-center gap-3 pt-1">
         <button
           type="submit"
-          disabled={!title.trim() || !scopeId || !startsAt || isPending || (!isEdit && groups.length === 0)}
+          disabled={!title.trim() || !scopeId || !startsAt || isPending}
           className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save changes' : 'Create Event'}
