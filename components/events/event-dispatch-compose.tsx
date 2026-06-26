@@ -26,6 +26,7 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
   const [body, setBody] = useState('')
   const [toDispatch, setToDispatch] = useState(false)
   const [toSms, setToSms] = useState(false)
+  const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
 
   const canSubmit = !!body.trim() && !pending
@@ -34,7 +35,7 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
     const trimmed = body.trim()
     if (!trimmed || pending) return
     startTransition(async () => {
-      await postEventDispatch(eventId, slug, {
+      const res = await postEventDispatch(eventId, slug, {
         title: title.trim() || null,
         body: trimmed,
         toDispatch,
@@ -42,6 +43,13 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
         // (ADR-256): nothing texts until SMS is enabled. Honest copy below.
         toSms,
       })
+      // Surface a failure instead of clearing the box as if it sent (the host would
+      // lose their text + think it posted).
+      if ('error' in res) {
+        setError(res.error)
+        return
+      }
+      setError('')
       setTitle('')
       setBody('')
       setToDispatch(false)
@@ -128,6 +136,8 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
           {pending ? 'Posting…' : 'Post update'}
         </button>
       </div>
+
+      {error && <p className="mt-2 text-2xs font-medium text-danger">{error}</p>}
 
       {toDispatch && (
         <p className="mt-2 text-2xs text-subtle">

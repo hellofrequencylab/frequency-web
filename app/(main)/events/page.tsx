@@ -875,6 +875,9 @@ function EventCard({
   blurb?: string
 }) {
   const warm = <WarmBadge capacity={event.capacity} going={going} />
+  // At capacity → the one-tap RSVP joins the waitlist (framed as care, not scarcity).
+  // RsvpButton already supports this; the index just needs to pass it.
+  const isFull = event.capacity != null && going >= event.capacity
   // Standalone public events carry a calm `Public` provenance chip + the
   // organizer name; circle events carry the {Circle} pill (ADR-254).
   const provenance = event.is_public_standalone ? (
@@ -927,7 +930,7 @@ function EventCard({
           {event.host && <span>Hosted by {event.host.display_name}</span>}
         </>
       }
-      action={canRsvp ? <RsvpButton eventId={event.id} isGoing={isGoing} /> : undefined}
+      action={canRsvp ? <RsvpButton eventId={event.id} isGoing={isGoing} isFull={isFull} /> : undefined}
     />
   )
 }
