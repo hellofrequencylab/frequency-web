@@ -13,7 +13,8 @@
 // the page, so this works in a server component.
 
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import Image from 'next/image'
+import { ChevronLeft, ImageIcon } from 'lucide-react'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
 
 export interface DetailTab {
@@ -24,6 +25,7 @@ export interface DetailTab {
 
 export function DetailTemplate({
   hero,
+  coverImage,
   title,
   subtitle,
   badges,
@@ -33,9 +35,14 @@ export function DetailTemplate({
   tabs,
   children,
 }: {
-  /** A full-width hero image/banner rendered ABOVE the context header band (e.g. a
-   *  cover photo). Optional — most detail pages don't set it. */
+  /** A fully custom hero node rendered ABOVE the context header band. The escape hatch for a
+   *  bespoke cover (e.g. a hero with a date fallback). Prefer `coverImage` for the standard cover. */
   hero?: React.ReactNode
+  /** STANDARD entity cover (the symmetric twin of IndexTemplate's `heroImage`). A string URL
+   *  renders the standard cropped 16:6 cover; an explicit `null` renders the neutral gradient
+   *  placeholder; omit it entirely for no cover (existing pages are unchanged). Ignored when
+   *  `hero` is set. */
+  coverImage?: string | null
   title: React.ReactNode
   subtitle?: React.ReactNode
   /** Status / mode chips (e.g. the in-person designator). */
@@ -56,8 +63,24 @@ export function DetailTemplate({
 }) {
   return (
     <div>
-      {/* Hero image (cover) at the very top of the header, when provided. */}
-      {hero && <div className="mb-4">{hero}</div>}
+      {/* Cover at the very top of the header. A custom `hero` wins; otherwise the standard
+          `coverImage` treatment renders when the prop is provided (image, or a neutral gradient
+          placeholder for an explicit null). Omitting both leaves no cover. */}
+      {hero ? (
+        <div className="mb-4">{hero}</div>
+      ) : coverImage !== undefined ? (
+        <div className="mb-4">
+          {coverImage ? (
+            <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
+              <Image src={coverImage} alt="" fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover" />
+            </div>
+          ) : (
+            <div className="flex aspect-[16/6] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
+              <ImageIcon className="h-8 w-8 opacity-60" aria-hidden />
+            </div>
+          )}
+        </div>
+      ) : null}
       {/* Context header band. On mobile the actions stack BELOW the identity so the
           title is never crushed into a truncation; from sm up they sit inline right.
           No bottom border here: the rule is drawn by <PageAdminBar asDivider> below, with

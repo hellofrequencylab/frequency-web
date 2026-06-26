@@ -513,6 +513,69 @@ half-wired module fails there.
 
 ---
 
+## 8.5 The standard page (header + admin settings)
+
+> **Update 2026-06-26 (ADR-411):** the standardized page header is now **first-class
+> template props**, not a per-page hand-roll (it had drifted into ~4 near-identical copies).
+> The canonical lockup, proven across Circles, Events, Practices, and Journeys, is
+> **breadcrumb -> cropped hero image -> title**, with an optional in-place admin **Settings**
+> surface. Compose the props; don't re-author the lockup.
+
+### The standard Index header: `trail` + `heroImage`
+
+[`IndexTemplate`](../components/templates/index-template.tsx) carries the whole lockup:
+
+| Prop | Type | Renders |
+|---|---|---|
+| `trail` | `Crumb[]` (`{ href, label }`, exported from the file) | a `<Breadcrumbs>` at the very top of the header |
+| `heroImage` | `string \| null` | the STANDARD cropped header banner (`h-44 ... object-cover sm:h-56`, rounded, bordered). Renders **only when set** |
+| `banner` | `React.ReactNode` | the **escape hatch** for a bespoke header node (rendered after `trail` + `heroImage`). Prefer `trail` + `heroImage`; reach for `banner` only for the rare custom header |
+
+A standard index is therefore `trail={[...]}` + `heroImage={url}` + `title`, no hand-built
+banner. Exemplars (all migrated): [`circles/page.tsx`](<../app/(main)/circles/page.tsx>),
+[`events/page.tsx`](<../app/(main)/events/page.tsx>),
+[`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
+[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>).
+
+> **Where the hero comes from:** the page resolves its hero URL from the Settings header
+> image (`getPageHeaderImage`, [`lib/page-settings/store.ts`](../lib/page-settings/store.ts))
+> and/or the page-content hero (`resolvePageContent` `heroImage`), then passes the resolved
+> string to `heroImage`.
+
+### The standard Detail cover: `coverImage`
+
+[`DetailTemplate`](../components/templates/detail-template.tsx) gains the symmetric twin:
+
+| Prop | Type | Renders |
+|---|---|---|
+| `coverImage` | `string` | the standard cropped **16:6** cover at the top of the header |
+| `coverImage` | `null` (explicit) | a neutral gradient placeholder (`from-primary-bg via-surface-elevated to-signal-bg` + an `ImageIcon`) |
+| `coverImage` | omitted | no cover (existing pages unchanged) |
+| `hero` | `React.ReactNode` | the **escape hatch**: a fully custom cover node. When set, `coverImage` is **ignored** (e.g. the event detail page's date-based fallback) |
+
+### The admin-settings scope kit (9 touch-points)
+
+The repeatable recipe to give a new entity an in-place **Settings** module with cover-image
+editing (run for Circles, Events, and Practices). Copy the exemplar pair:
+[`components/admin/modules/practice-settings-module.tsx`](../components/admin/modules/practice-settings-module.tsx)
++ [`app/(main)/practices/admin-actions.ts`](<../app/(main)/practices/admin-actions.ts>).
+Every server action **re-checks the capability server-side** (the dock's role gate is UX
+only; the action is the authority, since the admin client bypasses RLS).
+
+| # | File | Add |
+|---|---|---|
+| 1 | [`lib/core/capabilities.ts`](../lib/core/capabilities.ts) | `'<entity>.editSettings'` to the `Capability` union, a `{ kind: '<entity>'; ... ownerId/hostId; viewerManagesScope? }` `Scope` variant, and a `case '<entity>'` in `resolveCapabilities` (grant to owner/host, platform staff, or a parent-scope manager) |
+| 2 | [`lib/core/load-capabilities.ts`](../lib/core/load-capabilities.ts) | `get<Entity>Capabilities(id)` (fetch the owner column, call `resolveCapabilities`) |
+| 3 | [`lib/admin/modules/registry.ts`](../lib/admin/modules/registry.ts) | an `<entity>.settings` entry in `ADMIN_MODULES` (`scopes: ['<entity>']`, `requiredCapability`, `surface: 'sidebar'`) |
+| 4 | [`components/admin/modules/module-map.tsx`](../components/admin/modules/module-map.tsx) | bind `'<entity>.settings'` -> the new module component |
+| 5 | [`components/layout/settings-drawer.tsx`](../components/layout/settings-drawer.tsx) | `{ prefix: /^\/<entities>\/[^/]+/, kind: '<entity>' }` to `PATH_SCOPE_KINDS` (the existing registry render path then shows the module; no new branch) |
+| 6 | [`app/(main)/<entities>/admin-actions.ts`](<../app/(main)/practices/admin-actions.ts>) | `get<Entity>AdminData`, `update<Entity>Settings`, `upload<Entity>Cover`/`remove<Entity>Cover` (mirror `uploadCircleCover`: `site-media` bucket storing a URL, OR the event pattern: `event-media` bucket storing a PATH, match the entity's existing cover column), `update<Entity>Permalink` |
+| 7 | [`components/admin/modules/<entity>-settings-module.tsx`](../components/admin/modules/practice-settings-module.tsx) | the flush 2/3 + 1/3 grid with `InlineCover` + identity fields (mirror `practice-settings-module.tsx`) |
+| 8 | [`components/<entities>/edit-<entity>-button.tsx`](../components/practices/edit-practice-button.tsx) | dispatches the `'open-settings'` window event, placed in the `DetailTemplate` `actions` slot, capability-gated |
+| 9 | The index page | passes `trail` + `heroImage` (the standard header above) |
+
+---
+
 ## 9. The Studio: the shared *creation* surface (ADR-142)
 
 Pages are for *reading*; the **Studio** is the one window for *making*. Anywhere

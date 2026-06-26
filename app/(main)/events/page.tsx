@@ -4,7 +4,6 @@ import { CalendarDays } from 'lucide-react'
 import { EventCompose } from './event-compose'
 import { EventsFilterBar } from './events-filter-bar'
 import { IndexTemplate } from '@/components/templates/index-template'
-import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageContents } from '@/components/templates/page-contents'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -76,27 +75,13 @@ export default async function EventsPage({
 
   return (
     <IndexTemplate
-      // Header overhaul (mirrors Circles): a small breadcrumb at the very top, then the
-      // operator hero image, both ABOVE the title (the banner slot renders before the
-      // heading) — so the page reads breadcrumb → hero → title/subtitle + actions.
-      banner={
-        <div>
-          <Breadcrumbs
-            trail={[
-              { href: '/network', label: 'Community' },
-              { href: '/events', label: 'Events' },
-            ]}
-          />
-          {heroImage && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={heroImage}
-              alt=""
-              className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
-            />
-          )}
-        </div>
-      }
+      // Standardized header (PAGE-FRAMEWORK): breadcrumb -> cropped hero -> title, from the
+      // template's first-class props.
+      trail={[
+        { href: '/network', label: 'Community' },
+        { href: '/events', label: 'Events' },
+      ]}
+      heroImage={heroImage}
       title={pageTitle}
       description={pageDescription}
       action={
