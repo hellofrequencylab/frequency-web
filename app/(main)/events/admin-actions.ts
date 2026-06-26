@@ -12,6 +12,9 @@ import {
   coerceAttendanceMode,
 } from '@/lib/events/options'
 import { wallClockToIso } from '@/lib/events/datetime'
+import { posterSignedUrl } from '@/lib/events/poster-media'
+
+const MAX_GALLERY_IMAGES = 12
 
 // In-place "Event settings" admin module (EMBEDDED-ADMIN.md / ADR-133). Read +
 // write both re-resolve event.editSettings server-side (the dock's role gate is UX;
@@ -43,7 +46,7 @@ export async function getEventAdminData(slug: string) {
   })
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -59,7 +62,16 @@ export async function getEventAdminData(slug: string) {
     ? admin.storage.from('event-media').getPublicUrl(event.cover_image_path).data.publicUrl
     : null
 
-  return { ...event, coverUrl }
+  // The original scanned poster lives in the PRIVATE poster bucket → short-lived signed
+  // URL for the Photos manager to preview. Uploaded gallery images are public.
+  const posterUrl = await posterSignedUrl(event.poster_path)
+  const galleryPaths = event.gallery_image_paths ?? []
+  const galleryItems = galleryPaths.map((p) => ({
+    path: p,
+    url: admin.storage.from('event-media').getPublicUrl(p).data.publicUrl,
+  }))
+
+  return { ...event, coverUrl, posterUrl, galleryPaths, galleryItems }
 }
 
 type EventAdminRow = {
@@ -72,6 +84,8 @@ type EventAdminRow = {
   ends_at: string | null
   is_cancelled: boolean
   cover_image_path: string | null
+  poster_path: string | null
+  gallery_image_paths: string[] | null
   capacity: number | null
   attendance_mode: string | null
   online_url: string | null
@@ -259,6 +273,52 @@ export async function removeEventCover(id: string, slug: string) {
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')
   revalidatePath('/feed')
+}
+
+/** Remove the original scanned poster image from the event (clears poster_path, so the
+ *  header falls back to the uploaded cover or the date placeholder). Same capability gate. */
+export async function removeEventPoster(id: string, slug: string) {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('events')
+    .update({ poster_path: null })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  revalidatePath('/feed')
+}
+
+/** Replace the event's uploaded gallery images (events.gallery_image_paths). Used by the
+ *  Photos manager to add or delete photos. Validates + caps the array; same gate. */
+export async function setEventGalleryImages(
+  id: string,
+  slug: string,
+  paths: string[],
+): Promise<{ ok: true } | { error: string }> {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
+
+  const clean = (Array.isArray(paths) ? paths : [])
+    .filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
+    .map((p) => p.trim())
+    .slice(0, MAX_GALLERY_IMAGES)
+
+  const admin = createAdminClient()
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('events')
+    .update({ gallery_image_paths: clean })
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  revalidatePath('/feed')
+  return { ok: true }
 }
 
 /** Rename an event's permalink. Slugifies the input, rejects empty, and ensures the

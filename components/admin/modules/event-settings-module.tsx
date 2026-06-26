@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Check } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { moduleById } from '@/lib/admin/modules/registry'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
@@ -12,8 +12,11 @@ import {
   updateEventPermalink,
   uploadEventCover,
   removeEventCover,
+  removeEventPoster,
+  setEventGalleryImages,
   setEventCancelled,
 } from '@/app/(main)/events/admin-actions'
+import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import {
   CATEGORY_OPTIONS,
   VISIBILITY_OPTIONS,
@@ -48,6 +51,9 @@ export function EventSettingsModule() {
   const [permaPending, startPerma] = useTransition()
   // Controlled so the join-link + address sections show for the right format.
   const [mode, setMode] = useState('in_person')
+  // Photos manager: the original scanned poster (signed URL) + uploaded gallery paths.
+  const [posterUrl, setPosterUrl] = useState<string | null>(null)
+  const [galleryPaths, setGalleryPaths] = useState<string[]>([])
 
   useEffect(() => {
     if (!slug) return
@@ -59,6 +65,8 @@ export function EventSettingsModule() {
           if (d) {
             setPermalink(d.slug)
             setMode(d.attendance_mode ?? 'in_person')
+            setPosterUrl(d.posterUrl ?? null)
+            setGalleryPaths(d.galleryPaths ?? [])
           }
           setLoading(false)
         }
@@ -99,6 +107,26 @@ export function EventSettingsModule() {
     })
   }
 
+  function handleRemovePoster() {
+    if (!data || pending) return
+    startTransition(async () => {
+      try {
+        await removeEventPoster(data!.id, data!.slug)
+        setPosterUrl(null)
+      } catch {
+        /* best-effort; the thumbnail stays if it failed */
+      }
+    })
+  }
+
+  function handleGalleryChange(next: string[]) {
+    setGalleryPaths(next)
+    if (!data) return
+    startTransition(async () => {
+      await setEventGalleryImages(data!.id, data!.slug, next)
+    })
+  }
+
   function handlePermalink() {
     setPermaErr(null)
     startPerma(async () => {
@@ -136,6 +164,43 @@ export function EventSettingsModule() {
                 forceEdit
                 upload={uploadEventCover.bind(null, data.id, data.slug)}
                 remove={removeEventCover.bind(null, data.id, data.slug)}
+              />
+            </div>
+
+            {/* Photos — the original scanned poster (removable) + extra gallery images
+                (add / remove). Lets a host clear a poster that scanned in duplicated or
+                wrong, and curate the gallery shown on the event page. */}
+            <div className="space-y-2">
+              <span className={fieldLabel}>Photos</span>
+              {posterUrl && (
+                <div className="relative inline-block">
+                  {/* Signed URL from the private poster bucket → plain img (outside the
+                      next/image optimizer's allowed hosts), same as the recap album. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={posterUrl}
+                    alt="Original event poster"
+                    className="h-28 w-28 rounded-xl border border-border object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemovePoster}
+                    disabled={pending}
+                    aria-label="Remove the original poster"
+                    className="absolute -right-1.5 -top-1.5 rounded-full border border-border bg-surface p-1 text-subtle shadow-sm transition-colors hover:text-danger disabled:opacity-50"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                  <p className="mt-1 text-2xs text-subtle">The original poster</p>
+                </div>
+              )}
+              <MultiImageUpload
+                label="Gallery photos"
+                value={galleryPaths}
+                onChange={handleGalleryChange}
+                folder="event-gallery"
+                hint="Extra photos shown in the gallery on the event page. Add or remove anytime."
+                disabled={pending}
               />
             </div>
 
