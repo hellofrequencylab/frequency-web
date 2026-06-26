@@ -165,10 +165,14 @@ export default async function EventDetailPage({
   params: Promise<{ slug: string }>
   searchParams: Promise<{ ticket?: string; session_id?: string; claimed?: string }>
 }) {
-  const { slug } = await params
-  const { ticket, session_id, claimed } = await searchParams
+  // params, searchParams, and the auth client are mutually independent — resolve
+  // them concurrently instead of one-after-another. (createAdminClient is sync.)
   const admin = createAdminClient()
-  const supabase = await createClient()
+  const [{ slug }, { ticket, session_id, claimed }, supabase] = await Promise.all([
+    params,
+    searchParams,
+    createClient(),
+  ])
 
   const { data: rawEvent } = await admin
     .from('events')
@@ -196,19 +200,31 @@ export default async function EventDetailPage({
     attendance_mode: AttendanceMode | null
     online_url: string | null
   }
-  const { data: rawExtra } = await (admin)
-    .from('events')
-    .select(
-      'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, attendance_mode, online_url',
-    )
-    .eq('id', event.id)
-    .maybeSingle()
+  // These three only depend on already-resolved values (event.id / session_id) and
+  // not on each other, so resolve them concurrently: the extra-meta read, the
+  // Stripe redirect reconcile (when present), and the viewer's event capabilities.
+  const [{ data: rawExtra }, ticketedCentsResolved, eventCaps] = await Promise.all([
+    (admin)
+      .from('events')
+      .select(
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, attendance_mode, online_url',
+      )
+      .eq('id', event.id)
+      .maybeSingle(),
+    // Webhook-independent reconcile when Stripe redirects back from a paid ticket.
+    ticket === 'success' && session_id
+      ? recordTicketFromSessionId(session_id)
+      : Promise.resolve(null),
+    getEventCapabilities(event.id),
+  ])
   const extra = (rawExtra ?? null) as ExtraMeta | null
   const postedById = extra?.posted_by_profile_id ?? null
   const isPostedEvent = !!postedById
   const attendanceMode: AttendanceMode = extra?.attendance_mode ?? 'in_person'
   const isOnline = attendanceMode === 'online'
   const onlineUrl = extra?.online_url ?? null
+  const ticketedCents: number | null = ticketedCentsResolved
+  const canManage = eventCaps.has('event.editSettings')
 
   // Cover image (A1) — a public storage path in the event-media bucket → public URL
   // (next/image allows the supabase public storage host). Null = token placeholder.
@@ -216,30 +232,24 @@ export default async function EventDetailPage({
     ? admin.storage.from('event-media').getPublicUrl(extra.cover_image_path).data.publicUrl
     : null
 
-  // The credit: whoever put the event on the map, when they aren't the host.
-  let postedBy: { display_name: string; handle: string } | null = null
-  if (postedById && postedById !== (event.host?.id ?? null)) {
-    const { data: posterProfile } = await admin
-      .from('profiles')
-      .select('display_name, handle')
-      .eq('id', postedById)
-      .maybeSingle()
-    postedBy = (posterProfile as { display_name: string; handle: string } | null) ?? null
-  }
-
-  // The flexible poster harvest + signed URLs for its crops (one batched call).
+  // Both of these depend only on `extra` (not on each other): the "Posted by" credit
+  // lookup and the signed URLs for the poster's media crops — resolve concurrently.
   const posterDetails: EventDetailsWithMedia =
     extra?.details && typeof extra.details === 'object' ? extra.details : {}
-  const posterCropUrls = Object.fromEntries(await posterSignedUrlMap(detailsMediaPaths(posterDetails)))
-
-  // Webhook-independent reconcile when Stripe redirects back from a paid ticket.
-  let ticketedCents: number | null = null
-  if (ticket === 'success' && session_id) {
-    ticketedCents = await recordTicketFromSessionId(session_id)
-  }
-
-  const eventCaps = await getEventCapabilities(event.id)
-  const canManage = eventCaps.has('event.editSettings')
+  const [postedByResolved, posterCropEntries] = await Promise.all([
+    postedById && postedById !== (event.host?.id ?? null)
+      ? admin
+          .from('profiles')
+          .select('display_name, handle')
+          .eq('id', postedById)
+          .maybeSingle()
+          .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? null)
+      : Promise.resolve(null),
+    posterSignedUrlMap(detailsMediaPaths(posterDetails)),
+  ])
+  // The credit: whoever put the event on the map, when they aren't the host.
+  const postedBy: { display_name: string; handle: string } | null = postedByResolved
+  const posterCropUrls = Object.fromEntries(posterCropEntries)
 
   // Visibility gate (ADR-202). This page reads through the admin client, which
   // bypasses RLS — so the same rules the RLS policy enforces are re-applied here:
@@ -264,11 +274,32 @@ export default async function EventDetailPage({
     }
   }
 
-  const { data: rawRsvps } = await admin
-    .from('event_rsvps')
-    .select('id, status, plus_ones, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
-    .eq('event_id', event.id)
-    .order('created_at', { ascending: true })
+  // The RSVP roster, capacity/waitlist info, the hosting circle's public area, and
+  // the auth user are mutually independent (each depends only on event fields or the
+  // already-built supabase client) — resolve them concurrently.
+  const [{ data: rawRsvps }, capacityInfo, circleRow, {
+    data: { user },
+  }] = await Promise.all([
+    admin
+      .from('event_rsvps')
+      .select('id, status, plus_ones, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
+      .eq('event_id', event.id)
+      .order('created_at', { ascending: true }),
+    // Real capacity / waitlist info (lib/events/capacity) — drives the waitlist CTA
+    // and the "filling up" line. Never invented.
+    getCapacityInfo(event.id),
+    // The circle's PUBLIC city-level coordinates (the mini map rides the hosting
+    // circle's area, never the exact venue — ADR-186 privacy).
+    event.scope_type === 'circle'
+      ? admin
+          .from('circles')
+          .select('name, slug, latitude, longitude')
+          .eq('id', event.scope_id)
+          .maybeSingle()
+          .then(({ data }) => data as { name: string; slug: string; latitude: number | null; longitude: number | null } | null)
+      : Promise.resolve(null),
+    supabase.auth.getUser(),
+  ])
 
   const rsvps = (rawRsvps ?? []) as unknown as RSVPRow[]
   const goingRsvps = rsvps.filter((r) => r.status === 'going')
@@ -277,32 +308,17 @@ export default async function EventDetailPage({
   // capacity — the trigger counts 'going' rows). Sum across confirmed attendees.
   const guestCount = goingRsvps.reduce((sum, r) => sum + Math.max(0, r.plus_ones ?? 0), 0)
 
-  // Real capacity / waitlist info (lib/events/capacity) — drives the waitlist CTA
-  // and the "filling up" line. Never invented.
-  const capacityInfo = await getCapacityInfo(event.id)
-
-  // Resolve scope name + the circle's PUBLIC city-level coordinates (the mini map
-  // rides the hosting circle's area, never the exact venue — ADR-186 privacy).
+  // Resolve scope name + the circle's PUBLIC city-level coordinates.
   let scopeName: string | null = null
   let scopeSlug: string | null = null
   let circleCoords: { lat: number; lng: number } | null = null
-  if (event.scope_type === 'circle') {
-    const { data: c } = await admin
-      .from('circles')
-      .select('name, slug, latitude, longitude')
-      .eq('id', event.scope_id)
-      .maybeSingle()
-    const circle = c as { name: string; slug: string; latitude: number | null; longitude: number | null } | null
-    scopeName = circle?.name ?? null
-    scopeSlug = circle?.slug ?? null
-    if (circle?.latitude != null && circle?.longitude != null) {
-      circleCoords = { lat: Number(circle.latitude), lng: Number(circle.longitude) }
+  if (circleRow) {
+    scopeName = circleRow.name ?? null
+    scopeSlug = circleRow.slug ?? null
+    if (circleRow.latitude != null && circleRow.longitude != null) {
+      circleCoords = { lat: Number(circleRow.latitude), lng: Number(circleRow.longitude) }
     }
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
   let myProfileId: string | null = null
   let myRsvpStatus: string | null = null
@@ -322,7 +338,6 @@ export default async function EventDetailPage({
     if (profile) {
       myProfileId = profile.id
       isHost = event.host?.id === myProfileId
-      isCrew = await isPaidViewer()
       const myRsvp = rsvps.find((r) => r.profile.id === myProfileId)
       myRsvpStatus = myRsvp?.status ?? null
       myPlusOnes = myRsvp?.plus_ones ?? 0
@@ -330,23 +345,30 @@ export default async function EventDetailPage({
       // "From your circles" = going attendees (excluding me) who share at least
       // one active circle with me. Two cheap membership reads + a set overlap;
       // mirrors the shared-circle pattern in lib/connections/welcomes.ts. This
-      // is warm proof, never scarcity — it's only ever additive.
+      // is warm proof, never scarcity — it's only ever additive. The Crew check
+      // is independent of the membership reads, so they all run concurrently.
       const otherGoingIds = goingRsvps
         .map((r) => r.profile.id)
         .filter((id) => id !== myProfileId)
-      if (otherGoingIds.length > 0) {
-        const [mineRes, theirsRes] = await Promise.all([
-          admin
-            .from('memberships')
-            .select('circle_id')
-            .eq('profile_id', myProfileId)
-            .eq('status', 'active'),
-          admin
-            .from('memberships')
-            .select('profile_id, circle_id')
-            .in('profile_id', otherGoingIds)
-            .eq('status', 'active'),
-        ])
+      const [paidViewer, mineRes, theirsRes] = await Promise.all([
+        isPaidViewer(),
+        otherGoingIds.length > 0
+          ? admin
+              .from('memberships')
+              .select('circle_id')
+              .eq('profile_id', myProfileId)
+              .eq('status', 'active')
+          : Promise.resolve(null),
+        otherGoingIds.length > 0
+          ? admin
+              .from('memberships')
+              .select('profile_id, circle_id')
+              .in('profile_id', otherGoingIds)
+              .eq('status', 'active')
+          : Promise.resolve(null),
+      ])
+      isCrew = paidViewer
+      if (mineRes && theirsRes) {
         const myCircleIds = new Set(
           (mineRes.data ?? []).map((m) => (m as { circle_id: string }).circle_id)
         )
@@ -418,9 +440,16 @@ export default async function EventDetailPage({
   const isPaidEvent = hasTiers || flatPriceCents > 0
   let hostPayoutReady = false
   let ownsTicket = false
-  if (isPaidEvent && event.host?.id) {
-    if (await payoutsLive()) hostPayoutReady = (await getConnectStatus(event.host.id)).ready
-    if (myProfileId) ownsTicket = await hasTicket(event.id, myProfileId)
+  const hostId = event.host?.id
+  if (isPaidEvent && hostId) {
+    // The payout chain (payoutsLive → getConnectStatus) is sequential within itself,
+    // but it's independent of the viewer's hasTicket lookup — run them concurrently.
+    const [payoutReady, owns] = await Promise.all([
+      (async () => ((await payoutsLive()) ? (await getConnectStatus(hostId)).ready : false))(),
+      myProfileId ? hasTicket(event.id, myProfileId) : Promise.resolve(false),
+    ])
+    hostPayoutReady = payoutReady
+    ownsTicket = owns
   }
   if (ticketedCents !== null) ownsTicket = true
   const priceLabel = `$${(flatPriceCents / 100).toFixed(2)}`
@@ -475,27 +504,10 @@ export default async function EventDetailPage({
     location: event.location,
   })
 
-  // Practice check-in availability + whether the viewer already checked in.
-  const canCheckIn = !!myProfileId && isGoing && isPast && !event.is_cancelled
-  let alreadyCheckedIn = false
-  if (canCheckIn && myProfileId) {
-    const { data: ci } = await admin
-      .from('engagement_events')
-      .select('id')
-      .eq('idempotency_key', `event_checkin:${event.id}:${myProfileId}`)
-      .maybeSingle()
-    alreadyCheckedIn = !!ci
-  }
-
   // ── Post-event social loop (slice B-2, EVENTS-SYSTEM §2.5) ──────────────────
-  // Cohosts, the activity feed, the host's Event Dispatches, and the recap album.
-  const cohosts = (await listCohosts(event.id)) as CohostView[]
-  const isCohost = myProfileId != null && cohosts.some((c) => c.profileId === myProfileId)
-  // Who may add a comment / photo: the host, a cohost, or anyone holding an RSVP.
-  const isGuest = myRsvpStatus === 'going' || myRsvpStatus === 'maybe' || myRsvpStatus === 'waitlist'
-  const canContribute = !!myProfileId && (isHost || isCohost || isGuest)
-  const canDispatch = isHost || isCohost
-
+  // The check-in lookup, cohosts, the activity feed, the host's Event Dispatches,
+  // and the recap album are all independent of each other (each keyed only on
+  // event.id / myProfileId) — resolve them in one concurrent batch.
   type RawActivityPost = {
     id: string
     body: string | null
@@ -503,13 +515,6 @@ export default async function EventDetailPage({
     created_at: string
     author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   }
-  const { data: rawActivity } = await (admin)
-    .from('event_posts')
-    .select('id, body, image_url, created_at, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
-    .eq('event_id', event.id)
-    .order('created_at', { ascending: false })
-    .limit(100)
-
   // Host Event Dispatches (ADR-255) — page updates the host posted. They render in
   // the same activity stream with an event badge. event_dispatches isn't in the
   // generated types yet → untyped cast (repo convention).
@@ -520,18 +525,58 @@ export default async function EventDetailPage({
     created_at: string
     author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   }
+  type RawMedia = { id: string; image_url: string; caption: string | null; profile_id: string }
   // event_dispatches isn't in lib/database.types.ts yet, so the typed client can't
   // resolve the table name (narrows to `never`). Widen this ONE read to an untyped
   // client — the genuinely-untyped case the ADR-246 rule allows (same convention as
   // the lib/events/* data layer, which writes these rows).
   // eslint-disable-next-line no-restricted-syntax -- event_dispatches not in generated types yet (ADR-246 exception)
   const adminUntyped = admin as unknown as SupabaseClient
-  const { data: rawDispatches } = await adminUntyped
-    .from('event_dispatches')
-    .select('id, title, body, created_at, author:profiles!author_id ( id, display_name, handle, avatar_url )')
-    .eq('event_id', event.id)
-    .order('created_at', { ascending: false })
-    .limit(50)
+
+  // Practice check-in availability + whether the viewer already checked in.
+  const canCheckIn = !!myProfileId && isGoing && isPast && !event.is_cancelled
+
+  const [ciRes, cohostsRaw, { data: rawActivity }, { data: rawDispatches }, rawMediaRes] =
+    await Promise.all([
+      canCheckIn && myProfileId
+        ? admin
+            .from('engagement_events')
+            .select('id')
+            .eq('idempotency_key', `event_checkin:${event.id}:${myProfileId}`)
+            .maybeSingle()
+        : Promise.resolve(null),
+      listCohosts(event.id),
+      (admin)
+        .from('event_posts')
+        .select('id, body, image_url, created_at, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
+        .eq('event_id', event.id)
+        .order('created_at', { ascending: false })
+        .limit(100),
+      adminUntyped
+        .from('event_dispatches')
+        .select('id, title, body, created_at, author:profiles!author_id ( id, display_name, handle, avatar_url )')
+        .eq('event_id', event.id)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      // Recap album only matters once the event is over.
+      hasEnded
+        ? (admin)
+            .from('event_media')
+            .select('id, image_url, caption, profile_id')
+            .eq('event_id', event.id)
+            .order('created_at', { ascending: false })
+            .limit(200)
+        : Promise.resolve(null),
+    ])
+
+  const alreadyCheckedIn = !!ciRes?.data
+
+  const cohosts = cohostsRaw as CohostView[]
+  const isCohost = myProfileId != null && cohosts.some((c) => c.profileId === myProfileId)
+  // Who may add a comment / photo: the host, a cohost, or anyone holding an RSVP.
+  const isGuest = myRsvpStatus === 'going' || myRsvpStatus === 'maybe' || myRsvpStatus === 'waitlist'
+  const canContribute = !!myProfileId && (isHost || isCohost || isGuest)
+  const canDispatch = isHost || isCohost
 
   const commentPosts: ActivityPost[] = ((rawActivity ?? []) as unknown as RawActivityPost[]).map((p) => ({
     id: p.id,
@@ -558,23 +603,13 @@ export default async function EventDetailPage({
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   )
 
-  // Recap album only matters once the event is over.
-  let recapPhotos: RecapPhoto[] = []
-  if (hasEnded) {
-    type RawMedia = { id: string; image_url: string; caption: string | null; profile_id: string }
-    const { data: rawMedia } = await (admin)
-      .from('event_media')
-      .select('id, image_url, caption, profile_id')
-      .eq('event_id', event.id)
-      .order('created_at', { ascending: false })
-      .limit(200)
-    recapPhotos = ((rawMedia ?? []) as unknown as RawMedia[]).map((m) => ({
-      id: m.id,
-      imageUrl: m.image_url,
-      caption: m.caption,
-      profileId: m.profile_id,
-    }))
-  }
+  // Recap album only matters once the event is over (query ran in the batch above).
+  const recapPhotos: RecapPhoto[] = ((rawMediaRes?.data ?? []) as unknown as RawMedia[]).map((m) => ({
+    id: m.id,
+    imageUrl: m.image_url,
+    caption: m.caption,
+    profileId: m.profile_id,
+  }))
 
   // Warm-proof faces (shared by the reward strip + fact panel).
   const faces = goingRsvps.map(({ profile }) => ({
