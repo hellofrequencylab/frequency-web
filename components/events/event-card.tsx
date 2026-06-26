@@ -1,19 +1,30 @@
 import Image from 'next/image'
-import { MapPin, Users, Globe } from 'lucide-react'
+import { MapPin, Users, Globe, Calendar } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { FeaturedBadge } from '@/components/ui/featured-badge'
 import { RsvpButton } from '@/components/events/rsvp-button'
 import { formatWhen, type EventRow } from '@/app/(main)/events/index-data'
 
-function DateBlock({ iso }: { iso: string }) {
+function eventDate(iso: string) {
   const d = new Date(iso)
-  const month = d.toLocaleDateString('en-US', { month: 'short' })
-  const day = d.getDate()
+  return {
+    month: d.toLocaleDateString('en-US', { month: 'short' }),
+    day: d.getDate(),
+  }
+}
+
+// Generated cover for events without an uploaded photo — so every card carries
+// the same visual weight as a circle card's no-image fallback (mirrors
+// circle-card.tsx: the from-primary-bg via-surface-elevated to-signal-bg
+// gradient). The date sits large and centered, with a small calendar mark.
+function CoverFallback({ iso }: { iso: string }) {
+  const { month, day } = eventDate(iso)
   return (
-    <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
-      <span className="text-xs font-semibold uppercase leading-none tracking-wide">{month}</span>
-      <span className="text-xl font-bold leading-tight">{day}</span>
+    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
+      <Calendar className="h-5 w-5 opacity-70" aria-hidden />
+      <span className="mt-1.5 text-xs font-semibold uppercase leading-none tracking-wide">{month}</span>
+      <span className="text-4xl font-bold leading-tight">{day}</span>
     </div>
   )
 }
@@ -76,15 +87,16 @@ export function EventCard({
     <EntityCard
       href={`/events/${event.slug}`}
       // Lead with the expressive cover when the event has one (EVENTS-DESIGN
-      // §3.2 — reads like Luma Discover); the DateBlock anchors the card body
-      // otherwise. EntityCard's `cover` slot is a 16:9 header that no-ops when
-      // absent, so this stays backward-compatible.
+      // §3.2 — reads like Luma Discover). When it doesn't, a generated date
+      // cover gives the card the same visual weight as a circle card's no-image
+      // fallback, so every event reads rich rather than sparse.
       cover={
         coverUrl ? (
           <Image src={coverUrl} alt="" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
-        ) : undefined
+        ) : (
+          <CoverFallback iso={event.starts_at} />
+        )
       }
-      anchor={coverUrl ? undefined : <DateBlock iso={event.starts_at} />}
       title={event.title}
       description={blurb}
       badge={

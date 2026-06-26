@@ -1,17 +1,24 @@
 'use client'
 
 import { useEffect, useState, useTransition, type FormEvent } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Check } from 'lucide-react'
-import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { moduleById } from '@/lib/admin/modules/registry'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
-import { getEventAdminData, updateEventSettings, setEventCancelled } from '@/app/(main)/events/admin-actions'
+import { InlineCover } from '@/components/admin/inline/inline-cover'
+import {
+  getEventAdminData,
+  updateEventSettings,
+  updateEventPermalink,
+  uploadEventCover,
+  removeEventCover,
+  setEventCancelled,
+} from '@/app/(main)/events/admin-actions'
 
 // In-place "Event settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside
 // the page admin dock on /events/[slug], and renders nothing unless the server
 // grants event.editSettings (the event's host, staff, or whoever runs its circle).
-// Cancel/reinstate stays in the full admin editor.
+// Mirrors the Circle settings module (flush, no card chrome; lg:grid 3-col).
 
 type EventData = NonNullable<Awaited<ReturnType<typeof getEventAdminData>>>
 
@@ -29,6 +36,7 @@ function toLocalInput(iso: string | null): string {
 
 export function EventSettingsModule() {
   const pathname = usePathname()
+  const router = useRouter()
   const slug = pathname.match(/^\/events\/([^/]+)/)?.[1] ?? null
 
   const [data, setData] = useState<EventData | null>(null)
@@ -37,6 +45,10 @@ export function EventSettingsModule() {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
+  const [permalink, setPermalink] = useState('')
+  const [permaErr, setPermaErr] = useState<string | null>(null)
+  const [permaPending, startPerma] = useTransition()
+
   useEffect(() => {
     if (!slug) return
     let active = true
@@ -44,6 +56,7 @@ export function EventSettingsModule() {
       .then((d) => {
         if (active) {
           setData(d)
+          if (d) setPermalink(d.slug)
           setLoading(false)
         }
       })
@@ -64,6 +77,7 @@ export function EventSettingsModule() {
   if (!data) return null
 
   const mod = moduleById('event.settings')
+  const Icon = mod?.Icon
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -82,100 +96,197 @@ export function EventSettingsModule() {
     })
   }
 
+  function handlePermalink() {
+    setPermaErr(null)
+    startPerma(async () => {
+      const res = await updateEventPermalink(data!.id, data!.slug, permalink)
+      if ('error' in res) {
+        setPermaErr(res.error)
+      } else {
+        router.push(`/events/${res.slug}`)
+      }
+    })
+  }
+
+  // No card chrome — the settings sit flush on the panel's white surface.
   return (
-    <AdminModuleCard title={mod?.label ?? 'Event settings'} Icon={mod?.Icon} desc={mod?.desc}>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <label className="block space-y-1">
-          <span className={fieldLabel}>Title</span>
-          <input name="title" defaultValue={data.title} required disabled={pending} className={input} />
-        </label>
+    <div className="space-y-6">
+      <section>
+        <header className="mb-4 space-y-1">
+          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
+            {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
+            {mod?.label ?? 'Event settings'}
+          </h3>
+          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
+        </header>
 
-        <label className="block space-y-1">
-          <span className={fieldLabel}>Description</span>
-          <textarea
-            name="description"
-            defaultValue={data.description ?? ''}
-            rows={2}
-            disabled={pending}
-            className={`${input} resize-none`}
-          />
-        </label>
+        <form onSubmit={handleSubmit} className="space-y-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
+          {/* LEFT 2/3 — cover, title, description. */}
+          <div className="space-y-4 lg:col-span-2">
+            {/* Cover image — edited here in Settings (no inline editing on the page). */}
+            <div className="space-y-1.5">
+              <span className={fieldLabel}>Cover image</span>
+              <InlineCover
+                value={data.coverUrl ?? null}
+                alt={data.title}
+                canEdit
+                forceEdit
+                upload={uploadEventCover.bind(null, data.id, data.slug)}
+                remove={removeEventCover.bind(null, data.id, data.slug)}
+              />
+            </div>
 
-        <label className="block space-y-1">
-          <span className={fieldLabel}>Location</span>
-          <input name="location" defaultValue={data.location ?? ''} disabled={pending} className={input} />
-        </label>
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>Title</span>
+              <input name="title" defaultValue={data.title} required disabled={pending} className={input} />
+            </label>
 
-        {/* Stacked on phones: two datetime-local inputs side by side exceed a
-            phone-width panel (their intrinsic min-width can't shrink), which
-            forced the whole Settings panel to overflow sideways. */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className="block min-w-0 space-y-1">
-            <span className={fieldLabel}>Starts</span>
-            <input
-              name="starts_at"
-              type="datetime-local"
-              defaultValue={toLocalInput(data.starts_at)}
-              required
-              disabled={pending}
-              className={`${input} min-w-0`}
-            />
-          </label>
-          <label className="block min-w-0 space-y-1">
-            <span className={fieldLabel}>Ends</span>
-            <input
-              name="ends_at"
-              type="datetime-local"
-              defaultValue={toLocalInput(data.ends_at)}
-              disabled={pending}
-              className={`${input} min-w-0`}
-            />
-          </label>
-        </div>
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>Description</span>
+              <textarea
+                name="description"
+                defaultValue={data.description ?? ''}
+                rows={3}
+                disabled={pending}
+                className={`${input} resize-none`}
+              />
+            </label>
 
-        {error && <p className="text-xs font-medium text-danger">{error}</p>}
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>Location</span>
+              <input name="location" defaultValue={data.location ?? ''} disabled={pending} className={input} />
+            </label>
 
-        <div className="flex items-center justify-between gap-2 pt-1">
-          {/* Cancel / reinstate — moved here from the header kebab so Settings is
-              the one host surface. Same server-side capability gate. */}
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
-                try {
-                  await setEventCancelled(data!.id, data!.slug, !data!.is_cancelled)
-                  setError(null)
-                  setData((d) => (d ? { ...d, is_cancelled: !d.is_cancelled } : d))
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : 'Could not update the event. Try again.')
+            {/* Stacked on phones: two datetime-local inputs side by side exceed a
+                phone-width panel (their intrinsic min-width can't shrink), which
+                forced the whole Settings panel to overflow sideways. */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="block min-w-0 space-y-1.5">
+                <span className={fieldLabel}>Starts</span>
+                <input
+                  name="starts_at"
+                  type="datetime-local"
+                  defaultValue={toLocalInput(data.starts_at)}
+                  required
+                  disabled={pending}
+                  className={`${input} min-w-0`}
+                />
+              </label>
+              <label className="block min-w-0 space-y-1.5">
+                <span className={fieldLabel}>Ends</span>
+                <input
+                  name="ends_at"
+                  type="datetime-local"
+                  defaultValue={toLocalInput(data.ends_at)}
+                  disabled={pending}
+                  className={`${input} min-w-0`}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* RIGHT 1/3 — format, capacity, permalink. */}
+          <div className="space-y-4 lg:col-span-1">
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>Format</span>
+              <select
+                name="attendance_mode"
+                defaultValue={data.attendance_mode ?? 'in_person'}
+                disabled={pending}
+                className={input}
+              >
+                <option value="in_person">In person</option>
+                <option value="online">Online</option>
+                <option value="hybrid">In person + online</option>
+              </select>
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>Capacity</span>
+              <input
+                name="capacity"
+                type="number"
+                min={1}
+                defaultValue={data.capacity ?? ''}
+                placeholder="Unlimited"
+                disabled={pending}
+                className={input}
+              />
+            </label>
+
+            {/* Permalink — its own tiny action (not part of the content save) since a
+                rename redirects the page to the new URL. */}
+            <div className="space-y-1.5">
+              <span className={fieldLabel}>Permalink</span>
+              <div className="flex items-center gap-2">
+                <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle">
+                  <span className="shrink-0">/events/</span>
+                  <input
+                    value={permalink}
+                    onChange={(e) => setPermalink(e.target.value)}
+                    disabled={permaPending}
+                    className="min-w-0 flex-1 bg-transparent py-2 text-text outline-none disabled:opacity-50"
+                  />
+                </span>
+                <button
+                  type="button"
+                  onClick={handlePermalink}
+                  disabled={permaPending || !permalink.trim() || permalink.trim() === data.slug}
+                  className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+                >
+                  {permaPending ? 'Saving…' : 'Update'}
+                </button>
+              </div>
+              {permaErr && <span className="text-xs font-medium text-danger">{permaErr}</span>}
+            </div>
+          </div>
+
+          {/* Error + actions row — spans full width at the bottom. */}
+          <div className="space-y-3 pt-1 lg:col-span-3">
+            {error && <p className="text-xs font-medium text-danger">{error}</p>}
+            <div className="flex items-center justify-between gap-2">
+              {/* Cancel / reinstate — moved here from the header kebab so Settings is
+                  the one host surface. Same server-side capability gate. */}
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() =>
+                  startTransition(async () => {
+                    try {
+                      await setEventCancelled(data!.id, data!.slug, !data!.is_cancelled)
+                      setError(null)
+                      setData((d) => (d ? { ...d, is_cancelled: !d.is_cancelled } : d))
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Could not update the event. Try again.')
+                    }
+                  })
                 }
-              })
-            }
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-40 ${
-              data.is_cancelled
-                ? 'border-border bg-surface text-text hover:border-border-strong'
-                : 'border-danger/40 bg-surface text-danger hover:bg-danger-bg'
-            }`}
-          >
-            {data.is_cancelled ? 'Reinstate event' : 'Cancel event'}
-          </button>
-          <span className="flex items-center gap-2">
-            {saved && (
-              <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
-                <Check className="h-3.5 w-3.5" /> Saved
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-40 ${
+                  data.is_cancelled
+                    ? 'border-border bg-surface text-text hover:border-border-strong'
+                    : 'border-danger/40 bg-surface text-danger hover:bg-danger-bg'
+                }`}
+              >
+                {data.is_cancelled ? 'Reinstate event' : 'Cancel event'}
+              </button>
+              <span className="flex items-center gap-2">
+                {saved && (
+                  <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
+                    <Check className="h-3.5 w-3.5" /> Saved
+                  </span>
+                )}
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                >
+                  {pending ? 'Saving…' : 'Save'}
+                </button>
               </span>
-            )}
-            <button
-              type="submit"
-              disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
-            >
-              {pending ? 'Saving…' : 'Save'}
-            </button>
-          </span>
-        </div>
-      </form>
-    </AdminModuleCard>
+            </div>
+          </div>
+        </form>
+      </section>
+    </div>
   )
 }
