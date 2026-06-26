@@ -228,24 +228,17 @@ export default async function EventDetailPage({
   const ticketedCents: number | null = ticketedCentsResolved
   const canManage = eventCaps.has('event.editSettings')
 
-  // Cover image (A1) — a public storage path in the event-media bucket → public URL
-  // (next/image allows the supabase public storage host). Null = token placeholder.
+  // Uploaded cover (A1) — a public storage path in the event-media bucket → public URL
+  // (next/image allows the supabase public storage host). Null when the host never
+  // uploaded one, which is the case for every event captured by scanning a poster.
   const coverUrl = extra?.cover_image_path
     ? admin.storage.from('event-media').getPublicUrl(extra.cover_image_path).data.publicUrl
     : null
 
-  // Gallery — the poster (cover) leads, then the additional gallery images, each a
-  // public storage path → URL. The hero keeps showing the poster; this list feeds the
-  // clickable gallery (EventGallery only renders when there are 2+ images to browse).
-  const galleryUrls: string[] = [
-    coverUrl,
-    ...(extra?.gallery_image_paths ?? []).map(
-      (path) => admin.storage.from('event-media').getPublicUrl(path).data.publicUrl,
-    ),
-  ].filter((u): u is string => !!u)
-
   // Both of these depend only on `extra` (not on each other): the "Posted by" credit
-  // lookup and the signed URLs for the poster's media crops — resolve concurrently.
+  // lookup and the signed URLs for the poster's media — resolve concurrently. We sign
+  // the poster's crops (details.media) AND the full poster (poster_path) in one batch,
+  // so a scanned poster can serve as the header + gallery below.
   const posterDetails: EventDetailsWithMedia =
     extra?.details && typeof extra.details === 'object' ? extra.details : {}
   const [postedByResolved, posterCropEntries] = await Promise.all([
@@ -257,11 +250,43 @@ export default async function EventDetailPage({
           .maybeSingle()
           .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? null)
       : Promise.resolve(null),
-    posterSignedUrlMap(detailsMediaPaths(posterDetails)),
+    posterSignedUrlMap(
+      [...detailsMediaPaths(posterDetails), extra?.poster_path].filter((p): p is string => !!p),
+    ),
   ])
   // The credit: whoever put the event on the map, when they aren't the host.
   const postedBy: { display_name: string; handle: string } | null = postedByResolved
   const posterCropUrls = Object.fromEntries(posterCropEntries)
+
+  // Header image + clickable gallery. A scanned-poster event has no uploaded cover; its
+  // image lives in poster_path (the full flyer) and details.media (the scanner's cropped
+  // cover + region crops), all in the PRIVATE poster bucket → the short-lived signed URLs
+  // just resolved above. Header (hero) priority: uploaded cover → cropped cover → full
+  // poster. Gallery: the full flyer leads (so the whole poster opens full-screen), then
+  // the cropped cover, the poster's region crops, and any uploaded gallery images —
+  // deduped by storage path (signed URLs differ per render; the paths are stable).
+  const posterMedia = posterDetails.media
+  const posterFullUrl = extra?.poster_path ? posterCropUrls[extra.poster_path] ?? null : null
+  const coverCropUrl = posterMedia?.coverPath ? posterCropUrls[posterMedia.coverPath] ?? null : null
+  const heroUrl = coverUrl ?? coverCropUrl ?? posterFullUrl
+
+  const galleryUrls: string[] = (() => {
+    const seen = new Set<string>()
+    const out: string[] = []
+    const add = (id: string | null | undefined, url: string | null | undefined) => {
+      if (!id || !url || seen.has(id)) return
+      seen.add(id)
+      out.push(url)
+    }
+    add(extra?.poster_path, posterFullUrl) // full flyer first (when scanned)
+    add(extra?.cover_image_path, coverUrl) // uploaded cover leads for non-poster events
+    add(posterMedia?.coverPath, coverCropUrl) // the scanner's cropped cover
+    Object.values(posterMedia?.gallery ?? {}).forEach((p) => add(p, posterCropUrls[p] ?? null))
+    ;(extra?.gallery_image_paths ?? []).forEach((p) =>
+      add(p, admin.storage.from('event-media').getPublicUrl(p).data.publicUrl),
+    )
+    return out
+  })()
 
   // Visibility gate (ADR-202). This page reads through the admin client, which
   // bypasses RLS — so the same rules the RLS policy enforces are re-applied here:
@@ -821,11 +846,24 @@ export default async function EventDetailPage({
       )}
 
       <DetailTemplate
-        // [A1] cover — the one big visual win (slot exists; token placeholder when none).
+        // [A1] header image — the one big visual win. Uploaded cover, else the scanned
+        // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
         hero={
-          coverUrl ? (
+          heroUrl ? (
             <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
-              <Image src={coverUrl} alt="" fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover" preload />
+              {/* The uploaded cover is a PUBLIC URL the optimizer is configured for; a
+                  scanned poster's hero is a SIGNED URL from the private bucket (path
+                  `/object/sign/...`, outside next.config remotePatterns), so it must
+                  bypass the optimizer — matching PosterDetails' plain <img> crops. */}
+              <Image
+                src={heroUrl}
+                alt=""
+                fill
+                sizes="(max-width: 1024px) 100vw, 1024px"
+                className="object-cover"
+                preload
+                unoptimized={heroUrl !== coverUrl}
+              />
             </div>
           ) : (
             // No cover: a designed placeholder, not a blank box. Mirrors the
