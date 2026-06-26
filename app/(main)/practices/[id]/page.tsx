@@ -33,10 +33,24 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params
   const p = await getRankedPractice(id)
   if (!p) return { title: 'Practice' }
+  const desc = p.summary ?? p.description ?? undefined
+  const img = p.header_image
   return {
     title: p.title,
-    description: p.summary ?? p.description ?? undefined,
+    description: desc,
     alternates: { canonical: `/practices/${p.slug ?? p.id}` },
+    openGraph: {
+      title: p.title,
+      description: desc,
+      type: 'article',
+      ...(img ? { images: [{ url: img }] } : {}),
+    },
+    twitter: {
+      card: img ? 'summary_large_image' : 'summary',
+      title: p.title,
+      description: desc,
+      ...(img ? { images: [img] } : {}),
+    },
   }
 }
 

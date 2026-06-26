@@ -275,6 +275,12 @@ export async function uploadCircleCover(
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
   if (file.size > 8 * 1024 * 1024) return { error: 'Image must be under 8MB.' }
+  // Safe raster types only. The public site-media bucket has no MIME constraint, so an arbitrary
+  // content-type (text/html, image/svg+xml) would serve EXECUTABLE from the stored CDN URL (stored
+  // XSS). SVG is excluded deliberately (it can carry script).
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'].includes(file.type)) {
+    return { error: 'Use a JPEG, PNG, WebP, GIF, or AVIF image.' }
+  }
 
   const admin = createAdminClient()
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')

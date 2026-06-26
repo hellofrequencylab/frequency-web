@@ -131,7 +131,7 @@ export async function generateMetadata({
   const where = event.location ? ` at ${event.location}` : ''
   const full =
     event.description ??
-    `${event.title}: a Frequency community event${where}. Sign in to RSVP.`
+    `${event.title}: an event on Frequency${where}. Sign in to RSVP.`
   // Search snippets truncate around 155 chars — keep the meta description tight
   // (matches the discover detail pages).
   const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
@@ -641,7 +641,7 @@ export default async function EventDetailPage({
       : null
 
   const whenLine = `${formatFull(event.starts_at)} at ${formatTime(event.starts_at)}${
-    event.ends_at ? ` – ${formatTime(event.ends_at)}` : ''
+    event.ends_at ? ` to ${formatTime(event.ends_at)}` : ''
   }`
 
   const mode = MODE_CHIP[attendanceMode]
