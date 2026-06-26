@@ -166,8 +166,8 @@ opt-in.
 
 | Phase | Scope | Status |
 |---|---|---|
-| **0. Foundations** | Real-Crew create gate across all four entities + the upgrade popup (ADR-414). Additive schema: `suggestion_hidden`, `resonance_density_cells`, `member_match_prefs`. | ✅ This PR |
-| **1. Blended rank** | The five-signal score + diversity rerank as a unified feed rank, composing the existing proximity RPCs, resonance edges, and embeddings. People-suggestions enter the feed. | 📋 Next |
+| **0. Foundations** | Real-Crew create gate across all four entities + the upgrade popup (ADR-414). Additive schema: `suggestion_hidden`, `resonance_density_cells`, `member_match_prefs`. | ✅ shipped (ADR-414) |
+| **1. Blended rank** | The five-signal score + diversity rerank as a unified feed rank, composing the existing proximity RPCs, resonance edges, and embeddings. People-suggestions enter the feed. | ✅ shipped (ADR-415) |
 | **2. Adaptive radius + founder prompt** | The density rollup job + the expanding-ring walk. The founder-vs-activity branch. The privacy "turn on location" nudge. | 📋 |
 | **3. Radius slider + hide control** | Member radius slider (writes `feed_radius_m`); the X-to-hide wired to `suggestion_hidden`; streak-as-quiet-signal in the rank. | 📋 |
 | **4. Safety + verification** | Verification + safety gating for in-person meetups that originate from a circle/event introduction. | 📋 |
