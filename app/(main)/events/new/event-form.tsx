@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createEvent, updateEvent } from '@/app/(main)/events/actions'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 
 type Group = {
   id: string
@@ -82,6 +83,8 @@ export interface EventFormInitial {
   country: string
   /** Storage path in the public event-media bucket (resolved to a URL at render). */
   coverImagePath: string
+  /** Additional gallery image paths (event-media bucket), beyond the cover. */
+  galleryImagePaths: string[]
 }
 
 export function EventForm({
@@ -130,6 +133,7 @@ export function EventForm({
   const [postalCode, setPostalCode] = useState(initial?.postalCode ?? '')
   const [country, setCountry] = useState(initial?.country ?? '')
   const [coverImagePath, setCoverImagePath] = useState<string | null>(initial?.coverImagePath || null)
+  const [galleryImagePaths, setGalleryImagePaths] = useState<string[]>(initial?.galleryImagePaths ?? [])
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -138,6 +142,9 @@ export function EventForm({
     const fd = new FormData()
     fd.set('title', title.trim())
     fd.set('coverImagePath', coverImagePath ?? '')
+    // Gallery paths ride as a JSON array (FormData has no native array shape); the
+    // server parses + re-validates. Empty array clears the gallery.
+    fd.set('galleryImagePaths', JSON.stringify(galleryImagePaths))
     fd.set('description', description.trim())
     fd.set('location', location.trim())
     fd.set('scopeId', scopeId)
@@ -195,14 +202,24 @@ export function EventForm({
         />
       </div>
 
-      {/* Cover image */}
+      {/* Cover image — the poster / main image (hero + first item in the gallery). */}
       <ImageUpload
         label="Cover image"
         value={coverImagePath}
         onChange={setCoverImagePath}
         mode="path"
         folder="event-covers"
-        hint="The banner shown at the top of the event."
+        hint="The poster, shown at the top of the event and first in the gallery."
+        disabled={isPending}
+      />
+
+      {/* Gallery — additional photos. The cover above leads the gallery on the event page. */}
+      <MultiImageUpload
+        label="More photos"
+        value={galleryImagePaths}
+        onChange={setGalleryImagePaths}
+        folder="event-gallery"
+        hint="Optional. Extra photos shown in a gallery below the poster."
         disabled={isPending}
       />
 
