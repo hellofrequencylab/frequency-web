@@ -49,6 +49,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'practice-edit': 4,          // apply plain-language edits to a built Practice (Opus; low-volume, fail-safe)
   // ── Events (poster scan is Sonnet vision — the costliest of this group) ───────────────────────
   'event-poster-scan': 4,      // vision OCR of an event poster, plus the text assist (Sonnet vision)
+  'event-spark': 3,            // draft an event from a few wizard answers or a pasted flyer (Sonnet; structured, on-demand)
   'event-blurb': 2,            // one "why you'd vibe" line per browse (Haiku; cached per day per pairing)
   'whatsapp-import': 5,        // admin dry-run: classify + extract events/housing from a chat export (Sonnet; batched, on-demand)
   // ── Operator / admin + cron surfaces (Haiku, internal) ────────────────────────────────────────

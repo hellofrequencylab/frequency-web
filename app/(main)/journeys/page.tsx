@@ -16,7 +16,7 @@ import { getPageHeaderImage } from '@/lib/page-settings/store'
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
   title: 'Journeys',
-  description: 'The library to browse and build journeys: a life-development track across Mind, Body, Spirit, and Expression. Keep one for yourself, or share it to the open library for anyone to adopt. This season’s official Quest lives in My Quest.',
+  description: 'The library to browse and build Journeys: guided tracks of Practices across Mind, Body, Spirit, and Expression. Keep one for yourself, or share it to the open library for anyone to adopt. This season’s official Quest lives in My Quest.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2);

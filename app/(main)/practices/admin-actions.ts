@@ -5,6 +5,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { slugify } from '@/lib/utils'
 
+// Safe raster image types for cover uploads. SVG is excluded deliberately (it can carry script);
+// the public site-media bucket has no MIME constraint, so an arbitrary content-type (text/html,
+// image/svg+xml) would serve EXECUTABLE from the CDN URL stored in header_image (stored XSS).
+const IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
+// The practice detail route is id-based (/practices/[id]); the settings drawer also matches the
+// bespoke /practices/new. Guard so a non-uuid id never hits the uuid PK (Postgres 22P02).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 // In-place "Practice settings" admin module (EMBEDDED-ADMIN.md / ADR-133), mirroring
 // the Event + Circle settings modules. Read + write both re-resolve
 // practice.editSettings server-side (the dock's role gate is UX; THIS is the
@@ -17,6 +25,10 @@ import { slugify } from '@/lib/utils'
  *  practice.editSettings (so the module renders no chrome for someone who can't
  *  manage this practice). The route resolves practices by id (/practices/[id]). */
 export async function getPracticeAdminData(id: string) {
+  // Non-uuid ids (e.g. /practices/new, matched by the settings-drawer scope regex) would fire a
+  // Postgres 22P02 against the uuid PK. Fail closed before querying — the module renders nothing.
+  if (!UUID_RE.test(id)) return null
+
   const admin = createAdminClient()
   const { data: practice } = await admin
     .from('practices')
@@ -53,9 +65,11 @@ export async function updatePracticeSettings(id: string, slug: string | null, fd
   const title = (fd.get('title') as string).trim()
   if (!title) throw new Error('Title is required')
 
-  // Duration: empty clears to null; otherwise a non-negative integer in minutes.
+  // Duration: empty clears to null; otherwise a positive integer in minutes (parseInt would let a
+  // negative through, so clamp to >= 1).
   const durationRaw = ((fd.get('duration_min') as string) ?? '').trim()
-  const durationMin = durationRaw ? parseInt(durationRaw, 10) || null : null
+  const durationParsed = durationRaw ? parseInt(durationRaw, 10) : NaN
+  const durationMin = Number.isFinite(durationParsed) && durationParsed > 0 ? durationParsed : null
 
   const { error } = await admin
     .from('practices')
@@ -89,6 +103,7 @@ export async function uploadPracticeCover(
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
   if (file.size > 8 * 1024 * 1024) return { error: 'Image must be under 8MB.' }
+  if (!IMAGE_MIME.includes(file.type)) return { error: 'Use a JPEG, PNG, WebP, GIF, or AVIF image.' }
 
   const admin = createAdminClient()
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')

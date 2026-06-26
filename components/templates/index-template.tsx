@@ -61,10 +61,13 @@ export function IndexTemplate({
           {heroImage && (
             // The standardized header banner: cropped (object-cover) to a consistent height so
             // every index reads the same, regardless of the uploaded image's aspect ratio.
+            // Raw <img> (not next/image) so an arbitrary operator URL on a non-whitelisted host
+            // still renders; fetchPriority high gives this above-the-fold banner an LCP hint.
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={heroImage}
               alt=""
+              fetchPriority="high"
               className="mb-6 mt-3 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
             />
           )}
