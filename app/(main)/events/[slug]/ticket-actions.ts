@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getMyProfileId } from '@/lib/auth'
 import { createTicketCheckout, refundTicket } from '@/lib/billing/tickets'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Start a ticket purchase: validates + records a pending ticket and returns the
@@ -29,12 +30,18 @@ export async function startTicket(
     amountCents: opts?.amountCents ?? null,
   })
   if (r.error) return fail(r.error)
-  // KNOWN LIMITATION (tracked, follow-up): a `free` tier skips Stripe checkout (no
-  // money moves) but does NOT yet persist a claim — recording the free "ticket"/RSVP
-  // belongs to the RSVP domain (toggleRSVP / event_rsvps), outside this money-path
-  // change. Free events already work via the normal RSVP flow; wire free-tier claim
-  // recording when the tiered RSVP flow lands (EVENTS-SYSTEM follow-up).
-  if (r.free) return ok({ free: true })
+  // Free tier: no money moves, no checkout (createTicketCheckout already enforced the
+  // tier's active/member-only/inventory gates). Record the claim as a normal "going"
+  // RSVP (ADR-410): it rides event capacity (full ⇒ waitlist, via the DB capacity
+  // trigger), fires the first-RSVP gem + confirmation, and is idempotent — exactly the
+  // path a free event already uses. We deliberately do NOT mint an event_tickets row or
+  // bump the tier's `sold`, so a free tier's own `quantity` isn't separately enforced
+  // for claims (event capacity governs); the inventory gate above still blocks a
+  // sold-out free tier. Best-effort recording must not mask the claim from the client.
+  if (r.free) {
+    await setRsvpStatus(eventId, 'going')
+    return ok({ free: true })
+  }
   if (!r.url) return fail('Could not start checkout.')
   return ok({ url: r.url })
 }
