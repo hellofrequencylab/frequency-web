@@ -34,17 +34,24 @@ export function EventSettingsModule() {
   const [data, setData] = useState<EventData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   useEffect(() => {
     if (!slug) return
     let active = true
-    getEventAdminData(slug).then((d) => {
-      if (active) {
-        setData(d)
-        setLoading(false)
-      }
-    })
+    getEventAdminData(slug)
+      .then((d) => {
+        if (active) {
+          setData(d)
+          setLoading(false)
+        }
+      })
+      .catch(() => {
+        // A failed load shouldn't leave the dock spinning forever — drop the skeleton
+        // (data stays null → the module renders nothing, same as not-permitted).
+        if (active) setLoading(false)
+      })
     return () => {
       active = false
     }
@@ -62,9 +69,16 @@ export function EventSettingsModule() {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
     startTransition(async () => {
-      await updateEventSettings(data!.id, data!.slug, fd)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      try {
+        // updateEventSettings throws on an unauthorized/DB error or a bad time range —
+        // catch it so the host sees why instead of a silent no-op + unhandled rejection.
+        await updateEventSettings(data!.id, data!.slug, fd)
+        setError(null)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not save your changes. Try again.')
+      }
     })
   }
 
@@ -119,6 +133,8 @@ export function EventSettingsModule() {
           </label>
         </div>
 
+        {error && <p className="text-xs font-medium text-danger">{error}</p>}
+
         <div className="flex items-center justify-between gap-2 pt-1">
           {/* Cancel / reinstate — moved here from the header kebab so Settings is
               the one host surface. Same server-side capability gate. */}
@@ -127,8 +143,13 @@ export function EventSettingsModule() {
             disabled={pending}
             onClick={() =>
               startTransition(async () => {
-                await setEventCancelled(data!.id, data!.slug, !data!.is_cancelled)
-                setData((d) => (d ? { ...d, is_cancelled: !d.is_cancelled } : d))
+                try {
+                  await setEventCancelled(data!.id, data!.slug, !data!.is_cancelled)
+                  setError(null)
+                  setData((d) => (d ? { ...d, is_cancelled: !d.is_cancelled } : d))
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Could not update the event. Try again.')
+                }
               })
             }
             className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-40 ${
