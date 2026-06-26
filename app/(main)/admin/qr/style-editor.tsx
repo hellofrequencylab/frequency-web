@@ -42,10 +42,11 @@ export function StyleEditor({
   compact?: boolean
   /** Slot rendered directly under the preset buttons (e.g. an "Archived codes" link). */
   presetsFooter?: ReactNode
-  /** Compact-only: the caller lays out the design controls and presets (the editor
-   *  keeps the preview on top, then hands back these two nodes to arrange — e.g. as
-   *  a two-column controls-left / presets-right row). */
-  renderCompact?: (parts: { controls: ReactNode; presets: ReactNode }) => ReactNode
+  /** Compact-only: the caller lays out the design pieces itself. The editor hands back
+   *  the live preview, the design controls, and the preset buttons as three nodes to
+   *  arrange — e.g. preview + presets in a left column, controls in a wide right column,
+   *  for a horizontal designer. */
+  renderCompact?: (parts: { preview: ReactNode; controls: ReactNode; presets: ReactNode }) => ReactNode
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const svg = useMemo(() => renderStyledQrSvg(previewUrl, value, 240), [previewUrl, value])
@@ -326,10 +327,9 @@ export function StyleEditor({
     )
   }
 
-  // ── Compact layout — preview on top, then a two-column row with the design
-  //    controls on the left and the preset buttons stacked on the right. The split
-  //    row composition is driven by the caller (page-qr-manager) so it can place
-  //    the create/save actions below; we expose the pieces via `renderCompact`. ──
+  // ── Compact layout — the caller arranges the three pieces (preview · controls ·
+  //    presets) for a horizontal designer (page-qr-manager puts preview + presets in a
+  //    left column and the controls in a wide right column). We just supply the nodes. ──
   if (compact && renderCompact) {
     return (
       <div className="rounded-xl border border-border bg-canvas/50 p-4">
@@ -338,13 +338,13 @@ export function StyleEditor({
           <h4 className="text-xs font-semibold uppercase tracking-wider text-text">Design</h4>
         </div>
 
-        {/* Live preview (top) */}
-        <div
-          className="w-40 h-40 mx-auto rounded-lg border border-border bg-white p-1.5 [&>svg]:w-full [&>svg]:h-full"
-          dangerouslySetInnerHTML={{ __html: svg }}
-        />
-
         {renderCompact({
+          preview: (
+            <div
+              className="aspect-square w-40 rounded-lg border border-border bg-white p-1.5 [&>svg]:h-full [&>svg]:w-full"
+              dangerouslySetInnerHTML={{ __html: svg }}
+            />
+          ),
           controls,
           presets: (
             <>

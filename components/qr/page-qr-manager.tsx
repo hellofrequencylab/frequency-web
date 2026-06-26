@@ -56,10 +56,10 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
   }
 
   return (
-    <div className="grid gap-x-8 gap-y-5 lg:grid-cols-3">
+    <div className="grid gap-x-8 gap-y-5 md:grid-cols-3">
       {/* LEFT 2/3 — the creator (min-w-0 so the column can shrink on phones
           instead of widening the Settings panel) */}
-      <div className="min-w-0 space-y-4 lg:col-span-2">
+      <div className="min-w-0 space-y-4 md:col-span-2">
         <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
           <Palette className="h-3.5 w-3.5" /> Design a QR for this page
         </p>
@@ -90,12 +90,17 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
               <Archive className="h-3 w-3" /> Archived codes
             </Link>
           }
-          // Two-column compact designer: design controls on the left, the preset
-          // buttons column on the right (the editor keeps the preview up top).
-          renderCompact={({ controls, presets }) => (
-            <div className="mt-4 sm:grid sm:grid-cols-[1fr_auto] sm:gap-4">
-              <div>{controls}</div>
-              <div className="mt-4 sm:mt-0">{presets}</div>
+          // Horizontal compact designer: the live preview with the preset "looks"
+          // beneath it in a fixed left column, and the design controls spread across the
+          // wide right column (so Colors/Shape/Logo/Frame sit on single rows, not a tall
+          // stack). Collapses to one column on a phone.
+          renderCompact={({ preview, controls, presets }) => (
+            <div className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-[10rem_1fr]">
+              <div className="space-y-3">
+                {preview}
+                {presets}
+              </div>
+              <div className="min-w-0">{controls}</div>
             </div>
           )}
         />

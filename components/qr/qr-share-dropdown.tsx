@@ -73,7 +73,11 @@ export function QrShareDropdown({
         <div
           role="menu"
           aria-label="QR and Share"
-          className="absolute right-0 top-full z-50 mt-2 w-[min(90vw,34rem)] rounded-2xl border border-border bg-surface p-4 shadow-pop sm:p-6"
+          // Wide, horizontal panel: the manager designer lays out as three side-by-side regions
+          // (preview + looks · design controls · share + activity), so it stays short instead of a
+          // tall narrow column. Capped near the content-column width so it doesn't overhang the
+          // nav, with min() keeping it inside the viewport on smaller screens.
+          className="absolute right-0 top-full z-50 mt-2 w-[min(95vw,48rem)] rounded-2xl border border-border bg-surface p-4 shadow-pop sm:p-6"
         >
           {manager ? (
             <PageQrManager pathname={pathname} url={url} />
