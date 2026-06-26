@@ -347,15 +347,16 @@ lowest-risk wins are **auto-calendar-on-RSVP**, **completing the 3-touch cadence
   Reuses the ADR-177 destination-charge pipe + `application_fee`; gated by `payoutsLive()`.
 - ✅ **Refunds**: host `refundTicket` + `charge.refunded` webhook → status `refunded`, decrement
   `sold`, free capacity. Refund uses `reverse_transfer: true` + `refund_application_fee: true`
-  (verified against Stripe Connect docs). *Known follow-up:* a `free` tier doesn't yet persist a
-  claim (free events still use the normal RSVP flow).
+  (verified against Stripe Connect docs). A `free` tier claim now persists a normal "going" RSVP
+  via `setRsvpStatus` (ADR-410) — event capacity/waitlist + first-RSVP gem/confirmation; no
+  `event_tickets` row.
 - ✅ **Matching + AI blurbs** (`20260610020000_event_embeddings.sql`, `lib/events/embeddings.ts`,
   `matching.ts`, `lib/ai/event-blurb.ts`, `api/cron/embed-events`): 384-d event embeddings + an
   embed cron; hybrid score `0.45·interest + 0.35·social + 0.20·context`; a "For You" lane that only
   renders with real signal (cold-start safe); Haiku "why you'd vibe" blurbs built from real overlap
   only (per-day cache, read-only, degrade to null when AI is off).
 - ⏳ **Still parked:** SMS channel, blocked on the legal-entity + EIN decision (gates A2P 10DLC
-  registration *and* payouts). Free-tier claim persistence. Per-section `<Suspense>` on the Index.
+  registration *and* payouts). Per-section `<Suspense>` on the Index.
 
 ### 2026-06-10: Post-event social · host tooling · discovery (B-2/B-3/B-4, merged)
 - ✅ **Post-event social loop** (PR #498): `event_posts` activity feed, `event_media` recap album,

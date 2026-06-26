@@ -90,7 +90,7 @@ framework. **No orphaned exports.**
 |---|---|---|---|
 | 1 | **Confirmation touch on RSVP** | ❌ | Cron does 7d/24h/2h; the highest-intent moment (RSVP itself) sends no email. Small delta on existing email infra. |
 | 2 | **Cancel → bulk-refund → notify** | ◑ | `cancelEvent` only flips `is_cancelled`; paid attendees aren't auto-refunded. Primitives (`refundTicket`) exist; needs composing into the cancel path. |
-| 3 | **Free-tier claim persistence** | ◑ | A `free` tier returns `{free:true}` but records nothing (free events still work via normal RSVP). |
+| 3 | **Free-tier claim persistence** | ✅ | A `free` tier claim now records a normal "going" RSVP via `setRsvpStatus` (ADR-410): rides event capacity/waitlist + the first-RSVP gem/confirmation. No `event_tickets` row (event capacity governs, not per-tier `quantity`). |
 | 4 | **Activity feed / recap album / cohosts** (`event_posts`/`event_media`/`event_cohosts`) | ❌ | Post-event engagement loop unbuilt (spec §2.5). |
 | 5 | **SMS subsystem** + prep (`sms_*` prefs, `sms` consent scope, `sendSms` guard) | ❌ / 👤 | Blocked on the founder decision below; even the EIN-independent groundwork isn't laid yet. |
 | 6 | **Discovery polish** | ❌ | Distance/map facet, filtered ICS subscription feeds, organizer profiles, calendar-follow, connector suggestions. |
@@ -166,7 +166,7 @@ The §3 gap list is largely closed. Shipped via PRs #498/#499/#500:
 - **#6 discovery polish** (ICS subscription, organizer profiles, map, connectors): ✅ (PR #500).
 - Host **blast composer** + **Manage screen** + **host-marked check-in:** ✅ (PR #499).
 
-Canonical remaining list: SMS (§5, EIN-blocked) · free-tier claim persistence · `<Suspense>` on the
+Canonical remaining list: SMS (§5, EIN-blocked) · `<Suspense>` on the
 Index · §11 metrics instrumentation · drop the `as unknown as SupabaseClient` casts. **Ops still
 pending: apply migrations `20260613100000/110000/120000`, regenerate `database.types.ts`, run
 Supabase advisors.**
