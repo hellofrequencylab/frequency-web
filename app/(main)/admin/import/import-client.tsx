@@ -1,36 +1,64 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import { CalendarDays, Home, MapPin, ShieldCheck, Users } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { previewImport } from './actions'
 import type { ClassifiedItem, ImportPreview } from '@/lib/whatsapp/types'
 
-// The dry-run console. Reads a .txt (client-side) or a pasted export, calls the
-// read-only previewImport action, and renders what the importer found. It posts
-// nothing — every render here is a preview the operator reads before we wire a writer.
+// The dry-run console. Reads the exported chat .txt plus (for a media-included export)
+// its image files, runs the read-only previewImport action, and renders what the
+// importer found — each event/housing item shown with the photos posted alongside it.
+// Images stay in the browser (object URLs); nothing is uploaded and nothing is saved.
 
 const FIELD =
   'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
 const MAX_RENDER = 150 // cap the rendered list so a huge export stays responsive
+const IMAGE_EXT = /\.(jpe?g|png|webp|gif|heic|heif)$/i
+
+type ImageMap = Map<string, string> // filename → object URL
 
 export function ImportClient() {
   const [text, setText] = useState('')
-  const [fileName, setFileName] = useState<string | null>(null)
+  const [pick, setPick] = useState<{ chat: string | null; photos: number } | null>(null)
+  const [images, setImages] = useState<ImageMap>(new Map())
   const [preview, setPreview] = useState<ImportPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const urlsRef = useRef<string[]>([])
 
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setFileName(file.name)
+  // Revoke any object URLs we created when they are replaced or the component unmounts.
+  function revokeUrls() {
+    for (const u of urlsRef.current) URL.revokeObjectURL(u)
+    urlsRef.current = []
+  }
+  useEffect(() => revokeUrls, [])
+
+  async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
     setError(null)
-    try {
-      setText(await file.text())
-    } catch {
-      setError('Could not read that file. Try pasting the chat text instead.')
+
+    // The chat is the .txt (prefer WhatsApp's `_chat.txt`); the rest are media.
+    const txts = files.filter((f) => f.name.toLowerCase().endsWith('.txt'))
+    const chat = txts.find((f) => f.name.toLowerCase() === '_chat.txt') ?? txts[0] ?? null
+    const photos = files.filter((f) => IMAGE_EXT.test(f.name) || f.type.startsWith('image/'))
+
+    revokeUrls()
+    const map: ImageMap = new Map()
+    for (const f of photos) {
+      const url = URL.createObjectURL(f)
+      urlsRef.current.push(url)
+      map.set(f.name, url)
     }
+    setImages(map)
+
+    try {
+      setText(chat ? await chat.text() : '')
+    } catch {
+      setError('Could not read the chat file. Try pasting the chat text instead.')
+    }
+    setPick({ chat: chat?.name ?? null, photos: photos.length })
   }
 
   function run() {
@@ -53,31 +81,54 @@ export function ImportClient() {
       <div className="flex items-start gap-2 rounded-xl border border-border bg-surface-elevated/60 p-3 text-sm text-muted">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p>
-          Dry run. Nothing here is saved or posted. You are reading what the importer found, so you
-          can trust it before anything goes live. Phone numbers and emails in housing posts are held
-          back until a listing is claimed.
+          Dry run. Nothing here is saved or posted, and your photos stay in this browser. You are
+          reading what the importer found, so you can trust it before anything goes live. Phone
+          numbers and emails in housing posts are held back until a listing is claimed.
         </p>
       </div>
 
-      {/* Input: upload or paste. */}
+      {/* How to get the files. */}
+      <details className="rounded-xl border border-border bg-surface p-3 text-sm text-muted">
+        <summary className="cursor-pointer font-medium text-text">How to export with photos</summary>
+        <p className="mt-2">
+          In WhatsApp, open the group, tap its name, and choose Export chat. Pick{' '}
+          <span className="font-medium text-text">Attach Media</span> (iOS) or{' '}
+          <span className="font-medium text-text">Include media</span> (Android). It downloads a .zip.
+          Unzip it, then select the <span className="font-medium text-text">_chat.txt</span> and the
+          photos together below. For text only, skip the media and just upload or paste the .txt.
+        </p>
+      </details>
+
+      {/* Input: upload (chat + photos) or paste. */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <label className={`${buttonClasses('secondary', 'sm')} cursor-pointer`}>
-            <input type="file" accept=".txt,text/plain" className="hidden" onChange={onFile} />
-            Choose .txt file
+            <input
+              type="file"
+              accept=".txt,text/plain,image/*"
+              multiple
+              className="hidden"
+              onChange={onFiles}
+            />
+            Choose chat + photos
           </label>
-          {fileName && <span className="text-sm text-subtle">{fileName}</span>}
+          {pick && (
+            <span className="text-sm text-subtle">
+              {pick.chat ?? 'no .txt found'}
+              {pick.photos > 0 ? ` + ${pick.photos} photo${pick.photos > 1 ? 's' : ''}` : ''}
+            </span>
+          )}
         </div>
         <textarea
           value={text}
           onChange={(e) => {
             setText(e.target.value)
-            setFileName(null)
+            setPick(null)
           }}
-          rows={6}
+          rows={5}
           maxLength={4_000_000}
           className={FIELD}
-          placeholder="…or paste the exported chat text here."
+          placeholder="…or paste the exported chat text here (text only, no photos)."
         />
         <div className="flex items-center gap-3">
           <button
@@ -95,7 +146,7 @@ export function ImportClient() {
         {error && <p className="text-sm text-danger">{error}</p>}
       </div>
 
-      {preview && <PreviewResult preview={preview} listings={listings} />}
+      {preview && <PreviewResult preview={preview} listings={listings} images={images} />}
     </div>
   )
 }
@@ -103,9 +154,11 @@ export function ImportClient() {
 function PreviewResult({
   preview,
   listings,
+  images,
 }: {
   preview: ImportPreview
   listings: ClassifiedItem[]
+  images: ImageMap
 }) {
   const { parse, counts, aiSkipped, truncated } = preview
 
@@ -145,7 +198,7 @@ function PreviewResult({
 
       <div className="space-y-3">
         {listings.slice(0, MAX_RENDER).map((item, i) => (
-          <ItemCard key={`${item.refs.join('-')}-${i}`} item={item} />
+          <ItemCard key={`${item.refs.join('-')}-${i}`} item={item} images={images} />
         ))}
         {listings.length > MAX_RENDER && (
           <p className="text-sm text-subtle">
@@ -158,7 +211,7 @@ function PreviewResult({
   )
 }
 
-function ItemCard({ item }: { item: ClassifiedItem }) {
+function ItemCard({ item, images }: { item: ClassifiedItem; images: ImageMap }) {
   const isEvent = item.category === 'event'
   const Icon = isEvent ? CalendarDays : item.category === 'roommate' ? Users : Home
   return (
@@ -178,7 +231,35 @@ function ItemCard({ item }: { item: ClassifiedItem }) {
 
       {isEvent && item.event ? <EventBody item={item} /> : <HousingBody item={item} />}
 
+      <Thumbnails names={item.imageNames} images={images} />
+
       {item.note && <p className="mt-2 text-sm text-muted">{item.note}</p>}
+    </div>
+  )
+}
+
+function Thumbnails({ names, images }: { names: string[]; images: ImageMap }) {
+  if (names.length === 0) return null
+  const resolved = names.map((n) => images.get(n)).filter((u): u is string => !!u)
+  const missing = names.length - resolved.length
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      {resolved.slice(0, 6).map((url, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={`${url}-${i}`}
+          src={url}
+          alt=""
+          className="h-16 w-16 rounded-lg border border-border object-cover"
+        />
+      ))}
+      {resolved.length === 0 ? (
+        <span className="text-xs text-subtle">
+          {names.length} photo{names.length > 1 ? 's' : ''} posted with this (select the media to see them)
+        </span>
+      ) : (
+        missing > 0 && <span className="text-xs text-subtle">+{missing} not selected</span>
+      )}
     </div>
   )
 }

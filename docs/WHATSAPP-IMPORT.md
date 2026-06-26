@@ -79,14 +79,36 @@ the event claim handshake transfers control to the host anyway).
   `whatsapp-import: $5/day` in `lib/ai/budget.ts`.
 - **No DB writes.** Returns staged `ClassifiedItem[]` for review.
 
+### 3a. Image association — `lib/whatsapp/associate.ts`
+
+A media-included export (Export chat → **Attach Media** / **Include media**) is a `.zip`
+of `_chat.txt` plus the photo files, and each photo line in the text names its file
+(`IMG-20240115-WA0001.jpg (file attached)` on Android, `<attached: …jpg>` on iOS). The
+parser captures that filename into `WhatsAppMessage.attachmentName`, so the filename→photo
+link lives in the text itself and association runs server-side.
+
+`gatherImageNames(messages, item)` (pure, tested) returns the image filenames posted with
+a classified item: image attachments within a few messages of the item's own messages,
+by the same author. That ties a listing to the room photos posted right after it, and an
+event to its flyer, while keeping a neighbour's unrelated photo out. The result lands on
+`ClassifiedItem.imageNames`; the dry-run UI matches each name to the actual image file the
+operator selected (in the browser, no upload), and the future writer uploads + attaches
+them via the existing on-device image pipeline (`app/(main)/events/scan/image-tools.ts`).
+
+For **event flyers**, the image often carries more than the caption. The existing
+`scanEventPoster` vision flow already turns a flyer photo into a full event draft, so the
+writer step can route flagged flyers through it (budget-gated) for a richer extraction.
+
 ### 4. Dry-run surface — `app/(main)/admin/import/`
 
 `/admin/import` (Community → Activity, same gate as `/admin/events`: community host+ OR
-community staff). Upload or paste the `.txt`; the read-only `previewImport` server action
+community staff). Select the `_chat.txt` plus its
+photos (or paste text for a text-only export); the read-only `previewImport` server action
 parses + classifies and renders an `ImportPreview`: parse stats, per-category counts, and
-a card per event/housing/roommate with its source message refs and a low-confidence flag.
-A banner states plainly that nothing is saved or posted. The action **writes nothing** —
-no event, no listing, no storage object.
+a card per event/housing/roommate with its source message refs, a low-confidence flag, and
+**thumbnails of the photos posted with it**. Images stay in the browser as object URLs —
+nothing is uploaded. A banner states plainly that nothing is saved or posted. The action
+**writes nothing** — no event, no listing, no storage object.
 
 ## Consent model (the part to get right)
 
@@ -110,15 +132,18 @@ leans on both rather than inventing a new consent surface.
 | Parser + redactor + tests | ✅ this PR |
 | AI classify + extract (budget-gated, no writes) | ✅ this PR |
 | Read-only dry-run admin surface | ✅ this PR |
+| Image association (filenames → listing photos / flyer) + thumbnails | ✅ this PR |
 | Writer: approve event → posted draft + claim token | ⏳ next, after dry-run review |
 | Writer: approve housing → unclaimed listing, contacts held | ⏳ next |
-| De-dup against already-imported items (idempotent re-runs) | ⏳ next |
+| Writer: upload + attach associated photos; vision-read flagged flyers | ⏳ next |
+| `.zip` upload (skip the unzip step) + de-dup on re-runs | ⏳ next |
 
 ## Files
 
 - `lib/whatsapp/types.ts` — shared vocabulary (framework-free).
-- `lib/whatsapp/parse-export.ts` (+ `.test.ts`) — the parser.
+- `lib/whatsapp/parse-export.ts` (+ `.test.ts`) — the parser (incl. attachment filenames).
 - `lib/whatsapp/redact.ts` (+ `.test.ts`) — contact redaction.
+- `lib/whatsapp/associate.ts` (+ `.test.ts`) — image-to-listing association.
 - `lib/whatsapp/extract.ts` — AI classify + extract.
 - `app/(main)/admin/import/{page,import-client,actions}.tsx` — the dry-run surface.
 - `lib/ai/budget.ts` — `whatsapp-import` daily cap.

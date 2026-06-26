@@ -27,15 +27,19 @@ const IOS_PREFIX = new RegExp(`^\\[(${DATE}),?${NBSP_THIN}+(${TIME})\\]${NBSP_TH
 // Android: "date, time - Author: body" (or "date, time - system body").
 const ANDROID_PREFIX = new RegExp(`^(${DATE}),?${NBSP_THIN}+(${TIME})${NBSP_THIN}*-${NBSP_THIN}(.*)$`)
 
-// Attachment markers, both OSes. A body equal to (or, for iOS, ending with) one of
-// these is attachment-only — there is no text to classify, but we keep the row so
-// counts stay honest. Matched case-insensitively against the trimmed body.
-const ATTACHMENT_PATTERNS: RegExp[] = [
+// Text-only export markers (no file): the body IS the marker, so there is nothing to
+// classify, but we keep the row so counts stay honest. Matched case-insensitively
+// against the trimmed body. (The media-INCLUDED markers, which carry a real filename,
+// are handled by analyzeAttachment below so we can recover the filename + any caption.)
+const OMITTED_PATTERNS: RegExp[] = [
   /^<media omitted>$/i,
-  /(image|video|audio|sticker|gif|document|contact card) omitted$/i,
-  /\(file attached\)$/i,
-  /^<attached:.*>$/i,
+  /^(image|video|audio|sticker|gif|document|contact card) omitted$/i,
 ]
+
+// Media-INCLUDED attachment markers, which name the file. iOS brackets it
+// (`<attached: 00000045-PHOTO-….jpg>`); Android suffixes it (`IMG-….jpg (file attached)`).
+const IOS_ATTACHED = /<attached:\s*([^>]+?)>/i
+const ANDROID_ATTACHED = /\b([A-Za-z0-9][A-Za-z0-9._-]*\.[A-Za-z0-9]{2,5})\s*\(file attached\)/i
 
 // Common system notices that DO contain a colon (so the "no Name:" rule alone would
 // misread them as a message). Keep this list short and high-signal; the AI classifier
@@ -77,9 +81,35 @@ function splitAuthor(rest: string): { author: string; body: string } | null {
   return { author, body: rest.slice(idx + 2) }
 }
 
-function isAttachmentOnly(body: string): boolean {
-  const t = body.trim()
-  return t.length > 0 && ATTACHMENT_PATTERNS.some((re) => re.test(t))
+interface Attachment {
+  /** The attached file's name when a media-included marker is present; null otherwise. */
+  name: string | null
+  /** The body with the attachment marker removed (the caption that rode with the photo). */
+  caption: string
+  /** True when the message carries an attachment AND no caption text remains. */
+  attachmentOnly: boolean
+}
+
+/** Pull an attachment filename + caption out of a message body. Handles the
+ *  media-included markers (with a real filename) and the text-only "… omitted"
+ *  markers (no file). A photo posted with a caption keeps its caption as the body so
+ *  it still classifies; a bare photo is `attachmentOnly` and associated by adjacency. */
+function analyzeAttachment(body: string): Attachment {
+  const trimmed = body.trim()
+
+  const ios = IOS_ATTACHED.exec(trimmed)
+  const android = ios ? null : ANDROID_ATTACHED.exec(trimmed)
+  const match = ios ?? android
+  if (match) {
+    const caption = trimmed.replace(match[0], '').trim()
+    return { name: match[1].trim(), caption, attachmentOnly: caption.length === 0 }
+  }
+
+  if (OMITTED_PATTERNS.some((re) => re.test(trimmed))) {
+    return { name: null, caption: '', attachmentOnly: true }
+  }
+
+  return { name: null, caption: trimmed, attachmentOnly: false }
 }
 
 // Month/day order is locale-dependent and unknowable from the file alone, so this is
@@ -152,6 +182,7 @@ export function parseWhatsAppExport(raw: string): ParsedExport {
         text: prefix.rest.trim(),
         system: true,
         attachmentOnly: false,
+        attachmentName: null,
       })
       continue
     }
@@ -163,17 +194,19 @@ export function parseWhatsAppExport(raw: string): ParsedExport {
       author: split.author,
       text: split.body,
       system: false,
-      attachmentOnly: isAttachmentOnly(split.body),
+      attachmentOnly: false,
+      attachmentName: null,
     })
   }
 
-  // A trailing continuation pass already folded multi-line bodies; re-flag attachment
-  // -only rows whose body grew (rare) and trim every body once at the end.
+  // Continuations were folded above; now resolve each non-system body ONCE: pull out an
+  // attachment filename + caption, keep the caption as the text, and flag a bare photo.
   for (const m of messages) {
-    if (!m.system) {
-      m.text = m.text.trim()
-      m.attachmentOnly = isAttachmentOnly(m.text)
-    }
+    if (m.system) continue
+    const att = analyzeAttachment(m.text)
+    m.text = att.name !== null ? att.caption : m.text.trim()
+    m.attachmentName = att.name
+    m.attachmentOnly = att.attachmentOnly
   }
 
   const format: ExportFormat =

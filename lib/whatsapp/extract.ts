@@ -201,6 +201,7 @@ function coerceItem(raw: unknown): ClassifiedItem | null {
     category,
     confidence: coerceConfidence(r.confidence),
     note: str(r.note, 240),
+    imageNames: [], // filled by the action from the parsed chat (lib/whatsapp/associate)
   }
   if (category === 'event') {
     item.event = coerceEventExtraction(r.event)

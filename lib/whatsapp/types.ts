@@ -27,6 +27,11 @@ export interface WhatsAppMessage {
   system: boolean
   /** True when the body was ONLY an attachment marker (image/video/doc omitted). */
   attachmentOnly: boolean
+  /** When the message references an attached media FILE (a media-included export),
+   *  its filename exactly as printed — which matches the file in the export folder,
+   *  so the importer can tie a photo to the message it was posted with. null when the
+   *  message has no attachment, or the export was text-only ("image omitted"). */
+  attachmentName: string | null
 }
 
 /** The detected source format of an export. iOS brackets its timestamps; Android
@@ -79,6 +84,11 @@ export interface ClassifiedItem {
   confidence: FieldConfidence
   /** A one-line reason, in plain voice, for the operator's review. */
   note: string
+  /** Filenames of the images posted with this item (same author, adjacent messages),
+   *  to become the listing's photos or the event flyer. Populated from the parsed chat;
+   *  the dry-run UI maps each name to the actual image file the operator selected, and
+   *  the future writer uploads them. Empty for a text-only export. */
+  imageNames: string[]
   /** Present when category === 'event'. */
   event?: ExtractedEvent
   /** Present when category is 'housing' or 'roommate'. */

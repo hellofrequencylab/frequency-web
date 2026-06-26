@@ -128,6 +128,41 @@ describe('parseWhatsAppExport — robustness', () => {
   })
 })
 
+describe('parseWhatsAppExport — media attachments (filenames)', () => {
+  it('captures an iOS <attached: NAME> filename and flags the bare photo', () => {
+    const text = '[2024-01-15, 10:23:45 PM] Sara: ‎<attached: 00000045-PHOTO-2024-01-15-10-23-45.jpg>'
+    const m = parseWhatsAppExport(text).messages[0]
+    expect(m.attachmentName).toBe('00000045-PHOTO-2024-01-15-10-23-45.jpg')
+    expect(m.attachmentOnly).toBe(true)
+    expect(m.text).toBe('')
+  })
+
+  it('captures an Android NAME (file attached) filename', () => {
+    const text = '1/15/24, 10:23 PM - Sara: IMG-20240115-WA0001.jpg (file attached)'
+    const m = parseWhatsAppExport(text).messages[0]
+    expect(m.attachmentName).toBe('IMG-20240115-WA0001.jpg')
+    expect(m.attachmentOnly).toBe(true)
+  })
+
+  it('keeps the caption as the body when a photo is captioned', () => {
+    const text = [
+      '1/15/24, 10:23 PM - Sara: IMG-20240115-WA0001.jpg (file attached)',
+      'Sunny room in North Park, available now',
+    ].join('\n')
+    const m = parseWhatsAppExport(text).messages[0]
+    expect(m.attachmentName).toBe('IMG-20240115-WA0001.jpg')
+    expect(m.attachmentOnly).toBe(false)
+    expect(m.text).toBe('Sunny room in North Park, available now')
+  })
+
+  it('leaves attachmentName null for a text-only "image omitted" export', () => {
+    const text = '[2024-01-15, 10:23:45 PM] Sara: ‎image omitted'
+    const m = parseWhatsAppExport(text).messages[0]
+    expect(m.attachmentName).toBeNull()
+    expect(m.attachmentOnly).toBe(true)
+  })
+})
+
 describe('classifiableMessages', () => {
   it('keeps authored substantive messages and drops noise', () => {
     const text = [
