@@ -66,6 +66,7 @@ import type { WebRole } from '@/lib/core/roles'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
 import { SettingsDrawer, type SettingsDrawerState } from '@/components/layout/settings-drawer'
+import { MobileSettingsSheet } from '@/components/layout/mobile-settings-sheet'
 import { MindlessProvider, useMindless } from '@/components/on-air/mindless'
 import { MovementProvider } from '@/components/on-air/movement'
 import { LotusIcon } from '@/components/on-air/icons'
@@ -1884,6 +1885,10 @@ export default function AppShell({
               </div>
             )}
           </div>
+          {/* Mobile settings surface (< lg): the desktop SettingsDrawer above lives inside the
+              hidden lg:flex rail column, so on phones it never renders. This full-screen sheet is
+              the mobile equivalent, opening on the same `open-settings` event with the same content. */}
+          <MobileSettingsSheet />
           </PageAdminProvider>
         </div>
 

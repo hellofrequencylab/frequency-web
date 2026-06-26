@@ -86,21 +86,29 @@ export default async function EventsPage({
       description={pageDescription}
       action={
         (myProfileId || isCrew || isHost || operatorCta) ? (
-          <div className="flex items-center gap-3">
+          // A wrapping pill cluster: the secondary actions are uniform pills that wrap onto a new
+          // line on a phone (never overflow off-screen), while the primary "New Event" + operator CTA
+          // keep their own emphasis. Left-aligned under the title on mobile, right-aligned on desktop.
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             {isHost && (
-              <Link href="/admin/events" className="text-sm font-medium text-muted transition-colors hover:text-primary-strong">
+              <Link
+                href="/admin/events"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-border-strong hover:text-text"
+              >
                 Manage
               </Link>
             )}
-            {/* Captured-poster drafts (the Poster Events flow) — every member
-                can capture a town poster, so the link rides with sign-in. */}
+            {/* Captured-poster drafts (the Poster Events flow) — every member can capture a town
+                poster, so the link rides with sign-in. */}
             {myProfileId && (
-              <Link href="/events/drafts" className="text-sm font-medium text-muted transition-colors hover:text-primary-strong">
+              <Link
+                href="/events/drafts"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-border-strong hover:text-text"
+              >
                 My drafts
               </Link>
             )}
-            {/* Subscribe-to-calendar affordance (Events B-4) — signed-in members
-                only; renders nothing for visitors. */}
+            {/* Subscribe-to-calendar affordance (Events B-4) — signed-in members only. */}
             {myProfileId && <CalendarSubscribe />}
             {isCrew && <EventCompose groups={myCircles} />}
             {operatorCta}
