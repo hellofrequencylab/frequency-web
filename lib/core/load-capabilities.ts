@@ -254,6 +254,23 @@ export async function getEventCapabilities(eventId: string): Promise<Set<Capabil
   })
 }
 
+/** What the caller can do on a specific Practice. practice.editSettings goes to its
+ *  creator (owner), platform staff, or whoever manages its parent space. */
+export async function getPracticeCapabilities(practiceId: string): Promise<Set<Capability>> {
+  const viewer = await currentViewer()
+  const admin = createAdminClient()
+  const { data: p } = await admin
+    .from('practices')
+    .select('created_by')
+    .eq('id', practiceId)
+    .maybeSingle()
+  return resolveCapabilities(viewer, {
+    kind: 'practice',
+    practiceId,
+    ownerId: p?.created_by ?? null,
+  })
+}
+
 /** What the caller can do on a profile (edit-in-place gating). */
 export async function getProfileCapabilities(ownerId: string): Promise<Set<Capability>> {
   return resolveCapabilities(await currentViewer(), { kind: 'profile', ownerId })

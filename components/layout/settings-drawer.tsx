@@ -67,6 +67,7 @@ const PATH_SCOPE_KINDS: readonly { prefix: RegExp; kind: ScopeKind }[] = [
   { prefix: /^\/hubs\/[^/]+/, kind: 'hub' },
   { prefix: /^\/nexuses\/[^/]+/, kind: 'nexus' },
   { prefix: /^\/events\/[^/]+/, kind: 'event' },
+  { prefix: /^\/practices\/[^/]+/, kind: 'practice' },
   { prefix: /^\/channels\/[^/]+/, kind: 'channel' },
   { prefix: /^\/people\/[^/]+/, kind: 'profile' },
 ]

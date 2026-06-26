@@ -172,6 +172,27 @@ describe('resolveCapabilities · event', () => {
   })
 })
 
+describe('resolveCapabilities · practice', () => {
+  const base: Scope = { kind: 'practice', practiceId: 'pr1', ownerId: 'owner1' }
+
+  it('the practice owner can edit', () => {
+    expect(can(resolveCapabilities({ profileId: 'owner1', role: 'member' }, base), 'practice.editSettings')).toBe(true)
+  })
+
+  it('platform staff (web_role admin + janitor) can edit any practice', () => {
+    expect(can(resolveCapabilities({ profileId: 'ax', role: 'member', webRole: 'admin' }, base), 'practice.editSettings')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'jx', role: 'member', webRole: 'janitor' }, base), 'practice.editSettings')).toBe(true)
+  })
+
+  it('whoever manages the parent scope can edit (caller-computed)', () => {
+    expect(can(resolveCapabilities({ profileId: 'g', role: 'guide' }, { ...base, viewerManagesScope: true }), 'practice.editSettings')).toBe(true)
+  })
+
+  it('an unrelated member cannot edit', () => {
+    expect(can(resolveCapabilities({ profileId: 'x', role: 'member' }, base), 'practice.editSettings')).toBe(false)
+  })
+})
+
 describe('resolveCapabilities · scoped stewardship edges (P1.6, ADR-218→220)', () => {
   // A leadsScope predicate over a set of (scopeType:scopeId) the viewer holds.
   const edgesOn = (...keys: string[]) =>
