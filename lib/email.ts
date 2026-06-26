@@ -698,7 +698,7 @@ function claimInviteHtml({ organizerName, posterName, eventTitle, whenLine, loca
   const who = posterName ? escapeHtml(posterName) : 'A neighbor'
   const title = escapeHtml(eventTitle)
   const meta = [whenLine, location].filter(Boolean).map((s) => escapeHtml(s as string)).join(' · ')
-  const footer = `${who} listed your event on Frequency, a place to find and host local gatherings. You are getting this once so you can claim it or ignore it. Not your event? No action needed, it stays as a community listing.<br>Frequency™ · ${orgContactLine()}`
+  const footer = `${who} listed your event on Frequency, a place to find and host local gatherings. You are getting this once so you can claim it or ignore it. Not your event? No action needed, it stays as a community listing.<br>${orgContactLine()}`
   return emailShell(`
     <h1 style="${h1Style}">Is this your event?</h1>
     <p style="${pStyle}">${greeting}</p>
