@@ -8727,3 +8727,21 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 3. **Streak as a quiet signal** (`lib/feed/feed-people.ts`): the feed people suggestions read the viewer's + candidates' `current_streak` in one query and mark `bothStreaking` when both keep a streak of >= 3 days, which edges those matches up and adds a soft "you both keep a streak" reason. Never prominent, never a leaderboard, exactly as scoped.
 
 **Consequences.** New: `components/settings/feed-radius-slider.tsx`, `app/(main)/feed/people-actions.ts`, `components/feed/dismissable-suggestion.tsx`. Changed: `lib/connections/connection-settings.ts` (+`feedRadiusM`), `lib/connections/connection-settings-actions.ts` (clamped feed-radius write + `/feed` revalidate), `app/(main)/settings/connections/page.tsx` (mount), `lib/feed/feed-people.ts` (streak signal), `components/feed/feed-people-strip.tsx` (dismiss wrapper + streak reason). `feed_radius_m` / `suggestion_hidden` reached untyped (ADR-088/246). Gate: tsc, eslint, authz, 2380 tests. Reversible: remove the slider mount + the dismiss wrapper; no data migration to undo.
+
+---
+
+## ADR-418: Resonance Feed Phase 4 — meet-safely guidance + member verification scaffold
+
+**Status:** Accepted (2026-06-26). Members get clear meet-safely guidance where the feed introduces them to people, the verification badge surface is in place, and the verification flow itself is a deliberate, documented deferral. Phase 4 (the last build phase) of the plan (`docs/RESONANCE-FEED-ARCHITECTURE.md` §6, ADR-414→417).
+
+**Context.** The owner's safety idea: people meet at a real circle or public event (witnessed, public, low-risk), and we make staying safe easy; verification is wanted but the METHOD (phone / ID / vouch) is a genuine product decision, not something to invent unilaterally. So Phase 4 splits cleanly: ship the safety guidance + the verification INFRASTRUCTURE now, defer the verification FLOW.
+
+**Decision.**
+1. **Verification scaffold** (migration `20260823000000`): additive `profiles.verified_at`, `verification_method` (RESERVED: phone/id/vouch/email, null today), and `meetup_safety_ack_at`. Nothing sets `verified_at` yet, so no badge appears until a flow ships, exactly like the romance/astrology scaffold (ADR-414). Applied + verified on prod.
+2. **The verified badge** (`components/ui/verified-badge.tsx`): a calm check by a name, rendered ONLY when `verified_at` is set. Reusable; first surfaced on the feed people strip (the meetup-relevant surface). The feed people read now carries `verified` per person.
+3. **Meet-safely note** (`components/safety/meetup-safety-note.tsx`): a quiet line under the "people you'd click with" row — meet at a circle or public event first, here's how — that shows once and then stays quiet (a "Got it" writes `meetup_safety_ack_at` via the self-authorized `acknowledgeMeetupSafetyAction`). Links to the new guide.
+4. **The guide** (`content/help/safety/meeting-people-safely.md`): meet at a circle/event, keep early meetings public, tell someone, trust your gut, the never-share-your-exact-location promise, and how to remove / block / report. Ties into the existing reporting + blocking, not a rebuild.
+
+**Why defer the verification flow.** A real identity check is a product + trust + cost decision (which method, what it gates, how it's stored). Scaffolding the columns + the badge means the day that decision is made, the surfaces already exist; until then the safety guidance (meet in the open, around something real) is what keeps meetings safe, and the doc says so plainly.
+
+**Consequences.** New: migration `20260823000000_member_verification_scaffold.sql`, `components/ui/verified-badge.tsx`, `components/safety/meetup-safety-note.tsx`, `content/help/safety/meeting-people-safely.md`. Changed: `app/(main)/feed/people-actions.ts` (ack action), `lib/feed/feed-people.ts` (verified + ack reads), `components/feed/feed-people-strip.tsx` (badge + note). The three new columns are reached untyped (ADR-246). Gate: tsc, eslint, authz, 2380 tests. With Phase 4 merged, the resonance-feed build is complete through Phase 4; Phase 5 (romance + astrology) stays deliberately deferred on its Phase 0 scaffolding.

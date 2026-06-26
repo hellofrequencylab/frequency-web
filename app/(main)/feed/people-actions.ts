@@ -30,3 +30,25 @@ export async function hideSuggestionAction(hiddenProfileId: string): Promise<Act
   revalidatePath('/feed')
   return ok()
 }
+
+// Acknowledge the meet-safely guidance (Resonance Feed Phase 4, ADR-418), so it shows
+// once and then stays quiet. Self-authorized: writes only the caller's own profile row.
+export async function acknowledgeMeetupSafetyAction(): Promise<ActionResult> {
+  const me = await getMyProfileId()
+  if (!me) return fail('Sign in first.')
+  // meetup_safety_ack_at is reached untyped until the generated types regenerate (ADR-246).
+  const admin = createAdminClient() as unknown as {
+    from: (t: string) => {
+      update: (patch: Record<string, unknown>) => {
+        eq: (col: string, v: string) => Promise<{ error: unknown }>
+      }
+    }
+  }
+  const { error } = await admin
+    .from('profiles')
+    .update({ meetup_safety_ack_at: new Date().toISOString() })
+    .eq('id', me)
+  if (error) return fail('Could not save that.')
+  revalidatePath('/feed')
+  return ok()
+}
