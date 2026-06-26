@@ -98,10 +98,13 @@ export function alignClass(align?: string): string {
 // editorial weight without re-authoring type styles. Resolver returns a class
 // string for the heading element.
 
+// Fluid display scale: clamp(min, viewport-relative, max). The max equals the old
+// desktop size, so large screens are unchanged; the min is a smaller mobile floor so
+// long headlines stop swallowing the viewport on phones (they scale smoothly between).
 const EMPHASIS_SCALE: Record<string, string> = {
-  sm: 'text-2xl sm:text-3xl',
-  default: 'text-4xl sm:text-5xl',
-  lg: 'text-5xl sm:text-6xl lg:text-7xl leading-[0.95]',
+  sm: 'text-[clamp(1.375rem,3.5vw,1.875rem)]',
+  default: 'text-[clamp(1.875rem,5.5vw,3rem)]',
+  lg: 'text-[clamp(2rem,7vw,4.5rem)] leading-[0.95]',
 }
 
 const EMPHASIS_ACCENT: Record<string, string> = {

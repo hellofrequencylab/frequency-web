@@ -69,7 +69,7 @@ export function PhotoHero({
       <div className="amber-glow absolute inset-0 pointer-events-none" />
       <div
         className={`relative z-10 mx-auto px-6 text-center ${
-          isScreen ? 'max-w-5xl py-20 sm:py-28' : 'max-w-4xl py-24 sm:py-32'
+          isScreen ? 'max-w-5xl py-16 sm:py-28' : 'max-w-4xl py-16 sm:py-32'
         }`}
       >
         {eyebrow && (
@@ -83,7 +83,7 @@ export function PhotoHero({
         )}
         <h1
           className={`font-display uppercase text-white text-balance leading-[0.95] ${
-            isScreen ? 'text-6xl sm:text-7xl lg:text-8xl' : 'text-5xl sm:text-6xl lg:text-7xl'
+            isScreen ? 'text-[clamp(2.5rem,9vw,6rem)]' : 'text-[clamp(2.25rem,8vw,4.5rem)]'
           }`}
         >
           {title}
@@ -123,14 +123,14 @@ export function PageHero({
   vis?: string
 }) {
   return (
-    <section className={`px-6 ${pad ?? 'pt-24 pb-14 sm:pt-32 sm:pb-20'} ${vis}`}>
+    <section className={`px-6 ${pad ?? 'pt-20 pb-12 sm:pt-32 sm:pb-20'} ${vis}`}>
       <div className="max-w-3xl mx-auto text-center">
         {eyebrow && (
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-5">
             {eyebrow}
           </p>
         )}
-        <h1 className="font-display uppercase text-text text-5xl sm:text-6xl lg:text-7xl">
+        <h1 className="font-display uppercase text-text text-[clamp(2.25rem,8vw,4.5rem)]">
           {title}
         </h1>
         {subtitle && (
@@ -163,7 +163,7 @@ export function Section({
         ? 'bg-slat text-on-ink'
         : 'bg-surface'
   return (
-    <section className={`px-6 ${pad ?? 'py-20 sm:py-24'} ${bg} ${vis} ${className}`}>
+    <section className={`px-6 ${pad ?? 'py-14 sm:py-20 lg:py-24'} ${bg} ${vis} ${className}`}>
       <div className="max-w-3xl mx-auto">{children}</div>
     </section>
   )
@@ -185,8 +185,8 @@ export function SectionHeading({
           {eyebrow}
         </p>
       )}
-      <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">{title}</h2>
-      {kicker && <p className="mt-4 text-xl italic text-muted">{kicker}</p>}
+      <h2 className="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)]">{title}</h2>
+      {kicker && <p className="mt-4 text-lg sm:text-xl italic text-muted">{kicker}</p>}
     </div>
   )
 }
@@ -206,10 +206,10 @@ export function PullQuote({
   const isInk = tone === 'ink'
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : isInk ? 'bg-slat' : 'bg-surface'
   return (
-    <section className={`${bg} px-6 py-20 sm:py-24`}>
+    <section className={`${bg} px-6 py-14 sm:py-24`}>
       <figure className="max-w-3xl mx-auto text-center">
         <blockquote
-          className={`font-display uppercase text-3xl sm:text-4xl lg:text-5xl leading-[1.08] text-balance ${
+          className={`font-display uppercase text-[clamp(1.75rem,5.5vw,3rem)] leading-[1.08] text-balance ${
             isInk ? 'text-on-ink' : 'text-text'
           }`}
         >
@@ -400,11 +400,11 @@ export function Statement({
   const isInk = tone === 'ink'
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : isInk ? 'bg-slat' : 'bg-surface'
   return (
-    <section className={`${bg} px-6 ${pad ?? 'py-20 sm:py-24'} ${vis}`}>
+    <section className={`${bg} px-6 ${pad ?? 'py-14 sm:py-24'} ${vis}`}>
       <p
         className={`font-display uppercase max-w-3xl mx-auto text-center ${
           isInk ? 'text-on-ink' : 'text-text'
-        } text-4xl sm:text-5xl lg:text-6xl leading-[1.1]`}
+        } text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]`}
       >
         {children}
       </p>

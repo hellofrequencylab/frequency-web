@@ -377,7 +377,7 @@ export function ShowcaseBlock({
                 />
               </div>
               <div className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${reverse ? 'sm:-mr-20' : 'sm:-ml-20'}`}>
-                <h3 className="font-display uppercase text-white text-4xl sm:text-5xl mb-5 px-2 text-center sm:text-left">
+                <h3 className="font-display uppercase text-white text-[clamp(1.875rem,5.5vw,3rem)] mb-5 px-2 text-center sm:text-left">
                   {p.title}
                 </h3>
                 <div className="bg-surface rounded-3xl p-8 shadow-pop">
