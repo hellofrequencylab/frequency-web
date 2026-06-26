@@ -781,8 +781,11 @@ async function ForYouLane({
   myRsvps: Set<string>
   now: Date
 }) {
-  const byId = new Map(events.map((e) => [e.id, e]))
-  const scored = await scoreEventsForViewer(profileId, events.map((e) => e.id))
+  // Recommend events the viewer ISN'T already on — surfacing one they've already
+  // RSVP'd to is noise (it sits in "You're going" right above). Score only the rest.
+  const candidates = events.filter((e) => !myRsvps.has(e.id))
+  const byId = new Map(candidates.map((e) => [e.id, e]))
+  const scored = await scoreEventsForViewer(profileId, candidates.map((e) => e.id))
   // Usable signal = real personalization, not just the always-present time/
   // proximity floor. No signal → render nothing (cold-start fallback).
   const hasUsableSignal = scored.some((s) => s.interest > 0 || s.social > 0)

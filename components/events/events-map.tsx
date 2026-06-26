@@ -61,16 +61,22 @@ export default function EventsMap({
     mapRef.current = map
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
 
+    // The popup HTML + the SVG marker live OUTSIDE React (maplibre owns that DOM), so
+    // they can't wear Tailwind classes. Drive them off the DAWN tokens instead: the
+    // popup reads the CSS variables directly (they cascade from :root, so it tracks the
+    // active theme), and the marker takes the token's resolved value. No hardcoded hex.
+    const markerColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim()
+
     map.on('load', () => {
       for (const p of pins) {
         const popup = new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
-          `<div style="font-weight:600;color:#2A1B06">${escapeHtml(p.title)}</div>` +
-            `<div style="font-size:12px;color:#8a7a66;margin-top:2px">${escapeHtml(p.whenLabel)}${
+          `<div style="font-weight:600;color:var(--color-text)">${escapeHtml(p.title)}</div>` +
+            `<div style="font-size:12px;color:var(--color-muted);margin-top:2px">${escapeHtml(p.whenLabel)}${
               p.cityLabel ? ` · ${escapeHtml(p.cityLabel)}` : ''
             }</div>` +
-            `<a href="/events/${encodeURIComponent(p.slug)}" style="font-size:13px;color:#A8631B;text-decoration:none;display:inline-block;margin-top:4px">View event &rarr;</a>`,
+            `<a href="/events/${encodeURIComponent(p.slug)}" style="font-size:13px;color:var(--color-primary-strong);text-decoration:none;display:inline-block;margin-top:4px">View event &rarr;</a>`,
         )
-        new maplibregl.Marker({ color: '#E2912F' })
+        new maplibregl.Marker(markerColor ? { color: markerColor } : undefined)
           .setLngLat([p.lng, p.lat])
           .setPopup(popup)
           .addTo(map)
