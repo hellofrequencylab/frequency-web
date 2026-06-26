@@ -179,7 +179,7 @@ export function formatWhen(iso: string, now: Date) {
 export const CONTENT_FALLBACK = {
   title: 'Events',
   description:
-    'Group rides, gatherings, and meetups your circles are running near you. RSVP to see who’s coming, show up, and earn zaps for every one you make.',
+    'Group rides, gatherings, and meetups your circles are running near you. RSVP to see who’s coming, show up, and earn Zaps for every one you make.',
 }
 
 export interface EventsIndexParams {

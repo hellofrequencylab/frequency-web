@@ -97,9 +97,11 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
     throw new Error('End time must be after the start time.')
   }
 
-  // Capacity: empty clears to null (unlimited); otherwise a positive integer.
+  // Capacity: empty clears to null (unlimited); otherwise a positive integer (parseInt would let a
+  // negative through, so require > 0).
   const capacityRaw = ((fd.get('capacity') as string) ?? '').trim()
-  const capacity = capacityRaw ? parseInt(capacityRaw, 10) || null : null
+  const capacityParsed = capacityRaw ? parseInt(capacityRaw, 10) : NaN
+  const capacity = Number.isFinite(capacityParsed) && capacityParsed > 0 ? capacityParsed : null
 
   // Attendance mode is app-constrained (free text at the DB layer); fall back to
   // in_person for anything unexpected, matching the rest of the events code.
@@ -170,6 +172,11 @@ export async function uploadEventCover(
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
   if (file.size > 8 * 1024 * 1024) return { error: 'Image must be under 8MB.' }
+  // Safe raster types only (defense in depth: the event-media bucket constrains MIME, but the
+  // action should too). SVG excluded deliberately (it can carry script).
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'].includes(file.type)) {
+    return { error: 'Use a JPEG, PNG, WebP, GIF, or AVIF image.' }
+  }
 
   const admin = createAdminClient()
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
