@@ -4,7 +4,6 @@ import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
 import { IndexTemplate } from '@/components/templates'
-import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { pageContentMetadata } from '@/lib/page-content'
 import { getCirclesIndexData, CONTENT_FALLBACK } from '@/lib/circles/index-data'
@@ -39,27 +38,13 @@ export default async function CirclesPage({
 
   return (
     <IndexTemplate
-      // Header overhaul: a small breadcrumb at the very top, then the operator hero image,
-      // both ABOVE the title (the banner slot renders before the heading) — so the page
-      // reads breadcrumb → hero → title/subtitle + Start a circle.
-      banner={
-        <div>
-          <Breadcrumbs
-            trail={[
-              { href: '/network', label: 'Community' },
-              { href: '/circles', label: 'Circles' },
-            ]}
-          />
-          {content.heroImage && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={content.heroImage}
-              alt=""
-              className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-64"
-            />
-          )}
-        </div>
-      }
+      // Standardized header (PAGE-FRAMEWORK): breadcrumb -> cropped hero -> title, from the
+      // template's first-class props.
+      trail={[
+        { href: '/network', label: 'Community' },
+        { href: '/circles', label: 'Circles' },
+      ]}
+      heroImage={content.heroImage}
       title={content.title}
       action={
         signedIn || (content.ctaLabel && content.ctaHref) ? (
