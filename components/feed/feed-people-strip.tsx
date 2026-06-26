@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { PersonCard } from '@/components/cards/person-card'
 import { getFeedPeopleSuggestions } from '@/lib/feed/feed-people'
 import { suggestionReason } from '@/lib/people-suggestions'
+import { DismissableSuggestion } from './dismissable-suggestion'
 
 // "People you'd click with" — a quiet in-feed row that introduces the viewer to a
 // few members on their wavelength (Resonance Feed Phase 1, ADR-414). It reuses the
@@ -29,19 +30,24 @@ export async function FeedPeopleStrip({ viewerProfileId }: { viewerProfileId: st
         </Link>
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {people.map((p) => (
-          <PersonCard
-            key={p.id}
-            handle={p.handle}
-            displayName={p.displayName}
-            avatarUrl={p.avatarUrl}
-            meta={
-              suggestionReason(p) ? (
-                <span className="text-2xs text-subtle">{suggestionReason(p)}</span>
-              ) : undefined
-            }
-          />
-        ))}
+        {people.map((p) => {
+          // The reason line: the real graph signals, plus a quiet streak note when the
+          // viewer and this member both keep one (a soft match signal, never loud).
+          const reason = suggestionReason(p)
+          const why = [reason, p.bothStreaking ? 'you both keep a streak' : null]
+            .filter(Boolean)
+            .join(' · ')
+          return (
+            <DismissableSuggestion key={p.id} profileId={p.id} name={p.displayName}>
+              <PersonCard
+                handle={p.handle}
+                displayName={p.displayName}
+                avatarUrl={p.avatarUrl}
+                meta={why ? <span className="text-2xs text-subtle">{why}</span> : undefined}
+              />
+            </DismissableSuggestion>
+          )
+        })}
       </div>
     </section>
   )
