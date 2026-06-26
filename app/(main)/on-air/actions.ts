@@ -79,6 +79,8 @@ export interface CompleteSessionInput {
   endBell?: boolean
   bellEveryMin?: number
   haptics?: boolean
+  /** Ambient loop slug, null = none. */
+  ambientTrack?: string | null
 }
 
 export async function completeSession(
@@ -143,6 +145,8 @@ export async function completeSession(
           ? Math.max(0, Math.round(input.bellEveryMin))
           : prior.bellEveryMin,
       haptics: typeof input.haptics === 'boolean' ? input.haptics : prior.haptics,
+      // null = the member turned it off (persist that); undefined = keep prior.
+      ambientTrack: input.ambientTrack === undefined ? prior.ambientTrack : input.ambientTrack,
     }
     await admin
       .from('profiles')

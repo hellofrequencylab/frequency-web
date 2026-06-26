@@ -10,6 +10,13 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Added
+
+- **A soft background for Mindless**: in a Be Still sit, pick an **Ambient** loop
+  (Forest, Ocean, or Drift). Tap one to hear it. It plays low under the whole
+  session, fades in when you start and out when you finish, and loops with no
+  seam. Off by default, and remembered once you choose.
+
 ### Fixed
 
 - **Repeating events land on the right dates**: a monthly event set on the 29th, 30th, or

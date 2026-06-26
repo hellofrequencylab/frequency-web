@@ -30,6 +30,7 @@ import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { chime, endChime } from '@/lib/timer-audio'
 import {
+  AMBIENT_TRACKS,
   BELL_INTERVALS,
   BELL_TONES,
   BREATH_DURATION_PRESETS,
@@ -39,6 +40,7 @@ import {
   DURATION_PRESETS,
   SESSION_MODE_META,
   SESSION_MODE_ORDER,
+  ambientTrackBySlug,
   bellToneBySlug,
   bellVolumeScale,
   breathPositionAt,
@@ -56,6 +58,7 @@ import {
   type RevealPayload,
   type SessionMode,
 } from '@/lib/on-air'
+import { createAmbient, type AmbientHandle } from '@/lib/on-air-ambient'
 import { BreathVisualizer } from './visualizer'
 import { Reveal } from './reveal'
 import { MindlessMasthead } from './mode-toggle'
@@ -86,6 +89,7 @@ interface MindlessSetup {
   endBell: boolean
   bellEveryMin: number
   haptics: boolean
+  ambientTrack: string | null
 }
 
 export interface OnAirPractice {
@@ -312,6 +316,7 @@ export function OnAirSession({
   const [endBell, setEndBell] = useState(prefs.endBell ?? true)
   const [bellEveryMin, setBellEveryMin] = useState(prefs.bellEveryMin ?? 1)
   const [haptics, setHaptics] = useState(prefs.haptics ?? false)
+  const [ambientSlug, setAmbientSlug] = useState<string | null>(prefs.ambientTrack ?? null)
   // Mobile-only: the cue settings collapse so the primary controls (mode, minutes, Tune out) stay
   // above the fold on a phone. Always expanded on desktop (the two-column layout has the room).
   const [cuesOpen, setCuesOpen] = useState(false)
@@ -350,6 +355,7 @@ export function OnAirSession({
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
   const audio = useRef<AudioContext | null>(null)
+  const ambient = useRef<AmbientHandle | null>(null)
   const lastPhase = useRef<BreathPhase | null>(null)
   const lastMinute = useRef(0)
   const endCued = useRef(false)
@@ -518,7 +524,14 @@ export function OnAirSession({
   // Let the audio context go when the surface unmounts.
   useEffect(() => {
     const ctx = audio
+    const amb = ambient
     return () => {
+      try {
+        amb.current?.stop()
+      } catch {
+        // ambience is a nicety
+      }
+      amb.current = null
       try {
         void ctx.current?.close()
       } catch {
@@ -527,6 +540,48 @@ export function OnAirSession({
       ctx.current = null
     }
   }, [])
+
+  // --- ambient loop (lib/on-air-ambient) ------------------------------------
+  // An optional soft background that loops seamlessly for the whole sit, sharing
+  // the bell's gesture-unlocked AudioContext. Every call is wrapped; like the
+  // bell, the ambience is a nicety, never a blocker.
+
+  /** The shared bell/ambient context, created + unlocked lazily inside a gesture. */
+  function ensureCtx(): AudioContext | null {
+    try {
+      audio.current = audio.current ?? new AudioContext()
+      void audio.current.resume()
+      return audio.current
+    } catch {
+      return null
+    }
+  }
+
+  function stopAmbient() {
+    try {
+      ambient.current?.stop()
+    } catch {
+      // ambience is a nicety
+    }
+    ambient.current = null
+  }
+
+  function playAmbient(slug: string | null, fadeInSec: number, autoStopAfterSec?: number) {
+    stopAmbient()
+    if (!slug) return
+    const track = ambientTrackBySlug(slug)
+    const ctx = ensureCtx()
+    if (!track || !ctx) return
+    ambient.current = createAmbient(ctx, track.src, { fadeInSec, autoStopAfterSec })
+  }
+
+  /** Setup chip tap: select + a short audition that fades out on its own, so the
+   *  sit always opens from silence (the opening fade-in starts fresh in start()). */
+  function selectAmbient(slug: string | null) {
+    setAmbientSlug(slug)
+    if (slug) playAmbient(slug, 1, 4.5)
+    else stopAmbient()
+  }
 
   // The 5s auto-start pre-roll: tick down once a second, then begin() automatically. Re-runs each
   // tick with a fresh closure, so begin() reads the current armed pausedAt. The Start button calls
@@ -586,6 +641,7 @@ export function OnAirSession({
           endBell,
           bellEveryMin,
           haptics,
+          ambientTrack: ambientSlug,
         },
       })
     write()
@@ -609,6 +665,7 @@ export function OnAirSession({
     endBell,
     bellEveryMin,
     haptics,
+    ambientSlug,
   ])
 
   // Resume a recovered sit: rebuild the mode + cue settings, restore the exact wall clock, and seed
@@ -638,6 +695,10 @@ export function OnAirSession({
     setEndBell(s.endBell)
     setBellEveryMin(s.bellEveryMin)
     setHaptics(s.haptics)
+    setAmbientSlug(s.ambientTrack)
+    // Re-arm ambience on the resume tap (a gesture, so audio unlocks); a quick
+    // fade-in since the sit is already mid-flight.
+    playAmbient(s.ambientTrack, 1.5)
     resumeBanked.current = rec.resumeFromSec
     resumeTarget.current = rec.secondsTarget ?? 0
     const total = s.minutes * 60
@@ -683,6 +744,9 @@ export function OnAirSession({
         // the bell is a nicety, never a blocker
       }
     }
+    // Ambience fades in as the takeover opens — it sets the room through the
+    // pre-roll while the member settles, then carries through the whole sit.
+    playAmbient(ambientSlug, 3)
     lastPhase.current = null
     lastMinute.current = 0
     endCued.current = false
@@ -749,9 +813,11 @@ export function OnAirSession({
   function togglePause() {
     if (pausedAt === null) {
       setPausedAt(Date.now())
+      ambient.current?.pause()
     } else {
       setStartedAt((s) => s + (Date.now() - pausedAt))
       setPausedAt(null)
+      ambient.current?.resume()
     }
   }
 
@@ -777,6 +843,7 @@ export function OnAirSession({
   ) {
     // The sit is ending: drop the crash-recovery record so it never re-prompts.
     clearLiveSession('mindless')
+    stopAmbient()
     setStage('saving')
     await releaseQuiet()
     // The chooser can finish a freshly picked log-only practice the same tick it's
@@ -806,6 +873,7 @@ export function OnAirSession({
       endBell,
       bellEveryMin,
       haptics,
+      ambientTrack: ambientSlug,
     })
     finishing.current = false
     if (isError(result)) {
@@ -865,6 +933,7 @@ export function OnAirSession({
   function leave() {
     // Leaving is an explicit exit: drop the crash-recovery record.
     clearLiveSession('mindless')
+    stopAmbient()
     // Drop true fullscreen if the launcher's open gesture entered it (C.1-3); the
     // dvh takeover that remains is torn down by the unmount below.
     void exitAppFullscreen()
@@ -1438,6 +1507,38 @@ export function OnAirSession({
                 </button>
               </div>
             )}
+            {/* Ambient: a soft background loop, independent of the bell. A tap
+                auditions it; the choice plays, seamlessly looped, for the sit. */}
+            <div className="mt-3">
+              <SubLabel>Ambient</SubLabel>
+              <div className="mt-1.5 grid grid-cols-4 gap-2">
+                <button
+                  type="button"
+                  onClick={() => selectAmbient(null)}
+                  className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                    ambientSlug === null
+                      ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                      : 'border-border text-muted hover:bg-surface-elevated'
+                  }`}
+                >
+                  Off
+                </button>
+                {AMBIENT_TRACKS.map((t) => (
+                  <button
+                    key={t.slug}
+                    type="button"
+                    onClick={() => selectAmbient(t.slug)}
+                    className={`rounded-xl border px-2 py-1.5 text-xs transition-colors ${
+                      ambientSlug === t.slug
+                        ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                        : 'border-border text-muted hover:bg-surface-elevated'
+                    }`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            </div>
             </div>
           </div>
         )}
