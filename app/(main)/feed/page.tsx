@@ -6,6 +6,7 @@ import { CaptureBar } from '@/components/feed/capture-bar'
 import { CreateMenu } from '@/components/feed/create-menu'
 import { FeedList } from '@/components/feed/feed-list'
 import { LocalCornerCard } from '@/components/feed/local-corner-card'
+import { RomanceStrip } from '@/components/feed/romance-strip'
 import { getLocalActivity } from '@/lib/feed/density'
 import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -333,6 +334,16 @@ export default async function FeedPage({
           <div className="mb-4">
             <Suspense fallback={null}>
               <LocalCornerCard viewerProfileId={myProfileId} />
+            </Suspense>
+          </div>
+        )}
+
+        {/* Romance lane (Phase 5, ADR-419): renders ONLY for members who opted into
+            romance mode and have mutual opt-ins to show; invisible to everyone else. */}
+        {myProfileId && sort === 'relevant' && (
+          <div className="mb-4">
+            <Suspense fallback={null}>
+              <RomanceStrip viewerProfileId={myProfileId} />
             </Suspense>
           </div>
         )}
