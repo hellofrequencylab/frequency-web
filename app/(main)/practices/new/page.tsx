@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { canCreate } from '@/lib/core/load-capabilities'
 import { PracticeSpark } from '@/components/studio/practice/practice-spark'
 
 // Create a Practice (ADR-358), the atom-level twin of /journeys/new. New Practices open in the
@@ -18,6 +19,9 @@ export default async function NewPracticePage() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in?next=/practices/new')
+  // Real Crew (or steward/staff) may author a practice; a free member is bounced to the
+  // library, where "Create a practice" shows the free-beta upgrade popup (ADR-414).
+  if (!(await canCreate('practice.create'))) redirect('/practices')
 
   return <PracticeSpark />
 }

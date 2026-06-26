@@ -21,6 +21,7 @@ import { TuneInButton, TunedInButton } from '../channel-toggle'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
+import { canCreate } from '@/lib/core/load-capabilities'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { ChannelCover } from '@/components/channels/channel-cover'
 import { ModuleCard } from '@/components/modules/module-card'
@@ -92,6 +93,7 @@ export default async function ChannelPage({
 
   let myProfileId: string | null = null
   let isTunedIn = false
+  let canStartCircle = false
 
   if (user) {
     const { data: profile } = await admin
@@ -102,6 +104,8 @@ export default async function ChannelPage({
 
     if (profile) {
       myProfileId = profile.id
+      // Real Crew (or steward/staff) may start a circle here; others get the popup.
+      canStartCircle = await canCreate('circle.create')
       const { data: membership } = await admin
         .from('topical_channel_memberships')
         .select('id')
@@ -201,6 +205,7 @@ export default async function ChannelPage({
                 topicalChannelId={channel.id}
                 topicalChannelName={channel.name}
                 buttonLabel="Start a Circle"
+                canCreate={canStartCircle}
               />
               {isTunedIn
                 ? <TunedInButton channelId={channel.id} channelName={channel.name} size="md" />
@@ -266,6 +271,7 @@ export default async function ChannelPage({
                       topicalChannelId={channel.id}
                       topicalChannelName={channel.name}
                       buttonLabel="Create the first Circle"
+                      canCreate={canStartCircle}
                     />
                   ) : undefined
                 }

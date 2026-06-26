@@ -1,8 +1,6 @@
 import Link from 'next/link'
 import { Search, EyeOff } from 'lucide-react'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
-import { BETA_OPEN_ACCESS } from '@/lib/core/beta'
 import { type PracticeSort } from '@/lib/practices'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
@@ -72,11 +70,12 @@ export default async function PracticesPage({
   const caps = await getGlobalCapabilities()
   const isAdmin = caps.has('admin.access')
   const showHidden = isAdmin && sp.hidden === '1'
-  // Authoring a library practice is a Crew+ act (ADR-109): a plain Member may adopt/claim/log
-  // but never create. Hide the entry point for Members; the server action is the real gate.
-  // BETA open access (lib/core/beta.ts): any signed-in member may author (kept pending for Host+
-  // review), so the entry point shows for everyone signed in while the flag is on.
-  const canCreatePractice = !!caller && (BETA_OPEN_ACCESS || atLeastRole(caller.community_role, 'crew'))
+  // Authoring a library practice is a Crew act (ADR-109/ADR-414): real Crew (or a steward/
+  // staff) may create; a plain Member may adopt/claim/log but never create. The entry point
+  // now shows for EVERY signed-in member — non-Crew get the free-beta upgrade popup (the
+  // `practice.create` capability reads the REAL tier, so the popup fires during the beta).
+  const signedIn = !!caller
+  const canCreatePractice = caps.has('practice.create')
 
   // The toolbar writes the facets the library module reads back from the URL.
   const base = {
@@ -114,9 +113,9 @@ export default async function PracticesPage({
       title={title}
       description={description}
       action={
-        (canCreatePractice || (ctaLabel && ctaHref)) ? (
+        (signedIn || (ctaLabel && ctaHref)) ? (
           <div className="flex items-center gap-2">
-            {canCreatePractice && <NewPracticeButton />}
+            {signedIn && <NewPracticeButton canCreate={canCreatePractice} />}
             {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
             {ctaLabel && ctaHref && (
               <a

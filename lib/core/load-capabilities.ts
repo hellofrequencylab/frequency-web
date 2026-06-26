@@ -48,6 +48,9 @@ const currentViewer = cache(async (): Promise<Viewer> => {
     role: (p?.community_role ?? 'member') as CommunityRole,
     webRole: p?.webRole ?? 'none',
     tier: deriveTier(p?.membershipTier),
+    // The real DB tier (pre beta-override) feeds the creation gates so the upgrade
+    // popup still fires for a genuinely free member during the beta (ADR-414).
+    realTier: deriveTier(p?.realMembershipTier),
     leadsScope: (scopeType, scopeId) => edgeLeadsScope(edges, scopeType, scopeId),
   }
 })
@@ -73,6 +76,23 @@ async function hasEdgeAtLeast(level: CommunityLevel): Promise<boolean> {
 /** App-level capabilities (e.g. admin.access for the Admin tab). */
 export async function getGlobalCapabilities(): Promise<Set<Capability>> {
   return resolveCapabilities(await currentViewer(), { kind: 'global' })
+}
+
+/** The four global creation gates (ADR-414) — who may author a new entity. */
+export type CreateCapability = 'event.create' | 'circle.create' | 'journey.create' | 'practice.create'
+
+/** Render-time check: may the caller author a new entity of this kind? Reads the
+ *  REAL Crew tier (pre beta-override) so a free member sees the upgrade affordance. */
+export async function canCreate(cap: CreateCapability): Promise<boolean> {
+  return (await getGlobalCapabilities()).has(cap)
+}
+
+/** Server enforcement: throw unless the caller may author this kind. Call at the
+ *  top of every create action/page — the capability popup is UX, this is law. */
+export async function assertCanCreate(cap: CreateCapability): Promise<void> {
+  if (!(await canCreate(cap))) {
+    throw new Error('Upgrade to Crew to create this. Crew is free during the beta, one tap, no card.')
+  }
 }
 
 /** What the caller can do on a specific Circle. */

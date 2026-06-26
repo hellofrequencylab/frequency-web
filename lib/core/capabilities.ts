@@ -18,7 +18,7 @@
 // (host_id === me, the host+ admin gate, crew-can-take-tasks). Tune against
 // product as the inline-admin work (Phase 1) lands.
 
-import { type CommunityRole, type WebRole, isStaff as webIsStaff, isJanitor as webIsJanitor } from './roles'
+import { type CommunityRole, type WebRole, isStaff as webIsStaff, isJanitor as webIsJanitor, atLeastRole } from './roles'
 import { isPaid, type EntitlementTier } from './access-matrix'
 import { type ScopeType } from './stewardship'
 
@@ -34,6 +34,13 @@ export type Capability =
   | 'event.editSettings'
   // practice
   | 'practice.editSettings'
+  // creation gates (global) — who may AUTHOR a new entity. Real-Crew (paid) or a
+  // community steward (crew+ on the trust ladder). Everyone else is sold the
+  // one-tap free-beta upgrade. See docs/RESONANCE-FEED-ARCHITECTURE.md §"Access".
+  | 'event.create'
+  | 'circle.create'
+  | 'journey.create'
+  | 'practice.create'
   // topical channel (platform-curated — staff only)
   | 'channel.manage'
   // tasks (crew engagement inside a circle)
@@ -96,6 +103,12 @@ export interface Viewer {
   /** Billing entitlement tier. Paid (Crew/Supporter) unlocks the membership-gated
    *  capabilities (e.g. task volunteering). Omitted ⇒ free. */
   tier?: EntitlementTier | null
+  /** The REAL billing tier from the DB, BEFORE any beta open-access override
+   *  (lib/core/beta.ts grants everyone Crew while the beta is open, which `tier`
+   *  reflects). The CREATION gates read this so the free-beta upgrade popup still
+   *  fires for a genuinely free member during the beta — "real Crew to create".
+   *  Omitted ⇒ falls back to `tier` (i.e. no beta override in play). */
+  realTier?: EntitlementTier | null
   /** SCOPED stewardship predicate (P1.6, ADR-218→220): does the viewer hold an
    *  ACTIVE stewardship edge on `(scopeType, scopeId)`? Supplied by the server seam
    *  from the `stewardships` table; OR'd with the legacy leader-FK identity match so
@@ -124,6 +137,20 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       // Staff (admin/janitor) reach the Admin tab. Admin entry is the STAFF axis,
       // not the community ladder (host+ stewardship lives in per-scope caps below).
       if (isStaff) caps.add('admin.access')
+
+      // CREATION gates: who may author a new event / circle / journey / practice.
+      // Real-Crew (paid tier) OR a community steward (crew+ on the trust ladder).
+      // We read `realTier` (the DB tier BEFORE the beta open-access override) so a
+      // genuinely free member still meets the upgrade popup during the beta —
+      // "real Crew to create, free one-tap" (ADR-414). Staff create too (they run
+      // the platform). Plain free members get none of these, by design.
+      const realTier = viewer.realTier ?? viewer.tier
+      if (isPaid(realTier) || atLeastRole(viewer.role, 'crew') || isStaff) {
+        caps.add('event.create')
+        caps.add('circle.create')
+        caps.add('journey.create')
+        caps.add('practice.create')
+      }
       break
     }
 
@@ -264,10 +291,12 @@ export function capabilityGaps(
     attribute(resolveCapabilities(viewer, scopeAsMember), 'needs-membership')
   }
 
-  // Rung 2 — the paid tier (Crew/Supporter), on top of membership.
+  // Rung 2 — the paid tier (Crew/Supporter), on top of membership. Bump BOTH the
+  // effective tier and the real tier so the creation gates (which read realTier)
+  // attribute to 'needs-paid-tier' — that is exactly the rung the upgrade popup sells.
   let viewerPaid = viewer
-  if (!isPaid(viewer.tier)) {
-    viewerPaid = { ...viewer, tier: 'crew' }
+  if (!isPaid(viewer.tier) || !isPaid(viewer.realTier ?? viewer.tier)) {
+    viewerPaid = { ...viewer, tier: 'crew', realTier: 'crew' }
     attribute(resolveCapabilities(viewerPaid, scopeAsMember), 'needs-paid-tier')
   }
 

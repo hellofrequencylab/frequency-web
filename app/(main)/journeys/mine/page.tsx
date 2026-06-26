@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Map, FileText, Globe, Users, ArrowLeft } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
+import { canCreate } from '@/lib/core/load-capabilities'
 import { getMyPlanSummaries, type MyPlanSummary } from '@/lib/journey-plans'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { StatCard } from '@/components/ui/stat-card'
@@ -57,12 +58,14 @@ export default async function MyJourneysPage({ searchParams }: { searchParams: P
   const shown = filter === 'live' ? published : filter === 'draft' ? drafts : all
   const totalAdopters = published.reduce((n, p) => n + (p.adopt_count ?? 0), 0)
   const countFor = (k: FilterKey) => (k === 'live' ? published.length : k === 'draft' ? drafts.length : all.length)
+  // Real Crew (or steward/staff) may build a journey; others get the free-beta popup.
+  const canBuildJourney = await canCreate('journey.create')
 
   return (
     <IndexTemplate
       title="Your Journeys"
       description="Your space to store, edit, and publish everything you build. Drafts stay private until you publish them to the community library."
-      action={<NewJourneyButton />}
+      action={<NewJourneyButton canCreate={canBuildJourney} />}
     >
       <div className="max-w-4xl space-y-6">
         <Link href="/journeys" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-text">
