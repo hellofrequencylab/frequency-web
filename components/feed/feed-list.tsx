@@ -1,9 +1,13 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { MessageSquare, Megaphone, Zap, ArrowRight, CalendarDays, MapPin, CalendarClock } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { rankFeedPosts } from '@/lib/feed-rank'
+import { blendRank, feedNowMs } from '@/lib/feed/blend-rank'
+import { getViewerResonanceMap } from '@/lib/feed/viewer-resonance'
+import { FeedPeopleStrip } from './feed-people-strip'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import {
   viewerInEventDispatchArea,
@@ -193,7 +197,11 @@ export async function FeedList({
       // The 'nearby' lens passes the member's coords + radius so the reconciled
       // feed_for_viewer (geo + demo-aware) returns the closest activity first.
       const rpcArgs: Record<string, unknown> = { _sort: fetchSort, _limit: 40 }
-      if (sort === 'nearby' && nearby) {
+      // Pass the viewer's coords for BOTH the 'nearby' lens (which filters + orders by
+      // distance) and the 'relevant' lens (where it only POPULATES distance_m for the
+      // blended rank — the RPC orders by distance for 'nearby' alone, so selection is
+      // unchanged). Resonance Feed Phase 1 (ADR-414).
+      if (nearby && (sort === 'nearby' || sort === 'relevant')) {
         rpcArgs._lat = nearby.lat
         rpcArgs._lng = nearby.lng
         rpcArgs._radius_m = nearby.radiusM
@@ -209,9 +217,24 @@ export async function FeedList({
     rawPosts = rawPosts.filter((p) => !(p as { is_demo?: boolean }).is_demo)
   }
 
-  const posts: FeedPost[] = rankFeedPosts(rawPosts, fetchSort).map(
-    (p) => ({ ...p, replyCount: p.comment_count ?? 0 }),
-  ) as FeedPost[]
+  // The "For you" lens (sort='relevant') is the BLENDED resonance rank (Phase 1,
+  // ADR-414 → docs/RESONANCE-FEED-ARCHITECTURE.md §3): proximity + graph + recency +
+  // engagement, with a diversity rerank. Every other lens stays literal (recency /
+  // nearest / chronological). Fail-safe: with no resonance + no geo the blend reduces
+  // to recency-led, i.e. today's behavior.
+  let ranked: RawPost[]
+  if (sort === 'relevant' && myProfileId) {
+    const resonance = await getViewerResonanceMap(myProfileId)
+    const blendItems = rawPosts.map((p) => ({
+      ...p,
+      authorId: p.author.id,
+      distance_m: (p as { distance_m?: number | null }).distance_m ?? null,
+    }))
+    ranked = blendRank(blendItems, { nowMs: feedNowMs(), resonance, radiusM: nearby?.radiusM ?? 25000 }, 40)
+  } else {
+    ranked = rankFeedPosts(rawPosts, fetchSort)
+  }
+  const posts: FeedPost[] = ranked.map((p) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
 
   // ── Resolve scope context (wall, circle, channel) ─────────────────────────
   const scopeIds = [...new Set(posts.map(p => p.scope_id).filter(Boolean) as string[])]
@@ -340,7 +363,18 @@ export async function FeedList({
       {pinned.map(post => (
         <PostCard key={post.id} post={post} myProfileId={myProfileId} viewerRole={viewerRole} />
       ))}
-      {items.map(({ data: post }) => (
+      {items.slice(0, 3).map(({ data: post }) => (
+        <PostCard key={post.id} post={post} myProfileId={myProfileId} viewerRole={viewerRole} />
+      ))}
+      {/* "People you'd click with" rides INSIDE the For-you feed after the first few
+          posts (Resonance Feed Phase 1, ADR-414). Streamed behind Suspense so it never
+          blocks the post stream; renders nothing when there's no genuine suggestion. */}
+      {myProfileId && sort === 'relevant' && (
+        <Suspense fallback={null}>
+          <FeedPeopleStrip viewerProfileId={myProfileId} />
+        </Suspense>
+      )}
+      {items.slice(3).map(({ data: post }) => (
         <PostCard key={post.id} post={post} myProfileId={myProfileId} viewerRole={viewerRole} />
       ))}
     </div>
