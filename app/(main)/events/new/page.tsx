@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { EventForm } from './event-form'
+import { EventSpark } from '../event-spark'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 
 export default async function NewEventPage({
@@ -57,7 +57,7 @@ export default async function NewEventPage({
 
   return (
     <EventEditorWindow backHref="/events">
-      <EventForm groups={circles} defaultGroupId={defaultGroupId} />
+      <EventSpark groups={circles} defaultGroupId={defaultGroupId} />
     </EventEditorWindow>
   )
 }
