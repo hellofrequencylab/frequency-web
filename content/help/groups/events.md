@@ -82,4 +82,5 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 ## Tips
 
 - New to a circle? An event is the easiest way in: say you're coming, then just show up.
-- Hosts run events for their circle, so the gatherings you see follow the circles you've joined.
+- You'll see events from the circles you've joined, plus public local events happening in your area.
+- Want to host? Any Crew member can create an event, in a circle or as a public local gathering. Crew is free during the beta.

@@ -100,10 +100,11 @@ function mapDraft(r: Record<string, unknown>): EventDraft {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Resolve the scope_id for a posted town event: the poster's nexus region, or a
- *  stable fallback (the root region) so a region-less poster still surfaces in
- *  local discovery. Returns null only if there are no regions at all. */
-async function resolveRegionScopeId(profileId: string): Promise<string | null> {
+/** Resolve the scope_id for a town/public event: the member's nexus region, or a
+ *  stable fallback (the root region) so a region-less member still surfaces in
+ *  local discovery. Returns null only if there are no regions at all. Reused by
+ *  createEvent for circle-less public events (any Crew can create one). */
+export async function resolveRegionScopeId(profileId: string): Promise<string | null> {
   const admin = db()
   const { data: me } = await admin
     .from('profiles')
