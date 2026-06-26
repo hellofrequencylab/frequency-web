@@ -26,9 +26,6 @@ export function PosterDetails({
 }) {
   const { lineup, schedule, features, tickets, links, sponsors, other } = details
   const media = details.media
-  const gallery = (details.imageRegions ?? [])
-    .map((r, i) => ({ ...r, url: media?.gallery?.[String(i)] ? signedUrls[media.gallery[String(i)]] : undefined }))
-    .filter((r) => !!r.url)
   // Resolve link hrefs once (default-https + http/https-only); drop any that
   // can't be made safe so the section count and render agree.
   const safeLinks = (links ?? [])
@@ -42,7 +39,6 @@ export function PosterDetails({
     (tickets?.length ?? 0) > 0 ||
     safeLinks.length > 0 ||
     (sponsors?.length ?? 0) > 0 ||
-    gallery.length > 0 ||
     (other?.length ?? 0) > 0
   if (!hasAnything) return null
 
@@ -160,24 +156,6 @@ export function PosterDetails({
       {/* ── Sponsors: a quiet credits line ── */}
       {sponsors && sponsors.length > 0 && (
         <p className="text-xs text-subtle">With support from {sponsors.join(', ')}.</p>
-      )}
-
-      {/* ── Gallery ── */}
-      {gallery.length > 0 && (
-        <section>
-          <SectionHeader title="From the poster" />
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {gallery.map((g, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={i}
-                src={g.url}
-                alt={g.note ?? ''}
-                className="h-28 w-28 shrink-0 rounded-xl border border-border object-cover"
-              />
-            ))}
-          </div>
-        </section>
       )}
 
       {/* ── Other details ── */}
