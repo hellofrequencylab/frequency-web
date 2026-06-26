@@ -108,7 +108,12 @@ export function DisplayHeading({
   size?: 'default' | 'lg'
   as?: 'h1' | 'h2' | 'h3'
 }) {
-  const scale = size === 'lg' ? 'text-5xl sm:text-6xl lg:text-7xl leading-[0.95]' : 'text-4xl sm:text-5xl'
+  // Fluid scale, matching lib/page-editor/fields.tsx EMPHASIS_SCALE (clamp min→max):
+  // unchanged on desktop, smaller mobile floor so headlines stay balanced on phones.
+  const scale =
+    size === 'lg'
+      ? 'text-[clamp(2rem,7vw,4.5rem)] leading-[0.95]'
+      : 'text-[clamp(1.875rem,5.5vw,3rem)]'
   return (
     <Tag className={`font-display uppercase text-balance ${scale} ${ink ? 'text-on-ink' : 'text-text'}`}>
       {children}
