@@ -1803,7 +1803,11 @@ export default function AppShell({
               // (absolute, full column) overlays it. The width transition is dropped mid-drag so
               // the column tracks the pointer 1:1.
               <div
-                className={`relative hidden shrink-0 justify-end lg:flex ${
+                // lg:ml-3 widens the content↔right-rail gap by 0.75rem so it matches the LEFT gap:
+                // the nav items inset their text by px-3, so content sits ~3.25rem from the nav text
+                // but only ~2.5rem from the flush right-rail cards. This nudge evens the two sides
+                // without touching the shared gap token (lg:gap-10, ADR-404) or the card width.
+                className={`relative hidden shrink-0 justify-end lg:ml-3 lg:flex ${
                   settings.resizing ? '' : 'transition-[width] duration-200 ease-out motion-reduce:transition-none'
                 }`}
                 style={{ width: settings.open ? settings.width : railCollapsed ? 56 : 288 }}
