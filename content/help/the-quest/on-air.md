@@ -3,7 +3,7 @@ title: Mindless, the practice timer
 description: One timer, two modes. Be Still for the quiet sit, Get Moving for a walk, run, yoga or workout. Then collect your rewards, streak and next assignment.
 category: the-quest
 order: 4
-updated: 2026-06-23
+updated: 2026-06-26
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -86,6 +86,11 @@ rings at each phase change, or each minute on the plain timer) and pick its
 voice: Soft, Low, or Bowl. Or turn on **vibration**. Both stay off unless you
 choose them, and your choices are remembered. While you breathe, the number in
 the middle of the rings counts each phase down with you.
+
+Want a soft background instead of silence? Under **Sound & cues**, pick an
+**Ambient** loop: Forest, Ocean, or Drift. Tap one to hear it, and it plays low
+under the whole sit, fading in as you start and out when you finish. Off by
+default, and remembered once you choose.
 
 Follow the rings: they grow when you breathe in, rest while you hold, and settle
 as you let go.

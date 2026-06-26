@@ -1,6 +1,6 @@
 # On Air: the practice timer mini-app (member-facing: **Mindless**)
 
-> Status: **P1 to P16 shipped** (ADR-229; desktop intercepted-modal entry deferred, see Roadmap). **Unified into one timer with two modes (ADR-360, see "The unified timer" below); select-not-start setup + auto-resume from a partial + crash-safe recovery shipped (P15); design alignment + Get Moving teal/blue recolor shipped (P16).** Canon names: NAMING.md §The Quest ("On Air" =
+> Status: **P1 to P17 shipped** (ADR-229; desktop intercepted-modal entry deferred, see Roadmap). **Unified into one timer with two modes (ADR-360, see "The unified timer" below); select-not-start setup + auto-resume from a partial + crash-safe recovery shipped (P15); design alignment + Get Moving teal/blue recolor shipped (P16).** Canon names: NAMING.md §The Quest ("On Air" =
 > internal name; member-facing the app is **Mindless**, verb **"tune out"**, modes **Be Still** / **Get Moving**, tagline **"Get out of your head, and into your life."**; "Airtime", "Dispatch from Vera"). Member help: `content/help/the-quest/on-air.md`.
 
 One tap → the world goes quiet → you breathe (or you move) → the game pays you in
@@ -312,6 +312,16 @@ on revisit**, by design.
   **Free Practice**, Get Moving recolored teal/blue via the new `move` token, the
   Play icon swapped to **Volleyball**, and more masthead top margin. See "Design
   specifics".
+
+- ~~P17: optional ambient audio~~ ✅ shipped: a soft background loop for a Be
+  Still sit (the "Sound & cues" **Ambient** row: Off · Forest · Ocean · Drift,
+  default off). The player (`lib/on-air-ambient.ts`) decodes each MP3 and builds
+  a crossfade-to-self loop buffer so it wraps with no seam (no `<audio loop>`
+  click, no offline pre-processing step). It fades in over 3s at the start, ducks
+  on pause, lifts on resume, fades out at the end, and rides the bell's shared
+  AudioContext. Tracks are a registry (`AMBIENT_TRACKS`) over `/public/tracks`;
+  the choice persists in `profiles.meta.onAir` and is restored on crash-resume.
+  Drop an MP3 in + one registry line to add more. See ADR-408.
 
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.

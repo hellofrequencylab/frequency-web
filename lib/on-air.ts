@@ -319,6 +319,31 @@ export function bellToneBySlug(slug: string | null | undefined): BellTone {
   return BELL_TONES.find((t) => t.slug === slug) ?? BELL_TONES[0]
 }
 
+// Ambient loops: an optional soft background that plays for the whole sit. The
+// files live in /public/tracks; the player (lib/on-air-ambient.ts) decodes each
+// into a seamless crossfade-to-self loop and fades it in. `credit` keeps the
+// source on record (these are licensed Epidemic Sound tracks); it's never shown
+// to a member.
+export interface AmbientTrack {
+  slug: string
+  /** Member-facing name (setup chip). Plain words. */
+  name: string
+  /** Public path under /public. */
+  src: string
+  /** Source / attribution, for licensing records only. */
+  credit: string
+}
+
+export const AMBIENT_TRACKS: AmbientTrack[] = [
+  { slug: 'forest', name: 'Forest', src: '/tracks/forest.mp3', credit: 'Epidemic Sound: Ambience, Forest, Bird Sing, Black Forest Czech Republic' },
+  { slug: 'ocean', name: 'Ocean', src: '/tracks/ocean.mp3', credit: 'Epidemic Sound: Water, Wave, Ocean, Waves On Shore, Beach, Close' },
+  { slug: 'drift', name: 'Drift', src: '/tracks/drift.mp3', credit: 'Epidemic Sound: Remain (DEX 1200)' },
+]
+
+export function ambientTrackBySlug(slug: string | null | undefined): AmbientTrack | null {
+  return AMBIENT_TRACKS.find((t) => t.slug === slug) ?? null
+}
+
 /** Bell loudness: scales the synth peak. Quiet/Loud sit either side of the
  *  default. Kept well under earbud-hostile levels even at Loud. */
 export type BellVolume = 'quiet' | 'medium' | 'loud'
@@ -362,6 +387,8 @@ export interface OnAirPrefs {
   bellEveryMin?: number
   /** Vibration on phase changes, where the device supports it. Default off. */
   haptics?: boolean
+  /** Ambient background loop slug (AMBIENT_TRACKS), or null/absent for none. */
+  ambientTrack?: string | null
 }
 
 export const DEFAULT_PREFS: OnAirPrefs = {
