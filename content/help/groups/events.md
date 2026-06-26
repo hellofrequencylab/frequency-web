@@ -46,8 +46,9 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 - Open **Capture** and tap **Upload a poster**. Snap the whole poster, ideally squared up and out of direct glare; the app reads it and drafts the event for you: title, time, place, lineup, the works. A slight tilt or a little shine is fine, it straightens and reads the poster on its own.
 - **Found it online instead?** Start a new event and paste the write-up you copied from an Eventbrite page, a WhatsApp group, or the event's website. Add the flyer photo too if you have one. Vera reads the text and the image together, lays out the date, place, lineup, tickets, and every link, and keeps the photo as the cover.
 - If the poster has a **QR code**, the app reads it too and saves the booking or RSVP link straight onto the event.
-- Check the draft, fix anything the poster made hard to read, and publish. If it's **your** event, you become the host. If you **found** it, it posts to local events with your name on it: "Posted by you" with a little Zap.
-- Posting someone else's event earns **Zaps**, and you get a ready-to-send message inviting the organizer to claim it. When they claim it, the event becomes theirs to run, your credit stays, and you earn a **claim bonus**.
+- Check the draft, fix anything the poster made hard to read, and publish. Add a real start date first, or it won't show in the library (the scan sometimes misreads the year). If it's **your** event, you become the host. If you **found** it, it posts to local events with your name on it: "Posted by you" with a little Zap.
+- Add the **organizer's email** in the draft, and when you publish as "I found this," we email them a link to claim it automatically. No email on hand? You also get a ready-to-send message and link to share yourself.
+- The event page is clearly marked as community-posted, naming you and the organizer, with a **"Is this your event? Claim it"** button. When the organizer claims it, the event becomes theirs to run, your credit stays, and you earn a **claim bonus**.
 - Keep it honest: events that real people RSVP to and organizers actually claim build your posting reputation. Flooding the library with events nobody engages with earns nothing.
 
 ## Tickets & paying
