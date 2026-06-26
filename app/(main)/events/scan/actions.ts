@@ -233,14 +233,28 @@ export async function updateDraft(
 }
 
 export type PublishDraftResult =
-  | { ok: true; slug: string; claimToken?: string }
+  | { ok: true; slug: string; claimToken?: string; claimSentTo?: string }
   | { ok: false; error: string }
 
 /** Publish a draft: 'mine' makes the caller the host; 'posted' publishes on the
- *  organizer's behalf and mints the one-time claim token. */
+ *  organizer's behalf and mints the one-time claim token. Guards the start date so a
+ *  scanned event with a missing or past date can't silently vanish from the library
+ *  (it would never pass the `starts_at >= now` listing filter). */
 export async function publishDraft(id: string, ownership: DraftOwnership): Promise<PublishDraftResult> {
   const { profileId } = await requireCaller()
   const kind: DraftOwnership = ownership === 'mine' ? 'mine' : 'posted'
+
+  // Date gate: publishable ⟺ listable. The events Catalog only shows `starts_at >= now`,
+  // so block a missing/past start with a clear reason rather than publishing into the void.
+  const draft = await getMyDraft(profileId, id)
+  if (!draft) return { ok: false, error: 'Draft not found.' }
+  const startMs = draft.startsAt ? new Date(draft.startsAt).getTime() : NaN
+  if (!Number.isFinite(startMs)) {
+    return { ok: false, error: 'Add a start date before publishing, so people can find this event.' }
+  }
+  if (startMs < Date.now()) {
+    return { ok: false, error: 'That start date is in the past. Set a future date before publishing (the scan may have misread the year).' }
+  }
 
   const res = await publishEventDraft(profileId, id, kind)
   if (!res) return { ok: false, error: 'Could not publish. The draft may already be live.' }
@@ -249,7 +263,12 @@ export async function publishDraft(id: string, ownership: DraftOwnership): Promi
   revalidatePath('/events/drafts')
   revalidatePath(`/events/drafts/${id}`)
   if (res.slug) revalidatePath(`/events/${res.slug}`)
-  return { ok: true, slug: res.slug, ...(res.claimToken ? { claimToken: res.claimToken } : {}) }
+  return {
+    ok: true,
+    slug: res.slug,
+    ...(res.claimToken ? { claimToken: res.claimToken } : {}),
+    ...(res.claimSentTo ? { claimSentTo: res.claimSentTo } : {}),
+  }
 }
 
 /** Delete one of the caller's UNPUBLISHED drafts, plus its stored images

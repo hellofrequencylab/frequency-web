@@ -27,6 +27,7 @@ import { EventRewardStrip } from '@/components/events/event-reward-strip'
 import { EventFactPanel, type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
+import { ClaimEventBanner } from '@/components/events/claim-event-banner'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { listCohosts } from '@/lib/events/cohosts'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
@@ -201,6 +202,7 @@ export default async function EventDetailPage({
     gallery_image_paths: string[] | null
     attendance_mode: AttendanceMode | null
     online_url: string | null
+    status: string | null
   }
   // These three only depend on already-resolved values (event.id / session_id) and
   // not on each other, so resolve them concurrently: the extra-meta read, the
@@ -209,7 +211,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url',
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -227,6 +229,15 @@ export default async function EventDetailPage({
   const onlineUrl = extra?.online_url ?? null
   const ticketedCents: number | null = ticketedCentsResolved
   const canManage = eventCaps.has('event.editSettings')
+
+  // Draft guard (ADR poster-events): an unpublished draft must never render on its
+  // public slug. The admin read above bypasses RLS, so re-apply the status gate the
+  // migration assumes server reads carry — only a manager may preview a draft.
+  if ((extra?.status ?? 'published') !== 'published' && !canManage) notFound()
+
+  // An unclaimed event posted on an organizer's behalf: it has a poster credit, no
+  // host, and was never claimed. Drives the "this is not my event / claim it" UI.
+  const isUnclaimedPosted = isPostedEvent && !extra?.claimed_at && !event.host
 
   // Uploaded cover (A1) — a public storage path in the event-media bucket → public URL
   // (next/image allows the supabase public storage host). Null when the host never
@@ -843,6 +854,16 @@ export default async function EventDetailPage({
           <Ticket className="h-4 w-4" />
           You&rsquo;re in. ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
         </div>
+      )}
+
+      {/* "This is not my event" — for an unclaimed posted event, name the poster +
+          organizer and give the organizer a path to claim it. Hidden for managers. */}
+      {isUnclaimedPosted && !canManage && (
+        <ClaimEventBanner
+          eventId={event.id}
+          organizerName={extra?.organizer_name ?? null}
+          postedByName={postedBy?.display_name ?? null}
+        />
       )}
 
       <DetailTemplate

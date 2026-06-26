@@ -308,6 +308,9 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       // Browse shows only listable events: unlisted is link-only, private is
       // host-only (RLS enforces access; THIS enforces non-listing — ADR-202).
       .in('visibility', ['public', 'circle_only'])
+      // Only published events list — never an unpublished poster-scan draft. The admin
+      // client bypasses RLS, so this status gate (which the migration assumes) is on us.
+      .eq('status', 'published')
       .eq('is_cancelled', false)
       .gte('starts_at', now)
       .lte('starts_at', future)
@@ -342,6 +345,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
         .select(EVENT_SELECT)
         .in('id', candidateIds)
         .eq('visibility', 'public')
+        .eq('status', 'published')
         .neq('scope_type', 'circle')
         .eq('is_cancelled', false)
         .gte('starts_at', now)
@@ -365,6 +369,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       .from('events')
       .select(EVENT_SELECT)
       .eq('visibility', 'public')
+      .eq('status', 'published')
       .neq('scope_type', 'circle')
       .eq('is_cancelled', false)
       .gte('starts_at', now)
