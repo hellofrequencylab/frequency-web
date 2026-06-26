@@ -19,6 +19,7 @@ import type {
   OtherDetail,
   FieldConfidence,
 } from './types'
+import { normalizeHttpUrl } from '@/lib/safe-url'
 
 const DOMAIN_SLUGS: DomainSlug[] = ['mind', 'body', 'spirit', 'expression']
 
@@ -269,13 +270,14 @@ export function coerceEventDetails(raw: unknown): EventDetails {
     if (items.length) out.tickets = items
   }
 
-  // links (<=10): label + url required; kind whitelisted.
+  // links (<=10): a SAFE http/https url required (scheme-less poster links are
+  // defaulted to https; javascript:/data: are dropped); label + whitelisted kind.
   if (Array.isArray(d.links)) {
     const items: EventLink[] = []
     for (const v of d.links) {
       if (!v || typeof v !== 'object') continue
       const o = v as Record<string, unknown>
-      const url = str(o.url, 300)
+      const url = normalizeHttpUrl(str(o.url, 300))
       if (!url) continue
       const label = str(o.label, 120) || url
       items.push({ label, url, kind: oneOf(o.kind, LINK_KINDS, 'other') })

@@ -7,17 +7,13 @@
 
 import { ExternalLink, UserRound } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
+import { normalizeHttpUrl } from '@/lib/safe-url'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
 
 function centsLabel(cents: number | null | undefined): string | null {
   if (cents == null) return null
   if (cents === 0) return 'Free'
   return `$${(cents / 100).toFixed(2)}`
-}
-
-/** Links printed on a poster often drop the scheme — make them clickable. */
-function safeHref(url: string): string {
-  return /^https?:\/\//i.test(url) ? url : `https://${url.replace(/^\/+/, '')}`
 }
 
 export function PosterDetails({
@@ -33,13 +29,18 @@ export function PosterDetails({
   const gallery = (details.imageRegions ?? [])
     .map((r, i) => ({ ...r, url: media?.gallery?.[String(i)] ? signedUrls[media.gallery[String(i)]] : undefined }))
     .filter((r) => !!r.url)
+  // Resolve link hrefs once (default-https + http/https-only); drop any that
+  // can't be made safe so the section count and render agree.
+  const safeLinks = (links ?? [])
+    .map((l) => ({ ...l, href: normalizeHttpUrl(l.url) }))
+    .filter((l): l is typeof l & { href: string } => !!l.href)
 
   const hasAnything =
     (lineup?.length ?? 0) > 0 ||
     (schedule?.length ?? 0) > 0 ||
     (features?.length ?? 0) > 0 ||
     (tickets?.length ?? 0) > 0 ||
-    (links?.length ?? 0) > 0 ||
+    safeLinks.length > 0 ||
     (sponsors?.length ?? 0) > 0 ||
     gallery.length > 0 ||
     (other?.length ?? 0) > 0
@@ -137,14 +138,14 @@ export function PosterDetails({
       )}
 
       {/* ── Links ── */}
-      {links && links.length > 0 && (
+      {safeLinks.length > 0 && (
         <section>
           <SectionHeader title="Links" />
           <div className="flex flex-wrap gap-2">
-            {links.map((l, i) => (
+            {safeLinks.map((l, i) => (
               <a
                 key={`${l.url}-${i}`}
-                href={safeHref(l.url)}
+                href={l.href}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"

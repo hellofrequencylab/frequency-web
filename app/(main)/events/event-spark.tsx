@@ -2,8 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Sparkles, ArrowLeft, Loader2, ScanLine, ImagePlus, CalendarDays, MapPin, Tag } from 'lucide-react'
+import { Sparkles, ArrowLeft, Loader2, ScanLine, ImagePlus, X, CalendarDays, MapPin, Tag } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
 import { createClient } from '@/lib/supabase/client'
 import type { ExtractedEvent } from '@/lib/events/types'
@@ -17,13 +16,14 @@ import { EventForm } from './new/event-form'
 const SCAN_BUCKET = 'network-contacts'
 
 // Vera's event Spark — the guided /events/new composer, mirroring the Journeys/Practices
-// builder (components/journey/v2/journey-spark.tsx). Two ways in:
+// builder. Two ways in:
 //   • QUESTIONS — a short stepped form (what / when / where / details), or
-//   • FLYER     — paste a flyer or post and let Vera read it.
+//   • IMPORT    — paste the full write-up (from an Eventbrite/WhatsApp/website) AND/OR upload a
+//     photo of the flyer; Vera reads BOTH together into one event.
 // Either way Vera drafts the event for review, then creating it runs through the SHARED
 // saveDraft → draft editor → publish flow (the same one the poster scanner uses). Nothing
-// persists until that create. "Fill it in myself" hands off to the manual EventForm; "Scan
-// a poster" jumps to the vision flow. Degrades cleanly when Vera is off.
+// persists until that create. "Fill it in myself" hands off to the manual EventForm. Degrades
+// cleanly when Vera is off.
 
 const FIELD =
   'w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-primary placeholder:text-subtle'
@@ -37,7 +37,6 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
   const [step, setStep] = useState(1)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [extracting, setExtracting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [what, setWhat] = useState('')
@@ -45,12 +44,16 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
   const [where, setWhere] = useState('')
   const [details, setDetails] = useState('')
   const [flyer, setFlyer] = useState('')
-  // A photo of a flyer/poster the user uploaded: its stored path rides through to the draft as the
-  // cover, and the vision read fills the rest. Set only when the photo path is used.
+
+  // A flyer/poster photo the user attached on the import path. Staged locally (thumbnail) and
+  // uploaded + read TOGETHER with any pasted text when they hit "Draft with Vera". The kept
+  // upload becomes the draft's cover (posterPath).
+  const [stagedFile, setStagedFile] = useState<File | null>(null)
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null)
   const [posterPath, setPosterPath] = useState<string | null>(null)
 
   // Vera's drafted event (review step). title/description are the editable surface here; the
-  // rest carries through to the draft editor untouched.
+  // rest (date, place, price, lineup, tickets, links…) carries through to the draft editor.
   const [draft, setDraft] = useState<ExtractedEvent | null>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -60,74 +63,78 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
   const onReview = step === 5
   const total = usingFlyer ? 2 : 5
   const current = usingFlyer ? (onReview ? 2 : 1) : step
-  const label = onReview ? 'Review' : usingFlyer ? 'Flyer or photo' : ['What', 'When', 'Where', 'Details'][step - 1]
+  const label = onReview ? 'Review' : usingFlyer ? 'Import' : ['What', 'When', 'Where', 'Details'][step - 1]
+
+  const applyDraft = (d: ExtractedEvent) => {
+    setDraft(d)
+    setTitle(d.title)
+    setDescription(d.description)
+    setStep(5)
+  }
+
+  const aiOffMessage = (reason: string, fallback: string) =>
+    reason === 'ai_unavailable' ? 'Vera is off right now. Use "Fill it in myself" below.' : fallback
 
   const generate = () => {
     setError(null)
     start(async () => {
+      // IMPORT path with a staged photo → read the image AND the pasted text together (the smart
+      // uploader). Upload the downscaled photo, then one combined extraction.
+      if (usingFlyer && stagedFile) {
+        try {
+          const supabase = createClient()
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) {
+            setError('Sign in to read a photo.')
+            return
+          }
+          const small = await downscaleForScan(stagedFile)
+          const path = `${user.id}/${crypto.randomUUID()}.jpg`
+          const { error: upErr } = await supabase.storage
+            .from(SCAN_BUCKET)
+            .upload(path, small, { contentType: 'image/jpeg' })
+          if (upErr) {
+            setError('Could not upload that photo. Try again.')
+            return
+          }
+          const res = await scanPoster([path], flyer.trim() || undefined)
+          if (!res.ok) {
+            setError(aiOffMessage(res.reason, 'Could not read that. Try a clearer photo, or paste the text too.'))
+            return
+          }
+          setPosterPath(res.posterPath)
+          applyDraft(res.extraction)
+        } catch {
+          setError('Could not read that. Try again.')
+        }
+        return
+      }
+
+      // Text-only: the import path with just pasted text, or the questions path.
       const res = await sparkEventAction({ what, when, where, details }, usingFlyer ? flyer : undefined)
       if (!res.ok) {
-        setError(
-          res.reason === 'ai_unavailable'
-            ? 'Vera is off right now. Use "Fill it in myself" below.'
-            : 'Sign in to draft an event.',
-        )
-        return // stay on this step; the manual fallback stays visible
+        setError(aiOffMessage(res.reason, 'Sign in to draft an event.'))
+        return
       }
-      setDraft(res.draft)
-      setTitle(res.draft.title)
-      setDescription(res.draft.description)
-      setStep(5)
+      applyDraft(res.draft)
     })
   }
 
-  // Upload a flyer/poster photo and let Vera read it (the same vision path as /events/scan, brought
-  // inline). The photo is downscaled on-device, uploaded to the owner-scoped private bucket, read by
-  // scanPoster, and KEPT as the draft's cover. Jumps straight to the review step on success.
-  const onPhoto = (file: File) => {
+  const onPickPhoto = (file: File) => {
     if (!file.type.startsWith('image/')) {
       setError('That is not an image. Upload a photo of the flyer or poster.')
       return
     }
     setError(null)
-    setExtracting(true)
-    start(async () => {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          setError('Sign in to read a photo.')
-          return
-        }
-        const small = await downscaleForScan(file)
-        const path = `${user.id}/${crypto.randomUUID()}.jpg`
-        const { error: upErr } = await supabase.storage
-          .from(SCAN_BUCKET)
-          .upload(path, small, { contentType: 'image/jpeg' })
-        if (upErr) {
-          setError('Could not upload that photo. Try again.')
-          return
-        }
-        const res = await scanPoster([path])
-        if (!res.ok) {
-          setError(
-            res.reason === 'ai_unavailable'
-              ? 'Vera is off right now. Use "Fill it in myself" below.'
-              : 'Could not read that photo. Try a sharper, straight-on shot.',
-          )
-          return
-        }
-        setDraft(res.extraction)
-        setTitle(res.extraction.title)
-        setDescription(res.extraction.description)
-        setPosterPath(res.posterPath)
-        setStep(5)
-      } catch {
-        setError('Could not read that photo. Try again.')
-      } finally {
-        setExtracting(false)
-      }
-    })
+    if (thumbUrl) URL.revokeObjectURL(thumbUrl)
+    setStagedFile(file)
+    setThumbUrl(URL.createObjectURL(file))
+  }
+
+  const removePhoto = () => {
+    if (thumbUrl) URL.revokeObjectURL(thumbUrl)
+    setStagedFile(null)
+    setThumbUrl(null)
   }
 
   const create = () => {
@@ -161,17 +168,21 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
   const back = () => setStep((s) => Math.max(1, s - 1))
 
   const canNext = usingFlyer
-    ? flyer.trim().length > 0
+    ? flyer.trim().length > 0 || stagedFile !== null
     : (step === 1 && what.trim().length > 0) || step === 2 || step === 3 || step === 4
 
   const heading = onReview
     ? {
         title: 'Here is your event',
         description:
-          "Vera's draft. Tidy the title and description, then create it. You'll set the exact time, place, cover, and tickets in the editor next.",
+          "Vera's draft. Tidy the title and description, then create it. The date, place, cover, lineup, tickets, and links carry into the editor next.",
       }
     : usingFlyer
-      ? { title: 'Paste or upload your event', description: 'Paste the full write-up, page, or post, or upload a photo of the flyer. Vera turns it into an event.' }
+      ? {
+          title: 'Paste it, snap it, or both',
+          description:
+            'Found it on Eventbrite, a WhatsApp group, or a poster at a coffee shop? Paste the write-up and/or upload a photo of the flyer. Vera reads everything together and lays it out.',
+        }
       : [
           { title: 'What is the event?', description: 'A sentence is plenty. Tell Vera what it is and she drafts the rest.' },
           { title: 'When is it?', description: 'In your own words, like "this Friday 7pm" or "March 1 at noon".' },
@@ -189,35 +200,56 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
         <p className="mt-1 text-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
-          {/* FLYER / PHOTO path: paste the full write-up OR upload a photo of the flyer. */}
+          {/* IMPORT path: paste the full write-up AND/OR attach a photo of the flyer. */}
           {usingFlyer && !onReview && (
             <div className="space-y-3">
               <textarea
                 autoFocus
                 value={flyer}
                 onChange={(e) => setFlyer(e.target.value)}
-                rows={8}
+                rows={7}
                 className={FIELD}
                 placeholder="Paste the full event write-up, page, or post here…"
               />
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={extracting || pending}
-                  className={`${wizardSecondaryClass} !px-3 !py-2 text-sm`}
-                >
-                  {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />} Upload a photo
-                </button>
-                <span className="text-xs text-subtle">A flyer or poster image. Vera reads it and keeps it as the cover.</span>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) onPhoto(f); e.target.value = '' }}
-                />
-              </div>
+
+              {thumbUrl ? (
+                <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-2.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={thumbUrl} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-border object-cover" />
+                  <span className="min-w-0 flex-1 text-xs text-muted">
+                    Photo attached. Vera reads it with the text and keeps it as the cover.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    disabled={pending}
+                    aria-label="Remove photo"
+                    className="shrink-0 rounded-lg border border-border p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={pending}
+                    className={`${wizardSecondaryClass} !px-3 !py-2 text-sm`}
+                  >
+                    <ImagePlus className="h-4 w-4" /> Add a photo
+                  </button>
+                  <span className="text-xs text-subtle">A flyer or poster image. Optional, and combined with the text.</span>
+                </div>
+              )}
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickPhoto(f); e.target.value = '' }}
+              />
             </div>
           )}
 
@@ -239,8 +271,8 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
               >
                 <ScanLine className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-text">Have a flyer or a post already?</span>
-                  <span className="block text-xs leading-snug text-muted">Paste the full write-up or upload a photo, and Vera builds the whole event from it.</span>
+                  <span className="block text-sm font-semibold text-text">Found it somewhere? Import it.</span>
+                  <span className="block text-xs leading-snug text-muted">Paste the write-up from Eventbrite, a group, or a website, and/or upload a flyer photo. Vera builds the whole event.</span>
                 </span>
               </button>
             </>
@@ -287,7 +319,13 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
                   {draft.isFree ? 'Free' : draft.priceCents != null ? `$${(draft.priceCents / 100).toFixed(0)}` : 'Set the price in the editor'}
                   {draft.domain ? ` · ${draft.domain}` : ''}
                 </p>
-                <p className="text-2xs text-subtle">You&apos;ll set the exact time, place, cover image, and tickets in the editor next.</p>
+                {detailCount(draft) > 0 && (
+                  <p className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 shrink-0 text-subtle" />
+                    {detailSummary(draft)}
+                  </p>
+                )}
+                <p className="text-2xs text-subtle">You&apos;ll fine-tune everything (and the links) in the editor next.</p>
               </div>
             </div>
           )}
@@ -299,7 +337,7 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
           {(step > 1 || (usingFlyer && !onReview)) && (
             <button
               type="button"
-              onClick={usingFlyer && !onReview ? () => setUsingFlyer(false) : back}
+              onClick={usingFlyer && !onReview ? () => { setUsingFlyer(false); removePhoto() } : back}
               disabled={pending}
               className={`${wizardSecondaryClass} flex-1`}
             >
@@ -326,10 +364,6 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
 
       {!onReview && (
         <p className="mt-8 text-center text-xs text-subtle">
-          <Link href="/events/scan" className="underline-offset-4 transition-colors hover:text-muted hover:underline">
-            Scan a poster instead
-          </Link>
-          <span className="px-1.5 text-border" aria-hidden>·</span>
           <button type="button" onClick={() => setMode('manual')} className="underline-offset-4 transition-colors hover:text-muted hover:underline">
             Fill it in myself
           </button>
@@ -343,4 +377,31 @@ function formatWhen(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
   return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
+/** How many rich details Vera harvested (lineup, schedule, tickets, links, sponsors), so the
+ *  review can reassure the user nothing was dropped before the editor. */
+function detailCount(d: ExtractedEvent): number {
+  const x = d.details
+  return (
+    (x.lineup?.length ?? 0) +
+    (x.schedule?.length ?? 0) +
+    (x.tickets?.length ?? 0) +
+    (x.links?.length ?? 0) +
+    (x.sponsors?.length ?? 0)
+  )
+}
+
+function detailSummary(d: ExtractedEvent): string {
+  const x = d.details
+  const bits: string[] = []
+  const add = (n: number | undefined, one: string, many: string) => {
+    if (n && n > 0) bits.push(`${n} ${n === 1 ? one : many}`)
+  }
+  add(x.lineup?.length, 'act', 'acts')
+  add(x.schedule?.length, 'time', 'times')
+  add(x.tickets?.length, 'ticket tier', 'ticket tiers')
+  add(x.links?.length, 'link', 'links')
+  add(x.sponsors?.length, 'sponsor', 'sponsors')
+  return `Vera also captured ${bits.join(', ')}.`
 }
