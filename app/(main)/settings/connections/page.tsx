@@ -8,6 +8,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getMatchingConsent } from '@/lib/resonance/matches'
 import { ConnectionPrefsForm } from '@/components/settings/connection-prefs-form'
 import { LiveLocationToggle } from '@/components/settings/live-location-toggle'
+import { FeedRadiusSlider } from '@/components/settings/feed-radius-slider'
 import { ResonanceMatchingToggle } from '@/components/settings/resonance-matching-toggle'
 
 export default async function ConnectionsSettingsPage() {
@@ -39,6 +40,9 @@ export default async function ConnectionsSettingsPage() {
           maxDiscoveryRadiusM: settings.maxDiscoveryRadiusM,
         }}
       />
+      <div className="mt-5">
+        <FeedRadiusSlider initialRadiusM={prefs.feedRadiusM} />
+      </div>
       <div className="mt-5">
         <LiveLocationToggle initialLive={prefs.liveMode} liveUpdatedAt={prefs.liveUpdatedAt} />
       </div>
