@@ -134,14 +134,15 @@ introduction beforehand. Qualities, per the owner:
 | No swipe | ⚠️ Never. The feed surfaces people; there is no card stack. |
 | Hide / X a suggestion | ✅ Phase 0 table (`suggestion_hidden`); a member removes anyone they are not interested in, and the rank filters them out. |
 | Streaks as a match signal | ✅ Quiet. Biases the rank, never a prominent badge. |
-| Safety + verification for in-person | 📋 Meetups happen at real circles/events; verification + safety gating is a tracked phase, not an afterthought. |
-| Romance mode | ⚠️ **Not built.** Reserved as a future baseline (`member_match_prefs.romance_mode`, off). |
-| Birth-chart / astrology matching | ⚠️ **Not built.** Reserved as a future baseline (`member_match_prefs.birth_data` + `astrology_opt_in`, null/off). |
+| Safety + verification for in-person | ✅ Phase 4 (ADR-418): meet-safely guidance + verification scaffold (the flow is a deferred product call). |
+| Romance mode | ✅ Phase 5 (ADR-419): opt-in, MUTUAL-only, no swipe, drawn from people you share context with, meet-safely attached. Off by default. |
+| Birth-chart / astrology matching | ✅ Phase 5 (ADR-419): opt-in sun-sign compatibility as a quiet signal (both sides opted in). Time/place reserved for a fuller chart later. |
 
-**Why scaffold romance + astrology now without building them.** Isolating those special-category
-fields in one opt-in, owner-RLS table (`member_match_prefs`) means the day the product wants them, the
-governed home already exists, with no migration scramble and no PII sprinkled across `profiles`. Until
-then, nothing reads them.
+**On building romance + astrology safely.** The special-category fields live in one opt-in, owner-RLS
+table (`member_match_prefs`). Romance is never one-sided (both parties opt in to appear to each other),
+candidates come from the community context the viewer already shares (not strangers), exact location is
+never involved, and the meet-safely guidance rides along. The sun-sign engine (`lib/astrology/signs.ts`)
+needs only a birth date; the stored `birth_data` reserves time + place for a fuller chart later.
 
 ---
 
@@ -171,7 +172,7 @@ opt-in.
 | **2. Adaptive radius + founder prompt** | The density rollup job + the expanding-ring walk. The founder-vs-activity branch. The privacy "turn on location" nudge. | ✅ shipped (ADR-416) |
 | **3. Radius slider + hide control** | Member radius slider (writes `feed_radius_m`); the X-to-hide wired to `suggestion_hidden`; streak-as-quiet-signal in the rank. | ✅ shipped (ADR-417) |
 | **4. Safety + verification** | Verification + safety gating for in-person meetups that originate from a circle/event introduction. | ✅ shipped (ADR-418); verification FLOW deferred |
-| **5. Future baselines** | Romance mode and astrology matching, if and when the product calls for them, on the Phase 0 scaffolding. | ⚠️ Deferred |
+| **5. Romance + astrology** | Opt-in astrology compatibility signal + a mutual-opt-in romance lane, on the Phase 0 scaffolding. Off by default, no swipe, meet-safely throughout. | ✅ shipped (ADR-419) |
 
 Each phase is independently shippable and reads the phase before it. Nothing in Phases 1 to 5 needs a
 new embedding model or a new geo column, only the composition logic and the surfaces that read it.

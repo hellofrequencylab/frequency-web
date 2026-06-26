@@ -39,7 +39,7 @@ export async function FeedPeopleStrip({ viewerProfileId }: { viewerProfileId: st
           // The reason line: the real graph signals, plus a quiet streak note when the
           // viewer and this member both keep one (a soft match signal, never loud).
           const reason = suggestionReason(p)
-          const why = [reason, p.bothStreaking ? 'you both keep a streak' : null]
+          const why = [reason, p.bothStreaking ? 'you both keep a streak' : null, p.astroReason]
             .filter(Boolean)
             .join(' · ')
           return (

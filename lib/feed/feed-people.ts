@@ -8,6 +8,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPeopleSuggestions, type PersonSuggestion } from '@/lib/people-suggestions'
 import { getHiddenSuggestionIds } from './viewer-resonance'
+import { getMyMatchPrefs, getMatchPrefsFor } from '@/lib/match/prefs'
+import { sunSign, signCompatibility } from '@/lib/astrology/signs'
 
 // Both keep a streak of at least this many days -> a quiet "you both keep a streak"
 // match signal (never prominent, per the owner).
@@ -18,6 +20,8 @@ export interface FeedPersonSuggestion extends PersonSuggestion {
   bothStreaking: boolean
   /** This member is verified (ADR-418). Null/false until a verification flow ships. */
   verified: boolean
+  /** A quiet astrology note when both opted in + have birth dates (ADR-419), else null. */
+  astroReason: string | null
 }
 
 export async function getFeedPeopleSuggestions(
@@ -55,15 +59,36 @@ export async function getFeedPeopleSuggestions(
   }
   const viewerStreaking = (streakById.get(viewerProfileId) ?? 0) >= STREAK_SIGNAL_MIN
 
-  const enriched: FeedPersonSuggestion[] = visible.map((p) => ({
-    ...p,
-    bothStreaking: viewerStreaking && (streakById.get(p.id) ?? 0) >= STREAK_SIGNAL_MIN,
-    verified: verifiedById.get(p.id) ?? false,
-  }))
+  // Astrology signal (ADR-419): a quiet "your signs click" reason, ONLY when the viewer
+  // and the candidate both opted in and both have a birth date. Off entirely otherwise.
+  const [viewerPrefs, candidatePrefs] = await Promise.all([
+    getMyMatchPrefs(viewerProfileId),
+    getMatchPrefsFor(visible.map((p) => p.id)),
+  ])
+  const viewerSign = viewerPrefs.astrologyOptIn ? sunSign(viewerPrefs.birthData?.date) : null
 
-  // A stable nudge: shared-discipline matches edge up, without overturning the
-  // strong graph signals (shared circles + mutual connections stay the spine).
-  enriched.sort((a, b) => Number(b.bothStreaking) - Number(a.bothStreaking))
+  const enriched: FeedPersonSuggestion[] = visible.map((p) => {
+    let astroReason: string | null = null
+    if (viewerSign) {
+      const cp = candidatePrefs.get(p.id)
+      const candSign = cp?.astrologyOptIn ? sunSign(cp.birthData?.date) : null
+      if (candSign) astroReason = signCompatibility(viewerSign, candSign).reason
+    }
+    return {
+      ...p,
+      bothStreaking: viewerStreaking && (streakById.get(p.id) ?? 0) >= STREAK_SIGNAL_MIN,
+      verified: verifiedById.get(p.id) ?? false,
+      astroReason,
+    }
+  })
+
+  // A stable nudge: shared-discipline + astrology matches edge up, without overturning
+  // the strong graph signals (shared circles + mutual connections stay the spine).
+  enriched.sort(
+    (a, b) =>
+      Number(b.bothStreaking) - Number(a.bothStreaking) ||
+      Number(!!b.astroReason) - Number(!!a.astroReason),
+  )
   return enriched.slice(0, limit)
 }
 
