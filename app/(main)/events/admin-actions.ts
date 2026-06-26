@@ -46,6 +46,9 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   const admin = createAdminClient()
   const startsAt = fd.get('starts_at') as string
   const endsAt = fd.get('ends_at') as string
+  if (startsAt && endsAt && new Date(endsAt) < new Date(startsAt)) {
+    throw new Error('End time must be after the start time.')
+  }
   const { error } = await admin
     .from('events')
     .update({

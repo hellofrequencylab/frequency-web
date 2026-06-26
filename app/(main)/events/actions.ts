@@ -99,6 +99,9 @@ export async function createEvent(formData: FormData) {
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
 
   if (!title || !scopeId || !startsAt) return
+  // An end before the start is never valid — drop the bad write rather than store a
+  // negative-duration event (the form should also block it, this is the server guard).
+  if (endsAt && new Date(endsAt) < new Date(startsAt)) return
 
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
@@ -209,6 +212,8 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const description = (formData.get('description') as string | null)?.trim() || null
   const location = (formData.get('location') as string | null)?.trim() || null
   const endsAt = (formData.get('endsAt') as string | null) || null
+  // Reject a negative-duration edit (the form blocks it too; this is the server guard).
+  if (endsAt && new Date(endsAt) < new Date(startsAt)) return
 
   const capacityRaw = (formData.get('capacity') as string | null)?.trim() || ''
   const capacityParsed = capacityRaw ? parseInt(capacityRaw, 10) : NaN
@@ -426,9 +431,19 @@ async function readRsvpStatus(eventId: string, profileId: string): Promise<strin
   return (data as { status: string } | null)?.status ?? null
 }
 
+// Guard: the event must exist and not be cancelled before we write an RSVP row
+// (mirrors checkInEvent's own check). Without it a stale/cancelled event id could
+// mint orphaned RSVP rows + fire the going side-effects. Returns false to no-op.
+async function eventOpenForRsvp(eventId: string): Promise<boolean> {
+  const admin = createAdminClient()
+  const { data } = await admin.from('events').select('id, is_cancelled').eq('id', eventId).maybeSingle()
+  return !!data && !(data as { is_cancelled: boolean | null }).is_cancelled
+}
+
 export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
+  if (!(await eventOpenForRsvp(eventId))) return
 
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -518,6 +533,7 @@ export async function toggleRSVP(eventId: string) {
 export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' | 'not_going') {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
+  if (!(await eventOpenForRsvp(eventId))) return
 
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -688,6 +704,9 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     // never let a reward read break the check-in
   }
   await recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+  // A first check-in changes the event's going/check-in counts the detail + manage
+  // pages render, so refresh them (the 'going' branches already revalidate; this path didn't).
+  revalidatePath('/events', 'layout')
   return { ok: true, zapsAwarded }
 }
 
