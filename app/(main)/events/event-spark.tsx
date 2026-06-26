@@ -1,14 +1,20 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Sparkles, ArrowLeft, Loader2, ScanLine, CalendarDays, MapPin, Tag } from 'lucide-react'
+import { Sparkles, ArrowLeft, Loader2, ScanLine, ImagePlus, CalendarDays, MapPin, Tag } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
+import { createClient } from '@/lib/supabase/client'
 import type { ExtractedEvent } from '@/lib/events/types'
 import { sparkEventAction } from './create-actions'
-import { saveDraft } from './scan/actions'
+import { saveDraft, scanPoster } from './scan/actions'
+import { downscaleForScan } from './scan/image-tools'
 import { EventForm } from './new/event-form'
+
+// The PRIVATE bucket the poster scanner uploads to (owner-scoped RLS, path `${uid}/...`).
+// scanPoster + saveDraft both re-validate the path is the caller's, so the wizard reuses it.
+const SCAN_BUCKET = 'network-contacts'
 
 // Vera's event Spark — the guided /events/new composer, mirroring the Journeys/Practices
 // builder (components/journey/v2/journey-spark.tsx). Two ways in:
@@ -31,12 +37,17 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
   const [step, setStep] = useState(1)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [extracting, setExtracting] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const [what, setWhat] = useState('')
   const [when, setWhen] = useState('')
   const [where, setWhere] = useState('')
   const [details, setDetails] = useState('')
   const [flyer, setFlyer] = useState('')
+  // A photo of a flyer/poster the user uploaded: its stored path rides through to the draft as the
+  // cover, and the vision read fills the rest. Set only when the photo path is used.
+  const [posterPath, setPosterPath] = useState<string | null>(null)
 
   // Vera's drafted event (review step). title/description are the editable surface here; the
   // rest carries through to the draft editor untouched.
@@ -49,7 +60,7 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
   const onReview = step === 5
   const total = usingFlyer ? 2 : 5
   const current = usingFlyer ? (onReview ? 2 : 1) : step
-  const label = onReview ? 'Review' : usingFlyer ? 'Your flyer' : ['What', 'When', 'Where', 'Details'][step - 1]
+  const label = onReview ? 'Review' : usingFlyer ? 'Flyer or photo' : ['What', 'When', 'Where', 'Details'][step - 1]
 
   const generate = () => {
     setError(null)
@@ -70,6 +81,55 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
     })
   }
 
+  // Upload a flyer/poster photo and let Vera read it (the same vision path as /events/scan, brought
+  // inline). The photo is downscaled on-device, uploaded to the owner-scoped private bucket, read by
+  // scanPoster, and KEPT as the draft's cover. Jumps straight to the review step on success.
+  const onPhoto = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError('That is not an image. Upload a photo of the flyer or poster.')
+      return
+    }
+    setError(null)
+    setExtracting(true)
+    start(async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setError('Sign in to read a photo.')
+          return
+        }
+        const small = await downscaleForScan(file)
+        const path = `${user.id}/${crypto.randomUUID()}.jpg`
+        const { error: upErr } = await supabase.storage
+          .from(SCAN_BUCKET)
+          .upload(path, small, { contentType: 'image/jpeg' })
+        if (upErr) {
+          setError('Could not upload that photo. Try again.')
+          return
+        }
+        const res = await scanPoster([path])
+        if (!res.ok) {
+          setError(
+            res.reason === 'ai_unavailable'
+              ? 'Vera is off right now. Use "Fill it in myself" below.'
+              : 'Could not read that photo. Try a sharper, straight-on shot.',
+          )
+          return
+        }
+        setDraft(res.extraction)
+        setTitle(res.extraction.title)
+        setDescription(res.extraction.description)
+        setPosterPath(res.posterPath)
+        setStep(5)
+      } catch {
+        setError('Could not read that photo. Try again.')
+      } finally {
+        setExtracting(false)
+      }
+    })
+  }
+
   const create = () => {
     if (!title.trim() || !draft) return
     setError(null)
@@ -86,6 +146,8 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
         organizerContact: draft.organizerContact,
         domain: draft.domain,
         details: draft.details,
+        // The uploaded flyer photo (if any) becomes the draft's cover.
+        posterPath,
       })
       if ('id' in res) router.push(`/events/drafts/${res.id}`)
       else setError(res.error)
@@ -109,7 +171,7 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
           "Vera's draft. Tidy the title and description, then create it. You'll set the exact time, place, cover, and tickets in the editor next.",
       }
     : usingFlyer
-      ? { title: 'Paste your flyer', description: 'Drop in the text from a flyer or post and Vera turns it into an event.' }
+      ? { title: 'Paste or upload your event', description: 'Paste the full write-up, page, or post, or upload a photo of the flyer. Vera turns it into an event.' }
       : [
           { title: 'What is the event?', description: 'A sentence is plenty. Tell Vera what it is and she drafts the rest.' },
           { title: 'When is it?', description: 'In your own words, like "this Friday 7pm" or "March 1 at noon".' },
@@ -127,16 +189,36 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
         <p className="mt-1 text-sm leading-relaxed text-muted">{heading.description}</p>
 
         <div className="mt-5">
-          {/* FLYER path */}
+          {/* FLYER / PHOTO path: paste the full write-up OR upload a photo of the flyer. */}
           {usingFlyer && !onReview && (
-            <textarea
-              autoFocus
-              value={flyer}
-              onChange={(e) => setFlyer(e.target.value)}
-              rows={8}
-              className={FIELD}
-              placeholder="Paste the flyer or post text here…"
-            />
+            <div className="space-y-3">
+              <textarea
+                autoFocus
+                value={flyer}
+                onChange={(e) => setFlyer(e.target.value)}
+                rows={8}
+                className={FIELD}
+                placeholder="Paste the full event write-up, page, or post here…"
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={extracting || pending}
+                  className={`${wizardSecondaryClass} !px-3 !py-2 text-sm`}
+                >
+                  {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />} Upload a photo
+                </button>
+                <span className="text-xs text-subtle">A flyer or poster image. Vera reads it and keeps it as the cover.</span>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) onPhoto(f); e.target.value = '' }}
+                />
+              </div>
+            </div>
           )}
 
           {/* QUESTIONS path */}
@@ -158,7 +240,7 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
                 <ScanLine className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-text">Have a flyer or a post already?</span>
-                  <span className="block text-xs leading-snug text-muted">Paste its text and Vera builds the whole event from it.</span>
+                  <span className="block text-xs leading-snug text-muted">Paste the full write-up or upload a photo, and Vera builds the whole event from it.</span>
                 </span>
               </button>
             </>
