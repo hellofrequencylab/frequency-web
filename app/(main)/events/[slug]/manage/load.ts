@@ -111,9 +111,11 @@ export async function loadAnalytics(
   const waitlist = roster.filter((g) => g.status === 'waitlist').length
   const checkedIn = roster.filter((g) => g.checkedIn).length
   const headcount = going + goingGuests.reduce((sum, g) => sum + g.plusOnes, 0)
+  // Utilize the fresh roster count (computed above), not capacity.going from the
+  // separate capacity read, so the % matches the going number shown beside it.
   const utilization =
     capacity.capacity != null && capacity.capacity > 0
-      ? Math.round((capacity.going / capacity.capacity) * 100)
+      ? Math.round((going / capacity.capacity) * 100)
       : null
   return { capacity, going, maybe, waitlist, headcount, checkedIn, utilization }
 }
