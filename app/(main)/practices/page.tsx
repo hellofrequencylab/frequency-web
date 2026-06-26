@@ -7,6 +7,7 @@ import { type PracticeSort } from '@/lib/practices'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageContents } from '@/components/templates/page-contents'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
@@ -163,17 +164,27 @@ export default async function PracticesPage({
         </div>
       }
       banner={
-        // Operator-set header image (PX.1) — renders above the title, only when set.
-        heroImage && (
-          // Intrinsic sizing (w-full h-auto): the whole banner scales to the screen and is
-          // never cropped, so wide headers read fully on mobile too. Upload ~1600×500 (16:5).
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={heroImage}
-            alt=""
-            className="mb-6 h-auto w-full rounded-2xl border border-border"
+        // A small breadcrumb at the very top, then the operator hero image — both ABOVE
+        // the title (the banner slot renders before the heading), mirroring Events.
+        <div>
+          <Breadcrumbs
+            trail={[
+              { href: '/network', label: 'Community' },
+              { href: '/practices', label: 'Practices' },
+            ]}
           />
-        )
+          {/* Operator-set header image (PX.1) — renders only when set. Intrinsic sizing
+              (w-full h-auto): the whole banner scales to the screen and is never cropped,
+              so wide headers read fully on mobile too. Upload ~1600×500 (16:5). */}
+          {heroImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroImage}
+              alt=""
+              className="mb-6 h-auto w-full rounded-2xl border border-border"
+            />
+          )}
+        </div>
       }
     >
       {/* Jump between your stuff and the library. The personal entries point at module-driven
