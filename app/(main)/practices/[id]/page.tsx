@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Zap, Pencil, Wand2 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
+import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { getRankedPractice, getPracticeMemberState, getPracticeCreator } from '@/lib/practices'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { DetailTemplate } from '@/components/templates'
@@ -16,6 +17,7 @@ import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { PracticeAuthor } from '@/components/practice/practice-author'
 import { RemixPracticeButton } from '@/components/practice/remix-practice-button'
+import { EditPracticeButton } from '@/components/practices/edit-practice-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,13 +62,18 @@ export default async function PracticeDetailPage({ params }: Params) {
   // Public practices are world-readable; a private one is only its owner's.
   if (!practice.is_public && !isOwner) notFound()
 
-  const [pillars, state, creator] = await Promise.all([
+  const [pillars, state, creator, practiceCaps] = await Promise.all([
     getPillars(),
     profileId
       ? getPracticeMemberState(profileId, practice.id)
       : Promise.resolve({ adopted: false, loggedToday: false, partialToday: null }),
     getPracticeCreator(practice.created_by),
+    getPracticeCapabilities(practice.id),
   ])
+  // The Edit-practice affordance opens the in-place Settings drawer. Show it to a
+  // manager only — practice.editSettings is exactly the owner / staff / parent-space
+  // manager who the settings module itself self-gates on (it never loosens isOwner).
+  const canManagePractice = practiceCaps.has('practice.editSettings')
   const pillarName = practice.domain_id ? pillarsById(pillars).get(practice.domain_id)?.name ?? null : null
 
   const fallback = {
@@ -105,6 +112,7 @@ export default async function PracticeDetailPage({ params }: Params) {
           )}
         </>
       }
+      actions={canManagePractice ? <EditPracticeButton /> : undefined}
     >
       {practice.header_image && (
         // Plain <img>: topical placeholder host (no next/image remote-host coupling).

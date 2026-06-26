@@ -32,6 +32,8 @@ export type Capability =
   | 'circle.broadcast'
   // event
   | 'event.editSettings'
+  // practice
+  | 'practice.editSettings'
   // topical channel (platform-curated — staff only)
   | 'channel.manage'
   // tasks (crew engagement inside a circle)
@@ -69,6 +71,14 @@ export type Scope =
       hostId: string | null
       /** True if the viewer manages the event's parent scope (e.g. its circle) —
        *  computed by the caller (avoids over-granting). */
+      viewerManagesScope?: boolean
+    }
+  | {
+      kind: 'practice'
+      practiceId: string
+      /** practices.created_by — the practice's owner. */
+      ownerId: string | null
+      /** True if the viewer manages the practice's parent space (caller-computed). */
       viewerManagesScope?: boolean
     }
 
@@ -186,6 +196,15 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       const leadsEvent =
         (!!profileId && scope.hostId === profileId) || isStaff || scope.viewerManagesScope === true
       if (leadsEvent) caps.add('event.editSettings')
+      break
+    }
+
+    case 'practice': {
+      // A practice is owned by its creator; the owner, platform staff, or whoever manages
+      // its parent space (caller-computed) may edit it.
+      const leadsPractice =
+        (!!profileId && scope.ownerId === profileId) || isStaff || scope.viewerManagesScope === true
+      if (leadsPractice) caps.add('practice.editSettings')
       break
     }
   }
