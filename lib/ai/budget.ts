@@ -50,6 +50,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   // ── Events (poster scan is Sonnet vision — the costliest of this group) ───────────────────────
   'event-poster-scan': 4,      // vision OCR of an event poster, plus the text assist (Sonnet vision)
   'event-blurb': 2,            // one "why you'd vibe" line per browse (Haiku; cached per day per pairing)
+  'whatsapp-import': 5,        // admin dry-run: classify + extract events/housing from a chat export (Sonnet; batched, on-demand)
   // ── Operator / admin + cron surfaces (Haiku, internal) ────────────────────────────────────────
   'poster-observer': 2,        // admin moderation read on flagged poster events (Haiku; low-volume)
   'creator-tips': 2,           // admin creator-coaching analysis (Haiku; low-volume)

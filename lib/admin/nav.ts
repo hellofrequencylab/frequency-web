@@ -60,6 +60,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
         heading: 'Activity',
         items: [
           { label: 'Events', href: '/admin/events' },
+          { label: 'Import from chat', href: '/admin/import' },
           { label: 'Dispatches', href: '/admin/dispatches' },
           { label: 'Moderation', href: '/admin/moderation' },
         ],

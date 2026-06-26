@@ -8625,3 +8625,21 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 **Tradeoff (explicit).** A free claim does NOT mint an `event_tickets` row or bump the tier's `sold`, so the tier's own `quantity` is not separately metered against claims — **event capacity governs**. A free claimant therefore gets no QR-ticket/check-in object and isn't in the host's sold-tickets roster; they appear in the RSVP roster. The button stays gated behind `hostPayoutReady` for now (unchanged); ungating free claims from the payout switch is a separate follow-up, since free needs no payout.
 
 **Consequences.** Changed: `app/(main)/events/[slug]/ticket-actions.ts` (import + record the claim). No schema change (reuses `event_rsvps`). EVENTS-AUDIT item #3 and the EVENTS-SYSTEM "still parked" list updated to ✅.
+
+---
+
+## ADR-411: WhatsApp chat import — export-not-scrape, dry-run first, consent-aware
+
+**Status:** Accepted (2026-06-26). A community admin can turn their group's exported WhatsApp history into reviewable events + housing listings. This PR ships the foundation: parser, redactor, AI classifier/extractor, and a **read-only dry-run** at `/admin/import`. No writer yet — nothing is persisted.
+
+**Context.** An admin of a maxed-out (1025-member) WhatsApp housing group wanted its listings and local healing events on the platform without retyping. WhatsApp group history is end-to-end encrypted with **no read API** (the Cloud/Business API only sends/receives on your own number, it cannot read a group backlog). Every "scraping" route is browser-automation (whatsapp-web.js, Baileys, Selenium on WhatsApp Web) that violates WhatsApp's Terms and risks **banning the number** — an unacceptable trade for a community an admin spent years building. The user explicitly prioritized "don't fuck anything up" and offered a throwaway number for automation.
+
+**Decision.**
+1. **Export, not scrape.** Input is WhatsApp's built-in **Export chat** `.txt`. No automation touches WhatsApp's servers, so no number (main or throwaway) is ever at risk — the throwaway is moot.
+2. **Reuse the events engine, don't reinvent.** Extracted events use `coerceEventExtraction` (identical shape to a poster-scanned event); the AI path mirrors `lib/ai/events-ai.ts` (one forced structured-output tool through the shared `completeRaw` chokepoint, Sonnet, voice-canon via `withVoice`, ledger-recorded, budget-gated with a new `whatsapp-import: $5/day` cap, re-checked between batches). Housing maps onto the existing `lib/listings` contract.
+3. **Dry-run first (the safety guarantee).** This PR's surface is **read-only**: `previewImport` parses + classifies and returns an `ImportPreview` the operator reviews; it writes no event, listing, or storage object. Proving extraction quality precedes wiring any writer.
+4. **Consent-aware by construction.** Members posted into a *private* group. Housing contacts (phones/emails) are redacted out of copy and **held back until a listing is claimed** (`lib/whatsapp/redact.ts`, digit-count guarded so prices/dates survive). The planned event writer routes through the existing **posted-event + claim-token** flow so the original poster claims and controls their event. Leans on the existing `consent_records` table + event claim handshake rather than a new consent surface.
+
+**Why a dry-run instead of the full importer now.** The hard, verifiable parts (parse correctness, extraction quality) are deterministic-testable and write nothing; the write path mutates live `events`/`listings` and wants runtime verification. Splitting them lets the operator trust the preview before any row is created — and keeps this PR incapable of corrupting live data.
+
+**Consequences.** New: `lib/whatsapp/{types,parse-export,redact,extract}.ts` (+ `parse-export.test.ts`, `redact.test.ts` — 32 tests), `app/(main)/admin/import/{page,import-client,actions}.tsx`, `docs/WHATSAPP-IMPORT.md`. Changed: `lib/ai/budget.ts` (`whatsapp-import` cap), `lib/admin/nav.ts` (Community → Activity → "Import from chat"). No schema change (nothing persists yet). Roadmap (writer: approve→posted-draft + approve→unclaimed-listing, plus idempotent de-dup on re-runs) tracked in `docs/WHATSAPP-IMPORT.md`.
