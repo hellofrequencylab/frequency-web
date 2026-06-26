@@ -170,7 +170,7 @@ opt-in.
 | **1. Blended rank** | The five-signal score + diversity rerank as a unified feed rank, composing the existing proximity RPCs, resonance edges, and embeddings. People-suggestions enter the feed. | ✅ shipped (ADR-415) |
 | **2. Adaptive radius + founder prompt** | The density rollup job + the expanding-ring walk. The founder-vs-activity branch. The privacy "turn on location" nudge. | ✅ shipped (ADR-416) |
 | **3. Radius slider + hide control** | Member radius slider (writes `feed_radius_m`); the X-to-hide wired to `suggestion_hidden`; streak-as-quiet-signal in the rank. | ✅ shipped (ADR-417) |
-| **4. Safety + verification** | Verification + safety gating for in-person meetups that originate from a circle/event introduction. | 📋 |
+| **4. Safety + verification** | Verification + safety gating for in-person meetups that originate from a circle/event introduction. | ✅ shipped (ADR-418); verification FLOW deferred |
 | **5. Future baselines** | Romance mode and astrology matching, if and when the product calls for them, on the Phase 0 scaffolding. | ⚠️ Deferred |
 
 Each phase is independently shippable and reads the phase before it. Nothing in Phases 1 to 5 needs a

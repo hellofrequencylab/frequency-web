@@ -1,9 +1,11 @@
 import { UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { PersonCard } from '@/components/cards/person-card'
-import { getFeedPeopleSuggestions } from '@/lib/feed/feed-people'
+import { getFeedPeopleSuggestions, hasAcknowledgedMeetupSafety } from '@/lib/feed/feed-people'
 import { suggestionReason } from '@/lib/people-suggestions'
 import { DismissableSuggestion } from './dismissable-suggestion'
+import { VerifiedBadge } from '@/components/ui/verified-badge'
+import { MeetupSafetyNote } from '@/components/safety/meetup-safety-note'
 
 // "People you'd click with" — a quiet in-feed row that introduces the viewer to a
 // few members on their wavelength (Resonance Feed Phase 1, ADR-414). It reuses the
@@ -13,7 +15,10 @@ import { DismissableSuggestion } from './dismissable-suggestion'
 // genuine suggestion, so it never pads the feed with filler. Server Component; the
 // feed wraps it in <Suspense> so it never blocks the post stream.
 export async function FeedPeopleStrip({ viewerProfileId }: { viewerProfileId: string }) {
-  const people = await getFeedPeopleSuggestions(viewerProfileId, 3)
+  const [people, safetyAcknowledged] = await Promise.all([
+    getFeedPeopleSuggestions(viewerProfileId, 3),
+    hasAcknowledgedMeetupSafety(viewerProfileId),
+  ])
   if (people.length === 0) return null
 
   return (
@@ -43,11 +48,22 @@ export async function FeedPeopleStrip({ viewerProfileId }: { viewerProfileId: st
                 handle={p.handle}
                 displayName={p.displayName}
                 avatarUrl={p.avatarUrl}
+                context={
+                  <span className="inline-flex items-center gap-1">
+                    @{p.handle}
+                    <VerifiedBadge verified={p.verified} />
+                  </span>
+                }
                 meta={why ? <span className="text-2xs text-subtle">{why}</span> : undefined}
               />
             </DismissableSuggestion>
           )
         })}
+      </div>
+      {/* Meet-safely guidance (Phase 4, ADR-418): people meet at a circle or public
+          event; here's how to stay safe. Shows once, then stays quiet. */}
+      <div className="mt-3">
+        <MeetupSafetyNote acknowledged={safetyAcknowledged} />
       </div>
     </section>
   )
