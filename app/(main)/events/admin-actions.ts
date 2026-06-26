@@ -4,7 +4,14 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { slugify } from '@/lib/utils'
-import type { AttendanceMode } from '@/lib/events/geocode'
+import { saveEventLocation, type EventAddress } from '@/lib/events/geocode'
+import {
+  CATEGORY_VALUES,
+  VISIBILITY_VALUES,
+  coerceEnergyTag,
+  coerceAttendanceMode,
+} from '@/lib/events/options'
+import { wallClockToIso } from '@/lib/events/datetime'
 
 // In-place "Event settings" admin module (EMBEDDED-ADMIN.md / ADR-133). Read +
 // write both re-resolve event.editSettings server-side (the dock's role gate is UX;
@@ -23,8 +30,6 @@ type UntypedUpdate = {
   }
 }
 
-const VALID_ATTENDANCE: AttendanceMode[] = ['in_person', 'online', 'hybrid']
-
 export async function getEventAdminData(slug: string) {
   const admin = createAdminClient()
   // cover_image_path / capacity / attendance_mode are newer than the generated DB
@@ -38,7 +43,7 @@ export async function getEventAdminData(slug: string) {
   })
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, capacity, attendance_mode',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -69,6 +74,16 @@ type EventAdminRow = {
   cover_image_path: string | null
   capacity: number | null
   attendance_mode: string | null
+  online_url: string | null
+  venue_name: string | null
+  street: string | null
+  city: string | null
+  region: string | null
+  country: string | null
+  postal_code: string | null
+  category: string | null
+  visibility: string | null
+  energy_tag: string | null
 }
 
 /** Cancel or reinstate the event — the host control that used to live in the
@@ -103,26 +118,53 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   const capacityParsed = capacityRaw ? parseInt(capacityRaw, 10) : NaN
   const capacity = Number.isFinite(capacityParsed) && capacityParsed > 0 ? capacityParsed : null
 
-  // Attendance mode is app-constrained (free text at the DB layer); fall back to
-  // in_person for anything unexpected, matching the rest of the events code.
-  const modeRaw = (fd.get('attendance_mode') as string | null) ?? 'in_person'
-  const attendanceMode: AttendanceMode = (VALID_ATTENDANCE as string[]).includes(modeRaw)
-    ? (modeRaw as AttendanceMode)
-    : 'in_person'
+  const attendanceMode = coerceAttendanceMode(fd.get('attendance_mode'))
+
+  // Title is required and must not be blank — guard before deref (a malformed POST may have
+  // no 'title' field, and createEvent/updateEvent both reject an empty title).
+  const title = ((fd.get('title') as string | null) ?? '').trim()
+  if (!title) throw new Error('Title is required.')
+
+  // Category / visibility are CHECK-constrained enums — only write a recognised value (an
+  // unlisted string would 500 on the constraint), otherwise leave the column unchanged.
+  const categoryRaw = ((fd.get('category') as string) ?? '').trim()
+  const visibilityRaw = ((fd.get('visibility') as string) ?? '').trim()
+  const category = CATEGORY_VALUES.has(categoryRaw) ? categoryRaw : undefined
+  const visibility = VISIBILITY_VALUES.has(visibilityRaw) ? visibilityRaw : undefined
+  const energyTag = coerceEnergyTag(fd.get('energy_tag'))
 
   const { error } = await (admin as unknown as UntypedUpdate)
     .from('events')
     .update({
-      title: (fd.get('title') as string).trim(),
+      title,
       description: ((fd.get('description') as string) ?? '').trim() || null,
       location: ((fd.get('location') as string) ?? '').trim() || null,
-      starts_at: startsAt ? new Date(startsAt).toISOString() : undefined,
-      ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+      // UTC-naive: keep the picked wall-clock literally, not tz-shifted (lib/events/datetime).
+      starts_at: startsAt ? (wallClockToIso(startsAt) ?? undefined) : undefined,
+      ends_at: endsAt ? wallClockToIso(endsAt) : null,
       capacity,
-      attendance_mode: attendanceMode,
+      energy_tag: energyTag,
+      ...(category ? { category } : {}),
+      ...(visibility ? { visibility } : {}),
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
+
+  // Structured address + online link + attendance mode go through the shared geocode-on-save
+  // hook (createEvent uses the same): it persists the address columns + online_url +
+  // attendance_mode, and resolves events.geog when a geocoder is wired. Best-effort, so a geo
+  // miss never fails the save. Hidden inputs (e.g. address on an online event) arrive empty →
+  // cleared, which is the intended behaviour.
+  const address: EventAddress = {
+    venueName: ((fd.get('venue_name') as string) ?? '').trim() || null,
+    street: ((fd.get('street') as string) ?? '').trim() || null,
+    city: ((fd.get('city') as string) ?? '').trim() || null,
+    region: ((fd.get('region') as string) ?? '').trim() || null,
+    country: ((fd.get('country') as string) ?? '').trim() || null,
+    postalCode: ((fd.get('postal_code') as string) ?? '').trim() || null,
+  }
+  const onlineUrl = ((fd.get('online_url') as string) ?? '').trim() || null
+  await saveEventLocation(id, { address, attendanceMode, onlineUrl })
 
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')

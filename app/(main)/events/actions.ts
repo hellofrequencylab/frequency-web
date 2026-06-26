@@ -14,6 +14,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { stampEventSpaceId } from '@/lib/events/store'
+import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
@@ -78,7 +79,7 @@ export async function createEvent(formData: FormData) {
     : 'none'
   const recurrenceUntilRaw = (formData.get('recurrenceUntil') as string | null) || null
   const recurrenceUntil = recurrenceType !== 'none' && recurrenceUntilRaw
-    ? new Date(recurrenceUntilRaw).toISOString()
+    ? dateToWallClockIso(recurrenceUntilRaw)
     : null
 
   // P0 fields (additive). Capacity is the only real scarcity signal; visibility
@@ -102,6 +103,11 @@ export async function createEvent(formData: FormData) {
   // An end before the start is never valid — drop the bad write rather than store a
   // negative-duration event (the form should also block it, this is the server guard).
   if (endsAt && new Date(endsAt) < new Date(startsAt)) return
+
+  // UTC-naive: keep the picked wall-clock literally (lib/events/datetime), not tz-shifted.
+  const startsIso = wallClockToIso(startsAt)
+  const endsIso = endsAt ? wallClockToIso(endsAt) : null
+  if (!startsIso) return
 
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
@@ -134,8 +140,8 @@ export async function createEvent(formData: FormData) {
       location,
       scope_id: scopeId,
       scope_type: 'circle',   // always circle-scoped now
-      starts_at: new Date(startsAt).toISOString(),
-      ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+      starts_at: startsIso,
+      ends_at: endsIso,
       host_id: myProfileId,
       slug,
       recurrence_type: recurrenceType,
@@ -215,6 +221,11 @@ export async function updateEvent(eventId: string, formData: FormData) {
   // Reject a negative-duration edit (the form blocks it too; this is the server guard).
   if (endsAt && new Date(endsAt) < new Date(startsAt)) return
 
+  // UTC-naive: keep the picked wall-clock literally (lib/events/datetime), not tz-shifted.
+  const startsIso = wallClockToIso(startsAt)
+  const endsIso = endsAt ? wallClockToIso(endsAt) : null
+  if (!startsIso) return
+
   const capacityRaw = (formData.get('capacity') as string | null)?.trim() || ''
   const capacityParsed = capacityRaw ? parseInt(capacityRaw, 10) : NaN
   const capacity = Number.isFinite(capacityParsed) && capacityParsed > 0 ? capacityParsed : null
@@ -237,8 +248,8 @@ export async function updateEvent(eventId: string, formData: FormData) {
       title,
       description,
       location,
-      starts_at: new Date(startsAt).toISOString(),
-      ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+      starts_at: startsIso,
+      ends_at: endsIso,
       capacity,
       visibility,
       category,

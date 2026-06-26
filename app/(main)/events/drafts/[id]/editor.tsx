@@ -18,6 +18,7 @@ import type {
 } from '@/lib/events/types'
 import type { DetailsMedia, EventDetailsWithMedia } from '@/lib/events/details-media'
 import { updateDraft, publishDraft } from '../../scan/actions'
+import { isoToWallClockInput, wallClockToIso } from '@/lib/events/datetime'
 import { OutreachCard } from './outreach-card'
 
 export interface DraftEditorData {
@@ -62,20 +63,6 @@ const SECTION_LABEL: Record<SectionKey, string> = {
   other: 'Other details',
 }
 
-// ISO → the `YYYY-MM-DDTHH:mm` a <input type="datetime-local"> expects, local time.
-function toLocalInput(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-function toIso(local: string): string | null {
-  if (!local) return null
-  const d = new Date(local)
-  return Number.isNaN(d.getTime()) ? null : d.toISOString()
-}
 
 /** Small amber "the model was unsure here" marker. */
 function CheckChip() {
@@ -100,8 +87,8 @@ export function DraftEditor({
   // ── Primary fields ───────────────────────────────────────────────────────────
   const [title, setTitle] = useState(draft.title)
   const [description, setDescription] = useState(draft.description)
-  const [startsAt, setStartsAt] = useState(toLocalInput(draft.startsAt))
-  const [endsAt, setEndsAt] = useState(toLocalInput(draft.endsAt))
+  const [startsAt, setStartsAt] = useState(isoToWallClockInput(draft.startsAt))
+  const [endsAt, setEndsAt] = useState(isoToWallClockInput(draft.endsAt))
   const [location, setLocation] = useState(draft.location)
   const [isFree, setIsFree] = useState(draft.priceCents === 0)
   const [price, setPrice] = useState(
@@ -210,8 +197,8 @@ export function DraftEditor({
     return {
       title,
       description,
-      startsAt: toIso(startsAt),
-      endsAt: toIso(endsAt),
+      startsAt: wallClockToIso(startsAt),
+      endsAt: wallClockToIso(endsAt),
       location,
       isFree,
       priceCents: Number.isFinite(cents) && cents > 0 ? cents : null,
