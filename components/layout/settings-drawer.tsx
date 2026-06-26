@@ -221,6 +221,7 @@ export function SettingsDrawer({
   const settingsModules = manager ? settingsModulesFor(pathname) : []
   const hasSettings = settingsModules.length > 0
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
+  const isEvent = manager && /^\/events\/[^/]+/.test(pathname)
   const questModule = manager ? questModuleFor(pathname) : null
   // The full page-content editor (title / description / hero / CTA). ADMIN routes are
   // excluded: their Settings is trimmed to Subtitle + Layout (ADR-359), and the subtitle is
@@ -247,8 +248,13 @@ export function SettingsDrawer({
   // the network-wide '/circles/*' layout (This section) or one circle (This page), so it is
   // OPERATOR-only — a host arranges nothing; the rail-reorder box it replaces is gone (ADR-406).
   const showCircleLayout = isCircle && isOperator && isModuleRoute(pathname)
+  // The event DETAIL page is likewise module-driven (its post-area renders <PageModules>), so
+  // operators get the same Layout editor. isModuleRoute gates it to a real event detail slug
+  // (isEventDetailRoute excludes /events/new, /scan, /drafts). Operator-only, network-wide '/events/*'.
+  const showEventLayout = isEvent && isOperator && isModuleRoute(pathname)
 
-  const hasContent = hasSettings || !!questModule || !!contentModule || showPageSettings || showCircleLayout
+  const hasContent =
+    hasSettings || !!questModule || !!contentModule || showPageSettings || showCircleLayout || showEventLayout
 
   // Nothing to manage here: render nothing (no trigger lives in this component —
   // PageAdminBar dispatches `open-settings`; with no content the drawer stays closed,
@@ -359,6 +365,18 @@ export function SettingsDrawer({
                 {settingsBlock}
                 {questModule && <div className="min-w-0">{questModule}</div>}
                 {contentModule && <div className="min-w-0">{contentModule}</div>}
+                {showEventLayout && (
+                  <div className="min-w-0">
+                    <div className="mb-1 flex items-center gap-2">
+                      <LayoutGrid className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                      <span className="text-sm font-semibold text-text">Layout</span>
+                    </div>
+                    <p className="mb-2 text-xs text-muted">
+                      Choose which blocks show inside the event page and their order. Tunes the page, never the app shell.
+                    </p>
+                    <LayoutEditor />
+                  </div>
+                )}
               </div>
             )}
 

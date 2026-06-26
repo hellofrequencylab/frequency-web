@@ -1,4 +1,3 @@
-import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
@@ -10,33 +9,36 @@ import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME } from '@/lib/site'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
-import { TicketButton, RefundTicketButton, type TicketTierView } from './ticket-button'
+import { TicketButton, type TicketTierView } from './ticket-button'
 import { RsvpBottomBar } from './rsvp-bottom-bar'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { getCapacityInfo } from '@/lib/events/capacity'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { DetailTemplate } from '@/components/templates/detail-template'
-import { StartEditingLink } from '@/components/admin/inline/edit-mode-button'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
-import { EventActivity, type ActivityPost } from '@/components/events/event-activity'
-import { EventDispatchCompose } from '@/components/events/event-dispatch-compose'
+import { type ActivityPost } from '@/components/events/event-activity'
 import { EventRewardStrip } from '@/components/events/event-reward-strip'
 import { EventFactPanel, type FactGuest } from '@/components/events/event-fact-panel'
-import { RecapAlbum, type RecapPhoto } from '@/components/events/recap-album'
-import { CohostManager, type CohostView } from '@/components/events/cohost-manager'
+import { type RecapPhoto } from '@/components/events/recap-album'
+import { type CohostView } from '@/components/events/cohost-manager'
 import { listCohosts } from '@/lib/events/cohosts'
-import { PosterDetails } from '@/components/events/poster-details'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
-import { Skeleton } from '@/components/ui/skeleton'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
+// The event POST AREA (description · poster details · cohosts · sales · dispatch · activity · recap)
+// renders through the page-settings module engine (ADR-270/294/406), so operators arrange it from
+// Settings → Layout, shared across every /events/<slug> via the '/events/*' scope — exactly like the
+// circle page. The fixed header + the RSVP/ticket Join aside + the mobile action bar stay in the page.
+import { PageModules } from '@/components/widgets/page-modules'
+import { setEventContext } from '@/lib/events/active-event'
+import { EditEventButton } from '@/components/events/edit-event-button'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -721,6 +723,34 @@ export default async function EventDetailPage({
     ? hasTiers ? 'Tickets' : priceLabel
     : isGoing ? "You're going" : isWaitlisted ? 'On the waitlist' : 'Free'
 
+  // Stamp the resolved per-viewer context into the request-scoped holder so the event's post-area
+  // modules (components/widgets/events/*) read it without prop-drilling — then <PageModules> renders
+  // them in the operator-arranged layout. The fixed header + Join aside read the locals directly.
+  setEventContext({
+    event: {
+      id: event.id,
+      slug: event.slug,
+      title: event.title,
+      description: event.description,
+      is_cancelled: event.is_cancelled,
+    },
+    myProfileId,
+    canManage,
+    isHost,
+    isCohost,
+    canDispatch,
+    canContribute,
+    isPast,
+    hasEnded,
+    posterDetails,
+    posterCropUrls,
+    cohosts,
+    isPaidEvent,
+    soldTickets,
+    activityPosts,
+    recapPhotos,
+  })
+
   return (
     <div className="pb-24 lg:pb-0">
       {event.is_cancelled && (
@@ -765,6 +795,8 @@ export default async function EventDetailPage({
             event.title
           )
         }
+        // Operator/host entry to Settings (inline edit + the Layout editor), mirroring "Edit Circle".
+        actions={canManage ? <EditEventButton /> : undefined}
         // [A2] attendance-mode chip.
         badges={
           <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${mode.cls}`}>
@@ -894,109 +926,11 @@ export default async function EventDetailPage({
 
         {/* ── TWO-COLUMN interior grid (no new template; plain grid in the body) ── */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-          {/* [B] POST AREA — wide left */}
+          {/* [B] POST AREA — the operator-arranged module column (description · poster · cohosts ·
+              sales · dispatch · activity · recap). Shared across every event via the '/events/*'
+              scope and rearranged from Settings → Layout, exactly like the circle page. */}
           <div className="min-w-0 space-y-8">
-            {/* B1 description (open prose, not boxed) */}
-            {canManage ? (
-              <div className="max-w-2xl">
-                <InlineText
-                  value={event.description}
-                  multiline
-                  placeholder="Add a description…"
-                  save={updateEventField.bind(null, event.id, slug, 'description')}
-                >
-                  {event.description ? (
-                    <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
-                      {event.description}
-                    </p>
-                  ) : (
-                    <StartEditingLink label="+ Add a description" />
-                  )}
-                </InlineText>
-              </div>
-            ) : event.description ? (
-              <p className="max-w-2xl text-sm text-text leading-relaxed whitespace-pre-wrap">
-                {event.description}
-              </p>
-            ) : null}
-
-            {/* Poster details (captured events) */}
-            <PosterDetails details={posterDetails} signedUrls={posterCropUrls} />
-
-            {/* Cohosts — shown to everyone; the host manages them. */}
-            {(cohosts.length > 0 || isHost) && (
-              <CohostManager
-                eventId={event.id}
-                slug={event.slug}
-                cohosts={cohosts}
-                canManage={isHost}
-              />
-            )}
-
-            {/* Host: sold tickets + refunds (EVENTS-SYSTEM §7) */}
-            {canManage && isPaidEvent && (
-              <div className="rounded-2xl border border-border bg-surface p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                  Sales <span className="ml-1 font-normal normal-case text-muted">{soldTickets.length} sold</span>
-                </p>
-                {soldTickets.length === 0 ? (
-                  <p className="mt-2 text-sm text-subtle">No tickets sold yet.</p>
-                ) : (
-                  <ul className="mt-3 space-y-1.5">
-                    {soldTickets.map((t) => (
-                      <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
-                        <span className="min-w-0 truncate text-text">
-                          {t.buyer?.display_name ?? 'A member'}
-                          <span className="ml-2 text-subtle">
-                            ${(t.amount_cents / 100).toFixed(2)}
-                            {t.qty > 1 ? ` · ${t.qty}×` : ''}
-                          </span>
-                        </span>
-                        <RefundTicketButton
-                          ticketId={t.id}
-                          eventId={event.id}
-                          slug={event.slug}
-                          amountLabel={`$${(t.amount_cents / 100).toFixed(2)}`}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-
-            {/* B2 host Event Dispatch composer (host/cohost only) */}
-            {canDispatch && !event.is_cancelled && (
-              <EventDispatchCompose eventId={event.id} slug={event.slug} />
-            )}
-
-            {/* B2/B3 activity — Event Dispatches + guest comments + Boops + GIF.
-                Behind its own Suspense (PAGE-FRAMEWORK §5). */}
-            <Suspense fallback={<Skeleton className="h-40 rounded-2xl" />}>
-              <EventActivity
-                eventId={event.id}
-                slug={event.slug}
-                posts={activityPosts}
-                canPost={canContribute && !event.is_cancelled}
-                canModerate={isHost}
-                myProfileId={myProfileId}
-                isPast={isPast}
-              />
-            </Suspense>
-
-            {/* B4 recap album — once the event has ended. */}
-            {hasEnded && (
-              <Suspense fallback={<Skeleton className="h-48 rounded-2xl" />}>
-                <RecapAlbum
-                  eventId={event.id}
-                  slug={event.slug}
-                  photos={recapPhotos}
-                  canUpload={canContribute}
-                  canModerate={isHost}
-                  myProfileId={myProfileId}
-                />
-              </Suspense>
-            )}
+            <PageModules route={`/events/${event.slug}`} />
           </div>
 
           {/* [C] JOIN AREA — narrow right, sticky on lg+. Hidden on mobile (it

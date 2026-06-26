@@ -141,6 +141,18 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'circle-invite', label: 'Invite a friend', description: 'Invite tools for the host (manager only).' },
   { id: 'circle-journey-run', label: 'Start a journey run', description: 'Start a Journey cohort for the circle (manager only).' },
   { id: 'circle-text', label: 'Page text', description: 'A free rich-text note you can place anywhere on the page. Set per circle, with a network default.' },
+
+  // ── Event detail blocks (/events/<slug>) — the arrangeable POST AREA of one event. The fixed
+  // header (cover · title · badges · Edit/Join), the RSVP/ticket Join aside, and the mobile action
+  // bar stay in the page; these are the content sections an operator can reorder/hide. Each
+  // self-fetches from the request-scoped event context (lib/events/active-event.ts) and self-hides.
+  { id: 'event-description', label: 'Description', description: "The event's description; host-editable inline." },
+  { id: 'event-poster-details', label: 'Poster details', description: 'Captured details from a flyer: lineup, schedule, links, sponsors.' },
+  { id: 'event-cohosts', label: 'Cohosts', description: 'The people helping host; the host adds or removes them.' },
+  { id: 'event-sales', label: 'Ticket sales', description: 'Sold tickets and refunds for a paid event (host only).' },
+  { id: 'event-dispatch', label: 'Post an update', description: 'Compose an Event Dispatch to the page (host or cohost only).' },
+  { id: 'event-activity', label: 'Activity', description: 'Event Dispatches and guest comments, newest first.' },
+  { id: 'event-recap', label: 'Recap album', description: 'Post-event photos, shown once the event has ended.' },
 ] as const
 
 // ── Route module SETS (ADR-294) ────────────────────────────────────────────────
@@ -311,6 +323,19 @@ const CIRCLE_DETAIL_MODULE_IDS = [
   'circle-text',
 ] as const
 
+// Every event DETAIL page (/events/<slug>) shares one layout, keyed at the '/events/*' section
+// scope — the arrangeable post-area in default render order. The fixed header + RSVP/ticket Join
+// aside + mobile action bar stay in the page; only this content is module-driven.
+const EVENT_DETAIL_MODULE_IDS = [
+  'event-description',
+  'event-poster-details',
+  'event-cohosts',
+  'event-sales',
+  'event-dispatch',
+  'event-activity',
+  'event-recap',
+] as const
+
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section
  *  ('/seg/*'), or an exact route. Add a route's set here when you convert its page to
  *  `<PageModules>` (and list it in lib/widgets/module-routes.ts). */
@@ -337,6 +362,8 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/pages': PAGES_MODULE_IDS,
   // Section scope: every circle detail page (/circles/<slug>) shares one layout.
   '/circles/*': CIRCLE_DETAIL_MODULE_IDS,
+  // Section scope: every event detail page (/events/<slug>) shares one layout.
+  '/events/*': EVENT_DETAIL_MODULE_IDS,
 }
 
 // The scope keys that can carry a module set for `key`, MOST-SPECIFIC FIRST: an exact route
