@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { FolderOpen } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
@@ -40,6 +41,30 @@ export default async function JourneysPage() {
 
   return (
     <IndexTemplate
+      // Standardized header (mirrors Circles/Events): a breadcrumb at the very top, then the
+      // operator hero, both ABOVE the title (the banner slot renders before the heading) — so the
+      // page reads breadcrumb -> hero -> title/description.
+      banner={
+        <div>
+          <Breadcrumbs
+            trail={[
+              { href: '/network', label: 'Community' },
+              { href: '/journeys', label: 'Journeys' },
+            ]}
+          />
+          {/* Operator-set hero banner (PX.1) — renders only when set. Intrinsic sizing
+              (w-full h-auto): scales to the screen, never cropped, so wide headers read fully on
+              mobile too. Recommended upload ~1600x500 (16:5). */}
+          {bannerImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={bannerImage}
+              alt=""
+              className="mt-4 h-auto w-full max-w-4xl rounded-2xl border border-border"
+            />
+          )}
+        </div>
+      }
       title={title}
       description={description}
       action={
@@ -64,18 +89,6 @@ export default async function JourneysPage() {
         </div>
       }
     >
-      {/* Operator-set hero banner (PX.1) — renders only when set. Intrinsic sizing
-          (w-full h-auto): scales to the screen, never cropped, so wide headers read
-          fully on mobile too. Recommended upload ~1600×500 (16:5). */}
-      {bannerImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={bannerImage}
-          alt=""
-          className="mb-6 h-auto w-full max-w-4xl rounded-2xl border border-border"
-        />
-      )}
-
       <div className="max-w-4xl">
         <PageModules route="/journeys" />
       </div>
