@@ -177,7 +177,7 @@ export default async function RootPage() {
   if (data) {
     return (
       <>
-        <MarketingHeader overHero isAuth={!!user} headerMenu={headerMenu} menuTimings={menuTimings} />
+        <MarketingHeader overHero isAuth={!!user} headerMenu={headerMenu} menuTimings={menuTimings} ctaLabel="Join the beta" />
         <Render config={config} data={data} />
         <MarketingFooter menu={footerMenu} />
       </>
@@ -221,6 +221,7 @@ function Splash({
         isAuth={isAuth}
         headerMenu={headerMenu}
         menuTimings={menuTimings}
+        ctaLabel="Join the beta"
       />
 
       {/* ── Manifesto hero — the third place is gone; you can be the reason it

@@ -22,12 +22,19 @@ export function MarketingHeader({
   headerMenu,
   menuTimings,
   isAuth = false,
+  ctaLabel = BETA_CTA_LABEL,
 }: {
   overHero?: boolean
   headerMenu?: ResolvedMenu
   menuTimings?: MenuSettings
   /** When the viewer is signed in, the logo points into the app (/feed) instead of the splash. */
   isAuth?: boolean
+  /**
+   * Overrides the header CTA label (still routes to BETA_CTA_HREF). The home splash
+   * passes "Join the beta" so the front door reads as a beta invite; everywhere else
+   * keeps the builder-framed site-wide default ("Start a Circle", see lib/site).
+   */
+  ctaLabel?: string
 }) {
   const [scrolled, setScrolled] = useState(false)
 
@@ -87,7 +94,7 @@ export function MarketingHeader({
             : 'bg-white text-ink hover:bg-white/90'
         }`}
       >
-        {BETA_CTA_LABEL}
+        {ctaLabel}
       </Link>
 
       {/* Mobile nav (the desktop PrimaryNav is hidden below md). */}
