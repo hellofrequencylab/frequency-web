@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { refreshMemberTraits } from '@/lib/traits/refresh'
 import { refreshResonanceEdges } from '@/lib/resonance/edges'
 import { refreshResonanceEmbeddings } from '@/lib/resonance/embeddings'
+import { refreshResonanceDensityCells } from '@/lib/resonance/density'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { log } from '@/lib/log'
 
@@ -33,5 +34,12 @@ export async function GET(req: NextRequest) {
   const resonanceEmbeddings = await refreshResonanceEmbeddings()
   log.info('cron.refresh_resonance_embeddings', resonanceEmbeddings)
 
-  return NextResponse.json({ ok: true, ...result, resonance, resonanceEmbeddings })
+  // Density-rollup step (Resonance Feed Phase 2, ADR-416): rebuild resonance_density_cells so the
+  // adaptive-radius feed + the founder-vs-activity branch read fresh per-geocell activity. BEST-EFFORT
+  // + FAIL-SAFE: a missing function (pre-migration) or any error is swallowed inside the helper, so it
+  // never breaks the steps above. Counts only, fuzzed cells only (no identities, no raw coordinates).
+  const resonanceDensity = await refreshResonanceDensityCells()
+  log.info('cron.refresh_resonance_density', resonanceDensity)
+
+  return NextResponse.json({ ok: true, ...result, resonance, resonanceEmbeddings, resonanceDensity })
 }

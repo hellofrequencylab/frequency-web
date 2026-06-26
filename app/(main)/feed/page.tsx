@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { CaptureBar } from '@/components/feed/capture-bar'
 import { CreateMenu } from '@/components/feed/create-menu'
 import { FeedList } from '@/components/feed/feed-list'
+import { LocalCornerCard } from '@/components/feed/local-corner-card'
+import { getLocalActivity } from '@/lib/feed/density'
 import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
@@ -135,6 +137,12 @@ export default async function FeedPage({
     nextStepsEnabled(),
     autoPopupsEnabled(),
   ])
+  // Local-activity state + adaptive radius (Resonance Feed Phase 2, ADR-416). Drives the
+  // founder-vs-location-nudge card AND widens the 'nearby' radius when the area is sparse
+  // (the ripple), so a member in a quiet corner still sees something. Cached, fail-safe.
+  const localActivity = myProfileId ? await getLocalActivity(myProfileId) : null
+  const effectiveRadiusM = localActivity?.effectiveRadiusM ?? feedRadiusM
+
   const onboarding = progress?.onboarding ?? null
   const practiceStreak = progress?.streakState ?? null
   const stageIndex = progress?.stage.index ?? 0
@@ -318,6 +326,17 @@ export default async function FeedPage({
           </p>
         )}
 
+        {/* "Your corner" (Phase 2): a location nudge or a founder prompt when the area is
+            empty; nothing when it's already alive. Streamed so it never blocks the feed.
+            Shown on the home lenses (not the chronological Story record). */}
+        {myProfileId && sort !== 'story' && (
+          <div className="mb-4">
+            <Suspense fallback={null}>
+              <LocalCornerCard viewerProfileId={myProfileId} />
+            </Suspense>
+          </div>
+        )}
+
         {/* The feed query is the heaviest read on the page; stream it behind Suspense so the
             greeting, hero and composer paint immediately and posts fill in (PAGE-FRAMEWORK §5). */}
         <Suspense fallback={<FeedListSkeleton />}>
@@ -325,7 +344,7 @@ export default async function FeedPage({
             myProfileId={myProfileId}
             sort={sort}
             viewerRole={myRole}
-            nearby={hasHome && homeLat != null && homeLng != null ? { lat: homeLat, lng: homeLng, radiusM: feedRadiusM } : null}
+            nearby={hasHome && homeLat != null && homeLng != null ? { lat: homeLat, lng: homeLng, radiusM: effectiveRadiusM } : null}
             emptyMessage={hasCircle
               ? 'Your circle’s quiet right now. Share what’s on your mind.'
               : 'Find your people to fill this up, or share something with the community.'}
