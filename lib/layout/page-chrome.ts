@@ -114,10 +114,12 @@ export function railFor(pathname: string): Rail {
   // its own operator info rail on the right, so the member right rail is suppressed.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return 'none'
 
-  // The Pages workspace (/pages and its editors) is an operator surface like /admin: keep the
-  // left menu, drop the member community right rail. It is module-driven, so its operator chrome
-  // is the on-page Settings → Layout panel, not the member rail.
-  if (pathname === '/pages' || pathname.startsWith('/pages/')) return 'none'
+  // The Pages workspace (/pages and its sub-managers: /pages/home, /pages/splash, /pages/sequences)
+  // is a member-accessible operator MANAGER (a list of pages to open + edit), not the /admin
+  // workspace with its own info rail. So it keeps the GLOBAL community right rail like every other
+  // member surface (owner directive, 2026-06-20: the right rail shows on every page) — it falls
+  // through to 'global' below. The actual page editors open elsewhere (in place with edit mode, or
+  // the marketing/splash editors), so nothing full-width is affected here.
 
   // Full-viewport takeovers (the practice timer, the scanner, the auth gate, print) are
   // the ONLY other routes without the right rail — they read with zero app chrome.

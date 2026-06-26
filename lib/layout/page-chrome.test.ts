@@ -122,6 +122,17 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/events')).toBe('global')
     expect(railFor('/events/sunrise-sit/event.ics')).toBe('global')
   })
+
+  it('keeps the global rail on the Pages workspace and its sub-managers (owner directive: not the /admin workspace)', () => {
+    // /pages is a member-accessible operator MANAGER (a list of pages to open + edit), not the
+    // /admin workspace with its own info rail, so it keeps the GLOBAL community rail like every
+    // other member surface (owner directive, 2026-06-20). Only /admin/* and the takeovers drop it.
+    expect(railFor('/pages')).toBe('global')
+    expect(railFor('/pages/home')).toBe('global')
+    expect(railFor('/pages/splash')).toBe('global')
+    expect(railFor('/pages/sequences')).toBe('global')
+    expect(railFor('/pages/sequences/come-home')).toBe('global')
+  })
 })
 
 describe('leftRailFor — the global member left rail vs. the admin workspace', () => {

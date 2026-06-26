@@ -4,6 +4,7 @@ import { CalendarDays } from 'lucide-react'
 import { EventCompose } from './event-compose'
 import { EventsFilterBar } from './events-filter-bar'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageContents } from '@/components/templates/page-contents'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -75,6 +76,27 @@ export default async function EventsPage({
 
   return (
     <IndexTemplate
+      // Header overhaul (mirrors Circles): a small breadcrumb at the very top, then the
+      // operator hero image, both ABOVE the title (the banner slot renders before the
+      // heading) — so the page reads breadcrumb → hero → title/subtitle + actions.
+      banner={
+        <div>
+          <Breadcrumbs
+            trail={[
+              { href: '/network', label: 'Community' },
+              { href: '/events', label: 'Events' },
+            ]}
+          />
+          {heroImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroImage}
+              alt=""
+              className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
+            />
+          )}
+        </div>
+      }
       title={pageTitle}
       description={pageDescription}
       action={
@@ -102,16 +124,6 @@ export default async function EventsPage({
       }
       toolbar={toolbar}
     >
-      {/* Operator-set hero banner (PX.1) — renders only when set. */}
-      {heroImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={heroImage}
-          alt=""
-          className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
-        />
-      )}
-
       {/* No stat strip: event/circle counts aren't gamified, so they stay quiet
           inline context on the section headers below, never KPI tiles (the
           gamified-stat law, MEMBER-DESIGN-SYSTEM §2). */}

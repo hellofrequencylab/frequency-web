@@ -816,7 +816,20 @@ export default async function EventDetailPage({
               <Image src={coverUrl} alt="" fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover" preload />
             </div>
           ) : (
-            <div className="aspect-[16/6] w-full rounded-2xl bg-surface-elevated" />
+            // No cover: a designed placeholder, not a blank box. Mirrors the
+            // circle-card no-cover fill (soft DAWN gradient + centered icon) and
+            // leads with the event's date so the slot still says something.
+            <div className="relative flex aspect-[16/6] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
+              <div className="flex flex-col items-center gap-1 text-center">
+                <CalendarDays className="h-7 w-7 opacity-80" />
+                <span className="text-3xl font-bold leading-none sm:text-4xl">
+                  {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric' })}
+                </span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long' })}
+                </span>
+              </div>
+            </div>
           )
         }
         title={
