@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect } from 'react'
+import { useState, useMemo, useEffect, useTransition } from 'react'
 import { CalendarDays, Home, MapPin, ShieldCheck, Users } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { previewImport } from './actions'
@@ -16,7 +16,7 @@ const FIELD =
 const MAX_RENDER = 150 // cap the rendered list so a huge export stays responsive
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|heic|heif)$/i
 
-type ImageMap = Map<string, string> // filename → object URL
+type ImageMap = Map<string, File> // filename → the operator's selected image file
 
 export function ImportClient() {
   const [text, setText] = useState('')
@@ -25,14 +25,6 @@ export function ImportClient() {
   const [preview, setPreview] = useState<ImportPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
-  const urlsRef = useRef<string[]>([])
-
-  // Revoke any object URLs we created when they are replaced or the component unmounts.
-  function revokeUrls() {
-    for (const u of urlsRef.current) URL.revokeObjectURL(u)
-    urlsRef.current = []
-  }
-  useEffect(() => revokeUrls, [])
 
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -44,13 +36,9 @@ export function ImportClient() {
     const chat = txts.find((f) => f.name.toLowerCase() === '_chat.txt') ?? txts[0] ?? null
     const photos = files.filter((f) => IMAGE_EXT.test(f.name) || f.type.startsWith('image/'))
 
-    revokeUrls()
-    const map: ImageMap = new Map()
-    for (const f of photos) {
-      const url = URL.createObjectURL(f)
-      urlsRef.current.push(url)
-      map.set(f.name, url)
-    }
+    // Keep the File objects; each thumbnail mints + revokes its own object URL on
+    // render (see Thumb), so a URL string is never threaded through state.
+    const map: ImageMap = new Map(photos.map((f) => [f.name, f]))
     setImages(map)
 
     try {
@@ -240,20 +228,14 @@ function ItemCard({ item, images }: { item: ClassifiedItem; images: ImageMap }) 
 
 function Thumbnails({ names, images }: { names: string[]; images: ImageMap }) {
   if (names.length === 0) return null
-  const resolved = names.map((n) => images.get(n)).filter((u): u is string => !!u)
-  const missing = names.length - resolved.length
+  const files = names.map((n) => images.get(n)).filter((f): f is File => !!f)
+  const missing = names.length - files.length
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
-      {resolved.slice(0, 6).map((url, i) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={`${url}-${i}`}
-          src={url}
-          alt=""
-          className="h-16 w-16 rounded-lg border border-border object-cover"
-        />
+      {files.slice(0, 6).map((file, i) => (
+        <Thumb key={`${file.name}-${i}`} file={file} />
       ))}
-      {resolved.length === 0 ? (
+      {files.length === 0 ? (
         <span className="text-xs text-subtle">
           {names.length} photo{names.length > 1 ? 's' : ''} posted with this (select the media to see them)
         </span>
@@ -261,6 +243,18 @@ function Thumbnails({ names, images }: { names: string[]; images: ImageMap }) {
         missing > 0 && <span className="text-xs text-subtle">+{missing} not selected</span>
       )}
     </div>
+  )
+}
+
+// One thumbnail. Mints an object URL from the operator's OWN selected File and
+// revokes it on unmount (mirrors the poster-scan creator). The src is therefore a
+// local blob: URL we just created, never a string derived from the chat text.
+function Thumb({ file }: { file: File }) {
+  const url = useMemo(() => URL.createObjectURL(file), [file])
+  useEffect(() => () => URL.revokeObjectURL(url), [url])
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={url} alt="" className="h-16 w-16 rounded-lg border border-border object-cover" />
   )
 }
 
