@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { canCreate } from '@/lib/core/load-capabilities'
 import { JourneySpark } from '@/components/journey/v2/journey-spark'
 import { JOURNEY_TEMPLATES } from '@/lib/journeys/templates'
 
@@ -16,6 +17,9 @@ export default async function NewJourneyPage() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/')
+  // Real Crew (or steward/staff) may build a journey; a free member is bounced to the
+  // library, where "New journey" shows the free-beta upgrade popup (ADR-414).
+  if (!(await canCreate('journey.create'))) redirect('/journeys')
 
   // Lightweight template metadata for the "Start from a template" picker. The full template trees
   // (lib/journeys/templates.ts) pull in server-only compose code, so we map to a client-safe shape

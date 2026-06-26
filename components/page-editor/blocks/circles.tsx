@@ -173,6 +173,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
               <NewCircleCompose
                 interests={d.interests}
                 buttonLabel="Start the next circle"
+                canCreate={d.canCreate}
                 buttonClass="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               />
             </div>
@@ -193,7 +194,7 @@ export const circlesComponents: Record<string, ComponentConfig> = {
                   ? 'Try a wider search, or start the first one for this corner of the network.'
                   : 'Be the first to start a circle for your neighborhood or a Channel.'
               }
-              action={d.signedIn ? <NewCircleCompose interests={d.interests} buttonLabel="Start a circle" /> : undefined}
+              action={d.signedIn ? <NewCircleCompose interests={d.interests} buttonLabel="Start a circle" canCreate={d.canCreate} /> : undefined}
             />
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

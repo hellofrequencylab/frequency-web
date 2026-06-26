@@ -19,6 +19,21 @@ export const UPGRADE_COPY: Record<string, { title: string; blurb: string }> = {
     blurb:
       'Crew members host the gatherings. Post an event, gather your people, and be the reason something happens near you. It is the heart of Frequency, and it is yours to start.',
   },
+  'create-circle': {
+    title: 'Start a circle with Crew',
+    blurb:
+      'Crew members start the circles. Gather the people you want to see more of and give them a place to land. A circle is how a handful of regulars becomes a community.',
+  },
+  'create-journey': {
+    title: 'Build journeys with Crew',
+    blurb:
+      'Crew members design the journeys. Lay out a path others can walk, day by day, and turn what you know into something people finish together.',
+  },
+  'create-practice': {
+    title: 'Share practices with Crew',
+    blurb:
+      'Crew members publish the practices. Turn the thing you do every day into one others can pick up, and watch it ripple out across the community.',
+  },
 }
 
 const DEFAULT_COPY = {

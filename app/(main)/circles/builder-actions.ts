@@ -18,6 +18,7 @@ import {
   type CircleDraft,
   type CircleDraftPatch,
 } from '@/lib/circles/draft'
+import { assertCanCreate } from '@/lib/core/load-capabilities'
 import { draftCircleSpark, type CircleSparkDraft } from '@/lib/ai/circle-spark'
 import {
   composeCircleSection,
@@ -76,6 +77,7 @@ export async function sparkPreviewAction(input: {
  *  caller into the builder. */
 export async function createDraftFromSparkAction(spark: CircleSparkDraft): Promise<{ slug: string; circleId: string }> {
   const profileId = await callerProfileId()
+  await assertCanCreate('circle.create')
   const res = await createBlankCircleDraft({ profileId, spark })
   revalidatePath('/circles')
   revalidatePath('/lead')
@@ -85,6 +87,7 @@ export async function createDraftFromSparkAction(spark: CircleSparkDraft): Promi
 /** Start a blank draft from scratch (the "I'll write it myself" path). */
 export async function createBlankDraftAction(input?: { name?: string }): Promise<{ slug: string; circleId: string }> {
   const profileId = await callerProfileId()
+  await assertCanCreate('circle.create')
   const res = await createBlankCircleDraft({ profileId, name: input?.name })
   revalidatePath('/circles')
   revalidatePath('/lead')

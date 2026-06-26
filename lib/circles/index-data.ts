@@ -9,6 +9,7 @@ import { resolvePageContent } from '@/lib/page-content'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { getActiveTemplates, templatesEnabled } from '@/lib/circles/templates-data'
+import { canCreate as canCreateEntity } from '@/lib/core/load-capabilities'
 import type { StarterSeed } from '@/lib/circles/starter-projection'
 import type { CircleCardData } from '@/components/circles/circle-card'
 import type { CircleBase } from '@/lib/types/circle'
@@ -128,6 +129,8 @@ export interface CirclesIndexData {
     ctaHref: string | null
   }
   signedIn: boolean
+  /** Real Crew (or steward/staff) may start a circle; others get the upgrade popup (ADR-414). */
+  canCreate: boolean
   interests: CircleInterest[]
   channelLinks: ChannelLink[]
   /** Members first, then Starters to claim, then the rest of discovery. */
@@ -351,6 +354,10 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
     })),
   ]
 
+  // Real Crew (or steward/staff) may start a circle; a free member sees the upgrade
+  // popup. Cheap — shares the request-cached viewer (ADR-414).
+  const canStartCircle = user ? await canCreateEntity('circle.create') : false
+
   return {
     content: {
       title,
@@ -360,6 +367,7 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
       ctaHref: ctaHref ?? null,
     },
     signedIn: !!user,
+    canCreate: canStartCircle,
     interests,
     channelLinks,
     cards,
