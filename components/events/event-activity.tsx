@@ -192,7 +192,11 @@ export function EventActivity({
         imageUrl = await uploadImage()
         if (!imageUrl) return
       }
-      await createEventPost(eventId, slug, trimmed, imageUrl)
+      const res = await createEventPost(eventId, slug, trimmed, imageUrl)
+      if ('error' in res) {
+        setError(res.error)
+        return
+      }
       setBody('')
       clearImage()
       clearGif()

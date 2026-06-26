@@ -75,16 +75,16 @@ export async function createEventPost(
   slug: string,
   body: string,
   imageUrl: string | null,
-) {
+): Promise<ActionResult<void>> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
+  if (!profileId) return fail('Sign in to comment.')
 
   const trimmed = (body ?? '').trim().slice(0, MAX_BODY)
   const image = imageUrl?.trim() || null
-  if (!trimmed && !image) return
+  if (!trimmed && !image) return fail('Add a message or a photo first.')
 
   const admin = createAdminClient()
-  if (!(await isOnEvent(admin, eventId, profileId))) return
+  if (!(await isOnEvent(admin, eventId, profileId))) return fail('Only the host and guests can post here.')
 
   const { error } = await admin
     .from('event_posts')
@@ -96,10 +96,11 @@ export async function createEventPost(
     })
   if (error) {
     console.error('[createEventPost]', error.message)
-    return
+    return fail('Could not post your comment. Please try again.')
   }
 
   revalidateEvent(slug)
+  return ok()
 }
 
 export async function deleteEventPost(postId: string, slug: string) {
@@ -131,16 +132,16 @@ export async function uploadEventMedia(
   slug: string,
   imageUrl: string,
   caption: string | null,
-) {
+): Promise<ActionResult<void>> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
+  if (!profileId) return fail('Sign in to add a photo.')
 
   const image = imageUrl?.trim()
-  if (!image) return
+  if (!image) return fail('Pick a photo first.')
   const cap = caption?.trim().slice(0, MAX_CAPTION) || null
 
   const admin = createAdminClient()
-  if (!(await isOnEvent(admin, eventId, profileId))) return
+  if (!(await isOnEvent(admin, eventId, profileId))) return fail('Only the host and guests can add photos.')
 
   const { error } = await admin
     .from('event_media')
@@ -152,10 +153,11 @@ export async function uploadEventMedia(
     })
   if (error) {
     console.error('[uploadEventMedia]', error.message)
-    return
+    return fail('Could not add your photo. Please try again.')
   }
 
   revalidateEvent(slug)
+  return ok()
 }
 
 export async function deleteEventMedia(mediaId: string, slug: string) {
@@ -316,28 +318,34 @@ export async function postEventDispatch(
   eventId: string,
   slug: string,
   args: { title?: string | null; body: string; toDispatch?: boolean; toSms?: boolean },
-) {
+): Promise<ActionResult<void>> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
+  if (!profileId) return fail('Sign in to post an update.')
 
   const admin = createAdminClient()
   const isAuthor =
     (await isEventHost(admin, eventId, profileId)) || (await isEventCohost(eventId, profileId))
-  if (!isAuthor) return
+  if (!isAuthor) return fail('Only the host or a cohost can post an update.')
 
   const body = (args.body ?? '').trim()
-  if (!body) return
+  if (!body) return fail('Write something to send first.')
 
-  await composeEventDispatch({
-    eventId,
-    authorId: profileId,
-    title: args.title?.trim() || null,
-    body,
-    toPage: true,
-    toDispatch: !!args.toDispatch,
-    toSms: !!args.toSms,
-    eventUrl: `/events/${slug}`,
-  })
+  try {
+    await composeEventDispatch({
+      eventId,
+      authorId: profileId,
+      title: args.title?.trim() || null,
+      body,
+      toPage: true,
+      toDispatch: !!args.toDispatch,
+      toSms: !!args.toSms,
+      eventUrl: `/events/${slug}`,
+    })
+  } catch (e) {
+    console.error('[postEventDispatch]', e)
+    return fail('Could not post your update. Please try again.')
+  }
 
   revalidateEvent(slug)
+  return ok()
 }

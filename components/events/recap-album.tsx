@@ -90,7 +90,11 @@ export function RecapAlbum({
     startTransition(async () => {
       const imageUrl = await uploadImage()
       if (!imageUrl) return
-      await uploadEventMedia(eventId, slug, imageUrl, caption.trim() || null)
+      const res = await uploadEventMedia(eventId, slug, imageUrl, caption.trim() || null)
+      if ('error' in res) {
+        setError(res.error)
+        return
+      }
       setCaption('')
       clearImage()
       setError('')
