@@ -78,6 +78,13 @@ import { CircleMapBlock } from '@/components/widgets/circles/circle-map'
 import { CircleInvite } from '@/components/widgets/circles/circle-invite'
 import { CircleJourneyRun } from '@/components/widgets/circles/circle-journey-run'
 import { CircleText } from '@/components/widgets/circles/circle-text'
+import { EventDescription } from '@/components/widgets/events/event-description'
+import { EventPosterDetails } from '@/components/widgets/events/event-poster-details'
+import { EventCohosts } from '@/components/widgets/events/event-cohosts'
+import { EventSales } from '@/components/widgets/events/event-sales'
+import { EventDispatch } from '@/components/widgets/events/event-dispatch'
+import { EventActivityBlock } from '@/components/widgets/events/event-activity-block'
+import { EventRecap } from '@/components/widgets/events/event-recap'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -182,6 +189,14 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'circle-invite': CircleInvite,
   'circle-journey-run': CircleJourneyRun,
   'circle-text': CircleText,
+  // Event detail (/events/<slug>) — the arrangeable post-area blocks.
+  'event-description': EventDescription,
+  'event-poster-details': EventPosterDetails,
+  'event-cohosts': EventCohosts,
+  'event-sales': EventSales,
+  'event-dispatch': EventDispatch,
+  'event-activity': EventActivityBlock,
+  'event-recap': EventRecap,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {

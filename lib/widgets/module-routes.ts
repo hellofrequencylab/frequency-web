@@ -34,6 +34,20 @@ const MODULE_SECTIONS: readonly string[] = ['/practices', '/circles']
 // family here keeps the editor's route check honest when it lands.)
 const ENTITY_PROFILE_ROOT = '/spaces'
 
+// The event detail page (/events/<slug>) renders <PageModules>, but /events has other DIRECT
+// children that are bespoke Focus/Index surfaces (the create form, the poster scanner, the drafts
+// list) — so the one-deep MODULE_SECTIONS matcher would wrongly offer them a Layout editor. This
+// predicate matches ONLY a real event detail slug (exactly /events/<slug>), excluding those and the
+// grandchildren (/events/<slug>/edit, …/manage).
+const EVENT_NON_DETAIL = new Set(['new', 'scan', 'drafts'])
+export function isEventDetailRoute(pathname: string): boolean {
+  if (!pathname.startsWith('/events/')) return false
+  const segs = pathname.slice(1).split('/') // ['events', '<slug>', ...]
+  if (segs.length !== 2) return false
+  const slug = segs[1]
+  return !!slug && !EVENT_NON_DETAIL.has(slug)
+}
+
 /** Whether a path is an entity-profile tab (the index /spaces/<slug> or a tab /spaces/<slug>/<tab>),
  *  excluding the member directory (/spaces/directory) and the wizard/settings sub-surfaces (/spaces/new, …/settings). */
 export function isEntityProfileRoute(pathname: string): boolean {
@@ -55,6 +69,7 @@ export function isEntityProfileRoute(pathname: string): boolean {
 export function isModuleRoute(pathname: string): boolean {
   if (MODULE_ROUTES.includes(pathname)) return true
   if (isEntityProfileRoute(pathname)) return true
+  if (isEventDetailRoute(pathname)) return true
   return MODULE_SECTIONS.some((s) => {
     if (!pathname.startsWith(`${s}/`)) return false
     const rest = pathname.slice(s.length + 1)

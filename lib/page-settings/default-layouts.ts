@@ -36,6 +36,29 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
       },
     },
   },
+
+  // Events (/events/<slug>): the post-area is a single arrangeable column (the fixed header + the
+  // RSVP/ticket Join aside + the mobile action bar live in the page, not as modules). Default order
+  // matches the hand-built page: description → poster details → cohosts → sales → dispatch composer →
+  // activity → recap. Operators reorder/hide from Settings → Layout, shared across every event.
+  '/events/*': {
+    template: 'single',
+    slots: {
+      main: {
+        order: [
+          'event-description',
+          'event-poster-details',
+          'event-cohosts',
+          'event-sales',
+          'event-dispatch',
+          'event-activity',
+          'event-recap',
+        ],
+        hidden: [],
+        roles: {},
+      },
+    },
+  },
 }
 
 /** The coded default layout for a concrete route, resolving the same exact→section→global chain as
