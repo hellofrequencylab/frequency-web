@@ -240,7 +240,7 @@ const SPARK_SYSTEM = `You are Vera, Frequency's assistant. A community member an
 - price: if they say free, set isFree=true. If a paid price is given, set priceCents in whole cents (e.g. 1500 for $15).
 - domain: classify into one of mind, body, spirit, expression.
 - tags: 3 to 6 short lowercase descriptors drawn from what they wrote.
-- details: capture any extra structure they give (a lineup, set times, ticket tiers, links, sponsors) into the details fields, and anything else as other label/value pairs. Do not invent details.
+- details: capture any extra structure they give (a lineup, set times, ticket tiers, sponsors) into the details fields, and anything else as other label/value pairs. Capture EVERY link or handle they include (registration, tickets, website, social) into details.links with the right kind, since a pasted write-up is where those live. Do not invent details.
 - There is no image, so set cover.found=false and omit corners, imageBox, and imageRegions.`
 
 async function runExtraction(opts: {
@@ -289,22 +289,20 @@ async function runExtraction(opts: {
  *  manual entry). The caller must gate on aiAvailable + featureOverBudget. */
 export async function scanEventPoster(input: {
   images: { base64: string; mediaType: ImageMediaType }[]
+  /** Optional pasted write-up / listing text to read ALONGSIDE the image(s) — the
+   *  smart-uploader case (a poster photo plus the text copied from its event page). */
+  text?: string | null
   profileId?: string | null
 }): Promise<ExtractedEvent | null> {
   const imgs = input.images.slice(0, 6)
   if (!imgs.length) return null
+  const pasted = input.text?.trim().slice(0, 8000) || undefined
   const content: Anthropic.MessageParam['content'] = [
     ...imgs.map((im) => ({
       type: 'image' as const,
       source: { type: 'base64' as const, media_type: im.mediaType, data: im.base64 },
     })),
-    {
-      type: 'text' as const,
-      text:
-        imgs.length > 1
-          ? `These ${imgs.length} images are different views of the SAME event poster. Combine everything you can read across all of them into ONE event. Call save_event.`
-          : 'Turn this event poster into a draft. Call save_event.',
-    },
+    { type: 'text' as const, text: buildScanPrompt(imgs.length, pasted) },
   ]
   return runExtraction({
     tier: 'sonnet',
@@ -313,6 +311,24 @@ export async function scanEventPoster(input: {
     profileId: input.profileId,
     content,
   })
+}
+
+/** The user instruction for a scan. Merges multiple shots, and when a pasted write-up
+ *  accompanies the image, tells Vera to treat the text as the authoritative source for
+ *  names / dates / prices / links and harvest every URL into details.links. */
+function buildScanPrompt(imageCount: number, text?: string): string {
+  const parts: string[] = [
+    imageCount > 1
+      ? `These ${imageCount} images are different views of the SAME event (a flyer, poster, or screenshots). Combine everything you can read across all of them into ONE event.`
+      : 'Turn this event flyer, poster, or screenshot into a draft.',
+  ]
+  if (text) {
+    parts.push(
+      `The member ALSO pasted the event's full write-up or listing text below. Treat the text as the most reliable source for the exact title, date and time, address, prices, and organizer, and ESPECIALLY for any links (registration, tickets, website, social). Merge it with the image into ONE event, and capture every URL you find into details.links with the right kind. When the text and the image disagree, prefer the text for facts and the image for the cover.\n\n"""\n${text}\n"""`,
+    )
+  }
+  parts.push('Call save_event.')
+  return parts.join('\n\n')
 }
 
 /** Text assist on manual entry: free text → an event draft (Haiku). */

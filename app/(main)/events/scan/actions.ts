@@ -48,7 +48,7 @@ async function requireCaller(): Promise<{ profileId: string; userId: string }> {
  * image is KEPT as the event's poster_path, the extra shots are deleted after
  * extraction.
  */
-export async function scanPoster(paths: string[]): Promise<ScanPosterResult> {
+export async function scanPoster(paths: string[], text?: string): Promise<ScanPosterResult> {
   const { profileId, userId } = await requireCaller()
   const clean = (paths ?? []).slice(0, 6)
   if (!clean.length) return { ok: false, reason: 'no_read' }
@@ -77,7 +77,7 @@ export async function scanPoster(paths: string[]): Promise<ScanPosterResult> {
     return { ok: false, reason: 'no_read' }
   }
 
-  const extraction = await scanEventPoster({ images, profileId })
+  const extraction = await scanEventPoster({ images, text, profileId })
   cleanupExtras() // best-effort; the poster image itself is kept
 
   if (!extraction) {

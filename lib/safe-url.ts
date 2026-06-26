@@ -16,3 +16,18 @@ export function safeHttpUrl(raw: string | null | undefined): string | null {
     return null
   }
 }
+
+// Links pulled off a poster or pasted write-up are often printed without a
+// scheme (`instagram.com/x`, `frequency.app/events`). This tolerant variant
+// defaults a bare host/path to https, then runs the same http/https-only gate —
+// so legitimate scheme-less links survive while `javascript:`/`data:` (which
+// already carry a scheme) are still rejected. Returns the normalized URL, or
+// null when it can't be made safe. Use this for stored event links (validate on
+// store) and to resolve their hrefs (guard on render).
+export function normalizeHttpUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(trimmed)
+  return safeHttpUrl(hasScheme ? trimmed : `https://${trimmed.replace(/^\/+/, '')}`)
+}
