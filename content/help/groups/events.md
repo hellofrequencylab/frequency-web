@@ -3,7 +3,7 @@ title: Events & RSVPs
 description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
-updated: 2026-06-16
+updated: 2026-06-26
 audience: member
 role: host
 featureKeys: [events]
@@ -41,9 +41,10 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 
 ## Post an event you found
 
-See a cool event poster around town? Capture it and put the event on Frequency.
+See a cool event poster around town, or one on Eventbrite or in a group chat? Capture it and put the event on Frequency.
 
 - Open **Capture** and tap **Upload a poster**. Snap the whole poster, ideally squared up and out of direct glare; the app reads it and drafts the event for you: title, time, place, lineup, the works. A slight tilt or a little shine is fine, it straightens and reads the poster on its own.
+- **Found it online instead?** Start a new event and paste the write-up you copied from an Eventbrite page, a WhatsApp group, or the event's website. Add the flyer photo too if you have one. Vera reads the text and the image together, lays out the date, place, lineup, tickets, and every link, and keeps the photo as the cover.
 - If the poster has a **QR code**, the app reads it too and saves the booking or RSVP link straight onto the event.
 - Check the draft, fix anything the poster made hard to read, and publish. If it's **your** event, you become the host. If you **found** it, it posts to local events with your name on it: "Posted by you" with a little Zap.
 - Posting someone else's event earns **Zaps**, and you get a ready-to-send message inviting the organizer to claim it. When they claim it, the event becomes theirs to run, your credit stays, and you earn a **claim bonus**.
