@@ -74,6 +74,7 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 
 ## For hosts
 
+- **Add photos to your event.** Set a cover image as the poster, then add as many more photos as you like. They show up as a gallery on the event page, with the poster first, and any photo opens full screen when someone taps it. You can add or remove photos anytime by editing the event.
 - **Announce to your guests.** Send a note to everyone who's coming, across in-app, push, and email. Anyone who muted the event or turned off event notifications is skipped.
 - **Manage screen.** See your whole guest list, export it, move people off the waitlist, and check people in at the door. You reach it from the event's editor.
 - **Cohosts.** Add a cohost and they can help run the event right alongside you.
