@@ -4,6 +4,7 @@ import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
+import { safeHttpUrl } from '@/lib/safe-url'
 import {
   CalendarDays,
   MapPin,
@@ -89,9 +90,9 @@ export function EventFactPanel({
       {isOnline ? (
         <p className="flex items-start gap-2 text-sm text-text">
           <Video className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
-          {onlineUrl ? (
+          {safeHttpUrl(onlineUrl) ? (
             <a
-              href={onlineUrl}
+              href={onlineUrl ?? undefined}
               target="_blank"
               rel="noopener noreferrer"
               className="break-all text-primary-strong hover:underline"

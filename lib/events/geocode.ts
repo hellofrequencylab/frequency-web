@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { safeHttpUrl } from '@/lib/safe-url'
 
 // Event geolocation data layer (EVENTS-REWORK B1).
 //
@@ -86,7 +87,9 @@ export async function saveEventLocation(
       country: address.country ?? null,
       postal_code: address.postalCode ?? null,
       attendance_mode: attendanceMode,
-      online_url: onlineUrl ?? null,
+      // Only store an http/https join link — block javascript:/data: (stored XSS), since
+      // this URL is later rendered as an <a href> on the event page.
+      online_url: safeHttpUrl(onlineUrl),
     })
     .eq('id', eventId)
 

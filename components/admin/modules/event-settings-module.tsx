@@ -14,6 +14,13 @@ import {
   removeEventCover,
   setEventCancelled,
 } from '@/app/(main)/events/admin-actions'
+import {
+  CATEGORY_OPTIONS,
+  VISIBILITY_OPTIONS,
+  ENERGY_OPTIONS,
+  ATTENDANCE_OPTIONS,
+} from '@/lib/events/options'
+import { isoToWallClockInput } from '@/lib/events/datetime'
 
 // In-place "Event settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside
 // the page admin dock on /events/[slug], and renders nothing unless the server
@@ -24,15 +31,6 @@ type EventData = NonNullable<Awaited<ReturnType<typeof getEventAdminData>>>
 
 const input = fieldClasses
 const fieldLabel = labelClasses
-
-// ISO → the `YYYY-MM-DDTHH:mm` a <input type="datetime-local"> expects, in local time.
-function toLocalInput(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 
 export function EventSettingsModule() {
   const pathname = usePathname()
@@ -48,6 +46,8 @@ export function EventSettingsModule() {
   const [permalink, setPermalink] = useState('')
   const [permaErr, setPermaErr] = useState<string | null>(null)
   const [permaPending, startPerma] = useTransition()
+  // Controlled so the join-link + address sections show for the right format.
+  const [mode, setMode] = useState('in_person')
 
   useEffect(() => {
     if (!slug) return
@@ -56,7 +56,10 @@ export function EventSettingsModule() {
       .then((d) => {
         if (active) {
           setData(d)
-          if (d) setPermalink(d.slug)
+          if (d) {
+            setPermalink(d.slug)
+            setMode(d.attendance_mode ?? 'in_person')
+          }
           setLoading(false)
         }
       })
@@ -166,7 +169,7 @@ export function EventSettingsModule() {
                 <input
                   name="starts_at"
                   type="datetime-local"
-                  defaultValue={toLocalInput(data.starts_at)}
+                  defaultValue={isoToWallClockInput(data.starts_at)}
                   required
                   disabled={pending}
                   className={`${input} min-w-0`}
@@ -177,27 +180,96 @@ export function EventSettingsModule() {
                 <input
                   name="ends_at"
                   type="datetime-local"
-                  defaultValue={toLocalInput(data.ends_at)}
+                  defaultValue={isoToWallClockInput(data.ends_at)}
                   disabled={pending}
                   className={`${input} min-w-0`}
                 />
               </label>
             </div>
+
+            {/* Join link (online / hybrid) + structured address (in person / hybrid), toggled by Format. */}
+            {mode !== 'in_person' && (
+              <label className="block space-y-1.5">
+                <span className={fieldLabel}>Join link</span>
+                <input
+                  name="online_url"
+                  type="url"
+                  defaultValue={data.online_url ?? ''}
+                  placeholder="https://…"
+                  disabled={pending}
+                  className={input}
+                />
+              </label>
+            )}
+
+            {mode !== 'online' && (
+              <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
+                <span className={fieldLabel}>
+                  Address <span className="font-normal text-subtle">(optional, for the map)</span>
+                </span>
+                <input name="venue_name" defaultValue={data.venue_name ?? ''} placeholder="Venue name" disabled={pending} className={input} />
+                <input name="street" defaultValue={data.street ?? ''} placeholder="Street address" disabled={pending} className={input} />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <input name="city" defaultValue={data.city ?? ''} placeholder="City" disabled={pending} className={`${input} min-w-0`} />
+                  <input name="region" defaultValue={data.region ?? ''} placeholder="State or province" disabled={pending} className={`${input} min-w-0`} />
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <input name="postal_code" defaultValue={data.postal_code ?? ''} placeholder="Postal code" disabled={pending} className={`${input} min-w-0`} />
+                  <input name="country" defaultValue={data.country ?? ''} placeholder="Country" disabled={pending} className={`${input} min-w-0`} />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* RIGHT 1/3 — format, capacity, permalink. */}
+          {/* RIGHT 1/3 — format, category, visibility, energy, capacity, permalink. */}
           <div className="space-y-4 lg:col-span-1">
             <label className="block space-y-1.5">
               <span className={fieldLabel}>Format</span>
               <select
                 name="attendance_mode"
-                defaultValue={data.attendance_mode ?? 'in_person'}
+                value={mode}
+                onChange={(e) => setMode(e.target.value)}
                 disabled={pending}
                 className={input}
               >
-                <option value="in_person">In person</option>
-                <option value="online">Online</option>
-                <option value="hybrid">In person + online</option>
+                {ATTENDANCE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>What kind of gathering</span>
+              <select name="category" defaultValue={data.category ?? 'gathering'} disabled={pending} className={input}>
+                {CATEGORY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>Who can see this</span>
+              <select name="visibility" defaultValue={data.visibility ?? 'circle_only'} disabled={pending} className={input}>
+                {VISIBILITY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>Energy</span>
+              <select name="energy_tag" defaultValue={data.energy_tag ?? ''} disabled={pending} className={input}>
+                {ENERGY_OPTIONS.map((o) => (
+                  <option key={o.value || 'none'} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
             </label>
 
