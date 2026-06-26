@@ -26,6 +26,7 @@ import { type ActivityPost } from '@/components/events/event-activity'
 import { EventRewardStrip } from '@/components/events/event-reward-strip'
 import { EventFactPanel, type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
+import { EventGallery } from '@/components/events/event-gallery'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { listCohosts } from '@/lib/events/cohosts'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
@@ -197,6 +198,7 @@ export default async function EventDetailPage({
     details: EventDetailsWithMedia | null
     poster_path: string | null
     cover_image_path: string | null
+    gallery_image_paths: string[] | null
     attendance_mode: AttendanceMode | null
     online_url: string | null
   }
@@ -207,7 +209,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, attendance_mode, online_url',
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -231,6 +233,16 @@ export default async function EventDetailPage({
   const coverUrl = extra?.cover_image_path
     ? admin.storage.from('event-media').getPublicUrl(extra.cover_image_path).data.publicUrl
     : null
+
+  // Gallery — the poster (cover) leads, then the additional gallery images, each a
+  // public storage path → URL. The hero keeps showing the poster; this list feeds the
+  // clickable gallery (EventGallery only renders when there are 2+ images to browse).
+  const galleryUrls: string[] = [
+    coverUrl,
+    ...(extra?.gallery_image_paths ?? []).map(
+      (path) => admin.storage.from('event-media').getPublicUrl(path).data.publicUrl,
+    ),
+  ].filter((u): u is string => !!u)
 
   // Both of these depend only on `extra` (not on each other): the "Posted by" credit
   // lookup and the signed URLs for the poster's media crops — resolve concurrently.
@@ -922,6 +934,10 @@ export default async function EventDetailPage({
           </div>
         }
       >
+        {/* Photo gallery — the poster leads, then any additional images, each clickable
+            into a full-screen lightbox. Renders only when there are 2+ images to browse. */}
+        <EventGallery images={galleryUrls} />
+
         {/* Host/cohost: a quiet door to the Manage Dashboard (roster, waitlist,
             questionnaire, dispatches, analytics). Host-only; everyone else never
             sees it. */}

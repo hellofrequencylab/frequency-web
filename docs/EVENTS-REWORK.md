@@ -138,7 +138,7 @@ Eventbrite/Meetup import.
 
 | Area | Change |
 |---|---|
-| `events` | `+ geog geography(Point,4326)` (GiST), `+ attendance_mode`, `+ online_url`, structured address cols, `+ cover_image_path`, `+ theme`; relax `scope_type` to allow standalone public (ADR-254) |
+| `events` | `+ geog geography(Point,4326)` (GiST), `+ attendance_mode`, `+ online_url`, structured address cols, `+ cover_image_path`, `+ gallery_image_paths` (multi-image gallery; poster leads), `+ theme`; relax `scope_type` to allow standalone public (ADR-254) |
 | `event_rsvps` | wire `maybe` / `waitlist` / `plus_ones`; `+ plus_one_names`, `+ decline_reason`, approval state |
 | new | `event_questions` / `event_question_answers` (host-only answers) |
 | new | `event_dispatches` (event-scoped Dispatch link + channel flags) reusing `dispatches` + `notification_queue` |

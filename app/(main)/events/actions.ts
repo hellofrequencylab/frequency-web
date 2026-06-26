@@ -24,6 +24,25 @@ import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 
+// Gallery images ride as a JSON array of storage paths (the form has no native array
+// shape). Parse defensively: a missing/garbage value, a non-array, or any non-string
+// member yields a clean string[] (bad members dropped), capped so a crafted payload
+// can't bloat the row. Empty array = clear the gallery.
+const MAX_GALLERY_IMAGES = 12
+function parseGalleryPaths(raw: string | null): string[] {
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
+      .map((p) => p.trim())
+      .slice(0, MAX_GALLERY_IMAGES)
+  } catch {
+    return []
+  }
+}
+
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
 const VALID_VISIBILITY = ['public', 'unlisted', 'circle_only', 'private']
 const VALID_ENERGY = ['high_activation', 'grounding', 'social', 'ceremonial']
@@ -98,6 +117,8 @@ export async function createEvent(formData: FormData) {
 
   // Cover image (a storage path in the public event-media bucket, resolved to a URL at render).
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
+  // Additional gallery images (ordered storage paths in the same bucket).
+  const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
 
   if (!title || !scopeId || !startsAt) return
   // An end before the start is never valid — drop the bad write rather than store a
@@ -151,6 +172,7 @@ export async function createEvent(formData: FormData) {
       category,
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
+      gallery_image_paths: galleryImagePaths,
       // space_id is newer than the generated DB types — cast the payload to reach the column
       // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
       ...(spaceId ? { space_id: spaceId } : {}),
@@ -236,6 +258,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const energyRaw = (formData.get('energyTag') as string | null) || ''
   const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
+  const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
 
   const admin = createAdminClient()
   const { data: ev } = await admin.from('events').select('slug').eq('id', eventId).maybeSingle()
@@ -255,6 +278,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
       category,
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
+      gallery_image_paths: galleryImagePaths,
     })
     .eq('id', eventId)
   if (error) {
