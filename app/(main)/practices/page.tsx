@@ -7,7 +7,6 @@ import { type PracticeSort } from '@/lib/practices'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
 import { IndexTemplate } from '@/components/templates/index-template'
-import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageContents } from '@/components/templates/page-contents'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
@@ -102,10 +101,13 @@ export default async function PracticesPage({
   }
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, ctaLabel, ctaHref } =
+  const { title, description, heroImage: contentHero, ctaLabel, ctaHref } =
     await resolvePageContent('/practices', CONTENT_FALLBACK)
-  // The wide header banner now comes from the SEO & meta panel's Header image (page_settings).
-  const heroImage = await getPageHeaderImage('/practices')
+  // The wide header banner can be set from EITHER the Settings header image (page_settings) OR the
+  // older page-content hero (ADR-180). Prefer the new uploader, then fall back to the page-content
+  // hero so an image set there actually shows (it was being dropped — the page read only the
+  // page_settings field), mirroring how /journeys resolves its banner.
+  const heroImage = (await getPageHeaderImage('/practices')) ?? contentHero
 
   return (
     <IndexTemplate
@@ -163,29 +165,11 @@ export default async function PracticesPage({
           </div>
         </div>
       }
-      banner={
-        // A small breadcrumb at the very top, then the operator hero image — both ABOVE
-        // the title (the banner slot renders before the heading), mirroring Events.
-        <div>
-          <Breadcrumbs
-            trail={[
-              { href: '/network', label: 'Community' },
-              { href: '/practices', label: 'Practices' },
-            ]}
-          />
-          {/* Operator-set header image (PX.1) — renders only when set. Intrinsic sizing
-              (w-full h-auto): the whole banner scales to the screen and is never cropped,
-              so wide headers read fully on mobile too. Upload ~1600×500 (16:5). */}
-          {heroImage && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={heroImage}
-              alt=""
-              className="mb-6 h-auto w-full rounded-2xl border border-border"
-            />
-          )}
-        </div>
-      }
+      trail={[
+        { href: '/network', label: 'Community' },
+        { href: '/practices', label: 'Practices' },
+      ]}
+      heroImage={heroImage}
     >
       {/* Jump between your stuff and the library. The personal entries point at module-driven
           blocks that render only for a signed-in member with data; a dangling anchor is harmless
