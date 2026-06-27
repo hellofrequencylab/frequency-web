@@ -20,7 +20,7 @@ RPCs (the composition layer was the gap, not the data). Full design: [`RESONANCE
 | **1. Blended rank** | The five-signal score (proximity + graph + interest + recency + soft signals) + diversity rerank as one unified feed rank, composing the existing proximity RPCs, resonance edges, and embeddings. People-suggestions enter the feed. | ✅ shipped (ADR-415) |
 | **2. Adaptive radius + founder prompt** | The density-rollup job + the expanding-ring walk (neighborhood → city → region → world). Founder-vs-closest-activity branch. The "turn on location, we never share your exact spot" nudge. | ✅ shipped (ADR-416) |
 | **3. Radius slider + hide control** | Member radius slider (writes `feed_radius_m`); X-to-hide wired to `suggestion_hidden`; streak-as-a-quiet-signal in the rank. | ✅ shipped (ADR-417) |
-| **4. Safety + verification** | Verification + safety gating for in-person meetups that originate from a circle/event introduction. | ✅ shipped (ADR-418); verification FLOW deferred |
+| **4. Safety + verification** | Safety guidance + verification. | ✅ shipped (ADR-418 + ADR-420: "showed up" verification, gates the romance lane) |
 | **5. Romance + astrology** | Opt-in astrology compatibility signal + a mutual-opt-in romance lane, on the Phase 0 scaffolding. Off by default, no swipe, meet-safely throughout. | ✅ shipped (ADR-419) |
 
 **Cardinal rule across every phase:** exact location never leaves the DB. All discovery reads use the

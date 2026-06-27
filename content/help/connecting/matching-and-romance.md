@@ -23,6 +23,7 @@ Turn this on and add your birth date, and we'll add a quiet note like *your sign
 If you're open to more than friendship, you can turn on **romance mode**. It's built to be calm and safe, not a dating-app grind.
 
 - **It's mutual, always.** You only ever appear to, and see, people who **also** turned romance mode on. Nobody who hasn't opted in is involved, and you're invisible in this lane to everyone who hasn't.
+- **Verified to appear.** You can browse here right away, but you'll only **appear to others** once you're verified. Verifying is easy and on-brand: [show up to an event](/help/groups/events) and check in at the door. That's it.
 - **No swiping.** There's no card stack to burn through. We surface a few people you already share circles or connections with, in a clearly labeled "Open to connection" row on your feed.
 - **You're in control.** Turn it off anytime, and use the X to remove anyone you're not interested in. We won't suggest them again.
 

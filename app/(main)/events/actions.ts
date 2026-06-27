@@ -11,6 +11,7 @@ import { processGamificationEvent, recordStreakActivity } from '@/lib/achievemen
 import { awardGems } from '@/lib/gems'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
+import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
@@ -736,6 +737,11 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     .eq('profile_id', myProfileId)
     .maybeSingle()
   if (rsvp?.status !== 'going') return { ok: false }
+
+  // "Showed up" verification (ADR-420): physically checking in at a real event is the
+  // baseline real-person signal. Idempotent (only sets verified_at once) + fail-safe.
+  // Runs for any valid check-in, so a member already counted as attending still verifies.
+  await markVerifiedByAttendance(myProfileId)
 
   const { recorded } = await recordEngagementEvent({
     idempotencyKey: `event_checkin:${eventId}:${myProfileId}`,
