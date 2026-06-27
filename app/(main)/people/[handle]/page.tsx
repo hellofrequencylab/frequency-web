@@ -13,10 +13,11 @@ import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, Sparkles } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
+import { readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ConnectionPanel } from '@/components/people/connection-panel'
@@ -98,10 +99,13 @@ export default async function ProfilePage({
   // header_image_url isn't in the generated types yet (new column) — read via cast.
   const { data: hdrRow } = await (admin)
     .from('profiles')
-    .select('header_image_url')
+    .select('header_image_url, meta')
     .eq('id', profile.id)
     .maybeSingle()
   const headerImageUrl = (hdrRow as { header_image_url?: string | null } | null)?.header_image_url ?? null
+  // Spotlight (opt-in public mini-site): show a link to it when this member has
+  // published one. Derived from meta server-side; the blob never reaches the client.
+  const spotlightPublished = readSpotlightPublished((hdrRow as { meta?: unknown } | null)?.meta)
 
   const vcardEnabled = parseVcard(profile.vcard).enabled
 
@@ -241,6 +245,17 @@ export default async function ProfilePage({
   // Edit Profile (and a contact-card download when they enabled one); the profile QR +
   // share link now live in the band's own "Share" panel (PageAdminBar). A signed-in
   // non-owner gets the full friend/contact/message/tip/block/moderate set.
+  // Link to this member's public Spotlight page, shown to anyone when it's published.
+  const spotlightLink = spotlightPublished ? (
+    <Link
+      href={`/spotlight/${profile.handle}`}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+    >
+      <Sparkles className="h-3.5 w-3.5" />
+      Spotlight
+    </Link>
+  ) : null
+
   const ownerActions = (
     <>
       <Link
@@ -250,6 +265,7 @@ export default async function ProfilePage({
         <Pencil className="h-3.5 w-3.5" />
         Edit profile
       </Link>
+      {spotlightLink}
       {vcardEnabled && (
         <a
           href={`${profilePath}/vcard`}
@@ -264,6 +280,7 @@ export default async function ProfilePage({
 
   const viewerActions = user ? (
     <>
+      {spotlightLink}
       {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
       {vcardEnabled && (
         <a

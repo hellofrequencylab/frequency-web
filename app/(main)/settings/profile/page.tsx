@@ -18,7 +18,7 @@ export default async function ProfileSettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta')
+    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta, profile_theme')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -74,6 +74,7 @@ export default async function ProfileSettingsPage() {
           website:     profile.website ?? '',
           spotlightEnabled,
           spotlightPublished,
+          profileTheme: (profile as { profile_theme?: string | null }).profile_theme ?? null,
         }}
       />
       {connect && qrSvg && <ProfileQrCard svg={qrSvg} link={qrLink} codeId={connect.id} />}
