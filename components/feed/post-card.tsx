@@ -2,7 +2,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Megaphone, ArrowRight, Zap, NotebookPen, CalendarDays } from 'lucide-react'
 import { PostReplies } from './post-replies'
-import { ReactionBar } from './reaction-button'
 import { ContextActions } from '@/components/context-actions'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { getInitials, relativeTime } from '@/lib/utils'
@@ -254,21 +253,14 @@ export function PostCard({
             </div>
           )}
 
-          {/* The emoji reactions and the comment toggle sit on ONE line under the
-              content (PostReplies owns the row so the toggle stays inline); the
-              thread expands full-width below it. The zaps chip now lives up by the
-              author, so this row is reactions + comments only. */}
+          {/* PostReplies owns the whole reaction + comment surface: the reaction
+              COUNTS sit beside the comment count on the action line, and the inline
+              emoji PICKER shares the comment composer row below. */}
           <PostReplies
             postId={post.id}
             initialCount={replyCount}
             myProfileId={myProfileId}
-            reactions={
-              <ReactionBar
-                postId={post.id}
-                reactions={reactions}
-                myProfileId={myProfileId}
-              />
-            }
+            postReactions={reactions}
           />
       </div>
     </article>

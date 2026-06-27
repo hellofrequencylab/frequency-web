@@ -9,7 +9,7 @@ import { getInitials, relativeTime } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { isEndorsed } from '@/lib/season-ranks'
 import { PostBody } from './post-body'
-import { ReactionBar } from './reaction-button'
+import { ReactionBar, ReactionCounts, ReactionInlinePicker, usePostReactions, type ReactionRow } from './reaction-button'
 import type { CommentNode, CommentLeaf, CommentThread } from '@/lib/feed/comment-thread'
 
 // Show the latest N top-level comments by default; the rest collapse behind a
@@ -170,17 +170,22 @@ function ReplyComposer({
 export function PostReplies({
   postId,
   initialCount,
-  reactions,
+  postReactions,
   myProfileId = null,
 }: {
   postId: string
   initialCount: number
-  /** Reaction controls (the emoji bar) rendered inline, left of the comment toggle. */
-  reactions?: ReactNode
+  /** The post's own reactions (one row per reactor + emoji). Drives the COUNTS shown
+   *  top-right beside the comment count AND the inline emoji picker on the composer
+   *  row — one shared state, so the two never drift. */
+  postReactions: ReactionRow[]
   /** The viewer's profile id — lets each comment's reaction bar highlight the
    *  viewer's own reactions. Null when signed out. */
   myProfileId?: string | null
 }) {
+  // One reaction state for the post, shared by the top-right counts + the composer
+  // picker so a tap in either place updates both instantly.
+  const reactionState = usePostReactions(postId, postReactions, myProfileId)
   // Comments show in the feed: a post with replies opens its thread by default
   // (fetched on mount) instead of hiding them behind a click.
   const [open, setOpen] = useState(initialCount > 0)
@@ -270,26 +275,49 @@ export function PostReplies({
 
   return (
     <div>
-      {/* Action line under the post content: just the comment toggle on the right.
-          The post's reactions moved DOWN to share the comment composer row (below),
-          so reacting and commenting live together instead of in two places. */}
-      <div className="mt-2.5 flex items-center justify-end gap-2">
-        <button
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? 'Hide comments' : 'Show comments'}
-          className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
-            open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-          }`}
-        >
-          {isPending && !open ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M14 8.5c0 3.04-2.686 5.5-6 5.5a6.6 6.6 0 01-2.4-.45L2 15l.95-3.05A5.23 5.23 0 012 8.5C2 5.46 4.686 3 8 3s6 2.46 6 5.5z" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          )}
-          {count > 0 && count}
-        </button>
+      {/* One tight action line: the "View all / show fewer" comment control on the
+          LEFT, and the reaction COUNTS beside the comment count on the RIGHT — so the
+          reacts, the comment count, and the view-all link all share a single row. The
+          emoji PICKER lives down on the composer row (below), not here. */}
+      <div className="mt-2.5 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          {showExpander ? (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="text-xs font-medium text-primary-strong hover:underline"
+            >
+              View all {count} comments
+            </button>
+          ) : expanded && hiddenCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              className="text-xs font-medium text-subtle hover:text-muted hover:underline"
+            >
+              Show fewer comments
+            </button>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <ReactionCounts {...reactionState} compact />
+          <button
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? 'Hide comments' : 'Show comments'}
+            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
+              open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+            }`}
+          >
+            {isPending && !open ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M14 8.5c0 3.04-2.686 5.5-6 5.5a6.6 6.6 0 01-2.4-.45L2 15l.95-3.05A5.23 5.23 0 012 8.5C2 5.46 4.686 3 8 3s6 2.46 6 5.5z" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+            {count > 0 && count}
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -303,42 +331,23 @@ export function PostReplies({
             <p className="text-xs text-subtle text-center py-1">No replies yet. Be the first.</p>
           ) : (
             <div className="space-y-2.5">
-              {/* Truncation expander: reveal the earlier top-level comments. */}
-              {showExpander && (
-                <button
-                  type="button"
-                  onClick={() => setExpanded(true)}
-                  className="text-xs font-medium text-primary-strong hover:underline"
-                >
-                  View all {count} comments
-                </button>
-              )}
-              {expanded && hiddenCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setExpanded(false)}
-                  className="text-xs font-medium text-subtle hover:text-muted hover:underline"
-                >
-                  Show fewer comments
-                </button>
-              )}
+              {/* The "View all / show fewer" control lives on the action line above. */}
               {visibleComments.map(renderComment)}
             </div>
           )}
         </div>
       )}
 
-      {/* Reply composer — ALWAYS under every post, not gated behind the toggle, so
-          "Add a comment" is a one-step action (A.2). The emoji-react button, the
-          growing textarea, and send all share ONE row; ⌘/Ctrl+Enter or the button
-          sends. Submitting opens the thread. */}
+      {/* Reply composer — ALWAYS under every post. The inline emoji react strip (a
+          string of quick emojis + a picker), the growing textarea, and send all share
+          ONE row; ⌘/Ctrl+Enter or the button sends. Submitting opens the thread. */}
       <ReplyComposer
         value={body}
         onChange={setBody}
         onSubmit={handleSubmit}
         disabled={isPending}
         placeholder="Add a comment…"
-        reactSlot={reactions}
+        reactSlot={<ReactionInlinePicker {...reactionState} />}
       />
     </div>
   )
