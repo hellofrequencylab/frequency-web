@@ -79,18 +79,8 @@ export function SpotlightView({ data, contained = false }: { data: SpotlightData
       )}
       <div className="relative z-10">
       <main className="mx-auto max-w-xl px-4 pb-16">
-        {/* Header image (optional) — toggle, height + vertical focus are member-adjustable. */}
-        {theme.header.show && profile.header_image_url ? (
-          <div className="relative -mx-4 mb-[-3rem] overflow-hidden sm:rounded-b-3xl" style={{ height: theme.header.height }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={profile.header_image_url} alt="" className="h-full w-full object-cover" style={{ objectPosition: `50% ${theme.header.focusY}%` }} />
-          </div>
-        ) : (
-          <div className="h-10" />
-        )}
-
-        {/* Identity */}
-        <div className="flex flex-col items-center text-center">
+        {/* Identity leads (Linktree-style): avatar, name, handle, badges, bio at the top. */}
+        <div className="mt-8 flex flex-col items-center text-center">
           {profile.avatar_url ? (
             <Image
               src={profile.avatar_url}
@@ -123,6 +113,15 @@ export function SpotlightView({ data, contained = false }: { data: SpotlightData
             <p className="mt-4 max-w-md text-pretty text-sm leading-relaxed text-text">{profile.bio}</p>
           )}
         </div>
+
+        {/* Header image (optional) — a rounded banner UNDER the identity, not full-bleed.
+            Toggle, height + vertical focus stay member-adjustable. */}
+        {theme.header.show && profile.header_image_url ? (
+          <div className="relative mt-6 overflow-hidden rounded-2xl" style={{ height: theme.header.height }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={profile.header_image_url} alt="" className="h-full w-full object-cover" style={{ objectPosition: `50% ${theme.header.focusY}%` }} />
+          </div>
+        ) : null}
 
         {/* Stats shown up top — Zaps, streak, gems. */}
         {(totalZaps || profile.current_streak || profile.lifetime_gems) ? (

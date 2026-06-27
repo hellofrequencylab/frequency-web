@@ -69,6 +69,29 @@ describe('validateSpotlightLayout — security boundary', () => {
     if (second.type === 'gallery') expect(second.items).toHaveLength(MAX_GALLERY_IMAGES)
   })
 
+  it('gallery + image: clamp per-image crop (focus 0..100, zoom 100..200); missing → centred/100', () => {
+    const out = validateSpotlightLayout(
+      { blocks: [
+        { type: 'gallery', items: [
+          { assetPath: `${OWNER}/spotlight/a.webp`, alt: '', focusX: 999, focusY: -10, zoom: 999 },
+          { assetPath: `${OWNER}/spotlight/b.webp`, alt: '' }, // no crop → defaults
+        ] },
+        { type: 'image', assetPath: `${OWNER}/spotlight/c.png`, alt: 'x', focusX: 25, zoom: 50 },
+      ] },
+      OWNER,
+    )
+    const gallery = out.blocks[0]
+    if (gallery.type === 'gallery') {
+      expect(gallery.items[0]).toMatchObject({ focusX: 100, focusY: 0, zoom: 200 })
+      expect(gallery.items[1]).toMatchObject({ focusX: 50, focusY: 50, zoom: 100 })
+    }
+    const image = out.blocks[1]
+    if (image.type === 'image') {
+      // zoom below the floor clamps up to 100; an unset focusY defaults to centre.
+      expect(image).toMatchObject({ focusX: 25, focusY: 50, zoom: 100 })
+    }
+  })
+
   it('quote: drops empty, keeps optional cite', () => {
     const out = validateSpotlightLayout(
       { blocks: [
