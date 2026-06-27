@@ -60,14 +60,23 @@ function ColorField({
   )
 }
 
-export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
-  const [theme, setTheme] = useState<SpotlightTheme>(initial)
+// Controlled: the parent (the builder) owns `value` so the live preview reflects edits as
+// they happen. The Save button persists the current value. `showPreview` keeps the compact
+// inline swatch preview for the standalone (non-split) layout; the builder hides it since it
+// renders the full page live.
+export function SpotlightThemeEditor({
+  value, onChange, showPreview = true,
+}: {
+  value: SpotlightTheme
+  onChange: (t: SpotlightTheme) => void
+  showPreview?: boolean
+}) {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
 
   function patch(p: Partial<SpotlightTheme>) {
-    setTheme((t) => ({ ...t, ...p }))
+    onChange({ ...value, ...p })
   }
   function setBg(bg: SpotlightBg) {
     patch({ bg })
@@ -76,29 +85,29 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
   function save() {
     setError('')
     start(async () => {
-      const res = await saveSpotlightTheme(theme)
+      const res = await saveSpotlightTheme(value)
       if (res?.error) { setError(res.error); return }
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     })
   }
 
-  // ── Live preview values ──
+  // ── Inline swatch preview values ──
   const previewBg =
-    theme.bg.kind === 'gradient' ? buildGradientCss(theme.bg.gradient)
-    : theme.bg.kind === 'solid' ? theme.bg.color
+    value.bg.kind === 'gradient' ? buildGradientCss(value.bg.gradient)
+    : value.bg.kind === 'solid' ? value.bg.color
     : 'var(--color-canvas)'
   const previewTextRef =
-    theme.bg.kind === 'solid' ? theme.bg.color
-    : theme.bg.kind === 'gradient' ? theme.bg.gradient.stops[0].color
-    : theme.surface ?? '#ffffff'
-  const previewText = theme.text ?? readableOn(previewTextRef)
-  const previewFont = SPOTLIGHT_FONTS.find((f) => f.id === theme.font.body)?.stack
-  const previewHeadingFont = SPOTLIGHT_FONTS.find((f) => f.id === theme.font.heading)?.stack
-  const radiusPx = { sm: 6, md: 12, lg: 18, xl: 28 }[theme.card.radius]
-  const accent = theme.accent ?? '#7c6f5a'
+    value.bg.kind === 'solid' ? value.bg.color
+    : value.bg.kind === 'gradient' ? value.bg.gradient.stops[0].color
+    : value.surface ?? '#ffffff'
+  const previewText = value.text ?? readableOn(previewTextRef)
+  const previewFont = SPOTLIGHT_FONTS.find((f) => f.id === value.font.body)?.stack
+  const previewHeadingFont = SPOTLIGHT_FONTS.find((f) => f.id === value.font.heading)?.stack
+  const radiusPx = { sm: 6, md: 12, lg: 18, xl: 28 }[value.card.radius]
+  const accent = value.accent ?? '#7c6f5a'
 
-  const gradient = theme.bg.kind === 'gradient' ? theme.bg.gradient : null
+  const gradient = value.bg.kind === 'gradient' ? value.bg.gradient : null
   function setGradient(g: NonNullable<typeof gradient>) {
     setBg({ kind: 'gradient', gradient: g })
   }
@@ -121,7 +130,7 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
             <button
               key={p.id}
               type="button"
-              onClick={() => setTheme(p.theme)}
+              onClick={() => onChange(p.theme)}
               className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
             >
               {p.label}
@@ -129,7 +138,7 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
           ))}
           <button
             type="button"
-            onClick={() => setTheme(EMPTY_THEME)}
+            onClick={() => onChange(EMPTY_THEME)}
             className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-subtle transition-colors hover:bg-surface-elevated"
           >
             Reset
@@ -137,31 +146,33 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
         </div>
       </div>
 
-      {/* Live preview */}
-      <div className="overflow-hidden rounded-xl border border-border-strong" style={{ background: previewBg }}>
-        <div className="flex flex-col items-center gap-2 p-5">
-          <p className="text-lg font-bold" style={{ color: previewText, fontFamily: previewHeadingFont }}>Your name</p>
-          <div
-            className="w-full max-w-[200px] px-4 py-2.5 text-center text-sm font-semibold"
-            style={{
-              borderRadius: radiusPx,
-              background: theme.card.style === 'glass' ? `${(theme.surface ?? '#ffffff')}8c` : (theme.surface ?? '#ffffff'),
-              color: readableOn(theme.surface ?? '#ffffff'),
-              backdropFilter: theme.card.style === 'glass' ? 'blur(8px)' : undefined,
-              boxShadow: theme.card.shadow === 'strong' ? '0 10px 30px rgba(0,0,0,0.18)' : theme.card.shadow === 'soft' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              fontFamily: previewFont,
-            }}
-          >
-            A link
+      {/* Inline swatch preview (hidden in the split builder, which shows the full page live) */}
+      {showPreview && (
+        <div className="overflow-hidden rounded-xl border border-border-strong" style={{ background: previewBg }}>
+          <div className="flex flex-col items-center gap-2 p-5">
+            <p className="text-lg font-bold" style={{ color: previewText, fontFamily: previewHeadingFont }}>Your name</p>
+            <div
+              className="w-full max-w-[200px] px-4 py-2.5 text-center text-sm font-semibold"
+              style={{
+                borderRadius: radiusPx,
+                background: value.card.style === 'glass' ? `${(value.surface ?? '#ffffff')}8c` : (value.surface ?? '#ffffff'),
+                color: readableOn(value.surface ?? '#ffffff'),
+                backdropFilter: value.card.style === 'glass' ? 'blur(8px)' : undefined,
+                boxShadow: value.card.shadow === 'strong' ? '0 10px 30px rgba(0,0,0,0.18)' : value.card.shadow === 'soft' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                fontFamily: previewFont,
+              }}
+            >
+              A link
+            </div>
+            <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: accent, color: readableOn(accent) }}>Accent</span>
           </div>
-          <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: accent, color: readableOn(accent) }}>Accent</span>
         </div>
-      </div>
+      )}
 
       {/* Accent */}
       <div className={SECTION}>
         <p className={LABEL}>Accent colour</p>
-        <ColorField value={theme.accent} onChange={(v) => patch({ accent: v })} allowClear clearLabel="Default" />
+        <ColorField value={value.accent} onChange={(v) => patch({ accent: v })} allowClear clearLabel="Default" />
       </div>
 
       {/* Background */}
@@ -175,12 +186,12 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
               onClick={() =>
                 setBg(
                   k === 'none' ? { kind: 'none' }
-                  : k === 'solid' ? { kind: 'solid', color: theme.surface ?? '#1b1530' }
+                  : k === 'solid' ? { kind: 'solid', color: value.surface ?? '#1b1530' }
                   : { kind: 'gradient', gradient: { type: 'linear', angle: 160, animated: false, speed: 12, stops: [{ color: '#ff9a3c', pos: 0 }, { color: '#7b2ff7', pos: 100 }] } },
                 )
               }
               className={`rounded-lg border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
-                theme.bg.kind === k ? 'border-primary-strong bg-primary-bg text-primary-strong' : 'border-border text-text hover:bg-surface-elevated'
+                value.bg.kind === k ? 'border-primary-strong bg-primary-bg text-primary-strong' : 'border-border text-text hover:bg-surface-elevated'
               }`}
             >
               {k}
@@ -188,8 +199,8 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
           ))}
         </div>
 
-        {theme.bg.kind === 'solid' && (
-          <ColorField value={theme.bg.color} onChange={(v) => setBg(v ? { kind: 'solid', color: v } : { kind: 'none' })} />
+        {value.bg.kind === 'solid' && (
+          <ColorField value={value.bg.color} onChange={(v) => setBg(v ? { kind: 'solid', color: v } : { kind: 'none' })} />
         )}
 
         {gradient && (
@@ -270,11 +281,11 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
       <div className="grid grid-cols-2 gap-3">
         <div className={SECTION}>
           <p className={LABEL}>Card colour</p>
-          <ColorField value={theme.surface} onChange={(v) => patch({ surface: v })} allowClear clearLabel="Default" />
+          <ColorField value={value.surface} onChange={(v) => patch({ surface: v })} allowClear clearLabel="Default" />
         </div>
         <div className={SECTION}>
           <p className={LABEL}>Text colour</p>
-          <ColorField value={theme.text} onChange={(v) => patch({ text: v })} allowClear clearLabel="Auto" />
+          <ColorField value={value.text} onChange={(v) => patch({ text: v })} allowClear clearLabel="Auto" />
         </div>
       </div>
 
@@ -282,13 +293,13 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
       <div className="grid grid-cols-2 gap-3">
         <div className={SECTION}>
           <p className={LABEL}>Heading font</p>
-          <select value={theme.font.heading} onChange={(e) => patch({ font: { ...theme.font, heading: e.target.value as SpotlightFontId } })} className={`${FIELD} w-full`}>
+          <select value={value.font.heading} onChange={(e) => patch({ font: { ...value.font, heading: e.target.value as SpotlightFontId } })} className={`${FIELD} w-full`}>
             {SPOTLIGHT_FONTS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
           </select>
         </div>
         <div className={SECTION}>
           <p className={LABEL}>Body font</p>
-          <select value={theme.font.body} onChange={(e) => patch({ font: { ...theme.font, body: e.target.value as SpotlightFontId } })} className={`${FIELD} w-full`}>
+          <select value={value.font.body} onChange={(e) => patch({ font: { ...value.font, body: e.target.value as SpotlightFontId } })} className={`${FIELD} w-full`}>
             {SPOTLIGHT_FONTS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
           </select>
         </div>
@@ -298,7 +309,7 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
       <div className="grid grid-cols-3 gap-3">
         <div className={SECTION}>
           <p className={LABEL}>Corners</p>
-          <select value={theme.card.radius} onChange={(e) => patch({ card: { ...theme.card, radius: e.target.value as CardRadius } })} className={`${FIELD} w-full`}>
+          <select value={value.card.radius} onChange={(e) => patch({ card: { ...value.card, radius: e.target.value as CardRadius } })} className={`${FIELD} w-full`}>
             <option value="sm">Sharp</option>
             <option value="md">Soft</option>
             <option value="lg">Round</option>
@@ -307,7 +318,7 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
         </div>
         <div className={SECTION}>
           <p className={LABEL}>Shadow</p>
-          <select value={theme.card.shadow} onChange={(e) => patch({ card: { ...theme.card, shadow: e.target.value as CardShadow } })} className={`${FIELD} w-full`}>
+          <select value={value.card.shadow} onChange={(e) => patch({ card: { ...value.card, shadow: e.target.value as CardShadow } })} className={`${FIELD} w-full`}>
             <option value="none">None</option>
             <option value="soft">Soft</option>
             <option value="strong">Strong</option>
@@ -315,7 +326,7 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
         </div>
         <div className={SECTION}>
           <p className={LABEL}>Surface</p>
-          <select value={theme.card.style} onChange={(e) => patch({ card: { ...theme.card, style: e.target.value as CardStyle } })} className={`${FIELD} w-full`}>
+          <select value={value.card.style} onChange={(e) => patch({ card: { ...value.card, style: e.target.value as CardStyle } })} className={`${FIELD} w-full`}>
             <option value="solid">Solid</option>
             <option value="glass">Glass</option>
           </select>
@@ -325,23 +336,36 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
       {/* Header / cover band framing */}
       <div className={SECTION}>
         <p className={LABEL}>Cover band</p>
-        <p className="text-2xs text-muted">Frames your profile header photo at the top of the page.</p>
-        <label className="flex items-center justify-between text-xs text-muted">
-          <span>Height</span><span className="tabular-nums">{theme.header.height}px</span>
+        <label className="flex items-center gap-1.5 text-xs font-medium text-text">
+          <input
+            type="checkbox"
+            checked={value.header.show}
+            onChange={(e) => patch({ header: { ...value.header, show: e.target.checked } })}
+            className="accent-primary"
+          />
+          Show cover photo
         </label>
-        <input
-          type="range" min={80} max={360} step={8} value={theme.header.height}
-          onChange={(e) => patch({ header: { ...theme.header, height: Number(e.target.value) } })}
-          className="w-full accent-primary"
-        />
-        <label className="flex items-center justify-between text-xs text-muted">
-          <span>Position up/down</span><span className="tabular-nums">{theme.header.focusY}%</span>
-        </label>
-        <input
-          type="range" min={0} max={100} step={1} value={theme.header.focusY}
-          onChange={(e) => patch({ header: { ...theme.header, focusY: Number(e.target.value) } })}
-          className="w-full accent-primary"
-        />
+        {value.header.show && (
+          <>
+            <p className="text-2xs text-muted">Frames your profile header photo at the top of the page.</p>
+            <label className="flex items-center justify-between text-xs text-muted">
+              <span>Height</span><span className="tabular-nums">{value.header.height}px</span>
+            </label>
+            <input
+              type="range" min={80} max={360} step={8} value={value.header.height}
+              onChange={(e) => patch({ header: { ...value.header, height: Number(e.target.value) } })}
+              className="w-full accent-primary"
+            />
+            <label className="flex items-center justify-between text-xs text-muted">
+              <span>Position up/down</span><span className="tabular-nums">{value.header.focusY}%</span>
+            </label>
+            <input
+              type="range" min={0} max={100} step={1} value={value.header.focusY}
+              onChange={(e) => patch({ header: { ...value.header, focusY: Number(e.target.value) } })}
+              className="w-full accent-primary"
+            />
+          </>
+        )}
       </div>
 
       {error && <p className="text-xs text-danger">{error}</p>}

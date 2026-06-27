@@ -60,6 +60,12 @@ describe('validateSpotlightTheme — read-side boundary', () => {
     expect(out.card).toEqual({ radius: 'lg', shadow: 'soft', style: 'solid' })
   })
 
+  it('header.show defaults ON; only an explicit false hides the cover band', () => {
+    expect(validateSpotlightTheme({}).header.show).toBe(true)
+    expect(validateSpotlightTheme({ header: { show: false } }).header.show).toBe(false)
+    expect(validateSpotlightTheme({ header: { show: 'nope' } }).header.show).toBe(true)
+  })
+
   it('gradient animation: coerces animated to a real boolean and clamps speed to 4..40', () => {
     const fast = validateSpotlightTheme({ bg: { kind: 'gradient', gradient: { animated: 'yes', speed: 1, stops: [{ color: '#ffffff', pos: 0 }, { color: '#000000', pos: 100 }] } } })
     expect(fast.bg.kind).toBe('gradient')
