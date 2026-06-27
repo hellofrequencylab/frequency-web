@@ -8663,6 +8663,22 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 
 ---
 
+## ADR-413: Posted-event sharing auto-delivers the claim link, and the publish gate matches the listing filter
+
+**Status:** Accepted (2026-06-26). When a member publishes an event they posted on an organizer's behalf, Frequency now auto-emails the organizer the one-time claim link (it no longer relies on the poster copy-pasting it). The public event page gained a "this is not my event / claim it" path, the publish flow blocks undated/past events, and a draft-leak in the public reads is closed.
+
+**Context.** A member scanned several posters, published them "on behalf of" the organizers, and expected the organizers to be notified. They weren't: "share with the organizer" was a copy-to-clipboard card only (`outreach-card.tsx`) — the captured `organizer_contact` was stored but never used to send anything, and no claim email template existed. Separately, three issues compounded the confusion: (a) the organizer could never see the event in *their* drafts (drafts are owner-scoped to `posted_by_profile_id`, by design — only the claim handshake transfers it); (b) the public detail page + the `/events` discovery fallback read through the admin client and never re-applied the `status='published'` gate the poster-events migration assumes, so a draft could render on its public slug and even surface in the Catalog; and (c) a scan that misread the year wrote a past `starts_at`, which the `starts_at >= now` listing filter silently drops, so the event "vanished" with no warning.
+
+**Decision.**
+1. **Auto-deliver the claim link by email.** `publishEventDraft(..., 'posted')` now calls `deliverClaimInvite` (best-effort, never breaks publish): if `organizer_contact` is an email, it queues a new `sendEventClaimInviteEmail` (template in `lib/email.ts`, non-member transactional voice + custom footer) through the durable outbox. A raw phone/handle is **not** auto-texted (cold SMS to a non-member has no consent); those fall back to the manual copy-link card. The editor confirms "we emailed the organizer at X" via the new `claimSentTo` on `PublishResult`.
+2. **Public "claim it" CTA.** `ClaimEventBanner` on the event detail page (for an unclaimed posted event) names who posted it and who the organizer is, and a button re-sends the claim link to the organizer contact **on file** — never to an address typed in the browser, and the address is never revealed — via `resendClaimInvite` + the `requestClaimLink` action (sign-in gated as light anti-abuse).
+3. **Publish gate = listing filter.** `publishDraft` blocks a missing or past `starts_at` with a clear reason (the editor also warns inline and disables Publish). Publishable now implies listable.
+4. **Close the draft leak.** `index-data.ts` adds `.eq('status','published')` to all three event queries, and the detail page `notFound()`s an unpublished draft for non-managers. RLS already gated this; the admin-client server reads now carry the same gate the migration assumed.
+
+**Consequences.** New: `app/(main)/events/[slug]/claim-actions.ts`, `components/events/claim-event-banner.tsx`, the claim-invite email (`sendEventClaimInviteEmail` + builders in `lib/email.ts`). Changed: `lib/events/event-drafts.ts` (`deliverClaimInvite`, `resendClaimInvite`, `claimSentTo`), `app/(main)/events/scan/actions.ts` (date gate + thread `claimSentTo`), the draft editor + outreach card + draft page (auto-send confirmation, date warning), `index-data.ts` (status gate), the detail page (draft guard + claim banner). Also fixed a stray space in the weekly-digest greeting. SMS-to-organizer is intentionally deferred until a consented channel exists; the manual share covers texting in the meantime.
+
+---
+
 ## ADR-414: Real-Crew creation gate (the four create capabilities) + Resonance Feed Phase 0 scaffolding
 
 **Status:** Accepted (2026-06-26). Authoring an event, circle, journey, or practice now requires **real Crew** (the paid tier) or a community steward; everyone else meets a one-tap "Crew is free during the beta" upgrade popup. Ships with the additive data scaffolding for the worldwide, density-adaptive Resonance Feed (see `docs/RESONANCE-FEED-ARCHITECTURE.md`). This is **Phase 0** of that plan.

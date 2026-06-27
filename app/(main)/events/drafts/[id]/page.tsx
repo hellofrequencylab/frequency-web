@@ -38,7 +38,12 @@ export default async function DraftEditorPage({ params }: { params: Promise<{ id
       >
         <div className="space-y-4">
           {draft.claimToken && !draft.claimedAt && draft.slug && (
-            <OutreachCard claimToken={draft.claimToken} slug={draft.slug} />
+            <OutreachCard
+              claimToken={draft.claimToken}
+              slug={draft.slug}
+              // If the organizer contact is an email, the claim link was auto-sent at publish.
+              sentTo={/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(draft.organizerContact ?? '') ? draft.organizerContact! : undefined}
+            />
           )}
           {draft.slug && (
             <Link
