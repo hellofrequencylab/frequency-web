@@ -738,11 +738,12 @@ export default async function EventDetailPage({
             )}
           </div>
         </div>
-      ) : !event.is_cancelled && myProfileId && !isPast && !isHost ? (
+      ) : !event.is_cancelled && myProfileId && !isPast ? (
         <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
-          {/* RSVP is open to every member, on any event, regardless of who hosts it —
-              it is never Crew-gated. Crew unlocks CREATING events, not attending them
-              (the upgrade gate lives on the create flow, not here). */}
+          {/* RSVP is open to every member on any event, INCLUDING the host of their own
+              gathering (a host counts themselves in like anyone else) — it is never
+              Crew-gated. Crew unlocks CREATING events, not attending them (the upgrade
+              gate lives on the create flow, not here). */}
           <RsvpControls
             eventId={event.id}
             slug={event.slug}
@@ -798,9 +799,11 @@ export default async function EventDetailPage({
     </div>
   )
 
-  // Whether the mobile bottom bar should appear (there's a real action to take).
+  // Whether the mobile bottom bar should appear (there's a real action to take). A host
+  // CAN RSVP to their own FREE event (so the bar shows), but never buys a ticket to it —
+  // so the host is excluded only on the paid path ("you're hosting, no ticket needed").
   const showBottomBar =
-    !event.is_cancelled && !hasEnded && !isHost && (isPaidEvent ? !ownsTicket && !allTiersSoldOut : !!myProfileId)
+    !event.is_cancelled && !hasEnded && (isPaidEvent ? !isHost && !ownsTicket && !allTiersSoldOut : !!myProfileId)
   const bottomBarLabel = isPaidEvent
     ? `Get ticket${hasTiers ? '' : ` · ${priceLabel}`}`
     : isGoing
