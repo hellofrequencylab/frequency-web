@@ -5,6 +5,9 @@ import { getInitials } from '@/lib/utils'
 import { resolveProfileSkin } from '@/lib/theme/profile-skins'
 import { RoleBadge, type CommunityRole } from '@/lib/community-roles'
 import type { SpotlightData } from '@/lib/spotlight/data'
+import { SpotlightBlocks } from './blocks/render'
+
+const PUBLIC_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/object/public/avatars/`
 
 // The PUBLIC Spotlight page — a member's themed mini-site (linktree-style). Pure
 // presentation over already-allowlisted data (lib/spotlight/privacy.ts); it renders
@@ -29,14 +32,25 @@ function StatPill({ icon: Icon, value, label }: { icon: typeof Flame; value: str
 }
 
 export function SpotlightPage({ data }: { data: SpotlightData }) {
-  const { profile, hostedEvents } = data
+  const { profile, hostedEvents, layout, background } = data
   const skin = resolveProfileSkin(profile.profile_theme)
   const name = profile.display_name || `@${profile.handle}`
   const region = profile.nexus_regions?.name ?? null
   const website = profile.website ? normalizeUrl(profile.website) : null
+  // When the member has built a custom layout, it replaces the curated body below the
+  // identity header; otherwise the curated default (links + events) renders unchanged.
+  const hasLayout = layout.blocks.length > 0
 
   return (
-    <div data-skin={skin} className="min-h-screen bg-canvas">
+    <div data-skin={skin} className="relative min-h-screen bg-canvas">
+      {background.assetPath && (
+        <div className="pointer-events-none fixed inset-0 -z-0" aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${PUBLIC_BASE}${background.assetPath}`} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-canvas" style={{ opacity: background.dim / 100 }} />
+        </div>
+      )}
+      <div className="relative z-10">
       <main className="mx-auto max-w-xl px-4 pb-16">
         {/* Header image (optional) */}
         {profile.header_image_url ? (
@@ -95,42 +109,48 @@ export function SpotlightPage({ data }: { data: SpotlightData }) {
           </div>
         ) : null}
 
-        {/* Links */}
-        {website && (
-          <div className="mt-6 space-y-3">
-            <a
-              href={website.href}
-              target="_blank"
-              rel="noopener noreferrer nofollow"
-              className="flex items-center justify-center gap-2 rounded-2xl border border-border-strong bg-surface px-4 py-3.5 text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated"
-            >
-              <Globe className="h-4 w-4 text-primary-strong" aria-hidden /> {website.label}
-            </a>
-          </div>
-        )}
-
-        {/* Upcoming events this member hosts */}
-        {hostedEvents.length > 0 && (
-          <section className="mt-8">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">Upcoming</h2>
-            <div className="space-y-2">
-              {hostedEvents.map((e) => (
-                <Link
-                  key={e.id}
-                  href={`/events/${e.slug}`}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 transition-colors hover:bg-surface-elevated"
+        {hasLayout ? (
+          /* Member-built layout: their blocks replace the curated body. */
+          <SpotlightBlocks blocks={layout.blocks} />
+        ) : (
+          <>
+            {/* Curated default — links + upcoming events (unchanged from before). */}
+            {website && (
+              <div className="mt-6 space-y-3">
+                <a
+                  href={website.href}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-border-strong bg-surface px-4 py-3.5 text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated"
                 >
-                  <CalendarDays className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-text">{e.title}</p>
-                    <p className="text-xs text-muted">
-                      {new Date(e.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
+                  <Globe className="h-4 w-4 text-primary-strong" aria-hidden /> {website.label}
+                </a>
+              </div>
+            )}
+
+            {hostedEvents.length > 0 && (
+              <section className="mt-8">
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">Upcoming</h2>
+                <div className="space-y-2">
+                  {hostedEvents.map((e) => (
+                    <Link
+                      key={e.id}
+                      href={`/events/${e.slug}`}
+                      className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 transition-colors hover:bg-surface-elevated"
+                    >
+                      <CalendarDays className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-text">{e.title}</p>
+                        <p className="text-xs text-muted">
+                          {new Date(e.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
 
         {/* Quiet attribution + a way in */}
@@ -140,6 +160,7 @@ export function SpotlightPage({ data }: { data: SpotlightData }) {
           </Link>
         </footer>
       </main>
+      </div>
     </div>
   )
 }

@@ -67,3 +67,50 @@ export async function toggleSpotlightEnabled(profileId: string, enabled: boolean
 
   revalidatePath('/admin/members')
 }
+
+/**
+ * Reset a member's Spotlight to default (janitor): clears their custom layout +
+ * background + theme and force-unpublishes, but KEEPS the enable flag and any earned
+ * cosmetics. The moderation "make this page calm again" lever.
+ */
+export async function resetSpotlightToDefault(profileId: string): Promise<void> {
+  const caller = await requireJanitor()
+  const { profileId: pid } = parseInput(z.object({ profileId: uuid }), { profileId })
+
+  const admin = createAdminClient()
+  const { data: target } = await admin.from('profiles').select('meta').eq('id', pid).maybeSingle()
+  if (!target) throw new Error('Member not found')
+
+  const base = ((target as { meta?: unknown }).meta ?? {}) as { spotlight?: Record<string, unknown> }
+  const nextMeta = {
+    ...base,
+    spotlight: { ...(base.spotlight ?? {}), layout: null, background: null, published: false },
+  }
+  const { error } = await admin
+    .from('profiles')
+    .update({ meta: nextMeta as never, profile_theme: null })
+    .eq('id', pid)
+  if (error) throw new Error(error.message)
+
+  await logAdminAction({ actorId: caller.id, action: 'spotlight.reset', targetType: 'profile', targetId: pid })
+  revalidatePath('/admin/members')
+}
+
+/** Force-unpublish a member's Spotlight (janitor): takes the public page down without
+ *  touching their layout, so they can fix it and re-publish. */
+export async function forceUnpublishSpotlight(profileId: string): Promise<void> {
+  const caller = await requireJanitor()
+  const { profileId: pid } = parseInput(z.object({ profileId: uuid }), { profileId })
+
+  const admin = createAdminClient()
+  const { data: target } = await admin.from('profiles').select('meta').eq('id', pid).maybeSingle()
+  if (!target) throw new Error('Member not found')
+
+  const base = ((target as { meta?: unknown }).meta ?? {}) as { spotlight?: Record<string, unknown> }
+  const nextMeta = { ...base, spotlight: { ...(base.spotlight ?? {}), published: false } }
+  const { error } = await admin.from('profiles').update({ meta: nextMeta as never }).eq('id', pid)
+  if (error) throw new Error(error.message)
+
+  await logAdminAction({ actorId: caller.id, action: 'spotlight.force_unpublish', targetType: 'profile', targetId: pid })
+  revalidatePath('/admin/members')
+}

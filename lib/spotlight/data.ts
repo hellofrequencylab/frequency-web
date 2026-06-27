@@ -1,6 +1,12 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { readSpotlightPublished } from '@/lib/profile/spotlight-flags'
+import {
+  readSpotlightPublished,
+  readSpotlightLayoutRaw,
+  readSpotlightBackgroundRaw,
+} from '@/lib/profile/spotlight-flags'
+import { validateSpotlightLayout, validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
+import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 
 // Server data for the PUBLIC Spotlight page. Anonymous visitors get no RLS, so this
@@ -19,6 +25,10 @@ export interface SpotlightHostedEvent {
 export interface SpotlightData {
   profile: SpotlightRow
   hostedEvents: SpotlightHostedEvent[]
+  /** The member's validated block layout (empty when they haven't customized). */
+  layout: SpotlightLayout
+  /** The validated optional background image. */
+  background: SpotlightBackground
 }
 
 /**
@@ -29,16 +39,23 @@ export interface SpotlightData {
 export async function getPublishedSpotlight(handle: string): Promise<SpotlightData | null> {
   const admin = createAdminClient()
 
-  // Gate: resolve the profile + its publish flag from meta (never returned).
+  // Gate: resolve the profile + its publish flag + editor layout from meta (meta itself
+  // is never returned — only the validated layout/background derived from it).
   const { data: gate } = await admin
     .from('profiles')
-    .select('id, is_active, is_system, meta')
+    .select('id, auth_user_id, is_active, is_system, meta')
     .eq('handle', handle)
     .maybeSingle()
 
-  const g = gate as { id?: string; is_active?: boolean; is_system?: boolean; meta?: unknown } | null
+  const g = gate as { id?: string; auth_user_id?: string | null; is_active?: boolean; is_system?: boolean; meta?: unknown } | null
   if (!g?.id || g.is_active === false || g.is_system === true) return null
   if (!readSpotlightPublished(g.meta)) return null
+
+  // Validate the stored layout/background ON READ (the security boundary): a tampered
+  // meta blob is coerced to a safe subset, asset paths pinned to this owner's folder.
+  const ownerAuthId = g.auth_user_id ?? ''
+  const layout = validateSpotlightLayout(readSpotlightLayoutRaw(g.meta), ownerAuthId)
+  const background = validateSpotlightBackground(readSpotlightBackgroundRaw(g.meta), ownerAuthId)
 
   // Page row: the explicit allowlist only.
   const { data: row } = await admin
@@ -62,5 +79,7 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
   return {
     profile: row as unknown as SpotlightRow,
     hostedEvents: (events ?? []) as SpotlightHostedEvent[],
+    layout,
+    background,
   }
 }

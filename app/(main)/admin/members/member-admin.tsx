@@ -15,7 +15,7 @@ import {
   sendMagicLink, updateMemberProfile, deleteUserAccount,
 } from '../actions'
 import { EconomyPanel } from './economy-panel'
-import { toggleSpotlightEnabled } from './spotlight-actions'
+import { toggleSpotlightEnabled, resetSpotlightToDefault, forceUnpublishSpotlight } from './spotlight-actions'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
@@ -340,6 +340,34 @@ function MemberRow({
                 <Sparkles className="w-3 h-3" />
                 {spotlightOn ? 'Spotlight on' : 'Turn on Spotlight'}
               </Button>
+            )}
+            {!m.is_system && spotlightOn && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={() => startTransition(async () => {
+                    try { await forceUnpublishSpotlight(m.id); setStatus('Spotlight unpublished') }
+                    catch (err) { setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`) }
+                    setTimeout(() => setStatus(null), 2500)
+                  })}
+                >
+                  Unpublish Spotlight
+                </Button>
+                <Button
+                  variant="warningOutline"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={() => startTransition(async () => {
+                    try { await resetSpotlightToDefault(m.id); setStatus('Spotlight reset to default') }
+                    catch (err) { setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`) }
+                    setTimeout(() => setStatus(null), 2500)
+                  })}
+                >
+                  Reset Spotlight
+                </Button>
+              </>
             )}
             {/* No sign-in link or delete for the system voice: she has no auth user,
                 and deleteUserAccount guards her server-side anyway (ADR-231). */}
