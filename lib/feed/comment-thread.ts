@@ -28,14 +28,26 @@ export type RawComment = {
   author: CommentAuthor | null
 }
 
-/** Per-comment reaction state the viewer's heart button seeds from. */
+/** Per-comment reaction state the viewer's reaction bar seeds from. `reaction_count`
+ *  / `viewer_reacted` are the rolled-up totals (any emoji); `reactions` is the raw
+ *  rows so the emoji `ReactionBar` can group them per emoji for grouped counts. */
 export type CommentReactionState = {
   reaction_count: number
   viewer_reacted: boolean
 }
 
-/** A comment enriched with its reaction state. */
-export type CommentLeaf = RawComment & CommentReactionState
+/** A single reaction row on a comment: one per (comment, profile, emoji). The
+ *  `ReactionBar` groups these by `reaction_type` to show per-emoji counts and
+ *  highlight the viewer's own. */
+export type ReactionRow = {
+  reaction_type: string
+  profile_id: string
+}
+
+/** A comment enriched with its reaction state plus the raw reaction rows (the
+ *  emoji bar groups `reactions`; `reaction_count` / `viewer_reacted` stay for any
+ *  consumer that only needs the rolled-up totals). */
+export type CommentLeaf = RawComment & CommentReactionState & { reactions: ReactionRow[] }
 
 /** A top-level comment plus its (one level of) nested replies. */
 export type CommentNode = CommentLeaf & {
@@ -59,19 +71,25 @@ export type CommentThread = {
  *                   A reply whose parent is NOT a known top-level comment is
  *                   dropped (defensive — the queries already scope `nested` to
  *                   top-level ids, so this only guards against deeper rows).
- * @param reactions  per-post reaction state, keyed by post id (heart only).
+ * @param reactions  per-post rolled-up reaction state, keyed by post id (any emoji).
+ * @param reactionRows  per-post RAW reaction rows, keyed by post id, so each leaf
+ *                   carries the rows the emoji `ReactionBar` groups. Optional;
+ *                   defaults to no rows (every leaf gets an empty `reactions` array).
  *
  * Top-level comments stay in their incoming order (caller sorts ascending by
- * created_at); nested replies likewise. Reaction state defaults to zero/false
- * for any id missing from the map.
+ * created_at); nested replies likewise. Reaction state defaults to zero/false/[]
+ * for any id missing from the maps.
  */
 export function assembleThread(
   topLevel: RawComment[],
   nested: RawComment[],
   reactions: Map<string, CommentReactionState>,
+  reactionRows: Map<string, ReactionRow[]> = new Map(),
 ): CommentThread {
-  const reactionFor = (id: string): CommentReactionState =>
-    reactions.get(id) ?? { reaction_count: 0, viewer_reacted: false }
+  const reactionFor = (id: string): CommentReactionState & { reactions: ReactionRow[] } => ({
+    ...(reactions.get(id) ?? { reaction_count: 0, viewer_reacted: false }),
+    reactions: reactionRows.get(id) ?? [],
+  })
 
   const nodes: CommentNode[] = topLevel.map((c) => ({
     ...c,
@@ -96,10 +114,11 @@ export function assembleThread(
 }
 
 /**
- * Aggregate raw `post_reactions` rows into per-post state for the viewer.
- * One pass over all heart rows across every comment id — no N+1.
+ * Aggregate raw `post_reactions` rows into per-post rolled-up state for the
+ * viewer. One pass over every reaction row across every comment id — no N+1.
+ * Counts ALL emoji together (the rolled-up total / "did the viewer react at all").
  *
- * @param rows       `{ post_id, profile_id }` heart reactions over the subtree.
+ * @param rows       `{ post_id, profile_id }` reactions over the subtree.
  * @param viewerId   the caller's profile id (decides `viewer_reacted`).
  */
 export function aggregateReactionState(
@@ -112,6 +131,23 @@ export function aggregateReactionState(
     cur.reaction_count += 1
     if (profile_id === viewerId) cur.viewer_reacted = true
     map.set(post_id, cur)
+  }
+  return map
+}
+
+/**
+ * Bucket raw reaction rows by their post id, preserving emoji + profile so the
+ * emoji `ReactionBar` can group per-emoji counts and highlight the viewer's own.
+ * One pass over every row across the subtree — no N+1.
+ */
+export function groupReactionRows(
+  rows: Array<{ post_id: string } & ReactionRow>,
+): Map<string, ReactionRow[]> {
+  const map = new Map<string, ReactionRow[]>()
+  for (const { post_id, reaction_type, profile_id } of rows) {
+    const list = map.get(post_id) ?? []
+    list.push({ reaction_type, profile_id })
+    map.set(post_id, list)
   }
   return map
 }
