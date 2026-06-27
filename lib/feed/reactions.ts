@@ -9,13 +9,15 @@
 // hearts onto '❤️'). The values stored in `post_reactions.reaction_type` are the
 // emoji characters themselves.
 
+// Skin-toned emojis carry the MEDIUM tan modifier (🏽, U+1F3FD) so the set reads as
+// one consistent tone rather than the default Simpson-yellow.
 export const REACTIONS = [
   { key: '❤️', label: 'Love this' },
   { key: '🔥', label: 'Fire' },
-  { key: '🙌', label: 'Celebrate' },
+  { key: '🙌🏽', label: 'Celebrate' },
   { key: '😂', label: 'Funny' },
   { key: '😮', label: 'Wow' },
-  { key: '🙏', label: 'Grateful' },
+  { key: '🙏🏽', label: 'Grateful' },
 ] as const
 
 export type ReactionKey = (typeof REACTIONS)[number]['key']
