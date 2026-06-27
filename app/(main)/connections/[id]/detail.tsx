@@ -136,6 +136,12 @@ export function Detail({
           {contact.lastContactedAt && (
             <span className="text-xs text-subtle">Last contacted {fmtDate(contact.lastContactedAt)}</span>
           )}
+          {/* Make it unmistakable this is the viewer's OWN private contact entry, not the
+              person's Frequency profile — Edit/Delete here only touch this private record. */}
+          <span className="inline-flex w-full items-center gap-1.5 text-xs text-muted">
+            <Lock className="h-3 w-3 shrink-0" />
+            Your private contact. Editing or deleting this only changes your own note, never their Frequency profile.
+          </span>
         </span>
       }
       badges={
