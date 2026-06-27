@@ -118,6 +118,11 @@ export interface SpotlightBackground {
   assetPath: string | null
   /** 0–80: how much to dim the background so text stays readable. */
   dim: number
+  /** Focal point within the frame, 0–100 each (object-position). Default 50/50 (centred). */
+  focusX: number
+  focusY: number
+  /** Zoom, 100–200 (%). Default 100. */
+  zoom: number
 }
 
 export const EMPTY_LAYOUT: SpotlightLayout = { version: SPOTLIGHT_LAYOUT_VERSION, blocks: [] }

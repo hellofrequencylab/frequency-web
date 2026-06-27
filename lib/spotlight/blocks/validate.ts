@@ -158,12 +158,21 @@ export function validateSpotlightLayout(raw: unknown, ownerAuthUserId: string): 
   return { version: SPOTLIGHT_LAYOUT_VERSION, blocks }
 }
 
-/** Validate the optional background image + dim. */
+/** Clamp a finite number into [lo, hi] (rounded), else the fallback. */
+function clampN(v: unknown, lo: number, hi: number, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.max(lo, Math.min(hi, Math.round(v))) : fallback
+}
+
+/** Validate the optional background image + dim + framing (focal point & zoom). */
 export function validateSpotlightBackground(raw: unknown, ownerAuthUserId: string): SpotlightBackground {
-  if (!raw || typeof raw !== 'object') return { assetPath: null, dim: 0 }
+  const base = { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }
+  if (!raw || typeof raw !== 'object') return base
   const r = raw as Record<string, unknown>
-  const assetPath = safeAssetPath(r.assetPath, ownerAuthUserId)
-  const dimRaw = typeof r.dim === 'number' && Number.isFinite(r.dim) ? r.dim : 0
-  const dim = Math.max(0, Math.min(80, Math.round(dimRaw)))
-  return { assetPath, dim }
+  return {
+    assetPath: safeAssetPath(r.assetPath, ownerAuthUserId),
+    dim: clampN(r.dim, 0, 80, 0),
+    focusX: clampN(r.focusX, 0, 100, 50),
+    focusY: clampN(r.focusY, 0, 100, 50),
+    zoom: clampN(r.zoom, 100, 200, 100),
+  }
 }

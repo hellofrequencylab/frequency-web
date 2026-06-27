@@ -56,19 +56,27 @@ export function SpotlightPage({ data }: { data: SpotlightData }) {
   return (
     <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
       {background.assetPath && (
-        <div className="pointer-events-none fixed inset-0 -z-0" aria-hidden>
+        <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden" aria-hidden>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`${PUBLIC_BASE}${background.assetPath}`} alt="" className="h-full w-full object-cover" />
+          <img
+            src={`${PUBLIC_BASE}${background.assetPath}`}
+            alt=""
+            className="h-full w-full object-cover"
+            style={{
+              objectPosition: `${background.focusX}% ${background.focusY}%`,
+              transform: background.zoom !== 100 ? `scale(${background.zoom / 100})` : undefined,
+            }}
+          />
           <div className="absolute inset-0 bg-canvas" style={{ opacity: background.dim / 100 }} />
         </div>
       )}
       <div className="relative z-10">
       <main className="mx-auto max-w-xl px-4 pb-16">
-        {/* Header image (optional) */}
+        {/* Header image (optional) — height + vertical focus are member-adjustable. */}
         {profile.header_image_url ? (
-          <div className="relative -mx-4 mb-[-3rem] h-40 overflow-hidden sm:rounded-b-3xl">
+          <div className="relative -mx-4 mb-[-3rem] overflow-hidden sm:rounded-b-3xl" style={{ height: theme.header.height }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={profile.header_image_url} alt="" className="h-full w-full object-cover" />
+            <img src={profile.header_image_url} alt="" className="h-full w-full object-cover" style={{ objectPosition: `50% ${theme.header.focusY}%` }} />
           </div>
         ) : (
           <div className="h-10" />

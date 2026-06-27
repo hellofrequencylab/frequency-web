@@ -322,6 +322,28 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
         </div>
       </div>
 
+      {/* Header / cover band framing */}
+      <div className={SECTION}>
+        <p className={LABEL}>Cover band</p>
+        <p className="text-2xs text-muted">Frames your profile header photo at the top of the page.</p>
+        <label className="flex items-center justify-between text-xs text-muted">
+          <span>Height</span><span className="tabular-nums">{theme.header.height}px</span>
+        </label>
+        <input
+          type="range" min={80} max={360} step={8} value={theme.header.height}
+          onChange={(e) => patch({ header: { ...theme.header, height: Number(e.target.value) } })}
+          className="w-full accent-primary"
+        />
+        <label className="flex items-center justify-between text-xs text-muted">
+          <span>Position up/down</span><span className="tabular-nums">{theme.header.focusY}%</span>
+        </label>
+        <input
+          type="range" min={0} max={100} step={1} value={theme.header.focusY}
+          onChange={(e) => patch({ header: { ...theme.header, focusY: Number(e.target.value) } })}
+          className="w-full accent-primary"
+        />
+      </div>
+
       {error && <p className="text-xs text-danger">{error}</p>}
 
       <button

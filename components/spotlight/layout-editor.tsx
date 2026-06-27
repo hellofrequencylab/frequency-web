@@ -72,11 +72,14 @@ function SpotlightImageUploader({
   onChange,
   label,
   height = 'h-40',
+  square = false,
 }: {
   value: string | null
   onChange: (path: string | null) => void
   label: string
   height?: string
+  /** Render the frame as a 1:1 square (matches how galleries display publicly). */
+  square?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -95,6 +98,7 @@ function SpotlightImageUploader({
   }
 
   const previewSrc = value ? `${PUBLIC_BASE}${value}` : null
+  const frame = square ? 'aspect-square w-full' : height
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -102,7 +106,7 @@ function SpotlightImageUploader({
         <ImageIcon className="h-3.5 w-3.5" /> {label}
       </span>
       {previewSrc ? (
-        <div className={`relative ${height} overflow-hidden rounded-xl border border-border`}>
+        <div className={`relative ${frame} overflow-hidden rounded-xl border border-border`}>
           {/* Unoptimized: member-uploaded assets from Supabase Storage, not the configured next/image domains. */}
           <Image src={previewSrc} alt="" width={768} height={320} unoptimized className="h-full w-full object-cover" />
           <div className="absolute right-2 top-2 flex gap-1.5">
@@ -115,7 +119,7 @@ function SpotlightImageUploader({
           </div>
         </div>
       ) : (
-        <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className={`flex ${height} w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60`}>
+        <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className={`flex ${frame} w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60`}>
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
           {busy ? 'Uploading…' : 'Upload image or GIF'}
         </button>
@@ -150,6 +154,9 @@ export function LayoutEditor({
   // Background is stored separately (meta.spotlight.background) and saved on its own.
   const [bgPath, setBgPath] = useState<string | null>(initialBackground.assetPath)
   const [bgDim, setBgDim] = useState<number>(initialBackground.dim)
+  const [bgFocusX, setBgFocusX] = useState<number>(initialBackground.focusX)
+  const [bgFocusY, setBgFocusY] = useState<number>(initialBackground.focusY)
+  const [bgZoom, setBgZoom] = useState<number>(initialBackground.zoom)
   const [bgSaved, setBgSaved] = useState(false)
   const [bgError, setBgError] = useState('')
   const [bgPending, startBg] = useTransition()
@@ -184,7 +191,7 @@ export function LayoutEditor({
     })
   }
 
-  function saveBackground(next: { assetPath: string | null; dim: number }) {
+  function saveBackground(next: SpotlightBackground) {
     setBgError('')
     startBg(async () => {
       const res = await saveSpotlightBackground(next)
@@ -193,6 +200,7 @@ export function LayoutEditor({
       setTimeout(() => setBgSaved(false), 2500)
     })
   }
+  const bgState = (): SpotlightBackground => ({ assetPath: bgPath, dim: bgDim, focusX: bgFocusX, focusY: bgFocusY, zoom: bgZoom })
 
   return (
     <div className="space-y-6">
@@ -203,33 +211,24 @@ export function LayoutEditor({
           value={bgPath}
           onChange={(p) => {
             setBgPath(p)
-            // Clearing the image saves immediately; setting one waits for the dim choice + Save.
-            if (p === null) saveBackground({ assetPath: null, dim: bgDim })
+            // Clearing the image saves immediately; setting one waits for the framing + Save.
+            if (p === null) saveBackground({ assetPath: null, dim: bgDim, focusX: bgFocusX, focusY: bgFocusY, zoom: bgZoom })
           }}
           label="Background image"
           height="h-32"
         />
         {bgPath && (
-          <div className="mt-3 space-y-1">
-            <label className="flex items-center justify-between text-xs text-muted">
-              <span>Dim for readable text</span>
-              <span className="tabular-nums">{bgDim}%</span>
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={80}
-              step={5}
-              value={bgDim}
-              onChange={(e) => setBgDim(Number(e.target.value))}
-              className="w-full accent-primary"
-            />
+          <div className="mt-3 space-y-2">
+            <Slider label="Dim for readable text" suffix="%" min={0} max={80} step={5} value={bgDim} onChange={setBgDim} />
+            <Slider label="Position across" suffix="%" min={0} max={100} step={1} value={bgFocusX} onChange={setBgFocusX} />
+            <Slider label="Position up/down" suffix="%" min={0} max={100} step={1} value={bgFocusY} onChange={setBgFocusY} />
+            <Slider label="Zoom" suffix="%" min={100} max={200} step={5} value={bgZoom} onChange={setBgZoom} />
           </div>
         )}
         <div className="mt-3 flex items-center gap-3">
           <button
             type="button"
-            onClick={() => saveBackground({ assetPath: bgPath, dim: bgDim })}
+            onClick={() => saveBackground(bgState())}
             disabled={bgPending}
             className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
           >
@@ -360,37 +359,36 @@ function BlockFields({ block, onChange }: { block: SpotlightBlock; onChange: (p:
     const items = block.items
     return (
       <div className="space-y-3">
-        {items.map((it, idx) => (
-          <div key={idx} className="space-y-2 rounded-xl border border-border p-2">
-            <SpotlightImageUploader
-              value={it.assetPath || null}
-              onChange={(p) =>
-                onChange({
-                  items: p
-                    ? items.map((x, k) => (k === idx ? { ...x, assetPath: p } : x))
-                    : items.filter((_, k) => k !== idx),
-                })
-              }
-              label={`Image ${idx + 1}`}
-              height="h-28"
-            />
-            <input
-              value={it.alt}
-              onChange={(e) => onChange({ items: items.map((x, k) => (k === idx ? { ...x, alt: e.target.value } : x)) })}
-              placeholder="Describe the image (for screen readers)"
-              className={inputCls}
-              maxLength={ALT_MAX}
-            />
-          </div>
-        ))}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {items.map((it, idx) => (
+            <div key={idx} className="space-y-1.5 rounded-xl border border-border p-1.5">
+              <SpotlightImageUploader
+                value={it.assetPath || null}
+                onChange={(p) =>
+                  onChange({
+                    items: p
+                      ? items.map((x, k) => (k === idx ? { ...x, assetPath: p } : x))
+                      : items.filter((_, k) => k !== idx),
+                  })
+                }
+                label={`Image ${idx + 1}`}
+                square
+              />
+              <input
+                value={it.alt}
+                onChange={(e) => onChange({ items: items.map((x, k) => (k === idx ? { ...x, alt: e.target.value } : x)) })}
+                placeholder="Alt text"
+                className={`${inputCls} px-2 py-1 text-xs`}
+                maxLength={ALT_MAX}
+              />
+            </div>
+          ))}
+        </div>
         {items.length < MAX_GALLERY_IMAGES && (
-          <button
-            type="button"
-            onClick={() => onChange({ items: [...items, { assetPath: '', alt: '' }] })}
-            className="text-xs font-medium text-primary-strong hover:underline"
-          >
-            + Add image ({items.length}/{MAX_GALLERY_IMAGES})
-          </button>
+          <GalleryMultiUpload
+            remaining={MAX_GALLERY_IMAGES - items.length}
+            onAdd={(paths) => onChange({ items: [...items, ...paths.map((assetPath) => ({ assetPath, alt: '' }))] })}
+          />
         )}
       </div>
     )
@@ -449,6 +447,68 @@ function BlockFields({ block, onChange }: { block: SpotlightBlock; onChange: (p:
     return <p className="text-xs text-subtle">A horizontal line.</p>
   }
   return null
+}
+
+// A labelled range slider with a live value readout.
+function Slider({ label, suffix = '', min, max, step, value, onChange }: {
+  label: string; suffix?: string; min: number; max: number; step: number; value: number; onChange: (v: number) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="flex items-center justify-between text-xs text-muted">
+        <span>{label}</span><span className="tabular-nums">{value}{suffix}</span>
+      </label>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-primary" />
+    </div>
+  )
+}
+
+// Pick several images at once for a gallery. Uploads each selected file through the
+// session-derived action (sequentially, so each gets its own validated path) and appends
+// the resulting paths, capped at `remaining`.
+function GalleryMultiUpload({ remaining, onAdd }: { remaining: number; onAdd: (paths: string[]) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function pick(files: FileList) {
+    setError(null)
+    setBusy(true)
+    const chosen = Array.from(files).filter((f) => f.type.startsWith('image/')).slice(0, remaining)
+    const paths: string[] = []
+    for (const file of chosen) {
+      const fd = new FormData()
+      fd.set('file', file)
+      const res = await uploadSpotlightImage(fd)
+      if (res.path) paths.push(res.path)
+      else if (res.error) setError(res.error)
+    }
+    setBusy(false)
+    if (paths.length) onAdd(paths)
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+      >
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+        {busy ? 'Uploading…' : `Add images (${remaining} left)`}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        multiple
+        className="hidden"
+        onChange={(e) => { if (e.target.files?.length) void pick(e.target.files); e.target.value = '' }}
+      />
+      {error && <p className="mt-1 text-2xs text-danger">{error}</p>}
+    </div>
+  )
 }
 
 // Per-block colour override: text + background swatches that win over the page theme for

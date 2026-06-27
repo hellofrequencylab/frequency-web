@@ -4,10 +4,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { FocusTemplate } from '@/components/templates'
 import {
   readSpotlightEnabled,
+  readSpotlightPublished,
   readSpotlightLayoutRaw,
   readSpotlightBackgroundRaw,
   readSpotlightThemeRaw,
 } from '@/lib/profile/spotlight-flags'
+import { SpotlightPublishBar } from '@/components/spotlight/publish-bar'
 import {
   validateSpotlightLayout,
   validateSpotlightBackground,
@@ -40,14 +42,16 @@ export default async function SpotlightEditorPage() {
   const layout = validateSpotlightLayout(readSpotlightLayoutRaw(meta), user.id)
   const background = validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id)
   const theme = validateSpotlightTheme(readSpotlightThemeRaw(meta))
+  const published = readSpotlightPublished(meta)
 
   return (
     <FocusTemplate
       title="Build your Spotlight"
-      description="Theme your colours and fonts, add blocks, and arrange them however you like. Save, then publish from your profile settings."
+      description="Theme your colours and fonts, add blocks, and arrange them however you like. Publish to take it live."
       back={{ href: '/settings/profile', label: 'Profile settings' }}
     >
       <div className="space-y-6">
+        <SpotlightPublishBar handle={handle} initialPublished={published} />
         <SpotlightThemeEditor initial={theme} />
         <LayoutEditor initial={layout} initialBackground={background} handle={handle} />
       </div>
