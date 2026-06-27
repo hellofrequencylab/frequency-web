@@ -21,6 +21,9 @@ export interface RomanceMatch extends PersonSuggestion {
 export interface RomanceLane {
   /** The viewer has romance mode on (drives whether the surface renders at all). */
   enabled: boolean
+  /** The viewer is verified. Unverified members can browse but don't appear to others
+   *  (ADR-420), so the surface nudges them to verify (show up to an event). */
+  viewerVerified: boolean
   people: RomanceMatch[]
 }
 
@@ -45,24 +48,31 @@ async function readVerifiedFlags(ids: string[]): Promise<Map<string, boolean>> {
 
 export async function getRomanceMatches(viewerProfileId: string, limit = 4): Promise<RomanceLane> {
   const viewerPrefs = await getMyMatchPrefs(viewerProfileId)
-  if (!viewerPrefs.romanceMode) return { enabled: false, people: [] }
+  if (!viewerPrefs.romanceMode) return { enabled: false, viewerVerified: false, people: [] }
 
-  const [candidates, hidden] = await Promise.all([
+  const [candidates, hidden, viewerVerifiedMap] = await Promise.all([
     getPeopleSuggestions(viewerProfileId, 30),
     getHiddenSuggestionIds(viewerProfileId),
+    readVerifiedFlags([viewerProfileId]),
   ])
+  const viewerVerified = viewerVerifiedMap.get(viewerProfileId) ?? false
   const visible = candidates.filter((c) => !hidden.has(c.id))
-  if (visible.length === 0) return { enabled: true, people: [] }
+  if (visible.length === 0) return { enabled: true, viewerVerified, people: [] }
 
   const prefs = await getMatchPrefsFor(visible.map((c) => c.id))
   // Mutual opt-in only: the other person must ALSO have romance mode on.
   const mutual = visible.filter((c) => prefs.get(c.id)?.romanceMode === true)
-  if (mutual.length === 0) return { enabled: true, people: [] }
+  if (mutual.length === 0) return { enabled: true, viewerVerified, people: [] }
 
+  // Verified-to-appear (ADR-420): you only ever SEE verified opt-ins in the romance
+  // lane, and an unverified member never appears to anyone.
   const verified = await readVerifiedFlags(mutual.map((c) => c.id))
+  const verifiedMutual = mutual.filter((c) => verified.get(c.id) === true)
+  if (verifiedMutual.length === 0) return { enabled: true, viewerVerified, people: [] }
+
   const viewerSign = viewerPrefs.astrologyOptIn ? sunSign(viewerPrefs.birthData?.date) : null
 
-  const scored = mutual.map((c) => {
+  const scored = verifiedMutual.map((c) => {
     let astroReason: string | null = null
     let astroScore = 0
     if (viewerSign) {
@@ -85,6 +95,7 @@ export async function getRomanceMatches(viewerProfileId: string, limit = 4): Pro
 
   return {
     enabled: true,
+    viewerVerified,
     people: scored.slice(0, limit).map((s) => ({ ...s.c, verified: s.verified, astroReason: s.astroReason })),
   }
 }

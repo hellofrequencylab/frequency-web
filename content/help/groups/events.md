@@ -55,6 +55,10 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 - Many gatherings are free; just RSVP. Some are **ticketed**, and hosts can price them however fits: a set price, **pay-what-you-can**, a **sliding scale**, or a **donation**. Pick the amount that works for you (within any minimum the host sets).
 - Payment goes **straight to the host**. If plans change, hosts can **refund** a ticket, and if a host **cancels the event, everyone who paid is refunded automatically** and emailed to let you know.
 
+## Checking in verifies you
+
+When you **check in at the door** of an event you're going to, you earn your Zaps, keep your streak, and you also become a **verified member**: a small check appears by your name. Showing up in the real world is the truest sign you're a real person, so it's how verification works here. Nothing to upload, no form, just turn up.
+
 ## Building Current together
 
 - When you show up to a gathering **with your circle**, your circle builds **Current** together: a shared measure of your circle showing up for each other. It builds every time a member attends.
