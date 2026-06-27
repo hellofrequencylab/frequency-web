@@ -104,16 +104,29 @@ function coerceBlock(raw: unknown, index: number, ownerAuthUserId: string): Spot
     case 'image': {
       const assetPath = safeAssetPath(b.assetPath, ownerAuthUserId)
       if (!assetPath) return null
-      return { id, type: 'image', assetPath, alt: clampStr(b.alt, ALT_MAX) }
+      // Crop framing: same clamp boundary as the background (focal 0–100, zoom 100–200).
+      return {
+        id, type: 'image', assetPath, alt: clampStr(b.alt, ALT_MAX),
+        focusX: clampN(b.focusX, 0, 100, 50),
+        focusY: clampN(b.focusY, 0, 100, 50),
+        zoom: clampN(b.zoom, 100, 200, 100),
+      }
     }
     case 'gallery': {
       const rawItems = Array.isArray(b.items) ? b.items.slice(0, MAX_GALLERY_IMAGES) : []
       const items: GalleryItem[] = []
       for (const it of rawItems) {
         if (!it || typeof it !== 'object') continue
-        const assetPath = safeAssetPath((it as Record<string, unknown>).assetPath, ownerAuthUserId)
+        const item = it as Record<string, unknown>
+        const assetPath = safeAssetPath(item.assetPath, ownerAuthUserId)
         if (!assetPath) continue // drop any item outside the owner's own folder
-        items.push({ assetPath, alt: clampStr((it as Record<string, unknown>).alt, ALT_MAX) })
+        // Per-image crop framing: same clamp boundary as the background.
+        items.push({
+          assetPath, alt: clampStr(item.alt, ALT_MAX),
+          focusX: clampN(item.focusX, 0, 100, 50),
+          focusY: clampN(item.focusY, 0, 100, 50),
+          zoom: clampN(item.zoom, 100, 200, 100),
+        })
       }
       if (items.length === 0) return null
       return { id, type: 'gallery', items }

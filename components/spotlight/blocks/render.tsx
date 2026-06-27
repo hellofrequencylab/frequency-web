@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { Flame, Gem, CalendarDays, MapPin, Zap } from 'lucide-react'
 import type { SpotlightBlock, SpotlightStatKey, BlockTint } from '@/lib/spotlight/blocks/schema'
 import { buildEmbedSrc, embedHeight } from '@/lib/spotlight/embeds'
+import { GalleryLightbox } from './gallery-lightbox'
 
 // A per-block colour override → inline style (validated hex). `bg` recolours the card, `text`
 // the type. Merged over the page theme's cardStyle so a tint wins for just that block.
@@ -106,25 +107,17 @@ function BlockView({
             width={640}
             height={640}
             className="h-auto w-full object-cover"
+            style={{
+              objectPosition: `${block.focusX ?? 50}% ${block.focusY ?? 50}%`,
+              transform: (block.zoom ?? 100) !== 100 ? `scale(${(block.zoom ?? 100) / 100})` : undefined,
+            }}
           />
         </div>
       )
     case 'gallery':
-      return (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {block.items.map((item, i) => (
-            <div key={i} className="aspect-square overflow-hidden rounded-xl border border-border" style={cardStyle}>
-              <Image
-                src={`${PUBLIC_BASE}${item.assetPath}`}
-                alt={item.alt}
-                width={320}
-                height={320}
-                className="h-full w-full object-cover"
-              />
-            </div>
-          ))}
-        </div>
-      )
+      // Square thumbnails that open a lightbox — the interactive bits live in a client
+      // wrapper since this renderer is a Server Component.
+      return <GalleryLightbox items={block.items} publicBase={PUBLIC_BASE} cardStyle={cardStyle} />
     case 'quote':
       return (
         <blockquote className="border-l-4 border-primary-strong bg-surface/60 py-2 pl-4 pr-3" style={{ ...cardStyle, ...(block.tint?.bg ? { backgroundColor: block.tint.bg } : {}) }}>
