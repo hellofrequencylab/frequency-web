@@ -35,7 +35,7 @@ export function AdminRailDrawerColumn({ children }: { children: React.ReactNode 
       {/* The live info rail — xl+ only, sticky so it rides the scroll. Covered by the drawer
           when it is open. justify-end keeps it pinned right while the column grows. */}
       <aside className="hidden w-64 shrink-0 xl:block">
-        <div className="sticky top-14 max-h-[calc(100vh-4.5rem)] overflow-y-auto pb-6 pt-2.5">
+        <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] max-h-[calc(100vh-4.5rem)] overflow-y-auto pb-6 pt-2.5">
           {children}
         </div>
       </aside>
