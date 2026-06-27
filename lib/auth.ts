@@ -166,6 +166,12 @@ export async function getRealCallerRole(): Promise<CommunityRole | null> {
   return (await resolveCaller())?.realRole ?? null
 }
 
+/** The caller's REAL staff web_role (admin/janitor/none), ignoring any view-as
+ *  preview. Use to distinguish admin from janitor for affordances like "Act as". */
+export async function getRealCallerWebRole(): Promise<WebRole> {
+  return (await resolveCaller())?.realWebRole ?? 'none'
+}
+
 /** The caller's profile id, or null if not signed in / no profile row. */
 export async function getMyProfileId(): Promise<string | null> {
   return (await resolveCaller())?.id ?? null

@@ -75,6 +75,8 @@ describe('resolveCapabilities · profile', () => {
     // A community 'janitor'-rung with no web_role does NOT get moderation edit now.
     expect(can(resolveCapabilities({ profileId: 'jc', role: 'janitor' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(false)
     expect(can(resolveCapabilities({ profileId: 'j', role: 'member', webRole: 'janitor' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(true)
+    // Platform STAFF admin (web_role) also gets basic moderation edit now.
+    expect(can(resolveCapabilities({ profileId: 'a', role: 'member', webRole: 'admin' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(true)
   })
 
   it('spotlight.manage requires the owner (or janitor) AND the owner having it enabled', () => {

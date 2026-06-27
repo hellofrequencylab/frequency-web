@@ -168,18 +168,19 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
     }
 
     case 'profile': {
-      // profile.edit + spotlight.manage require sign-in (the outer `profileId &&`,
-      // preserved from the original gate so the gap-prober's hypothetical anon+janitor
-      // never grants them). Owners edit their own profile; janitors may edit any.
-      const isOwnerOrJanitor = !!profileId && (scope.ownerId === profileId || isJanitor)
-      if (isOwnerOrJanitor) {
+      // All require sign-in (the outer `profileId &&`, preserved from the original gate
+      // so the gap-prober's hypothetical anon+staff never grants them).
+      const isOwner = !!profileId && scope.ownerId === profileId
+      // profile.edit (basic moderation: name/bio): the owner, or platform STAFF
+      // (admin OR janitor) — admins get basic profile control, janitors get it too.
+      if (isOwner || (!!profileId && isStaff)) {
         caps.add('profile.edit')
       }
 
       // Spotlight (opt-in public mini-site). MANAGE goes to the owner of an ENABLED
       // Spotlight (or a janitor, for moderation) — turning it on is an admin/owner
       // act recorded in the owner's meta, never inferred from the viewer.
-      if (isOwnerOrJanitor && scope.ownerSpotlightEnabled === true) {
+      if ((isOwner || (!!profileId && isJanitor)) && scope.ownerSpotlightEnabled === true) {
         caps.add('spotlight.manage')
       }
       // VIEW is a Crew+ entitlement read from the REAL tier (pre beta-override,
