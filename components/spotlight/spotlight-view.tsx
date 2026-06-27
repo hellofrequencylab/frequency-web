@@ -2,10 +2,10 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, Flame, Gem, Globe, MapPin, Zap } from 'lucide-react'
+import { CalendarDays, Globe, MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { resolveProfileSkin } from '@/lib/theme/profile-skins'
-import { RoleBadge, type CommunityRole } from '@/lib/community-roles'
+import { ROLE_LABEL, roleBadgeStyle, type RoleChipKey } from '@/lib/community-roles'
 import type { SpotlightData } from '@/lib/spotlight/data'
 import { spotlightThemeStyles } from '@/lib/spotlight/theme'
 import { SpotlightBlocks } from './blocks/render'
@@ -22,16 +22,6 @@ function normalizeUrl(raw: string): { href: string; label: string } {
   const label = raw.replace(/^https?:\/\//, '').replace(/\/$/, '')
   const href = /^https?:\/\//.test(raw) ? raw : `https://${raw}`
   return { href, label }
-}
-
-function StatPill({ icon: Icon, value, label }: { icon: typeof Flame; value: string; label: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2">
-      <Icon className="h-4 w-4 text-primary-strong" aria-hidden />
-      <span className="text-sm font-semibold text-text tabular-nums">{value}</span>
-      <span className="text-xs text-muted">{label}</span>
-    </div>
-  )
 }
 
 export function SpotlightView({ data, contained = false }: { data: SpotlightData; contained?: boolean }) {
@@ -79,8 +69,22 @@ export function SpotlightView({ data, contained = false }: { data: SpotlightData
       )}
       <div className="relative z-10">
       <main className="mx-auto max-w-xl px-4 pb-16">
-        {/* Identity leads (Linktree-style): avatar, name, handle, badges, bio at the top. */}
-        <div className="mt-8 flex flex-col items-center text-center">
+        {/* Header/cover image at the top — the avatar sits IN FRONT of it (z-index),
+            overlapping its lower edge. Toggle, height + vertical focus stay member-adjustable. */}
+        {theme.header.show && profile.header_image_url ? (
+          <div className="relative -mx-4 overflow-hidden sm:rounded-b-3xl" style={{ height: theme.header.height }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={profile.header_image_url} alt="" className="h-full w-full object-cover" style={{ objectPosition: `50% ${theme.header.focusY}%` }} />
+          </div>
+        ) : null}
+
+        {/* Identity (Linktree-style): avatar leads and, when a header is set, overlaps it
+            from in front via z-index + a negative top margin. */}
+        <div
+          className={`relative z-10 flex flex-col items-center text-center ${
+            theme.header.show && profile.header_image_url ? '-mt-14' : 'mt-8'
+          }`}
+        >
           {profile.avatar_url ? (
             <Image
               src={profile.avatar_url}
@@ -100,7 +104,15 @@ export function SpotlightView({ data, contained = false }: { data: SpotlightData
 
           <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
             {profile.community_role && (
-              <RoleBadge role={profile.community_role as CommunityRole} className="text-xs" />
+              // Solid, high-contrast chip (matches the stat-pill surface) so the role stays
+              // readable over any member-chosen gradient; the rank colour is kept as a dot.
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-semibold text-text shadow-sm"
+                style={roleBadgeStyle(profile.community_role as RoleChipKey)}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--rank)' }} aria-hidden />
+                {ROLE_LABEL[profile.community_role as RoleChipKey] ?? profile.community_role}
+              </span>
             )}
             {region && (
               <span className="inline-flex items-center gap-1 text-xs text-muted">
@@ -114,29 +126,8 @@ export function SpotlightView({ data, contained = false }: { data: SpotlightData
           )}
         </div>
 
-        {/* Header image (optional) — a rounded banner UNDER the identity, not full-bleed.
-            Toggle, height + vertical focus stay member-adjustable. */}
-        {theme.header.show && profile.header_image_url ? (
-          <div className="relative mt-6 overflow-hidden rounded-2xl" style={{ height: theme.header.height }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={profile.header_image_url} alt="" className="h-full w-full object-cover" style={{ objectPosition: `50% ${theme.header.focusY}%` }} />
-          </div>
-        ) : null}
-
-        {/* Stats shown up top — Zaps, streak, gems. */}
-        {(totalZaps || profile.current_streak || profile.lifetime_gems) ? (
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-            {totalZaps > 0 && (
-              <StatPill icon={Zap} value={totalZaps.toLocaleString()} label="zaps" />
-            )}
-            {!!profile.current_streak && profile.current_streak > 0 && (
-              <StatPill icon={Flame} value={String(profile.current_streak)} label="day streak" />
-            )}
-            {!!profile.lifetime_gems && profile.lifetime_gems > 0 && (
-              <StatPill icon={Gem} value={profile.lifetime_gems.toLocaleString()} label="gems earned" />
-            )}
-          </div>
-        ) : null}
+        {/* Game stats are NOT auto-shown in the header — they appear only in the member's
+            stats block (below), so the top stays clean and member-curated. */}
 
         {hasLayout ? (
           /* Member-built layout: their blocks replace the curated body. */
