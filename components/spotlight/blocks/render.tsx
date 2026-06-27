@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import type { CSSProperties } from 'react'
-import { Flame, Gem, CalendarDays, MapPin } from 'lucide-react'
+import { Flame, Gem, CalendarDays, MapPin, Zap } from 'lucide-react'
 import type { SpotlightBlock, SpotlightStatKey, BlockTint } from '@/lib/spotlight/blocks/schema'
 
 // A per-block colour override → inline style (validated hex). `bg` recolours the card, `text`
@@ -26,6 +26,7 @@ const PUBLIC_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/ob
 // The authoritative gamification values a `stats` block can show. Resolved server-side
 // from the allowlisted profile row (never member-supplied), so the numbers can't be faked.
 export interface SpotlightStatsContext {
+  zaps: number | null
   streak: number | null
   gems: number | null
   joinedYear: number | null
@@ -45,7 +46,9 @@ function StatPill({ icon: Icon, value, label, cardStyle }: { icon: typeof Flame;
 function StatsView({ show, stats, cardStyle }: { show: SpotlightStatKey[]; stats: SpotlightStatsContext; cardStyle?: CSSProperties }) {
   const pills: { key: SpotlightStatKey; node: React.ReactNode }[] = []
   for (const key of show) {
-    if (key === 'streak' && stats.streak && stats.streak > 0) {
+    if (key === 'zaps' && stats.zaps && stats.zaps > 0) {
+      pills.push({ key, node: <StatPill icon={Zap} value={stats.zaps.toLocaleString()} label="zaps" cardStyle={cardStyle} /> })
+    } else if (key === 'streak' && stats.streak && stats.streak > 0) {
       pills.push({ key, node: <StatPill icon={Flame} value={String(stats.streak)} label="day streak" cardStyle={cardStyle} /> })
     } else if (key === 'gems' && stats.gems && stats.gems > 0) {
       pills.push({ key, node: <StatPill icon={Gem} value={stats.gems.toLocaleString()} label="gems earned" cardStyle={cardStyle} /> })

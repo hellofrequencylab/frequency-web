@@ -26,8 +26,8 @@ export type BlockType = 'heading' | 'text' | 'links' | 'image' | 'gallery' | 'qu
 /** The gamification numbers a `stats` block can surface. Values are read SERVER-SIDE from
  *  the allowlisted profile row (privacy.ts) — the block only stores WHICH to show, never a
  *  member-supplied value, so the numbers can't be faked. */
-export type SpotlightStatKey = 'streak' | 'gems' | 'joined' | 'region'
-export const SPOTLIGHT_STAT_KEYS: readonly SpotlightStatKey[] = ['streak', 'gems', 'joined', 'region']
+export type SpotlightStatKey = 'zaps' | 'streak' | 'gems' | 'joined' | 'region'
+export const SPOTLIGHT_STAT_KEYS: readonly SpotlightStatKey[] = ['zaps', 'streak', 'gems', 'joined', 'region']
 
 /** Optional per-block colour overrides (validated hex) — they win over the page theme for
  *  just that block. `text` recolours type; `bg` recolours the block's card/surface. */

@@ -16,6 +16,7 @@ import {
 import { validateSpotlightTheme } from '@/lib/spotlight/theme'
 import type { SpotlightRow } from '@/lib/spotlight/privacy'
 import type { SpotlightHostedEvent } from '@/lib/spotlight/data'
+import { getProfileZapTotal } from '@/lib/profile-zaps'
 import { SpotlightBuilder } from '@/components/spotlight/builder'
 
 export const dynamic = 'force-dynamic'
@@ -65,6 +66,8 @@ export default async function SpotlightEditorPage() {
     .order('starts_at', { ascending: true })
     .limit(5)
 
+  const totalZaps = await getProfileZapTotal(row.id as string)
+
   // The member-safe identity the preview renders (mirrors lib/spotlight/privacy.ts).
   const profile: SpotlightRow = {
     id: row.id as string,
@@ -97,6 +100,7 @@ export default async function SpotlightEditorPage() {
         published={published}
         profile={profile}
         hostedEvents={(events ?? []) as SpotlightHostedEvent[]}
+        totalZaps={totalZaps}
         initialTheme={theme}
         initialLayout={layout}
         initialBackground={background}

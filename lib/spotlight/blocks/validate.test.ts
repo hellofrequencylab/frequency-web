@@ -97,6 +97,12 @@ describe('validateSpotlightLayout — security boundary', () => {
     if (s.type === 'stats') expect(s.show).toEqual(['streak', 'gems'])
   })
 
+  it('stats: accepts the zaps key', () => {
+    const out = validateSpotlightLayout({ blocks: [{ type: 'stats', show: ['zaps', 'streak'] }] }, OWNER)
+    const s = out.blocks[0]
+    if (s?.type === 'stats') expect(s.show).toEqual(['zaps', 'streak'])
+  })
+
   it('drops unknown block types entirely (no echo fallback)', () => {
     const out = validateSpotlightLayout({ blocks: [{ type: 'iframe', src: 'evil' }, { type: 'divider' }] }, OWNER)
     expect(out.blocks).toHaveLength(1)

@@ -53,6 +53,7 @@ function blankBlock(type: SpotlightBlock['type']): SpotlightBlock {
 }
 
 const STAT_LABELS: Record<SpotlightStatKey, string> = {
+  zaps: 'Zaps',
   streak: 'Day streak',
   gems: 'Gems earned',
   joined: 'Member since',

@@ -9029,3 +9029,13 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 4. **Cover-photo toggle.** `SpotlightHeader` gains `show: boolean` (default ON, validated `!== false`) so a member can remove the top cover band entirely; the view renders the clean spacer when off, controlled by a "Show cover photo" checkbox in the theme editor's Cover band section.
 
 **Consequences.** New: `components/spotlight/{spotlight-view,builder}.tsx`. Changed: `components/spotlight/spotlight-page.tsx` (→ thin wrapper), `theme-editor.tsx` + `layout-editor.tsx` (controlled; `showPreview` flag; cover-photo toggle), `lib/spotlight/theme.ts` (+`header.show`), `components/spotlight/spotlight-view.tsx` (header gated on `show`), `app/(main)/settings/profile/spotlight/page.tsx` (fetch preview identity + events, render the builder, `FocusTemplate width="wide"`). No schema/migration; `privacy.ts`/`SPOTLIGHT_SELECT` untouched. The public route still server-renders through the thin wrapper. **Deferred (noted):** a scaled/zoomable preview frame + device-size toggle, drag-and-drop block reordering, music/video embeds, earned cosmetics. Gate: tsc, eslint, authz-contract, 28 spotlight + 3 privacy tests.
+
+---
+
+## ADR-436: Spotlight stats — add Zaps (top row + stats block)
+
+**Status:** Accepted (2026-06-27). Lifetime **Zaps** now show in the Spotlight top stat row (alongside streak + gems) and are a selectable key in the `stats` block. Zaps is the headline gamification number and was the only one of the four standing metrics missing.
+
+**Decision.** Zaps is an aggregate, not a `profiles` column, so it isn't in `SPOTLIGHT_SELECT`. `getPublishedSpotlight` (and the builder page) compute it via the existing `getProfileZapTotal` (one SECURITY DEFINER `sum()`), and `SpotlightData` carries `totalZaps`. `SpotlightStatKey` gains `'zaps'` (first in the list); the renderer's `SpotlightStatsContext` + `StatsView` handle it (Zap icon); the top auto-row shows Zaps · Streak · Gems when present. The value is authoritative (computed server-side, never member-supplied), consistent with the other stats. `privacy.ts`/`SPOTLIGHT_SELECT` untouched (Zaps was never a column).
+
+**Consequences.** Changed: `lib/spotlight/data.ts` (+`totalZaps` via `getProfileZapTotal`), `lib/spotlight/blocks/schema.ts` (+`zaps` key), `components/spotlight/blocks/render.tsx` (context + StatsView), `components/spotlight/spotlight-view.tsx` (top row + context), `components/spotlight/{builder,layout-editor}.tsx` (prop + label), `app/(main)/settings/profile/spotlight/page.tsx` (compute + pass for the preview), +1 validator test (29 spotlight). No schema/migration. Gate: tsc, eslint, authz-contract, 29 spotlight + 3 privacy tests.
