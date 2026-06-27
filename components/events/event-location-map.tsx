@@ -40,8 +40,8 @@ export function EventLocationMap({
 }) {
   if (isOnline) return null
 
-  // A taller 4:6 (portrait) map so the venue reads clearly, not a thin strip.
-  const mapClass = 'aspect-[4/6] max-h-[30rem] w-full overflow-hidden rounded-xl border border-border'
+  // A horizontal 16:9 map so the venue reads clearly across the full block width.
+  const mapClass = 'aspect-video w-full overflow-hidden rounded-xl border border-border'
 
   if (venuePoint) {
     return (
