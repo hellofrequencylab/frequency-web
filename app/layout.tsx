@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, Geist_Mono, Anton } from "next/font/google";
+import { Nunito, Geist_Mono, Anton, Playfair_Display, Caveat, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/site";
 import { JsonLd } from "@/components/json-ld";
@@ -30,6 +30,13 @@ const anton = Anton({
   weight: "400",
   display: "swap",
 });
+
+// Member-selectable Spotlight fonts (lib/spotlight/theme.ts maps ids → these vars). Loaded
+// once on <html> so they self-host and cascade to the public /spotlight route. Variable
+// fonts where possible (Caveat needs explicit weights).
+const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap" });
+const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], weight: ["400", "700"], display: "swap" });
+const spaceGrotesk = Space_Grotesk({ variable: "--font-grotesk", subsets: ["latin"], display: "swap" });
 
 // The first-paint theme-color values, kept in one place so the viewport metadata and the pre-paint
 // themeScript below cannot drift. They mirror --color-canvas (light) and --color-ink (dark) in
@@ -122,7 +129,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
+      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} ${playfair.variable} ${caveat.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <head>
         {/* Theme script must run synchronously before any paint */}

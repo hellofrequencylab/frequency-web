@@ -176,7 +176,7 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
                 setBg(
                   k === 'none' ? { kind: 'none' }
                   : k === 'solid' ? { kind: 'solid', color: theme.surface ?? '#1b1530' }
-                  : { kind: 'gradient', gradient: { type: 'linear', angle: 160, stops: [{ color: '#ff9a3c', pos: 0 }, { color: '#7b2ff7', pos: 100 }] } },
+                  : { kind: 'gradient', gradient: { type: 'linear', angle: 160, animated: false, speed: 12, stops: [{ color: '#ff9a3c', pos: 0 }, { color: '#7b2ff7', pos: 100 }] } },
                 )
               }
               className={`rounded-lg border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
@@ -212,6 +212,28 @@ export function SpotlightThemeEditor({ initial }: { initial: SpotlightTheme }) {
                     className="flex-1 accent-primary"
                   />
                   <span className="w-9 tabular-nums text-right">{gradient.angle}°</span>
+                </label>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-text">
+                <input
+                  type="checkbox"
+                  checked={gradient.animated}
+                  onChange={(e) => setGradient({ ...gradient, animated: e.target.checked })}
+                  className="accent-primary"
+                />
+                Animate
+              </label>
+              {gradient.animated && (
+                <label className="flex flex-1 items-center gap-2 text-xs text-muted">
+                  Speed
+                  <input
+                    type="range" min={4} max={40} step={1} value={gradient.speed}
+                    onChange={(e) => setGradient({ ...gradient, speed: Number(e.target.value) })}
+                    className="flex-1 accent-primary"
+                  />
+                  <span className="w-12 text-right tabular-nums">{gradient.speed}s</span>
                 </label>
               )}
             </div>

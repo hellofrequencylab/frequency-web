@@ -10,14 +10,19 @@
 
 import type { CSSProperties } from 'react'
 
-// ── Curated font stacks (no @font-face from a member; system/web-safe only this round) ──
-export type SpotlightFontId = 'sans' | 'serif' | 'rounded' | 'mono' | 'display'
+// ── Curated fonts. Real web fonts are self-hosted via next/font in app/layout.tsx and
+// exposed as CSS variables on <html> (so they cascade to the public Spotlight route); each
+// stack references its variable with a system fallback. No member @font-face — the set is
+// a closed allowlist. ──
+export type SpotlightFontId = 'sans' | 'serif' | 'rounded' | 'mono' | 'display' | 'script' | 'grotesk'
 export const SPOTLIGHT_FONTS: { id: SpotlightFontId; label: string; stack: string }[] = [
   { id: 'sans', label: 'Clean sans', stack: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
-  { id: 'serif', label: 'Classic serif', stack: 'Georgia, Cambria, "Times New Roman", serif' },
-  { id: 'rounded', label: 'Friendly rounded', stack: 'ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Quicksand", system-ui, sans-serif' },
-  { id: 'mono', label: 'Mono', stack: 'ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", monospace' },
-  { id: 'display', label: 'Bold display', stack: '"Arial Black", "Helvetica Neue", Impact, system-ui, sans-serif' },
+  { id: 'serif', label: 'Elegant serif', stack: 'var(--font-playfair), Georgia, Cambria, "Times New Roman", serif' },
+  { id: 'rounded', label: 'Friendly rounded', stack: 'var(--font-nunito), ui-rounded, "SF Pro Rounded", system-ui, sans-serif' },
+  { id: 'mono', label: 'Mono', stack: 'var(--font-geist-mono), ui-monospace, "SF Mono", monospace' },
+  { id: 'display', label: 'Bold display', stack: 'var(--font-anton), "Arial Black", Impact, system-ui, sans-serif' },
+  { id: 'script', label: 'Handwritten', stack: 'var(--font-caveat), "Bradley Hand", "Comic Sans MS", cursive' },
+  { id: 'grotesk', label: 'Modern grotesk', stack: 'var(--font-grotesk), "Helvetica Neue", system-ui, sans-serif' },
 ]
 const FONT_BY_ID = new Map(SPOTLIGHT_FONTS.map((f) => [f.id, f.stack]))
 
@@ -36,6 +41,10 @@ export interface SpotlightGradient {
   type: 'linear' | 'radial'
   angle: number // 0–360 (linear only)
   stops: GradientStop[] // 2–4
+  /** Slowly pan the gradient (CSS keyframe `spotlight-bg-pan` in globals.css). */
+  animated: boolean
+  /** Animation duration in seconds, 4–40. */
+  speed: number
 }
 export type SpotlightBg =
   | { kind: 'none' }
@@ -73,17 +82,17 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   {
     id: 'sunset', label: 'Sunset',
     theme: { accent: '#ff6b6b', surface: '#2b1d33', text: '#fdeff2', font: { heading: 'display', body: 'sans' }, card: { radius: 'xl', shadow: 'strong', style: 'glass' },
-      bg: { kind: 'gradient', gradient: { type: 'linear', angle: 160, stops: [{ color: '#ff9a3c', pos: 0 }, { color: '#ff6b6b', pos: 50 }, { color: '#7b2ff7', pos: 100 }] } } },
+      bg: { kind: 'gradient', gradient: { type: 'linear', angle: 160, animated: true, speed: 14, stops: [{ color: '#ff9a3c', pos: 0 }, { color: '#ff6b6b', pos: 50 }, { color: '#7b2ff7', pos: 100 }] } } },
   },
   {
     id: 'vaporwave', label: 'Vaporwave',
     theme: { accent: '#ff71ce', surface: '#1a1033', text: '#eafffd', font: { heading: 'mono', body: 'mono' }, card: { radius: 'md', shadow: 'strong', style: 'glass' },
-      bg: { kind: 'gradient', gradient: { type: 'linear', angle: 135, stops: [{ color: '#05ffa1', pos: 0 }, { color: '#b967ff', pos: 50 }, { color: '#01cdfe', pos: 100 }] } } },
+      bg: { kind: 'gradient', gradient: { type: 'linear', angle: 135, animated: true, speed: 10, stops: [{ color: '#05ffa1', pos: 0 }, { color: '#b967ff', pos: 50 }, { color: '#01cdfe', pos: 100 }] } } },
   },
   {
     id: 'forest', label: 'Forest',
     theme: { accent: '#3fa34d', surface: '#10231a', text: '#eefaf0', font: { heading: 'serif', body: 'serif' }, card: { radius: 'lg', shadow: 'soft', style: 'solid' },
-      bg: { kind: 'gradient', gradient: { type: 'linear', angle: 180, stops: [{ color: '#0b3d2e', pos: 0 }, { color: '#1b5e3f', pos: 100 }] } } },
+      bg: { kind: 'gradient', gradient: { type: 'linear', angle: 180, animated: false, speed: 12, stops: [{ color: '#0b3d2e', pos: 0 }, { color: '#1b5e3f', pos: 100 }] } } },
   },
   {
     id: 'mono', label: 'Mono',
@@ -120,6 +129,8 @@ function validateGradient(raw: unknown): SpotlightGradient | null {
     type: oneOf(g.type, ['linear', 'radial'] as const, 'linear'),
     angle: clampNum(g.angle, 0, 360, 160),
     stops,
+    animated: g.animated === true,
+    speed: clampNum(g.speed, 4, 40, 12),
   }
 }
 
@@ -222,6 +233,11 @@ export function spotlightThemeStyles(theme: SpotlightTheme): SpotlightThemeStyle
     wrapper['--color-canvas'] = theme.bg.color
   } else if (theme.bg.kind === 'gradient') {
     wrapper.backgroundImage = buildGradientCss(theme.bg.gradient)
+    if (theme.bg.gradient.animated) {
+      // Pan a deliberately oversized gradient via the global `spotlight-bg-pan` keyframe.
+      wrapper.backgroundSize = '300% 300%'
+      wrapper.animation = `spotlight-bg-pan ${theme.bg.gradient.speed}s ease infinite`
+    }
   }
 
   // The background colour we derive readable text against: an explicit solid bg, else the

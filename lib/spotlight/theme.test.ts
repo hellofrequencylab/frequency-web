@@ -50,22 +50,45 @@ describe('validateSpotlightTheme — read-side boundary', () => {
     expect(out.bg.kind).toBe('none')
   })
 
-  it('unknown font / card values fall back to defaults', () => {
+  it('unknown font / card values fall back to defaults; new font ids are accepted', () => {
     const out = validateSpotlightTheme({
-      font: { heading: 'comic-sans', body: 'mono' },
+      font: { heading: 'comic-sans', body: 'script' }, // script is a real allowlisted id now
       card: { radius: 'huge', shadow: 'glow', style: 'hologram' },
     })
     expect(out.font.heading).toBe('sans')
-    expect(out.font.body).toBe('mono')
+    expect(out.font.body).toBe('script')
     expect(out.card).toEqual({ radius: 'lg', shadow: 'soft', style: 'solid' })
+  })
+
+  it('gradient animation: coerces animated to a real boolean and clamps speed to 4..40', () => {
+    const fast = validateSpotlightTheme({ bg: { kind: 'gradient', gradient: { animated: 'yes', speed: 1, stops: [{ color: '#ffffff', pos: 0 }, { color: '#000000', pos: 100 }] } } })
+    expect(fast.bg.kind).toBe('gradient')
+    if (fast.bg.kind === 'gradient') {
+      expect(fast.bg.gradient.animated).toBe(false) // a non-true value is not animated
+      expect(fast.bg.gradient.speed).toBe(4) // clamped up from 1
+    }
+    const slow = validateSpotlightTheme({ bg: { kind: 'gradient', gradient: { animated: true, speed: 999, stops: [{ color: '#ffffff', pos: 0 }, { color: '#000000', pos: 100 }] } } })
+    if (slow.bg.kind === 'gradient') {
+      expect(slow.bg.gradient.animated).toBe(true)
+      expect(slow.bg.gradient.speed).toBe(40)
+    }
+  })
+
+  it('an animated gradient emits the pan animation inline', () => {
+    const s = spotlightThemeStyles(validateSpotlightTheme({
+      bg: { kind: 'gradient', gradient: { animated: true, speed: 9, stops: [{ color: '#ff0000', pos: 0 }, { color: '#0000ff', pos: 100 }] } },
+    }))
+    const w = s.wrapper as Record<string, string>
+    expect(w.animation).toContain('spotlight-bg-pan 9s')
+    expect(w.backgroundSize).toBe('300% 300%')
   })
 })
 
 describe('builders', () => {
   it('buildGradientCss composes from validated parts only', () => {
-    expect(buildGradientCss({ type: 'linear', angle: 90, stops: [{ color: '#ff0000', pos: 0 }, { color: '#0000ff', pos: 100 }] }))
+    expect(buildGradientCss({ type: 'linear', angle: 90, animated: false, speed: 12, stops: [{ color: '#ff0000', pos: 0 }, { color: '#0000ff', pos: 100 }] }))
       .toBe('linear-gradient(90deg, #ff0000 0%, #0000ff 100%)')
-    expect(buildGradientCss({ type: 'radial', angle: 0, stops: [{ color: '#fff', pos: 0 }, { color: '#000', pos: 100 }] }))
+    expect(buildGradientCss({ type: 'radial', angle: 0, animated: false, speed: 12, stops: [{ color: '#fff', pos: 0 }, { color: '#000', pos: 100 }] }))
       .toContain('radial-gradient(')
   })
 

@@ -103,6 +103,21 @@ describe('validateSpotlightLayout — security boundary', () => {
     expect(out.blocks[0].type).toBe('divider')
   })
 
+  it('per-block tint: keeps valid hex (text/bg), drops non-hex, drops an all-invalid tint', () => {
+    const out = validateSpotlightLayout(
+      { blocks: [
+        { type: 'heading', text: 'Tinted', tint: { text: '#ff0000', bg: 'red; drop()' } },
+        { type: 'text', text: 'Plain', tint: { text: 'nope', bg: 'also-nope' } },
+      ] },
+      OWNER,
+    )
+    expect(out.blocks).toHaveLength(2)
+    const h = out.blocks[0]
+    if (h.type === 'heading') { expect(h.tint?.text).toBe('#ff0000'); expect(h.tint?.bg).toBeUndefined() }
+    const txt = out.blocks[1]
+    if (txt.type === 'text') expect(txt.tint).toBeUndefined() // both invalid → no tint attached
+  })
+
   it('accepts the exact path shape the uploader produces (uuid filename, every allowed ext)', () => {
     // Locks the contract between uploadSpotlightImage (`<owner>/spotlight/<uuid>.<ext>`)
     // and the read-side validator: every extension the upload accepts must validate, or a
