@@ -12,11 +12,14 @@
 // REQUEST-SAFE: `cache()` (React.cache) gives a per-request memo cell, cleared between requests by
 // the framework. A module that runs OUTSIDE an event detail route reads `null` and renders nothing.
 
-import { cache } from 'react'
+import { cache, type ReactNode } from 'react'
 import type { ActivityPost } from '@/components/events/event-activity'
 import type { RecapPhoto } from '@/components/events/recap-album'
 import type { CohostView } from '@/components/events/cohost-manager'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
+import type { EventMapPin } from '@/components/events/events-map'
+import type { FactGuest } from '@/components/events/event-fact-panel'
+import type { WarmProofAttendee } from '@/components/events/warm-proof'
 
 /** The bits of the event a module needs (the page keeps the full row for its fixed header/Join). */
 export interface EventLite {
@@ -34,6 +37,34 @@ export interface SoldTicket {
   qty: number
   status: string
   buyer: { display_name: string | null; handle: string | null } | null
+}
+
+/** The warm-proof social counts the page already computed, for the `event-warm-proof` module. */
+export interface WarmProofData {
+  going: number
+  fromYourCircles: number
+  maybe: number
+  guests: number
+  faces: WarmProofAttendee[]
+  nearFull: boolean
+  spotsLeft: number | null
+}
+
+/** The critical-info card inputs the page already computed, for the `event-facts` module. */
+export interface EventFactsData {
+  whenLine: string
+  isOnline: boolean
+  location: string | null
+  onlineUrl: string | null
+  mapPin: EventMapPin | null
+  /** The event's OWN precise geog point — published + in-person + geocoded, else null. */
+  venuePoint: { lat: number; lng: number } | null
+  going: number
+  nearFull: boolean
+  spotsLeft: number | null
+  guests: FactGuest[]
+  /** Crew see the roster; others see only the count. */
+  guestsAreVisible: boolean
 }
 
 export interface EventDetailContext {
@@ -59,6 +90,16 @@ export interface EventDetailContext {
   /** Event Dispatches + guest comments, merged newest-first. */
   activityPosts: ActivityPost[]
   recapPhotos: RecapPhoto[]
+  // ── Movable Join-area modules (ADR — event interior fully templated). The page computes each
+  // piece ONCE (the same gates/data the fixed aside used) and stamps it here, so the Join, Warm
+  // proof, and Facts modules render it without re-deriving the ticketing/RSVP/capacity logic.
+  /** The RSVP/ticket Join box, fully built + gated by the page (null on a cancelled event). The
+   *  `event-join` module renders this node verbatim. */
+  joinActions: ReactNode
+  /** Inputs for the `event-warm-proof` module's <WarmProof> card. */
+  warmProof: WarmProofData
+  /** Inputs for the `event-facts` module's <EventFactPanel> card (incl. the exact-venue map). */
+  facts: EventFactsData
 }
 
 interface Holder {

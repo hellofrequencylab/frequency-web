@@ -79,12 +79,23 @@ import { CircleInvite } from '@/components/widgets/circles/circle-invite'
 import { CircleJourneyRun } from '@/components/widgets/circles/circle-journey-run'
 import { CircleText } from '@/components/widgets/circles/circle-text'
 import { EventDescription } from '@/components/widgets/events/event-description'
-import { EventPosterDetails } from '@/components/widgets/events/event-poster-details'
+import {
+  EventLineup,
+  EventSchedule,
+  EventGoodToKnow,
+  EventPricing,
+  EventLinks,
+  EventSponsors,
+  EventDetailsBlock,
+} from '@/components/widgets/events/event-poster-sections'
 import { EventCohosts } from '@/components/widgets/events/event-cohosts'
 import { EventSales } from '@/components/widgets/events/event-sales'
 import { EventDispatch } from '@/components/widgets/events/event-dispatch'
 import { EventActivityBlock } from '@/components/widgets/events/event-activity-block'
 import { EventRecap } from '@/components/widgets/events/event-recap'
+import { EventJoin } from '@/components/widgets/events/event-join'
+import { EventWarmProof } from '@/components/widgets/events/event-warm-proof'
+import { EventFacts } from '@/components/widgets/events/event-facts'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -189,9 +200,19 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'circle-invite': CircleInvite,
   'circle-journey-run': CircleJourneyRun,
   'circle-text': CircleText,
-  // Event detail (/events/<slug>) — the arrangeable post-area blocks.
+  // Event detail (/events/<slug>) — the FULL arrangeable interior, every section its own movable
+  // block (post area + the former Join aside + the per-poster-section blocks).
+  'event-join': EventJoin,
+  'event-warm-proof': EventWarmProof,
+  'event-facts': EventFacts,
   'event-description': EventDescription,
-  'event-poster-details': EventPosterDetails,
+  'event-lineup': EventLineup,
+  'event-schedule': EventSchedule,
+  'event-good-to-know': EventGoodToKnow,
+  'event-pricing': EventPricing,
+  'event-links': EventLinks,
+  'event-sponsors': EventSponsors,
+  'event-details': EventDetailsBlock,
   'event-cohosts': EventCohosts,
   'event-sales': EventSales,
   'event-dispatch': EventDispatch,
