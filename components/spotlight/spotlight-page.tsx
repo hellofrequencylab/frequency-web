@@ -37,6 +37,14 @@ export function SpotlightPage({ data }: { data: SpotlightData }) {
   const name = profile.display_name || `@${profile.handle}`
   const region = profile.nexus_regions?.name ?? null
   const website = profile.website ? normalizeUrl(profile.website) : null
+  // Authoritative stat values for any `stats` block — read from the allowlisted row,
+  // never from member input, so the numbers shown can't be faked.
+  const statsContext = {
+    streak: profile.current_streak,
+    gems: profile.lifetime_gems,
+    joinedYear: profile.created_at ? new Date(profile.created_at).getFullYear() : null,
+    region,
+  }
   // When the member has built a custom layout, it replaces the curated body below the
   // identity header; otherwise the curated default (links + events) renders unchanged.
   const hasLayout = layout.blocks.length > 0
@@ -111,7 +119,7 @@ export function SpotlightPage({ data }: { data: SpotlightData }) {
 
         {hasLayout ? (
           /* Member-built layout: their blocks replace the curated body. */
-          <SpotlightBlocks blocks={layout.blocks} />
+          <SpotlightBlocks blocks={layout.blocks} stats={statsContext} />
         ) : (
           <>
             {/* Curated default — links + upcoming events (unchanged from before). */}

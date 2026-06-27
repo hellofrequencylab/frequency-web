@@ -8,9 +8,14 @@ import {
   type SpotlightBlock,
   type SpotlightLayout,
   type SpotlightBackground,
+  type SpotlightStatKey,
   BLOCK_PALETTE,
   MAX_BLOCKS,
+  MAX_GALLERY_IMAGES,
   ALT_MAX,
+  QUOTE_MAX,
+  CITE_MAX,
+  SPOTLIGHT_STAT_KEYS,
   SPOTLIGHT_LAYOUT_VERSION,
 } from '@/lib/spotlight/blocks/schema'
 import {
@@ -36,8 +41,18 @@ function blankBlock(type: SpotlightBlock['type']): SpotlightBlock {
     case 'text': return { id, type, text: '' }
     case 'links': return { id, type, items: [{ label: '', url: '' }] }
     case 'image': return { id, type, assetPath: '', alt: '' }
+    case 'gallery': return { id, type, items: [] }
+    case 'quote': return { id, type, text: '' }
+    case 'stats': return { id, type, show: [] }
     case 'divider': return { id, type }
   }
+}
+
+const STAT_LABELS: Record<SpotlightStatKey, string> = {
+  streak: 'Day streak',
+  gems: 'Gems earned',
+  joined: 'Member since',
+  region: 'Region',
 }
 
 const inputCls =
@@ -327,6 +342,95 @@ function BlockFields({ block, onChange }: { block: SpotlightBlock; onChange: (p:
           className={inputCls}
           maxLength={ALT_MAX}
         />
+      </div>
+    )
+  }
+  if (block.type === 'gallery') {
+    const items = block.items
+    return (
+      <div className="space-y-3">
+        {items.map((it, idx) => (
+          <div key={idx} className="space-y-2 rounded-xl border border-border p-2">
+            <SpotlightImageUploader
+              value={it.assetPath || null}
+              onChange={(p) =>
+                onChange({
+                  items: p
+                    ? items.map((x, k) => (k === idx ? { ...x, assetPath: p } : x))
+                    : items.filter((_, k) => k !== idx),
+                })
+              }
+              label={`Image ${idx + 1}`}
+              height="h-28"
+            />
+            <input
+              value={it.alt}
+              onChange={(e) => onChange({ items: items.map((x, k) => (k === idx ? { ...x, alt: e.target.value } : x)) })}
+              placeholder="Describe the image (for screen readers)"
+              className={inputCls}
+              maxLength={ALT_MAX}
+            />
+          </div>
+        ))}
+        {items.length < MAX_GALLERY_IMAGES && (
+          <button
+            type="button"
+            onClick={() => onChange({ items: [...items, { assetPath: '', alt: '' }] })}
+            className="text-xs font-medium text-primary-strong hover:underline"
+          >
+            + Add image ({items.length}/{MAX_GALLERY_IMAGES})
+          </button>
+        )}
+      </div>
+    )
+  }
+  if (block.type === 'quote') {
+    return (
+      <div className="space-y-2">
+        <textarea
+          value={block.text}
+          onChange={(e) => onChange({ text: e.target.value })}
+          placeholder="A quote or callout…"
+          rows={2}
+          className={`${inputCls} resize-y`}
+          maxLength={QUOTE_MAX}
+        />
+        <input
+          value={block.cite ?? ''}
+          onChange={(e) => onChange({ cite: e.target.value })}
+          placeholder="Attribution (optional)"
+          className={inputCls}
+          maxLength={CITE_MAX}
+        />
+      </div>
+    )
+  }
+  if (block.type === 'stats') {
+    const show = block.show
+    return (
+      <div className="space-y-1.5">
+        <p className="text-xs text-subtle">Pick which numbers to show. The values come from your account.</p>
+        <div className="flex flex-wrap gap-2">
+          {SPOTLIGHT_STAT_KEYS.map((key) => {
+            const on = show.includes(key)
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() =>
+                  onChange({ show: on ? show.filter((k) => k !== key) : [...show, key] })
+                }
+                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  on
+                    ? 'border-primary-strong bg-primary-bg text-primary-strong'
+                    : 'border-border text-text hover:bg-surface-elevated'
+                }`}
+              >
+                {STAT_LABELS[key]}
+              </button>
+            )
+          })}
+        </div>
       </div>
     )
   }
