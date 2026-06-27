@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect, type ReactNode } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ImagePlus, X, Trash2, Film, Radio, Smile } from 'lucide-react'
-import { createEventPost, deleteEventPost } from '@/app/(main)/events/[slug]/social-actions'
+import { createEventPost, deleteEventPost, postEventDispatch } from '@/app/(main)/events/[slug]/social-actions'
 import { getEventPostReactions, toggleEventPostReaction } from '@/lib/events/reactions'
 import type { BoopKind, PostReactions } from '@/lib/events/reactions'
 import { createClient } from '@/lib/supabase/client'
@@ -60,7 +60,7 @@ export function EventActivity({
   canModerate,
   myProfileId,
   isPast,
-  dispatchComposer,
+  canDispatch = false,
 }: {
   eventId: string
   slug: string
@@ -72,12 +72,16 @@ export function EventActivity({
   myProfileId: string | null
   /** The event has already happened (changes the placeholder copy). */
   isPast: boolean
-  /** The host/cohost "Post an update" composer, when the viewer may dispatch (canDispatch).
-   *  When set it REPLACES the attendee "Say hi" composer — there is only ever one composer
-   *  above the stream. Null for attendees, who get the say-hi box (gated by canPost). */
-  dispatchComposer?: ReactNode
+  /** Viewer is the host/cohost: the ONE composer adds a "Send as a Dispatch" toggle that turns a
+   *  plain thread comment into an event announcement (with an optional title). Off → a regular
+   *  comment, the same box everyone uses. */
+  canDispatch?: boolean
 }) {
   const [body, setBody] = useState('')
+  // Host-only: when on, this update posts as an event announcement (Dispatch) with an optional
+  // title instead of a plain thread comment. Off (and for everyone else) it's a regular comment.
+  const [asDispatch, setAsDispatch] = useState(false)
+  const [title, setTitle] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [gifUrl, setGifUrl] = useState<string | null>(null)
@@ -189,9 +193,31 @@ export function EventActivity({
   }
 
   function submit() {
+    if (pending) return
     const trimmed = body.trim()
-    if ((!trimmed && !imageFile && !gifUrl) || pending) return
+    // A Dispatch is text + optional title (no image); a comment can be text and/or an image.
+    if (asDispatch ? !trimmed : !trimmed && !imageFile && !gifUrl) return
     startTransition(async () => {
+      // Host chose "Send as a Dispatch" → an event announcement (title optional), not a comment.
+      if (canDispatch && asDispatch) {
+        const res = await postEventDispatch(eventId, slug, {
+          title: title.trim() || null,
+          body: trimmed,
+          toDispatch: true,
+        })
+        if ('error' in res) {
+          setError(res.error)
+          return
+        }
+        setBody('')
+        setTitle('')
+        setAsDispatch(false)
+        clearImage()
+        clearGif()
+        setError('')
+        return
+      }
+      // Default for everyone (host or guest): a regular thread comment.
       let imageUrl: string | null = gifUrl
       if (imageFile) {
         imageUrl = await uploadImage()
@@ -209,7 +235,8 @@ export function EventActivity({
     })
   }
 
-  const canSubmit = (!!body.trim() || !!imageFile || !!gifUrl) && !pending
+  const canSubmit =
+    !pending && (asDispatch ? !!body.trim() : !!body.trim() || !!imageFile || !!gifUrl)
 
   return (
     <section>
@@ -220,25 +247,42 @@ export function EventActivity({
         )}
       </h2>
 
-      {/* ONE composer above the stream. Hosts/cohosts (canDispatch) get the "Post an update"
-          composer passed down from the block; everyone else gets the say-hi composer below. */}
-      {dispatchComposer ? (
-        <div className="mb-4">{dispatchComposer}</div>
-      ) : canPost ? (
+      {/* ONE composer above the stream, the same box for everyone. A host/cohost (canDispatch)
+          gets a "Send as a Dispatch" toggle that turns the post into an event announcement with
+          an optional title; off, and for every other guest, it's a plain thread comment. */}
+      {canPost ? (
         <div className="mb-4 rounded-2xl border border-border bg-surface p-3">
+          {/* Title — only for a Dispatch (an announcement may carry a headline). */}
+          {canDispatch && asDispatch && (
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Title (optional)"
+              disabled={pending}
+              className="mb-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+            />
+          )}
+
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={(e) => {
               if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit()
             }}
-            placeholder={isPast ? 'Say thanks, share a moment, tag a friend.' : 'Say hi before the event.'}
+            placeholder={
+              asDispatch
+                ? 'What should guests know? Parking, a time change, what to bring.'
+                : isPast
+                  ? 'Say thanks, share a moment, tag a friend.'
+                  : 'Say hi before the event.'
+            }
             rows={2}
             disabled={pending}
             className="w-full resize-none bg-transparent text-sm leading-relaxed text-text/90 placeholder:text-subtle outline-none disabled:opacity-60"
           />
 
-          {(imagePreview || gifUrl) && (
+          {!asDispatch && (imagePreview || gifUrl) && (
             <div className="relative mt-2 inline-block">
               {/* Local blob preview of the file being uploaded, or the chosen GIF;
                   next/image with `unoptimized` passes object URLs / GIFs straight
@@ -262,7 +306,7 @@ export function EventActivity({
             </div>
           )}
 
-          {showGifInput && (
+          {!asDispatch && showGifInput && (
             <div className="mt-2 flex items-center gap-2">
               <input
                 type="url"
@@ -292,30 +336,61 @@ export function EventActivity({
 
           <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2">
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={pending}
-                aria-label="Attach image"
-                className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
-                  imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                }`}
-              >
-                <ImagePlus className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowGifInput((v) => !v)}
-                disabled={pending}
-                aria-label="Add a GIF"
-                className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
-                  gifUrl || showGifInput
-                    ? 'bg-primary-bg text-primary-strong'
-                    : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                }`}
-              >
-                <Film className="h-4 w-4" />
-              </button>
+              {/* Image + GIF — for a comment only; a Dispatch is a text announcement. */}
+              {!asDispatch && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={pending}
+                    aria-label="Attach image"
+                    className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                      imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                    }`}
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowGifInput((v) => !v)}
+                    disabled={pending}
+                    aria-label="Add a GIF"
+                    className={`inline-flex items-center rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                      gifUrl || showGifInput
+                        ? 'bg-primary-bg text-primary-strong'
+                        : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                    }`}
+                  >
+                    <Film className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+              {/* Host/cohost: turn this post into an event announcement (Dispatch). Turning it on
+                  clears any attached image — an announcement is text + an optional title. */}
+              {canDispatch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !asDispatch
+                    setAsDispatch(next)
+                    if (next) {
+                      clearImage()
+                      clearGif()
+                      setShowGifInput(false)
+                    }
+                  }}
+                  disabled={pending}
+                  aria-pressed={asDispatch}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
+                    asDispatch
+                      ? 'bg-primary-bg text-primary-strong'
+                      : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                  }`}
+                >
+                  <Radio className="h-3.5 w-3.5" />
+                  Send as a Dispatch
+                </button>
+              )}
             </div>
             <button
               type="button"
@@ -323,9 +398,16 @@ export function EventActivity({
               disabled={!canSubmit}
               className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {pending ? 'Posting…' : 'Post'}
+              {pending ? 'Posting…' : asDispatch ? 'Send Dispatch' : 'Post'}
             </button>
           </div>
+
+          {asDispatch && (
+            <p className="mt-2 text-2xs text-subtle">
+              Sends as an event announcement. Guests who RSVP&rsquo;d get it in their Dispatches,
+              unless they muted this event.
+            </p>
+          )}
         </div>
       ) : (
         <p className="mb-4 text-sm text-subtle">RSVP to join the conversation.</p>
