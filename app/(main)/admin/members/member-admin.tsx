@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Search, ChevronDown, ChevronUp, Mail, Pencil,
-  UserX, UserCheck, Trash2, Loader2, Check,
+  UserX, UserCheck, Trash2, Loader2, Check, Sparkles,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import {
   sendMagicLink, updateMemberProfile, deleteUserAccount,
 } from '../actions'
 import { EconomyPanel } from './economy-panel'
+import { toggleSpotlightEnabled } from './spotlight-actions'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
@@ -34,6 +35,9 @@ interface Member {
   current_season_rank: string | null
   current_season_zaps: number | null
   regionName: string | null
+  /** Derived from meta server-side — is this member's Spotlight page turned on?
+   *  The raw meta blob is never sent to the client (it holds PII). */
+  spotlightEnabled: boolean
 }
 
 export function MemberAdmin({
@@ -131,6 +135,7 @@ function MemberRow({
   const [editMode, setEditMode] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [spotlightOn, setSpotlightOn] = useState(m.spotlightEnabled)
 
   const initials = getInitials(m.display_name)
 
@@ -189,6 +194,20 @@ function MemberRow({
       setEditMode(false)
       setStatus('Profile updated')
       setTimeout(() => setStatus(null), 2000)
+    })
+  }
+
+  function handleToggleSpotlight() {
+    const next = !spotlightOn
+    startTransition(async () => {
+      try {
+        await toggleSpotlightEnabled(m.id, next)
+        setSpotlightOn(next)
+        setStatus(next ? 'Spotlight turned on for this member' : 'Spotlight turned off')
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      }
+      setTimeout(() => setStatus(null), 2500)
     })
   }
 
@@ -305,6 +324,19 @@ function MemberRow({
             >
               <Pencil className="w-3 h-3" /> Edit profile
             </Button>
+            {/* Spotlight page (opt-in public mini-site) — off for everyone by
+                default, flipped on here per member to let them set theirs up. */}
+            {!m.is_system && (
+              <Button
+                variant={spotlightOn ? 'successOutline' : 'secondary'}
+                size="sm"
+                onClick={handleToggleSpotlight}
+                disabled={isPending}
+              >
+                <Sparkles className="w-3 h-3" />
+                {spotlightOn ? 'Spotlight on' : 'Turn on Spotlight'}
+              </Button>
+            )}
             {/* No sign-in link or delete for the system voice: she has no auth user,
                 and deleteUserAccount guards her server-side anyway (ADR-231). */}
             {!m.is_system && (

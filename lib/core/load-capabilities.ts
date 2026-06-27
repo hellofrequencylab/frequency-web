@@ -27,6 +27,7 @@ import {
 } from './stewardship'
 import { getStewardships } from '@/lib/stewardships'
 import { countOpenCircleTasks } from '@/lib/crew/circle-tasks'
+import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 
 // The STAFF axis (web_role, ADR-208) rides on the caller profile alongside the
 // community role, so the SAME Viewer feeds every scope builder below — DB → auth →
@@ -291,7 +292,22 @@ export async function getPracticeCapabilities(practiceId: string): Promise<Set<C
   })
 }
 
-/** What the caller can do on a profile (edit-in-place gating). */
+/** What the caller can do on a profile (edit-in-place gating + Spotlight). Reads the
+ *  OWNER's Spotlight flags from their meta so the resolver can grant spotlight.manage
+ *  only when the owner has it enabled (opt-in is owner state, not a viewer flag). */
 export async function getProfileCapabilities(ownerId: string): Promise<Set<Capability>> {
-  return resolveCapabilities(await currentViewer(), { kind: 'profile', ownerId })
+  const viewer = await currentViewer()
+  const admin = createAdminClient()
+  const { data: owner } = await admin
+    .from('profiles')
+    .select('meta')
+    .eq('id', ownerId)
+    .maybeSingle()
+  const meta = (owner as { meta?: unknown } | null)?.meta
+  return resolveCapabilities(viewer, {
+    kind: 'profile',
+    ownerId,
+    ownerSpotlightEnabled: readSpotlightEnabled(meta),
+    ownerSpotlightPublished: readSpotlightPublished(meta),
+  })
 }

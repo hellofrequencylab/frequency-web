@@ -48,6 +48,12 @@ export type Capability =
   | 'task.claim'
   // profile
   | 'profile.edit'
+  // spotlight — a member's opt-in public mini-site (docs/NAMING.md "Spotlight page").
+  // OFF for everyone by default; turned on per user. `manage` = the owner of an
+  // enabled Spotlight (or a janitor) may set it up; `view` = a Crew+ viewer may see
+  // a published Spotlight page. Both are resolved in the 'profile' scope below.
+  | 'spotlight.manage'
+  | 'spotlight.view'
   // structural management (admin-side)
   | 'hub.manage'
   | 'nexus.manage'
@@ -68,7 +74,14 @@ export type Scope =
        *  hub/nexus (computed by the caller — avoids over-granting all guides). */
       viewerManagesParent?: boolean
     }
-  | { kind: 'profile'; ownerId: string }
+  | {
+      kind: 'profile'
+      ownerId: string
+      /** The OWNER's Spotlight flags (read from their profiles.meta by the server
+       *  seam). Opt-in is owner state, not a viewer-global flag. Omitted ⇒ off. */
+      ownerSpotlightEnabled?: boolean
+      ownerSpotlightPublished?: boolean
+    }
   | { kind: 'channel'; channelId: string }
   | { kind: 'hub'; hubId: string; guideId?: string | null; viewerManagesParent?: boolean }
   | { kind: 'nexus'; nexusId: string; mentorId?: string | null }
@@ -155,9 +168,27 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
     }
 
     case 'profile': {
-      // Owners edit their own profile; janitors may edit any (moderation).
-      if (profileId && (scope.ownerId === profileId || isJanitor)) {
+      // profile.edit + spotlight.manage require sign-in (the outer `profileId &&`,
+      // preserved from the original gate so the gap-prober's hypothetical anon+janitor
+      // never grants them). Owners edit their own profile; janitors may edit any.
+      const isOwnerOrJanitor = !!profileId && (scope.ownerId === profileId || isJanitor)
+      if (isOwnerOrJanitor) {
         caps.add('profile.edit')
+      }
+
+      // Spotlight (opt-in public mini-site). MANAGE goes to the owner of an ENABLED
+      // Spotlight (or a janitor, for moderation) — turning it on is an admin/owner
+      // act recorded in the owner's meta, never inferred from the viewer.
+      if (isOwnerOrJanitor && scope.ownerSpotlightEnabled === true) {
+        caps.add('spotlight.manage')
+      }
+      // VIEW is a Crew+ entitlement read from the REAL tier (pre beta-override,
+      // ADR-414) so the beta's open-access grant can't widen who reaches the public
+      // page — the SAME gate shape as the creation caps. Whether a given page is
+      // actually PUBLISHED is enforced at the route; this caps the affordance.
+      const spotlightTier = viewer.realTier ?? viewer.tier
+      if (isPaid(spotlightTier) || atLeastRole(viewer.role, 'crew') || isStaff) {
+        caps.add('spotlight.view')
       }
       break
     }
