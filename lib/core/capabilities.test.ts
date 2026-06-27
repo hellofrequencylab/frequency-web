@@ -76,6 +76,30 @@ describe('resolveCapabilities · profile', () => {
     expect(can(resolveCapabilities({ profileId: 'jc', role: 'janitor' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(false)
     expect(can(resolveCapabilities({ profileId: 'j', role: 'member', webRole: 'janitor' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(true)
   })
+
+  it('spotlight.manage requires the owner (or janitor) AND the owner having it enabled', () => {
+    const owner = { profileId: 'p1', role: 'member' as const }
+    // off by default → no manage even for the owner
+    expect(can(resolveCapabilities(owner, { kind: 'profile', ownerId: 'p1' }), 'spotlight.manage')).toBe(false)
+    // enabled → owner manages
+    expect(can(resolveCapabilities(owner, { kind: 'profile', ownerId: 'p1', ownerSpotlightEnabled: true }), 'spotlight.manage')).toBe(true)
+    // a different member never manages someone else's, even when enabled
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'member' }, { kind: 'profile', ownerId: 'p1', ownerSpotlightEnabled: true }), 'spotlight.manage')).toBe(false)
+    // a janitor may manage (moderation) when enabled
+    expect(can(resolveCapabilities({ profileId: 'j', role: 'member', webRole: 'janitor' }, { kind: 'profile', ownerId: 'p1', ownerSpotlightEnabled: true }), 'spotlight.manage')).toBe(true)
+  })
+
+  it('spotlight.view is a Crew+ entitlement on the REAL tier (beta override cannot widen it)', () => {
+    const scope: Scope = { kind: 'profile', ownerId: 'p1', ownerSpotlightEnabled: true, ownerSpotlightPublished: true }
+    // free member (incl. a beta-granted effective Crew but realTier free) → no view
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'member', tier: 'free' }, scope), 'spotlight.view')).toBe(false)
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'member', tier: 'crew', realTier: 'free' }, scope), 'spotlight.view')).toBe(false)
+    // real paid Crew → view
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'member', realTier: 'crew' }, scope), 'spotlight.view')).toBe(true)
+    // crew on the trust ladder, or staff → view
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'crew' }, scope), 'spotlight.view')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'a', role: 'member', webRole: 'admin' }, scope), 'spotlight.view')).toBe(true)
+  })
 })
 
 describe('resolveCapabilities · circle', () => {

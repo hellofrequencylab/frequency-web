@@ -242,6 +242,16 @@
   longer a member-facing economy construct. (See the Retired list and the cut
   circle-collaborative mechanics under Co-op / Run.)
 
+## Profile pages
+
+- **Spotlight** = a member's opt-in public mini-site (a linktree/personal page themed
+  by their profile). Member-facing copy: "Spotlight page", "your Spotlight" (sentence
+  case, one capital). Public URL `/spotlight/[handle]`. Internal: capabilities
+  `spotlight.manage` / `spotlight.view`, flags `meta.spotlight.{enabled,published}`,
+  audit action `spotlight.toggle`. OFF for everyone by default; turned on per member.
+  **Not "Studio"** (locked for the creation tool + the future Calm/Studio *mode* axis)
+  and **not "Signal"** (a retired rank, below). Locked June 2026 (ADR-423).
+
 ## Retired: zero hits allowed outside this list and ADR-208
 
 Spark/Current/Deep (tiers) · Runner/Operative/Agent (ranks) ·
