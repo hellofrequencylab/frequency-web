@@ -25,6 +25,7 @@ import {
   LABEL_MAX,
   ALT_MAX,
 } from './schema'
+import { validateEmbedRef } from '../embeds'
 
 function clampStr(v: unknown, max: number): string {
   return typeof v === 'string' ? v.slice(0, max) : ''
@@ -133,6 +134,14 @@ function coerceBlock(raw: unknown, index: number, ownerAuthUserId: string): Spot
       }
       if (show.length === 0) return null
       return { id, type: 'stats', show }
+    }
+    case 'embed': {
+      // The read-side authority: only a (provider, ref) that matches the closed host
+      // allowlist survives. The renderer reconstructs the iframe src from this — a member
+      // never supplies a raw src.
+      const e = validateEmbedRef(b.provider, b.ref)
+      if (!e) return null
+      return { id, type: 'embed', provider: e.provider, ref: e.ref }
     }
     case 'divider':
       return { id, type: 'divider', ...t }

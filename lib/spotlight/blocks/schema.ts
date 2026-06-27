@@ -21,7 +21,9 @@ export const CITE_MAX = 80
 export const LABEL_MAX = 60
 export const ALT_MAX = 140
 
-export type BlockType = 'heading' | 'text' | 'links' | 'image' | 'gallery' | 'quote' | 'stats' | 'divider'
+import type { EmbedProvider } from '../embeds'
+
+export type BlockType = 'heading' | 'text' | 'links' | 'image' | 'gallery' | 'quote' | 'stats' | 'embed' | 'divider'
 
 /** The gamification numbers a `stats` block can surface. Values are read SERVER-SIDE from
  *  the allowlisted profile row (privacy.ts) — the block only stores WHICH to show, never a
@@ -91,6 +93,13 @@ export interface StatsBlock {
    *  server-side from the profile row — the block never carries the numbers themselves. */
   show: SpotlightStatKey[]
 }
+export interface EmbedBlock {
+  id: string
+  type: 'embed'
+  provider: EmbedProvider
+  /** The validated id/ref the renderer reconstructs the iframe src from (never a raw src). */
+  ref: string
+}
 export interface DividerBlock {
   id: string
   type: 'divider'
@@ -105,6 +114,7 @@ export type SpotlightBlock =
   | GalleryBlock
   | QuoteBlock
   | StatsBlock
+  | EmbedBlock
   | DividerBlock
 
 export interface SpotlightLayout {
@@ -136,5 +146,6 @@ export const BLOCK_PALETTE: { type: BlockType; label: string }[] = [
   { type: 'gallery', label: 'Gallery' },
   { type: 'quote', label: 'Quote' },
   { type: 'stats', label: 'Stats' },
+  { type: 'embed', label: 'Music / Video' },
   { type: 'divider', label: 'Divider' },
 ]
