@@ -139,24 +139,32 @@ export default async function MainLayout({
   // EXCEPTION: a public networked Space profile is crawlable + shareable, so render it
   // in the public marketing chrome (logo header + footer) rather than the member shell
   // (there is no profile to build the shell from). The space layout walls private/missing.
+  // A PUBLIC view (a networked Space profile or a public events page) renders in the slim public
+  // chrome for ANY viewer who can't get the member shell — signed-out, OR signed-in but pre-profile
+  // / mid-beta-induction. That last case is why /events was bouncing to /onboarding/beta: a session
+  // with onboarding incomplete hit the induction redirect even on a public page. The public surface
+  // must never redirect to onboarding; it just shows the page with a Sign in / Join header.
+  const currentPath = (await headers()).get('x-pathname')
+  const isPublicView = isAnonSpaceProfile(currentPath) || isAnonPublicEvent(currentPath)
+  const publicChrome = async () => {
+    const [headerMenu, footerMenu, menuTimings] = await Promise.all([
+      getMenu('header'),
+      getMenu('footer'),
+      getMenuSettings(),
+    ])
+    return (
+      <>
+        <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={false} />
+        {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
+            (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
+        <main className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>{children}</main>
+        <MarketingFooter menu={footerMenu} />
+      </>
+    )
+  }
+
   if (!user) {
-    const anonPath = (await headers()).get('x-pathname')
-    if (isAnonSpaceProfile(anonPath) || isAnonPublicEvent(anonPath)) {
-      const [headerMenu, footerMenu, menuTimings] = await Promise.all([
-        getMenu('header'),
-        getMenu('footer'),
-        getMenuSettings(),
-      ])
-      return (
-        <>
-          <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={false} />
-          {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
-              (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-          <main className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>{children}</main>
-          <MarketingFooter menu={footerMenu} />
-        </>
-      )
-    }
+    if (isPublicView) return publicChrome()
     redirect('/')
   }
 
@@ -166,15 +174,23 @@ export default async function MainLayout({
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  // No profile row means the trigger hasn't run yet. Send to onboarding.
-  if (!profile) redirect('/onboarding')
+  // No profile row means the trigger hasn't run yet. Send to onboarding — unless this is a public
+  // page, which stays viewable.
+  if (!profile) {
+    if (isPublicView) return publicChrome()
+    redirect('/onboarding')
+  }
 
   // During beta, the induction is the mandatory opening sequence: anyone who
   // hasn't completed it is routed in. `/onboarding` (outside this layout, so no
   // loop) forwards to /onboarding/beta. Flipping BETA_INDUCTION_ACTIVE off at
-  // launch reverts to the non-blocking model (ADR-047).
+  // launch reverts to the non-blocking model (ADR-047). A public page is exempt so a
+  // not-yet-onboarded session can still read it.
   const meta = profile.meta as { onboarding_completed?: boolean } | null
-  if (BETA_INDUCTION_ACTIVE && !meta?.onboarding_completed) redirect('/onboarding')
+  if (BETA_INDUCTION_ACTIVE && !meta?.onboarding_completed) {
+    if (isPublicView) return publicChrome()
+    redirect('/onboarding')
+  }
 
   // Effective role honours a steward's (host+) "view as" override so the whole shell
   // (nav + capabilities) previews a role under them; realRole is the true role, used
