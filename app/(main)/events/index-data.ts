@@ -330,67 +330,39 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     circleEvents = (rawCircle ?? []) as unknown as EventRow[]
   }
 
-  // ── (2) Standalone PUBLIC events near the viewer (hybrid scope, ADR-254) ─────
-  // The Catalog is the union of the viewer's circle events AND standalone public
-  // events near them. Discovery is governed by the RLS-respecting nearby_events
-  // RPC (it returns only events the viewer may already read); we then enrich the
-  // returned IDs with the display columns and keep only the STANDALONE public
-  // ones (scope_type != 'circle') so circle events aren't double-counted. The
-  // provenance distinction drives the `Public` chip on the card.
-  let publicEvents: EventRow[] = []
+  // ── (2) EVERY upcoming standalone PUBLIC event (hybrid scope, ADR-254) ───────
+  // The catalog lists ALL published, upcoming public events — proximity never gates whether a
+  // public gathering appears (that was the bug: events a host posted but no organizer claimed,
+  // or any event outside the viewer's geocell, silently vanished from the listing). When the
+  // viewer has a home location we ALSO resolve distances (for the Distance facet + sort) from
+  // the RLS-respecting nearby_events RPC, but distance only enriches; it never filters.
   const circleIdSet = new Set(circleEvents.map((e) => e.id))
+  let publicQuery = admin
+    .from('events')
+    .select(EVENT_SELECT)
+    .eq('visibility', 'public')
+    .eq('status', 'published')
+    .neq('scope_type', 'circle')
+    .eq('is_cancelled', false)
+    .gte('starts_at', now)
+    .lte('starts_at', future)
+    .order('starts_at', { ascending: true })
+  if (hideDemo) publicQuery = publicQuery.eq('is_demo', false)
+  const { data: rawPublic } = await publicQuery.limit(200)
+
+  let distanceById = new Map<string, number | null>()
   if (myGeocell) {
-    // A generous radius for the union; the Distance facet narrows it further.
     const nearby = await nearbyEvents(supabase, {
       lat: myGeocell.lat,
       lng: myGeocell.lng,
       radiusM: 50_000,
-      limit: 60,
+      limit: 200,
     })
-    const distanceById = new Map(nearby.map((n) => [n.id, n.distanceM]))
-    const candidateIds = nearby.map((n) => n.id).filter((id) => !circleIdSet.has(id))
-    if (candidateIds.length > 0) {
-      let publicQuery = admin
-        .from('events')
-        .select(EVENT_SELECT)
-        .in('id', candidateIds)
-        .eq('visibility', 'public')
-        .eq('status', 'published')
-        .neq('scope_type', 'circle')
-        .eq('is_cancelled', false)
-        .gte('starts_at', now)
-        .lte('starts_at', future)
-      if (hideDemo) publicQuery = publicQuery.eq('is_demo', false)
-      const { data: rawPublic } = await publicQuery.limit(40)
-      publicEvents = ((rawPublic ?? []) as unknown as EventRow[]).map((e) => ({
-        ...e,
-        distance_m: distanceById.get(e.id) ?? null,
-        is_public_standalone: true,
-      }))
-    }
+    distanceById = new Map(nearby.map((n) => [n.id, n.distanceM]))
   }
-
-  // Fallback so public events are discoverable WITHOUT a saved location: when the nearby
-  // (geocell) path found nothing — the common case for a viewer who hasn't set a location —
-  // list upcoming standalone public events directly. Without this, a public event only ever
-  // surfaces via location-based discovery, so it never shows for a location-less viewer.
-  if (publicEvents.length === 0) {
-    let fallbackQuery = admin
-      .from('events')
-      .select(EVENT_SELECT)
-      .eq('visibility', 'public')
-      .eq('status', 'published')
-      .neq('scope_type', 'circle')
-      .eq('is_cancelled', false)
-      .gte('starts_at', now)
-      .lte('starts_at', future)
-      .order('starts_at', { ascending: true })
-    if (hideDemo) fallbackQuery = fallbackQuery.eq('is_demo', false)
-    const { data: rawFallback } = await fallbackQuery.limit(40)
-    publicEvents = ((rawFallback ?? []) as unknown as EventRow[])
-      .filter((e) => !circleIdSet.has(e.id))
-      .map((e) => ({ ...e, distance_m: null, is_public_standalone: true }))
-  }
+  const publicEvents: EventRow[] = ((rawPublic ?? []) as unknown as EventRow[])
+    .filter((e) => !circleIdSet.has(e.id))
+    .map((e) => ({ ...e, distance_m: distanceById.get(e.id) ?? null, is_public_standalone: true }))
 
   // ── (3) The viewer's OWN hosted events ──────────────────────────────────────
   // ROOT CAUSE of "only one event shows": the circle+public union above misses an event the
@@ -405,7 +377,10 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     let hostedQuery = admin
       .from('events')
       .select(EVENT_SELECT)
-      .eq('host_id', myProfileId)
+      // Events the viewer HOSTS *or* POSTED on an organizer's behalf (posted_by_profile_id) —
+      // an unclaimed posted event has host_id NULL, so a host-only filter dropped every event
+      // the viewer created until someone claimed it. Both belong in their listing.
+      .or(`host_id.eq.${myProfileId},posted_by_profile_id.eq.${myProfileId}`)
       .eq('status', 'published')
       .eq('is_cancelled', false)
       // Community-scoped only: a viewer's circle events + standalone public events
@@ -418,7 +393,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       .lte('starts_at', future)
       .order('starts_at', { ascending: true })
     if (hideDemo) hostedQuery = hostedQuery.eq('is_demo', false)
-    const { data: rawHosted } = await hostedQuery.limit(40)
+    const { data: rawHosted } = await hostedQuery.limit(60)
     hostedEvents = (rawHosted ?? []) as unknown as EventRow[]
   }
 
