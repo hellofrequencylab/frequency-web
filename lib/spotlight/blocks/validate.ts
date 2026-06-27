@@ -9,12 +9,18 @@ import {
   type SpotlightLayout,
   type SpotlightBackground,
   type LinkItem,
+  type GalleryItem,
+  type SpotlightStatKey,
   EMPTY_LAYOUT,
   SPOTLIGHT_LAYOUT_VERSION,
+  SPOTLIGHT_STAT_KEYS,
   MAX_BLOCKS,
   MAX_LINKS_PER_BLOCK,
+  MAX_GALLERY_IMAGES,
   HEADING_MAX,
   TEXT_MAX,
+  QUOTE_MAX,
+  CITE_MAX,
   LABEL_MAX,
   ALT_MAX,
 } from './schema'
@@ -82,6 +88,35 @@ function coerceBlock(raw: unknown, index: number, ownerAuthUserId: string): Spot
       const assetPath = safeAssetPath(b.assetPath, ownerAuthUserId)
       if (!assetPath) return null
       return { id, type: 'image', assetPath, alt: clampStr(b.alt, ALT_MAX) }
+    }
+    case 'gallery': {
+      const rawItems = Array.isArray(b.items) ? b.items.slice(0, MAX_GALLERY_IMAGES) : []
+      const items: GalleryItem[] = []
+      for (const it of rawItems) {
+        if (!it || typeof it !== 'object') continue
+        const assetPath = safeAssetPath((it as Record<string, unknown>).assetPath, ownerAuthUserId)
+        if (!assetPath) continue // drop any item outside the owner's own folder
+        items.push({ assetPath, alt: clampStr((it as Record<string, unknown>).alt, ALT_MAX) })
+      }
+      if (items.length === 0) return null
+      return { id, type: 'gallery', items }
+    }
+    case 'quote': {
+      const text = clampStr(b.text, QUOTE_MAX).trim()
+      if (!text) return null
+      const cite = clampStr(b.cite, CITE_MAX).trim()
+      return cite ? { id, type: 'quote', text, cite } : { id, type: 'quote', text }
+    }
+    case 'stats': {
+      const rawShow = Array.isArray(b.show) ? b.show : []
+      const show: SpotlightStatKey[] = []
+      for (const k of rawShow) {
+        if (SPOTLIGHT_STAT_KEYS.includes(k as SpotlightStatKey) && !show.includes(k as SpotlightStatKey)) {
+          show.push(k as SpotlightStatKey)
+        }
+      }
+      if (show.length === 0) return null
+      return { id, type: 'stats', show }
     }
     case 'divider':
       return { id, type: 'divider' }

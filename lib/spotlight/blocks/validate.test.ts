@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateSpotlightLayout, validateSpotlightBackground } from './validate'
-import { MAX_BLOCKS } from './schema'
+import { MAX_BLOCKS, MAX_GALLERY_IMAGES } from './schema'
 
 const OWNER = '8b0d1087-ed37-4bc4-8439-8a109de1a48d'
 
@@ -45,6 +45,56 @@ describe('validateSpotlightLayout — security boundary', () => {
     )
     expect(out.blocks).toHaveLength(1)
     expect(out.blocks[0].type).toBe('image')
+  })
+
+  it('gallery: drops foreign-path items, caps count, drops an all-foreign (empty) gallery', () => {
+    const many = Array.from({ length: 50 }, (_, i) => ({ assetPath: `${OWNER}/spotlight/g${i}.webp`, alt: '' }))
+    const out = validateSpotlightLayout(
+      { blocks: [
+        { type: 'gallery', items: [
+          { assetPath: '../escape.png', alt: 'x' },
+          { assetPath: 'someone-else/spotlight/x.png', alt: 'x' },
+          { assetPath: `${OWNER}/spotlight/ok.gif`, alt: 'mine' },
+        ] },
+        { type: 'gallery', items: many },
+        { type: 'gallery', items: [{ assetPath: 'evil/x.png', alt: 'x' }] },
+      ] },
+      OWNER,
+    )
+    // first gallery keeps only the owner-scoped item; second is capped; third drops whole.
+    expect(out.blocks).toHaveLength(2)
+    const first = out.blocks[0]
+    if (first.type === 'gallery') expect(first.items).toHaveLength(1)
+    const second = out.blocks[1]
+    if (second.type === 'gallery') expect(second.items).toHaveLength(MAX_GALLERY_IMAGES)
+  })
+
+  it('quote: drops empty, keeps optional cite', () => {
+    const out = validateSpotlightLayout(
+      { blocks: [
+        { type: 'quote', text: '   ' },
+        { type: 'quote', text: 'Stay weird.', cite: 'Someone' },
+      ] },
+      OWNER,
+    )
+    expect(out.blocks).toHaveLength(1)
+    const q = out.blocks[0]
+    expect(q.type).toBe('quote')
+    if (q.type === 'quote') { expect(q.text).toBe('Stay weird.'); expect(q.cite).toBe('Someone') }
+  })
+
+  it('stats: filters unknown keys, dedupes, drops an empty selection', () => {
+    const out = validateSpotlightLayout(
+      { blocks: [
+        { type: 'stats', show: ['streak', 'streak', 'evil', 'gems'] },
+        { type: 'stats', show: ['nonsense'] },
+        { type: 'stats', show: [] },
+      ] },
+      OWNER,
+    )
+    expect(out.blocks).toHaveLength(1)
+    const s = out.blocks[0]
+    if (s.type === 'stats') expect(s.show).toEqual(['streak', 'gems'])
   })
 
   it('drops unknown block types entirely (no echo fallback)', () => {
