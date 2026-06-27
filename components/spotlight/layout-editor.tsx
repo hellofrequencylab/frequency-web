@@ -10,6 +10,7 @@ import {
   type SpotlightStatKey,
   type BlockTint,
   type BlockType,
+  type EmbedBlock,
   BLOCK_PALETTE,
   MAX_BLOCKS,
   MAX_GALLERY_IMAGES,
@@ -27,6 +28,7 @@ import {
   saveSpotlightBackground,
   uploadSpotlightImage,
 } from '@/app/(main)/settings/profile/spotlight-actions'
+import { parseEmbedUrl, buildEmbedSrc, embedHeight } from '@/lib/spotlight/embeds'
 
 // Resolve a stored asset PATH to its public URL for previews. The path is the only thing
 // we persist (the renderer derives the URL the same way), so the editor mirrors it.
@@ -48,11 +50,13 @@ function blankBlock(type: SpotlightBlock['type']): SpotlightBlock {
     case 'gallery': return { id, type, items: [] }
     case 'quote': return { id, type, text: '' }
     case 'stats': return { id, type, show: [] }
+    case 'embed': return { id, type, provider: 'spotify', ref: '' }
     case 'divider': return { id, type }
   }
 }
 
 const STAT_LABELS: Record<SpotlightStatKey, string> = {
+  zaps: 'Zaps',
   streak: 'Day streak',
   gems: 'Gems earned',
   joined: 'Member since',
@@ -443,10 +447,56 @@ function BlockFields({ block, onChange }: { block: SpotlightBlock; onChange: (p:
       </div>
     )
   }
+  if (block.type === 'embed') {
+    return <EmbedField block={block} onChange={onChange} />
+  }
   if (block.type === 'divider') {
     return <p className="text-xs text-subtle">A horizontal line.</p>
   }
   return null
+}
+
+// Music / video embed: paste a Spotify / YouTube / SoundCloud / Vimeo link. The pasted URL
+// is parsed against the host allowlist into a (provider, ref); the block stores only that,
+// and both the preview and the public page rebuild the iframe src from it (never a raw src).
+function EmbedField({ block, onChange }: { block: EmbedBlock; onChange: (p: Partial<SpotlightBlock>) => void }) {
+  const [url, setUrl] = useState('')
+  const [err, setErr] = useState('')
+  function apply(raw: string) {
+    setUrl(raw)
+    if (!raw.trim()) { setErr(''); return }
+    const parsed = parseEmbedUrl(raw)
+    if (parsed) { setErr(''); onChange({ provider: parsed.provider, ref: parsed.ref } as Partial<SpotlightBlock>) }
+    else setErr('That link is not from Spotify, YouTube, SoundCloud, or Vimeo.')
+  }
+  return (
+    <div className="space-y-2">
+      <input
+        value={url}
+        onChange={(e) => apply(e.target.value)}
+        placeholder="Paste a Spotify, YouTube, SoundCloud, or Vimeo link"
+        className={inputCls}
+      />
+      {err && <p className="text-2xs text-danger">{err}</p>}
+      {block.ref && (
+        <div className="overflow-hidden rounded-xl border border-border">
+          <iframe
+            src={buildEmbedSrc(block.provider, block.ref)}
+            title={`${block.provider} embed`}
+            height={embedHeight(block.provider)}
+            className="w-full"
+            style={{ border: 0 }}
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
+            allow="encrypted-media; picture-in-picture"
+          />
+        </div>
+      )}
+      <p className="text-2xs text-muted">
+        {block.ref ? `Embedded from ${block.provider}.` : 'Spotify song/album/playlist, YouTube or Vimeo video, or a SoundCloud track.'}
+      </p>
+    </div>
+  )
 }
 
 // A labelled range slider with a live value readout.

@@ -97,6 +97,28 @@ describe('validateSpotlightLayout — security boundary', () => {
     if (s.type === 'stats') expect(s.show).toEqual(['streak', 'gems'])
   })
 
+  it('stats: accepts the zaps key', () => {
+    const out = validateSpotlightLayout({ blocks: [{ type: 'stats', show: ['zaps', 'streak'] }] }, OWNER)
+    const s = out.blocks[0]
+    if (s?.type === 'stats') expect(s.show).toEqual(['zaps', 'streak'])
+  })
+
+  it('embed: keeps an allowlisted (provider, ref), drops a foreign/garbage one', () => {
+    const out = validateSpotlightLayout(
+      { blocks: [
+        { type: 'embed', provider: 'youtube', ref: 'dQw4w9WgXcQ' },
+        { type: 'embed', provider: 'youtube', ref: 'javascript:alert(1)' },
+        { type: 'embed', provider: 'soundcloud', ref: 'https://evil.com/x' },
+        { type: 'embed', provider: 'made-up', ref: 'x' },
+      ] },
+      OWNER,
+    )
+    expect(out.blocks).toHaveLength(1)
+    const e = out.blocks[0]
+    expect(e.type).toBe('embed')
+    if (e.type === 'embed') { expect(e.provider).toBe('youtube'); expect(e.ref).toBe('dQw4w9WgXcQ') }
+  })
+
   it('drops unknown block types entirely (no echo fallback)', () => {
     const out = validateSpotlightLayout({ blocks: [{ type: 'iframe', src: 'evil' }, { type: 'divider' }] }, OWNER)
     expect(out.blocks).toHaveLength(1)

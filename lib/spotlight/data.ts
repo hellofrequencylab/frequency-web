@@ -9,6 +9,7 @@ import {
 import { validateSpotlightLayout, validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
+import { getProfileZapTotal } from '@/lib/profile-zaps'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 
 // Server data for the PUBLIC Spotlight page. Anonymous visitors get no RLS, so this
@@ -33,6 +34,8 @@ export interface SpotlightData {
   background: SpotlightBackground
   /** The validated custom theme (colours/gradient/fonts/card). */
   theme: SpotlightTheme
+  /** Lifetime Zaps earned (one SQL aggregate) — a gamification stat the member can display. */
+  totalZaps: number
 }
 
 /**
@@ -81,11 +84,14 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
     .order('starts_at', { ascending: true })
     .limit(5)
 
+  const totalZaps = await getProfileZapTotal(g.id)
+
   return {
     profile: row as unknown as SpotlightRow,
     hostedEvents: (events ?? []) as SpotlightHostedEvent[],
     layout,
     background,
     theme,
+    totalZaps,
   }
 }

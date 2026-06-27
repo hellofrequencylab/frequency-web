@@ -9029,3 +9029,28 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 4. **Cover-photo toggle.** `SpotlightHeader` gains `show: boolean` (default ON, validated `!== false`) so a member can remove the top cover band entirely; the view renders the clean spacer when off, controlled by a "Show cover photo" checkbox in the theme editor's Cover band section.
 
 **Consequences.** New: `components/spotlight/{spotlight-view,builder}.tsx`. Changed: `components/spotlight/spotlight-page.tsx` (→ thin wrapper), `theme-editor.tsx` + `layout-editor.tsx` (controlled; `showPreview` flag; cover-photo toggle), `lib/spotlight/theme.ts` (+`header.show`), `components/spotlight/spotlight-view.tsx` (header gated on `show`), `app/(main)/settings/profile/spotlight/page.tsx` (fetch preview identity + events, render the builder, `FocusTemplate width="wide"`). No schema/migration; `privacy.ts`/`SPOTLIGHT_SELECT` untouched. The public route still server-renders through the thin wrapper. **Deferred (noted):** a scaled/zoomable preview frame + device-size toggle, drag-and-drop block reordering, music/video embeds, earned cosmetics. Gate: tsc, eslint, authz-contract, 28 spotlight + 3 privacy tests.
+
+---
+
+## ADR-436: Spotlight stats — add Zaps (top row + stats block)
+
+**Status:** Accepted (2026-06-27). Lifetime **Zaps** now show in the Spotlight top stat row (alongside streak + gems) and are a selectable key in the `stats` block. Zaps is the headline gamification number and was the only one of the four standing metrics missing.
+
+**Decision.** Zaps is an aggregate, not a `profiles` column, so it isn't in `SPOTLIGHT_SELECT`. `getPublishedSpotlight` (and the builder page) compute it via the existing `getProfileZapTotal` (one SECURITY DEFINER `sum()`), and `SpotlightData` carries `totalZaps`. `SpotlightStatKey` gains `'zaps'` (first in the list); the renderer's `SpotlightStatsContext` + `StatsView` handle it (Zap icon); the top auto-row shows Zaps · Streak · Gems when present. The value is authoritative (computed server-side, never member-supplied), consistent with the other stats. `privacy.ts`/`SPOTLIGHT_SELECT` untouched (Zaps was never a column).
+
+**Consequences.** Changed: `lib/spotlight/data.ts` (+`totalZaps` via `getProfileZapTotal`), `lib/spotlight/blocks/schema.ts` (+`zaps` key), `components/spotlight/blocks/render.tsx` (context + StatsView), `components/spotlight/spotlight-view.tsx` (top row + context), `components/spotlight/{builder,layout-editor}.tsx` (prop + label), `app/(main)/settings/profile/spotlight/page.tsx` (compute + pass for the preview), +1 validator test (29 spotlight). No schema/migration. Gate: tsc, eslint, authz-contract, 29 spotlight + 3 privacy tests.
+
+---
+
+## ADR-437: Spotlight media embeds — Spotify / YouTube / SoundCloud / Vimeo (host-allowlisted iframes)
+
+**Status:** Accepted (2026-06-27). A new **Music / Video** block embeds Spotify, YouTube, SoundCloud, or Vimeo — the MySpace "profile song" + Discord-style rich media. This is the first iframe surface in Spotlight; it was deferred precisely because iframes are the dangerous case, so it ships with a closed-allowlist, reconstructed-src design.
+
+**Context.** Members asked for the iconic MySpace/Discord embeds. The hard constraint: the public page reads `meta` with no anon RLS, so a member-supplied iframe `src` would be an arbitrary-iframe injection. The whole feature is built so a member NEVER supplies a src.
+
+**Decision.**
+1. **Closed host allowlist + reconstructed src.** `lib/spotlight/embeds.ts` is the one place providers live. A member pastes a normal share URL; `parseEmbedUrl` matches it against a fixed host set and extracts a strict id/ref (YouTube 11-char id, Vimeo numeric, Spotify `type/id` 22-char, SoundCloud host-pinned track URL). The block stores only `(provider, ref)`. The renderer calls `buildEmbedSrc(provider, ref)` to REBUILD a known-safe embed URL from the validated ref + the provider's fixed template — the raw URL is never used as a src.
+2. **Validation is the read-side authority.** `validateEmbedRef` re-checks the per-provider pattern in the block validator on every public read (and on save); a `(provider, ref)` that fails is dropped whole. 16 unit tests cover the dangerous cases (`evil.com`, `youtube.com.evil.com`, `javascript:`/`data:`, wrong-length ids, foreign SoundCloud host).
+3. **CSP + sandbox.** `next.config.ts` `frame-src` adds `open.spotify.com` + `w.soundcloud.com` (YouTube/Vimeo were already allowed) — kept in sync with the embeds allowlist. The iframe is `sandbox`ed to the perms players need and `loading="lazy"`; the trusted first-party player is the only thing that can ever load there.
+
+**Consequences.** New: `lib/spotlight/embeds.ts` (+`embeds.test.ts`, 16 tests). Changed: `lib/spotlight/blocks/{schema,validate}.ts` (+`EmbedBlock`, validator case, +1 integration test), `components/spotlight/blocks/render.tsx` (sandboxed iframe from rebuilt src), `components/spotlight/layout-editor.tsx` (paste-a-link `EmbedField` + live preview), `next.config.ts` (frame-src). No schema/migration — the block lives in `meta.spotlight.layout`; `privacy.ts` untouched. **Deferred (noted):** more providers (Bandcamp/Apple Music/Twitch), and the other MySpace/Discord socials — guestbook (needs storage + moderation), Top Friends, sticker/decal layer. Gate: tsc, eslint, authz-contract, 37 spotlight + 3 privacy tests.
