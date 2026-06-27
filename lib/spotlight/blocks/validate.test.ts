@@ -133,7 +133,7 @@ describe('validateSpotlightLayout — security boundary', () => {
     }
     // The same uuid path is also valid as a background.
     expect(validateSpotlightBackground({ assetPath: `${OWNER}/spotlight/${uuid}.gif`, dim: 40 }, OWNER))
-      .toEqual({ assetPath: `${OWNER}/spotlight/${uuid}.gif`, dim: 40 })
+      .toEqual({ assetPath: `${OWNER}/spotlight/${uuid}.gif`, dim: 40, focusX: 50, focusY: 50, zoom: 100 })
   })
 
   it('clamps heading/text length and drops empty', () => {
@@ -148,9 +148,15 @@ describe('validateSpotlightLayout — security boundary', () => {
 })
 
 describe('validateSpotlightBackground', () => {
-  it('clamps dim to 0..80 and rejects a foreign path', () => {
-    expect(validateSpotlightBackground({ assetPath: 'evil/x.png', dim: 999 }, OWNER)).toEqual({ assetPath: null, dim: 80 })
+  it('clamps dim to 0..80 and rejects a foreign path; framing defaults to centred/100', () => {
+    expect(validateSpotlightBackground({ assetPath: 'evil/x.png', dim: 999 }, OWNER))
+      .toEqual({ assetPath: null, dim: 80, focusX: 50, focusY: 50, zoom: 100 })
     expect(validateSpotlightBackground({ assetPath: `${OWNER}/spotlight/bg.webp`, dim: -5 }, OWNER))
-      .toEqual({ assetPath: `${OWNER}/spotlight/bg.webp`, dim: 0 })
+      .toEqual({ assetPath: `${OWNER}/spotlight/bg.webp`, dim: 0, focusX: 50, focusY: 50, zoom: 100 })
+  })
+
+  it('clamps focal point to 0..100 and zoom to 100..200', () => {
+    expect(validateSpotlightBackground({ assetPath: `${OWNER}/spotlight/bg.webp`, focusX: 200, focusY: -10, zoom: 999 }, OWNER))
+      .toEqual({ assetPath: `${OWNER}/spotlight/bg.webp`, dim: 0, focusX: 100, focusY: 0, zoom: 200 })
   })
 })
