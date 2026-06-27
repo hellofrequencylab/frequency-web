@@ -49,7 +49,10 @@ export function MarketingHeader({
 
   return (
     <header
-      className={`fixed top-0 inset-x-0 z-50 h-16 flex items-center gap-3 px-5 sm:px-8 transition-colors duration-300 ${
+      // h-16 + top padding by env(safe-area-inset-top) so the fixed bar fills behind the
+      // iOS PWA status bar / notch (viewport-fit=cover) instead of rendering under it.
+      style={{ height: 'calc(4rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
+      className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 px-5 sm:px-8 transition-colors duration-300 ${
         light ? 'bg-surface/90 backdrop-blur-md border-b border-border' : 'bg-transparent'
       }`}
     >

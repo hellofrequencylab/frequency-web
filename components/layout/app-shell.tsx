@@ -1565,11 +1565,17 @@ export default function AppShell({
       data-skin={skin}
       data-generation={generation}
       data-occasion={occasion === 'none' ? undefined : occasion}
-      className="flex min-h-screen flex-col overflow-x-clip bg-canvas"
+      className="flex min-h-dvh flex-col overflow-x-clip bg-canvas"
     >
 
       {/* ── Top bar ───────────────────────────────────────── */}
-      <header className="sticky top-0 h-14 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30">
+      {/* In iOS standalone PWA the webview extends under the status bar (viewport-fit=cover +
+          black-translucent). Pad the bar by env(safe-area-inset-top) and grow its height to
+          match, so its bg-surface/90 fills behind the status bar and the buttons clear the notch. */}
+      <header
+        className="sticky top-0 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30"
+        style={{ height: 'calc(3.5rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
+      >
 
         {/* Engraved, interactive wordmark. Leads the bar — on mobile the menu now
             lives in the bottom tab bar, so the wordmark anchors the top-left. */}
@@ -1704,7 +1710,10 @@ export default function AppShell({
           (top-14), with the admin / Vera search bar as its panel header. Triggers align to the
           content column (a left rail-width spacer); the panel slides out with panelAlign='content'. */}
       {showAdminMega && adminMega && (
-        <div className="sticky top-14 z-30 hidden border-b border-border bg-surface/95 backdrop-blur-sm md:block">
+        <div
+          className="sticky z-30 hidden border-b border-border bg-surface/95 backdrop-blur-sm md:block"
+          style={{ top: 'calc(3.5rem + env(safe-area-inset-top))' }}
+        >
           <div className="mx-auto flex h-12 max-w-[105rem] items-center gap-8 px-4 sm:px-6 lg:px-8">
             <div className="hidden w-48 shrink-0 md:block" aria-hidden />
             <div className="min-w-0 flex-1">
@@ -1730,7 +1739,9 @@ export default function AppShell({
       {/* Both rails now live IN normal flow inside the one shared page scroll, so the
           LEFT nav scrolls up with the content exactly like the right rail (its profile
           card sits at the bottom of the column and rides up with the page). */}
-      <div className="flex min-w-0 flex-1">
+      {/* px-safe pads the body by env(safe-area-inset-left/right) so the rails + page
+          gutters clear a side-notch in landscape (0 in portrait / off-device). */}
+      <div className="flex min-w-0 flex-1 px-safe">
         <div
           data-feed-scroll
           className="min-w-0 flex-1 pb-[calc(3.5rem_+_env(safe-area-inset-bottom))] md:pb-0"
