@@ -639,7 +639,7 @@ export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>
       done.posts++
       const parentId = (pp as { id: string } | null)?.id
       if (!parentId) continue
-      for (const m of reactors) reactionRows.push({ post_id: parentId, profile_id: m, reaction_type: rng2() < 0.85 ? '❤️' : '🙌' })
+      for (const m of reactors) reactionRows.push({ post_id: parentId, profile_id: m, reaction_type: rng2() < 0.85 ? '❤️' : '🙌🏽' })
       for (const rep of post.replies) {
         const rid = profileIdByKey[rep.authorKey]
         if (!rid) continue
