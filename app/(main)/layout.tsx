@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveSpaceForHost, activeVerticalsForSpace } from '@/lib/spaces'
 import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
+import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import type { Metadata } from 'next'
 import { loadChromeOverrides, isSafeRoute } from '@/lib/layout/page-chrome'
 import { loadPageSettings } from '@/lib/page-settings/store'
@@ -462,6 +463,7 @@ export default async function MainLayout({
       menuTimings={menuTimings}
     >
       <GaConsentGate disabled={!analyticsConsent} />
+      <ImpersonationBanner />
       {children}
       <AchievementToastContainer />
       <ZapToastContainer />

@@ -13,10 +13,12 @@ import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, Sparkles, Settings } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, Sparkles, Settings, UserCog } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-capabilities'
+import { getRealCallerWebRole } from '@/lib/auth'
+import { actAsMember } from '@/app/(main)/impersonate-actions'
 import { readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
@@ -147,6 +149,8 @@ export default async function ProfilePage({
   const canModerateProfile = !isOwner && profileCaps.has('profile.edit')
   // Staff (admin/janitor) get a deep link into the full account editor in Admin → People.
   const isStaffViewer = !isOwner && (await getGlobalCapabilities()).has('admin.access')
+  // Janitors additionally get "Act as" — full identity impersonation of this member.
+  const isJanitorViewer = !isOwner && (await getRealCallerWebRole()) === 'janitor'
 
   // Friendship state between viewer and this profile
   let friendState: FriendState = { kind: 'none' }
@@ -326,6 +330,20 @@ export default async function ProfilePage({
           <Settings className="h-3.5 w-3.5" />
           Manage account
         </Link>
+      )}
+      {/* Janitor full control: become this member (session swap). The server action
+          re-checks the real janitor web_role before swapping. */}
+      {isJanitorViewer && (
+        <form action={actAsMember.bind(null, profileId)}>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-signal-bg bg-signal-bg/40 px-3 py-1.5 text-sm font-medium text-signal-strong transition-colors hover:bg-signal-bg"
+            title="Act as this member (full control)"
+          >
+            <UserCog className="h-3.5 w-3.5" />
+            Act as {firstName}
+          </button>
+        </form>
       )}
     </>
   ) : null
