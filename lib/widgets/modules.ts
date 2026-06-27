@@ -149,7 +149,8 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // context (lib/events/active-event.ts) and self-hides when it doesn't apply.
   { id: 'event-join', label: 'Join / RSVP', description: 'The RSVP, ticket, check-in, and waitlist actions. Hidden on a cancelled event.' },
   { id: 'event-warm-proof', label: 'Warm proof', description: 'Who is going: the avatar pile and a warm line of real attendance numbers.' },
-  { id: 'event-facts', label: 'Event facts', description: 'The when / where card, with the city-level or exact-venue map and the guest list.' },
+  { id: 'event-facts', label: 'Event facts', description: 'The when card, the capacity line, and the guest list.' },
+  { id: 'event-location', label: 'Location & map', description: 'The venue line and the map: the exact spot when the event is geocoded, or the hosting circle’s city-level pin.' },
   { id: 'event-description', label: 'Description', description: "The event's description; host-editable inline." },
   // Each poster-harvest section is its OWN movable block (no lumped "poster details"): an operator
   // moves or hides any one of them independently. Each renders only when the poster carried it.
@@ -367,6 +368,7 @@ const EVENT_DETAIL_MODULE_IDS = [
   'event-join',
   'event-warm-proof',
   'event-facts',
+  'event-location',
 ] as const
 
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section

@@ -208,9 +208,12 @@ export function EventSettingsModule() {
           {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-4 lg:grid lg:grid-cols-3 lg:gap-x-6 lg:gap-y-4 lg:space-y-0">
-          {/* IMAGES — full width, cover on top, gallery below (§2). */}
-          <div className="space-y-4 lg:col-span-3">
+        {/* A single rail-width column: each field row is its own line so the form reads top to
+            bottom and fits the right rail (resize the drawer wider to give the multi-field lines
+            more room). Images + description lead, then the metadata lines, the address box, the map. */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* IMAGES — cover on top, gallery below. */}
+          <div className="space-y-4">
             <div className="space-y-1.5">
               <span className={fieldLabel}>Cover image</span>
               {coverUrl || !posterUrl ? (
@@ -285,8 +288,8 @@ export function EventSettingsModule() {
             </div>
           </div>
 
-          {/* Description — full width, under the images (§3). */}
-          <label className="block space-y-1.5 lg:col-span-3">
+          {/* Description — full width, under the images. */}
+          <label className="block space-y-1.5">
             <span className={fieldLabel}>Description</span>
             <textarea
               name="description"
@@ -297,125 +300,78 @@ export function EventSettingsModule() {
             />
           </label>
 
-          {/* LEFT 2/3 — title, when, location, join link + address/map. */}
-          <div className="space-y-4 lg:col-span-2">
-            <label className="block space-y-1.5">
+          {/* Line 1 — Title (wide) + Capacity (narrow). */}
+          <div className="grid grid-cols-3 gap-3">
+            <label className="col-span-2 block min-w-0 space-y-1.5">
               <span className={fieldLabel}>Title</span>
-              <input name="title" defaultValue={data.title} required disabled={pending} className={input} />
+              <input name="title" defaultValue={data.title} required disabled={pending} className={`${input} min-w-0`} />
             </label>
-
-            <label className="block space-y-1.5">
-              <span className={fieldLabel}>Location</span>
-              <input name="location" defaultValue={data.location ?? ''} disabled={pending} className={input} />
+            <label className="block min-w-0 space-y-1.5">
+              <span className={fieldLabel}>Capacity</span>
+              <input
+                name="capacity"
+                type="number"
+                min={1}
+                defaultValue={data.capacity ?? ''}
+                placeholder="Any"
+                disabled={pending}
+                className={`${input} min-w-0`}
+              />
             </label>
-
-            {/* Stacked on phones: two datetime-local inputs side by side exceed a
-                phone-width panel (their intrinsic min-width can't shrink). */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <label className="block min-w-0 space-y-1.5">
-                <span className={fieldLabel}>Starts</span>
-                <input
-                  name="starts_at"
-                  type="datetime-local"
-                  defaultValue={isoToWallClockInput(data.starts_at)}
-                  required
-                  disabled={pending}
-                  className={`${input} min-w-0`}
-                />
-              </label>
-              <label className="block min-w-0 space-y-1.5">
-                <span className={fieldLabel}>Ends</span>
-                <input
-                  name="ends_at"
-                  type="datetime-local"
-                  defaultValue={isoToWallClockInput(data.ends_at)}
-                  disabled={pending}
-                  className={`${input} min-w-0`}
-                />
-              </label>
-            </div>
-
-            {/* Join link (online / hybrid) + structured address (in person / hybrid), toggled by Format. */}
-            {mode !== 'in_person' && (
-              <label className="block space-y-1.5">
-                <span className={fieldLabel}>Join link</span>
-                <input
-                  name="online_url"
-                  type="url"
-                  defaultValue={data.online_url ?? ''}
-                  placeholder="https://…"
-                  disabled={pending}
-                  className={input}
-                />
-              </label>
-            )}
-
-            {mode !== 'online' && (
-              <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
-                <span className={fieldLabel}>
-                  Address <span className="font-normal text-subtle">(search a venue to fill it in and drop the pin)</span>
-                </span>
-                {/* Venue typeahead (§1): a pick fills every address field + moves the pin. */}
-                <VenueAutocomplete value={venueName} onPick={handleVenuePick} disabled={pending} />
-                <input type="hidden" name="venue_name" value={venueName} />
-                <input
-                  name="street"
-                  value={street}
-                  onChange={(e) => setStreet(e.target.value)}
-                  placeholder="Street address"
-                  disabled={pending}
-                  className={input}
-                />
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <input
-                    name="city"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="City"
-                    disabled={pending}
-                    className={`${input} min-w-0`}
-                  />
-                  <input
-                    name="region"
-                    value={region}
-                    onChange={(e) => setRegion(e.target.value)}
-                    placeholder="State or province"
-                    disabled={pending}
-                    className={`${input} min-w-0`}
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <input
-                    name="postal_code"
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    placeholder="Postal code"
-                    disabled={pending}
-                    className={`${input} min-w-0`}
-                  />
-                  <input
-                    name="country"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    placeholder="Country"
-                    disabled={pending}
-                    className={`${input} min-w-0`}
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* RIGHT 1/3 — format → kind → visibility → capacity → energy → permalink (§4). */}
-          <div className="space-y-4 lg:col-span-1">
-            <label className="block space-y-1.5">
+          {/* Line 2 — Location (full). */}
+          <label className="block space-y-1.5">
+            <span className={fieldLabel}>Location</span>
+            <input name="location" defaultValue={data.location ?? ''} disabled={pending} className={input} />
+          </label>
+
+          {/* Line 3 — Starts | Ends | Who can see this. min-w-0 lets the datetime + select
+              shrink to the rail; widen the drawer to give them more room. */}
+          <div className="grid grid-cols-3 gap-2">
+            <label className="block min-w-0 space-y-1.5">
+              <span className={fieldLabel}>Starts</span>
+              <input
+                name="starts_at"
+                type="datetime-local"
+                defaultValue={isoToWallClockInput(data.starts_at)}
+                required
+                disabled={pending}
+                className={`${input} min-w-0 px-2`}
+              />
+            </label>
+            <label className="block min-w-0 space-y-1.5">
+              <span className={fieldLabel}>Ends</span>
+              <input
+                name="ends_at"
+                type="datetime-local"
+                defaultValue={isoToWallClockInput(data.ends_at)}
+                disabled={pending}
+                className={`${input} min-w-0 px-2`}
+              />
+            </label>
+            <label className="block min-w-0 space-y-1.5">
+              <span className={fieldLabel}>Who can see this</span>
+              <select name="visibility" defaultValue={data.visibility ?? 'circle_only'} disabled={pending} className={`${input} min-w-0 px-2`}>
+                {VISIBILITY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {/* Line 4 — Format | What kind | Energy. */}
+          <div className="grid grid-cols-3 gap-2">
+            <label className="block min-w-0 space-y-1.5">
               <span className={fieldLabel}>Format</span>
               <select
                 name="attendance_mode"
                 value={mode}
                 onChange={(e) => setMode(e.target.value)}
                 disabled={pending}
-                className={input}
+                className={`${input} min-w-0 px-2`}
               >
                 {ATTENDANCE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -424,10 +380,9 @@ export function EventSettingsModule() {
                 ))}
               </select>
             </label>
-
-            <label className="block space-y-1.5">
-              <span className={fieldLabel}>What kind of gathering</span>
-              <select name="category" defaultValue={data.category ?? 'gathering'} disabled={pending} className={input}>
+            <label className="block min-w-0 space-y-1.5">
+              <span className={fieldLabel}>What kind</span>
+              <select name="category" defaultValue={data.category ?? 'gathering'} disabled={pending} className={`${input} min-w-0 px-2`}>
                 {CATEGORY_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -435,34 +390,9 @@ export function EventSettingsModule() {
                 ))}
               </select>
             </label>
-
-            <label className="block space-y-1.5">
-              <span className={fieldLabel}>Who can see this</span>
-              <select name="visibility" defaultValue={data.visibility ?? 'circle_only'} disabled={pending} className={input}>
-                {VISIBILITY_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block space-y-1.5">
-              <span className={fieldLabel}>Capacity</span>
-              <input
-                name="capacity"
-                type="number"
-                min={1}
-                defaultValue={data.capacity ?? ''}
-                placeholder="Unlimited"
-                disabled={pending}
-                className={input}
-              />
-            </label>
-
-            <label className="block space-y-1.5">
+            <label className="block min-w-0 space-y-1.5">
               <span className={fieldLabel}>Energy</span>
-              <select name="energy_tag" defaultValue={data.energy_tag ?? ''} disabled={pending} className={input}>
+              <select name="energy_tag" defaultValue={data.energy_tag ?? ''} disabled={pending} className={`${input} min-w-0 px-2`}>
                 {ENERGY_OPTIONS.map((o) => (
                   <option key={o.value || 'none'} value={o.value}>
                     {o.label}
@@ -470,39 +400,109 @@ export function EventSettingsModule() {
                 ))}
               </select>
             </label>
-
-            {/* Permalink — its own tiny action (not part of the content save) since a
-                rename redirects the page to the new URL. */}
-            <div className="space-y-1.5">
-              <span className={fieldLabel}>Permalink</span>
-              <div className="flex items-center gap-2">
-                <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle">
-                  <span className="shrink-0">/events/</span>
-                  <input
-                    value={permalink}
-                    onChange={(e) => setPermalink(e.target.value)}
-                    disabled={permaPending}
-                    className="min-w-0 flex-1 bg-transparent py-2 text-text outline-none disabled:opacity-50"
-                  />
-                </span>
-                <button
-                  type="button"
-                  onClick={handlePermalink}
-                  disabled={permaPending || !permalink.trim() || permalink.trim() === data.slug}
-                  className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
-                >
-                  {permaPending ? 'Saving…' : 'Update'}
-                </button>
-              </div>
-              {permaErr && <span className="text-xs font-medium text-danger">{permaErr}</span>}
-            </div>
           </div>
 
-          {/* MAP — full width, BELOW all the info (title / when / address fields sit above it).
-              In-person / hybrid only. The draggable pin's lat/lng ride in hidden inputs so the
-              save persists a manual pin (which overrides the best-effort geocode). */}
+          {/* Line 5 — Permalink (full). Its own tiny action (not part of the content save) since
+              a rename redirects the page to the new URL. */}
+          <div className="space-y-1.5">
+            <span className={fieldLabel}>Permalink</span>
+            <div className="flex items-center gap-2">
+              <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle">
+                <span className="shrink-0">/events/</span>
+                <input
+                  value={permalink}
+                  onChange={(e) => setPermalink(e.target.value)}
+                  disabled={permaPending}
+                  className="min-w-0 flex-1 bg-transparent py-2 text-text outline-none disabled:opacity-50"
+                />
+              </span>
+              <button
+                type="button"
+                onClick={handlePermalink}
+                disabled={permaPending || !permalink.trim() || permalink.trim() === data.slug}
+                className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+              >
+                {permaPending ? 'Saving…' : 'Update'}
+              </button>
+            </div>
+            {permaErr && <span className="text-xs font-medium text-danger">{permaErr}</span>}
+          </div>
+
+          {/* Join link (online / hybrid only), toggled by Format. Full width. */}
+          {mode !== 'in_person' && (
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>Join link</span>
+              <input
+                name="online_url"
+                type="url"
+                defaultValue={data.online_url ?? ''}
+                placeholder="https://…"
+                disabled={pending}
+                className={input}
+              />
+            </label>
+          )}
+
+          {/* Line 6 — Address box (full rail, in person / hybrid). A venue pick fills every
+              field and drops the pin. */}
           {mode !== 'online' && (
-            <div className="space-y-1.5 lg:col-span-3">
+            <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
+              <span className={fieldLabel}>
+                Address <span className="font-normal text-subtle">(search a venue to fill it in and drop the pin)</span>
+              </span>
+              <VenueAutocomplete value={venueName} onPick={handleVenuePick} disabled={pending} />
+              <input type="hidden" name="venue_name" value={venueName} />
+              <input
+                name="street"
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+                placeholder="Street address"
+                disabled={pending}
+                className={input}
+              />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <input
+                  name="city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="City"
+                  disabled={pending}
+                  className={`${input} min-w-0`}
+                />
+                <input
+                  name="region"
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  placeholder="State or province"
+                  disabled={pending}
+                  className={`${input} min-w-0`}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <input
+                  name="postal_code"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder="Postal code"
+                  disabled={pending}
+                  className={`${input} min-w-0`}
+                />
+                <input
+                  name="country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  placeholder="Country"
+                  disabled={pending}
+                  className={`${input} min-w-0`}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Line 7 — Map (full rail, in person / hybrid). The draggable pin's lat/lng ride in
+              hidden inputs so the save persists a manual pin (overrides the best-effort geocode). */}
+          {mode !== 'online' && (
+            <div className="space-y-1.5">
               <span className={fieldLabel}>Pin the exact spot</span>
               <EventLocationPicker
                 lat={lat}
@@ -521,8 +521,8 @@ export function EventSettingsModule() {
             </div>
           )}
 
-          {/* Error + save row — spans full width. */}
-          <div className="space-y-3 pt-1 lg:col-span-3">
+          {/* Error + save row. */}
+          <div className="space-y-3 pt-1">
             {error && <p className="text-xs font-medium text-danger">{error}</p>}
             <div className="flex items-center justify-end gap-2">
               {saved && (
