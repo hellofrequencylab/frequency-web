@@ -483,6 +483,16 @@ async function readRsvpStatus(eventId: string, profileId: string): Promise<strin
   return (data as { status: string } | null)?.status ?? null
 }
 
+// The event's host. Used to deny attendance gamification credit to the host of
+// the event itself (anti-farming: no self-attendance rewards). Best-effort: a
+// read failure returns null, so the caller treats it as "not the host" and the
+// normal (other-attendee) reward path runs.
+async function readEventHostId(eventId: string): Promise<string | null> {
+  const admin = createAdminClient()
+  const { data } = await admin.from('events').select('host_id').eq('id', eventId).maybeSingle()
+  return (data as { host_id: string | null } | null)?.host_id ?? null
+}
+
 // Guard: the event must exist and not be cancelled before we write an RSVP row
 // (mirrors checkInEvent's own check). Without it a stale/cancelled event id could
 // mint orphaned RSVP rows + fire the going side-effects. Returns false to no-op.
@@ -511,11 +521,18 @@ export async function toggleRSVP(eventId: string) {
   // waitlist). Gems are the first-RSVP web reward; attendance zaps come at
   // check-in. We keep the streak/achievement tick that already lived here.
   const onGoing = (firstTime: boolean) => {
-    processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
-    recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
     if (firstTime) {
-      // One row per (event, profile); the gem fires once on the first RSVP.
-      awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+      // Attendance credit (achievement + streak + gem) is a FIRST-RSVP reward,
+      // and never for your own event (anti-farming: a host can't farm attendance
+      // by RSVPing to events they host, nor by un/re-RSVPing to repeat the tick).
+      void (async () => {
+        const isOwnEvent = (await readEventHostId(eventId)) === myProfileId
+        if (isOwnEvent) return
+        processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
+        recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+        // One row per (event, profile); the gem fires once on the first RSVP.
+        awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+      })()
     }
     // Validated creation pays the host (idempotent per event, so any 'going' is safe).
     fireEventValidation(eventId, myProfileId).catch((e) => console.error('[events creation validation]', e))
@@ -603,10 +620,17 @@ export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' |
 
   // Side-effects for a true intent-to-attend (mirrors toggleRSVP's onGoing).
   const onGoing = (firstTime: boolean) => {
-    processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
-    recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
     if (firstTime) {
-      awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+      // Attendance credit (achievement + streak + gem) is a FIRST-RSVP reward,
+      // and never for your own event (anti-farming: a host can't farm attendance
+      // by RSVPing to events they host, nor by un/re-RSVPing to repeat the tick).
+      void (async () => {
+        const isOwnEvent = (await readEventHostId(eventId)) === myProfileId
+        if (isOwnEvent) return
+        processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
+        recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+        awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+      })()
     }
     // Validated creation pays the host (idempotent per event, so any 'going' is safe).
     fireEventValidation(eventId, myProfileId).catch((e) => console.error('[events creation validation]', e))

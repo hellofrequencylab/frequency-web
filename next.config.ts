@@ -32,7 +32,9 @@ const csp = [
   // Supabase (REST + realtime), GA (incl. GA4's region-routed /g/collect endpoint), Vercel
   // insights/live, OpenFreeMap tiles (maplibre), Photon (address geocoding), ipapi (IP geo).
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://photon.komoot.io https://ipapi.co",
-  "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com",
+  // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
+  // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
+  "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com",
   "media-src 'self' blob: https:",
   "worker-src 'self' blob:",
   'report-uri /api/csp-report', // keep reporting even while enforcing — catch any miss
