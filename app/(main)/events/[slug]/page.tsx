@@ -24,8 +24,7 @@ import { RsvpControls } from '@/components/events/rsvp-controls'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { type ActivityPost } from '@/components/events/event-activity'
 import { EventRewardStrip } from '@/components/events/event-reward-strip'
-import { WarmProof } from '@/components/events/warm-proof'
-import { EventFactPanel, type FactGuest } from '@/components/events/event-fact-panel'
+import { type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
 import { ClaimEventBanner } from '@/components/events/claim-event-banner'
@@ -35,12 +34,14 @@ import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
-// The event POST AREA (description · poster details · cohosts · sales · dispatch · activity · recap)
-// renders through the page-settings module engine (ADR-270/294/406), so operators arrange it from
-// Settings → Layout, shared across every /events/<slug> via the '/events/*' scope — exactly like the
-// circle page. The fixed header + the RSVP/ticket Join aside + the mobile action bar stay in the page.
+// The WHOLE event interior (description · poster · cohosts · sales · activity · recap, PLUS the Join
+// box · warm proof · facts · the host "Post an update" composer) renders through the page-settings
+// module engine (ADR-270/294/406), so operators arrange every block from Settings → Layout, shared
+// across every /events/<slug> via the '/events/*' scope — exactly like the circle page. Only the
+// fixed header (cover · title · badges · Edit/Manage) and the mobile action bar stay in the page; the
+// page builds the Join/warm-proof/facts data once and stamps it into the event context for the
+// modules to render (lib/events/active-event.ts), so no module re-derives the ticketing/RSVP logic.
 import { PageModules } from '@/components/widgets/page-modules'
-import { EventDispatch } from '@/components/widgets/events/event-dispatch'
 import { setEventContext } from '@/lib/events/active-event'
 import { EditEventButton } from '@/components/events/edit-event-button'
 
@@ -815,9 +816,12 @@ export default async function EventDetailPage({
     ? hasTiers ? 'Tickets' : priceLabel
     : isGoing ? "You're going" : isWaitlisted ? 'On the waitlist' : 'Free'
 
-  // Stamp the resolved per-viewer context into the request-scoped holder so the event's post-area
-  // modules (components/widgets/events/*) read it without prop-drilling — then <PageModules> renders
-  // them in the operator-arranged layout. The fixed header + Join aside read the locals directly.
+  // Stamp the resolved per-viewer context into the request-scoped holder so EVERY event interior
+  // module (components/widgets/events/*) reads it without prop-drilling — then the single
+  // <PageModules> renders them in the operator-arranged layout. The whole interior is module-driven
+  // now (only the fixed header + the mobile action bar read the locals directly): the Join box,
+  // warm proof, and facts that used to be a hardcoded aside are stamped here as `joinActions` /
+  // `warmProof` / `facts`, each already gated/computed by the page so the modules render verbatim.
   setEventContext({
     event: {
       id: event.id,
@@ -841,6 +845,31 @@ export default async function EventDetailPage({
     soldTickets,
     activityPosts,
     recapPhotos,
+    // The Join box, fully built + gated above; null on a cancelled event so the `event-join`
+    // module renders nothing there (the old aside guarded it the same way).
+    joinActions: event.is_cancelled ? null : joinActions,
+    warmProof: {
+      going: goingRsvps.length,
+      fromYourCircles,
+      maybe: maybeCount,
+      guests: guestCount,
+      faces,
+      nearFull,
+      spotsLeft: capacityInfo.spotsLeft,
+    },
+    facts: {
+      whenLine,
+      isOnline,
+      location: event.location,
+      onlineUrl,
+      mapPin,
+      venuePoint,
+      going: goingRsvps.length,
+      nearFull,
+      spotsLeft: capacityInfo.spotsLeft,
+      guests: factGuests,
+      guestsAreVisible: isCrew,
+    },
   })
 
   return (
@@ -1027,88 +1056,20 @@ export default async function EventDetailPage({
           </div>
         }
       >
-        {/* MOBILE: warm proof + the critical-info card stack ABOVE the Post area so a guest
-            sees who's going and the facts before the conversation (EVENTS-DESIGN §2.6). The
-            lg aside is hidden < lg; this block is hidden ≥ lg. */}
-        <div className="mb-8 space-y-3 lg:hidden">
-          {!event.is_cancelled && (
-            <WarmProof
-              going={goingRsvps.length}
-              fromYourCircles={fromYourCircles}
-              maybe={maybeCount}
-              guests={guestCount}
-              faces={faces}
-              nearFull={nearFull}
-              spotsLeft={capacityInfo.spotsLeft}
-            />
-          )}
-          <EventFactPanel
-            whenLine={whenLine}
-            isOnline={isOnline}
-            location={event.location}
-            onlineUrl={onlineUrl}
-            mapPin={mapPin}
-            venuePoint={venuePoint}
-            going={goingRsvps.length}
-            nearFull={nearFull}
-            spotsLeft={capacityInfo.spotsLeft}
-            guests={factGuests}
-            guestsAreVisible={isCrew}
-          />
-        </div>
+        {/* Photo gallery — the header image leads, then any host-uploaded extras, each clickable
+            into a full-screen lightbox. It stays in the page (not a module): it's built from the
+            signed/public hero + gallery URLs the header already resolved, and renders only with 2+
+            images. It leads the interior, above the arrangeable blocks. */}
+        <EventGallery images={galleryUrls} />
 
-        {/* ── TWO-COLUMN interior grid (no new template; plain grid in the body) ── */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-          {/* [B] POST AREA — the operator-arranged module column (description · poster · cohosts ·
-              sales · dispatch · activity · recap). Shared across every event via the '/events/*'
-              scope and rearranged from Settings → Layout, exactly like the circle page. */}
-          <div className="min-w-0 space-y-8">
-            {/* Photo gallery — the header image leads, then any host-uploaded extras, each
-                clickable into a full-screen lightbox. Lives in the CONTENT column (not the
-                header). Renders only when there are 2+ images to browse. */}
-            <EventGallery images={galleryUrls} />
-            <PageModules route={`/events/${event.slug}`} />
-          </div>
-
-          {/* [C] JOIN AREA — narrow right column, flowing with the content (not sticky to the
-              viewport). Hidden on mobile (it collapses to the bottom bar + the fact panel
-              stacks above). */}
-          <aside className="hidden space-y-4 self-start lg:block">
-            {/* "Post an update" sits at the TOP of the right column for a host or cohost. It
-                self-gates on the request-scoped event context (canDispatch + not cancelled),
-                so an ordinary guest sees nothing here. It renders ONLY here now — the
-                `event-dispatch` layout module was removed from the left post-area set so it
-                never double-renders. */}
-            <EventDispatch />
-            {!event.is_cancelled && joinActions}
-            {/* Warm proof sits with the RSVP action: "X going" / "be the first". */}
-            {!event.is_cancelled && (
-              <WarmProof
-                going={goingRsvps.length}
-                fromYourCircles={fromYourCircles}
-                maybe={maybeCount}
-                guests={guestCount}
-                faces={faces}
-                nearFull={nearFull}
-                spotsLeft={capacityInfo.spotsLeft}
-              />
-            )}
-            {/* C4 critical info */}
-            <EventFactPanel
-              whenLine={whenLine}
-              isOnline={isOnline}
-              location={event.location}
-              onlineUrl={onlineUrl}
-              mapPin={mapPin}
-              venuePoint={venuePoint}
-              going={goingRsvps.length}
-              nearFull={nearFull}
-              spotsLeft={capacityInfo.spotsLeft}
-              guests={factGuests}
-              guestsAreVisible={isCrew}
-            />
-          </aside>
-        </div>
+        {/* ── The FULL interior is one templated <PageModules> now: no hardcoded aside, no bespoke
+            two-column grid. The '/events/*' layout owns the arrangement — its default Main + side
+            grid reproduces the old two-column page (post area in MAIN; the Join box, warm proof,
+            facts, and the host "Post an update" composer in SIDE), and every block is movable from
+            the on-page Layout editor. On a phone the SIDE column stacks above MAIN (the grid's
+            order-first), so a guest still sees who's going + the facts before the conversation —
+            the old mobile-only duplicate is gone (no double-render). ── */}
+        <PageModules route={`/events/${event.slug}`} />
       </DetailTemplate>
 
       {/* MOBILE sticky action bar — hidden on lg+, hidden for host/past/cancelled. */}
