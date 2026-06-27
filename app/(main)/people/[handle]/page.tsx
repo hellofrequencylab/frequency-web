@@ -34,7 +34,7 @@ import { DemoBadge } from '@/components/ui/demo-badge'
 import { SupporterBadge } from '@/components/supporter-badge'
 import { VeraProfile } from '@/components/people/vera-profile'
 import { getMemberSignature } from '@/lib/frequency-signature-data'
-import { getProfileZapTotal } from '@/lib/profile-zaps'
+import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
 import { getProfileAwards } from '@/lib/profile/awards'
 import { ProfileAwards } from '@/components/profile/profile-awards'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
@@ -80,6 +80,7 @@ export default async function ProfilePage({
       created_at,
       current_streak,
       lifetime_gems,
+      lifetime_zaps,
       is_demo,
       is_system,
       vcard,
@@ -166,12 +167,14 @@ export default async function ProfilePage({
     myProfileId && !isOwner ? getLinkedContactForProfile(myProfileId, profileId) : Promise.resolve(null)
 
   const [
-    totalZaps, completionsCountResult, postsCountResult, circlesResult, signature, awards,
+    journeysDone, completionsCountResult, postsCountResult, circlesResult, signature, awards,
     payoutsAreLive, connectStatus, profileCaps, globalCaps, realWebRole,
     friendResult, isBlocked, myLinkedContact,
   ] = await Promise.all([
-    // Lifetime Zaps as one SQL aggregate (HARD-05): no per-row tally / N+1.
-    getProfileZapTotal(profileId),
+    // Journeys finished THIS SEASON — the canonical rank-ladder driver (same source the
+    // feed / crew home / leaderboard use). The displayed Zaps number is a separate value
+    // (profiles.lifetime_zaps, read off the row below) — they are not the same metric.
+    journeysFinishedThisSeason(profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
     admin.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', profileId).is('parent_id', null).is('hidden_at', null),
     admin.from('memberships').select('circles!circle_id ( id, name, slug )').eq('profile_id', profileId).eq('status', 'active'),
@@ -216,13 +219,17 @@ export default async function ProfilePage({
   const postCount = postsCountResult.count ?? 0
   const currentStreak = (profile.current_streak as number | null) ?? 0
   const gems = (profile.lifetime_gems as number | null) ?? 0
+  // Lifetime Zaps shown on the standing card + the Spark milestone — the authoritative
+  // profiles.lifetime_zaps (the same headline number the dashboard shows). NOT the
+  // crew-completions subtotal, which read 0 for Zaps earned from posts/reactions/joins.
+  const lifetimeZaps = (profile as { lifetime_zaps?: number | null }).lifetime_zaps ?? 0
 
   const circles = ((circlesResult.data ?? []) as unknown as { circles: { id: string; name: string; slug: string } | null }[])
     .map(m => m.circles).filter((c): c is { id: string; name: string; slug: string } => !!c)
 
   // Rank, next tier, and progress come from the one canonical source (season-ranks),
   // so the profile shows the same ladder as the feed, crew home, and leaderboard.
-  const { rank, def: rankDef, next: rankNext, pct: rankPct, zapsToNext } = rankProgress(totalZaps)
+  const { rank, def: rankDef, next: rankNext, pct: rankPct, zapsToNext } = rankProgress(journeysDone)
   // Rank is *endorsed* (shown publicly) only on the paid tier (Crew/Supporter); a
   // free member earns it but it stays in their own Vault, not on their public
   // profile (ADR-141, PB.1i: tier, not role). Inert in Beta (everyone is comped Crew).
@@ -240,7 +247,7 @@ export default async function ProfilePage({
     { icon: Star, label: 'Early Adopter', description: 'Here from the beginning', current: 1, target: 1, milestone: true },
     { icon: MessageSquare, label: 'First Post', description: 'Said your first hello', current: postCount, target: 1 },
     { icon: Users, label: 'Circle Up', description: 'Found your first circle', current: circles.length, target: 1 },
-    { icon: Zap, label: 'Spark', description: '50 zaps earned', current: totalZaps, target: 50 },
+    { icon: Zap, label: 'Spark', description: '50 zaps earned', current: lifetimeZaps, target: 50 },
     { icon: Trophy, label: 'Task Master', description: '10 tasks done', current: tasksCompleted, target: 10 },
   ]
     .map((r) => ({ ...r, earned: r.current >= r.target, ratio: Math.min(1, r.current / r.target) }))
@@ -513,7 +520,7 @@ export default async function ProfilePage({
             next={rankNext}
             pct={rankPct}
             zapsToNext={zapsToNext}
-            zaps={totalZaps}
+            zaps={lifetimeZaps}
             gems={gems}
             streak={currentStreak}
           />
