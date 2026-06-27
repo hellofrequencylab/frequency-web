@@ -114,14 +114,12 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/spaces/demo-business/settings/email')).toBe('global')
   })
 
-  it('drops the rail on the event DETAIL slug (its own in-body Join aside), but keeps it on the index, /events/new, and the slug sub-routes', () => {
-    // The event detail page (/events/<slug>) renders its OWN narrow right column (the
-    // RSVP/ticket Join aside + warm proof + facts) in the content body, so the global
-    // community rail is suppressed to avoid stacking two right columns.
-    expect(railFor('/events/sunrise-sit')).toBe('none')
-    expect(railFor('/events/some-slug')).toBe('none')
-    // The index, the create Focus form, the scanner/drafts children, and the deeper
-    // sub-routes all keep the global rail — only the bare detail slug drops it.
+  it('ALWAYS keeps the global rail on the event detail page (and every events route)', () => {
+    // The global community rail is a fixed part of the member chrome. The event detail
+    // page keeps it like every other member surface — a doubled-column feeling is fixed
+    // by making the page's own interior templated, never by dropping the rail.
+    expect(railFor('/events/sunrise-sit')).toBe('global')
+    expect(railFor('/events/some-slug')).toBe('global')
     expect(railFor('/events')).toBe('global')
     expect(railFor('/events/new')).toBe('global')
     expect(railFor('/events/scan')).toBe('global')

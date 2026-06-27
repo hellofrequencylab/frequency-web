@@ -98,18 +98,12 @@ const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   /^\/spaces\/[^/]+\/crm$/, // a Space's CRM board (paid, owner/admin-gated)
 ]
 
-// ENTITY-DETAIL surfaces that render their OWN in-body right column (a Join/RSVP aside),
-// so the global community rail is suppressed to avoid the double-right-column trap. Today
-// the only one is the event DETAIL page (/events/<slug>): it lays out its own narrow right
-// aside (RSVP/ticket Join · warm proof · the facts) in the content body, so a second
-// community rail beside it would stack two right columns. Match the bare detail SLUG only —
-// NOT the /events index, NOT /events/new (the create Focus form), and NOT the deeper
-// sub-routes (/events/<slug>/manage, …/edit, …/event.ics), which keep the global rail. The
-// negative lookahead excludes the bespoke direct children; the `[^/]+$` anchor keeps it one
-// segment deep so /events and /events/<slug>/<sub> never match.
-const DETAIL_NONE_PATTERNS: RegExp[] = [
-  /^\/events\/(?!new$|scan$|drafts$)[^/]+$/, // event detail — its own in-body Join aside
-]
+// ⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️
+// Do NOT suppress the rail for /events/<slug> (a past change set it to 'none' to dodge a
+// "double right column" — that was wrong). The global rail is a fixed part of the member
+// chrome; the fix for any doubled-column feeling is to make the PAGE'S OWN interior content
+// templated/movable blocks, NEVER to remove the rail. The event detail page falls through to
+// the default 'global' rail like every other member surface.
 
 export function railFor(pathname: string): Rail {
   // The Leader surface (/lead/*) is a member-side CONSOLIDATED dashboard (not the
@@ -121,11 +115,6 @@ export function railFor(pathname: string): Rail {
   // A Space's CRM board is a full-width Dashboard workspace: it keeps the left menu but drops the
   // member right rail (the board scrolls horizontally and reads best edge to edge).
   if (DASHBOARD_NONE_PATTERNS.some((re) => re.test(pathname))) return 'none'
-
-  // An entity-detail surface that renders its own in-body right column (the event detail
-  // page's Join/RSVP aside) drops the community rail so the page never shows two right
-  // columns. Only the bare detail slug matches — the index and the bespoke children keep it.
-  if (DETAIL_NONE_PATTERNS.some((re) => re.test(pathname))) return 'none'
 
   // The admin workspace keeps the global LEFT menu (the one site nav) but drops the
   // member community RIGHT rail: the admin layout (app/(main)/admin/layout.tsx) mounts
