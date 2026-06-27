@@ -15,6 +15,7 @@ import {
 } from '@/lib/events/options'
 import { wallClockToIso } from '@/lib/events/datetime'
 import { posterSignedUrl } from '@/lib/events/poster-media'
+import { pointFromGeog } from '@/lib/events/geo'
 
 const MAX_GALLERY_IMAGES = 12
 
@@ -79,18 +80,6 @@ export async function getEventAdminData(slug: string) {
   const point = pointFromGeog(event.geog)
 
   return { ...event, coverUrl, posterUrl, galleryPaths, galleryItems, lat: point?.lat ?? null, lng: point?.lng ?? null }
-}
-
-/** Pull (lat, lng) out of a serialised events.geog value; null when absent/malformed.
- *  PostgREST serialises a PostGIS geography column as GeoJSON. */
-function pointFromGeog(geog: unknown): { lat: number; lng: number } | null {
-  const g = geog as { coordinates?: [number, number] } | null
-  const coords = g?.coordinates
-  if (!coords || coords.length < 2) return null
-  const [lng, lat] = coords
-  if (typeof lat !== 'number' || typeof lng !== 'number') return null
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
-  return { lat, lng }
 }
 
 type EventAdminRow = {

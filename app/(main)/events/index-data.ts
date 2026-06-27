@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { nearbyEvents } from '@/lib/events/geocode'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
+import { pointFromGeog } from '@/lib/events/geo'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
@@ -49,10 +50,10 @@ export type EventRow = {
   // True for events surfaced by the public-nearby union, not the viewer's circles
   // (ADR-254). Drives the `Public` provenance chip on the card.
   is_public_standalone?: boolean
-  // The event's OWN geocoded point (events.geog) — PostgREST serialises a PostGIS
-  // geography as GeoJSON ({type, coordinates:[lng,lat]}). Used to plot standalone
-  // public events (which have no hosting circle) at their real spot on the index map.
-  geog?: { coordinates?: [number, number] } | null
+  // The event's OWN geocoded point (events.geog). PostgREST returns a PostGIS geography
+  // as an EWKB hex STRING (or, in some setups, a GeoJSON object) — decode it with
+  // pointFromGeog. Used to plot standalone public events (no hosting circle) at their spot.
+  geog?: unknown
   host: { id: string; display_name: string; handle: string } | null
 }
 
@@ -612,15 +613,11 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
         const c = circleCoords[e.scope_id]
         return { ...base, cityLabel: circleNames[e.scope_id] ?? null, lat: c.lat, lng: c.lng }
       }
-      // Standalone / public event → its own geocoded point, when it has one.
-      const coords = e.geog?.coordinates
-      if (
-        Array.isArray(coords) &&
-        coords.length >= 2 &&
-        Number.isFinite(coords[1]) &&
-        Number.isFinite(coords[0])
-      ) {
-        return { ...base, cityLabel: e.location ?? null, lat: coords[1], lng: coords[0] }
+      // Standalone / public event → its own geocoded point, when it has one. `geog` arrives
+      // as an EWKB hex string from PostgREST, so decode it (never read `.coordinates` raw).
+      const pt = pointFromGeog(e.geog)
+      if (pt) {
+        return { ...base, cityLabel: e.location ?? null, lat: pt.lat, lng: pt.lng }
       }
       return null
     })

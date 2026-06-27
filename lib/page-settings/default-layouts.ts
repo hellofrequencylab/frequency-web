@@ -67,7 +67,6 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
       side: {
         order: [
           'event-join',
-          'event-warm-proof',
           'event-facts',
           'event-location',
         ],

@@ -30,6 +30,7 @@ import { ClaimEventBanner } from '@/components/events/claim-event-banner'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { listCohosts } from '@/lib/events/cohosts'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
+import { pointFromGeog } from '@/lib/events/geo'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
@@ -205,8 +206,9 @@ export default async function EventDetailPage({
     attendance_mode: AttendanceMode | null
     online_url: string | null
     status: string | null
-    // PostgREST serialises a PostGIS geography as GeoJSON ({type, coordinates:[lng,lat]}).
-    geog: { coordinates?: [number, number] } | null
+    // PostgREST returns a PostGIS `geography` as an EWKB hex string (or, in some setups, a
+    // GeoJSON object) — decode it with pointFromGeog, never read `.coordinates` directly.
+    geog: unknown
   }
   // These three only depend on already-resolved values (event.id / session_id) and
   // not on each other, so resolve them concurrently: the extra-meta read, the
@@ -670,17 +672,11 @@ export default async function EventDetailPage({
   // Exact-venue point (§5): the event's OWN geog, shown as a precise mini-map. Only
   // for a PUBLISHED, in-person event that actually has a geocoded point — drafts and
   // online events never get it, and without a point we render nothing (no regression).
+  // `geog` comes back from PostgREST as an EWKB hex STRING (not GeoJSON), so it must be
+  // decoded — `pointFromGeog` handles both forms. This is why the map was never showing.
   const isPublished = (extra?.status ?? 'published') === 'published'
-  const venueCoords = extra?.geog?.coordinates
   const venuePoint: { lat: number; lng: number } | null =
-    !isOnline &&
-    isPublished &&
-    Array.isArray(venueCoords) &&
-    venueCoords.length >= 2 &&
-    Number.isFinite(venueCoords[1]) &&
-    Number.isFinite(venueCoords[0])
-      ? { lat: venueCoords[1], lng: venueCoords[0] }
-      : null
+    !isOnline && isPublished ? pointFromGeog(extra?.geog) : null
 
   // Mini-map pin (city-level circle area). Only in-person events with a circle that
   // has public coordinates get a map.
