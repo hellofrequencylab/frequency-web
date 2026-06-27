@@ -2,6 +2,8 @@ import { MessageSquare } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PostCard, type FeedPost, type RawPost } from './post-card'
+import { buildPostOriginResolver } from '@/lib/feed/post-origin'
+import { PostOriginHeader } from './post-origin'
 
 // The same column shape the profile feed selects, so the post-card has every
 // field it needs. Kept local rather than exported from profile-feed to avoid a
@@ -59,15 +61,20 @@ export async function ProfilePosts({
   const toFeedPost = (p: RawPost): FeedPost =>
     ({ ...p, replyCount: p.comment_count ?? 0 }) as FeedPost
 
+  // Show where each post was posted (circle / wall / public feed), like the activity tab.
+  const resolveOrigin = await buildPostOriginResolver(posts.map((p) => p.scope_id), profileId)
+
   return (
     <div className="space-y-4">
       {posts.map((p) => (
-        <PostCard
-          key={p.id}
-          post={toFeedPost(p)}
-          myProfileId={myProfileId}
-          viewerRole={viewerRole}
-        />
+        <div key={p.id}>
+          <PostOriginHeader origin={resolveOrigin(p.scope_id)} />
+          <PostCard
+            post={toFeedPost(p)}
+            myProfileId={myProfileId}
+            viewerRole={viewerRole}
+          />
+        </div>
       ))}
     </div>
   )
