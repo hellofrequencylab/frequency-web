@@ -46,3 +46,24 @@ export function withSpotlightPublished(meta: unknown, published: boolean): Recor
   const base = (meta ?? {}) as SpotlightMeta
   return { ...base, spotlight: { ...(base.spotlight ?? {}), published } }
 }
+
+/** Read the raw (UNVALIDATED) editor layout/background out of meta. Callers MUST run
+ *  the validator (lib/spotlight/blocks/validate.ts) before rendering — this is just the
+ *  accessor. */
+export function readSpotlightLayoutRaw(meta: unknown): unknown {
+  return (meta as { spotlight?: { layout?: unknown } } | null | undefined)?.spotlight?.layout
+}
+export function readSpotlightBackgroundRaw(meta: unknown): unknown {
+  return (meta as { spotlight?: { background?: unknown } } | null | undefined)?.spotlight?.background
+}
+
+/** Merge a new layout into meta, preserving enabled/published/background. */
+export function withSpotlightLayout(meta: unknown, layout: unknown): Record<string, unknown> {
+  const base = (meta ?? {}) as SpotlightMeta
+  return { ...base, spotlight: { ...(base.spotlight ?? {}), layout } }
+}
+/** Merge a new background into meta, preserving everything else. */
+export function withSpotlightBackground(meta: unknown, background: unknown): Record<string, unknown> {
+  const base = (meta ?? {}) as SpotlightMeta
+  return { ...base, spotlight: { ...(base.spotlight ?? {}), background } }
+}

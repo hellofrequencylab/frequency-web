@@ -13,17 +13,17 @@ import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, Sparkles, Settings, UserCog } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, Sparkles, UserCog } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { getRealCallerWebRole } from '@/lib/auth'
 import { actAsMember } from '@/app/(main)/impersonate-actions'
-import { readSpotlightPublished } from '@/lib/profile/spotlight-flags'
+import { readSpotlightPublished, readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ConnectionPanel } from '@/components/people/connection-panel'
-import { ModerateProfileButton } from './moderate-profile-button'
+import { ProfileSettingsDrawer } from './profile-settings-drawer'
 import { TipButton } from './tip-button'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { recordTipFromSessionId } from '@/lib/billing/tips'
@@ -108,6 +108,7 @@ export default async function ProfilePage({
   // Spotlight (opt-in public mini-site): show a link to it when this member has
   // published one. Derived from meta server-side; the blob never reaches the client.
   const spotlightPublished = readSpotlightPublished((hdrRow as { meta?: unknown } | null)?.meta)
+  const spotlightEnabled = readSpotlightEnabled((hdrRow as { meta?: unknown } | null)?.meta)
 
   const vcardEnabled = parseVcard(profile.vcard).enabled
 
@@ -312,24 +313,20 @@ export default async function ProfilePage({
         <TipButton toProfileId={profileId} recipientName={firstName} />
       )}
       {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
-      {canModerateProfile && (
-        <ModerateProfileButton
+      {/* One Settings drawer for staff — the member's profile fields, Spotlight admin
+          controls, and a deep link to full account management. Replaces the old separate
+          "Edit (mod)" popup + "Manage account" link. */}
+      {isStaffViewer && (
+        <ProfileSettingsDrawer
           profileId={profileId}
+          handle={profile.handle as string}
           initialName={profile.display_name}
           initialBio={profile.bio ?? ''}
+          spotlightEnabled={spotlightEnabled}
+          spotlightPublished={spotlightPublished}
+          canModerate={canModerateProfile}
+          isJanitor={isJanitorViewer}
         />
-      )}
-      {/* Full account management for staff: deep-link straight to this member's row in
-          Admin → People (role, activate/deactivate, delete, gems/zaps, Spotlight, full
-          edit). The inline "Edit (mod)" popup is only a quick name/bio fix. */}
-      {isStaffViewer && (
-        <Link
-          href={`/admin/members?q=${encodeURIComponent(profile.handle as string)}&member=${profileId}`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-        >
-          <Settings className="h-3.5 w-3.5" />
-          Manage account
-        </Link>
       )}
       {/* Janitor full control: become this member (session swap). The server action
           re-checks the real janitor web_role before swapping. */}

@@ -483,6 +483,13 @@ export function ProfileForm({
 
           <ProfileThemePicker initialTheme={initial.profileTheme} />
 
+          <Link
+            href="/settings/profile/spotlight"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-strong hover:underline"
+          >
+            <Sparkles className="h-3.5 w-3.5" /> Build your page (headings, text, links)
+          </Link>
+
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
             <span className="text-sm text-text">{spotPublished ? 'Published' : 'Draft (only you can see it)'}</span>
             <button
