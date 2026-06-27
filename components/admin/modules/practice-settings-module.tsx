@@ -13,6 +13,8 @@ import {
   uploadPracticeCover,
   removePracticeCover,
 } from '@/app/(main)/practices/admin-actions'
+import { deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
+import { DangerDelete } from '@/components/admin/danger-delete'
 
 // In-place "Practice settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside
 // the page admin dock on /practices/[id], and renders nothing unless the server grants
@@ -230,6 +232,16 @@ export function PracticeSettingsModule() {
             </div>
           </div>
         </form>
+
+        <DangerDelete
+          entity="practice"
+          warning="Permanently removes this practice. Past logs are kept but unlinked. Once deleted it can’t be recovered."
+          onDelete={async () => {
+            const res = await deleteOwnPracticeAction(data!.id)
+            return 'error' in res ? { error: res.error } : undefined
+          }}
+          redirectTo="/practices"
+        />
       </section>
     </div>
   )

@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
+import { getMyProfileId } from '@/lib/auth'
+import { logAdminAction } from '@/lib/admin/audit'
 import { listPublicPractices, getCircleActivePractice } from '@/lib/practices'
 import {
   getCircleChallenges,
@@ -359,4 +361,44 @@ export async function updateCirclePermalink(
   revalidatePath(`/circles/${next}`)
   revalidatePath('/circles')
   return { slug: next }
+}
+
+/**
+ * Permanently delete a circle. Gated on circle.editSettings (its host, a managing
+ * guide/mentor of the parent, or staff) — the same gate as editing it. The capability
+ * re-check is the FIRST statement (the authz scan is file-level, not a per-function
+ * prover). FK cascades clear memberships, invites, circle_practices, tasks, awards;
+ * the polymorphic refs (posts/events scope, stewardship edges) carry no FK, so they
+ * are unlinked here in the same call. Irreversible — the UI requires a typed confirm.
+ */
+export async function deleteCircle(id: string, slug: string): Promise<{ error?: string }> {
+  const caps = await getCircleCapabilities(id)
+  if (!caps.has('circle.editSettings')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { data: circle } = await admin.from('circles').select('name').eq('id', id).maybeSingle()
+
+  // Unlink polymorphic references first (no FK to cascade them). Posts scoped to the
+  // circle are unlinked to the public feed; circle-scoped events keep their (now-dead)
+  // scope_id — harmless, they just resolve no circle context — since events.scope_id
+  // is non-nullable and force-deleting them would cascade their RSVPs.
+  await admin.from('posts').update({ scope_id: null }).eq('scope_id', id)
+  await admin.from('stewardships').delete().eq('scope_type', 'circle').eq('scope_id', id)
+
+  const { error } = await admin.from('circles').delete().eq('id', id)
+  if (error) return { error: error.message }
+
+  const actorId = await getMyProfileId().catch(() => null)
+  await logAdminAction({
+    actorId,
+    action: 'circle.delete',
+    targetType: 'circle',
+    targetId: id,
+    detail: { slug, name: (circle as { name?: string } | null)?.name ?? null },
+  })
+
+  revalidatePath('/circles')
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath('/admin/circles')
+  return {}
 }
