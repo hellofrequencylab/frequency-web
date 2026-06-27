@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: 'Privacy policy',
   description: 'How Frequency collects, uses, and protects your personal information.',
   alternates: { canonical: '/privacy' },
+  openGraph: {
+    title: 'Privacy policy',
+    description: 'How Frequency collects, uses, and protects your personal information.',
+    url: '/privacy',
+  },
   robots: { index: true, follow: true },
 }
 

@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: 'Terms of service',
   description: 'The terms for using Frequency: your account, acceptable use, messaging consent, and the legal basics.',
   alternates: { canonical: '/terms' },
+  openGraph: {
+    title: 'Terms of service',
+    description: 'The terms for using Frequency: your account, acceptable use, messaging consent, and the legal basics.',
+    url: '/terms',
+  },
   robots: { index: true, follow: true },
 }
 
