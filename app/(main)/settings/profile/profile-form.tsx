@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { Check, Loader2 } from 'lucide-react'
-import { updateProfile } from './actions'
+import { updateProfile, uploadProfileImageAction } from './actions'
 import { HeaderEditor } from './header-editor'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 
@@ -136,24 +135,27 @@ export function ProfileForm({
     setAvatarPreview(URL.createObjectURL(file))
   }
 
-  // Upload the cropped header blob (already 1500×560 from the editor).
+  // Upload the cropped header blob (already 1500×560 from the editor). The write
+  // goes through a server action — the browser client can lack a session under
+  // SSR-cookie auth, which makes a direct storage upload run as `anon` and fail
+  // the owner-INSERT RLS policy ("new row violates row-level security policy").
   async function uploadHeader(): Promise<string> {
     if (!headerBlob) return headerUrl
     setUploading(true)
     setUploadError('')
-    const supabase = createClient()
-    const path = `${userId}/header.jpg`
-    const { error } = await supabase.storage.from('avatars').upload(path, headerBlob, { upsert: true, contentType: 'image/jpeg' })
-    if (error) {
-      setUploadError(`Header upload failed: ${error.message}`)
-      setUploading(false)
+    try {
+      const fd = new FormData()
+      fd.append('file', headerBlob, 'header.jpg')
+      fd.append('kind', 'header')
+      const url = await uploadProfileImageAction(fd)
+      setHeaderUrl(url)
+      return url
+    } catch (err) {
+      setUploadError(`Header upload failed: ${err instanceof Error ? err.message : 'unknown error'}`)
       return headerUrl
+    } finally {
+      setUploading(false)
     }
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    const busted = `${publicUrl}?t=${Date.now()}`
-    setHeaderUrl(busted)
-    setUploading(false)
-    return busted
   }
 
   async function uploadAvatar(): Promise<string> {
@@ -170,24 +172,19 @@ export function ProfileForm({
       return avatarUrl
     }
 
-    const supabase = createClient()
-    const path = `${userId}/avatar.jpg`
-
-    const { error } = await supabase.storage
-      .from('avatars')
-      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
-
-    if (error) {
-      setUploadError(`Upload failed: ${error.message}`)
-      setUploading(false)
+    try {
+      const fd = new FormData()
+      fd.append('file', blob, 'avatar.jpg')
+      fd.append('kind', 'avatar')
+      const url = await uploadProfileImageAction(fd)
+      setAvatarUrl(url)
+      return url
+    } catch (err) {
+      setUploadError(`Upload failed: ${err instanceof Error ? err.message : 'unknown error'}`)
       return avatarUrl
+    } finally {
+      setUploading(false)
     }
-
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    const bustedUrl = `${publicUrl}?t=${Date.now()}`
-    setAvatarUrl(bustedUrl)
-    setUploading(false)
-    return bustedUrl
   }
 
   const canSave =

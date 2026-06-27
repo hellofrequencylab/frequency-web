@@ -5,6 +5,24 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { sanitizeProfileInput } from '@/lib/profile-input'
+import { uploadProfileImage } from '@/lib/storage/profile-images'
+
+// Avatar/header upload runs on the server (not the browser client) because the
+// browser client often has no session under SSR-cookie auth, which makes the
+// storage write run as `anon` and fail the owner-INSERT RLS policy. Here the auth
+// user id is resolved from the verified session, so the write always authorizes.
+export async function uploadProfileImageAction(formData: FormData): Promise<string> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const file = formData.get('file')
+  if (!(file instanceof Blob)) throw new Error('No image provided.')
+  const kind = formData.get('kind') === 'header' ? 'header' : 'avatar'
+  const contentType = file.type || 'image/jpeg'
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  return uploadProfileImage(user.id, bytes, contentType, kind)
+}
 
 export async function updateProfile(data: {
   displayName: string
