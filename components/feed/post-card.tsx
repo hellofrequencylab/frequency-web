@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Megaphone, ArrowRight, Zap, NotebookPen } from 'lucide-react'
+import { Megaphone, ArrowRight, Zap, NotebookPen, CalendarDays } from 'lucide-react'
 import { PostReplies } from './post-replies'
 import { ReactionButton } from './reaction-button'
 import { ContextActions } from '@/components/context-actions'
@@ -26,7 +26,7 @@ export type FeedPost = {
   comment_count?: number
   engagement_score?: number
   scopeContext?: {
-    type: 'wall' | 'circle' | 'channel'
+    type: 'wall' | 'circle' | 'channel' | 'event'
     name: string
     href: string
     avatar_url?: string | null
@@ -181,6 +181,17 @@ export function PostCard({
                       {getInitials(post.scopeContext.name)}
                     </div>
                   )}
+                </Link>
+              )}
+              {/* An event-scoped post stacks a small calendar badge (the event has no
+                  avatar), so its destination still reads at a glance like a wall post. */}
+              {post.scopeContext?.type === 'event' && (
+                <Link
+                  href={post.scopeContext.href}
+                  aria-label={post.scopeContext.name}
+                  className="absolute -bottom-1 -right-1.5 ring-2 ring-surface rounded-full w-5 h-5 bg-success-bg text-success flex items-center justify-center"
+                >
+                  <CalendarDays className="w-3 h-3" />
                 </Link>
               )}
             </div>
