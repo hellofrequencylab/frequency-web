@@ -366,7 +366,6 @@ const EVENT_DETAIL_MODULE_IDS = [
   'event-recap',
   // Former Join aside (defaults to SIDE).
   'event-join',
-  'event-warm-proof',
   'event-facts',
   'event-location',
 ] as const
