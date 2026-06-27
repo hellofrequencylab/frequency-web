@@ -92,7 +92,18 @@ export function EventCard({
       // fallback, so every event reads rich rather than sparse.
       cover={
         coverUrl ? (
-          <Image src={coverUrl} alt="" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
+          // An uploaded cover is a PUBLIC Supabase URL the optimizer is configured for;
+          // a scanned poster's cover is a SIGNED URL from the private bucket (path
+          // `/object/sign/...`, outside next.config remotePatterns), so it must bypass the
+          // optimizer or next/image renders a broken image (matches the detail hero).
+          <Image
+            src={coverUrl}
+            alt=""
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className="object-cover"
+            unoptimized={coverUrl.includes('/object/sign/')}
+          />
         ) : (
           <CoverFallback iso={event.starts_at} />
         )

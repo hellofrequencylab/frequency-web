@@ -14,7 +14,6 @@ import { RsvpBottomBar } from './rsvp-bottom-bar'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { getCapacityInfo } from '@/lib/events/capacity'
-import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
@@ -741,19 +740,16 @@ export default async function EventDetailPage({
         </div>
       ) : !event.is_cancelled && myProfileId && !isPast && !isHost ? (
         <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
-          <CrewGateButton
-            isCrew={isCrew}
-            label={isGoing ? '✓ Going' : capacityInfo.isFull ? 'Join waitlist' : "RSVP: I'm going"}
-            buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
-          >
-            <RsvpControls
-              eventId={event.id}
-              slug={event.slug}
-              status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
-              plusOnes={myPlusOnes}
-              isFull={capacityInfo.isFull}
-            />
-          </CrewGateButton>
+          {/* RSVP is open to every member, on any event, regardless of who hosts it —
+              it is never Crew-gated. Crew unlocks CREATING events, not attending them
+              (the upgrade gate lives on the create flow, not here). */}
+          <RsvpControls
+            eventId={event.id}
+            slug={event.slug}
+            status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
+            plusOnes={myPlusOnes}
+            isFull={capacityInfo.isFull}
+          />
           {/* At-RSVP calendar — the highest-ROI lever, emphasised once going. */}
           {isGoing ? (
             <div className="rounded-xl border border-border bg-surface-elevated/40 px-4 py-3">

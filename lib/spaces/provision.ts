@@ -18,8 +18,10 @@
 // through the untyped admin client (ADR-246), exactly like lib/spaces/membership.ts.
 
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
+import { isStaff } from '@/lib/core/roles'
 import { blueprintForType } from '@/lib/spaces/blueprints'
 import { addSpaceMember } from '@/lib/spaces/membership'
 import { isSpaceType, seedSpaceConfigFromDefaults } from '@/lib/spaces/functions'
@@ -42,7 +44,10 @@ type SpacesQuery = {
   select: (cols: string) => SpacesQuery
   eq: (col: string, val: string) => SpacesQuery
   insert: (rows: Record<string, unknown>) => SpacesQuery
-  maybeSingle: () => Promise<{ data: { id?: string; entity_id?: string } | null; error: unknown }>
+  maybeSingle: () => Promise<{
+    data: { id?: string; entity_id?: string; type?: string; slug?: string; owner_profile_id?: string | null } | null
+    error: unknown
+  }>
 }
 
 function spacesTable(): SpacesQuery {
@@ -152,4 +157,68 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   // Success: hand the owner straight to the settings surface to finish the profile. redirect()
   // throws, so it must sit OUTSIDE any try/catch (Next docs: redirecting.md).
   redirect(`/spaces/${slug}/settings`)
+}
+
+/**
+ * Permanently delete a Space AND everything it owns. The server is the authority on BOTH the gate
+ * and the cascade:
+ *   1. Only the Space OWNER (spaces.owner_profile_id) or platform STAFF (web_role) may delete — a
+ *      destructive, owner-grade action, never an editor/admin member one.
+ *   2. The ROOT space is never deletable (it holds the platform money partition + every public
+ *      community event), so a stray call can't nuke the network.
+ *   3. The single `spaces` row delete fans out through ON DELETE CASCADE: every event the space owns
+ *      (events.space_id → spaces, CASCADE) goes with it, and each event cascades to its RSVPs,
+ *      posts, cohosts, tickets, and media — so "the space and all its events" is one atomic delete.
+ *      The space's circles, pages, CRM, members, and email config cascade the same way.
+ *
+ * Returns `{ error }` so the settings UI (DangerDelete) can surface a failure inline; on success it
+ * returns `{}` and the caller redirects to /spaces (the deleted slug no longer resolves).
+ */
+export async function deleteSpace(spaceId: string): Promise<{ error?: string }> {
+  const id = (spaceId ?? '').trim()
+  if (!id) return { error: 'Missing the space to delete.' }
+
+  const caller = await getCallerProfile()
+  if (!caller?.id) return { error: 'Sign in to delete a space.' }
+
+  // Load the space's owner + type for the gate (untyped table, ADR-246).
+  let space: { id?: string; type?: string; slug?: string; owner_profile_id?: string | null } | null
+  try {
+    const { data } = await spacesTable()
+      .select('id, type, slug, owner_profile_id')
+      .eq('id', id)
+      .maybeSingle()
+    space = data
+  } catch {
+    return { error: 'Could not load that space. Try again.' }
+  }
+  if (!space?.id) return { error: 'That space no longer exists.' }
+
+  // The root space is the platform partition — never deletable.
+  if (space.type === 'root') return { error: 'The root space cannot be deleted.' }
+
+  // Owner OR platform staff only. An editor/admin member of the space cannot delete it.
+  const isOwner = !!space.owner_profile_id && space.owner_profile_id === caller.id
+  if (!isOwner && !isStaff(caller.webRole)) {
+    return { error: 'Only the space owner can delete it.' }
+  }
+
+  // One atomic delete; ON DELETE CASCADE removes the events, members, circles, pages, and CRM the
+  // space owns. The untyped builder has no typed `delete`, so reach it through a narrow cast.
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (table: string) => {
+        delete: () => { eq: (col: string, val: string) => Promise<{ error: unknown }> }
+      }
+    }
+    const { error } = await db.from('spaces').delete().eq('id', id)
+    if (error) return { error: 'Could not delete the space. Try again.' }
+  } catch {
+    return { error: 'Could not delete the space. Try again.' }
+  }
+
+  // Drop cached views that listed the space or its events.
+  revalidatePath('/spaces')
+  revalidatePath('/events')
+  return {}
 }

@@ -15,13 +15,10 @@ import {
   removeEventCover,
   removeEventPoster,
   setEventGalleryImages,
-  setEventCancelled,
   // Aliased: it's a server action, not a React hook — the `use*` name would trip the
   // rules-of-hooks lint when called inside a callback.
   useEventPosterAsCover as promotePosterToCover,
-  deleteEvent,
 } from '@/app/(main)/events/admin-actions'
-import { DangerDelete } from '@/components/admin/danger-delete'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import type { PlaceResult } from '@/lib/geocode'
@@ -83,8 +80,6 @@ export function EventSettingsModule() {
   // submitted as hidden inputs so the save persists a manual pin (overrides geocode).
   const [lat, setLat] = useState<number | null>(null)
   const [lng, setLng] = useState<number | null>(null)
-  // Two-step inline confirm for Cancel (Reinstate stays one tap).
-  const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   useEffect(() => {
     if (!slug) return
@@ -407,25 +402,6 @@ export function EventSettingsModule() {
                     className={`${input} min-w-0`}
                   />
                 </div>
-
-                {/* Draggable map pin (§5). The pin's lat/lng ride in hidden inputs so the
-                    save persists a manual pin (which overrides the best-effort geocode). */}
-                <div className="space-y-1.5">
-                  <EventLocationPicker
-                    lat={lat}
-                    lng={lng}
-                    onChange={(nLat, nLng) => {
-                      setLat(nLat)
-                      setLng(nLng)
-                    }}
-                  />
-                  <p className="text-2xs text-subtle">
-                    Drag the pin or tap the map to set the exact spot. This is the precise venue, not the
-                    city-level area shown to people browsing.
-                  </p>
-                </div>
-                <input type="hidden" name="lat" value={lat ?? ''} />
-                <input type="hidden" name="lng" value={lng ?? ''} />
               </div>
             )}
           </div>
@@ -522,6 +498,29 @@ export function EventSettingsModule() {
             </div>
           </div>
 
+          {/* MAP — full width, BELOW all the info (title / when / address fields sit above it).
+              In-person / hybrid only. The draggable pin's lat/lng ride in hidden inputs so the
+              save persists a manual pin (which overrides the best-effort geocode). */}
+          {mode !== 'online' && (
+            <div className="space-y-1.5 lg:col-span-3">
+              <span className={fieldLabel}>Pin the exact spot</span>
+              <EventLocationPicker
+                lat={lat}
+                lng={lng}
+                onChange={(nLat, nLng) => {
+                  setLat(nLat)
+                  setLng(nLng)
+                }}
+              />
+              <p className="text-2xs text-subtle">
+                Drag the pin or tap the map to set the exact spot. This is the precise venue, not the
+                city-level area shown to people browsing.
+              </p>
+              <input type="hidden" name="lat" value={lat ?? ''} />
+              <input type="hidden" name="lng" value={lng ?? ''} />
+            </div>
+          )}
+
           {/* Error + save row — spans full width. */}
           <div className="space-y-3 pt-1 lg:col-span-3">
             {error && <p className="text-xs font-medium text-danger">{error}</p>}
@@ -541,91 +540,6 @@ export function EventSettingsModule() {
             </div>
           </div>
         </form>
-
-        {/* Cancel + Delete share ONE bordered box at the form bottom (§6). Cancel gets a
-            two-step confirm; Reinstate stays one tap. Delete requires typing DELETE. */}
-        <div className="mt-6 space-y-4 rounded-2xl border border-danger/30 bg-danger-bg/20 p-4">
-          <div>
-            <p className="text-sm font-semibold text-danger">
-              {data.is_cancelled ? 'This event is cancelled' : 'Cancel this event'}
-            </p>
-            <p className="mt-0.5 text-xs text-muted">
-              {data.is_cancelled
-                ? 'It is off the calendar. Reinstate it to bring it back.'
-                : 'Takes it off the calendar without losing it. RSVPs and check-ins stay intact.'}
-            </p>
-            {data.is_cancelled ? (
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() =>
-                  startTransition(async () => {
-                    try {
-                      await setEventCancelled(data!.id, data!.slug, false)
-                      setError(null)
-                      setData((d) => (d ? { ...d, is_cancelled: false } : d))
-                    } catch (err) {
-                      setError(err instanceof Error ? err.message : 'Could not update the event. Try again.')
-                    }
-                  })
-                }
-                className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
-              >
-                Reinstate event
-              </button>
-            ) : !confirmingCancel ? (
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => setConfirmingCancel(true)}
-                className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-danger/40 bg-surface px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-40"
-              >
-                Cancel event
-              </button>
-            ) : (
-              <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium text-danger">Cancel this event?</span>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() =>
-                    startTransition(async () => {
-                      try {
-                        await setEventCancelled(data!.id, data!.slug, true)
-                        setError(null)
-                        setData((d) => (d ? { ...d, is_cancelled: true } : d))
-                        setConfirmingCancel(false)
-                      } catch (err) {
-                        setError(err instanceof Error ? err.message : 'Could not update the event. Try again.')
-                      }
-                    })
-                  }
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
-                >
-                  Yes, cancel it
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmingCancel(false)}
-                  className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text"
-                >
-                  Keep it
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="border-t border-danger/20 pt-4">
-            <DangerDelete
-              entity="event"
-              warning="Permanently removes the event and all its RSVPs and check-ins. To take it off the calendar without losing it, use Cancel instead."
-              onDelete={() => deleteEvent(data!.id, data!.slug)}
-              redirectTo="/events"
-              confirmText="DELETE"
-              chromeless
-            />
-          </div>
-        </div>
       </section>
     </div>
   )
