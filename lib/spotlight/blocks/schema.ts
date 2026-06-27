@@ -29,16 +29,25 @@ export type BlockType = 'heading' | 'text' | 'links' | 'image' | 'gallery' | 'qu
 export type SpotlightStatKey = 'streak' | 'gems' | 'joined' | 'region'
 export const SPOTLIGHT_STAT_KEYS: readonly SpotlightStatKey[] = ['streak', 'gems', 'joined', 'region']
 
+/** Optional per-block colour overrides (validated hex) — they win over the page theme for
+ *  just that block. `text` recolours type; `bg` recolours the block's card/surface. */
+export interface BlockTint {
+  text?: string
+  bg?: string
+}
+
 export interface HeadingBlock {
   id: string
   type: 'heading'
   text: string
   level: 2 | 3
+  tint?: BlockTint
 }
 export interface TextBlock {
   id: string
   type: 'text'
   text: string
+  tint?: BlockTint
 }
 export interface LinkItem {
   label: string
@@ -48,6 +57,7 @@ export interface LinksBlock {
   id: string
   type: 'links'
   items: LinkItem[]
+  tint?: BlockTint
 }
 export interface ImageBlock {
   id: string
@@ -72,6 +82,7 @@ export interface QuoteBlock {
   text: string
   /** Optional attribution shown under the quote. */
   cite?: string
+  tint?: BlockTint
 }
 export interface StatsBlock {
   id: string
@@ -83,6 +94,7 @@ export interface StatsBlock {
 export interface DividerBlock {
   id: string
   type: 'divider'
+  tint?: BlockTint
 }
 
 export type SpotlightBlock =

@@ -11,6 +11,7 @@ import {
   type LinkItem,
   type GalleryItem,
   type SpotlightStatKey,
+  type BlockTint,
   EMPTY_LAYOUT,
   SPOTLIGHT_LAYOUT_VERSION,
   SPOTLIGHT_STAT_KEYS,
@@ -53,23 +54,38 @@ function safeId(v: unknown, index: number): string {
   return typeof v === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(v) ? v : `b_${index}`
 }
 
+/** A per-block colour override: strict 6-digit hex only (same boundary as the theme), so a
+ *  tampered tint can at worst contribute fewer colours, never injected CSS. Returns undefined
+ *  when nothing valid is present, so the block stays untinted. */
+const HEX6 = /^#[0-9a-fA-F]{6}$/
+function safeTint(v: unknown): BlockTint | undefined {
+  if (!v || typeof v !== 'object') return undefined
+  const t = v as Record<string, unknown>
+  const out: BlockTint = {}
+  if (typeof t.text === 'string' && HEX6.test(t.text)) out.text = t.text.toLowerCase()
+  if (typeof t.bg === 'string' && HEX6.test(t.bg)) out.bg = t.bg.toLowerCase()
+  return out.text || out.bg ? out : undefined
+}
+
 /** Coerce one raw block to a safe block, or null to drop it whole (never partial). */
 function coerceBlock(raw: unknown, index: number, ownerAuthUserId: string): SpotlightBlock | null {
   if (!raw || typeof raw !== 'object') return null
   const b = raw as Record<string, unknown>
   const id = safeId(b.id, index)
+  const tint = safeTint(b.tint)
+  const t = tint ? { tint } : {}
 
   switch (b.type) {
     case 'heading': {
       const text = clampStr(b.text, HEADING_MAX).trim()
       if (!text) return null
       const level = b.level === 3 ? 3 : 2
-      return { id, type: 'heading', text, level }
+      return { id, type: 'heading', text, level, ...t }
     }
     case 'text': {
       const text = clampStr(b.text, TEXT_MAX).trim()
       if (!text) return null
-      return { id, type: 'text', text }
+      return { id, type: 'text', text, ...t }
     }
     case 'links': {
       const rawItems = Array.isArray(b.items) ? b.items.slice(0, MAX_LINKS_PER_BLOCK) : []
@@ -82,7 +98,7 @@ function coerceBlock(raw: unknown, index: number, ownerAuthUserId: string): Spot
         items.push({ label, url })
       }
       if (items.length === 0) return null
-      return { id, type: 'links', items }
+      return { id, type: 'links', items, ...t }
     }
     case 'image': {
       const assetPath = safeAssetPath(b.assetPath, ownerAuthUserId)
@@ -105,7 +121,7 @@ function coerceBlock(raw: unknown, index: number, ownerAuthUserId: string): Spot
       const text = clampStr(b.text, QUOTE_MAX).trim()
       if (!text) return null
       const cite = clampStr(b.cite, CITE_MAX).trim()
-      return cite ? { id, type: 'quote', text, cite } : { id, type: 'quote', text }
+      return cite ? { id, type: 'quote', text, cite, ...t } : { id, type: 'quote', text, ...t }
     }
     case 'stats': {
       const rawShow = Array.isArray(b.show) ? b.show : []
@@ -119,7 +135,7 @@ function coerceBlock(raw: unknown, index: number, ownerAuthUserId: string): Spot
       return { id, type: 'stats', show }
     }
     case 'divider':
-      return { id, type: 'divider' }
+      return { id, type: 'divider', ...t }
     default:
       return null // unknown type → drop
   }

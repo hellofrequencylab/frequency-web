@@ -9,6 +9,8 @@ import {
   type SpotlightLayout,
   type SpotlightBackground,
   type SpotlightStatKey,
+  type BlockTint,
+  type BlockType,
   BLOCK_PALETTE,
   MAX_BLOCKS,
   MAX_GALLERY_IMAGES,
@@ -18,6 +20,9 @@ import {
   SPOTLIGHT_STAT_KEYS,
   SPOTLIGHT_LAYOUT_VERSION,
 } from '@/lib/spotlight/blocks/schema'
+
+// Block types that support a per-block colour override (text/background).
+const TINTABLE = new Set<BlockType>(['heading', 'text', 'links', 'quote', 'divider'])
 import {
   saveSpotlightLayout,
   saveSpotlightBackground,
@@ -253,6 +258,12 @@ export function LayoutEditor({
             </div>
           </div>
           <BlockFields block={block} onChange={(p) => update(block.id, p)} />
+          {TINTABLE.has(block.type) && (
+            <BlockTintRow
+              tint={'tint' in block ? block.tint : undefined}
+              onChange={(tint) => update(block.id, { tint } as Partial<SpotlightBlock>)}
+            />
+          )}
         </div>
       ))}
 
@@ -438,4 +449,29 @@ function BlockFields({ block, onChange }: { block: SpotlightBlock; onChange: (p:
     return <p className="text-xs text-subtle">A horizontal line.</p>
   }
   return null
+}
+
+// Per-block colour override: text + background swatches that win over the page theme for
+// this block. Empty = inherit the theme. Validated to hex on save.
+function BlockTintRow({ tint, onChange }: { tint?: BlockTint; onChange: (t: BlockTint | undefined) => void }) {
+  function set(key: 'text' | 'bg', value: string | undefined) {
+    const next: BlockTint = { ...tint, [key]: value }
+    if (!next.text && !next.bg) { onChange(undefined); return }
+    onChange(next)
+  }
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-border pt-2">
+      <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Colours</span>
+      <label className="flex items-center gap-1.5 text-xs text-muted">
+        Text
+        <input type="color" value={tint?.text ?? '#000000'} onChange={(e) => set('text', e.target.value)} className="h-6 w-7 cursor-pointer rounded border border-border-strong" aria-label="Block text colour" />
+        {tint?.text && <button type="button" onClick={() => set('text', undefined)} className="text-subtle hover:text-text">×</button>}
+      </label>
+      <label className="flex items-center gap-1.5 text-xs text-muted">
+        Background
+        <input type="color" value={tint?.bg ?? '#ffffff'} onChange={(e) => set('bg', e.target.value)} className="h-6 w-7 cursor-pointer rounded border border-border-strong" aria-label="Block background colour" />
+        {tint?.bg && <button type="button" onClick={() => set('bg', undefined)} className="text-subtle hover:text-text">×</button>}
+      </label>
+    </div>
+  )
 }

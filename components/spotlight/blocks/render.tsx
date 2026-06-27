@@ -1,7 +1,16 @@
 import Image from 'next/image'
 import type { CSSProperties } from 'react'
 import { Flame, Gem, CalendarDays, MapPin } from 'lucide-react'
-import type { SpotlightBlock, SpotlightStatKey } from '@/lib/spotlight/blocks/schema'
+import type { SpotlightBlock, SpotlightStatKey, BlockTint } from '@/lib/spotlight/blocks/schema'
+
+// A per-block colour override → inline style (validated hex). `bg` recolours the card, `text`
+// the type. Merged over the page theme's cardStyle so a tint wins for just that block.
+function tintStyle(tint?: BlockTint): CSSProperties {
+  return {
+    ...(tint?.bg ? { backgroundColor: tint.bg } : {}),
+    ...(tint?.text ? { color: tint.text } : {}),
+  }
+}
 
 // Server-side render of a validated Spotlight layout. CLOSED allowlist switch — a block
 // type with no renderer produces nothing (never an echo of raw input). No
@@ -61,12 +70,12 @@ function BlockView({
   switch (block.type) {
     case 'heading':
       return block.level === 3 ? (
-        <h3 className="mt-4 text-base font-bold text-text" style={{ fontFamily: headingFont }}>{block.text}</h3>
+        <h3 className="mt-4 text-base font-bold text-text" style={{ fontFamily: headingFont, ...tintStyle(block.tint) }}>{block.text}</h3>
       ) : (
-        <h2 className="mt-6 text-lg font-bold text-text" style={{ fontFamily: headingFont }}>{block.text}</h2>
+        <h2 className="mt-6 text-lg font-bold text-text" style={{ fontFamily: headingFont, ...tintStyle(block.tint) }}>{block.text}</h2>
       )
     case 'text':
-      return <p className="whitespace-pre-wrap text-pretty text-sm leading-relaxed text-text">{block.text}</p>
+      return <p className="whitespace-pre-wrap text-pretty text-sm leading-relaxed text-text" style={tintStyle(block.tint)}>{block.text}</p>
     case 'links':
       return (
         <div className="space-y-2">
@@ -77,7 +86,7 @@ function BlockView({
               target="_blank"
               rel="noopener noreferrer nofollow"
               className="block rounded-2xl border border-border-strong bg-surface px-4 py-3 text-center text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated"
-              style={cardStyle}
+              style={{ ...cardStyle, ...tintStyle(block.tint) }}
             >
               {item.label}
             </a>
@@ -114,15 +123,15 @@ function BlockView({
       )
     case 'quote':
       return (
-        <blockquote className="border-l-4 border-primary-strong bg-surface/60 py-2 pl-4 pr-3" style={cardStyle}>
-          <p className="text-pretty text-sm italic leading-relaxed text-text">{block.text}</p>
+        <blockquote className="border-l-4 border-primary-strong bg-surface/60 py-2 pl-4 pr-3" style={{ ...cardStyle, ...(block.tint?.bg ? { backgroundColor: block.tint.bg } : {}) }}>
+          <p className="text-pretty text-sm italic leading-relaxed text-text" style={{ color: block.tint?.text }}>{block.text}</p>
           {block.cite && <footer className="mt-1.5 text-xs font-medium text-muted">— {block.cite}</footer>}
         </blockquote>
       )
     case 'stats':
       return <StatsView show={block.show} stats={stats} cardStyle={cardStyle} />
     case 'divider':
-      return <hr className="my-2 border-border" />
+      return <hr className="my-2 border-border" style={{ borderColor: block.tint?.text }} />
     default:
       return null
   }

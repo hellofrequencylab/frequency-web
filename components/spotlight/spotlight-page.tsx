@@ -54,7 +54,7 @@ export function SpotlightPage({ data }: { data: SpotlightData }) {
   const hasLayout = layout.blocks.length > 0
 
   return (
-    <div data-skin={skin} className="relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+    <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
       {background.assetPath && (
         <div className="pointer-events-none fixed inset-0 -z-0" aria-hidden>
           {/* eslint-disable-next-line @next/next/no-img-element */}

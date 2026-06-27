@@ -904,6 +904,21 @@ h1, h2, h3, h4, h5, h6 {
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
+/* ── Spotlight animated gradient background ────────────────────────────────────
+   A slow pan of an oversized gradient (background-size 300%). Member opt-in via the
+   Spotlight theme editor; the duration is set inline from a validated value. Honors
+   reduced-motion (the global guard below also neutralizes it). */
+@keyframes spotlight-bg-pan {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+/* The pan animation is applied inline (duration from a validated value), so the per-keyframe
+   guards can't reach it; neutralize it on the Spotlight root for reduced-motion users. */
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-root { animation: none !important; }
+}
+
 /* ── Beta badge wiggle (the induction's BETA tag) ──────────────────────────────
    A periodic attention nudge: still ~90% of the loop, then a quick shake. */
 @keyframes wiggle {
