@@ -94,6 +94,10 @@ a summary card, related links, a table of contents).
 - **Slots:** `sidebar` (+ `sidebarSide` left/right), the main `children`.
 - **Rail note:** a page with its own in-body sidebar should usually register as
   `'scoped'` in `page-chrome.ts` so the global rail is suppressed (no double-rail).
+  **Exception — the events DETAIL page (`/events/<slug>`) ALWAYS keeps the global
+  `'global'` rail.** Never set it to `'none'`/`'scoped'`. If the page's own interior
+  feels like a doubled column, the fix is to make that interior templated/movable
+  (PageModules blocks), NOT to remove the rail. (A past change dropped it; reverted.)
 
 ### Template E: **Header / 2 Column** (`TwoColumnTemplate`)
 Title band over **two equal columns** of comparable weight (e.g. "yours" vs "the
