@@ -46,7 +46,14 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="absolute inset-x-0 top-0 rounded-b-2xl bg-surface p-4 pt-4 shadow-pop">
+          {/* top-0 means the sheet starts at the very top edge — in a standalone PWA that
+              is UNDER the status bar / notch, so pad the top by the safe-area inset (plus a
+              base) or the "Menu" label + Close button get clipped. Cap height + scroll so a
+              long nav never runs off the bottom past the home indicator. */}
+          <div
+            className="absolute inset-x-0 top-0 max-h-[100dvh] overflow-y-auto rounded-b-2xl bg-surface px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-pop px-safe"
+            style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
+          >
             <div className="mb-3 flex items-center justify-between">
               <span className="text-2xs font-bold uppercase tracking-wider text-subtle">Menu</span>
               <button
