@@ -13,7 +13,9 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
   return (
     <>
       <SiteHeader variant="light" />
-      <main className="min-h-screen bg-surface pt-16">{children}</main>
+      {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
+          tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
+      <main className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>{children}</main>
 
       <footer className="bg-marketing-canvas border-t border-border/60 px-6 py-10">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">

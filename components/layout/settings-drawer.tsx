@@ -194,7 +194,7 @@ export function SettingsDrawer({
       </div>
 
       {/* The panel cover is full column height, but its CONTENT sticks to the viewport. */}
-      <div className="sticky top-14 flex max-h-[calc(100vh-3.5rem)] flex-col">
+      <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] flex max-h-[calc(100vh-3.5rem)] flex-col">
         {/* Header — title + close. */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-border pl-5 pr-3">
           <p className="text-sm font-bold text-text">Settings</p>

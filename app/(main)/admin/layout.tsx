@@ -40,7 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               full-width admin sub-header on md+ (3.5rem header + 3rem sub-header = 6.5rem).
               The band is OPAQUE canvas so the page scrolls cleanly underneath it like header
               chrome — nothing bleeds through the padding around the input. */}
-          <div className="sticky top-14 z-20 mb-6 bg-[var(--color-canvas)] py-2.5 md:top-[6.5rem]">
+          <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 mb-6 bg-[var(--color-canvas)] py-2.5 md:top-[calc(6.5rem+env(safe-area-inset-top))]">
             <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
           </div>
 
