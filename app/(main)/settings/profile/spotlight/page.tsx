@@ -2,8 +2,15 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { FocusTemplate } from '@/components/templates'
-import { readSpotlightEnabled, readSpotlightLayoutRaw } from '@/lib/profile/spotlight-flags'
-import { validateSpotlightLayout } from '@/lib/spotlight/blocks/validate'
+import {
+  readSpotlightEnabled,
+  readSpotlightLayoutRaw,
+  readSpotlightBackgroundRaw,
+} from '@/lib/profile/spotlight-flags'
+import {
+  validateSpotlightLayout,
+  validateSpotlightBackground,
+} from '@/lib/spotlight/blocks/validate'
 import { LayoutEditor } from '@/components/spotlight/layout-editor'
 
 export const dynamic = 'force-dynamic'
@@ -28,14 +35,15 @@ export default async function SpotlightEditorPage() {
 
   const handle = ((me as { handle?: string }).handle) ?? ''
   const layout = validateSpotlightLayout(readSpotlightLayoutRaw(meta), user.id)
+  const background = validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id)
 
   return (
     <FocusTemplate
       title="Build your Spotlight"
-      description="Add headings, text, and links, and arrange them however you like. Save, then publish from your profile settings."
+      description="Add headings, text, links, images, and a background, and arrange them however you like. Save, then publish from your profile settings."
       back={{ href: '/settings/profile', label: 'Profile settings' }}
     >
-      <LayoutEditor initial={layout} handle={handle} />
+      <LayoutEditor initial={layout} initialBackground={background} handle={handle} />
     </FocusTemplate>
   )
 }

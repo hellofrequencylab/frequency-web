@@ -53,6 +53,24 @@ describe('validateSpotlightLayout — security boundary', () => {
     expect(out.blocks[0].type).toBe('divider')
   })
 
+  it('accepts the exact path shape the uploader produces (uuid filename, every allowed ext)', () => {
+    // Locks the contract between uploadSpotlightImage (`<owner>/spotlight/<uuid>.<ext>`)
+    // and the read-side validator: every extension the upload accepts must validate, or a
+    // freshly uploaded image would render as nothing.
+    const uuid = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+    for (const ext of ['jpg', 'png', 'gif', 'webp']) {
+      const out = validateSpotlightLayout(
+        { blocks: [{ type: 'image', assetPath: `${OWNER}/spotlight/${uuid}.${ext}`, alt: 'mine' }] },
+        OWNER,
+      )
+      expect(out.blocks).toHaveLength(1)
+      expect(out.blocks[0].type).toBe('image')
+    }
+    // The same uuid path is also valid as a background.
+    expect(validateSpotlightBackground({ assetPath: `${OWNER}/spotlight/${uuid}.gif`, dim: 40 }, OWNER))
+      .toEqual({ assetPath: `${OWNER}/spotlight/${uuid}.gif`, dim: 40 })
+  })
+
   it('clamps heading/text length and drops empty', () => {
     const out = validateSpotlightLayout(
       { blocks: [{ type: 'heading', text: 'x'.repeat(500) }, { type: 'text', text: '   ' }] },
