@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useTransition, useEffect, useCallback, type ReactNode } from 'react'
+import { useState, useTransition, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Loader2, Send } from 'lucide-react'
-import { createReply, fetchReplies } from '@/app/(main)/feed/actions'
+import { Loader2, Send, SmilePlus } from 'lucide-react'
+import { createReply, fetchReplies, toggleReaction } from '@/app/(main)/feed/actions'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { isEndorsed } from '@/lib/season-ranks'
+import { REACTIONS } from '@/lib/feed/reactions'
 import { PostBody } from './post-body'
-import { ReactionButton } from './reaction-button'
+import { ReactionBar } from './reaction-button'
 import type { CommentNode, CommentLeaf, CommentThread } from '@/lib/feed/comment-thread'
 
 // Show the latest N top-level comments by default; the rest collapse behind a
@@ -21,14 +22,19 @@ type ReplyTarget = { id: string; name: string } | null
 
 // One comment row (avatar + name + flair + time + body + actions). Shared by the
 // top-level comment and its nested replies — `nested` only changes the avatar size
-// so a reply reads as a child without re-authoring the row.
+// so a reply reads as a child without re-authoring the row. Each row carries the
+// emoji `ReactionBar` (comments are posts, so they take the same reactions) and a
+// Reply affordance that opens the inline composer aimed here.
 function CommentRow({
   comment,
+  myProfileId,
   nested = false,
   onReply,
   children,
 }: {
   comment: CommentLeaf
+  /** The viewer's profile id — lets the bar highlight the viewer's own reactions. */
+  myProfileId: string | null
   nested?: boolean
   /** Open the inline composer aimed at this comment. */
   onReply: (target: { id: string; name: string }) => void
@@ -41,7 +47,9 @@ function CommentRow({
 
   return (
     <div>
-      <div className="flex items-start gap-2.5">
+      {/* Warmer, tighter, less-boxy row: a soft surface tint instead of a hard
+          card border, so the thread reads as a quiet conversation. */}
+      <div className="flex items-start gap-2.5 rounded-xl bg-surface/50 px-2.5 py-2">
         <Link href={author ? `/people/${author.handle}` : '#'} className="shrink-0">
           {author?.avatar_url ? (
             <Image
@@ -78,22 +86,22 @@ function CommentRow({
             <span className="text-2xs text-subtle">{relativeTime(comment.created_at)}</span>
           </div>
           <PostBody body={comment.body ?? ''} className="mt-0.5 text-xs leading-relaxed text-text" />
-          {/* Per-comment actions: a heart (reuses ReactionButton on this comment's
-              id — comments are posts) and a Reply affordance that opens the composer
-              aimed here. Replying to your OWN comment earns nothing (the server's
-              self-reply guard keys off this comment's author). */}
-          <div className="-ml-1.5 mt-0.5 flex items-center gap-0.5">
-            <ReactionButton
+          {/* Per-comment actions: the emoji ReactionBar (comments are posts, so the
+              same curated set, with grouped counts) and a Reply affordance that
+              opens the composer aimed here. Replying to your OWN comment earns
+              nothing (the server's self-reply guard keys off this comment's author). */}
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            <ReactionBar
               postId={comment.id}
-              reactionType="heart"
-              initialActive={comment.viewer_reacted}
-              initialCount={comment.reaction_count}
+              reactions={comment.reactions}
+              myProfileId={myProfileId}
+              compact
             />
             {author && (
               <button
                 type="button"
                 onClick={() => onReply({ id: comment.id, name: author.display_name })}
-                className="rounded-lg px-2 py-1 text-2xs font-medium text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
+                className="rounded-lg px-2 py-0.5 text-2xs font-medium text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
               >
                 Reply
               </button>
@@ -107,6 +115,8 @@ function CommentRow({
 }
 
 // A small inline composer reused for both the post-level and per-comment replies.
+// `onReact` (when provided) renders the inline emoji picker that shares the
+// composer row — only the post-level composer reacts to the POST.
 function ReplyComposer({
   value,
   onChange,
@@ -114,6 +124,7 @@ function ReplyComposer({
   disabled,
   placeholder,
   autoFocus = false,
+  onReact,
 }: {
   value: string
   onChange: (v: string) => void
@@ -121,9 +132,68 @@ function ReplyComposer({
   disabled: boolean
   placeholder: string
   autoFocus?: boolean
+  /** When set, an emoji-react button shares this composer row (post-level only). */
+  onReact?: (emoji: string) => void
 }) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const pickerRef = useRef<HTMLDivElement>(null)
+
+  // Close the composer emoji picker on an outside click or Escape.
+  useEffect(() => {
+    if (!pickerOpen) return
+    function onDown(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setPickerOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [pickerOpen])
+
   return (
-    <form onSubmit={onSubmit} className="mt-3 flex items-end gap-2 pl-2">
+    <form onSubmit={onSubmit} className="mt-2.5 flex items-end gap-1.5">
+      {/* Inline emoji react sharing the composer row (post-level only). */}
+      {onReact && (
+        <div className="relative shrink-0" ref={pickerRef}>
+          <button
+            type="button"
+            onClick={() => setPickerOpen((o) => !o)}
+            aria-label="React with an emoji"
+            aria-expanded={pickerOpen}
+            className="flex h-11 w-9 items-center justify-center rounded-xl text-subtle transition-colors hover:bg-surface-elevated hover:text-muted sm:h-auto sm:w-auto sm:p-2"
+          >
+            <SmilePlus className="w-4 h-4" />
+          </button>
+          {pickerOpen && (
+            <div
+              role="menu"
+              className="absolute bottom-full left-0 z-20 mb-1.5 flex gap-0.5 rounded-2xl bg-surface-elevated p-1.5 shadow-lg ring-1 ring-border/40"
+            >
+              {REACTIONS.map((r) => (
+                <button
+                  key={r.key}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setPickerOpen(false)
+                    onReact(r.key)
+                  }}
+                  aria-label={r.label}
+                  title={r.label}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-base transition-transform hover:scale-110 hover:bg-surface"
+                >
+                  <span aria-hidden>{r.key}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <textarea
         value={value}
         autoFocus={autoFocus}
@@ -138,7 +208,7 @@ function ReplyComposer({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) onSubmit(e)
         }}
-        className="flex-1 resize-none rounded-xl border border-border bg-surface px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50"
+        className="flex-1 resize-none rounded-xl bg-surface px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle ring-1 ring-border/40 focus:outline-none focus:ring-1 focus:ring-border-strong/40 disabled:opacity-50"
       />
       <button
         type="submit"
@@ -156,14 +226,15 @@ export function PostReplies({
   postId,
   initialCount,
   reactions,
-  reward,
+  myProfileId = null,
 }: {
   postId: string
   initialCount: number
-  /** Reaction controls (heart/plus) rendered inline, left of the comment toggle. */
+  /** Reaction controls (the emoji bar) rendered inline, left of the comment toggle. */
   reactions?: ReactNode
-  /** Reward chip (zaps) rendered inline, right of the comment toggle. */
-  reward?: ReactNode
+  /** The viewer's profile id — lets each comment's reaction bar highlight the
+   *  viewer's own reactions. Null when signed out. */
+  myProfileId?: string | null
 }) {
   // Comments show in the feed: a post with replies opens its thread by default
   // (fetched on mount) instead of hiding them behind a click.
@@ -219,6 +290,15 @@ export function PostReplies({
     })
   }
 
+  // React to the POST itself from the composer's inline picker. Activates the emoji
+  // (a one-tap "react", not a toggle); the post's own reaction bar reconciles its
+  // count from server truth the next time the feed loads.
+  function reactFromComposer(emoji: string) {
+    startTransition(async () => {
+      await toggleReaction(postId, emoji, true)
+    })
+  }
+
   const count = loaded ? thread.total : initialCount
 
   // Truncate long threads: show only the latest COLLAPSED_TOP_LEVEL top-level
@@ -229,13 +309,13 @@ export function PostReplies({
   const visibleComments = showExpander ? allComments.slice(-COLLAPSED_TOP_LEVEL) : allComments
 
   const renderComment = (comment: CommentNode) => (
-    <CommentRow key={comment.id} comment={comment} onReply={setReplyTo}>
+    <CommentRow key={comment.id} comment={comment} myProfileId={myProfileId} onReply={setReplyTo}>
       {/* One level of nesting: replies indent under their parent (smaller avatar,
           ml-8). Replies-to-replies flatten to this same level server-side. */}
       {(comment.replies.length > 0 || replyTo?.id === comment.id) && (
-        <div className="ml-8 mt-3 space-y-3">
+        <div className="ml-8 mt-2.5 space-y-2.5">
           {comment.replies.map((reply) => (
-            <CommentRow key={reply.id} comment={reply} nested onReply={setReplyTo} />
+            <CommentRow key={reply.id} comment={reply} myProfileId={myProfileId} nested onReply={setReplyTo} />
           ))}
           {replyTo?.id === comment.id && (
             <ReplyComposer
@@ -254,15 +334,15 @@ export function PostReplies({
 
   return (
     <div>
-      {/* One balanced action line under the post content: reactions, the comment
-          toggle, and the reward chip — all on the right. No divider rule; spacing
-          alone separates it from the content (density over lines). */}
-      <div className="mt-3 flex items-center justify-end gap-0.5">
-        {reactions}
+      {/* One balanced action line under the post content: the emoji reactions on
+          the left, the comment toggle on the right. No divider rule; spacing alone
+          separates it from the content (density over lines). */}
+      <div className="mt-2.5 flex items-center justify-between gap-2">
+        <div className="min-w-0">{reactions}</div>
         <button
           onClick={() => setOpen((o) => !o)}
           aria-label={open ? 'Hide comments' : 'Show comments'}
-          className={`flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
+          className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
             open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
           }`}
         >
@@ -275,11 +355,10 @@ export function PostReplies({
           )}
           {count > 0 && count}
         </button>
-        {reward}
       </div>
 
       {open && (
-        <div className="mt-3 space-y-3">
+        <div className="mt-2.5 space-y-2.5">
           {/* Existing replies */}
           {!loaded && isPending ? (
             <div className="flex justify-center py-2">
@@ -288,7 +367,7 @@ export function PostReplies({
           ) : allComments.length === 0 ? (
             <p className="text-xs text-subtle text-center py-1">No replies yet. Be the first.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {/* Truncation expander: reveal the earlier top-level comments. */}
               {showExpander && (
                 <button
@@ -315,14 +394,16 @@ export function PostReplies({
       )}
 
       {/* Reply composer — ALWAYS under every post, not gated behind the toggle, so
-          "Add a comment" is a one-step action (A.2). A single growing line;
-          ⌘/Ctrl+Enter or the button sends. Submitting opens the thread. */}
+          "Add a comment" is a one-step action (A.2). The emoji-react button, the
+          growing textarea, and send all share ONE row; ⌘/Ctrl+Enter or the button
+          sends. Submitting opens the thread. */}
       <ReplyComposer
         value={body}
         onChange={setBody}
         onSubmit={handleSubmit}
         disabled={isPending}
         placeholder="Add a comment…"
+        onReact={reactFromComposer}
       />
     </div>
   )
