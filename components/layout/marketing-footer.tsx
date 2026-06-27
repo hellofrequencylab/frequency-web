@@ -24,7 +24,12 @@ function footerLinks(menu?: ResolvedMenu): { href: string; label: string }[] {
 export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
   const links = footerLinks(menu)
   return (
-    <footer className="bg-marketing-canvas border-t border-border/60 px-6 py-12">
+    <footer
+      className="bg-marketing-canvas border-t border-border/60 px-6 pt-12 px-safe"
+      // Keep the 3rem base, add the home-indicator inset on top so the legal row clears it
+      // in a standalone PWA (env() = 0 on a normal display, so no change off-device).
+      style={{ paddingBottom: 'calc(3rem + env(safe-area-inset-bottom))' }}
+    >
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8">
           {/* Brand */}
