@@ -74,6 +74,9 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
         region: str('region'),
         country: str('country'),
         postalCode: str('postalCode'),
+        // Free-text fallback: geocode the one-line `location` (what most create paths set, incl.
+        // Vera scans + the onboarding wizard) when no structured address was entered.
+        query: str('location'),
       },
       attendanceMode,
       onlineUrl: str('onlineUrl'),

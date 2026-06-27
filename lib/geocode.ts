@@ -73,10 +73,12 @@ function joinStreet(p: Record<string, string | undefined>): string | null {
   return line || null
 }
 
-// A human label for a structured result: the feature's name, then the bits that
-// disambiguate it (city, state, country). Dedupes "Name, Name" when name === city.
+// A human label for a structured result: the feature's NAME or, for a plain address with no
+// name, its street line (so "8950 Villa La Jolla Dr" shows instead of collapsing to just the
+// city) — then the bits that disambiguate it (city, state, country). Dedupes repeats.
 function structuredLabel(p: Record<string, string | undefined>): string {
-  const parts = [p.name, p.city, p.state, p.country].filter(Boolean) as string[]
+  const head = p.name ?? joinStreet(p) ?? undefined
+  const parts = [head, p.city, p.state, p.country].filter(Boolean) as string[]
   const seen = new Set<string>()
   return parts.filter((x) => (seen.has(x) ? false : (seen.add(x), true))).join(', ')
 }
@@ -90,12 +92,21 @@ function structuredLabel(p: Record<string, string | undefined>): string {
 export async function searchAddresses(
   query: string,
   signal?: AbortSignal,
+  /** Optional location bias — Photon ranks results NEAR this point first, so "8950 Villa La
+   *  Jolla" surfaces the La Jolla venue instead of a same-named street on the other coast.
+   *  Pass the event's current pin, or the viewer's home location. */
+  bias?: { lat: number; lng: number } | null,
 ): Promise<PlaceResult[]> {
   const q = query.trim()
   if (q.length < 2) return []
 
-  // No `layer` filter here — we WANT venues / streets / POIs, not just cities.
-  const params = new URLSearchParams({ q, limit: '6', lang: 'en' })
+  // No `layer` filter here — we WANT venues / streets / POIs, not just cities. A larger limit
+  // gives the local-bias re-ranking more candidates to pull the right venue up from.
+  const params = new URLSearchParams({ q, limit: '10', lang: 'en' })
+  if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
+    params.set('lat', String(bias.lat))
+    params.set('lon', String(bias.lng))
+  }
 
   let res: Response
   try {
