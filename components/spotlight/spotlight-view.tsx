@@ -78,8 +78,8 @@ export function SpotlightView({ data, contained = false }: { data: SpotlightData
       )}
       <div className="relative z-10">
       <main className="mx-auto max-w-xl px-4 pb-16">
-        {/* Header image (optional) — height + vertical focus are member-adjustable. */}
-        {profile.header_image_url ? (
+        {/* Header image (optional) — toggle, height + vertical focus are member-adjustable. */}
+        {theme.header.show && profile.header_image_url ? (
           <div className="relative -mx-4 mb-[-3rem] overflow-hidden sm:rounded-b-3xl" style={{ height: theme.header.height }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={profile.header_image_url} alt="" className="h-full w-full object-cover" style={{ objectPosition: `50% ${theme.header.focusY}%` }} />

@@ -336,23 +336,36 @@ export function SpotlightThemeEditor({
       {/* Header / cover band framing */}
       <div className={SECTION}>
         <p className={LABEL}>Cover band</p>
-        <p className="text-2xs text-muted">Frames your profile header photo at the top of the page.</p>
-        <label className="flex items-center justify-between text-xs text-muted">
-          <span>Height</span><span className="tabular-nums">{value.header.height}px</span>
+        <label className="flex items-center gap-1.5 text-xs font-medium text-text">
+          <input
+            type="checkbox"
+            checked={value.header.show}
+            onChange={(e) => patch({ header: { ...value.header, show: e.target.checked } })}
+            className="accent-primary"
+          />
+          Show cover photo
         </label>
-        <input
-          type="range" min={80} max={360} step={8} value={value.header.height}
-          onChange={(e) => patch({ header: { ...value.header, height: Number(e.target.value) } })}
-          className="w-full accent-primary"
-        />
-        <label className="flex items-center justify-between text-xs text-muted">
-          <span>Position up/down</span><span className="tabular-nums">{value.header.focusY}%</span>
-        </label>
-        <input
-          type="range" min={0} max={100} step={1} value={value.header.focusY}
-          onChange={(e) => patch({ header: { ...value.header, focusY: Number(e.target.value) } })}
-          className="w-full accent-primary"
-        />
+        {value.header.show && (
+          <>
+            <p className="text-2xs text-muted">Frames your profile header photo at the top of the page.</p>
+            <label className="flex items-center justify-between text-xs text-muted">
+              <span>Height</span><span className="tabular-nums">{value.header.height}px</span>
+            </label>
+            <input
+              type="range" min={80} max={360} step={8} value={value.header.height}
+              onChange={(e) => patch({ header: { ...value.header, height: Number(e.target.value) } })}
+              className="w-full accent-primary"
+            />
+            <label className="flex items-center justify-between text-xs text-muted">
+              <span>Position up/down</span><span className="tabular-nums">{value.header.focusY}%</span>
+            </label>
+            <input
+              type="range" min={0} max={100} step={1} value={value.header.focusY}
+              onChange={(e) => patch({ header: { ...value.header, focusY: Number(e.target.value) } })}
+              className="w-full accent-primary"
+            />
+          </>
+        )}
       </div>
 
       {error && <p className="text-xs text-danger">{error}</p>}

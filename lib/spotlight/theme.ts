@@ -58,6 +58,8 @@ export interface SpotlightCard {
 }
 /** Framing for the top cover band (the profile header image on the Spotlight page). */
 export interface SpotlightHeader {
+  /** Show the cover band at all. Off = a clean top with no header image. */
+  show: boolean
   /** Band height in px (80–360). */
   height: number
   /** Vertical focal point 0–100 (object-position Y) so the subject sits where you want. */
@@ -83,29 +85,29 @@ export const EMPTY_THEME: SpotlightTheme = {
   bg: { kind: 'none' },
   font: { heading: 'sans', body: 'sans' },
   card: { radius: 'lg', shadow: 'soft', style: 'solid' },
-  header: { height: 160, focusY: 50 },
+  header: { show: true, height: 160, focusY: 50 },
 }
 
 // One-tap starting points. Each is a partial theme merged over EMPTY_THEME by the editor.
 export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }[] = [
   {
     id: 'sunset', label: 'Sunset',
-    theme: { accent: '#ff6b6b', surface: '#2b1d33', text: '#fdeff2', font: { heading: 'display', body: 'sans' }, card: { radius: 'xl', shadow: 'strong', style: 'glass' }, header: { height: 200, focusY: 50 },
+    theme: { accent: '#ff6b6b', surface: '#2b1d33', text: '#fdeff2', font: { heading: 'display', body: 'sans' }, card: { radius: 'xl', shadow: 'strong', style: 'glass' }, header: { show: true, height: 200, focusY: 50 },
       bg: { kind: 'gradient', gradient: { type: 'linear', angle: 160, animated: true, speed: 14, stops: [{ color: '#ff9a3c', pos: 0 }, { color: '#ff6b6b', pos: 50 }, { color: '#7b2ff7', pos: 100 }] } } },
   },
   {
     id: 'vaporwave', label: 'Vaporwave',
-    theme: { accent: '#ff71ce', surface: '#1a1033', text: '#eafffd', font: { heading: 'mono', body: 'mono' }, card: { radius: 'md', shadow: 'strong', style: 'glass' }, header: { height: 200, focusY: 50 },
+    theme: { accent: '#ff71ce', surface: '#1a1033', text: '#eafffd', font: { heading: 'mono', body: 'mono' }, card: { radius: 'md', shadow: 'strong', style: 'glass' }, header: { show: true, height: 200, focusY: 50 },
       bg: { kind: 'gradient', gradient: { type: 'linear', angle: 135, animated: true, speed: 10, stops: [{ color: '#05ffa1', pos: 0 }, { color: '#b967ff', pos: 50 }, { color: '#01cdfe', pos: 100 }] } } },
   },
   {
     id: 'forest', label: 'Forest',
-    theme: { accent: '#3fa34d', surface: '#10231a', text: '#eefaf0', font: { heading: 'serif', body: 'serif' }, card: { radius: 'lg', shadow: 'soft', style: 'solid' }, header: { height: 160, focusY: 50 },
+    theme: { accent: '#3fa34d', surface: '#10231a', text: '#eefaf0', font: { heading: 'serif', body: 'serif' }, card: { radius: 'lg', shadow: 'soft', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },
       bg: { kind: 'gradient', gradient: { type: 'linear', angle: 180, animated: false, speed: 12, stops: [{ color: '#0b3d2e', pos: 0 }, { color: '#1b5e3f', pos: 100 }] } } },
   },
   {
     id: 'mono', label: 'Mono',
-    theme: { accent: '#111111', surface: '#ffffff', text: '#111111', font: { heading: 'sans', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { height: 160, focusY: 50 },
+    theme: { accent: '#111111', surface: '#ffffff', text: '#111111', font: { heading: 'sans', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },
       bg: { kind: 'solid', color: '#f4f4f5' } },
   },
 ]
@@ -179,6 +181,7 @@ export function validateSpotlightTheme(raw: unknown): SpotlightTheme {
       style: oneOf(card.style, ['solid', 'glass'] as const, 'solid'),
     },
     header: {
+      show: header.show !== false, // default ON; only an explicit false hides the cover band
       height: clampNum(header.height, 80, 360, 160),
       focusY: clampNum(header.focusY, 0, 100, 50),
     },
