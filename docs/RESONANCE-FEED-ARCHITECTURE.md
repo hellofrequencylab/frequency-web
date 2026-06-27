@@ -134,7 +134,7 @@ introduction beforehand. Qualities, per the owner:
 | No swipe | ⚠️ Never. The feed surfaces people; there is no card stack. |
 | Hide / X a suggestion | ✅ Phase 0 table (`suggestion_hidden`); a member removes anyone they are not interested in, and the rank filters them out. |
 | Streaks as a match signal | ✅ Quiet. Biases the rank, never a prominent badge. |
-| Safety + verification for in-person | ✅ Phase 4 (ADR-418): meet-safely guidance + verification scaffold (the flow is a deferred product call). |
+| Safety + verification for in-person | ✅ Phase 4 (ADR-418) + verification flow (ADR-420): you verify by showing up to an event and checking in; unverified members don't appear in the romance lane. |
 | Romance mode | ✅ Phase 5 (ADR-419): opt-in, MUTUAL-only, no swipe, drawn from people you share context with, meet-safely attached. Off by default. |
 | Birth-chart / astrology matching | ✅ Phase 5 (ADR-419): opt-in sun-sign compatibility as a quiet signal (both sides opted in). Time/place reserved for a fuller chart later. |
 

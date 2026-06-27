@@ -35,10 +35,11 @@ export default async function FeedPage({
   searchParams: Promise<{ sort?: string; welcome?: string; v?: string }>
 }) {
   const { sort: sortParam, welcome, v } = await searchParams
-  const sort: 'recent' | 'relevant' | 'nearby' | 'story' =
+  const sort: 'recent' | 'relevant' | 'nearby' | 'story' | 'popular' =
     sortParam === 'recent' ? 'recent'
       : sortParam === 'nearby' ? 'nearby'
       : sortParam === 'story' ? 'story'
+      : sortParam === 'popular' ? 'popular'
       : 'relevant'
   const showVeraWelcome = welcome === 'vera'
   // "Ask Vera" opens straight in chat; the post-induction welcome plays the deck.
@@ -281,7 +282,7 @@ export default async function FeedPage({
       {/* Sort toggle + feed */}
       <section className="mt-8">
         <SectionHeader
-          title={sort === 'nearby' ? 'Nearby' : sort === 'relevant' ? 'For you' : sort === 'story' ? 'The community’s story' : 'Recent'}
+          title={sort === 'nearby' ? 'Nearby' : sort === 'relevant' ? 'Resonance' : sort === 'popular' ? 'Most popular' : sort === 'story' ? 'The community’s story' : 'Most recent'}
           action={
             <div className="flex items-center gap-0.5 bg-surface-elevated rounded-lg p-0.5">
               {hasHome && (
@@ -304,7 +305,7 @@ export default async function FeedPage({
                     : 'text-muted hover:text-text'
                 }`}
               >
-                For you
+                Resonance
               </Link>
               <Link
                 href="?sort=recent"
@@ -314,7 +315,17 @@ export default async function FeedPage({
                     : 'text-muted hover:text-text'
                 }`}
               >
-                Recent
+                Most recent
+              </Link>
+              <Link
+                href="?sort=popular"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  sort === 'popular'
+                    ? 'bg-surface text-text shadow-sm'
+                    : 'text-muted hover:text-text'
+                }`}
+              >
+                Most popular
               </Link>
               <Link
                 href="?sort=story"

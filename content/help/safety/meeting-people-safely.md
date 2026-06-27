@@ -30,4 +30,4 @@ Frequency is built so you meet people the natural way: at a circle or a public e
 
 ## Verification
 
-We're building member verification so you can see, at a glance, who has confirmed they're a real person. When a member is verified, you'll see a small check by their name. Until your area has it, the rules above are what keep meetings safe: meet in the open, around something real, and take your time.
+You verify yourself the most Frequency way there is: **show up to an event and check in at the door.** Actually turning up in the real world is the truest sign you're a real person, so checking in earns you a small **verified check** by your name, automatically. There's nothing to upload and no form to fill in. Until you've been to one, the rules above are what keep meetings safe: meet in the open, around something real, and take your time.

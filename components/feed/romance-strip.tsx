@@ -1,4 +1,4 @@
-import { Heart } from 'lucide-react'
+import { Heart, BadgeCheck } from 'lucide-react'
 import Link from 'next/link'
 import { PersonCard } from '@/components/cards/person-card'
 import { VerifiedBadge } from '@/components/ui/verified-badge'
@@ -17,7 +17,9 @@ export async function RomanceStrip({ viewerProfileId }: { viewerProfileId: strin
     getRomanceMatches(viewerProfileId, 4),
     hasAcknowledgedMeetupSafety(viewerProfileId),
   ])
-  if (!lane.enabled || lane.people.length === 0) return null
+  if (!lane.enabled) return null
+  // Opted in but nothing to show AND already verified: stay quiet (no matches yet).
+  if (lane.people.length === 0 && lane.viewerVerified) return null
 
   return (
     <section className="rounded-2xl border border-border bg-surface/60 p-4">
@@ -35,6 +37,22 @@ export async function RomanceStrip({ viewerProfileId }: { viewerProfileId: strin
       <p className="mb-3 text-xs text-muted">
         People who are also open to more than friendship and share your circles. Only ever shown to others who opted in too.
       </p>
+
+      {/* Verified-to-appear (ADR-420): an unverified member can browse, but won't appear to
+          others until they show up to an event. A calm nudge, not a wall. */}
+      {!lane.viewerVerified && (
+        <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-border bg-surface-elevated px-3.5 py-2.5">
+          <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
+          <p className="min-w-0 text-xs text-muted">
+            You can browse here, but you&rsquo;ll only appear to others once you&rsquo;re verified.{' '}
+            <Link href="/events" className="font-semibold text-primary-strong hover:underline">
+              Show up to an event
+            </Link>{' '}
+            and check in to verify, that&rsquo;s it.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {lane.people.map((p) => {
           const why = [suggestionReason(p), p.astroReason].filter(Boolean).join(' · ')
