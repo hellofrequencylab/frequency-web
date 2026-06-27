@@ -49,6 +49,10 @@ export type EventRow = {
   // True for events surfaced by the public-nearby union, not the viewer's circles
   // (ADR-254). Drives the `Public` provenance chip on the card.
   is_public_standalone?: boolean
+  // The event's OWN geocoded point (events.geog) — PostgREST serialises a PostGIS
+  // geography as GeoJSON ({type, coordinates:[lng,lat]}). Used to plot standalone
+  // public events (which have no hosting circle) at their real spot on the index map.
+  geog?: { coordinates?: [number, number] } | null
   host: { id: string; display_name: string; handle: string } | null
 }
 
@@ -301,7 +305,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // not-yet-regenerated columns; see lib/events/geocode.ts).
   const EVENT_SELECT = `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
        featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
-       cover_image_path, poster_path, host:profiles!host_id ( id, display_name, handle )`
+       cover_image_path, poster_path, geog, host:profiles!host_id ( id, display_name, handle )`
 
   // ── (1) In-scope CIRCLE events (the original circle-anchored listing) ────────
   let circleEvents: EventRow[] = []
@@ -403,6 +407,12 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       .eq('host_id', myProfileId)
       .eq('status', 'published')
       .eq('is_cancelled', false)
+      // Community-scoped only: a viewer's circle events + standalone public events
+      // belong in the library, but their SPACE events (scope_type 'standalone', a
+      // private space surface, scope_id → spaces.id) must NOT leak into the community
+      // events index — those live on the space, not here (ADR-254 keeps the two scopes
+      // distinct). Without this, every space gathering a member hosts floods /events.
+      .in('scope_type', ['circle', 'public'])
       .gte('starts_at', now)
       .lte('starts_at', future)
       .order('starts_at', { ascending: true })
@@ -582,27 +592,39 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   const goingEvents = sortedEvents.filter((e) => myRsvps.has(e.id))
 
   // ── Map pins (Events B-4) ───────────────────────────────────────────────────
-  // Plot each in-person event. Standalone public events sit at their OWN geocoded
-  // point's HOSTING CIRCLE-equivalent? No — they have no circle, so they ride the
-  // circle-anchored pin only for circle events; standalone events are pinned at
-  // their own coordinates is out of scope here (we have only distance, not lat/lng
-  // from the RPC), so they aren't mapped — the list carries them. Circle events
-  // plot at their HOSTING CIRCLE'S public coordinates (ADR-186). The toggle hides
-  // itself when there's nothing to map.
+  // Plot every in-person event we can place. A standalone PUBLIC event has no hosting
+  // circle, so it plots at its OWN geocoded point (events.geog, now selected) — that's
+  // the venue the host set, and the city-level privacy default that protects circle
+  // homes doesn't apply to a public gathering. A CIRCLE event plots at its hosting
+  // circle's PUBLIC city-level coordinates (ADR-186 privacy). Either way, online events
+  // are skipped, and the toggle hides itself when there's nothing to map.
   const mapPins: EventMapPin[] = sortedEvents
-    .filter((e) => e.scope_type === 'circle' && e.attendance_mode !== 'online' && e.category !== 'online' && !!circleCoords[e.scope_id])
-    .map((e) => {
-      const c = circleCoords[e.scope_id]
-      return {
+    .filter((e) => e.attendance_mode !== 'online' && e.category !== 'online')
+    .map((e): EventMapPin | null => {
+      const base = {
         id: e.id,
         slug: e.slug,
         title: e.title,
         whenLabel: formatWhen(e.starts_at, nowDate),
-        cityLabel: circleNames[e.scope_id] ?? null,
-        lat: c.lat,
-        lng: c.lng,
       }
+      // Circle event → the circle's public coordinates (privacy-safe city pin).
+      if (e.scope_type === 'circle' && circleCoords[e.scope_id]) {
+        const c = circleCoords[e.scope_id]
+        return { ...base, cityLabel: circleNames[e.scope_id] ?? null, lat: c.lat, lng: c.lng }
+      }
+      // Standalone / public event → its own geocoded point, when it has one.
+      const coords = e.geog?.coordinates
+      if (
+        Array.isArray(coords) &&
+        coords.length >= 2 &&
+        Number.isFinite(coords[1]) &&
+        Number.isFinite(coords[0])
+      ) {
+        return { ...base, cityLabel: e.location ?? null, lat: coords[1], lng: coords[0] }
+      }
+      return null
     })
+    .filter((p): p is EventMapPin => p !== null)
 
   // The "For You" lane is the page's one slow path (embedding scoring + optional
   // AI blurbs) — it streams in behind <Suspense> below so the shell, stats, and

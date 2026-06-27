@@ -7,7 +7,10 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { isStaff } from '@/lib/core/roles'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { DangerDelete } from '@/components/admin/danger-delete'
+import { deleteSpace } from '@/lib/spaces/provision'
 import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
 import { SpaceSettingsForm, type SpaceSettingsValues } from './settings-form'
 
@@ -111,6 +114,10 @@ export default async function SpaceSettingsPage({
   const caps = await getSpaceCapabilities(space, viewerProfileId)
   const canUse = (fn: SpaceFunctionKey): boolean =>
     staffViewing || spaceFunctionAccess(space, fn, caps.role)
+
+  // Deleting a Space is OWNER-grade (or platform staff) and permanent — it cascades the space's
+  // events, members, circles, and CRM. Never offered for the root space (the platform partition).
+  const canDelete = space.type !== 'root' && (caps.isOwner || isStaff(caller?.webRole))
 
   const extras = await readProfileExtras(space.id)
   const initial: SpaceSettingsValues = {
@@ -271,6 +278,21 @@ export default async function SpaceSettingsPage({
           />
         )}
       </div>
+
+      {/* Danger zone — owner-grade, permanent, and last on the page. Deleting the space removes it
+          and everything it owns (its events and their RSVPs, its members, circles, pages, and CRM).
+          Typing DELETE is required; the server re-checks owner/staff. */}
+      {canDelete && (
+        <div className="mt-8">
+          <DangerDelete
+            entity="space"
+            warning="Permanently deletes this space and everything it owns: all its events (with their RSVPs and check-ins), members, circles, pages, and CRM. This cannot be undone."
+            onDelete={deleteSpace.bind(null, space.id)}
+            redirectTo="/spaces"
+            confirmText="DELETE"
+          />
+        </div>
+      )}
     </FocusTemplate>
   )
 }

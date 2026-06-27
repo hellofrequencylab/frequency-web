@@ -6,6 +6,7 @@ import { LayoutGrid } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
 import { isModuleRoute } from '@/lib/widgets/module-routes'
 import { LayoutEditor } from '@/components/admin/page-settings/layout-editor'
+import { EventDangerZone } from '@/components/admin/modules/event-danger-zone'
 import { CircleQuestModule } from '@/components/admin/modules/circle-quest-module'
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
@@ -99,11 +100,11 @@ export function useSettingsPanel(): { hasContent: boolean; content: React.ReactN
 
   // Module-driven detail pages (circle / event) get the Layout editor (operator-only, network-wide).
   const showCircleLayout = isCircle && isOperator && isModuleRoute(pathname)
-  const showEventLayout =
-    manager && /^\/events\/[^/]+/.test(pathname) && isOperator && isModuleRoute(pathname)
+  const isEvent = manager && /^\/events\/[^/]+/.test(pathname)
+  const showEventLayout = isEvent && isOperator && isModuleRoute(pathname)
 
   const hasContent =
-    hasSettings || !!questModule || !!contentModule || showPageSettings || showCircleLayout || showEventLayout
+    hasSettings || !!questModule || !!contentModule || showPageSettings || showCircleLayout || showEventLayout || isEvent
 
   if (!hasContent) return { hasContent: false, content: null }
 
@@ -153,6 +154,13 @@ export function useSettingsPanel(): { hasContent: boolean; content: React.ReactN
                 Choose which blocks show inside the event page and their order. Tunes the page, never the app shell.
               </p>
               <LayoutEditor />
+            </div>
+          )}
+          {/* Cancel + Delete live at the very bottom, BELOW the Layout picker — the
+              destructive controls sit under everything else in the drawer. */}
+          {isEvent && (
+            <div className="min-w-0">
+              <EventDangerZone />
             </div>
           )}
         </div>
