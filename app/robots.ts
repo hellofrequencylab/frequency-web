@@ -13,7 +13,10 @@ const DISALLOW = [
   "/practices",
   "/programs",
   "/channels",
-  "/events",
+  // /events + /events/<slug> are PUBLIC (SEO/AIO); only the create flow stays out of the
+  // index. Host manage sub-routes are proxy-protected (anon gets redirected), so a crawler
+  // never indexes them even though they aren't listed here.
+  "/events/new",
   "/messages",
   "/people",
   "/search",

@@ -65,6 +65,10 @@ export interface EventFactsData {
   guests: FactGuest[]
   /** Crew see the roster; others see only the count. */
   guestsAreVisible: boolean
+  /** False for a signed-out visitor (drives the "Sign in to see who's coming" gate). */
+  viewerSignedIn: boolean
+  /** Sign-in URL that returns to this event after auth. */
+  signInHref: string
 }
 
 export interface EventDetailContext {

@@ -78,6 +78,21 @@ function isAnonSpaceProfile(p: string | null): boolean {
   return true
 }
 
+// The events index (/events) and an event's detail page (/events/<slug>) are PUBLIC + crawlable
+// (SEO/AIO) — a signed-out visitor sees the event and is prompted to sign in for any action. Like a
+// Space profile, these render in the public marketing chrome (no member rails). The CREATE flow
+// (/events/new) and host MANAGE sub-routes stay members-only (proxy + this gate both exclude them).
+function isAnonPublicEvent(p: string | null): boolean {
+  if (!p) return false
+  if (p === '/events') return true
+  const m = /^\/events\/([^/]+)(?:\/(.+))?$/.exec(p)
+  if (!m) return false
+  const [, slug, rest] = m
+  if (slug === 'new') return false
+  if (rest) return false // any sub-route (e.g. /manage) is members-only
+  return true
+}
+
 // Per-route SEO overrides (ADR-268): an operator sets a route's title / description /
 // share-image in the on-page Page panel; this applies them as the (main) layout's metadata
 // (a page's own generateMetadata still wins). The current route comes from the `x-pathname`
@@ -126,7 +141,7 @@ export default async function MainLayout({
   // (there is no profile to build the shell from). The space layout walls private/missing.
   if (!user) {
     const anonPath = (await headers()).get('x-pathname')
-    if (isAnonSpaceProfile(anonPath)) {
+    if (isAnonSpaceProfile(anonPath) || isAnonPublicEvent(anonPath)) {
       const [headerMenu, footerMenu, menuTimings] = await Promise.all([
         getMenu('header'),
         getMenu('footer'),

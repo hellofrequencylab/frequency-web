@@ -22,6 +22,8 @@ export const EventFacts = async () => {
       spotsLeft={facts.spotsLeft}
       guests={facts.guests}
       guestsAreVisible={facts.guestsAreVisible}
+      viewerSignedIn={facts.viewerSignedIn}
+      signInHref={facts.signInHref}
     />
   )
 }
