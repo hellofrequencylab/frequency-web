@@ -8,8 +8,10 @@ import { sanitizeProfileInput } from '@/lib/profile-input'
 import { uploadProfileImage } from '@/lib/storage/profile-images'
 import {
   readSpotlightEnabled,
+  withSpotlightEnabled,
   withSpotlightPublished,
 } from '@/lib/profile/spotlight-flags'
+import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 
 // Owner-only: publish or unpublish your own Spotlight page (the public mini-site).
 // Self-scoped — the write is always keyed to the caller's own auth_user_id, so it can
@@ -36,6 +38,46 @@ export async function setSpotlightPublished(published: boolean): Promise<void> {
   }
 
   const nextMeta = withSpotlightPublished(meta, published)
+  const { error } = await admin
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', user.id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/settings/profile')
+  const handle = (me as { handle?: string }).handle
+  if (handle) revalidatePath(`/spotlight/${handle}`)
+}
+
+// Self-serve: a Crew+ member turns their OWN Spotlight on (or off) — the switch that
+// replaces the janitor-only setup gate (ADR-431). Self-scoped (always keyed to the
+// caller's own auth_user_id) AND capability-checked: `spotlight.enable` is re-resolved
+// server-side as the first act, so a non-Crew member can't flip it even by calling the
+// action directly. Enabling only sets up the page (the owner still publishes explicitly
+// via setSpotlightPublished); DISABLING also unpublishes so a turned-off page can't stay
+// live at its public URL. A janitor's force-toggle (admin/members) is unchanged.
+export async function setMySpotlightEnabled(enabled: boolean): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { data: me } = await admin
+    .from('profiles')
+    .select('id, handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!me) throw new Error('Profile not found')
+
+  const caps = await getProfileCapabilities((me as { id: string }).id)
+  if (!caps.has('spotlight.enable')) {
+    throw new Error('Spotlight is a Crew feature. Upgrade to turn yours on.')
+  }
+
+  const meta = (me as { meta?: unknown }).meta
+  let nextMeta = withSpotlightEnabled(meta, enabled)
+  if (!enabled) nextMeta = withSpotlightPublished(nextMeta, false)
+
   const { error } = await admin
     .from('profiles')
     .update({ meta: nextMeta as never })

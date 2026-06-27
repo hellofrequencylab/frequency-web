@@ -10,6 +10,7 @@ import { shortLinkUrl } from '@/lib/qr/links'
 import { ProfileForm } from './profile-form'
 import { ProfileQrCard } from '@/components/settings/profile-qr-card'
 import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
+import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 
 export default async function ProfileSettingsPage() {
   const supabase = await createClient()
@@ -28,6 +29,9 @@ export default async function ProfileSettingsPage() {
   // blob never reaches the client form.
   const spotlightEnabled = readSpotlightEnabled((profile as { meta?: unknown }).meta)
   const spotlightPublished = readSpotlightPublished((profile as { meta?: unknown }).meta)
+  // Can this member turn their OWN Spotlight on? Crew+ self-serve (ADR-431) — the
+  // capability is the law, re-checked in the action too.
+  const canEnableSpotlight = (await getProfileCapabilities(profile.id as string)).has('spotlight.enable')
 
   // The member's personal connect code (provisioned on first need) → a styled QR
   // generator, linked to this account, right here in Edit Profile.
@@ -74,6 +78,7 @@ export default async function ProfileSettingsPage() {
           website:     profile.website ?? '',
           spotlightEnabled,
           spotlightPublished,
+          canEnableSpotlight,
           profileTheme: (profile as { profile_theme?: string | null }).profile_theme ?? null,
         }}
       />
