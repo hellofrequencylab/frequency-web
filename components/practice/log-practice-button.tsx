@@ -93,7 +93,8 @@ export function LogPracticeButton({
   if (isTimer) {
     const openTimer = () => {
       if (timerKind === 'movement') {
-        const opts: TimerResumeOptions = { practiceId, mode: movementConfig?.mode }
+        // autoStart: selecting a practice opens the timer and begins the countdown immediately.
+        const opts: TimerResumeOptions = { practiceId, mode: movementConfig?.mode, autoStart: true }
         if (isResume) {
           opts.resumeFromSec = resumeFromSec
           opts.secondsTarget = secondsTarget
@@ -103,7 +104,7 @@ export function LogPracticeButton({
         // 'mindless' AND 'none' both go to the On Air sit; the session derives the
         // real flavour from the practice's mindless_mode (a 'none' practice carries
         // 'log' → the Just Log screen). mindlessMode rides along as an advisory hint.
-        const opts: TimerResumeOptions = { practiceId }
+        const opts: TimerResumeOptions = { practiceId, autoStart: true }
         if (mindlessMode) opts.mindlessMode = mindlessMode
         if (isResume) {
           opts.resumeFromSec = resumeFromSec
@@ -173,5 +174,6 @@ type TimerResumeOptions = {
   mindlessMode?: MindlessMode
   resumeFromSec?: number
   secondsTarget?: number
+  autoStart?: boolean
 }
 type TimerOpen = (opts: TimerResumeOptions) => void

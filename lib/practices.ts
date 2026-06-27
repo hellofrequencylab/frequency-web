@@ -1268,6 +1268,11 @@ export interface LogPracticeResult {
    *  the remaining Zaps were paid; streak + bonuses were NOT re-run (they ran on the
    *  first partial log). */
   finished?: boolean
+  /** true = REFUSED because this practice requires its timer (uses_timer) but the caller
+   *  made a one-tap attempt (no positive secondsTarget). Nothing was written and nothing
+   *  was paid. The UI surfaces a "use the timer to log this" message. A timed practice can
+   *  only be logged from inside its session (completeSession always passes secondsTarget). */
+  timerRequired?: boolean
 }
 
 /** The FULL per-log Zap value a practice pays (reward_zaps override else weight-class
@@ -1329,6 +1334,34 @@ export async function logPractice(input: {
   // keys the idempotency row + the practice_logs unique constraint can't be spoofed
   // to backdate; a member can only shift their OWN local day. yyyy-mm-dd.
   const day = await resolveMemberDay(profileId, clientTimezone)
+
+  // The TIMER GATE (load-bearing): a practice with a set timer (uses_timer = timer_kind <> 'none')
+  // can ONLY be logged from inside its session, which always carries a positive secondsTarget. A
+  // one-tap attempt on a timed practice (no positive target) is REFUSED here before any write or
+  // pay, so a member can never bypass the timer and log a timed sit in a single tap. The On Air
+  // completeSession path always passes secondsTarget, so it's unaffected; a "Finish Practice" top-up
+  // (existing partial) also carries a target. Read uses_timer up front (a single select reused for
+  // the reward fields below would be ideal, but those reads are best-effort + late, so we keep this
+  // gate read distinct and authoritative). Fail-open on a read error: a flaky read must never block
+  // a legitimate one-tap log of a non-timed practice.
+  const suppliedTarget = Math.max(0, Math.round(secondsTarget ?? 0))
+  const isOneTapAttempt = suppliedTarget <= 0
+  if (isOneTapAttempt) {
+    try {
+      const { data } = await db()
+        .from('practices')
+        .select('uses_timer')
+        .eq('id', practiceId)
+        .maybeSingle()
+      const usesTimer = (data as { uses_timer: boolean | null } | null)?.uses_timer === true
+      if (usesTimer) {
+        // Refuse: nothing written, nothing paid. The UI tells the member to use the timer.
+        return { logged: false, zapsAwarded: 0, timerRequired: true }
+      }
+    } catch {
+      // a flaky uses_timer read must never block a genuine one-tap log
+    }
+  }
 
   // Completion economy. A TIMED log carries a positive target; the ratio of done/target
   // decides full vs partial. A one-tap log (no target) is always FULL — the unchanged

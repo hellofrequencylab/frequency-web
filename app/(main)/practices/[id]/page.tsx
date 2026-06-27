@@ -150,16 +150,17 @@ export default async function PracticeDetailPage({ params }: Params) {
           </Link>
         ) : isOwner ? (
           <>
-            {/* A PARTIAL today on a TIMED practice belongs on the timer button below (it resumes
-                the sit); the plain log button collapses to "Logged today" so we never show two
-                "Continue Practice" buttons. A NON-timed partial can't be resumed, so it just
-                reads "Logged today". */}
-            <LogPracticeButton
-              practiceId={practice.id}
-              initialLogged={state.loggedToday}
-              resumeFromSec={practice.uses_timer ? undefined : state.partialToday?.bankedSec}
-              secondsTarget={practice.uses_timer ? undefined : state.partialToday?.targetSec}
-            />
+            {/* The plain one-tap log is ONLY for a non-timed practice. A timed practice must be
+                logged from its timer (the server refuses a one-tap on it), so it shows ONLY the
+                timer button below, never this one. */}
+            {!practice.uses_timer && (
+              <LogPracticeButton
+                practiceId={practice.id}
+                initialLogged={state.loggedToday}
+                resumeFromSec={state.partialToday?.bankedSec}
+                secondsTarget={state.partialToday?.targetSec}
+              />
+            )}
             {/* A timed practice opens the On Air timer pre-set to this practice + its length
                 in place (C.4); a log-only practice has no timer. A partial today resumes it
                 ("Continue Practice") instead of starting from zero. */}
@@ -190,14 +191,17 @@ export default async function PracticeDetailPage({ params }: Params) {
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
             {state.adopted && (
               <>
-                {/* A PARTIAL today on a timed practice resumes via the timer button below; the
-                    plain log button stays "Logged today" so there's never a double button. */}
-                <LogPracticeButton
-                  practiceId={practice.id}
-                  initialLogged={state.loggedToday}
-                  resumeFromSec={practice.uses_timer ? undefined : state.partialToday?.bankedSec}
-                  secondsTarget={practice.uses_timer ? undefined : state.partialToday?.targetSec}
-                />
+                {/* The plain one-tap log is ONLY for a non-timed practice; a timed practice is
+                    logged from its timer (the server refuses a one-tap on it), so it shows ONLY
+                    the timer button below. */}
+                {!practice.uses_timer && (
+                  <LogPracticeButton
+                    practiceId={practice.id}
+                    initialLogged={state.loggedToday}
+                    resumeFromSec={state.partialToday?.bankedSec}
+                    secondsTarget={state.partialToday?.targetSec}
+                  />
+                )}
                 {practice.uses_timer && (
                   <PracticeTimerButton
                     practiceId={practice.id}
@@ -215,14 +219,17 @@ export default async function PracticeDetailPage({ params }: Params) {
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
             {state.adopted && (
               <>
-                {/* A PARTIAL today on a timed practice resumes via the timer button below; the
-                    plain log button stays "Logged today" so there's never a double button. */}
-                <LogPracticeButton
-                  practiceId={practice.id}
-                  initialLogged={state.loggedToday}
-                  resumeFromSec={practice.uses_timer ? undefined : state.partialToday?.bankedSec}
-                  secondsTarget={practice.uses_timer ? undefined : state.partialToday?.targetSec}
-                />
+                {/* The plain one-tap log is ONLY for a non-timed practice; a timed practice is
+                    logged from its timer (the server refuses a one-tap on it), so it shows ONLY
+                    the timer button below. */}
+                {!practice.uses_timer && (
+                  <LogPracticeButton
+                    practiceId={practice.id}
+                    initialLogged={state.loggedToday}
+                    resumeFromSec={state.partialToday?.bankedSec}
+                    secondsTarget={state.partialToday?.targetSec}
+                  />
+                )}
                 {practice.uses_timer && (
                   <PracticeTimerButton
                     practiceId={practice.id}

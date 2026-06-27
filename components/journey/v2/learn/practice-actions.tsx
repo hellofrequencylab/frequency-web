@@ -62,8 +62,9 @@ export function PracticeActions({
     const resume = isResume && partialToday
       ? { resumeFromSec: partialToday.bankedSec, secondsTarget: partialToday.targetSec }
       : {}
-    if (movementMode) movement.open({ practiceId, mode: movementMode, ...resume })
-    else mindless.open({ practiceId, ...resume })
+    // autoStart: selecting a practice opens the timer and begins the countdown immediately.
+    if (movementMode) movement.open({ practiceId, mode: movementMode, autoStart: true, ...resume })
+    else mindless.open({ practiceId, autoStart: true, ...resume })
   }
   const [pending, start] = useTransition()
   const [done, setDone] = useState<{ logged: boolean; zaps: number } | null>(null)
