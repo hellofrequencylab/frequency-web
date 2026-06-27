@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, Flame, Gem, Globe, MapPin } from 'lucide-react'
+import { CalendarDays, Flame, Gem, Globe, MapPin, Zap } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { resolveProfileSkin } from '@/lib/theme/profile-skins'
 import { RoleBadge, type CommunityRole } from '@/lib/community-roles'
@@ -35,7 +35,7 @@ function StatPill({ icon: Icon, value, label }: { icon: typeof Flame; value: str
 }
 
 export function SpotlightView({ data, contained = false }: { data: SpotlightData; contained?: boolean }) {
-  const { profile, hostedEvents, layout, background, theme } = data
+  const { profile, hostedEvents, layout, background, theme, totalZaps } = data
   const skin = resolveProfileSkin(profile.profile_theme)
   // The member's custom colours/gradient/fonts/card style (validated). Empty styles when
   // they haven't customized, so the page renders exactly as the skin alone would.
@@ -46,6 +46,7 @@ export function SpotlightView({ data, contained = false }: { data: SpotlightData
   // Authoritative stat values for any `stats` block — read from the allowlisted row,
   // never from member input, so the numbers shown can't be faked.
   const statsContext = {
+    zaps: totalZaps,
     streak: profile.current_streak,
     gems: profile.lifetime_gems,
     joinedYear: profile.created_at ? new Date(profile.created_at).getFullYear() : null,
@@ -123,9 +124,12 @@ export function SpotlightView({ data, contained = false }: { data: SpotlightData
           )}
         </div>
 
-        {/* Stats the member chooses to display */}
-        {(profile.current_streak || profile.lifetime_gems) ? (
+        {/* Stats shown up top — Zaps, streak, gems. */}
+        {(totalZaps || profile.current_streak || profile.lifetime_gems) ? (
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            {totalZaps > 0 && (
+              <StatPill icon={Zap} value={totalZaps.toLocaleString()} label="zaps" />
+            )}
             {!!profile.current_streak && profile.current_streak > 0 && (
               <StatPill icon={Flame} value={String(profile.current_streak)} label="day streak" />
             )}

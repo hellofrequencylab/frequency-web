@@ -180,10 +180,14 @@ export async function createReply(parentId: string, body: string) {
   const admin = createAdminClient()
   const { data: parent } = await admin
     .from('posts')
-    .select('scope_id, visibility')
+    .select('scope_id, visibility, author_id')
     .eq('id', parentId)
     .maybeSingle()
   if (!parent) return
+
+  // Self-reply guard: replying to your OWN post grants nothing (anti-farming).
+  // A user can't pump Gems or a comment badge by talking to himself.
+  const isSelfReply = parent.author_id === profileId
 
   // Replying inside a circle requires active membership, same as a top-level
   // group post (createPost above) — otherwise any user could post into a
@@ -204,8 +208,11 @@ export async function createReply(parentId: string, body: string) {
   // Notify members @mentioned in the reply (same fan-out as top-level posts).
   if (reply) await fanOutMentions(admin, reply.id, trimmed, profileId, 'a reply')
 
-  awardGems(profileId, 'comment_reply').catch((e) => console.error('[feed gamification]', e))
-  processGamificationEvent({ type: 'post_create', profileId }).catch((e) => console.error('[feed gamification]', e))
+  // Only reward replies to OTHER people's posts — never your own.
+  if (!isSelfReply) {
+    awardGems(profileId, 'comment_reply').catch((e) => console.error('[feed gamification]', e))
+    processGamificationEvent({ type: 'post_create', profileId }).catch((e) => console.error('[feed gamification]', e))
+  }
 
   // No revalidation: PostReplies re-fetches the thread (and re-derives the count)
   // optimistically right after this resolves, so revalidating the feed here would
@@ -267,17 +274,33 @@ export async function toggleReaction(
   if (activate) {
     // Idempotent insert against the unique (post_id, profile_id, reaction_type)
     // constraint: a double-tap that races just no-ops instead of erroring.
-    const { error } = await supabase
+    // `.select()` returns the row only when this upsert actually INSERTED — a
+    // duplicate (ignored) yields no rows. We use that to award only on a
+    // genuinely-new reaction (anti-farming: un-react/re-react can't pump the cap).
+    const { data: inserted, error } = await supabase
       .from('post_reactions')
       .upsert(
         { post_id: postId, profile_id: profileId, reaction_type: reactionType },
         { onConflict: 'post_id,profile_id,reaction_type', ignoreDuplicates: true },
       )
+      .select('id')
     if (error) {
       console.error('[toggleReaction]', error.message)
       return fail('Could not save your reaction')
     }
-    awardGems(profileId, 'reaction').catch((e) => console.error('[feed gamification]', e))
+    // Only a first-time reaction to someone ELSE's post earns a gem.
+    const isNewReaction = (inserted?.length ?? 0) > 0
+    if (isNewReaction) {
+      const admin = createAdminClient()
+      const { data: post } = await admin
+        .from('posts')
+        .select('author_id')
+        .eq('id', postId)
+        .maybeSingle()
+      if (post && post.author_id !== profileId) {
+        awardGems(profileId, 'reaction').catch((e) => console.error('[feed gamification]', e))
+      }
+    }
   } else {
     // Idempotent un-react: delete by the natural key, no pre-existence check.
     const { error } = await supabase
