@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect } from 'react'
+import { useState, useTransition, useRef, useEffect, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ImagePlus, X, Trash2, Film, Radio, Smile } from 'lucide-react'
@@ -60,6 +60,7 @@ export function EventActivity({
   canModerate,
   myProfileId,
   isPast,
+  dispatchComposer,
 }: {
   eventId: string
   slug: string
@@ -71,6 +72,10 @@ export function EventActivity({
   myProfileId: string | null
   /** The event has already happened (changes the placeholder copy). */
   isPast: boolean
+  /** The host/cohost "Post an update" composer, when the viewer may dispatch (canDispatch).
+   *  When set it REPLACES the attendee "Say hi" composer — there is only ever one composer
+   *  above the stream. Null for attendees, who get the say-hi box (gated by canPost). */
+  dispatchComposer?: ReactNode
 }) {
   const [body, setBody] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -215,7 +220,11 @@ export function EventActivity({
         )}
       </h2>
 
-      {canPost ? (
+      {/* ONE composer above the stream. Hosts/cohosts (canDispatch) get the "Post an update"
+          composer passed down from the block; everyone else gets the say-hi composer below. */}
+      {dispatchComposer ? (
+        <div className="mb-4">{dispatchComposer}</div>
+      ) : canPost ? (
         <div className="mb-4 rounded-2xl border border-border bg-surface p-3">
           <textarea
             value={body}
@@ -223,7 +232,7 @@ export function EventActivity({
             onKeyDown={(e) => {
               if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit()
             }}
-            placeholder={isPast ? 'Say thanks, share a moment, tag a friend.' : 'Say hi before the day.'}
+            placeholder={isPast ? 'Say thanks, share a moment, tag a friend.' : 'Say hi before the event.'}
             rows={2}
             disabled={pending}
             className="w-full resize-none bg-transparent text-sm leading-relaxed text-text/90 placeholder:text-subtle outline-none disabled:opacity-60"

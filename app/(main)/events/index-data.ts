@@ -8,6 +8,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { nearbyEvents } from '@/lib/events/geocode'
+import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
@@ -37,6 +38,10 @@ export type EventRow = {
   attendance_mode: string | null
   price_cents: number | null
   cover_image_path: string | null
+  // The original scanned poster (events.poster_path) — the card's header-image fallback when
+  // there's no uploaded cover. Lives in the PRIVATE network-contacts bucket, so it serves via a
+  // short-lived signed URL (mirrors the detail page), not the public event-media URL.
+  poster_path?: string | null
   // Set on standalone public events surfaced by the nearby union (ADR-254): the
   // distance from the viewer's fuzzed home to the EVENT's own geocoded point, in
   // metres. Circle events leave this null (their distance is circle-anchored).
@@ -296,7 +301,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // not-yet-regenerated columns; see lib/events/geocode.ts).
   const EVENT_SELECT = `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
        featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
-       cover_image_path, host:profiles!host_id ( id, display_name, handle )`
+       cover_image_path, poster_path, host:profiles!host_id ( id, display_name, handle )`
 
   // ── (1) In-scope CIRCLE events (the original circle-anchored listing) ────────
   let circleEvents: EventRow[] = []
@@ -382,8 +387,40 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       .map((e) => ({ ...e, distance_m: null, is_public_standalone: true }))
   }
 
-  const events: EventRow[] = [...circleEvents, ...publicEvents]
-  const hasAnyScope = myCircleIds.length > 0 || !!myGeocell
+  // ── (3) The viewer's OWN hosted events ──────────────────────────────────────
+  // ROOT CAUSE of "only one event shows": the circle+public union above misses an event the
+  // viewer HOSTS unless it happens to be scoped to a circle they're a member of AND listable, or
+  // it's a standalone public event near them. So a host's own gathering (e.g. circle_only, or a
+  // circle they host but aren't a member-row of, or unlisted) never lands in the library even
+  // though they can plainly see it — and even though the "Happening soon" rail surfaces it. We add
+  // every upcoming, published, non-cancelled event the viewer hosts so the library is a superset of
+  // what they can see (the rail included). De-duped by id below; the union owns provenance/distance.
+  let hostedEvents: EventRow[] = []
+  if (myProfileId) {
+    let hostedQuery = admin
+      .from('events')
+      .select(EVENT_SELECT)
+      .eq('host_id', myProfileId)
+      .eq('status', 'published')
+      .eq('is_cancelled', false)
+      .gte('starts_at', now)
+      .lte('starts_at', future)
+      .order('starts_at', { ascending: true })
+    if (hideDemo) hostedQuery = hostedQuery.eq('is_demo', false)
+    const { data: rawHosted } = await hostedQuery.limit(40)
+    hostedEvents = (rawHosted ?? []) as unknown as EventRow[]
+  }
+
+  // De-dupe the union by id (an event can satisfy more than one source — e.g. a public event the
+  // viewer also hosts). First writer wins, so circle/public provenance + distance survive.
+  const events: EventRow[] = []
+  const seenEventIds = new Set<string>()
+  for (const e of [...circleEvents, ...publicEvents, ...hostedEvents]) {
+    if (seenEventIds.has(e.id)) continue
+    seenEventIds.add(e.id)
+    events.push(e)
+  }
+  const hasAnyScope = myCircleIds.length > 0 || !!myGeocell || hostedEvents.length > 0
 
   // Circle names + coordinates for scope_ids (only the circle-scoped events).
   const circleScopeIds = [...new Set(events.filter((e) => e.scope_type === 'circle').map((e) => e.scope_id))]
@@ -402,14 +439,24 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     })
   }
 
-  // Resolve cover images. cover_image_path lives in the PUBLIC `event-media`
-  // bucket (mirrors event-activity / recap-album), so a plain public URL serves —
-  // no signing, and next/image can optimize it (next.config remotePatterns).
+  // Resolve each card's header image, mirroring the detail page's priority: the uploaded cover
+  // (cover_image_path) leads, then the original scanned poster (poster_path) as a fallback, so a
+  // poster-captured event still shows its flyer on the card instead of the date placeholder.
+  // cover_image_path lives in the PUBLIC `event-media` bucket → a plain public URL (next/image
+  // can optimize it). poster_path lives in the PRIVATE network-contacts bucket → a short-lived
+  // signed URL (the same path the detail page signs), batched in one storage call.
   const coverUrls: Record<string, string> = {}
+  const posterPaths = events
+    .filter((e) => !e.cover_image_path && e.poster_path)
+    .map((e) => e.poster_path as string)
+  const posterUrlByPath = posterPaths.length > 0 ? await posterSignedUrlMap(posterPaths) : new Map<string, string>()
   for (const e of events) {
     if (e.cover_image_path) {
       const { data } = admin.storage.from('event-media').getPublicUrl(e.cover_image_path)
       if (data?.publicUrl) coverUrls[e.id] = data.publicUrl
+    } else if (e.poster_path) {
+      const signed = posterUrlByPath.get(e.poster_path)
+      if (signed) coverUrls[e.id] = signed
     }
   }
 

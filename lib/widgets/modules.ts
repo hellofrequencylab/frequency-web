@@ -341,11 +341,15 @@ const CIRCLE_DETAIL_MODULE_IDS = [
 // module-driven, so an operator can move ANY block from the on-page Layout editor.
 //
 // The default interior layout (lib/page-settings/default-layouts.ts) places these in a Main + side
-// grid that reproduces the old hand-built two-column page exactly: the post area (description →
-// poster → cohosts → sales → activity → recap) leads MAIN, while the Join box, facts, warm proof,
-// and the host "Post an update" composer fill the SIDE column. Listing 'event-dispatch' here (it
-// was previously kept out of the set + rendered directly in the aside) is now safe + correct: the
-// aside is gone, so the module is the ONLY place the composer renders — no double-render.
+// grid: the post area (description → poster → cohosts → sales → activity → recap) leads MAIN, while
+// the Join box, facts, and warm proof fill the SIDE column.
+//
+// The 'event-dispatch' composer is NO LONGER a default block: the host "Post an update" composer is
+// now folded INTO the activity module (event-activity renders it for hosts/cohosts, the say-hi
+// composer for everyone else), so there is one composer, not two boxes. The 'event-details' block
+// (the poster key-value details) is likewise out of the default set. Both module DEFINITIONS stay
+// in LAYOUT_MODULES so an operator can re-add either from the Layout editor; they're just absent
+// from the out-of-the-box layout.
 const EVENT_DETAIL_MODULE_IDS = [
   // Post area (defaults to MAIN) — every poster section is its own movable block (no lumping).
   'event-description',
@@ -355,13 +359,11 @@ const EVENT_DETAIL_MODULE_IDS = [
   'event-pricing',
   'event-links',
   'event-sponsors',
-  'event-details',
   'event-cohosts',
   'event-sales',
   'event-activity',
   'event-recap',
   // Former Join aside (defaults to SIDE).
-  'event-dispatch',
   'event-join',
   'event-warm-proof',
   'event-facts',
