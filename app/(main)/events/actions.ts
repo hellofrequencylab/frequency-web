@@ -11,7 +11,9 @@ import { processGamificationEvent, recordStreakActivity } from '@/lib/achievemen
 import { awardGems } from '@/lib/gems'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
+import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
+import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { stampEventSpaceId } from '@/lib/events/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
@@ -23,6 +25,25 @@ import { shouldSend } from '@/lib/notification-preferences'
 import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
+
+// Gallery images ride as a JSON array of storage paths (the form has no native array
+// shape). Parse defensively: a missing/garbage value, a non-array, or any non-string
+// member yields a clean string[] (bad members dropped), capped so a crafted payload
+// can't bloat the row. Empty array = clear the gallery.
+const MAX_GALLERY_IMAGES = 12
+function parseGalleryPaths(raw: string | null): string[] {
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
+      .map((p) => p.trim())
+      .slice(0, MAX_GALLERY_IMAGES)
+  } catch {
+    return []
+  }
+}
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
 const VALID_VISIBILITY = ['public', 'unlisted', 'circle_only', 'private']
@@ -69,7 +90,12 @@ export async function createEvent(formData: FormData) {
   const title = (formData.get('title') as string | null)?.trim()
   const description = (formData.get('description') as string | null)?.trim() || null
   const location = (formData.get('location') as string | null)?.trim() || null
-  const scopeId = formData.get('scopeId') as string | null
+  // Scope: a circle event belongs to one of the creator's circles; a PUBLIC event
+  // (any Crew member, with or without a circle) is a standalone local event placed in
+  // the creator's region (resolved below, like the poster-scan flow).
+  const scopeType = (formData.get('scopeType') as string | null) === 'public' ? 'public' : 'circle'
+  const isPublic = scopeType === 'public'
+  const formScopeId = formData.get('scopeId') as string | null
   const startsAt = formData.get('startsAt') as string | null
   const endsAt = (formData.get('endsAt') as string | null) || null
 
@@ -89,7 +115,10 @@ export async function createEvent(formData: FormData) {
   const capacity = Number.isFinite(capacityParsed) && capacityParsed > 0 ? capacityParsed : null
 
   const visibilityRaw = (formData.get('visibility') as string | null) || 'circle_only'
-  const visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
+  let visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
+  // A public (circle-less) event can't be circle_only — there is no circle to scope it to —
+  // so fall it back to public.
+  if (isPublic && visibility === 'circle_only') visibility = 'public'
 
   const category = (formData.get('category') as string | null)?.trim() || 'gathering'
 
@@ -98,8 +127,12 @@ export async function createEvent(formData: FormData) {
 
   // Cover image (a storage path in the public event-media bucket, resolved to a URL at render).
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
+  // Additional gallery images (ordered storage paths in the same bucket).
+  const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
 
-  if (!title || !scopeId || !startsAt) return
+  if (!title || !startsAt) return
+  // A circle event must name a circle; a public event resolves its scope below.
+  if (!isPublic && !formScopeId) return
   // An end before the start is never valid — drop the bad write rather than store a
   // negative-duration event (the form should also block it, this is the server guard).
   if (endsAt && new Date(endsAt) < new Date(startsAt)) return
@@ -111,6 +144,11 @@ export async function createEvent(formData: FormData) {
 
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
+
+  // Resolve the scope: a circle event uses the chosen circle; a public event is placed in
+  // the creator's region (the same resolver the poster-scan flow uses).
+  const scopeId = isPublic ? await resolveRegionScopeId(myProfileId) : formScopeId
+  if (!scopeId) return
 
   const admin = createAdminClient()
 
@@ -139,7 +177,7 @@ export async function createEvent(formData: FormData) {
       description,
       location,
       scope_id: scopeId,
-      scope_type: 'circle',   // always circle-scoped now
+      scope_type: scopeType,   // 'circle' (a circle's event) or 'public' (a standalone local event)
       starts_at: startsIso,
       ends_at: endsIso,
       host_id: myProfileId,
@@ -151,6 +189,7 @@ export async function createEvent(formData: FormData) {
       category,
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
+      gallery_image_paths: galleryImagePaths,
       // space_id is newer than the generated DB types — cast the payload to reach the column
       // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
       ...(spaceId ? { space_id: spaceId } : {}),
@@ -236,6 +275,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const energyRaw = (formData.get('energyTag') as string | null) || ''
   const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
+  const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
 
   const admin = createAdminClient()
   const { data: ev } = await admin.from('events').select('slug').eq('id', eventId).maybeSingle()
@@ -255,6 +295,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
       category,
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
+      gallery_image_paths: galleryImagePaths,
     })
     .eq('id', eventId)
   if (error) {
@@ -696,6 +737,11 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     .eq('profile_id', myProfileId)
     .maybeSingle()
   if (rsvp?.status !== 'going') return { ok: false }
+
+  // "Showed up" verification (ADR-420): physically checking in at a real event is the
+  // baseline real-person signal. Idempotent (only sets verified_at once) + fail-safe.
+  // Runs for any valid check-in, so a member already counted as attending still verifies.
+  await markVerifiedByAttendance(myProfileId)
 
   const { recorded } = await recordEngagementEvent({
     idempotencyKey: `event_checkin:${eventId}:${myProfileId}`,

@@ -5,6 +5,64 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { sanitizeProfileInput } from '@/lib/profile-input'
+import { uploadProfileImage } from '@/lib/storage/profile-images'
+import {
+  readSpotlightEnabled,
+  withSpotlightPublished,
+} from '@/lib/profile/spotlight-flags'
+
+// Owner-only: publish or unpublish your own Spotlight page (the public mini-site).
+// Self-scoped — the write is always keyed to the caller's own auth_user_id, so it can
+// never touch anyone else's row. Requires the owner's Spotlight to be ENABLED first
+// (an admin turns that on); publishing is the owner's explicit, separate act, so a
+// page never goes public by accident. Read-modify-write of the isolated spotlight
+// sub-object (withSpotlightPublished) preserves every other meta key.
+export async function setSpotlightPublished(published: boolean): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { data: me } = await admin
+    .from('profiles')
+    .select('id, handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!me) throw new Error('Profile not found')
+
+  const meta = (me as { meta?: unknown }).meta
+  if (!readSpotlightEnabled(meta)) {
+    throw new Error('Your Spotlight page is not turned on yet.')
+  }
+
+  const nextMeta = withSpotlightPublished(meta, published)
+  const { error } = await admin
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', user.id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/settings/profile')
+  const handle = (me as { handle?: string }).handle
+  if (handle) revalidatePath(`/spotlight/${handle}`)
+}
+
+// Avatar/header upload runs on the server (not the browser client) because the
+// browser client often has no session under SSR-cookie auth, which makes the
+// storage write run as `anon` and fail the owner-INSERT RLS policy. Here the auth
+// user id is resolved from the verified session, so the write always authorizes.
+export async function uploadProfileImageAction(formData: FormData): Promise<string> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const file = formData.get('file')
+  if (!(file instanceof Blob)) throw new Error('No image provided.')
+  const kind = formData.get('kind') === 'header' ? 'header' : 'avatar'
+  const contentType = file.type || 'image/jpeg'
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  return uploadProfileImage(user.id, bytes, contentType, kind)
+}
 
 export async function updateProfile(data: {
   displayName: string

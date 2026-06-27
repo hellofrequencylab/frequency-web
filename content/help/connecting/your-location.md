@@ -3,7 +3,7 @@ title: Your location & being found nearby
 description: Exactly what others can see, every control you have, and how live location works.
 category: connecting
 order: 6
-updated: 2026-06-25
+updated: 2026-06-26
 audience: member
 featureKeys: [connections, location, settings, resonance]
 status: published
@@ -27,6 +27,9 @@ instantly.
   community. This controls who can surface you by location.
 - **Discoverability radius.** Your own slider for how far away someone can be and
   still discover you.
+- **Feed reach.** A separate slider for how far your own **Nearby feed** casts, from
+  just your block out to the wider region. It's only your starting point: when your
+  area is quiet, we widen it on our own so your feed is never empty.
 
 ## How precisely you're shown
 

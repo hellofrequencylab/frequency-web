@@ -2,30 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { finalizePendingInduction } from '../actions'
+import { finalizePendingInduction, uploadPendingAvatar } from '../actions'
 
 // Deferred induction, final step (now authed). Uploads the avatar the signed-out
-// flow parked in localStorage, then writes the profile from the stashed answers
-// and drops the new Founder into the feed with Vera's lightbox. Best-effort on the
-// avatar: if it's missing or won't upload, we finish without it (they add one
-// later from their profile). Runs exactly once.
+// flow parked in localStorage (server-side, so it can't fail as an unauthenticated
+// `anon` storage write), then writes the profile from the stashed answers and drops
+// the new Founder into the feed with Vera's lightbox. Best-effort on the avatar: if
+// it's missing or won't upload, we finish without it (they add one later from their
+// profile). Runs exactly once.
 const PENDING_AVATAR_KEY = 'fq_pending_avatar'
-
-function dataUrlToBlob(dataUrl: string): { blob: Blob; ext: string } | null {
-  const m = /^data:([^;,]+)[^,]*,(.*)$/.exec(dataUrl)
-  if (!m) return null
-  const mime = m[1] || 'image/jpeg'
-  const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg'
-  try {
-    const bin = atob(m[2])
-    const bytes = new Uint8Array(bin.length)
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-    return { blob: new Blob([bytes], { type: mime }), ext }
-  } catch {
-    return null
-  }
-}
 
 export function BetaCompleteFinalizer() {
   const router = useRouter()
@@ -41,22 +26,12 @@ export function BetaCompleteFinalizer() {
       let avatarUrl: string | null = null
 
       // Upload the parked avatar, if any (best-effort). Only present when they
-      // actually picked one, so a merge never disturbs an existing photo.
+      // actually picked one, so a merge never disturbs an existing photo. The
+      // upload runs server-side so it can't fail as an unauthenticated write.
       try {
         const dataUrl = localStorage.getItem(PENDING_AVATAR_KEY)
         if (dataUrl) {
-          const parsed = dataUrlToBlob(dataUrl)
-          const supabase = createClient()
-          const { data: { user } } = await supabase.auth.getUser()
-          if (parsed && user) {
-            const path = `${user.id}/avatar.${parsed.ext}`
-            const { error: upErr } = await supabase.storage
-              .from('avatars')
-              .upload(path, parsed.blob, { upsert: true, contentType: parsed.blob.type })
-            if (!upErr) {
-              avatarUrl = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
-            }
-          }
+          avatarUrl = await uploadPendingAvatar(dataUrl)
         }
         localStorage.removeItem(PENDING_AVATAR_KEY)
       } catch {

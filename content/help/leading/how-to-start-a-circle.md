@@ -41,6 +41,10 @@ That is the kit. Everything below is how to use it.
 
 You are now a **Host**. The role is earned by doing this, never bought.
 
+Starting a Circle is a **Crew** thing, and Crew is **free during the beta**: if you
+are not Crew yet, choosing "Start a Circle" offers a one-tap upgrade, no card, and
+you keep everything you have. Any member can still **join** a Circle.
+
 ## Set a standing time and do not move it
 
 Pick one night and keep it. The single biggest reason groups survive is that

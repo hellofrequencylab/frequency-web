@@ -59,6 +59,9 @@ You can shape practices, not just pick them:
   the steps, a cadence, and a Pillar. Review it, change anything, and create. Already
   wrote your practice somewhere else? Paste it and Vera shapes it into the same fields.
   Want to start from scratch instead? Pick "Skip, I'll build it myself" to go straight to the editor.
+  Creating a practice is a **Crew** thing, and Crew is **free during the beta**: if you
+  are not Crew yet, "Create a practice" offers a one-tap upgrade, no card. Any member
+  can still **adopt** a practice and log it.
 - **Edit yours.** Any practice you created shows an **Edit** button. Change its name,
   summary, full "how to" guide, cadence, Pillar, category, and icon by hand, or use
   **Edit with Vera** to make a change in plain language ("make it a morning sit," "cut it

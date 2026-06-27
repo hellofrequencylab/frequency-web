@@ -665,6 +665,84 @@ Frequency is a community platform for local groups to connect, organise events, 
 `
 }
 
+// ── Posted-event claim invite (to a third-party organizer) ──────────────────────
+// Sent once when a member posts an event they found on behalf of the real organizer
+// and we have the organizer's EMAIL. A non-member transactional message: it must not
+// claim membership, carries its own footer, and its CTA is the one-time claim link
+// that makes the organizer the host. Voice: plain, sentence case, no em dashes.
+
+export async function sendEventClaimInviteEmail(params: {
+  to: string
+  organizerName: string | null
+  posterName: string | null
+  eventTitle: string
+  whenLine: string | null
+  location: string | null
+  claimUrl: string
+  eventUrl: string
+}) {
+  const { to, eventTitle } = params
+  await enqueueEmail({
+    to,
+    subject: `Claim your event on Frequency: ${eventTitle}`,
+    html: claimInviteHtml(params),
+    text: claimInviteText(params),
+  })
+}
+
+function claimInviteHtml({ organizerName, posterName, eventTitle, whenLine, location, claimUrl, eventUrl }: {
+  organizerName: string | null; posterName: string | null; eventTitle: string
+  whenLine: string | null; location: string | null; claimUrl: string; eventUrl: string
+}): string {
+  const greeting = organizerName ? `Hi ${escapeHtml(organizerName)},` : 'Hi there,'
+  const who = posterName ? escapeHtml(posterName) : 'A neighbor'
+  const title = escapeHtml(eventTitle)
+  const meta = [whenLine, location].filter(Boolean).map((s) => escapeHtml(s as string)).join(' · ')
+  const footer = `${who} listed your event on Frequency, a place to find and host local gatherings. You are getting this once so you can claim it or ignore it. Not your event? No action needed, it stays as a community listing.<br>${orgContactLine()}`
+  return emailShell(`
+    <h1 style="${h1Style}">Is this your event?</h1>
+    <p style="${pStyle}">${greeting}</p>
+    <p style="${pStyle}">
+      ${who} added <strong>${title}</strong>${meta ? ` (${meta})` : ''} to Frequency so people nearby can find it.
+    </p>
+    <p style="${pStyle}">
+      If you are the organizer, claim it to become the host. You can edit the details, see who is coming, and message your guests.
+    </p>
+    <a href="${claimUrl}" style="${btnStyle}">Claim your event →</a>
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#8F8675;">
+      Want to see it first? <a href="${eventUrl}" style="color:#9A5E12;text-decoration:none;font-weight:600;">View the event</a>.
+    </p>
+    <p style="font-size:13px;color:#8F8675;">
+      Or paste this link in your browser:<br>
+      <span style="font-family:monospace;color:#6B6253;">${claimUrl}</span>
+    </p>
+  `, footer)
+}
+
+function claimInviteText({ organizerName, posterName, eventTitle, whenLine, location, claimUrl, eventUrl }: {
+  organizerName: string | null; posterName: string | null; eventTitle: string
+  whenLine: string | null; location: string | null; claimUrl: string; eventUrl: string
+}): string {
+  const greeting = organizerName ? `Hi ${organizerName},` : 'Hi there,'
+  const who = posterName || 'A neighbor'
+  const meta = [whenLine, location].filter(Boolean).join(' · ')
+  return `${greeting}
+
+${who} added "${eventTitle}"${meta ? ` (${meta})` : ''} to Frequency so people nearby can find it.
+
+If you are the organizer, claim it to become the host. You can edit the details, see who is coming, and message your guests.
+
+Claim your event:
+${claimUrl}
+
+Want to see it first? View the event: ${eventUrl}
+
+${who} listed your event on Frequency, a place to find and host local gatherings. You are getting this once so you can claim it or ignore it. Not your event? No action needed.
+Frequency™ · ${BASE_URL}
+`
+}
+
 // Weekly community digest ──────────────────────────────────────────────────────
 
 function formatDigestDate(iso: string): string {
@@ -727,7 +805,7 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
     <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
       Your week
     </p>
-    <h1 style="${h1Style}">Hi ${recipientName} , </h1>
+    <h1 style="${h1Style}">Hi ${recipientName},</h1>
     <p style="${pStyle}">Here's what's happening in your community this week.</p>
     ${statusHtml}
     ${dispatchesHtml}

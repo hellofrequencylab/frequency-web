@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { EventCompose } from './event-compose'
+import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { EventsFilterBar } from './events-filter-bar'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { PageContents } from '@/components/templates/page-contents'
@@ -41,7 +42,6 @@ export default async function EventsPage({
     content,
     nowDate,
     myProfileId,
-    myCircles,
     isCrew,
     isHost,
     goingEvents,
@@ -110,7 +110,18 @@ export default async function EventsPage({
             )}
             {/* Subscribe-to-calendar affordance (Events B-4) — signed-in members only. */}
             {myProfileId && <CalendarSubscribe />}
-            {isCrew && <EventCompose groups={myCircles} />}
+            {/* Create an event. Crew (and stewards) get the real composer; everyone else
+                signed in gets the "Crew is free during beta" upgrade popup. */}
+            {myProfileId && (
+              <CrewGateButton
+                isCrew={isCrew}
+                label="New Event"
+                reason="create-event"
+                buttonClassName="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              >
+                <EventCompose />
+              </CrewGateButton>
+            )}
             {operatorCta}
           </div>
         ) : undefined

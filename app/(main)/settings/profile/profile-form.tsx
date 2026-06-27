@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
-import { Check, Loader2 } from 'lucide-react'
-import { updateProfile } from './actions'
+import { Check, Loader2, Sparkles, ExternalLink } from 'lucide-react'
+import { updateProfile, uploadProfileImageAction, setSpotlightPublished } from './actions'
 import { HeaderEditor } from './header-editor'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 
@@ -55,6 +55,8 @@ export function ProfileForm({
     phone: string
     city: string
     website: string
+    spotlightEnabled: boolean
+    spotlightPublished: boolean
   }
 }) {
   const [displayName,   setDisplayName]   = useState(initial.displayName)
@@ -75,6 +77,9 @@ export function ProfileForm({
   const [headerRemoved, setHeaderRemoved] = useState(false)
   const [uploading,     setUploading]     = useState(false)
   const [uploadError,   setUploadError]   = useState('')
+  const [spotPublished, setSpotPublished] = useState(initial.spotlightPublished)
+  const [spotPending,   setSpotPending]   = useState(false)
+  const [spotError,     setSpotError]     = useState('')
   const [saved,         setSaved]         = useState(false)
   const [saveError,     setSaveError]     = useState('')
   const [isPending,     startTransition]  = useTransition()
@@ -136,24 +141,27 @@ export function ProfileForm({
     setAvatarPreview(URL.createObjectURL(file))
   }
 
-  // Upload the cropped header blob (already 1500×560 from the editor).
+  // Upload the cropped header blob (already 1500×560 from the editor). The write
+  // goes through a server action — the browser client can lack a session under
+  // SSR-cookie auth, which makes a direct storage upload run as `anon` and fail
+  // the owner-INSERT RLS policy ("new row violates row-level security policy").
   async function uploadHeader(): Promise<string> {
     if (!headerBlob) return headerUrl
     setUploading(true)
     setUploadError('')
-    const supabase = createClient()
-    const path = `${userId}/header.jpg`
-    const { error } = await supabase.storage.from('avatars').upload(path, headerBlob, { upsert: true, contentType: 'image/jpeg' })
-    if (error) {
-      setUploadError(`Header upload failed: ${error.message}`)
-      setUploading(false)
+    try {
+      const fd = new FormData()
+      fd.append('file', headerBlob, 'header.jpg')
+      fd.append('kind', 'header')
+      const url = await uploadProfileImageAction(fd)
+      setHeaderUrl(url)
+      return url
+    } catch (err) {
+      setUploadError(`Header upload failed: ${err instanceof Error ? err.message : 'unknown error'}`)
       return headerUrl
+    } finally {
+      setUploading(false)
     }
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    const busted = `${publicUrl}?t=${Date.now()}`
-    setHeaderUrl(busted)
-    setUploading(false)
-    return busted
   }
 
   async function uploadAvatar(): Promise<string> {
@@ -170,24 +178,19 @@ export function ProfileForm({
       return avatarUrl
     }
 
-    const supabase = createClient()
-    const path = `${userId}/avatar.jpg`
-
-    const { error } = await supabase.storage
-      .from('avatars')
-      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
-
-    if (error) {
-      setUploadError(`Upload failed: ${error.message}`)
-      setUploading(false)
+    try {
+      const fd = new FormData()
+      fd.append('file', blob, 'avatar.jpg')
+      fd.append('kind', 'avatar')
+      const url = await uploadProfileImageAction(fd)
+      setAvatarUrl(url)
+      return url
+    } catch (err) {
+      setUploadError(`Upload failed: ${err instanceof Error ? err.message : 'unknown error'}`)
       return avatarUrl
+    } finally {
+      setUploading(false)
     }
-
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    const bustedUrl = `${publicUrl}?t=${Date.now()}`
-    setAvatarUrl(bustedUrl)
-    setUploading(false)
-    return bustedUrl
   }
 
   const canSave =
@@ -239,7 +242,22 @@ export function ProfileForm({
     })
   }
 
+  async function handleTogglePublish() {
+    const next = !spotPublished
+    setSpotPending(true)
+    setSpotError('')
+    try {
+      await setSpotlightPublished(next)
+      setSpotPublished(next)
+    } catch (err) {
+      setSpotError(err instanceof Error ? err.message : 'Could not update your Spotlight.')
+    } finally {
+      setSpotPending(false)
+    }
+  }
+
   const showInitials = getInitials(displayName || initial.displayName || '?')
+  const spotlightUrl = handle ? `/spotlight/${handle}` : ''
 
   return (
     <form onSubmit={handleSave} className="space-y-6">
@@ -446,6 +464,51 @@ export function ProfileForm({
           />
         </div>
       </div>
+
+      {/* ── Spotlight page (opt-in public mini-site) ── shown only once turned on ── */}
+      {initial.spotlightEnabled && (
+        <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+          <div className="flex items-start gap-2">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+            <div>
+              <p className="text-sm font-semibold text-text">Your Spotlight page</p>
+              <p className="mt-0.5 text-xs text-muted">
+                A shareable page with your bio, links, and what you host. Themed to match your
+                profile. Anyone with the link can see it once you publish.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
+            <span className="text-sm text-text">{spotPublished ? 'Published' : 'Draft (only you can see it)'}</span>
+            <button
+              type="button"
+              onClick={handleTogglePublish}
+              disabled={spotPending}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+                spotPublished
+                  ? 'border border-border-strong text-text hover:bg-surface-elevated'
+                  : 'bg-primary text-on-primary hover:bg-primary-hover'
+              }`}
+            >
+              {spotPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {spotPublished ? 'Unpublish' : 'Publish'}
+            </button>
+          </div>
+
+          {spotError && <p className="text-xs text-danger">{spotError}</p>}
+
+          {spotPublished && spotlightUrl && (
+            <Link
+              href={spotlightUrl}
+              target="_blank"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-strong hover:underline"
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> View your Spotlight
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* ── Error + Save ────────────────────────────── */}
       {saveError && (

@@ -24,8 +24,11 @@ import { RsvpControls } from '@/components/events/rsvp-controls'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { type ActivityPost } from '@/components/events/event-activity'
 import { EventRewardStrip } from '@/components/events/event-reward-strip'
+import { WarmProof } from '@/components/events/warm-proof'
 import { EventFactPanel, type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
+import { EventGallery } from '@/components/events/event-gallery'
+import { ClaimEventBanner } from '@/components/events/claim-event-banner'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { listCohosts } from '@/lib/events/cohosts'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
@@ -197,8 +200,10 @@ export default async function EventDetailPage({
     details: EventDetailsWithMedia | null
     poster_path: string | null
     cover_image_path: string | null
+    gallery_image_paths: string[] | null
     attendance_mode: AttendanceMode | null
     online_url: string | null
+    status: string | null
   }
   // These three only depend on already-resolved values (event.id / session_id) and
   // not on each other, so resolve them concurrently: the extra-meta read, the
@@ -207,7 +212,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, attendance_mode, online_url',
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -226,14 +231,26 @@ export default async function EventDetailPage({
   const ticketedCents: number | null = ticketedCentsResolved
   const canManage = eventCaps.has('event.editSettings')
 
-  // Cover image (A1) — a public storage path in the event-media bucket → public URL
-  // (next/image allows the supabase public storage host). Null = token placeholder.
+  // Draft guard (ADR poster-events): an unpublished draft must never render on its
+  // public slug. The admin read above bypasses RLS, so re-apply the status gate the
+  // migration assumes server reads carry — only a manager may preview a draft.
+  if ((extra?.status ?? 'published') !== 'published' && !canManage) notFound()
+
+  // An unclaimed event posted on an organizer's behalf: it has a poster credit, no
+  // host, and was never claimed. Drives the "this is not my event / claim it" UI.
+  const isUnclaimedPosted = isPostedEvent && !extra?.claimed_at && !event.host
+
+  // Uploaded cover (A1) — a public storage path in the event-media bucket → public URL
+  // (next/image allows the supabase public storage host). Null when the host never
+  // uploaded one, which is the case for every event captured by scanning a poster.
   const coverUrl = extra?.cover_image_path
     ? admin.storage.from('event-media').getPublicUrl(extra.cover_image_path).data.publicUrl
     : null
 
   // Both of these depend only on `extra` (not on each other): the "Posted by" credit
-  // lookup and the signed URLs for the poster's media crops — resolve concurrently.
+  // lookup and the signed URLs for the poster's media — resolve concurrently. We sign
+  // the poster's crops (details.media) AND the full poster (poster_path) in one batch,
+  // so a scanned poster can serve as the header + gallery below.
   const posterDetails: EventDetailsWithMedia =
     extra?.details && typeof extra.details === 'object' ? extra.details : {}
   const [postedByResolved, posterCropEntries] = await Promise.all([
@@ -245,11 +262,33 @@ export default async function EventDetailPage({
           .maybeSingle()
           .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? null)
       : Promise.resolve(null),
-    posterSignedUrlMap(detailsMediaPaths(posterDetails)),
+    posterSignedUrlMap(
+      [...detailsMediaPaths(posterDetails), extra?.poster_path].filter((p): p is string => !!p),
+    ),
   ])
   // The credit: whoever put the event on the map, when they aren't the host.
   const postedBy: { display_name: string; handle: string } | null = postedByResolved
   const posterCropUrls = Object.fromEntries(posterCropEntries)
+
+  // Header image: the ORIGINAL poster leads for a scanned event. Priority: uploaded
+  // cover → full poster (the original flyer) → the scanner's cropped cover as a last
+  // resort. (The cropped cover/region crops are NOT shown as separate images anymore —
+  // they just duplicate the poster.)
+  const posterMedia = posterDetails.media
+  const posterFullUrl = extra?.poster_path ? posterCropUrls[extra.poster_path] ?? null : null
+  const coverCropUrl = posterMedia?.coverPath ? posterCropUrls[posterMedia.coverPath] ?? null : null
+  const heroUrl = coverUrl ?? posterFullUrl ?? coverCropUrl
+
+  // Gallery: the header image leads (clickable → full-screen), then any host-UPLOADED
+  // extras. The scanner's crops are intentionally excluded: the original poster is the
+  // header, and the lineup/region crops already render under "From the poster". So a
+  // plain scanned event shows just its original poster, with no duplicate crops.
+  const galleryUrls: string[] = [
+    heroUrl,
+    ...(extra?.gallery_image_paths ?? []).map(
+      (p) => admin.storage.from('event-media').getPublicUrl(p).data.publicUrl,
+    ),
+  ].filter((u): u is string => !!u)
 
   // Visibility gate (ADR-202). This page reads through the admin client, which
   // bypasses RLS — so the same rules the RLS policy enforces are re-applied here:
@@ -808,12 +847,35 @@ export default async function EventDetailPage({
         </div>
       )}
 
+      {/* "This is not my event" — for an unclaimed posted event, name the poster +
+          organizer and give the organizer a path to claim it. Hidden for managers. */}
+      {isUnclaimedPosted && !canManage && (
+        <ClaimEventBanner
+          eventId={event.id}
+          organizerName={extra?.organizer_name ?? null}
+          postedByName={postedBy?.display_name ?? null}
+        />
+      )}
+
       <DetailTemplate
-        // [A1] cover — the one big visual win (slot exists; token placeholder when none).
+        // [A1] header image — the one big visual win. Uploaded cover, else the scanned
+        // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
         hero={
-          coverUrl ? (
+          heroUrl ? (
             <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
-              <Image src={coverUrl} alt="" fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover" preload />
+              {/* The uploaded cover is a PUBLIC URL the optimizer is configured for; a
+                  scanned poster's hero is a SIGNED URL from the private bucket (path
+                  `/object/sign/...`, outside next.config remotePatterns), so it must
+                  bypass the optimizer — matching PosterDetails' plain <img> crops. */}
+              <Image
+                src={heroUrl}
+                alt=""
+                fill
+                sizes="(max-width: 1024px) 100vw, 1024px"
+                className="object-cover"
+                preload
+                unoptimized={heroUrl !== coverUrl}
+              />
             </div>
           ) : (
             // No cover: a designed placeholder, not a blank box. Mirrors the
@@ -843,8 +905,21 @@ export default async function EventDetailPage({
             event.title
           )
         }
-        // Operator/host entry to Settings (inline edit + the Layout editor), mirroring "Edit Circle".
-        actions={canManage ? <EditEventButton /> : undefined}
+        // Operator/host entries, stacked: Edit (Settings drawer) then Manage (dashboard).
+        actions={
+          canManage ? (
+            <div className="flex flex-col items-stretch gap-2 sm:items-end">
+              <EditEventButton />
+              <Link
+                href={`/events/${event.slug}/manage`}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+              >
+                <LayoutDashboard className="h-4 w-4 text-subtle" />
+                Manage event
+              </Link>
+            </div>
+          ) : undefined
+        }
         // [A2] attendance-mode chip.
         badges={
           <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${mode.cls}`}>
@@ -922,42 +997,31 @@ export default async function EventDetailPage({
           </div>
         }
       >
-        {/* Host/cohost: a quiet door to the Manage Dashboard (roster, waitlist,
-            questionnaire, dispatches, analytics). Host-only; everyone else never
-            sees it. */}
-        {canManage && (
-          <div className="mb-6">
-            <Link
-              href={`/events/${event.slug}/manage`}
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
-            >
-              <LayoutDashboard className="h-4 w-4 text-subtle" />
-              Manage event
-            </Link>
-          </div>
-        )}
-
-        {/* [A3] EventRewardStrip — calm gamification chips + warm proof. Hidden for
-            a cancelled event (no rewards to dangle on a dead event). */}
+        {/* [A3] One calm reward line under the title — the check-in Zaps reward (+ streak
+            / Current when real). Hidden for a cancelled event. */}
         {!event.is_cancelled && (
           <EventRewardStrip
             checkInZaps={ZAP_AMOUNTS.event_attend}
             isPast={isPast}
             circleName={scopeName}
-            going={goingRsvps.length}
-            fromYourCircles={fromYourCircles}
-            maybe={maybeCount}
-            guests={guestCount}
-            faces={faces}
-            nearFull={nearFull}
-            spotsLeft={capacityInfo.spotsLeft}
           />
         )}
 
-        {/* MOBILE: the critical-info card stacks ABOVE the Post area so a guest sees
-            the facts before the conversation (EVENTS-DESIGN §2.6). The lg aside is
-            hidden < lg; this block is hidden ≥ lg. */}
-        <div className="mb-8 lg:hidden">
+        {/* MOBILE: warm proof + the critical-info card stack ABOVE the Post area so a guest
+            sees who's going and the facts before the conversation (EVENTS-DESIGN §2.6). The
+            lg aside is hidden < lg; this block is hidden ≥ lg. */}
+        <div className="mb-8 space-y-3 lg:hidden">
+          {!event.is_cancelled && (
+            <WarmProof
+              going={goingRsvps.length}
+              fromYourCircles={fromYourCircles}
+              maybe={maybeCount}
+              guests={guestCount}
+              faces={faces}
+              nearFull={nearFull}
+              spotsLeft={capacityInfo.spotsLeft}
+            />
+          )}
           <EventFactPanel
             whenLine={whenLine}
             isOnline={isOnline}
@@ -978,6 +1042,10 @@ export default async function EventDetailPage({
               sales · dispatch · activity · recap). Shared across every event via the '/events/*'
               scope and rearranged from Settings → Layout, exactly like the circle page. */}
           <div className="min-w-0 space-y-8">
+            {/* Photo gallery — the header image leads, then any host-uploaded extras, each
+                clickable into a full-screen lightbox. Lives in the CONTENT column (not the
+                header). Renders only when there are 2+ images to browse. */}
+            <EventGallery images={galleryUrls} />
             <PageModules route={`/events/${event.slug}`} />
           </div>
 
@@ -985,6 +1053,18 @@ export default async function EventDetailPage({
               collapses to the bottom bar + the fact panel stacks above). */}
           <aside className="hidden space-y-4 self-start lg:sticky lg:top-20 lg:block">
             {!event.is_cancelled && joinActions}
+            {/* Warm proof sits with the RSVP action: "X going" / "be the first". */}
+            {!event.is_cancelled && (
+              <WarmProof
+                going={goingRsvps.length}
+                fromYourCircles={fromYourCircles}
+                maybe={maybeCount}
+                guests={guestCount}
+                faces={faces}
+                nearFull={nearFull}
+                spotsLeft={capacityInfo.spotsLeft}
+              />
+            )}
             {/* C4 critical info */}
             <EventFactPanel
               whenLine={whenLine}

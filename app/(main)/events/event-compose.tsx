@@ -3,16 +3,13 @@
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 
-type Group = { id: string; name: string }
-
 // The "New Event" entry on the events page. It opens the guided Vera composer at /events/new
 // (the EventSpark wizard: a few questions → Vera drafts the event → review → the draft editor),
-// matching how Journeys and Practices are created. Replaces the old in-place Studio quick-create
-// popup. Rendered only for members who can host (the page gates on `isCrew`); we still hide it
-// when the member is in no circle, since an event needs a circle to belong to.
-export function EventCompose({ groups }: { groups: Group[] }) {
-  if (groups.length === 0) return null
-
+// matching how Journeys and Practices are created. Crew (and stewards) can create whether or
+// not they belong to a circle — the wizard scopes a circle-less event as a public local event
+// in the member's area. The page gates the entry: Crew get this link, non-Crew get the upgrade
+// popup (see CrewGateButton on /events).
+export function EventCompose() {
   return (
     <Link
       href="/events/new"

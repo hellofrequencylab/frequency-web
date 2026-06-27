@@ -8,6 +8,7 @@ import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { SubscribersTable, BetaTable } from './lists-tables'
 import { listSubscribers } from '@/lib/studio/contacts'
 import { listBetaSignups, summarizeBeta } from '@/lib/studio/beta'
+import { readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,9 +65,11 @@ export default async function AdminMembersPage({
 // ── Members ──────────────────────────────────────────────────────────────────
 async function MembersTab() {
   const admin = createAdminClient()
+  // `meta` is read server-side ONLY to derive the Spotlight boolean below; it holds
+  // PII (acquisition/UTM, streak, persona) and is never passed to the client.
   const select = `
       id, auth_user_id, display_name, handle, avatar_url, bio, community_role,
-      is_active, is_system, created_at, current_season_rank, current_season_zaps,
+      is_active, is_system, created_at, current_season_rank, current_season_zaps, meta,
       nexus_regions!nexus_region_id ( name )
     `
   // The system voice (Vera, ADR-231) is fetched separately and PINNED to the top:
@@ -82,11 +85,17 @@ async function MembersTab() {
     admin.from('profiles').select(select).eq('is_system', true),
   ])
 
-  const allMembers = [...(systemProfiles ?? []), ...(members ?? [])].map((m) => ({
-    ...m,
-    community_role: m.community_role ?? 'member',
-    regionName: m.nexus_regions?.name ?? null,
-  }))
+  // Strip `meta` here: derive only the Spotlight boolean and drop the raw blob so no
+  // PII crosses the server→client boundary (the member list is a client component).
+  const allMembers = [...(systemProfiles ?? []), ...(members ?? [])].map((row) => {
+    const { meta, ...m } = row as typeof row & { meta?: unknown }
+    return {
+      ...m,
+      community_role: m.community_role ?? 'member',
+      regionName: m.nexus_regions?.name ?? null,
+      spotlightEnabled: readSpotlightEnabled(meta),
+    }
+  })
 
   // Resolve emails by paging through the auth users (a few listUsers calls)
   // instead of one getUserById per member, which was up to 200 sequential

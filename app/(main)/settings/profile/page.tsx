@@ -9,6 +9,7 @@ import { parseStyle } from '@/lib/qr/style'
 import { shortLinkUrl } from '@/lib/qr/links'
 import { ProfileForm } from './profile-form'
 import { ProfileQrCard } from '@/components/settings/profile-qr-card'
+import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 
 export default async function ProfileSettingsPage() {
   const supabase = await createClient()
@@ -17,11 +18,16 @@ export default async function ProfileSettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, bio, avatar_url, phone, city, website')
+    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   if (!profile) notFound()
+
+  // Spotlight (opt-in public mini-site) flags — derived server-side; the raw meta
+  // blob never reaches the client form.
+  const spotlightEnabled = readSpotlightEnabled((profile as { meta?: unknown }).meta)
+  const spotlightPublished = readSpotlightPublished((profile as { meta?: unknown }).meta)
 
   // The member's personal connect code (provisioned on first need) → a styled QR
   // generator, linked to this account, right here in Edit Profile.
@@ -66,6 +72,8 @@ export default async function ProfileSettingsPage() {
           phone:       profile.phone ?? '',
           city:        profile.city ?? '',
           website:     profile.website ?? '',
+          spotlightEnabled,
+          spotlightPublished,
         }}
       />
       {connect && qrSvg && <ProfileQrCard svg={qrSvg} link={qrLink} codeId={connect.id} />}

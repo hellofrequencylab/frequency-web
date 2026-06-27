@@ -1004,6 +1004,7 @@ export type Database = {
           city?: string | null
           created_at?: string | null
           featured_at?: string | null
+          gallery_image_paths?: string[]
           geog?: unknown
           host_id?: string | null
           hub_id?: string | null
@@ -1032,6 +1033,7 @@ export type Database = {
           city?: string | null
           created_at?: string | null
           featured_at?: string | null
+          gallery_image_paths?: string[]
           geog?: unknown
           host_id?: string | null
           hub_id?: string | null
@@ -3303,6 +3305,7 @@ export type Database = {
           ends_at: string | null
           energy_tag: string | null
           featured_at: string | null
+          gallery_image_paths: string[]
           geog: unknown
           host_id: string | null
           id: string
@@ -3355,6 +3358,7 @@ export type Database = {
           ends_at?: string | null
           energy_tag?: string | null
           featured_at?: string | null
+          gallery_image_paths?: string[]
           geog?: unknown
           host_id?: string | null
           id?: string
@@ -3407,6 +3411,7 @@ export type Database = {
           ends_at?: string | null
           energy_tag?: string | null
           featured_at?: string | null
+          gallery_image_paths?: string[]
           geog?: unknown
           host_id?: string | null
           id?: string

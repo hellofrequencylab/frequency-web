@@ -46,14 +46,19 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 - Open **Capture** and tap **Upload a poster**. Snap the whole poster, ideally squared up and out of direct glare; the app reads it and drafts the event for you: title, time, place, lineup, the works. A slight tilt or a little shine is fine, it straightens and reads the poster on its own.
 - **Found it online instead?** Start a new event and paste the write-up you copied from an Eventbrite page, a WhatsApp group, or the event's website. Add the flyer photo too if you have one. Vera reads the text and the image together, lays out the date, place, lineup, tickets, and every link, and keeps the photo as the cover.
 - If the poster has a **QR code**, the app reads it too and saves the booking or RSVP link straight onto the event.
-- Check the draft, fix anything the poster made hard to read, and publish. If it's **your** event, you become the host. If you **found** it, it posts to local events with your name on it: "Posted by you" with a little Zap.
-- Posting someone else's event earns **Zaps**, and you get a ready-to-send message inviting the organizer to claim it. When they claim it, the event becomes theirs to run, your credit stays, and you earn a **claim bonus**.
+- Check the draft, fix anything the poster made hard to read, and publish. Add a real start date first, or it won't show in the library (the scan sometimes misreads the year). If it's **your** event, you become the host. If you **found** it, it posts to local events with your name on it: "Posted by you" with a little Zap.
+- Add the **organizer's email** in the draft, and when you publish as "I found this," we email them a link to claim it automatically. No email on hand? You also get a ready-to-send message and link to share yourself.
+- The event page is clearly marked as community-posted, naming you and the organizer, with a **"Is this your event? Claim it"** button. When the organizer claims it, the event becomes theirs to run, your credit stays, and you earn a **claim bonus**.
 - Keep it honest: events that real people RSVP to and organizers actually claim build your posting reputation. Flooding the library with events nobody engages with earns nothing.
 
 ## Tickets & paying
 
 - Many gatherings are free; just RSVP. Some are **ticketed**, and hosts can price them however fits: a set price, **pay-what-you-can**, a **sliding scale**, or a **donation**. Pick the amount that works for you (within any minimum the host sets).
 - Payment goes **straight to the host**. If plans change, hosts can **refund** a ticket, and if a host **cancels the event, everyone who paid is refunded automatically** and emailed to let you know.
+
+## Checking in verifies you
+
+When you **check in at the door** of an event you're going to, you earn your Zaps, keep your streak, and you also become a **verified member**: a small check appears by your name. Showing up in the real world is the truest sign you're a real person, so it's how verification works here. Nothing to upload, no form, just turn up.
 
 ## Building Current together
 
@@ -74,6 +79,7 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 
 ## For hosts
 
+- **Add photos to your event.** Set a cover image as the poster, then add as many more photos as you like. They show up as a gallery on the event page, with the poster first, and any photo opens full screen when someone taps it. You can add or remove photos anytime by editing the event.
 - **Announce to your guests.** Send a note to everyone who's coming, across in-app, push, and email. Anyone who muted the event or turned off event notifications is skipped.
 - **Manage screen.** See your whole guest list, export it, move people off the waitlist, and check people in at the door. You reach it from the event's editor.
 - **Cohosts.** Add a cohost and they can help run the event right alongside you.
@@ -81,4 +87,5 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 ## Tips
 
 - New to a circle? An event is the easiest way in: say you're coming, then just show up.
-- Hosts run events for their circle, so the gatherings you see follow the circles you've joined.
+- You'll see events from the circles you've joined, plus public local events happening in your area.
+- Want to host? Any Crew member can create an event, in a circle or as a public local gathering. Crew is free during the beta.
