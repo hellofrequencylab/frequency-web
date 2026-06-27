@@ -240,18 +240,25 @@ export async function FeedList({
   }
   const posts: FeedPost[] = ranked.map((p) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
 
-  // ── Resolve scope context (wall, circle, channel) ─────────────────────────
+  // ── Resolve scope context (wall, circle, channel, event) ──────────────────
+  // The main feed shows posts from everywhere, so each one names its destination
+  // (the chip + the stacked second indicator on the author avatar). Precedence
+  // mirrors buildPostOriginResolver: circle → event → channel → wall.
   const scopeIds = [...new Set(posts.map(p => p.scope_id).filter(Boolean) as string[])]
-  const scopeMap: Record<string, { type: 'wall' | 'circle' | 'channel'; name: string; href: string; avatar_url?: string | null; handle?: string }> = {}
+  const scopeMap: Record<string, { type: 'wall' | 'circle' | 'channel' | 'event'; name: string; href: string; avatar_url?: string | null; handle?: string }> = {}
 
   if (scopeIds.length > 0) {
-    const [profileScopes, circleScopes, channelScopes] = await Promise.all([
+    const [profileScopes, circleScopes, channelScopes, eventScopes] = await Promise.all([
       admin.from('profiles').select('id, display_name, handle, avatar_url').in('id', scopeIds),
       admin.from('circles').select('id, name, slug').in('id', scopeIds),
       admin.from('channels').select('id, name').in('id', scopeIds),
+      admin.from('events').select('id, title, slug').in('id', scopeIds),
     ])
     for (const c of (circleScopes.data ?? []) as { id: string; name: string; slug: string }[]) {
       scopeMap[c.id] = { type: 'circle', name: c.name, href: `/circles/${c.slug}` }
+    }
+    for (const e of (eventScopes.data ?? []) as { id: string; title: string; slug: string }[]) {
+      if (!scopeMap[e.id]) scopeMap[e.id] = { type: 'event', name: e.title, href: `/events/${e.slug}` }
     }
     for (const ch of (channelScopes.data ?? []) as { id: string; name: string }[]) {
       if (!scopeMap[ch.id]) scopeMap[ch.id] = { type: 'channel', name: ch.name, href: `/channels/${ch.id}` }

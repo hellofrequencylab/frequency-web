@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, Globe, PenLine } from 'lucide-react'
+import { Users, Globe, PenLine, CalendarDays } from 'lucide-react'
 import type { PostOrigin } from '@/lib/feed/post-origin'
 
 // The "where" line above a profile-timeline post — always shown so it's clear which
@@ -11,6 +11,16 @@ export function PostOriginHeader({ origin }: { origin: PostOrigin }) {
       <p className="text-xs text-subtle mb-1.5 flex flex-wrap items-center gap-1 px-1">
         <Users className="w-3 h-3" /> Posted in{' '}
         <Link href={`/circles/${origin.slug}`} className="font-medium text-muted hover:underline">
+          {origin.name}
+        </Link>
+      </p>
+    )
+  }
+  if (origin.kind === 'event') {
+    return (
+      <p className="text-xs text-subtle mb-1.5 flex flex-wrap items-center gap-1 px-1">
+        <CalendarDays className="w-3 h-3" /> Posted on{' '}
+        <Link href={`/events/${origin.slug}`} className="font-medium text-muted hover:underline">
           {origin.name}
         </Link>
       </p>
@@ -42,6 +52,16 @@ export function PostOriginLabel({ origin, prefix }: { origin: PostOrigin; prefix
         {prefix && <span>{prefix}</span>}
         <Link href={`/circles/${origin.slug}`} className="inline-flex items-center gap-1 font-medium text-muted hover:underline">
           <Users className="w-3 h-3" /> {origin.name}
+        </Link>
+      </span>
+    )
+  }
+  if (origin.kind === 'event') {
+    return (
+      <span className="inline-flex items-center gap-1">
+        {prefix && <span>{prefix}</span>}
+        <Link href={`/events/${origin.slug}`} className="inline-flex items-center gap-1 font-medium text-muted hover:underline">
+          <CalendarDays className="w-3 h-3" /> {origin.name}
         </Link>
       </span>
     )
