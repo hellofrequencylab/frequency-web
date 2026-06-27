@@ -34,6 +34,8 @@ import { SupporterBadge } from '@/components/supporter-badge'
 import { VeraProfile } from '@/components/people/vera-profile'
 import { getMemberSignature } from '@/lib/frequency-signature-data'
 import { getProfileZapTotal } from '@/lib/profile-zaps'
+import { getProfileAwards } from '@/lib/profile/awards'
+import { ProfileAwards } from '@/components/profile/profile-awards'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
 import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
@@ -177,7 +179,7 @@ export default async function ProfilePage({
     isBlocked = await hasBlocked(myProfileId, profileId)
   }
 
-  const [totalZaps, completionsCountResult, postsCountResult, circlesResult, signature] = await Promise.all([
+  const [totalZaps, completionsCountResult, postsCountResult, circlesResult, signature, awards] = await Promise.all([
     // Lifetime Zaps as one SQL aggregate (HARD-05): no per-row tally / N+1.
     getProfileZapTotal(profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
@@ -186,6 +188,8 @@ export default async function ProfilePage({
     // The Frequency Signature — the member's practice spread across the four Pillars
     // (docs/JOURNEYS.md §9.2), the identity centerpiece below.
     getMemberSignature(profileId),
+    // Real earned awards + owned shop items for the public awards section.
+    getProfileAwards(profileId),
   ])
 
   const tasksCompleted = completionsCountResult.count ?? 0
@@ -481,20 +485,19 @@ export default async function ProfilePage({
         {/* SIDEBAR (1/3) — tiled info: Standing, Frequency Signature, Achievements. Scrolls
             with the main content (no sticky) so the whole column reads as one page. */}
         <aside className="order-1 min-w-0 space-y-4 self-start xl:order-2 xl:col-span-1">
-          {/* Standing — Zaps · Gems · Streak · Rank as a tidy menu under a rank header. */}
-          {(rankEndorsed || isOwner) && (
-            <ProfileStandingCard
-              isOwner={isOwner}
-              rank={rank}
-              rankDef={rankDef}
-              next={rankNext}
-              pct={rankPct}
-              zapsToNext={zapsToNext}
-              zaps={totalZaps}
-              gems={gems}
-              streak={currentStreak}
-            />
-          )}
+          {/* Standing — Zaps · Gems · Streak · Rank, shown on every profile (the owner asked
+              for everyone's stats to be public, not just paid-tier members). */}
+          <ProfileStandingCard
+            isOwner={isOwner}
+            rank={rank}
+            rankDef={rankDef}
+            next={rankNext}
+            pct={rankPct}
+            zapsToNext={zapsToNext}
+            zaps={totalZaps}
+            gems={gems}
+            streak={currentStreak}
+          />
 
           {/* Frequency Signature — the identity constellation, stacked for the column. */}
           <div>
@@ -519,6 +522,9 @@ export default async function ProfilePage({
               ))}
             </div>
           </div>
+
+          {/* Real earned awards + owned/awarded shop items (renders nothing when empty). */}
+          <ProfileAwards awards={awards} firstName={firstName} isOwner={isOwner} />
         </aside>
       </div>
       </DetailTemplate>
