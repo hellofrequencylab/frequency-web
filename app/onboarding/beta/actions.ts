@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { uploadProfileImage } from '@/lib/storage/profile-images'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { rememberFacts } from '@/lib/ai/memory'
@@ -447,6 +448,29 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
 
   // Beta: a returning member who was still on the Member tier comes up to Crew.
   await grantBetaCrew(user.id)
+}
+
+/**
+ * Upload the avatar the signed-out induction parked (as a data URL) once the
+ * member is authed. Runs server-side via the service role: the browser client can
+ * lack a session right after the magic-link hop, which makes a client-side storage
+ * upload run as `anon` and fail the owner-INSERT RLS policy — the reason a real
+ * member's onboarding photo silently never landed. Best-effort: returns null on
+ * any problem so finishing onboarding never blocks on the photo.
+ */
+export async function uploadPendingAvatar(dataUrl: string): Promise<string | null> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+    const m = /^data:([^;,]+)[^,]*,(.*)$/.exec(dataUrl)
+    if (!m) return null
+    const contentType = m[1] || 'image/jpeg'
+    const bytes = new Uint8Array(Buffer.from(m[2], 'base64'))
+    return await uploadProfileImage(user.id, bytes, contentType, 'avatar')
+  } catch {
+    return null
+  }
 }
 
 /**
