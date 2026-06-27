@@ -62,7 +62,7 @@ function rateLimited<T>(fn: () => Promise<T>): Promise<T> {
  *  Nominatim's `q` handles partial addresses well, so we just join whatever the
  *  host gave us (venue first, postal last) and let the provider do the matching. */
 function toQuery(address: EventAddress): string {
-  return [
+  const structured = [
     address.venueName,
     address.street,
     address.city,
@@ -73,6 +73,9 @@ function toQuery(address: EventAddress): string {
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(', ')
+  // Fall back to the free-text location line (Vera scan / onboarding) when there are no
+  // structured fields, so a one-line address still resolves to a point.
+  return structured || (address.query?.trim() ?? '')
 }
 
 type NominatimResult = {

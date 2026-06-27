@@ -450,7 +450,14 @@ export function EventSettingsModule() {
               <span className={fieldLabel}>
                 Address <span className="font-normal text-subtle">(search a venue to fill it in and drop the pin)</span>
               </span>
-              <VenueAutocomplete value={venueName} onPick={handleVenuePick} disabled={pending} />
+              <VenueAutocomplete
+                value={venueName}
+                onPick={handleVenuePick}
+                disabled={pending}
+                // Bias results to the event's current pin so a venue search lands the nearby
+                // match (e.g. the La Jolla wellness center, not a same-named street elsewhere).
+                bias={lat != null && lng != null ? { lat, lng } : null}
+              />
               <input type="hidden" name="venue_name" value={venueName} />
               <input
                 name="street"

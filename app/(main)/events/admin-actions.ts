@@ -7,6 +7,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { logAdminAction } from '@/lib/admin/audit'
 import { slugify } from '@/lib/utils'
 import { saveEventLocation, type EventAddress } from '@/lib/events/geocode'
+import { nominatimGeocoder } from '@/lib/events/geocode-provider'
 import {
   CATEGORY_VALUES,
   VISIBILITY_VALUES,
@@ -185,6 +186,9 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
     region: ((fd.get('region') as string) ?? '').trim() || null,
     country: ((fd.get('country') as string) ?? '').trim() || null,
     postalCode: ((fd.get('postal_code') as string) ?? '').trim() || null,
+    // Free-text fallback: geocode the one-line `location` when the structured fields are empty
+    // (e.g. a Vera-scanned or onboarding-entered address), so the map pin still populates.
+    query: ((fd.get('location') as string) ?? '').trim() || null,
   }
   const onlineUrl = ((fd.get('online_url') as string) ?? '').trim() || null
 
@@ -201,7 +205,9 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       ? { lat: latNum, lng: lngNum }
       : null
 
-  await saveEventLocation(id, { address, attendanceMode, onlineUrl, point })
+  // A manual pin wins; otherwise geocode-on-save resolves the point from the address (the edit
+  // path previously passed NO geocoder, so an address with no dragged pin never set events.geog).
+  await saveEventLocation(id, { address, attendanceMode, onlineUrl, point, geocoder: nominatimGeocoder })
 
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')
