@@ -190,8 +190,9 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   if (item.slug === 'streak-freeze') {
     const { grantStreakFreeze } = await import('@/lib/practice-streak')
     await grantStreakFreeze(profileId).catch(() => {})
-    revalidatePath('/crew')
-    revalidatePath('/feed')
+    // Spending changes the spendable balance shown in the global shell header on EVERY
+    // route, so revalidate the root layout — not just /crew — or the stat boxes stay stale.
+    revalidatePath('/', 'layout')
     return ok({ pending: false })
   }
 
@@ -205,8 +206,9 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   }
 
   revalidatePath('/crew/store')
-  revalidatePath('/crew')
-  revalidatePath('/people', 'layout')
+  // The spendable Gem balance shows in the global shell header on every route; revalidate
+  // the root layout so all the stat boxes update immediately after a spend (not just /crew).
+  revalidatePath('/', 'layout')
   return ok({ pending: cosmeticType === null })
 }
 
@@ -227,7 +229,8 @@ export async function giftGemsAction(
   const result = await giftGems(profileId, toProfileId, amount)
 
   revalidatePath('/crew/store')
-  revalidatePath('/crew')
+  // Gifting debits the giver's spendable balance shown site-wide — refresh the shell header.
+  revalidatePath('/', 'layout')
   return result
 }
 
