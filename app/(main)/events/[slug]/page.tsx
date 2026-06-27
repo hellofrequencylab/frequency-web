@@ -205,6 +205,8 @@ export default async function EventDetailPage({
     attendance_mode: AttendanceMode | null
     online_url: string | null
     status: string | null
+    // PostgREST serialises a PostGIS geography as GeoJSON ({type, coordinates:[lng,lat]}).
+    geog: { coordinates?: [number, number] } | null
   }
   // These three only depend on already-resolved values (event.id / session_id) and
   // not on each other, so resolve them concurrently: the extra-meta read, the
@@ -213,7 +215,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status',
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, geog',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -665,6 +667,21 @@ export default async function EventDetailPage({
     handle: profile.handle,
   }))
 
+  // Exact-venue point (§5): the event's OWN geog, shown as a precise mini-map. Only
+  // for a PUBLISHED, in-person event that actually has a geocoded point — drafts and
+  // online events never get it, and without a point we render nothing (no regression).
+  const isPublished = (extra?.status ?? 'published') === 'published'
+  const venueCoords = extra?.geog?.coordinates
+  const venuePoint: { lat: number; lng: number } | null =
+    !isOnline &&
+    isPublished &&
+    Array.isArray(venueCoords) &&
+    venueCoords.length >= 2 &&
+    Number.isFinite(venueCoords[1]) &&
+    Number.isFinite(venueCoords[0])
+      ? { lat: venueCoords[1], lng: venueCoords[0] }
+      : null
+
   // Mini-map pin (city-level circle area). Only in-person events with a circle that
   // has public coordinates get a map.
   const mapPin: EventMapPin | null =
@@ -1031,6 +1048,7 @@ export default async function EventDetailPage({
             location={event.location}
             onlineUrl={onlineUrl}
             mapPin={mapPin}
+            venuePoint={venuePoint}
             going={goingRsvps.length}
             nearFull={nearFull}
             spotsLeft={capacityInfo.spotsLeft}
@@ -1082,6 +1100,7 @@ export default async function EventDetailPage({
               location={event.location}
               onlineUrl={onlineUrl}
               mapPin={mapPin}
+              venuePoint={venuePoint}
               going={goingRsvps.length}
               nearFull={nearFull}
               spotsLeft={capacityInfo.spotsLeft}

@@ -36,6 +36,15 @@ const EventsMap = dynamic(() => import('./events-map'), {
   ),
 })
 
+// Exact-venue map (the event's own geog point), shown in place of the city-level
+// circle pin when the event has a precise location. Also client-only.
+const EventVenueMap = dynamic(() => import('./event-venue-map'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-40 w-full animate-pulse rounded-xl border border-border bg-surface-elevated" />
+  ),
+})
+
 const MAX_FACES = 6
 
 export type FactGuest = WarmProofAttendee & { handle: string }
@@ -46,6 +55,7 @@ export function EventFactPanel({
   location,
   onlineUrl,
   mapPin,
+  venuePoint = null,
   going,
   nearFull = false,
   spotsLeft = null,
@@ -63,6 +73,9 @@ export function EventFactPanel({
   /** The hosting circle's PUBLIC, city-level pin for the mini map (never the exact
    *  venue). Null = no map. */
   mapPin?: EventMapPin | null
+  /** The event's OWN precise geog point. When set (published + in-person + geocoded),
+   *  it replaces the city-level circle pin with an exact-venue map. Null = no precise map. */
+  venuePoint?: { lat: number; lng: number } | null
   /** Confirmed 'going' count. */
   going: number
   /** Page-decided: capacity is real AND genuinely near full. */
@@ -110,7 +123,14 @@ export function EventFactPanel({
         </p>
       ) : null}
 
-      {!isOnline && mapPin && (
+      {/* A precise venue point wins: show the exact spot. Otherwise fall back to the
+          city-level circle pin (privacy default for events without their own geog). */}
+      {!isOnline && venuePoint ? (
+        <div>
+          <EventVenueMap lat={venuePoint.lat} lng={venuePoint.lng} />
+          <p className="mt-1.5 text-3xs text-subtle">The pin marks the exact venue.</p>
+        </div>
+      ) : !isOnline && mapPin ? (
         <div>
           <EventsMap
             pins={[mapPin]}
@@ -120,7 +140,7 @@ export function EventFactPanel({
             The pin sits on the circle&rsquo;s area, not the exact address.
           </p>
         </div>
-      )}
+      ) : null}
 
       {/* Capacity — only ever the warm "filling up" line, never a bare low count */}
       {nearFull && typeof spotsLeft === 'number' && spotsLeft > 0 && (

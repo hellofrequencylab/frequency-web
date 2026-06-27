@@ -48,7 +48,7 @@ export async function getEventAdminData(slug: string) {
   })
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, geog',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -73,7 +73,24 @@ export async function getEventAdminData(slug: string) {
     url: admin.storage.from('event-media').getPublicUrl(p).data.publicUrl,
   }))
 
-  return { ...event, coverUrl, posterUrl, galleryPaths, galleryItems }
+  // Decode the saved geog point (PostgREST serialises a PostGIS geography as GeoJSON,
+  // {type, coordinates:[lng,lat]}) so the editor's draggable pin can seed from it.
+  // Same decode the dispatch-audience resolver uses; null when never geocoded.
+  const point = pointFromGeog(event.geog)
+
+  return { ...event, coverUrl, posterUrl, galleryPaths, galleryItems, lat: point?.lat ?? null, lng: point?.lng ?? null }
+}
+
+/** Pull (lat, lng) out of a serialised events.geog value; null when absent/malformed.
+ *  PostgREST serialises a PostGIS geography column as GeoJSON. */
+function pointFromGeog(geog: unknown): { lat: number; lng: number } | null {
+  const g = geog as { coordinates?: [number, number] } | null
+  const coords = g?.coordinates
+  if (!coords || coords.length < 2) return null
+  const [lng, lat] = coords
+  if (typeof lat !== 'number' || typeof lng !== 'number') return null
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  return { lat, lng }
 }
 
 type EventAdminRow = {
@@ -100,6 +117,7 @@ type EventAdminRow = {
   category: string | null
   visibility: string | null
   energy_tag: string | null
+  geog: unknown
 }
 
 /** Cancel or reinstate the event — the host control that used to live in the
@@ -180,11 +198,70 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
     postalCode: ((fd.get('postal_code') as string) ?? '').trim() || null,
   }
   const onlineUrl = ((fd.get('online_url') as string) ?? '').trim() || null
-  await saveEventLocation(id, { address, attendanceMode, onlineUrl })
+
+  // Manual map pin (Event settings overhaul §5): the editor submits the dragged
+  // marker's lat/lng as hidden inputs. A valid pair OVERRIDES the best-effort
+  // geocode — the host placed it, so it's the truth. Empty/NaN → fall back to
+  // geocode-on-save (no behaviour change for events without a pin).
+  const latRaw = ((fd.get('lat') as string) ?? '').trim()
+  const lngRaw = ((fd.get('lng') as string) ?? '').trim()
+  const latNum = latRaw ? Number(latRaw) : NaN
+  const lngNum = lngRaw ? Number(lngRaw) : NaN
+  const point =
+    Number.isFinite(latNum) && Number.isFinite(lngNum) && Math.abs(latNum) <= 90 && Math.abs(lngNum) <= 180
+      ? { lat: latNum, lng: lngNum }
+      : null
+
+  await saveEventLocation(id, { address, attendanceMode, onlineUrl, point })
 
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')
   revalidatePath('/feed')
+}
+
+/**
+ * Promote the original scanned poster (poster_path, in the PRIVATE network-contacts
+ * bucket) to the public cover (cover_image_path, in event-media). Used when a host
+ * captured the event by scanning a poster — it lands as the poster with no cover, so
+ * this one tap reuses that image as the cover. Copies the bytes into the public
+ * bucket (the poster bucket stays private) and persists the new path. Same gate.
+ */
+export async function useEventPosterAsCover(
+  id: string,
+  slug: string,
+): Promise<{ url: string } | { error: string }> {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
+
+  const admin = createAdminClient()
+  const { data: ev } = await admin.from('events').select('poster_path').eq('id', id).maybeSingle()
+  const posterPath = (ev as { poster_path?: string | null } | null)?.poster_path ?? null
+  if (!posterPath) return { error: 'There is no poster to use.' }
+
+  // Pull the poster bytes from the private bucket, write them into the public cover bucket.
+  const { data: blob, error: dlErr } = await admin.storage.from('network-contacts').download(posterPath)
+  if (dlErr || !blob) return { error: dlErr?.message ?? 'Could not read the poster.' }
+
+  const ext = (posterPath.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const path = `${id}/cover-from-poster-${Date.now()}.${ext}`
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  const { error: upErr } = await admin.storage
+    .from('event-media')
+    .upload(path, bytes, { contentType: blob.type || 'image/jpeg', upsert: false })
+  if (upErr) return { error: upErr.message }
+
+  const { error: dbErr } = await (admin as unknown as UntypedUpdate)
+    .from('events')
+    .update({ cover_image_path: path })
+    .eq('id', id)
+  if (dbErr) return { error: dbErr.message }
+
+  const { data } = admin.storage.from('event-media').getPublicUrl(path)
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  revalidatePath('/feed')
+  return { url: data.publicUrl }
 }
 
 // Field-level patch for the inline tuning layer (ADR-138). Allowlisted; re-checks

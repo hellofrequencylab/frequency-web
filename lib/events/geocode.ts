@@ -62,6 +62,10 @@ export function hasGeocodableAddress(address: EventAddress): boolean {
  * saves the address; a geocode failure leaves geog NULL (the event is simply not
  * "near me"-discoverable until re-saved). online/hybrid events skip geocoding.
  *
+ * A `point` (an explicit lat/lng from the editor's dragged map pin) OVERRIDES the
+ * geocoder: when the host has placed the pin themselves, that is the truth, so we
+ * persist it and never geocode. Geocode-on-save only runs when no manual pin was set.
+ *
  * Returns the point it persisted, or null when none was set.
  */
 export async function saveEventLocation(
@@ -71,10 +75,12 @@ export async function saveEventLocation(
     attendanceMode: AttendanceMode
     onlineUrl?: string | null
     geocoder?: Geocoder
+    /** Explicit pin from the editor's draggable marker. Overrides the geocoder. */
+    point?: GeoPoint | null
   },
 ): Promise<GeoPoint | null> {
   const admin = createAdminClient()
-  const { address, attendanceMode, onlineUrl, geocoder } = args
+  const { address, attendanceMode, onlineUrl, geocoder, point: explicitPoint } = args
 
   // Always persist the structured address + mode (additive columns).
   await admin
@@ -93,8 +99,20 @@ export async function saveEventLocation(
     })
     .eq('id', eventId)
 
-  // Online-only events carry no point. Hybrid + in_person geocode if we can.
+  // Online-only events carry no point — even a stray manual pin is ignored.
   if (attendanceMode === 'online') return null
+
+  // A manual pin wins: persist it directly, skip the geocoder entirely.
+  if (explicitPoint && Number.isFinite(explicitPoint.lat) && Number.isFinite(explicitPoint.lng)) {
+    await admin.rpc('set_event_geog', {
+      _event_id: eventId,
+      _lat: explicitPoint.lat,
+      _long: explicitPoint.lng,
+    })
+    return explicitPoint
+  }
+
+  // No manual pin → fall back to geocode-on-save (best-effort) if we have a geocoder.
   if (!geocoder || !hasGeocodableAddress(address)) return null
 
   let point: GeoPoint | null = null
