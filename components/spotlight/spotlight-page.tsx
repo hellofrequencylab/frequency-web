@@ -5,6 +5,7 @@ import { getInitials } from '@/lib/utils'
 import { resolveProfileSkin } from '@/lib/theme/profile-skins'
 import { RoleBadge, type CommunityRole } from '@/lib/community-roles'
 import type { SpotlightData } from '@/lib/spotlight/data'
+import { spotlightThemeStyles } from '@/lib/spotlight/theme'
 import { SpotlightBlocks } from './blocks/render'
 
 const PUBLIC_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/object/public/avatars/`
@@ -32,8 +33,11 @@ function StatPill({ icon: Icon, value, label }: { icon: typeof Flame; value: str
 }
 
 export function SpotlightPage({ data }: { data: SpotlightData }) {
-  const { profile, hostedEvents, layout, background } = data
+  const { profile, hostedEvents, layout, background, theme } = data
   const skin = resolveProfileSkin(profile.profile_theme)
+  // The member's custom colours/gradient/fonts/card style (validated). Empty styles when
+  // they haven't customized, so the page renders exactly as the skin alone would.
+  const themeStyles = spotlightThemeStyles(theme)
   const name = profile.display_name || `@${profile.handle}`
   const region = profile.nexus_regions?.name ?? null
   const website = profile.website ? normalizeUrl(profile.website) : null
@@ -50,7 +54,7 @@ export function SpotlightPage({ data }: { data: SpotlightData }) {
   const hasLayout = layout.blocks.length > 0
 
   return (
-    <div data-skin={skin} className="relative min-h-screen bg-canvas">
+    <div data-skin={skin} className="relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
       {background.assetPath && (
         <div className="pointer-events-none fixed inset-0 -z-0" aria-hidden>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -86,7 +90,7 @@ export function SpotlightPage({ data }: { data: SpotlightData }) {
             </div>
           )}
 
-          <h1 className="mt-4 text-2xl font-bold text-text">{name}</h1>
+          <h1 className="mt-4 text-2xl font-bold text-text" style={{ fontFamily: themeStyles.headingFont }}>{name}</h1>
           <p className="text-sm text-muted">@{profile.handle}</p>
 
           <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
@@ -119,7 +123,12 @@ export function SpotlightPage({ data }: { data: SpotlightData }) {
 
         {hasLayout ? (
           /* Member-built layout: their blocks replace the curated body. */
-          <SpotlightBlocks blocks={layout.blocks} stats={statsContext} />
+          <SpotlightBlocks
+            blocks={layout.blocks}
+            stats={statsContext}
+            cardStyle={themeStyles.card}
+            headingFont={themeStyles.headingFont}
+          />
         ) : (
           <>
             {/* Curated default — links + upcoming events (unchanged from before). */}

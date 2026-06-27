@@ -7,11 +7,13 @@ import {
   readSpotlightEnabled,
   withSpotlightLayout,
   withSpotlightBackground,
+  withSpotlightTheme,
 } from '@/lib/profile/spotlight-flags'
 import {
   validateSpotlightLayout,
   validateSpotlightBackground,
 } from '@/lib/spotlight/blocks/validate'
+import { validateSpotlightTheme } from '@/lib/spotlight/theme'
 
 // Save the member's Spotlight block layout. Owner-only and SESSION-DERIVED — there is
 // NO target-id parameter, so a caller can only ever write their own row (mirrors
@@ -128,6 +130,40 @@ export async function saveSpotlightBackground(
 
   const safe = validateSpotlightBackground(rawBackground, user.id)
   const nextMeta = withSpotlightBackground((me as { meta?: unknown }).meta, safe)
+  const { error } = await admin
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', user.id)
+  if (error) return { error: error.message }
+
+  revalidatePath('/settings/profile/spotlight')
+  const handle = (me as { handle?: string }).handle
+  if (handle) revalidatePath(`/spotlight/${handle}`)
+  return {}
+}
+
+// Save the custom Spotlight theme (colours, gradient, fonts, card style). Owner-only and
+// SESSION-DERIVED (no target id). VALIDATED before persist — colours are strict hex, the
+// gradient is rebuilt from validated stops on render, fonts/card are closed allowlists, so
+// no raw CSS is ever stored or rendered.
+export async function saveSpotlightTheme(rawTheme: unknown): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const admin = createAdminClient()
+  const { data: me } = await admin
+    .from('profiles')
+    .select('handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!me) return { error: 'Profile not found' }
+  if (!readSpotlightEnabled((me as { meta?: unknown }).meta)) {
+    return { error: 'Your Spotlight page is not turned on yet.' }
+  }
+
+  const safe = validateSpotlightTheme(rawTheme)
+  const nextMeta = withSpotlightTheme((me as { meta?: unknown }).meta, safe)
   const { error } = await admin
     .from('profiles')
     .update({ meta: nextMeta as never })

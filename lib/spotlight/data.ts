@@ -4,9 +4,11 @@ import {
   readSpotlightPublished,
   readSpotlightLayoutRaw,
   readSpotlightBackgroundRaw,
+  readSpotlightThemeRaw,
 } from '@/lib/profile/spotlight-flags'
 import { validateSpotlightLayout, validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
+import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 
 // Server data for the PUBLIC Spotlight page. Anonymous visitors get no RLS, so this
@@ -29,6 +31,8 @@ export interface SpotlightData {
   layout: SpotlightLayout
   /** The validated optional background image. */
   background: SpotlightBackground
+  /** The validated custom theme (colours/gradient/fonts/card). */
+  theme: SpotlightTheme
 }
 
 /**
@@ -56,6 +60,7 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
   const ownerAuthId = g.auth_user_id ?? ''
   const layout = validateSpotlightLayout(readSpotlightLayoutRaw(g.meta), ownerAuthId)
   const background = validateSpotlightBackground(readSpotlightBackgroundRaw(g.meta), ownerAuthId)
+  const theme = validateSpotlightTheme(readSpotlightThemeRaw(g.meta))
 
   // Page row: the explicit allowlist only.
   const { data: row } = await admin
@@ -81,5 +86,6 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
     hostedEvents: (events ?? []) as SpotlightHostedEvent[],
     layout,
     background,
+    theme,
   }
 }
