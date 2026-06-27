@@ -1,16 +1,27 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowUp, ArrowDown, Trash2, Plus, Check, Loader2, ExternalLink } from 'lucide-react'
+import { ArrowUp, ArrowDown, Trash2, Plus, Check, Loader2, ExternalLink, Upload, ImageIcon, X } from 'lucide-react'
 import {
   type SpotlightBlock,
   type SpotlightLayout,
+  type SpotlightBackground,
   BLOCK_PALETTE,
   MAX_BLOCKS,
+  ALT_MAX,
   SPOTLIGHT_LAYOUT_VERSION,
 } from '@/lib/spotlight/blocks/schema'
-import { saveSpotlightLayout } from '@/app/(main)/settings/profile/spotlight-actions'
+import {
+  saveSpotlightLayout,
+  saveSpotlightBackground,
+  uploadSpotlightImage,
+} from '@/app/(main)/settings/profile/spotlight-actions'
+
+// Resolve a stored asset PATH to its public URL for previews. The path is the only thing
+// we persist (the renderer derives the URL the same way), so the editor mirrors it.
+const PUBLIC_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/object/public/avatars/`
 
 let counter = 0
 function newId() {
@@ -32,11 +43,96 @@ function blankBlock(type: SpotlightBlock['type']): SpotlightBlock {
 const inputCls =
   'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none'
 
-export function LayoutEditor({ initial, handle }: { initial: SpotlightLayout; handle: string }) {
+// One upload control shared by image blocks and the background. Posts the file to the
+// session-derived server action (service-role write — the browser client has no session
+// under SSR-cookie auth) and hands back the storage PATH. Previews resolve the path to a
+// public URL; the parent owns the value + the save.
+function SpotlightImageUploader({
+  value,
+  onChange,
+  label,
+  height = 'h-40',
+}: {
+  value: string | null
+  onChange: (path: string | null) => void
+  label: string
+  height?: string
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function pick(file: File) {
+    setError(null)
+    if (!file.type.startsWith('image/')) { setError('Choose an image file.'); return }
+    setBusy(true)
+    const fd = new FormData()
+    fd.set('file', file)
+    const res = await uploadSpotlightImage(fd)
+    setBusy(false)
+    if (res.error || !res.path) { setError(res.error ?? 'Upload failed.'); return }
+    onChange(res.path)
+  }
+
+  const previewSrc = value ? `${PUBLIC_BASE}${value}` : null
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-subtle">
+        <ImageIcon className="h-3.5 w-3.5" /> {label}
+      </span>
+      {previewSrc ? (
+        <div className={`relative ${height} overflow-hidden rounded-xl border border-border`}>
+          {/* Unoptimized: member-uploaded assets from Supabase Storage, not the configured next/image domains. */}
+          <Image src={previewSrc} alt="" width={768} height={320} unoptimized className="h-full w-full object-cover" />
+          <div className="absolute right-2 top-2 flex gap-1.5">
+            <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className="rounded-lg bg-canvas/90 px-2.5 py-1 text-xs font-medium text-text shadow-sm backdrop-blur transition-colors hover:bg-canvas disabled:opacity-60">
+              {busy ? 'Uploading…' : 'Replace'}
+            </button>
+            <button type="button" onClick={() => onChange(null)} disabled={busy} aria-label="Remove image" className="rounded-lg bg-canvas/90 p-1 text-subtle shadow-sm backdrop-blur transition-colors hover:text-danger disabled:opacity-60">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className={`flex ${height} w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60`}>
+          {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+          {busy ? 'Uploading…' : 'Upload image or GIF'}
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) void pick(f); e.target.value = '' }}
+      />
+      <p className="text-2xs text-muted">JPEG, PNG, GIF, or WebP. Up to 5 MB.</p>
+      {error && <p className="text-2xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
+export function LayoutEditor({
+  initial,
+  initialBackground,
+  handle,
+}: {
+  initial: SpotlightLayout
+  initialBackground: SpotlightBackground
+  handle: string
+}) {
   const [blocks, setBlocks] = useState<SpotlightBlock[]>(initial.blocks)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
+
+  // Background is stored separately (meta.spotlight.background) and saved on its own.
+  const [bgPath, setBgPath] = useState<string | null>(initialBackground.assetPath)
+  const [bgDim, setBgDim] = useState<number>(initialBackground.dim)
+  const [bgSaved, setBgSaved] = useState(false)
+  const [bgError, setBgError] = useState('')
+  const [bgPending, startBg] = useTransition()
 
   function update(id: string, patch: Partial<SpotlightBlock>) {
     setBlocks((bs) => bs.map((b) => (b.id === id ? ({ ...b, ...patch } as SpotlightBlock) : b)))
@@ -68,8 +164,63 @@ export function LayoutEditor({ initial, handle }: { initial: SpotlightLayout; ha
     })
   }
 
+  function saveBackground(next: { assetPath: string | null; dim: number }) {
+    setBgError('')
+    startBg(async () => {
+      const res = await saveSpotlightBackground(next)
+      if (res?.error) { setBgError(res.error); return }
+      setBgSaved(true)
+      setTimeout(() => setBgSaved(false), 2500)
+    })
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Background — page chrome, saved on its own */}
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">Background</p>
+        <SpotlightImageUploader
+          value={bgPath}
+          onChange={(p) => {
+            setBgPath(p)
+            // Clearing the image saves immediately; setting one waits for the dim choice + Save.
+            if (p === null) saveBackground({ assetPath: null, dim: bgDim })
+          }}
+          label="Background image"
+          height="h-32"
+        />
+        {bgPath && (
+          <div className="mt-3 space-y-1">
+            <label className="flex items-center justify-between text-xs text-muted">
+              <span>Dim for readable text</span>
+              <span className="tabular-nums">{bgDim}%</span>
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={80}
+              step={5}
+              value={bgDim}
+              onChange={(e) => setBgDim(Number(e.target.value))}
+              className="w-full accent-primary"
+            />
+          </div>
+        )}
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => saveBackground({ assetPath: bgPath, dim: bgDim })}
+            disabled={bgPending}
+            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+          >
+            {bgPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : bgSaved ? <Check className="h-3.5 w-3.5" /> : null}
+            {bgPending ? 'Saving…' : bgSaved ? 'Saved' : 'Save background'}
+          </button>
+          {bgError && <span className="text-xs text-danger">{bgError}</span>}
+        </div>
+      </section>
+
+      {/* Blocks */}
       {blocks.length === 0 && (
         <p className="rounded-xl border border-dashed border-border bg-surface/50 p-6 text-center text-sm text-muted">
           Your page is empty. Add a block below to start building it.
@@ -90,9 +241,9 @@ export function LayoutEditor({ initial, handle }: { initial: SpotlightLayout; ha
         </div>
       ))}
 
-      {/* Palette */}
+      {/* Palette — every block type, image included now */}
       <div className="flex flex-wrap gap-2">
-        {BLOCK_PALETTE.filter((p) => p.type !== 'image').map((p) => (
+        {BLOCK_PALETTE.map((p) => (
           <button
             key={p.type}
             type="button"
@@ -158,6 +309,24 @@ function BlockFields({ block, onChange }: { block: SpotlightBlock; onChange: (p:
         {items.length < 10 && (
           <button type="button" onClick={() => onChange({ items: [...items, { label: '', url: '' }] })} className="text-xs font-medium text-primary-strong hover:underline">+ Add link</button>
         )}
+      </div>
+    )
+  }
+  if (block.type === 'image') {
+    return (
+      <div className="space-y-2">
+        <SpotlightImageUploader
+          value={block.assetPath || null}
+          onChange={(p) => onChange({ assetPath: p ?? '' })}
+          label="Image"
+        />
+        <input
+          value={block.alt}
+          onChange={(e) => onChange({ alt: e.target.value })}
+          placeholder="Describe the image (for screen readers)"
+          className={inputCls}
+          maxLength={ALT_MAX}
+        />
       </div>
     )
   }
