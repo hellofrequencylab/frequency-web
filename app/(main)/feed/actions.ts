@@ -9,6 +9,12 @@ import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import {
+  assembleThread,
+  aggregateReactionState,
+  type RawComment,
+  type CommentThread,
+} from '@/lib/feed/comment-thread'
 
 const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
 
@@ -220,9 +226,33 @@ export async function createReply(parentId: string, body: string) {
   // reaction lag).
 }
 
-export async function fetchReplies(parentId: string) {
+// The columns every comment row needs (author drives avatar + ProfileFlair).
+const COMMENT_SELECT = `id, body, created_at, parent_id,
+       author:profiles!author_id ( id, display_name, handle, avatar_url, membership_tier )`
+
+// Cap the subtree so a runaway thread can't fan out unbounded. Top-level comments
+// are bounded here; nested replies are fetched in ONE follow-up over those ids.
+const TOP_LEVEL_LIMIT = 100
+const NESTED_LIMIT = 300
+
+/**
+ * Fetch the full 2-level comment subtree for a root post.
+ *
+ * Two batched queries (no N+1):
+ *   1. direct children   — `parent_id = parentId`
+ *   2. nested replies    — `parent_id IN (childIds)` (one round-trip)
+ * then ONE `post_reactions` read over every comment id for heart counts +
+ * whether the viewer reacted. The same private-circle gate and `hidden_at IS NULL`
+ * filter apply to BOTH comment queries.
+ *
+ * Returns top-level comments (each with a `replies` array) plus the subtree
+ * `total` — the count the comment badge should show.
+ */
+export async function fetchReplies(parentId: string): Promise<CommentThread> {
+  const empty: CommentThread = { comments: [], total: 0 }
+
   const profileId = await getMyProfileId()
-  if (!profileId) return []
+  if (!profileId) return empty
 
   const admin = createAdminClient()
   // Don't expose replies inside a private circle to non-members.
@@ -231,27 +261,54 @@ export async function fetchReplies(parentId: string) {
     .select('scope_id, visibility')
     .eq('id', parentId)
     .maybeSingle()
-  if (!parent) return []
+  if (!parent) return empty
   if (parent.visibility === 'group') {
-    if (!parent.scope_id || !(await isActiveMember(admin, profileId, parent.scope_id))) return []
+    if (!parent.scope_id || !(await isActiveMember(admin, profileId, parent.scope_id))) return empty
   }
 
-  const { data } = await admin
+  // 1. Direct children of the root post.
+  const { data: topRows } = await admin
     .from('posts')
-    .select(
-      `id, body, created_at,
-       author:profiles!author_id ( id, display_name, handle, avatar_url, membership_tier )`
-    )
+    .select(COMMENT_SELECT)
     .eq('parent_id', parentId)
     .is('hidden_at', null)
     .order('created_at', { ascending: true })
-    .limit(50)
-  return (data ?? []) as unknown as Array<{
-    id: string
-    body: string | null
-    created_at: string
-    author: { id: string; display_name: string; handle: string; avatar_url: string | null; membership_tier: string | null; current_season_rank: string | null; current_streak: number; achievement_count: number }
-  }>
+    .limit(TOP_LEVEL_LIMIT)
+
+  const topLevel = (topRows ?? []) as unknown as RawComment[]
+  const topIds = topLevel.map((c) => c.id)
+
+  // 2. One batched follow-up for the nested replies (children of the children).
+  let nested: RawComment[] = []
+  if (topIds.length > 0) {
+    const { data: nestedRows } = await admin
+      .from('posts')
+      .select(COMMENT_SELECT)
+      .in('parent_id', topIds)
+      .is('hidden_at', null)
+      .order('created_at', { ascending: true })
+      .limit(NESTED_LIMIT)
+    nested = (nestedRows ?? []) as unknown as RawComment[]
+  }
+
+  // 3. One reaction read over every comment id (top-level + nested) — heart only,
+  //    aggregated in code so the viewer's button seeds with correct state. Mirrors
+  //    how the feed loader derives a post's reaction state, but batched.
+  const allIds = [...topIds, ...nested.map((r) => r.id)]
+  let reactions = new Map<string, { reaction_count: number; viewer_reacted: boolean }>()
+  if (allIds.length > 0) {
+    const { data: reactionRows } = await admin
+      .from('post_reactions')
+      .select('post_id, profile_id')
+      .in('post_id', allIds)
+      .eq('reaction_type', 'heart')
+    reactions = aggregateReactionState(
+      (reactionRows ?? []) as Array<{ post_id: string; profile_id: string }>,
+      profileId,
+    )
+  }
+
+  return assembleThread(topLevel, nested, reactions)
 }
 
 // Toggle the caller's heart / plus on a post. This is the site's highest-frequency
