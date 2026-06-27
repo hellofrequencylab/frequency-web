@@ -3,8 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
-import { BETA_OPEN_ACCESS } from '@/lib/core/beta'
-import { getCircleCapabilities } from '@/lib/core/load-capabilities'
+import { getCircleCapabilities, canCreate } from '@/lib/core/load-capabilities'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { redirect } from 'next/navigation'
 import {
@@ -122,18 +121,18 @@ export async function dropPracticeAction(practiceId: string): Promise<ActionResu
  * Returns the caller's id + whether host+ standing (the curation tier) lets the practice
  * auto-approve. A non-host author creates PENDING: the practice stays out of the public pool
  * until a Host+ approves it. Returns an error string when the caller is signed out (or, outside
- * beta, a plain Member — see BETA_OPEN_ACCESS).
+ * beta, a plain Member without real Crew — see ADR-414).
  */
 async function authorizeCreatePractice(): Promise<
   { profileId: string; autoApprove: boolean } | { error: string }
 > {
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Not signed in' }
-  // BETA open access: any signed-in member may author (kept pending for Host+ review below, so
-  // nothing unvetted goes public). Outside beta the gate is CREW+ on the trust ladder — a plain
-  // Member is rejected (server is the source of truth; the hidden UI button is only convenience).
-  if (!BETA_OPEN_ACCESS && !atLeastRole(caller.community_role, 'crew')) {
-    return { error: 'Only Crew and above can create a practice.' }
+  // Real-Crew create gate (ADR-414) — reads the true tier (pre beta-override) so a free
+  // member is sold the one-tap free-beta upgrade rather than silently allowed. Nothing
+  // unvetted goes public regardless: a non-host author still creates PENDING (below).
+  if (!(await canCreate('practice.create'))) {
+    return { error: 'Upgrade to Crew to create a practice. Crew is free during the beta, one tap, no card.' }
   }
   // Host+ (or platform staff, who curate the library) author live; everyone else pending review.
   const autoApprove = atLeastRole(caller.community_role, 'host') || caller.webRole !== 'none'

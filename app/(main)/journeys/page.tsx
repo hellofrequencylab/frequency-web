@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { FolderOpen } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
+import { canCreate } from '@/lib/core/load-capabilities'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getPageHeaderImage } from '@/lib/page-settings/store'
@@ -37,6 +38,8 @@ export default async function JourneysPage() {
   // Prefer the new uploader so a header set there actually shows here (it was being
   // dropped — the page only read the old field). Same source crew/practices use.
   const bannerImage = (await getPageHeaderImage('/journeys')) ?? heroImage
+  // Real Crew (or steward/staff) may build a journey; others get the free-beta popup.
+  const canBuildJourney = await canCreate('journey.create')
 
   return (
     <IndexTemplate
@@ -52,7 +55,7 @@ export default async function JourneysPage() {
       description={description}
       action={
         <div className="flex items-center gap-2">
-          <NewJourneyButton />
+          <NewJourneyButton canCreate={canBuildJourney} />
           {/* The member's own management space (store / edit / publish / duplicate / delete). */}
           <Link
             href="/journeys/mine"

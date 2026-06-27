@@ -7,6 +7,26 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
+## 🌐 Resonance Feed + access model — 2026-06-26 ([ADR-414](DECISIONS.md), [spec](RESONANCE-FEED-ARCHITECTURE.md))
+
+The worldwide, density-adaptive ("ripple") resonance feed + the real-Crew create gate. One feed that
+is always full, gets more local the denser your area is, expands outward when sparse, and quietly
+introduces people on the same wavelength. Built ON the shipped resonance graph, embeddings, and geo
+RPCs (the composition layer was the gap, not the data). Full design: [`RESONANCE-FEED-ARCHITECTURE.md`](RESONANCE-FEED-ARCHITECTURE.md).
+
+| Phase | Scope | Status |
+|---|---|---|
+| **0. Foundations** | Real-Crew create gate across Events · Circles · Journeys · Practices (four `*.create` capabilities reading the real tier so the free-beta upgrade popup fires) + `CrewGateButton` everywhere. Additive schema: `suggestion_hidden` (hide/X a suggestion), `resonance_density_cells` (per-geocell activity rollup), `member_match_prefs` (reserved romance + astrology baselines, off/null). | ✅ this PR |
+| **1. Blended rank** | The five-signal score (proximity + graph + interest + recency + soft signals) + diversity rerank as one unified feed rank, composing the existing proximity RPCs, resonance edges, and embeddings. People-suggestions enter the feed. | ✅ shipped (ADR-415) |
+| **2. Adaptive radius + founder prompt** | The density-rollup job + the expanding-ring walk (neighborhood → city → region → world). Founder-vs-closest-activity branch. The "turn on location, we never share your exact spot" nudge. | ✅ shipped (ADR-416) |
+| **3. Radius slider + hide control** | Member radius slider (writes `feed_radius_m`); X-to-hide wired to `suggestion_hidden`; streak-as-a-quiet-signal in the rank. | ✅ shipped (ADR-417) |
+| **4. Safety + verification** | Safety guidance + verification. | ✅ shipped (ADR-418 + ADR-420: "showed up" verification, gates the romance lane) |
+| **5. Romance + astrology** | Opt-in astrology compatibility signal + a mutual-opt-in romance lane, on the Phase 0 scaffolding. Off by default, no swipe, meet-safely throughout. | ✅ shipped (ADR-419) |
+
+**Cardinal rule across every phase:** exact location never leaves the DB. All discovery reads use the
+fuzzed ~1.1km geocell or coarse band labels, never raw coordinates. Privacy controls already exist
+(`location_band`, `discoverable_by`, `discovery_radius_m`, `ghost_mode`).
+
 ## 🔎 Audit-backlog clearance — 2026-06-25 (merged #1086)
 
 The full deferred backlog from [`AUDIT-2026-06-25.md`](AUDIT-2026-06-25.md) was designed as 10

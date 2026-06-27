@@ -21,8 +21,16 @@ interface MyPrefsInput {
   discoverableBy?: string
   locationBand?: string
   discoveryRadiusM?: number
+  /** How far the member's FEED reaches (feed_radius_m). The ripple widens it on its
+   *  own when the area is sparse; this is the member's chosen BASE (ADR-417). */
+  feedRadiusM?: number
   ghostMode?: boolean
 }
+
+// The member's feed-reach slider bounds: 5km (just my block) to 500km (the whole
+// region). The ripple still expands beyond this when the local area is empty.
+const FEED_RADIUS_MIN_M = 5000
+const FEED_RADIUS_MAX_M = 500000
 
 /** Save the caller's own connection/location preferences. Self-authorized: only ever
  *  writes the caller's profile row, and validates every field (enums + radius clamped
@@ -52,6 +60,11 @@ export async function saveMyConnectionPrefs(input: MyPrefsInput): Promise<Action
       settings.maxDiscoveryRadiusM,
     )
   }
+  if (input.feedRadiusM !== undefined) {
+    const r = Math.round(Number(input.feedRadiusM))
+    if (!Number.isFinite(r)) return fail('Invalid radius.')
+    patch.feed_radius_m = Math.min(Math.max(r, FEED_RADIUS_MIN_M), FEED_RADIUS_MAX_M)
+  }
 
   if (Object.keys(patch).length === 0) return ok()
 
@@ -60,6 +73,7 @@ export async function saveMyConnectionPrefs(input: MyPrefsInput): Promise<Action
   if (error) return fail(error.message)
   revalidatePath('/settings')
   revalidatePath('/network')
+  revalidatePath('/feed')
   return ok()
 }
 

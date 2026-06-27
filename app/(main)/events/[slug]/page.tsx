@@ -24,6 +24,7 @@ import { RsvpControls } from '@/components/events/rsvp-controls'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { type ActivityPost } from '@/components/events/event-activity'
 import { EventRewardStrip } from '@/components/events/event-reward-strip'
+import { WarmProof } from '@/components/events/warm-proof'
 import { EventFactPanel, type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
@@ -269,35 +270,25 @@ export default async function EventDetailPage({
   const postedBy: { display_name: string; handle: string } | null = postedByResolved
   const posterCropUrls = Object.fromEntries(posterCropEntries)
 
-  // Header image + clickable gallery. A scanned-poster event has no uploaded cover; its
-  // image lives in poster_path (the full flyer) and details.media (the scanner's cropped
-  // cover + region crops), all in the PRIVATE poster bucket → the short-lived signed URLs
-  // just resolved above. Header (hero) priority: uploaded cover → cropped cover → full
-  // poster. Gallery: the full flyer leads (so the whole poster opens full-screen), then
-  // the cropped cover, the poster's region crops, and any uploaded gallery images —
-  // deduped by storage path (signed URLs differ per render; the paths are stable).
+  // Header image: the ORIGINAL poster leads for a scanned event. Priority: uploaded
+  // cover → full poster (the original flyer) → the scanner's cropped cover as a last
+  // resort. (The cropped cover/region crops are NOT shown as separate images anymore —
+  // they just duplicate the poster.)
   const posterMedia = posterDetails.media
   const posterFullUrl = extra?.poster_path ? posterCropUrls[extra.poster_path] ?? null : null
   const coverCropUrl = posterMedia?.coverPath ? posterCropUrls[posterMedia.coverPath] ?? null : null
-  const heroUrl = coverUrl ?? coverCropUrl ?? posterFullUrl
+  const heroUrl = coverUrl ?? posterFullUrl ?? coverCropUrl
 
-  const galleryUrls: string[] = (() => {
-    const seen = new Set<string>()
-    const out: string[] = []
-    const add = (id: string | null | undefined, url: string | null | undefined) => {
-      if (!id || !url || seen.has(id)) return
-      seen.add(id)
-      out.push(url)
-    }
-    add(extra?.poster_path, posterFullUrl) // full flyer first (when scanned)
-    add(extra?.cover_image_path, coverUrl) // uploaded cover leads for non-poster events
-    add(posterMedia?.coverPath, coverCropUrl) // the scanner's cropped cover
-    Object.values(posterMedia?.gallery ?? {}).forEach((p) => add(p, posterCropUrls[p] ?? null))
-    ;(extra?.gallery_image_paths ?? []).forEach((p) =>
-      add(p, admin.storage.from('event-media').getPublicUrl(p).data.publicUrl),
-    )
-    return out
-  })()
+  // Gallery: the header image leads (clickable → full-screen), then any host-UPLOADED
+  // extras. The scanner's crops are intentionally excluded: the original poster is the
+  // header, and the lineup/region crops already render under "From the poster". So a
+  // plain scanned event shows just its original poster, with no duplicate crops.
+  const galleryUrls: string[] = [
+    heroUrl,
+    ...(extra?.gallery_image_paths ?? []).map(
+      (p) => admin.storage.from('event-media').getPublicUrl(p).data.publicUrl,
+    ),
+  ].filter((u): u is string => !!u)
 
   // Visibility gate (ADR-202). This page reads through the admin client, which
   // bypasses RLS — so the same rules the RLS policy enforces are re-applied here:
@@ -914,8 +905,21 @@ export default async function EventDetailPage({
             event.title
           )
         }
-        // Operator/host entry to Settings (inline edit + the Layout editor), mirroring "Edit Circle".
-        actions={canManage ? <EditEventButton /> : undefined}
+        // Operator/host entries, stacked: Edit (Settings drawer) then Manage (dashboard).
+        actions={
+          canManage ? (
+            <div className="flex flex-col items-stretch gap-2 sm:items-end">
+              <EditEventButton />
+              <Link
+                href={`/events/${event.slug}/manage`}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+              >
+                <LayoutDashboard className="h-4 w-4 text-subtle" />
+                Manage event
+              </Link>
+            </div>
+          ) : undefined
+        }
         // [A2] attendance-mode chip.
         badges={
           <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${mode.cls}`}>
@@ -993,46 +997,31 @@ export default async function EventDetailPage({
           </div>
         }
       >
-        {/* Photo gallery — the poster leads, then any additional images, each clickable
-            into a full-screen lightbox. Renders only when there are 2+ images to browse. */}
-        <EventGallery images={galleryUrls} />
-
-        {/* Host/cohost: a quiet door to the Manage Dashboard (roster, waitlist,
-            questionnaire, dispatches, analytics). Host-only; everyone else never
-            sees it. */}
-        {canManage && (
-          <div className="mb-6">
-            <Link
-              href={`/events/${event.slug}/manage`}
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
-            >
-              <LayoutDashboard className="h-4 w-4 text-subtle" />
-              Manage event
-            </Link>
-          </div>
-        )}
-
-        {/* [A3] EventRewardStrip — calm gamification chips + warm proof. Hidden for
-            a cancelled event (no rewards to dangle on a dead event). */}
+        {/* [A3] One calm reward line under the title — the check-in Zaps reward (+ streak
+            / Current when real). Hidden for a cancelled event. */}
         {!event.is_cancelled && (
           <EventRewardStrip
             checkInZaps={ZAP_AMOUNTS.event_attend}
             isPast={isPast}
             circleName={scopeName}
-            going={goingRsvps.length}
-            fromYourCircles={fromYourCircles}
-            maybe={maybeCount}
-            guests={guestCount}
-            faces={faces}
-            nearFull={nearFull}
-            spotsLeft={capacityInfo.spotsLeft}
           />
         )}
 
-        {/* MOBILE: the critical-info card stacks ABOVE the Post area so a guest sees
-            the facts before the conversation (EVENTS-DESIGN §2.6). The lg aside is
-            hidden < lg; this block is hidden ≥ lg. */}
-        <div className="mb-8 lg:hidden">
+        {/* MOBILE: warm proof + the critical-info card stack ABOVE the Post area so a guest
+            sees who's going and the facts before the conversation (EVENTS-DESIGN §2.6). The
+            lg aside is hidden < lg; this block is hidden ≥ lg. */}
+        <div className="mb-8 space-y-3 lg:hidden">
+          {!event.is_cancelled && (
+            <WarmProof
+              going={goingRsvps.length}
+              fromYourCircles={fromYourCircles}
+              maybe={maybeCount}
+              guests={guestCount}
+              faces={faces}
+              nearFull={nearFull}
+              spotsLeft={capacityInfo.spotsLeft}
+            />
+          )}
           <EventFactPanel
             whenLine={whenLine}
             isOnline={isOnline}
@@ -1053,6 +1042,10 @@ export default async function EventDetailPage({
               sales · dispatch · activity · recap). Shared across every event via the '/events/*'
               scope and rearranged from Settings → Layout, exactly like the circle page. */}
           <div className="min-w-0 space-y-8">
+            {/* Photo gallery — the header image leads, then any host-uploaded extras, each
+                clickable into a full-screen lightbox. Lives in the CONTENT column (not the
+                header). Renders only when there are 2+ images to browse. */}
+            <EventGallery images={galleryUrls} />
             <PageModules route={`/events/${event.slug}`} />
           </div>
 
@@ -1060,6 +1053,18 @@ export default async function EventDetailPage({
               collapses to the bottom bar + the fact panel stacks above). */}
           <aside className="hidden space-y-4 self-start lg:sticky lg:top-20 lg:block">
             {!event.is_cancelled && joinActions}
+            {/* Warm proof sits with the RSVP action: "X going" / "be the first". */}
+            {!event.is_cancelled && (
+              <WarmProof
+                going={goingRsvps.length}
+                fromYourCircles={fromYourCircles}
+                maybe={maybeCount}
+                guests={guestCount}
+                faces={faces}
+                nearFull={nearFull}
+                spotsLeft={capacityInfo.spotsLeft}
+              />
+            )}
             {/* C4 critical info */}
             <EventFactPanel
               whenLine={whenLine}

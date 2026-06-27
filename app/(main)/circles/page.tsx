@@ -30,7 +30,7 @@ export default async function CirclesPage({
   searchParams: Promise<{ type?: string; interest?: string; sort?: string; q?: string; channel?: string }>
 }) {
   const circlesIndex = await getCirclesIndexData(await searchParams)
-  const { content, signedIn, interests } = circlesIndex
+  const { content, signedIn, interests, canCreate } = circlesIndex
 
   // Block layout: an operator-published doc wins; else the coded default template.
   const published = await getPublishedData('circles')
@@ -53,6 +53,7 @@ export default async function CirclesPage({
               <NewCircleCompose
                 interests={interests}
                 buttonLabel="Start a circle"
+                canCreate={canCreate}
                 buttonClass="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
               />
             )}
