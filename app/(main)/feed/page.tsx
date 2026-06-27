@@ -12,6 +12,7 @@ import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
 import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
+import { AvatarNudge } from '@/components/feed/avatar-nudge'
 import { FeedWalkthrough } from '@/components/walkthroughs/feed-walkthrough'
 import { FeedRolePromotion } from '@/components/walkthroughs/feed-role-promotion'
 import { nextStepsEnabled } from '@/lib/onboarding/status'
@@ -56,12 +57,14 @@ export default async function FeedPage({
   let homeLat: number | null = null
   let homeLng: number | null = null
   let feedRadiusM = 25000
+  // Default true so we never flash the "add a photo" nudge before we know (ADR-421).
+  let hasAvatar = true
   let veraWelcome: { slides: ReturnType<typeof buildWelcomeSlides>; opening: ReturnType<typeof buildVeraOpening> } | null = null
 
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role, display_name, current_streak, meta')
+      .select('id, community_role, display_name, current_streak, meta, avatar_url')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
@@ -70,6 +73,7 @@ export default async function FeedPage({
       myRole = (profile.community_role ?? 'member') as CommunityRole
       firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
       streak = (profile.current_streak as number | null) ?? 0
+      hasAvatar = !!(profile as { avatar_url?: string | null }).avatar_url
 
       // Member geo (ADR-088) + primary circle — independent reads, fetched together rather
       // than back-to-back (site audit 2026-06-18). Geo goes through an untyped handle since the
@@ -255,6 +259,11 @@ export default async function FeedPage({
             atRisk={practiceStreak?.atRisk ?? false}
             loggedToday={practiceStreak?.loggedToday ?? false}
           />}
+
+      {/* "Add a photo" nudge (ADR-421): a safety net for anyone who landed without an
+          avatar (the localStorage-quota loss, a cross-browser magic-link, or any upload
+          hiccup). Dismissible; disappears once they add a photo. */}
+      {myProfileId && !hasAvatar && <AvatarNudge />}
 
       {/* Capture — the primary "log a moment" entry (ADR-155/156); posting is one
           mode inside it. Replaces the always-open inline composer. */}
