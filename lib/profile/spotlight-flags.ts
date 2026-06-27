@@ -56,6 +56,9 @@ export function readSpotlightLayoutRaw(meta: unknown): unknown {
 export function readSpotlightBackgroundRaw(meta: unknown): unknown {
   return (meta as { spotlight?: { background?: unknown } } | null | undefined)?.spotlight?.background
 }
+export function readSpotlightThemeRaw(meta: unknown): unknown {
+  return (meta as { spotlight?: { theme?: unknown } } | null | undefined)?.spotlight?.theme
+}
 
 /** Merge a new layout into meta, preserving enabled/published/background. */
 export function withSpotlightLayout(meta: unknown, layout: unknown): Record<string, unknown> {
@@ -66,4 +69,9 @@ export function withSpotlightLayout(meta: unknown, layout: unknown): Record<stri
 export function withSpotlightBackground(meta: unknown, background: unknown): Record<string, unknown> {
   const base = (meta ?? {}) as SpotlightMeta
   return { ...base, spotlight: { ...(base.spotlight ?? {}), background } }
+}
+/** Merge a new custom theme (colours/gradient/fonts/card) into meta, preserving everything else. */
+export function withSpotlightTheme(meta: unknown, theme: unknown): Record<string, unknown> {
+  const base = (meta ?? {}) as SpotlightMeta
+  return { ...base, spotlight: { ...(base.spotlight ?? {}), theme } }
 }

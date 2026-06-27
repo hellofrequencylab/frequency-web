@@ -6,12 +6,15 @@ import {
   readSpotlightEnabled,
   readSpotlightLayoutRaw,
   readSpotlightBackgroundRaw,
+  readSpotlightThemeRaw,
 } from '@/lib/profile/spotlight-flags'
 import {
   validateSpotlightLayout,
   validateSpotlightBackground,
 } from '@/lib/spotlight/blocks/validate'
+import { validateSpotlightTheme } from '@/lib/spotlight/theme'
 import { LayoutEditor } from '@/components/spotlight/layout-editor'
+import { SpotlightThemeEditor } from '@/components/spotlight/theme-editor'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,14 +39,18 @@ export default async function SpotlightEditorPage() {
   const handle = ((me as { handle?: string }).handle) ?? ''
   const layout = validateSpotlightLayout(readSpotlightLayoutRaw(meta), user.id)
   const background = validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id)
+  const theme = validateSpotlightTheme(readSpotlightThemeRaw(meta))
 
   return (
     <FocusTemplate
       title="Build your Spotlight"
-      description="Add headings, text, links, images, and a background, and arrange them however you like. Save, then publish from your profile settings."
+      description="Theme your colours and fonts, add blocks, and arrange them however you like. Save, then publish from your profile settings."
       back={{ href: '/settings/profile', label: 'Profile settings' }}
     >
-      <LayoutEditor initial={layout} initialBackground={background} handle={handle} />
+      <div className="space-y-6">
+        <SpotlightThemeEditor initial={theme} />
+        <LayoutEditor initial={layout} initialBackground={background} handle={handle} />
+      </div>
     </FocusTemplate>
   )
 }
