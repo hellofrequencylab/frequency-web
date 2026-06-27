@@ -795,6 +795,19 @@ export default async function EventDetailPage({
             On waitlist · tap to leave
           </button>
         </form>
+      ) : !event.is_cancelled && !myProfileId && !isPast ? (
+        /* Signed-out visitor on a free, upcoming event: RSVP is for everyone, so offer the
+           one step that unlocks it — sign in, then you're on the list. (Paid events are
+           handled above with their own "Sign in to get your ticket" line.) */
+        <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
+          <Link
+            href={`/sign-in?next=/events/${event.slug}`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          >
+            Sign in to RSVP
+          </Link>
+          <p className="text-xs text-muted">Free to join. Sign in and you&rsquo;re on the list.</p>
+        </div>
       ) : null}
     </div>
   )

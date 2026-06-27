@@ -69,6 +69,7 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
           'event-join',
           'event-warm-proof',
           'event-facts',
+          'event-location',
         ],
         hidden: [],
         roles: {},
