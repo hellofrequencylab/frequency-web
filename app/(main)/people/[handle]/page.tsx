@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
@@ -62,6 +63,9 @@ export default async function ProfilePage({
   }
 
   const admin = createAdminClient()
+  // One profile read for everything the band needs. header_image_url + meta used to be a
+  // second round-trip; they're folded in here. header_image_url isn't in the generated
+  // types yet (new column) — read it off the row via the cast below, same as before.
   const { data: profile } = await admin
     .from('profiles')
     .select(`
@@ -79,6 +83,8 @@ export default async function ProfilePage({
       is_demo,
       is_system,
       vcard,
+      header_image_url,
+      meta,
       nexus_regions!nexus_region_id ( name )
     `)
     .eq('handle', handle)
@@ -101,16 +107,11 @@ export default async function ProfilePage({
   }
 
   // header_image_url isn't in the generated types yet (new column) — read via cast.
-  const { data: hdrRow } = await (admin)
-    .from('profiles')
-    .select('header_image_url, meta')
-    .eq('id', profile.id)
-    .maybeSingle()
-  const headerImageUrl = (hdrRow as { header_image_url?: string | null } | null)?.header_image_url ?? null
+  const headerImageUrl = (profile as { header_image_url?: string | null }).header_image_url ?? null
   // Spotlight (opt-in public mini-site): show a link to it when this member has
   // published one. Derived from meta server-side; the blob never reaches the client.
-  const spotlightPublished = readSpotlightPublished((hdrRow as { meta?: unknown } | null)?.meta)
-  const spotlightEnabled = readSpotlightEnabled((hdrRow as { meta?: unknown } | null)?.meta)
+  const spotlightPublished = readSpotlightPublished((profile as { meta?: unknown }).meta)
+  const spotlightEnabled = readSpotlightEnabled((profile as { meta?: unknown }).meta)
 
   const vcardEnabled = parseVcard(profile.vcard).enabled
 
@@ -141,45 +142,34 @@ export default async function ProfilePage({
 
   const profileId = profile.id as string
 
-  // Tips (ADR-176): show the Tip control to a signed-in non-owner only when the
-  // recipient is actually payouts-ready (and billing is live). The server decides;
-  // the button never appears for someone who can't receive money.
-  const canTipRecipient =
-    !!user && !isOwner && (await payoutsLive()) && (await getConnectStatus(profileId)).ready
+  // Everything the identity band + sidebar needs is mutually independent once we have
+  // user / viewer / profileId, so it all goes through ONE Promise.all instead of a chain
+  // of serial awaits (the band used to wait on the slowest of ~10 round-trips). The
+  // relationship reads (friendship / block / linked contact) are gated exactly as before
+  // — built as conditional promises so we only issue them when the same guard would have.
+  const isRelationalViewer = !!myProfileId && myProfileId !== profileId
 
-  // Capability-gated moderator edit: profile.edit on a profile you don't own = janitor.
-  const profileCaps = await getProfileCapabilities(profileId)
-  const canModerateProfile = !isOwner && profileCaps.has('profile.edit')
-  // Staff (admin/janitor) get a deep link into the full account editor in Admin → People.
-  const isStaffViewer = !isOwner && (await getGlobalCapabilities()).has('admin.access')
-  // Janitors additionally get "Act as" — full identity impersonation of this member.
-  const isJanitorViewer = !isOwner && (await getRealCallerWebRole()) === 'janitor'
+  // Friendship state — same pairing + status mapping as before, just resolved in-batch.
+  const friendPair = isRelationalViewer
+    ? (myProfileId! < profileId
+        ? { user_a_id: myProfileId!, user_b_id: profileId }
+        : { user_a_id: profileId, user_b_id: myProfileId! })
+    : null
+  const friendPromise = friendPair
+    ? admin.from('friendships').select('status, requested_by').match(friendPair).maybeSingle()
+    : Promise.resolve(null)
+  // Block state — only read for a signed-in non-self viewer, same guard as before.
+  const blockPromise = isRelationalViewer ? hasBlocked(myProfileId!, profileId) : Promise.resolve(false)
+  // The viewer's OWN merged contact card (docs/NETWORK-CRM.md) — same gate (signed-in
+  // non-owner) as before, just folded into the batch.
+  const linkedContactPromise =
+    myProfileId && !isOwner ? getLinkedContactForProfile(myProfileId, profileId) : Promise.resolve(null)
 
-  // Friendship state between viewer and this profile
-  let friendState: FriendState = { kind: 'none' }
-  if (myProfileId && myProfileId !== profileId) {
-    const pair = myProfileId < profileId
-      ? { user_a_id: myProfileId, user_b_id: profileId }
-      : { user_a_id: profileId, user_b_id: myProfileId }
-    const { data: f } = await admin
-      .from('friendships')
-      .select('status, requested_by')
-      .match(pair)
-      .maybeSingle()
-    if (f) {
-      if (f.status === 'accepted') friendState = { kind: 'accepted' }
-      else if (f.requested_by === myProfileId) friendState = { kind: 'pending_outgoing' }
-      else friendState = { kind: 'pending_incoming' }
-    }
-  }
-
-  // Block state between viewer and this profile.
-  let isBlocked = false
-  if (myProfileId && myProfileId !== profileId) {
-    isBlocked = await hasBlocked(myProfileId, profileId)
-  }
-
-  const [totalZaps, completionsCountResult, postsCountResult, circlesResult, signature, awards] = await Promise.all([
+  const [
+    totalZaps, completionsCountResult, postsCountResult, circlesResult, signature, awards,
+    payoutsAreLive, connectStatus, profileCaps, globalCaps, realWebRole,
+    friendResult, isBlocked, myLinkedContact,
+  ] = await Promise.all([
     // Lifetime Zaps as one SQL aggregate (HARD-05): no per-row tally / N+1.
     getProfileZapTotal(profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
@@ -190,7 +180,37 @@ export default async function ProfilePage({
     getMemberSignature(profileId),
     // Real earned awards + owned shop items for the public awards section.
     getProfileAwards(profileId),
+    // Tips (ADR-176): payouts-live + the recipient's Connect status. Always fetched; the
+    // canTipRecipient boolean below keeps the signed-in-non-owner short-circuit semantics.
+    payoutsLive(),
+    getConnectStatus(profileId),
+    // Capability-gated moderator edit: profile.edit on a profile you don't own = janitor.
+    getProfileCapabilities(profileId),
+    // Staff (admin/janitor) deep link into the full account editor in Admin → People.
+    getGlobalCapabilities(),
+    // Janitors additionally get "Act as" — full identity impersonation of this member.
+    getRealCallerWebRole(),
+    friendPromise,
+    blockPromise,
+    linkedContactPromise,
   ])
+
+  // Tips (ADR-176): show the Tip control to a signed-in non-owner only when the recipient
+  // is actually payouts-ready (and billing is live). The server decides; the button never
+  // appears for someone who can't receive money.
+  const canTipRecipient = !!user && !isOwner && payoutsAreLive && connectStatus.ready
+  const canModerateProfile = !isOwner && profileCaps.has('profile.edit')
+  const isStaffViewer = !isOwner && globalCaps.has('admin.access')
+  const isJanitorViewer = !isOwner && realWebRole === 'janitor'
+
+  // Friendship state between viewer and this profile (same status mapping as before).
+  let friendState: FriendState = { kind: 'none' }
+  const f = friendResult?.data
+  if (f) {
+    if (f.status === 'accepted') friendState = { kind: 'accepted' }
+    else if (f.requested_by === myProfileId) friendState = { kind: 'pending_outgoing' }
+    else friendState = { kind: 'pending_incoming' }
+  }
 
   const tasksCompleted = completionsCountResult.count ?? 0
   const postCount = postsCountResult.count ?? 0
@@ -215,12 +235,6 @@ export default async function ProfilePage({
   // reach (the celebration hook from the Progress spec), not just dimmed-out.
   // Earned float to the top; among the rest, the closest comes first.
   const firstName = (profile.display_name as string).trim().split(/\s+/)[0]
-
-  // The viewer's OWN merged contact card for this member (docs/NETWORK-CRM.md) —
-  // private to them, shown only when a signed-in non-owner has linked a personal
-  // contact to this profile. It's their own logged data, surfaced where it helps.
-  const myLinkedContact =
-    myProfileId && !isOwner ? await getLinkedContactForProfile(myProfileId, profileId) : null
 
   const rewards = [
     { icon: Star, label: 'Early Adopter', description: 'Here from the beginning', current: 1, target: 1, milestone: true },
@@ -463,22 +477,27 @@ export default async function ProfilePage({
                 ]}
               />
             </div>
-            {activeTab === 'posts' ? (
-              <ProfilePosts
-                profileId={profileId}
-                firstName={firstName}
-                isOwner={isOwner}
-                myProfileId={myProfileId}
-                viewerRole={myRole}
-              />
-            ) : (
-              <ProfileFeed
-                profileId={profileId}
-                profileHandle={profile.handle as string}
-                myProfileId={myProfileId}
-                viewerRole={myRole}
-              />
-            )}
+            {/* The timeline/posts list is the slowest async work on the page, so it
+                streams behind its own Suspense boundary — the identity band + sidebar
+                paint first, the feed swaps in when its rows resolve. */}
+            <Suspense fallback={<ProfileFeedSkeleton />}>
+              {activeTab === 'posts' ? (
+                <ProfilePosts
+                  profileId={profileId}
+                  firstName={firstName}
+                  isOwner={isOwner}
+                  myProfileId={myProfileId}
+                  viewerRole={myRole}
+                />
+              ) : (
+                <ProfileFeed
+                  profileId={profileId}
+                  profileHandle={profile.handle as string}
+                  myProfileId={myProfileId}
+                  viewerRole={myRole}
+                />
+              )}
+            </Suspense>
           </div>
         </div>
 
@@ -529,6 +548,30 @@ export default async function ProfilePage({
       </div>
       </DetailTemplate>
     </>
+  )
+}
+
+// Suspense fallback for the streamed timeline — a few pulsing bars sized to the feed
+// rows, so the space is reserved (no layout shift) while the posts resolve.
+function ProfileFeedSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 animate-pulse rounded-full bg-surface-elevated" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 w-1/3 animate-pulse rounded bg-surface-elevated" />
+              <div className="h-3 w-1/5 animate-pulse rounded bg-surface-elevated" />
+            </div>
+          </div>
+          <div className="mt-3 space-y-2">
+            <div className="h-3 w-full animate-pulse rounded bg-surface-elevated" />
+            <div className="h-3 w-4/5 animate-pulse rounded bg-surface-elevated" />
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 
