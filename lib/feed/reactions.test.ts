@@ -4,7 +4,7 @@ import { REACTIONS, REACTION_KEYS, isReactionKey, reactionLabel } from './reacti
 describe('reaction allowed set', () => {
   it('exposes six curated emojis', () => {
     expect(REACTIONS).toHaveLength(6)
-    expect(REACTION_KEYS).toEqual(['❤️', '🔥', '🙌', '😂', '😮', '🙏'])
+    expect(REACTION_KEYS).toEqual(['❤️', '🔥', '🙌🏽', '😂', '😮', '🙏🏽'])
   })
 
   it('every reaction has a non-empty human label', () => {
@@ -41,7 +41,7 @@ describe('isReactionKey', () => {
 describe('reactionLabel', () => {
   it('returns the human label for a known emoji', () => {
     expect(reactionLabel('❤️')).toBe('Love this')
-    expect(reactionLabel('🙏')).toBe('Grateful')
+    expect(reactionLabel('🙏🏽')).toBe('Grateful')
   })
 
   it('falls back to the value itself for an unknown emoji', () => {

@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useTransition, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import { useState, useTransition, useEffect, useCallback, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Loader2, Send, SmilePlus } from 'lucide-react'
-import { createReply, fetchReplies, toggleReaction } from '@/app/(main)/feed/actions'
+import { Loader2, Send } from 'lucide-react'
+import { createReply, fetchReplies } from '@/app/(main)/feed/actions'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { isEndorsed } from '@/lib/season-ranks'
-import { REACTIONS } from '@/lib/feed/reactions'
 import { PostBody } from './post-body'
 import { ReactionBar } from './reaction-button'
 import type { CommentNode, CommentLeaf, CommentThread } from '@/lib/feed/comment-thread'
@@ -124,7 +123,7 @@ function ReplyComposer({
   disabled,
   placeholder,
   autoFocus = false,
-  onReact,
+  reactSlot,
 }: {
   value: string
   onChange: (v: string) => void
@@ -132,68 +131,14 @@ function ReplyComposer({
   disabled: boolean
   placeholder: string
   autoFocus?: boolean
-  /** When set, an emoji-react button shares this composer row (post-level only). */
-  onReact?: (emoji: string) => void
+  /** The post's reaction bar (counts + picker), rendered inline at the left of the
+   *  composer row so reacting and commenting share ONE row. Post-level only. */
+  reactSlot?: ReactNode
 }) {
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const pickerRef = useRef<HTMLDivElement>(null)
-
-  // Close the composer emoji picker on an outside click or Escape.
-  useEffect(() => {
-    if (!pickerOpen) return
-    function onDown(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false)
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setPickerOpen(false)
-    }
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [pickerOpen])
-
   return (
     <form onSubmit={onSubmit} className="mt-2.5 flex items-end gap-1.5">
-      {/* Inline emoji react sharing the composer row (post-level only). */}
-      {onReact && (
-        <div className="relative shrink-0" ref={pickerRef}>
-          <button
-            type="button"
-            onClick={() => setPickerOpen((o) => !o)}
-            aria-label="React with an emoji"
-            aria-expanded={pickerOpen}
-            className="flex h-11 w-9 items-center justify-center rounded-xl text-subtle transition-colors hover:bg-surface-elevated hover:text-muted sm:h-auto sm:w-auto sm:p-2"
-          >
-            <SmilePlus className="w-4 h-4" />
-          </button>
-          {pickerOpen && (
-            <div
-              role="menu"
-              className="absolute bottom-full left-0 z-20 mb-1.5 flex gap-0.5 rounded-2xl bg-surface-elevated p-1.5 shadow-lg ring-1 ring-border/40"
-            >
-              {REACTIONS.map((r) => (
-                <button
-                  key={r.key}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setPickerOpen(false)
-                    onReact(r.key)
-                  }}
-                  aria-label={r.label}
-                  title={r.label}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-base transition-transform hover:scale-110 hover:bg-surface"
-                >
-                  <span aria-hidden>{r.key}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* The post's reaction bar shares the composer row (post-level only). */}
+      {reactSlot && <div className="shrink-0 self-center">{reactSlot}</div>}
       <textarea
         value={value}
         autoFocus={autoFocus}
@@ -290,15 +235,6 @@ export function PostReplies({
     })
   }
 
-  // React to the POST itself from the composer's inline picker. Activates the emoji
-  // (a one-tap "react", not a toggle); the post's own reaction bar reconciles its
-  // count from server truth the next time the feed loads.
-  function reactFromComposer(emoji: string) {
-    startTransition(async () => {
-      await toggleReaction(postId, emoji, true)
-    })
-  }
-
   const count = loaded ? thread.total : initialCount
 
   // Truncate long threads: show only the latest COLLAPSED_TOP_LEVEL top-level
@@ -334,11 +270,10 @@ export function PostReplies({
 
   return (
     <div>
-      {/* One balanced action line under the post content: the emoji reactions on
-          the left, the comment toggle on the right. No divider rule; spacing alone
-          separates it from the content (density over lines). */}
-      <div className="mt-2.5 flex items-center justify-between gap-2">
-        <div className="min-w-0">{reactions}</div>
+      {/* Action line under the post content: just the comment toggle on the right.
+          The post's reactions moved DOWN to share the comment composer row (below),
+          so reacting and commenting live together instead of in two places. */}
+      <div className="mt-2.5 flex items-center justify-end gap-2">
         <button
           onClick={() => setOpen((o) => !o)}
           aria-label={open ? 'Hide comments' : 'Show comments'}
@@ -403,7 +338,7 @@ export function PostReplies({
         onSubmit={handleSubmit}
         disabled={isPending}
         placeholder="Add a comment…"
-        onReact={reactFromComposer}
+        reactSlot={reactions}
       />
     </div>
   )
