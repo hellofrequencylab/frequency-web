@@ -18,6 +18,7 @@ export function VenueAutocomplete({
   placeholder = 'Venue name',
   disabled = false,
   className,
+  bias,
 }: {
   value?: string | null
   /** The full structured result for the picked place. */
@@ -25,6 +26,8 @@ export function VenueAutocomplete({
   placeholder?: string
   disabled?: boolean
   className?: string
+  /** Location bias — results near this point rank first (the current pin, or the viewer's home). */
+  bias?: { lat: number; lng: number } | null
 }) {
   const [q, setQ] = useState(value ?? '')
   const [open, setOpen] = useState(false)
@@ -32,6 +35,12 @@ export function VenueAutocomplete({
   const [results, setResults] = useState<PlaceResult[]>([])
   const boxRef = useRef<HTMLDivElement>(null)
   const touched = useRef(false) // true once the user types — gates the search
+  // Hold the latest bias in a ref so a fresh object reference each render never re-arms the
+  // debounce (the search effect only depends on the typed query).
+  const biasRef = useRef(bias)
+  useEffect(() => {
+    biasRef.current = bias
+  }, [bias])
 
   useEffect(() => {
     if (!touched.current) return // don't auto-search the pre-filled venue name
@@ -44,7 +53,7 @@ export function VenueAutocomplete({
         return
       }
       setLoading(true)
-      const r = await searchAddresses(term, ctrl.signal)
+      const r = await searchAddresses(term, ctrl.signal, biasRef.current)
       setResults(r)
       setLoading(false)
       setOpen(true)

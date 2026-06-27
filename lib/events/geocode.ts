@@ -23,6 +23,10 @@ export interface EventAddress {
   region?: string | null
   country?: string | null
   postalCode?: string | null
+  /** A free-text location line (the event's `location` field, e.g. what Vera scanned off a
+   *  poster or the onboarding wizard collected). Geocoded when the structured fields are empty,
+   *  so an event that only ever got a one-line address still lands a pin on the map. */
+  query?: string | null
 }
 
 /** A resolved point. lng/lat in WGS-84 (SRID 4326). */
@@ -49,7 +53,8 @@ export function hasGeocodableAddress(address: EventAddress): boolean {
     address.street?.trim() ||
       address.city?.trim() ||
       address.postalCode?.trim() ||
-      address.venueName?.trim(),
+      address.venueName?.trim() ||
+      address.query?.trim(),
   )
 }
 
