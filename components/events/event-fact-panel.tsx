@@ -37,6 +37,8 @@ export function EventFactPanel({
   spotsLeft = null,
   guests = [],
   guestsAreVisible,
+  viewerSignedIn = true,
+  signInHref = '/sign-in',
 }: {
   /** Preformatted "when" line, e.g. "Thursday, June 19 at 7:00 PM". */
   whenLine: string
@@ -54,6 +56,10 @@ export function EventFactPanel({
   guests?: FactGuest[]
   /** Crew see the roster; others see only the count (privacy-by-default). */
   guestsAreVisible: boolean
+  /** False for a signed-out visitor → "Sign in to see who's coming" replaces the faces (Partiful). */
+  viewerSignedIn?: boolean
+  /** Where the "see who's coming" CTA sends a signed-out visitor (sign-in, return to this event). */
+  signInHref?: string
 }) {
   const [showAll, setShowAll] = useState(false)
   const faces = guests.slice(0, MAX_FACES)
@@ -102,7 +108,16 @@ export function EventFactPanel({
           {going > 0 ? `${going} going` : 'No one going yet'}
         </p>
 
-        {going > 0 && faces.length > 0 && (
+        {going > 0 && !viewerSignedIn && (
+          <Link
+            href={signInHref}
+            className="inline-flex items-center gap-1 text-sm font-semibold text-primary-strong hover:underline"
+          >
+            Sign in to see who&rsquo;s coming →
+          </Link>
+        )}
+
+        {going > 0 && viewerSignedIn && faces.length > 0 && (
           <div className="mb-2 flex -space-x-2" aria-hidden>
             {faces.map((g) =>
               g.avatarUrl ? (

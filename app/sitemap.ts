@@ -83,6 +83,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/discover`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/discover/circles`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/events`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    // The community events index — the canonical public events listing (the /discover/events page
+    // is a curated browse that links here).
+    { url: `${SITE_URL}/events`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/journeys`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/topics`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/discover/partners`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
@@ -208,14 +211,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Only UPCOMING events are listed: getPublicEvents (public_events RPC) filters
     // starts_at >= now(), so expired events are isolated OUT of the sitemap by
-    // construction (they go noindex,follow on the page until pruned). Each entry
-    // carries its dynamic per-event OG image for the image sitemap.
+    // construction (they go noindex,follow on the page until pruned). The CANONICAL event URL
+    // is now /events/<slug> (the discover detail canonicalises here), so the sitemap points at
+    // it; each entry carries the per-event OG image for the image sitemap.
     const eventRoutes: MetadataRoute.Sitemap = events.map((e) => ({
-      url: `${SITE_URL}/discover/events/${e.slug}`,
+      url: `${SITE_URL}/events/${e.slug}`,
       lastModified: new Date(e.starts_at),
       changeFrequency: "daily",
-      priority: 0.6,
-      images: [`${SITE_URL}/discover/events/${e.slug}/opengraph-image`],
+      priority: 0.7,
+      images: [`${SITE_URL}/events/${e.slug}/opengraph-image`],
     }));
 
     const journeyRoutes: MetadataRoute.Sitemap = journeys.map((j) => ({

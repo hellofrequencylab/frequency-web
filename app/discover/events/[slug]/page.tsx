@@ -36,7 +36,9 @@ export async function generateMetadata({
   return {
     title: event.title,
     description,
-    alternates: { canonical: `/discover/events/${event.slug}` },
+    // The canonical public event page is /events/<slug> (the in-app, shareable URL). This discover
+    // detail stays crawlable but consolidates its SEO signal there, so the two don't compete.
+    alternates: { canonical: `/events/${event.slug}` },
     ...(ended ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       title: ogTitle,

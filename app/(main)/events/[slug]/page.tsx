@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { SITE_NAME } from '@/lib/site'
+import { SITE_NAME, SITE_URL } from '@/lib/site'
+import { JsonLd } from '@/components/json-ld'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton, type TicketTierView } from './ticket-button'
@@ -147,10 +148,14 @@ export async function generateMetadata({
   return {
     title: event.title,
     description,
+    // /events/<slug> is the canonical public event URL (the discover detail points here too),
+    // so search + AI engines consolidate on this one page.
+    alternates: { canonical: `/events/${slug}` },
     openGraph: {
       title: ogTitle,
       description,
       type: 'article',
+      url: `/events/${slug}`,
     },
     twitter: {
       card: 'summary_large_image',
@@ -874,11 +879,50 @@ export default async function EventDetailPage({
       spotsLeft: capacityInfo.spotsLeft,
       guests: factGuests,
       guestsAreVisible: isCrew,
+      viewerSignedIn: !!myProfileId,
+      signInHref: `/sign-in?next=/events/${event.slug}`,
     },
   })
 
+  // Event structured data (schema.org) for SEO + AI answer engines. Canonical URL is this
+  // public /events/<slug> page; the dynamic OG card is the required `image`. Location is the
+  // event's own (public) venue line for an in-person event, a VirtualLocation when online.
+  const eventJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.title,
+    startDate: event.starts_at,
+    ...(event.ends_at ? { endDate: event.ends_at } : {}),
+    eventStatus: event.is_cancelled
+      ? 'https://schema.org/EventCancelled'
+      : 'https://schema.org/EventScheduled',
+    eventAttendanceMode:
+      attendanceMode === 'online'
+        ? 'https://schema.org/OnlineEventAttendanceMode'
+        : attendanceMode === 'hybrid'
+          ? 'https://schema.org/MixedEventAttendanceMode'
+          : 'https://schema.org/OfflineEventAttendanceMode',
+    image: [`${SITE_URL}/events/${event.slug}/opengraph-image`, `${SITE_URL}/opengraph-image`],
+    ...(event.description ? { description: event.description } : {}),
+    url: `${SITE_URL}/events/${event.slug}`,
+    location: isOnline
+      ? { '@type': 'VirtualLocation', url: `${SITE_URL}/events/${event.slug}` }
+      : {
+          '@type': 'Place',
+          name: event.location || scopeName || 'In person',
+          ...(event.location ? { address: event.location } : {}),
+        },
+    ...(scopeName
+      ? { organizer: { '@type': 'Organization', name: scopeName } }
+      : event.host
+        ? { organizer: { '@type': 'Person', name: event.host.display_name } }
+        : {}),
+    isAccessibleForFree: !isPaidEvent,
+  }
+
   return (
     <div className="pb-24 lg:pb-0">
+      <JsonLd data={eventJsonLd} />
       {event.is_cancelled && (
         <div className="mb-4 rounded-2xl bg-danger-bg border border-danger px-3 py-2">
           <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
