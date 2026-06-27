@@ -8939,6 +8939,22 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 
 ---
 
+## ADR-430: Spotlight editor round 3 — gallery, quote, and stats blocks (self-contained composition)
+
+**Status:** Accepted (2026-06-27). Three more layout blocks: **gallery** (multi-image grid, reusing the round-2 upload), **quote** (a callout with optional attribution), and **stats** (the member picks which gamification numbers to surface inline). The owner chose "more layout blocks" for round 3 — richer page composition with NO new external hosts, all on the existing closed-allowlist render path.
+
+**Context.** After images/GIFs/backgrounds (ADR-429), the next step was either external embeds (music/video — each needs a per-host iframe allowlist and a fresh security review) or more *self-contained* blocks. The owner picked the latter, so round 3 adds zero new trust surface: gallery is just N image assetPaths (the same `safeAssetPath` pin as the image block), quote is plain text (auto-escaped), and stats carries NO numbers — only which keys to show.
+
+**Decision.**
+1. **Stats are authoritative, never member-supplied.** A `stats` block stores only `show: StatKey[]` (`streak | gems | joined | region`). The VALUES are resolved server-side in `spotlight-page.tsx` from the already-allowlisted profile row (`current_streak`, `lifetime_gems`, `created_at` year, region name from `privacy.ts`) and threaded into the renderer as a `SpotlightStatsContext` — so a member can choose what to display but can't fake the number. The validator filters `show` to known keys, dedupes, and drops an empty selection.
+2. **Gallery reuses the image security pin.** Each gallery item is validated through the same `safeAssetPath` (owner's `<authUserId>/spotlight/…` folder), capped at `MAX_GALLERY_IMAGES` (12); items outside the owner's folder are dropped, an all-foreign gallery drops whole. The editor reuses the round-2 `SpotlightImageUploader` per item.
+3. **Quote is plain text.** Clamped (`QUOTE_MAX` 280 / `CITE_MAX` 80), empty dropped, rendered as a `<blockquote>` with auto-escaped text — no new render primitive, no HTML.
+4. **Same closed-allowlist spine.** All three are new `case`s in the one validator and the one renderer switch; an unknown type still renders nothing. `SPOTLIGHT_SELECT`/`privacy.ts` are untouched (the stats values were already in the allowlist for the curated default). No new server action, no migration, no new bucket.
+
+**Consequences.** Changed: `lib/spotlight/blocks/schema.ts` (+gallery/quote/stats types, `SpotlightStatKey`, limits, palette), `lib/spotlight/blocks/validate.ts` (+3 coerce cases), `components/spotlight/blocks/render.tsx` (+3 views, `SpotlightStatsContext` prop), `components/spotlight/spotlight-page.tsx` (resolve + pass stats context), `components/spotlight/layout-editor.tsx` (+3 block editors), `lib/spotlight/blocks/validate.test.ts` (+3 tests, 14 total). No-layout members still render byte-identical. **Deferred (still noted):** embeds/music/video (per-host iframe allowlist — the next big security step), orphaned-asset GC, the report-moderation migration, a minor-account publish gate, and earned cosmetics. Gate: tsc, eslint, authz-contract, 14 tests + 3 privacy.
+
+---
+
 ## ADR-431: Spotlight self-enable for Crew+ (members reach their own editor) + discoverable entry points
 
 **Status:** Accepted (2026-06-27). A Crew+ member can now **turn their own Spotlight on** from Settings → Profile and reach the builder without a janitor flipping a flag first. The janitor toggle stays for moderation. Fixes the dead end where members "couldn't find any way to edit their Spotlight."
