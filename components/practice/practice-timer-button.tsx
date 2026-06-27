@@ -47,7 +47,8 @@ export function PracticeTimerButton({
     // The provider open() takes the agreed resume options (practiceId + mode +
     // resumeFromSec + secondsTarget); narrow to that shape at the call site.
     if (isMovement) {
-      const opts: TimerResumeOptions = { practiceId, mode: movementMode ?? undefined }
+      // autoStart: selecting a practice opens the timer and begins the countdown immediately.
+      const opts: TimerResumeOptions = { practiceId, mode: movementMode ?? undefined, autoStart: true }
       if (isResume) {
         opts.resumeFromSec = resumeFromSec
         opts.secondsTarget = secondsTarget
@@ -56,7 +57,7 @@ export function PracticeTimerButton({
     } else {
       // 'mindless' AND 'none' both open the On Air sit; the session reads the
       // practice's mindless_mode ('none' carries 'log' → the Just Log screen).
-      const opts: TimerResumeOptions = { practiceId }
+      const opts: TimerResumeOptions = { practiceId, autoStart: true }
       if (isResume) {
         opts.resumeFromSec = resumeFromSec
         opts.secondsTarget = secondsTarget
@@ -86,5 +87,6 @@ type TimerResumeOptions = {
   mode?: MovementMode
   resumeFromSec?: number
   secondsTarget?: number
+  autoStart?: boolean
 }
 type TimerOpen = (opts: TimerResumeOptions) => void

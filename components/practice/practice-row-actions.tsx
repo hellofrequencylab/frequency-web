@@ -90,7 +90,17 @@ export function PracticeRowActions({
 
   return (
     <div className="flex items-center gap-2">
-      <LogPracticeButton practiceId={practiceId} onLogged={() => setLogged(true)} />
+      {/* Route by timer_kind so a TIMED practice opens its timer (and auto-starts) instead of
+          one-tapping a log the server would refuse. Only a timed kind ('mindless' | 'movement')
+          switches the button into timer mode; a non-timed ('none' / unset) practice keeps the
+          plain one-tap log path untouched. */}
+      <LogPracticeButton
+        practiceId={practiceId}
+        timerKind={timerKind && timerKind !== 'none' ? timerKind : undefined}
+        mindlessMode={mindlessMode}
+        movementConfig={movementConfig}
+        onLogged={() => setLogged(true)}
+      />
       <Link
         href={href}
         className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"

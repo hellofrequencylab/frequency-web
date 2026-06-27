@@ -800,6 +800,25 @@
   filter: grayscale(0.5);
 }
 
+/* ── Safe-area utilities (iOS standalone PWA / notch) ──────────────────────────
+   The app runs `viewport-fit=cover` + black-translucent status bar, so the webview
+   extends UNDER the status bar / notch and the side notch in landscape. The bottom
+   tab bar already pads `env(safe-area-inset-bottom)`; these mirror that for the TOP
+   and SIDES so top chrome clears the notch and landscape gutters clear a side-notch.
+   `env()` resolves to 0 on any non-inset display, so these are no-ops off-device. */
+@layer utilities {
+  .pt-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .h-topbar {
+    height: calc(3.5rem + env(safe-area-inset-top));
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
 /* The profile hero stats skeleton tile height — a named size for the streamed
    hero-stats placeholders (and the matching profile-body fallback), so the figure
    lives in ONE place instead of a duplicated `h-[58px]` arbitrary value. Exposed via

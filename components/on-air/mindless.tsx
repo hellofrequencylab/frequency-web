@@ -74,6 +74,10 @@ export interface MindlessOpenOpts {
   resumeFromSec?: number
   /** The full target length in seconds (the practice's authored duration). */
   secondsTarget?: number
+  /** When true (a practice-SELECT launch), the session SKIPS the setup screen and begins the
+   *  countdown immediately, auto-configured to the practice's type + duration. The manual "open the
+   *  timer from the On Air page" entry points leave this off so they still show setup. */
+  autoStart?: boolean
 }
 
 interface MindlessApi {
@@ -111,6 +115,8 @@ type OverlayState =
       resume?: ResumeInfo
       /** A crash-recovery open forces the mode so the engine that owns the saved record mounts. */
       forceMode?: TimerMode
+      /** A practice-select launch auto-starts the countdown (skips setup). */
+      autoStart?: boolean
     }
   | {
       phase: 'ready'
@@ -120,6 +126,8 @@ type OverlayState =
       /** A Movement sub-mode forced by the entry (a movement practice / the Movement door). */
       movementMode?: MovementMode
       resume?: ResumeInfo
+      /** A practice-select launch auto-starts the countdown (skips setup). */
+      autoStart?: boolean
     }
   | { phase: 'error' }
 
@@ -177,7 +185,16 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
       opts.resumeFromSec >= 0
         ? { resumeFromSec: Math.round(opts.resumeFromSec), secondsTarget: Math.round(opts.secondsTarget) }
         : undefined
-    setState({ phase: 'loading', practiceId: opts?.practiceId, movementMode: opts?.mode, resume, forceMode })
+    // autoStart only rides a practice-SELECT open (never a crash-recovery one, which has no opts
+    // and forces a mode); a recovered session must surface its own Resume prompt, not auto-run.
+    setState({
+      phase: 'loading',
+      practiceId: opts?.practiceId,
+      movementMode: opts?.mode,
+      resume,
+      forceMode,
+      autoStart: forceMode ? false : opts?.autoStart,
+    })
   }, [])
 
   const open = useCallback((opts?: MindlessOpenOpts) => openInternal(opts), [openInternal])
@@ -199,6 +216,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     const forcedMovementMode = state.movementMode
     const requestedResume = state.resume
     const forceMode = state.forceMode
+    const requestedAutoStart = state.autoStart
     void (async () => {
       const result = await loadOnAirSession(requestedPracticeId)
       if (!live) return
@@ -214,6 +232,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         mode,
         movementMode: forcedMovementMode,
         resume: requestedResume,
+        autoStart: requestedAutoStart,
       })
     })()
     return () => {
@@ -315,6 +334,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             practicedToday={state.data.practicedToday}
             resumeFromSec={state.resume?.resumeFromSec}
             secondsTarget={state.resume?.secondsTarget}
+            // A practice-select launch skips setup and begins the countdown immediately.
+            autoStart={state.autoStart}
             onExit={close}
             // The Be Still | Get Moving toggle: passing onModeChange tells the session it's inside
             // the unified door (the standalone /on-air route omits it, so no toggle there).
@@ -329,6 +350,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             practicedToday={state.data.practicedToday}
             resumeFromSec={state.resume?.resumeFromSec}
             secondsTarget={state.resume?.secondsTarget}
+            // A practice-select launch skips setup and begins the countdown immediately.
+            autoStart={state.autoStart}
             onExit={close}
             mode={state.mode}
             onModeChange={setMode}

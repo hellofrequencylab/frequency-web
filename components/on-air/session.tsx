@@ -199,6 +199,7 @@ export function OnAirSession({
   practicedToday = 0,
   resumeFromSec,
   secondsTarget,
+  autoStart = false,
   onExit,
   mode: doorMode,
   onModeChange,
@@ -214,6 +215,10 @@ export function OnAirSession({
   resumeFromSec?: number
   /** "Finish Practice" resume: the full target length in seconds (the practice's duration). */
   secondsTarget?: number
+  /** A practice-SELECT launch: skip the setup screen and arm the countdown immediately, using the
+   *  initial practice's routed mode + length. Off (the default) for the manual On Air entry points,
+   *  which still open to setup. A 'log' (Just Log) practice or an empty list never auto-starts. */
+  autoStart?: boolean
   /** Overlay mode (the global Mindless launcher): when set, leaving the session
    *  CLOSES the overlay via this callback instead of navigating the router. The
    *  route page (/on-air) omits it, keeping its back/replace exit unchanged. */
@@ -611,6 +616,23 @@ export function OnAirSession({
     const rec = loadLiveSession<MindlessSetup>('mindless')
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (rec) setResumePrompt(rec)
+  }, [])
+
+  // AUTO-START (a practice-select launch): skip the setup screen and arm the countdown immediately,
+  // on the initial practice's routed mode + minutes (both already seeded in state above). Fires ONCE
+  // on mount, and only when there's a real practice to run, the routed mode is a real timer (never
+  // Just Log), and no crash-recovered sit is waiting (that surfaces its own Resume prompt and must
+  // win). Manual On Air entry points pass autoStart=false, so they still open to setup unchanged.
+  const autoStartedRef = useRef(false)
+  useEffect(() => {
+    if (!autoStart || autoStartedRef.current) return
+    autoStartedRef.current = true
+    if (loadLiveSession<MindlessSetup>('mindless')) return // a recovered sit owns the screen
+    if (!initialId) return
+    if (mode === 'log') return // a Just Log practice has no countdown to auto-run
+    void start({ practiceId: initialId, mode, minutes })
+    // Run once on mount; the initial mode/minutes are the seeded state for the launched practice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // While a sit is genuinely running (live, past the pre-roll), persist the record on every state

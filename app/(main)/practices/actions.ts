@@ -67,6 +67,12 @@ export async function logPracticeAction(
     secondsDone: timed?.secondsDone ?? null,
     secondsTarget: timed?.secondsTarget ?? null,
   })
+  // Timer gate: a practice with a set timer can only be logged from inside its session (which
+  // carries a target). A one-tap attempt is refused server-side; surface that as a clear fail so
+  // the UI sends the member to the timer instead of silently doing nothing.
+  if (res.timerRequired) {
+    return fail('Use the timer to log this practice.')
+  }
   // Re-seed the "your practices" tight rows so an already-logged practice paints in
   // its collapsed state on the next server render (B.4). The client wrapper collapses
   // optimistically too, so this is the durable, refresh-safe path, not the live one.

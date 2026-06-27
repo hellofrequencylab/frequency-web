@@ -30,6 +30,8 @@ interface MovementApi {
     mode?: MovementMode
     resumeFromSec?: number
     secondsTarget?: number
+    /** A practice-select launch auto-starts the movement timer (skips setup). */
+    autoStart?: boolean
   }) => void
   close: () => void
 }
@@ -47,6 +49,7 @@ export function useMovement(): MovementApi {
         mode: opts?.mode ?? 'play',
         resumeFromSec: opts?.resumeFromSec,
         secondsTarget: opts?.secondsTarget,
+        autoStart: opts?.autoStart,
       }),
     [mindless],
   )
