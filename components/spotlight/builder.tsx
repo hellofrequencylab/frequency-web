@@ -25,6 +25,7 @@ export function SpotlightBuilder({
   published,
   profile,
   hostedEvents,
+  totalZaps,
   initialTheme,
   initialLayout,
   initialBackground,
@@ -33,6 +34,7 @@ export function SpotlightBuilder({
   published: boolean
   profile: SpotlightRow
   hostedEvents: SpotlightHostedEvent[]
+  totalZaps: number
   initialTheme: SpotlightTheme
   initialLayout: SpotlightLayout
   initialBackground: SpotlightBackground
@@ -48,6 +50,7 @@ export function SpotlightBuilder({
     layout: { version: SPOTLIGHT_LAYOUT_VERSION, blocks },
     background,
     theme,
+    totalZaps,
   }
 
   const preview = (
