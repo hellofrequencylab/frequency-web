@@ -7,6 +7,22 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
+## ✨ Spotlight — remaining MySpace / Discord socials — 2026-06-27
+
+The Spotlight editor shipped rounds 1–7 (blocks, images/GIF/bg, gallery/quote/stats, themes
++ gradients + fonts + per-block colours, Crew+ self-enable, the live split-screen builder,
+media embeds — Spotify/YouTube/SoundCloud/Vimeo). The iconic socials still to build, each a
+bigger lift (storage + moderation), captured here as the build queue:
+
+| Item | Scope | Status |
+|---|---|---|
+| **Top Friends** | The MySpace "Top 8": pick N friends to feature in a grid on your Spotlight. Reuses the existing friends/friendships data — no moderation needed. **Build first.** | 📋 specced, not built |
+| **Guestbook** | Visitors leave a note on your Spotlight. Needs a `spotlight_guestbook` table (RLS: owner reads all, anyone-signed-in writes), moderation (hide/report, owner delete), rate-limit + anti-spam, and the read-side render. | 📋 specced, not built |
+| **Stickers / decals** | A playful decorative layer — place emoji/earned stickers on the page (absolute-positioned, validated coordinates + an allowlisted sticker set). | 📋 specced, not built |
+
+Deferred embed providers: Bandcamp, Apple Music, Twitch (each needs a host-allowlist entry +
+`frame-src`). Earned cosmetics (frames/skins tied to gems/streaks) remain in the cosmetics lane.
+
 ## 🌐 Resonance Feed + access model — 2026-06-26 ([ADR-414](DECISIONS.md), [spec](RESONANCE-FEED-ARCHITECTURE.md))
 
 The worldwide, density-adaptive ("ripple") resonance feed + the real-Crew create gate. One feed that
