@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
+import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
 import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
@@ -290,13 +291,18 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const identityValid = displayName.trim().length > 0 && formatOk && handleStatus === 'available'
 
   // ── Helpers ────────────────────────────────────────────────────────────────
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setAvatarFile(file)
-    setAvatarPreview(URL.createObjectURL(file))
     setUploadError('')
     setAvatarUrl('')
+    // Downscale + compress on pick so EVERY downstream path uses a small image: the
+    // signed-out flow parks it in localStorage across the magic-link hop (a raw photo's
+    // base64 overflows the ~5MB quota and was silently dropped), and the immediate
+    // upload is faster. Best-effort: falls back to the original file on any failure.
+    const compressed = await downscaleImageFile(file)
+    setAvatarFile(compressed)
+    setAvatarPreview(URL.createObjectURL(compressed))
   }
 
   async function uploadAvatar(): Promise<string> {
