@@ -8855,3 +8855,19 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 **Why two flags, not one.** "Turned on to mess with" (enabled) and "live on the internet" (published) are different risk levels. Splitting them lets the platform enable a member for setup without anything going public until that member deliberately publishes.
 
 **Consequences.** New: `lib/spotlight/{privacy.ts,privacy.test.ts,data.ts}`, `components/spotlight/spotlight-page.tsx`, `app/spotlight/[handle]/page.tsx`. Changed: `app/(main)/settings/profile/{actions.ts (setSpotlightPublished, self-scoped),page.tsx,profile-form.tsx (publish control + view link)}`. The in-app profile-page CTA + the theme picker are round 3 (which also edits `people/[handle]`). Minor-age signal remains deferred (ADR-423/418): the page stays opt-in + admin-gated + owner-published, with no contact/location ever shown, until a real age flag exists. Gate: tsc, eslint, authz-contract, vitest. Reversible: the route 404s for everyone while no one is both enabled and published (the default); deleting the route + the publish control fully retracts it with no data migration.
+
+---
+
+## ADR-425: Spotlight round 3 — constrained theme picker (wire profile_theme) + in-app link
+
+**Status:** Accepted (2026-06-27). The owner can now choose a look for their Spotlight + profile from a governed set of skins, wiring the previously-dormant `profiles.profile_theme` column. Round 3 of Spotlight (ADR-423/424). No migration.
+
+**Context.** `profile_theme` has existed unused; rounds 1–2 read it but nothing let a member set it. The owner wants expressive-but-safe profiles. The "constrained but expressive" research lesson (Linear's 3-variable themes, design tokens, SpaceHey blocking raw CSS/JS) says: let people pick from a governed kit, never inject markup or raw colors.
+
+**Decision.**
+1. **A curated allowlist + one choke point.** `lib/theme/profile-skins.ts` exposes `PROFILE_SKINS` (a subset of the app `SKINS`, each carrying a reserved `requiredItem?` for the future cosmetics gate) and `resolveProfileSkin()` — the SINGLE owner-aware function every Spotlight render site calls (replacing the inline `resolveSkin`). So earned/cosmetic skins later are an additive change in one place, not a render-site sweep.
+2. **Owner-only, validated write.** `updateProfileTheme(themeId)` (self-scoped to the caller's `auth_user_id`, requires Spotlight enabled) validates against the allowlist before writing `profile_theme` — no raw color/CSS value can ever reach the column.
+3. **A visible picker.** `components/spotlight/profile-theme-picker.tsx` previews each skin by applying its own `[data-skin]` to the swatch, surfaced in the Settings → Profile Spotlight section (only once enabled). Optimistic with rollback on error.
+4. **In-app discovery.** The profile page (`people/[handle]`) shows a "Spotlight" link to anyone when the member has a published page (derived from meta server-side; the blob never reaches the client).
+
+**Consequences.** New: `lib/theme/profile-skins.ts`, `lib/profile/profile-theme-actions.ts`, `components/spotlight/profile-theme-picker.tsx`. Changed: `components/spotlight/spotlight-page.tsx` (resolveProfileSkin choke point), `app/(main)/settings/profile/{page.tsx,profile-form.tsx}` (picker + profile_theme prop), `app/(main)/people/[handle]/page.tsx` (Spotlight link). Today the picker offers the two built-in skins (default, midnight); the cosmetics layer adds earned skins by extending `PROFILE_SKINS` + gating on `requiredItem`, with no render changes. Gate: tsc, eslint, authz-contract. Reversible: removing the picker leaves `profile_theme` dormant again with no data change.

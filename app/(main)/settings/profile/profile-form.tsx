@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
 import { Check, Loader2, Sparkles, ExternalLink } from 'lucide-react'
 import { updateProfile, uploadProfileImageAction, setSpotlightPublished } from './actions'
+import { ProfileThemePicker } from '@/components/spotlight/profile-theme-picker'
 import { HeaderEditor } from './header-editor'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 
@@ -57,6 +58,7 @@ export function ProfileForm({
     website: string
     spotlightEnabled: boolean
     spotlightPublished: boolean
+    profileTheme: string | null
   }
 }) {
   const [displayName,   setDisplayName]   = useState(initial.displayName)
@@ -478,6 +480,8 @@ export function ProfileForm({
               </p>
             </div>
           </div>
+
+          <ProfileThemePicker initialTheme={initial.profileTheme} />
 
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
             <span className="text-sm text-text">{spotPublished ? 'Published' : 'Draft (only you can see it)'}</span>

@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { CalendarDays, Flame, Gem, Globe, MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
-import { resolveSkin } from '@/lib/theme/skins'
+import { resolveProfileSkin } from '@/lib/theme/profile-skins'
 import { RoleBadge, type CommunityRole } from '@/lib/community-roles'
 import type { SpotlightData } from '@/lib/spotlight/data'
 
@@ -30,7 +30,7 @@ function StatPill({ icon: Icon, value, label }: { icon: typeof Flame; value: str
 
 export function SpotlightPage({ data }: { data: SpotlightData }) {
   const { profile, hostedEvents } = data
-  const skin = resolveSkin(profile.profile_theme)
+  const skin = resolveProfileSkin(profile.profile_theme)
   const name = profile.display_name || `@${profile.handle}`
   const region = profile.nexus_regions?.name ?? null
   const website = profile.website ? normalizeUrl(profile.website) : null
