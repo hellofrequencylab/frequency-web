@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { ArrowUp, ArrowDown, Trash2, Plus, Check, Loader2, ExternalLink, Upload, ImageIcon, X } from 'lucide-react'
 import {
   type SpotlightBlock,
-  type SpotlightLayout,
   type SpotlightBackground,
   type SpotlightStatKey,
   type BlockTint,
@@ -137,48 +136,49 @@ function SpotlightImageUploader({
   )
 }
 
+// Controlled: the parent (the builder) owns `blocks` + `background` so the live preview
+// reflects edits as they happen. The editor keeps its own Save buttons (they persist the
+// current value) and transient saved/error/pending state.
 export function LayoutEditor({
-  initial,
-  initialBackground,
+  blocks,
+  onBlocksChange,
+  background,
+  onBackgroundChange,
   handle,
 }: {
-  initial: SpotlightLayout
-  initialBackground: SpotlightBackground
+  blocks: SpotlightBlock[]
+  onBlocksChange: (b: SpotlightBlock[]) => void
+  background: SpotlightBackground
+  onBackgroundChange: (bg: SpotlightBackground) => void
   handle: string
 }) {
-  const [blocks, setBlocks] = useState<SpotlightBlock[]>(initial.blocks)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
-
-  // Background is stored separately (meta.spotlight.background) and saved on its own.
-  const [bgPath, setBgPath] = useState<string | null>(initialBackground.assetPath)
-  const [bgDim, setBgDim] = useState<number>(initialBackground.dim)
-  const [bgFocusX, setBgFocusX] = useState<number>(initialBackground.focusX)
-  const [bgFocusY, setBgFocusY] = useState<number>(initialBackground.focusY)
-  const [bgZoom, setBgZoom] = useState<number>(initialBackground.zoom)
   const [bgSaved, setBgSaved] = useState(false)
   const [bgError, setBgError] = useState('')
   const [bgPending, startBg] = useTransition()
 
   function update(id: string, patch: Partial<SpotlightBlock>) {
-    setBlocks((bs) => bs.map((b) => (b.id === id ? ({ ...b, ...patch } as SpotlightBlock) : b)))
+    onBlocksChange(blocks.map((b) => (b.id === id ? ({ ...b, ...patch } as SpotlightBlock) : b)))
   }
   function remove(id: string) {
-    setBlocks((bs) => bs.filter((b) => b.id !== id))
+    onBlocksChange(blocks.filter((b) => b.id !== id))
   }
   function move(id: string, dir: -1 | 1) {
-    setBlocks((bs) => {
-      const i = bs.findIndex((b) => b.id === id)
-      const j = i + dir
-      if (i < 0 || j < 0 || j >= bs.length) return bs
-      const next = [...bs]
-      ;[next[i], next[j]] = [next[j], next[i]]
-      return next
-    })
+    const i = blocks.findIndex((b) => b.id === id)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= blocks.length) return
+    const next = [...blocks]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    onBlocksChange(next)
   }
   function add(type: SpotlightBlock['type']) {
-    setBlocks((bs) => (bs.length >= MAX_BLOCKS ? bs : [...bs, blankBlock(type)]))
+    if (blocks.length >= MAX_BLOCKS) return
+    onBlocksChange([...blocks, blankBlock(type)])
+  }
+  function setBg(p: Partial<SpotlightBackground>) {
+    onBackgroundChange({ ...background, ...p })
   }
 
   function save() {
@@ -200,7 +200,6 @@ export function LayoutEditor({
       setTimeout(() => setBgSaved(false), 2500)
     })
   }
-  const bgState = (): SpotlightBackground => ({ assetPath: bgPath, dim: bgDim, focusX: bgFocusX, focusY: bgFocusY, zoom: bgZoom })
 
   return (
     <div className="space-y-6">
@@ -208,27 +207,28 @@ export function LayoutEditor({
       <section className="rounded-2xl border border-border bg-surface p-4">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle">Background</p>
         <SpotlightImageUploader
-          value={bgPath}
+          value={background.assetPath}
           onChange={(p) => {
-            setBgPath(p)
+            const next = { ...background, assetPath: p }
+            onBackgroundChange(next)
             // Clearing the image saves immediately; setting one waits for the framing + Save.
-            if (p === null) saveBackground({ assetPath: null, dim: bgDim, focusX: bgFocusX, focusY: bgFocusY, zoom: bgZoom })
+            if (p === null) saveBackground(next)
           }}
           label="Background image"
           height="h-32"
         />
-        {bgPath && (
+        {background.assetPath && (
           <div className="mt-3 space-y-2">
-            <Slider label="Dim for readable text" suffix="%" min={0} max={80} step={5} value={bgDim} onChange={setBgDim} />
-            <Slider label="Position across" suffix="%" min={0} max={100} step={1} value={bgFocusX} onChange={setBgFocusX} />
-            <Slider label="Position up/down" suffix="%" min={0} max={100} step={1} value={bgFocusY} onChange={setBgFocusY} />
-            <Slider label="Zoom" suffix="%" min={100} max={200} step={5} value={bgZoom} onChange={setBgZoom} />
+            <Slider label="Dim for readable text" suffix="%" min={0} max={80} step={5} value={background.dim} onChange={(v) => setBg({ dim: v })} />
+            <Slider label="Position across" suffix="%" min={0} max={100} step={1} value={background.focusX} onChange={(v) => setBg({ focusX: v })} />
+            <Slider label="Position up/down" suffix="%" min={0} max={100} step={1} value={background.focusY} onChange={(v) => setBg({ focusY: v })} />
+            <Slider label="Zoom" suffix="%" min={100} max={200} step={5} value={background.zoom} onChange={(v) => setBg({ zoom: v })} />
           </div>
         )}
         <div className="mt-3 flex items-center gap-3">
           <button
             type="button"
-            onClick={() => saveBackground(bgState())}
+            onClick={() => saveBackground(background)}
             disabled={bgPending}
             className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
           >
