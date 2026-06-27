@@ -37,22 +37,39 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
     },
   },
 
-  // Events (/events/<slug>): the post-area is a single arrangeable column (the fixed header + the
-  // RSVP/ticket Join aside + the mobile action bar live in the page, not as modules). Default order
-  // matches the hand-built page: description → poster details → cohosts → sales → dispatch composer →
-  // activity → recap. Operators reorder/hide from Settings → Layout, shared across every event.
+  // Events (/events/<slug>): the FULL interior is arrangeable now — only the fixed header and the
+  // mobile action bar live in the page. The default is a Main + side grid that reproduces the old
+  // hand-built two-column page exactly: the post area (description → poster details → cohosts →
+  // sales → activity → recap) leads MAIN, while the right Join column (the host "Post an update"
+  // composer first, then the RSVP/ticket Join box, warm proof, and the when/where facts) fills
+  // SIDE. Operators move any block from Settings → Layout, shared across every event.
   '/events/*': {
-    template: 'single',
+    template: 'main-side',
     slots: {
       main: {
         order: [
           'event-description',
-          'event-poster-details',
+          'event-lineup',
+          'event-schedule',
+          'event-good-to-know',
+          'event-pricing',
+          'event-links',
+          'event-sponsors',
+          'event-details',
           'event-cohosts',
           'event-sales',
-          'event-dispatch',
           'event-activity',
           'event-recap',
+        ],
+        hidden: [],
+        roles: {},
+      },
+      side: {
+        order: [
+          'event-dispatch',
+          'event-join',
+          'event-warm-proof',
+          'event-facts',
         ],
         hidden: [],
         roles: {},

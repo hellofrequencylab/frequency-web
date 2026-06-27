@@ -62,10 +62,13 @@ export async function PageModules({
 function TemplateGrid({ template, slot }: { template: TemplateId; slot: (id: string) => ReactNode }) {
   switch (template) {
     case 'main-side':
+      // The SIDE column stacks ABOVE main on small screens (order-first) but sits to the RIGHT on
+      // lg+: a phone sees the high-signal side blocks (e.g. an event's Join box + facts) before the
+      // long main flow, while desktop keeps the wide-main / narrow-side reading order.
       return (
         <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
           <div className="@container space-y-4 lg:col-span-2">{slot('main')}</div>
-          <div className="@container space-y-4">{slot('side')}</div>
+          <div className="@container order-first space-y-4 lg:order-none">{slot('side')}</div>
         </div>
       )
     case 'two-col':

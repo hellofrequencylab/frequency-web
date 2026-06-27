@@ -142,12 +142,24 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'circle-journey-run', label: 'Start a journey run', description: 'Start a Journey cohort for the circle (manager only).' },
   { id: 'circle-text', label: 'Page text', description: 'A free rich-text note you can place anywhere on the page. Set per circle, with a network default.' },
 
-  // ── Event detail blocks (/events/<slug>) — the arrangeable POST AREA of one event. The fixed
-  // header (cover · title · badges · Edit/Join), the RSVP/ticket Join aside, and the mobile action
-  // bar stay in the page; these are the content sections an operator can reorder/hide. Each
-  // self-fetches from the request-scoped event context (lib/events/active-event.ts) and self-hides.
+  // ── Event detail blocks (/events/<slug>) — the FULL arrangeable interior of one event. The fixed
+  // header (cover · title · badges · Edit/Manage) and the mobile action bar stay in the page; every
+  // content section below — the Join box, warm proof, and facts that used to be a hardcoded aside,
+  // plus the post area — is now a movable module. Each self-fetches from the request-scoped event
+  // context (lib/events/active-event.ts) and self-hides when it doesn't apply.
+  { id: 'event-join', label: 'Join / RSVP', description: 'The RSVP, ticket, check-in, and waitlist actions. Hidden on a cancelled event.' },
+  { id: 'event-warm-proof', label: 'Warm proof', description: 'Who is going: the avatar pile and a warm line of real attendance numbers.' },
+  { id: 'event-facts', label: 'Event facts', description: 'The when / where card, with the city-level or exact-venue map and the guest list.' },
   { id: 'event-description', label: 'Description', description: "The event's description; host-editable inline." },
-  { id: 'event-poster-details', label: 'Poster details', description: 'Captured details from a flyer: lineup, schedule, links, sponsors.' },
+  // Each poster-harvest section is its OWN movable block (no lumped "poster details"): an operator
+  // moves or hides any one of them independently. Each renders only when the poster carried it.
+  { id: 'event-lineup', label: 'Lineup', description: 'The acts / people captured from the poster.' },
+  { id: 'event-schedule', label: 'Schedule', description: 'The run of show captured from the poster.' },
+  { id: 'event-good-to-know', label: 'Good to know', description: 'The quick what-to-expect tags captured from the poster.' },
+  { id: 'event-pricing', label: 'Pricing', description: 'The prices as printed on the poster.' },
+  { id: 'event-links', label: 'Links', description: 'The links captured from the poster.' },
+  { id: 'event-sponsors', label: 'Sponsors', description: 'The support / credits line from the poster.' },
+  { id: 'event-details', label: 'Details', description: 'The other key-value details captured from the poster.' },
   { id: 'event-cohosts', label: 'Cohosts', description: 'The people helping host; the host adds or removes them.' },
   { id: 'event-sales', label: 'Ticket sales', description: 'Sold tickets and refunds for a paid event (host only).' },
   { id: 'event-dispatch', label: 'Post an update', description: 'Compose an Event Dispatch to the page (host or cohost only).' },
@@ -324,21 +336,35 @@ const CIRCLE_DETAIL_MODULE_IDS = [
 ] as const
 
 // Every event DETAIL page (/events/<slug>) shares one layout, keyed at the '/events/*' section
-// scope — the arrangeable post-area in default render order. The fixed header + RSVP/ticket Join
-// aside + mobile action bar stay in the page; only this content is module-driven.
+// scope — the FULL arrangeable interior in default render order. Only the fixed header (cover ·
+// title · badges · Edit/Manage) and the mobile action bar stay in the page; everything else is
+// module-driven, so an operator can move ANY block from the on-page Layout editor.
 //
-// NOTE: 'event-dispatch' (the host's "Post an update" composer) is NOT in this post-area set
-// anymore. The owner wants it at the TOP of the right Join aside, above the RSVP box, so the
-// page renders <EventDispatch /> directly there (host/cohost-gated by the same event context).
-// Leaving it here too would double-render the composer. Its meta + component stay defined (it's
-// still a self-gating context-reading RSC) — it's just placed in the aside, not the module flow.
+// The default interior layout (lib/page-settings/default-layouts.ts) places these in a Main + side
+// grid that reproduces the old hand-built two-column page exactly: the post area (description →
+// poster → cohosts → sales → activity → recap) leads MAIN, while the Join box, facts, warm proof,
+// and the host "Post an update" composer fill the SIDE column. Listing 'event-dispatch' here (it
+// was previously kept out of the set + rendered directly in the aside) is now safe + correct: the
+// aside is gone, so the module is the ONLY place the composer renders — no double-render.
 const EVENT_DETAIL_MODULE_IDS = [
+  // Post area (defaults to MAIN) — every poster section is its own movable block (no lumping).
   'event-description',
-  'event-poster-details',
+  'event-lineup',
+  'event-schedule',
+  'event-good-to-know',
+  'event-pricing',
+  'event-links',
+  'event-sponsors',
+  'event-details',
   'event-cohosts',
   'event-sales',
   'event-activity',
   'event-recap',
+  // Former Join aside (defaults to SIDE).
+  'event-dispatch',
+  'event-join',
+  'event-warm-proof',
+  'event-facts',
 ] as const
 
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section
