@@ -324,64 +324,73 @@ export default async function ProfilePage({
     </>
   )
 
+  // The secondary, lower-stakes controls (Block · janitor "Act as") render as small
+  // text LINKS in a row UNDER the primary button row, right-aligned — they shouldn't
+  // compete with Friends/Message/Settings for weight.
+  const hasSecondary = (!isOwner) || isJanitorViewer
   const viewerActions = user ? (
-    <>
-      {spotlightLink}
-      {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
-      {vcardEnabled && (
-        <a
-          href={`${profilePath}/vcard`}
-          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-        >
-          <Contact className="w-3.5 h-3.5" />
-          Save contact
-        </a>
-      )}
-      {!isBlocked && friendState.kind === 'accepted' && (
-        <form action={startConversation.bind(null, profileId)}>
-          <button
-            type="submit"
-            className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg transition-colors"
+    <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {spotlightLink}
+        {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
+        {vcardEnabled && (
+          <a
+            href={`${profilePath}/vcard`}
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
-            <MessageSquare className="w-3.5 h-3.5" />
-            Message
-          </button>
-        </form>
+            <Contact className="w-3.5 h-3.5" />
+            Save contact
+          </a>
+        )}
+        {!isBlocked && friendState.kind === 'accepted' && (
+          <form action={startConversation.bind(null, profileId)}>
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg transition-colors"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              Message
+            </button>
+          </form>
+        )}
+        {!isBlocked && canTipRecipient && (
+          <TipButton toProfileId={profileId} recipientName={firstName} />
+        )}
+        {/* One Settings drawer for staff — the member's profile fields, Spotlight admin
+            controls, and a deep link to full account management. */}
+        {isStaffViewer && (
+          <ProfileSettingsDrawer
+            profileId={profileId}
+            handle={profile.handle as string}
+            initialName={profile.display_name}
+            initialBio={profile.bio ?? ''}
+            spotlightEnabled={spotlightEnabled}
+            spotlightPublished={spotlightPublished}
+            canModerate={canModerateProfile}
+            isJanitor={isJanitorViewer}
+          />
+        )}
+      </div>
+      {hasSecondary && (
+        <div className="flex items-center gap-3 pr-0.5">
+          {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} variant="link" />}
+          {/* Janitor full control: become this member (session swap). The server action
+              re-checks the real janitor web_role before swapping. */}
+          {isJanitorViewer && (
+            <form action={actAsMember.bind(null, profileId)}>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1 text-xs font-medium text-signal-strong transition-colors hover:underline"
+                title="Act as this member (full control)"
+              >
+                <UserCog className="h-3 w-3" />
+                Act as {firstName}
+              </button>
+            </form>
+          )}
+        </div>
       )}
-      {!isBlocked && canTipRecipient && (
-        <TipButton toProfileId={profileId} recipientName={firstName} />
-      )}
-      {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
-      {/* One Settings drawer for staff — the member's profile fields, Spotlight admin
-          controls, and a deep link to full account management. Replaces the old separate
-          "Edit (mod)" popup + "Manage account" link. */}
-      {isStaffViewer && (
-        <ProfileSettingsDrawer
-          profileId={profileId}
-          handle={profile.handle as string}
-          initialName={profile.display_name}
-          initialBio={profile.bio ?? ''}
-          spotlightEnabled={spotlightEnabled}
-          spotlightPublished={spotlightPublished}
-          canModerate={canModerateProfile}
-          isJanitor={isJanitorViewer}
-        />
-      )}
-      {/* Janitor full control: become this member (session swap). The server action
-          re-checks the real janitor web_role before swapping. */}
-      {isJanitorViewer && (
-        <form action={actAsMember.bind(null, profileId)}>
-          <button
-            type="submit"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-signal-bg bg-signal-bg/40 px-3 py-1.5 text-sm font-medium text-signal-strong transition-colors hover:bg-signal-bg"
-            title="Act as this member (full control)"
-          >
-            <UserCog className="h-3.5 w-3.5" />
-            Act as {firstName}
-          </button>
-        </form>
-      )}
-    </>
+    </div>
   ) : null
 
   // ── The profile IS the Detail template (PAGE-FRAMEWORK §3, Template C; the
