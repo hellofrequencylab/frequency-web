@@ -151,6 +151,7 @@ export function MovementSession({
   resumeFromSec = 0,
   secondsTarget,
   practicedToday = 0,
+  autoStart = false,
   onExit,
   mode: doorMode,
   onModeChange,
@@ -166,6 +167,10 @@ export function MovementSession({
   /** "Finish Practice" resume: the practice's full target length in seconds. Bounds the
    *  remaining run so the resume stops at the target, and feeds the completion messaging. */
   secondsTarget?: number
+  /** A practice-SELECT launch: skip the setup screen and begin the movement immediately, on the
+   *  initial practice's configured mode + plan. Off (the default) for the manual entry points,
+   *  which still open to setup. A crash-recovered run surfaces its Resume prompt instead. */
+  autoStart?: boolean
   /** Distinct members with a practice log today (presence line, shown at >=3). */
   practicedToday?: number
   /** Overlay mode: leaving CLOSES the overlay via this callback instead of navigating. */
@@ -508,6 +513,21 @@ export function MovementSession({
     const rec = loadLiveSession<MovementSetup>('movement')
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (rec) setResumePrompt(rec)
+  }, [])
+
+  // AUTO-START (a practice-select launch): skip setup and begin the movement immediately, on the
+  // initial practice's configured mode + plan (already seeded in state above). Fires ONCE on mount,
+  // only when there's a real practice to run and no crash-recovered run is waiting (that surfaces its
+  // own Resume prompt and must win). Manual entry points pass autoStart=false and still show setup.
+  const autoStartedRef = useRef(false)
+  useEffect(() => {
+    if (!autoStart || autoStartedRef.current) return
+    autoStartedRef.current = true
+    if (loadLiveSession<MovementSetup>('movement')) return // a recovered run owns the screen
+    if (!initialId) return
+    void start()
+    // Run once on mount; mode + plan are the seeded state for the launched practice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // While live, persist the running record on every state change + a 30s heartbeat (the freshness
