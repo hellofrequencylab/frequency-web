@@ -2,6 +2,7 @@ import Image from 'next/image'
 import type { CSSProperties } from 'react'
 import { Flame, Gem, CalendarDays, MapPin, Zap } from 'lucide-react'
 import type { SpotlightBlock, SpotlightStatKey, BlockTint } from '@/lib/spotlight/blocks/schema'
+import { buildEmbedSrc, embedHeight } from '@/lib/spotlight/embeds'
 
 // A per-block colour override → inline style (validated hex). `bg` recolours the card, `text`
 // the type. Merged over the page theme's cardStyle so a tint wins for just that block.
@@ -130,6 +131,25 @@ function BlockView({
           <p className="text-pretty text-sm italic leading-relaxed text-text" style={{ color: block.tint?.text }}>{block.text}</p>
           {block.cite && <footer className="mt-1.5 text-xs font-medium text-muted">— {block.cite}</footer>}
         </blockquote>
+      )
+    case 'embed':
+      // The src is REBUILT from the validated (provider, ref) — never a member-supplied src.
+      // The allowlisted first-party players are trusted; the iframe is still sandboxed to the
+      // perms they need and nothing more.
+      return (
+        <div className="overflow-hidden rounded-2xl border border-border" style={cardStyle}>
+          <iframe
+            src={buildEmbedSrc(block.provider, block.ref)}
+            title={`${block.provider} embed`}
+            height={embedHeight(block.provider)}
+            className="w-full"
+            style={{ border: 0 }}
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
+            allow="autoplay; encrypted-media; clipboard-write; picture-in-picture; fullscreen"
+          />
+        </div>
       )
     case 'stats':
       return <StatsView show={block.show} stats={stats} cardStyle={cardStyle} />
