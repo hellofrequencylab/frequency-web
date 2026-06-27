@@ -102,6 +102,20 @@ describe('resolveCapabilities · profile', () => {
     expect(can(resolveCapabilities({ profileId: 'p2', role: 'crew' }, scope), 'spotlight.view')).toBe(true)
     expect(can(resolveCapabilities({ profileId: 'a', role: 'member', webRole: 'admin' }, scope), 'spotlight.view')).toBe(true)
   })
+
+  it('spotlight.enable is a Crew+ self-serve switch — only the OWNER, only Crew+', () => {
+    const scope: Scope = { kind: 'profile', ownerId: 'p1' }
+    // a free owner cannot self-enable (the upgrade nudge lives elsewhere)
+    expect(can(resolveCapabilities({ profileId: 'p1', role: 'member', tier: 'free' }, scope), 'spotlight.enable')).toBe(false)
+    // a real paid-Crew owner, or crew-on-the-ladder owner, or staff owner → can enable their own
+    expect(can(resolveCapabilities({ profileId: 'p1', role: 'member', realTier: 'crew' }, scope), 'spotlight.enable')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'p1', role: 'crew' }, scope), 'spotlight.enable')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'p1', role: 'member', webRole: 'admin' }, scope), 'spotlight.enable')).toBe(true)
+    // a Crew+ NON-owner never gets enable on someone else's profile (it's self-serve only)
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'crew' }, scope), 'spotlight.enable')).toBe(false)
+    // even a janitor doesn't self-enable a member here — they use the admin toggle instead
+    expect(can(resolveCapabilities({ profileId: 'j', role: 'member', webRole: 'janitor' }, scope), 'spotlight.enable')).toBe(false)
+  })
 })
 
 describe('resolveCapabilities · circle', () => {

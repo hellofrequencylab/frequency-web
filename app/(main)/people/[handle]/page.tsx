@@ -252,7 +252,8 @@ export default async function ProfilePage({
   // Edit Profile (and a contact-card download when they enabled one); the profile QR +
   // share link now live in the band's own "Share" panel (PageAdminBar). A signed-in
   // non-owner gets the full friend/contact/message/tip/block/moderate set.
-  // Link to this member's public Spotlight page, shown to anyone when it's published.
+  // Link to this member's public Spotlight page, shown to any visitor ONLY when it's
+  // published (an unpublished page 404s, so we never link a visitor into a dead end).
   const spotlightLink = spotlightPublished ? (
     <Link
       href={`/spotlight/${profile.handle}`}
@@ -260,6 +261,19 @@ export default async function ProfilePage({
     >
       <Sparkles className="h-3.5 w-3.5" />
       Spotlight
+    </Link>
+  ) : null
+
+  // The OWNER gets a Spotlight entry whenever it's enabled, so they can always reach it
+  // from their own profile header: the live page once published, otherwise the builder
+  // (where they design + publish it). Falls back to nothing until it's turned on.
+  const ownerSpotlightLink = spotlightEnabled ? (
+    <Link
+      href={spotlightPublished ? `/spotlight/${profile.handle}` : '/settings/profile/spotlight'}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+    >
+      <Sparkles className="h-3.5 w-3.5" />
+      {spotlightPublished ? 'Spotlight' : 'Build Spotlight'}
     </Link>
   ) : null
 
@@ -272,7 +286,7 @@ export default async function ProfilePage({
         <Pencil className="h-3.5 w-3.5" />
         Edit profile
       </Link>
-      {spotlightLink}
+      {ownerSpotlightLink}
       {vcardEnabled && (
         <a
           href={`${profilePath}/vcard`}

@@ -49,9 +49,11 @@ export type Capability =
   // profile
   | 'profile.edit'
   // spotlight — a member's opt-in public mini-site (docs/NAMING.md "Spotlight page").
-  // OFF for everyone by default; turned on per user. `manage` = the owner of an
-  // enabled Spotlight (or a janitor) may set it up; `view` = a Crew+ viewer may see
-  // a published Spotlight page. Both are resolved in the 'profile' scope below.
+  // OFF for everyone by default. `enable` = a Crew+ OWNER may turn their OWN Spotlight
+  // on (self-serve setup); `manage` = the owner of an enabled Spotlight (or a janitor)
+  // may build/arrange it; `view` = a Crew+ viewer may see a published Spotlight page.
+  // All three are resolved in the 'profile' scope below.
+  | 'spotlight.enable'
   | 'spotlight.manage'
   | 'spotlight.view'
   // structural management (admin-side)
@@ -188,8 +190,17 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       // page — the SAME gate shape as the creation caps. Whether a given page is
       // actually PUBLISHED is enforced at the route; this caps the affordance.
       const spotlightTier = viewer.realTier ?? viewer.tier
-      if (isPaid(spotlightTier) || atLeastRole(viewer.role, 'crew') || isStaff) {
+      const spotlightCrewPlus = isPaid(spotlightTier) || atLeastRole(viewer.role, 'crew') || isStaff
+      if (spotlightCrewPlus) {
         caps.add('spotlight.view')
+      }
+      // ENABLE: a Crew+ OWNER may turn their OWN Spotlight on — the self-serve switch
+      // that replaces the janitor-only toggle for setup (the owner still publishes
+      // explicitly). Same Crew+ bar as view / the creation caps (realTier, so the beta
+      // open-access grant can't widen who gets the affordance). A janitor can still flip
+      // it for anyone via the admin path (spotlight.manage / member-admin).
+      if (isOwner && spotlightCrewPlus) {
+        caps.add('spotlight.enable')
       }
       break
     }

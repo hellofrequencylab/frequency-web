@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useTransition } from 'react'
 import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
 import { Check, Loader2, Sparkles, ExternalLink } from 'lucide-react'
-import { updateProfile, uploadProfileImageAction, setSpotlightPublished } from './actions'
+import { updateProfile, uploadProfileImageAction, setSpotlightPublished, setMySpotlightEnabled } from './actions'
 import { ProfileThemePicker } from '@/components/spotlight/profile-theme-picker'
 import { HeaderEditor } from './header-editor'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
@@ -58,6 +58,8 @@ export function ProfileForm({
     website: string
     spotlightEnabled: boolean
     spotlightPublished: boolean
+    /** Crew+ self-serve: may this member turn their own Spotlight on? (ADR-431) */
+    canEnableSpotlight: boolean
     profileTheme: string | null
   }
 }) {
@@ -79,6 +81,7 @@ export function ProfileForm({
   const [headerRemoved, setHeaderRemoved] = useState(false)
   const [uploading,     setUploading]     = useState(false)
   const [uploadError,   setUploadError]   = useState('')
+  const [spotEnabled,   setSpotEnabled]   = useState(initial.spotlightEnabled)
   const [spotPublished, setSpotPublished] = useState(initial.spotlightPublished)
   const [spotPending,   setSpotPending]   = useState(false)
   const [spotError,     setSpotError]     = useState('')
@@ -251,6 +254,20 @@ export function ProfileForm({
     try {
       await setSpotlightPublished(next)
       setSpotPublished(next)
+    } catch (err) {
+      setSpotError(err instanceof Error ? err.message : 'Could not update your Spotlight.')
+    } finally {
+      setSpotPending(false)
+    }
+  }
+
+  async function handleToggleEnable(next: boolean) {
+    setSpotPending(true)
+    setSpotError('')
+    try {
+      await setMySpotlightEnabled(next)
+      setSpotEnabled(next)
+      if (!next) setSpotPublished(false) // disabling also unpublishes (server does the same)
     } catch (err) {
       setSpotError(err instanceof Error ? err.message : 'Could not update your Spotlight.')
     } finally {
@@ -467,8 +484,37 @@ export function ProfileForm({
         </div>
       </div>
 
-      {/* ── Spotlight page (opt-in public mini-site) ── shown only once turned on ── */}
-      {initial.spotlightEnabled && (
+      {/* ── Spotlight page (opt-in public mini-site) ───────────────────────────
+          Crew+ members turn it on themselves here (ADR-431); once on, the builder,
+          theme, and publish controls appear. Members who can't enable it yet see
+          nothing (an upgrade nudge lives on /upgrade, not here). */}
+      {!spotEnabled && initial.canEnableSpotlight && (
+        <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+          <div className="flex items-start gap-2">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+            <div>
+              <p className="text-sm font-semibold text-text">Your Spotlight page</p>
+              <p className="mt-0.5 text-xs text-muted">
+                Build a shareable page that&rsquo;s all yours: your bio, links, images, and what you
+                host, arranged however you like. Turn it on to start; nothing goes public until you
+                publish it.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleToggleEnable(true)}
+            disabled={spotPending}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          >
+            {spotPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            Turn on your Spotlight
+          </button>
+          {spotError && <p className="text-xs text-danger">{spotError}</p>}
+        </div>
+      )}
+
+      {spotEnabled && (
         <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
           <div className="flex items-start gap-2">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
@@ -485,9 +531,9 @@ export function ProfileForm({
 
           <Link
             href="/settings/profile/spotlight"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-strong hover:underline"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
-            <Sparkles className="h-3.5 w-3.5" /> Build your page (headings, text, links)
+            <Sparkles className="h-3.5 w-3.5" /> Build your page (text, links, images, background)
           </Link>
 
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
@@ -517,6 +563,20 @@ export function ProfileForm({
             >
               <ExternalLink className="h-3.5 w-3.5" /> View your Spotlight
             </Link>
+          )}
+
+          {initial.canEnableSpotlight && (
+            <div className="border-t border-border pt-3">
+              <button
+                type="button"
+                onClick={() => handleToggleEnable(false)}
+                disabled={spotPending}
+                className="text-xs font-medium text-subtle transition-colors hover:text-danger disabled:opacity-50"
+              >
+                Turn off Spotlight
+              </button>
+              <p className="mt-0.5 text-2xs text-muted">Hides the page and unpublishes it. Your layout is kept.</p>
+            </div>
           )}
         </div>
       )}
