@@ -349,6 +349,14 @@ function BlockFields({ block, onChange }: { block: SpotlightBlock; onChange: (p:
           onChange={(p) => onChange({ assetPath: p ?? '' })}
           label="Image"
         />
+        {block.assetPath && (
+          <CropControls
+            focusX={block.focusX ?? 50}
+            focusY={block.focusY ?? 50}
+            zoom={block.zoom ?? 100}
+            onChange={(p) => onChange(p as Partial<SpotlightBlock>)}
+          />
+        )}
         <input
           value={block.alt}
           onChange={(e) => onChange({ alt: e.target.value })}
@@ -385,6 +393,14 @@ function BlockFields({ block, onChange }: { block: SpotlightBlock; onChange: (p:
                 className={`${inputCls} px-2 py-1 text-xs`}
                 maxLength={ALT_MAX}
               />
+              {it.assetPath && (
+                <CropControls
+                  focusX={it.focusX ?? 50}
+                  focusY={it.focusY ?? 50}
+                  zoom={it.zoom ?? 100}
+                  onChange={(p) => onChange({ items: items.map((x, k) => (k === idx ? { ...x, ...p } : x)) })}
+                />
+              )}
             </div>
           ))}
         </div>
@@ -509,6 +525,27 @@ function Slider({ label, suffix = '', min, max, step, value, onChange }: {
         <span>{label}</span><span className="tabular-nums">{value}{suffix}</span>
       </label>
       <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-primary" />
+    </div>
+  )
+}
+
+// Per-image crop framing: focal point (across / up-down) + zoom, mirroring the background's
+// focus controls in the theme editor. Values clamp on read (lib/spotlight/blocks/validate.ts);
+// the editor just drives them with the same sliders.
+function CropControls({
+  focusX, focusY, zoom, onChange,
+}: {
+  focusX: number
+  focusY: number
+  zoom: number
+  onChange: (p: { focusX?: number; focusY?: number; zoom?: number }) => void
+}) {
+  return (
+    <div className="space-y-1.5 border-t border-border pt-2">
+      <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Crop</span>
+      <Slider label="Position across" suffix="%" min={0} max={100} step={1} value={focusX} onChange={(v) => onChange({ focusX: v })} />
+      <Slider label="Position up/down" suffix="%" min={0} max={100} step={1} value={focusY} onChange={(v) => onChange({ focusY: v })} />
+      <Slider label="Zoom" suffix="%" min={100} max={200} step={5} value={zoom} onChange={(v) => onChange({ zoom: v })} />
     </div>
   )
 }

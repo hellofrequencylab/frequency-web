@@ -67,11 +67,21 @@ export interface ImageBlock {
   /** A storage PATH in the public bucket (never a full URL) — the renderer derives the URL. */
   assetPath: string
   alt: string
+  /** Focal point within the frame, 0–100 each (object-position). Default 50/50 (centred). */
+  focusX?: number
+  focusY?: number
+  /** Zoom, 100–200 (%). Default 100. */
+  zoom?: number
 }
 export interface GalleryItem {
   /** A storage PATH in the public bucket (never a full URL) — the renderer derives the URL. */
   assetPath: string
   alt: string
+  /** Focal point within the frame, 0–100 each (object-position). Default 50/50 (centred). */
+  focusX?: number
+  focusY?: number
+  /** Zoom, 100–200 (%). Default 100. */
+  zoom?: number
 }
 export interface GalleryBlock {
   id: string
