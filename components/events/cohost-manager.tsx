@@ -133,8 +133,10 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
   }
 
   return (
-    <div className="relative mt-3">
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5">
+    <div className="mt-3">
+      {/* No stroke around the add-cohost input (owner ask): the inner <input> carries no
+          border either, so this reads as a quiet inline field, not a boxed control. */}
+      <div className="flex items-center gap-2 rounded-lg px-3 py-1.5">
         <UserPlus className="h-4 w-4 shrink-0 text-subtle" />
         <input
           type="text"
@@ -152,8 +154,13 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
 
       {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
 
+      {/* Results render in NORMAL FLOW (not an absolute overlay). The cohosts module lands
+          in a page-module slot whose `@container` wrapper sets container-type (Tailwind v4),
+          which establishes paint containment and CLIPS an absolutely-positioned `top-full`
+          dropdown — the real reason the matches never showed. An in-flow list pushes the
+          content below it down and is never clipped. */}
       {hits.length > 0 && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-full max-w-sm rounded-xl border border-border bg-surface py-1 shadow-xl shadow-black/5">
+        <div className="mt-1 w-full max-w-sm rounded-xl border border-border bg-surface py-1 shadow-xl shadow-black/5">
           {hits.map((p) => (
             <button
               key={p.id}

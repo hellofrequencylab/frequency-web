@@ -30,7 +30,7 @@ export function EventRewardStrip({
   if (!showCheckIn && !showStreak && !showCurrent) return null
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-border pb-4 text-sm text-muted">
+    <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-muted">
       {showCheckIn && (
         <span className="inline-flex items-center gap-1.5 font-medium text-text">
           <Zap className="h-4 w-4 shrink-0 text-primary" />

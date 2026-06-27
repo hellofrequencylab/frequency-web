@@ -62,8 +62,6 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/g/abc123',
       '/n/node-7',
       '/events/new',
-      '/events/sunrise-sit',
-      '/events/some-slug',
       '/practices/42/edit',
       '/connections/new',
       '/connections/c_123',
@@ -116,11 +114,20 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/spaces/demo-business/settings/email')).toBe('global')
   })
 
-  it('keeps the global rail on the events index and the slug ICS sub-route (only the bare Invite slug is no-rail)', () => {
-    // The Invite slug is no-rail, but the index keeps the global rail and the
-    // single-segment regex never swallows /events or a deeper /events/[slug]/* path.
+  it('drops the rail on the event DETAIL slug (its own in-body Join aside), but keeps it on the index, /events/new, and the slug sub-routes', () => {
+    // The event detail page (/events/<slug>) renders its OWN narrow right column (the
+    // RSVP/ticket Join aside + warm proof + facts) in the content body, so the global
+    // community rail is suppressed to avoid stacking two right columns.
+    expect(railFor('/events/sunrise-sit')).toBe('none')
+    expect(railFor('/events/some-slug')).toBe('none')
+    // The index, the create Focus form, the scanner/drafts children, and the deeper
+    // sub-routes all keep the global rail — only the bare detail slug drops it.
     expect(railFor('/events')).toBe('global')
+    expect(railFor('/events/new')).toBe('global')
+    expect(railFor('/events/scan')).toBe('global')
+    expect(railFor('/events/drafts')).toBe('global')
     expect(railFor('/events/sunrise-sit/event.ics')).toBe('global')
+    expect(railFor('/events/sunrise-sit/manage')).toBe('global')
   })
 
   it('keeps the global rail on the Pages workspace and its sub-managers (owner directive: not the /admin workspace)', () => {
