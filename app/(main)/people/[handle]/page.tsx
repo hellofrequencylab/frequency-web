@@ -13,10 +13,10 @@ import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, Sparkles } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, Sparkles, Settings } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
-import { getProfileCapabilities } from '@/lib/core/load-capabilities'
+import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
@@ -145,6 +145,8 @@ export default async function ProfilePage({
   // Capability-gated moderator edit: profile.edit on a profile you don't own = janitor.
   const profileCaps = await getProfileCapabilities(profileId)
   const canModerateProfile = !isOwner && profileCaps.has('profile.edit')
+  // Staff (admin/janitor) get a deep link into the full account editor in Admin → People.
+  const isStaffViewer = !isOwner && (await getGlobalCapabilities()).has('admin.access')
 
   // Friendship state between viewer and this profile
   let friendState: FriendState = { kind: 'none' }
@@ -312,6 +314,18 @@ export default async function ProfilePage({
           initialName={profile.display_name}
           initialBio={profile.bio ?? ''}
         />
+      )}
+      {/* Full account management for staff: deep-link straight to this member's row in
+          Admin → People (role, activate/deactivate, delete, gems/zaps, Spotlight, full
+          edit). The inline "Edit (mod)" popup is only a quick name/bio fix. */}
+      {isStaffViewer && (
+        <Link
+          href={`/admin/members?q=${encodeURIComponent(profile.handle as string)}&member=${profileId}`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <Settings className="h-3.5 w-3.5" />
+          Manage account
+        </Link>
       )}
     </>
   ) : null

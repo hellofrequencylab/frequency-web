@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -47,10 +48,13 @@ export function MemberAdmin({
   members: Member[]
   emailMap: Record<string, string>
 }) {
-  const [query, setQuery] = useState('')
+  // Deep-link support: a profile's "Manage account" link lands here as
+  // ?q=<handle>&member=<id> — pre-filter the roster to that member and open their row.
+  const sp = useSearchParams()
+  const [query, setQuery] = useState(sp.get('q') ?? '')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [showInactive, setShowInactive] = useState(false)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(sp.get('member'))
 
   const filtered = members.filter(m => {
     if (!showInactive && !m.is_active) return false
