@@ -7,13 +7,14 @@ import { isError } from '@/lib/action-result'
 import { REACTIONS, reactionLabel } from '@/lib/feed/reactions'
 
 // The emoji reactions on every post and comment — the site's highest-frequency
-// interaction. Each emoji pill fills INSTANTLY on click (optimistic), runs the
-// server write in the background, and rolls back with a quiet inline note if that
-// write rejects. A small picker (SmilePlus) opens the full set so a member can add
-// a reaction the post doesn't have yet.
+// interaction. Each emoji fills INSTANTLY on click (optimistic), runs the server
+// write in the background, and rolls back with a quiet inline note if that write
+// rejects. Why a client island: the visual truth is local; the server only confirms
+// (no revalidation, so nothing refetches props — the ~3s lag of the old form is gone).
 //
-// Why a client island: the visual truth is local; the server only confirms (no
-// revalidation, so nothing refetches props — the ~3s lag of the old form is gone).
+// One source of truth for the toggle state — `usePostReactions` — so a post can show
+// its COUNTS in one place (beside the comment count) and its emoji PICKER in another
+// (inline with the comment box) and the two stay perfectly in sync.
 
 /** A reaction as it arrives from the feed RPCs: one row per (post, profile, emoji). */
 export type ReactionRow = {
@@ -35,46 +36,28 @@ function tally(reactions: ReactionRow[], myProfileId: string | null): Map<string
   return map
 }
 
-export function ReactionBar({
-  postId,
-  reactions,
-  myProfileId,
-  compact = false,
-}: {
-  postId: string
-  reactions: ReactionRow[]
-  myProfileId: string | null
-  /** Comments render a tighter bar (smaller pills) than top-level posts. */
-  compact?: boolean
-}) {
+export type ReactionState = {
+  base: Map<string, Tally>
+  toggle: (emoji: string) => void
+  failed: boolean
+  pending: boolean
+}
+
+/** Owns the optimistic reaction state for one post/comment. Call ONCE per entity and
+ *  share the result with the counts display + the picker so they never drift. */
+export function usePostReactions(
+  postId: string,
+  reactions: ReactionRow[],
+  myProfileId: string | null,
+): ReactionState {
   // Base = confirmed server truth, seeded from props and advanced only on a
   // successful write, so a burst of taps never drifts a count.
   const [base, setBase] = useState<Map<string, Tally>>(() => tally(reactions, myProfileId))
   const [pending, startTransition] = useTransition()
   const [failed, setFailed] = useState(false)
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const pickerRef = useRef<HTMLDivElement>(null)
-
-  // Close the picker on an outside click or Escape.
-  useEffect(() => {
-    if (!pickerOpen) return
-    function onDown(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false)
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setPickerOpen(false)
-    }
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [pickerOpen])
 
   const toggle = useCallback(
     (emoji: string) => {
-      setPickerOpen(false)
       setFailed(false)
       const current = base.get(emoji) ?? { count: 0, mine: false }
       const willActivate = !current.mine
@@ -112,15 +95,20 @@ export function ReactionBar({
     [base, postId],
   )
 
-  // Render the emojis that have at least one reaction, in the canonical order.
+  return { base, toggle, failed, pending }
+}
+
+/** The reaction COUNTS — one pill per emoji that has at least one reaction, in the
+ *  canonical order. Tappable to toggle. Render this where the tallies should SHOW
+ *  (e.g. beside the comment count). Renders nothing when there are no reactions. */
+export function ReactionCounts({ base, toggle, failed, compact = false }: ReactionState & { compact?: boolean }) {
   const active = REACTIONS.filter((r) => (base.get(r.key)?.count ?? 0) > 0)
-
-  const pillBase = compact
+  if (active.length === 0) return null
+  const pill = compact
     ? 'flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-medium transition-colors'
-    : 'flex min-h-11 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-colors sm:min-h-0'
-
+    : 'flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs font-medium transition-colors'
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex flex-wrap items-center gap-0.5">
       {active.map((r) => {
         const t = base.get(r.key)!
         return (
@@ -131,33 +119,72 @@ export function ReactionBar({
             aria-pressed={t.mine}
             aria-label={reactionLabel(r.key)}
             title={failed ? 'That did not save. Tap to try again.' : reactionLabel(r.key)}
-            className={`${pillBase} ${
-              t.mine
-                ? 'bg-primary-bg/60 text-primary-strong'
-                : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-            }`}
+            className={`${pill} ${t.mine ? 'bg-primary-bg/60 text-primary-strong' : 'text-muted hover:bg-surface-elevated'}`}
           >
             <span aria-hidden>{r.key}</span>
-            {t.count > 0 && <span>{t.count}</span>}
+            <span className="tabular-nums">{t.count}</span>
           </button>
         )
       })}
+    </div>
+  )
+}
 
-      {/* Add-a-reaction picker. */}
+/** The inline emoji react control: a string of the first `quickCount` reaction emojis
+ *  as quick-tap buttons, plus a picker (SmilePlus) for the full set. Render inline with
+ *  the comment composer so reacting and commenting share one row. `quickCount={0}` shows
+ *  ONLY the picker (used on comments, which stay tight: counts + one add button). */
+export function ReactionInlinePicker({ base, toggle, pending, quickCount = 5 }: ReactionState & { quickCount?: number }) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const pickerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!pickerOpen) return
+    function onDown(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setPickerOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [pickerOpen])
+
+  const quick = REACTIONS.slice(0, quickCount)
+  const emojiBtn = (mine: boolean | undefined) =>
+    `flex h-7 w-7 items-center justify-center rounded-full text-base transition-transform hover:scale-110 hover:bg-surface-elevated ${
+      mine ? 'bg-primary-bg/60' : ''
+    }`
+
+  return (
+    <div className="flex shrink-0 items-center gap-0.5">
+      {quick.map((r) => (
+        <button
+          key={r.key}
+          type="button"
+          onClick={() => toggle(r.key)}
+          aria-label={r.label}
+          title={r.label}
+          className={emojiBtn(base.get(r.key)?.mine)}
+        >
+          <span aria-hidden>{r.key}</span>
+        </button>
+      ))}
+      {/* Picker for the full set (the sixth emoji + a discoverable menu). */}
       <div className="relative" ref={pickerRef}>
         <button
           type="button"
           onClick={() => setPickerOpen((o) => !o)}
-          aria-label="Add a reaction"
+          aria-label="More reactions"
           aria-expanded={pickerOpen}
           disabled={pending}
-          className={
-            compact
-              ? 'flex items-center rounded-full px-1.5 py-0.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-muted'
-              : 'flex min-h-11 items-center rounded-full px-2 py-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-muted sm:min-h-0'
-          }
+          className="flex h-7 w-7 items-center justify-center rounded-full text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
         >
-          <SmilePlus className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+          <SmilePlus className="h-4 w-4" />
         </button>
         {pickerOpen && (
           <div
@@ -169,12 +196,13 @@ export function ReactionBar({
                 key={r.key}
                 type="button"
                 role="menuitem"
-                onClick={() => toggle(r.key)}
+                onClick={() => {
+                  setPickerOpen(false)
+                  toggle(r.key)
+                }}
                 aria-label={r.label}
                 title={r.label}
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-base transition-transform hover:scale-110 hover:bg-surface ${
-                  base.get(r.key)?.mine ? 'bg-primary-bg/60' : ''
-                }`}
+                className={emojiBtn(base.get(r.key)?.mine)}
               >
                 <span aria-hidden>{r.key}</span>
               </button>
@@ -182,6 +210,29 @@ export function ReactionBar({
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+/** The combined bar used on COMMENTS: counts + picker together in one row (a comment
+ *  has no separate composer to host the picker, so they stay paired). */
+export function ReactionBar({
+  postId,
+  reactions,
+  myProfileId,
+  compact = false,
+}: {
+  postId: string
+  reactions: ReactionRow[]
+  myProfileId: string | null
+  compact?: boolean
+}) {
+  const state = usePostReactions(postId, reactions, myProfileId)
+  // Comments stay tight: the counts plus a SINGLE add button (no quick strip).
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      <ReactionCounts {...state} compact={compact} />
+      <ReactionInlinePicker {...state} quickCount={0} />
     </div>
   )
 }
