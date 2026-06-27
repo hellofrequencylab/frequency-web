@@ -12,5 +12,11 @@ export const EventJoin = async () => {
   const ctx = getEventContext()
   if (!ctx) return null
   if (!ctx.joinActions) return null
-  return <>{ctx.joinActions}</>
+  // An "RSVP" heading sits above the action box, matching the Activity section's heading style.
+  return (
+    <section>
+      <h2 className="mb-3 text-sm font-bold text-text">RSVP</h2>
+      {ctx.joinActions}
+    </section>
+  )
 }

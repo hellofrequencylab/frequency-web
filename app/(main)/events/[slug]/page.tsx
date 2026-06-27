@@ -121,7 +121,7 @@ export async function generateMetadata({
   const admin = createAdminClient()
   const { data: ev } = await admin
     .from('events')
-    .select('title, description, location, starts_at, cover_image_path')
+    .select('title, description, location, starts_at')
     .eq('slug', slug)
     .maybeSingle()
   if (!ev) return { title: 'Event not found' }
@@ -130,7 +130,6 @@ export async function generateMetadata({
     description: string | null
     location: string | null
     starts_at: string
-    cover_image_path: string | null
   }
 
   const where = event.location ? ` at ${event.location}` : ''
@@ -142,10 +141,9 @@ export async function generateMetadata({
   const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
   const ogTitle = `${event.title} · ${SITE_NAME}`
 
-  const coverUrl = event.cover_image_path
-    ? admin.storage.from('event-media').getPublicUrl(event.cover_image_path).data.publicUrl
-    : null
-
+  // The share image is the dynamic OG card (opengraph-image.tsx) — Next injects it into
+  // openGraph.images automatically, and Twitter inherits it as a large summary image. So
+  // every event gets a card here without a per-event cover lookup.
   return {
     title: event.title,
     description,
@@ -153,10 +151,9 @@ export async function generateMetadata({
       title: ogTitle,
       description,
       type: 'article',
-      ...(coverUrl ? { images: [{ url: coverUrl }] } : {}),
     },
     twitter: {
-      card: coverUrl ? 'summary_large_image' : 'summary',
+      card: 'summary_large_image',
       title: ogTitle,
       description,
     },

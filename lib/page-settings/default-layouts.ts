@@ -37,28 +37,25 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
     },
   },
 
-  // Events (/events/<slug>): the FULL interior is arrangeable now — only the fixed header and the
-  // mobile action bar live in the page. The default is a Main + side grid: the post area
-  // (description → poster sections → cohosts → sales → activity → recap) leads MAIN, while the
-  // right Join column (the RSVP/ticket Join box, warm proof, and the when/where facts) fills SIDE.
-  // The host "Post an update" composer is no longer its own side block — it's folded into the
-  // activity module (one role-based composer), and the poster "Details" block is out of the default
-  // set; both modules stay re-addable from Settings → Layout. Operators move any block there.
+  // Events (/events/<slug>): the FULL interior is arrangeable, but this is the ONE canonical layout
+  // every event shares unless an operator deliberately rearranges it (per-event saved layouts were
+  // cleared so every event reads the same — same boxes, same order). MAIN carries the content the
+  // host wrote + the conversation (description → activity → the poster sections → recap); SIDE is the
+  // at-a-glance + action column: RSVP first, then when/where facts, the venue MAP (a tall 4:6 card),
+  // cohosts, and host-only ticket sales. The host "Post an update" composer is folded into activity
+  // (one role-based composer); the poster "Details" block stays re-addable from Settings → Layout.
   '/events/*': {
     template: 'main-side',
     slots: {
       main: {
         order: [
           'event-description',
+          'event-activity',
           'event-lineup',
-          'event-schedule',
           'event-good-to-know',
           'event-pricing',
           'event-links',
           'event-sponsors',
-          'event-cohosts',
-          'event-sales',
-          'event-activity',
           'event-recap',
         ],
         hidden: [],
@@ -67,8 +64,11 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
       side: {
         order: [
           'event-join',
+          'event-schedule',
           'event-facts',
           'event-location',
+          'event-cohosts',
+          'event-sales',
         ],
         hidden: [],
         roles: {},

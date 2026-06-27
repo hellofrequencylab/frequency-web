@@ -40,10 +40,13 @@ export function EventLocationMap({
 }) {
   if (isOnline) return null
 
+  // A taller 4:6 (portrait) map so the venue reads clearly, not a thin strip.
+  const mapClass = 'aspect-[4/6] max-h-[30rem] w-full overflow-hidden rounded-xl border border-border'
+
   if (venuePoint) {
     return (
       <div>
-        <EventVenueMap lat={venuePoint.lat} lng={venuePoint.lng} />
+        <EventVenueMap lat={venuePoint.lat} lng={venuePoint.lng} className={mapClass} />
         <p className="mt-1.5 text-3xs text-subtle">The pin marks the exact venue.</p>
       </div>
     )
@@ -52,7 +55,7 @@ export function EventLocationMap({
   if (mapPin) {
     return (
       <div>
-        <EventsMap pins={[mapPin]} className="h-40 w-full overflow-hidden rounded-xl border border-border" />
+        <EventsMap pins={[mapPin]} className={mapClass} />
         <p className="mt-1.5 text-3xs text-subtle">
           The pin sits on the circle&rsquo;s area, not the exact address.
         </p>
