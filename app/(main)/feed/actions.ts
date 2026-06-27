@@ -8,7 +8,15 @@ import type { Database } from '@/lib/database.types'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
+import { isReactionKey } from '@/lib/feed/reactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import {
+  assembleThread,
+  aggregateReactionState,
+  groupReactionRows,
+  type RawComment,
+  type CommentThread,
+} from '@/lib/feed/comment-thread'
 
 const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
 
@@ -220,9 +228,33 @@ export async function createReply(parentId: string, body: string) {
   // reaction lag).
 }
 
-export async function fetchReplies(parentId: string) {
+// The columns every comment row needs (author drives avatar + ProfileFlair).
+const COMMENT_SELECT = `id, body, created_at, parent_id,
+       author:profiles!author_id ( id, display_name, handle, avatar_url, membership_tier )`
+
+// Cap the subtree so a runaway thread can't fan out unbounded. Top-level comments
+// are bounded here; nested replies are fetched in ONE follow-up over those ids.
+const TOP_LEVEL_LIMIT = 100
+const NESTED_LIMIT = 300
+
+/**
+ * Fetch the full 2-level comment subtree for a root post.
+ *
+ * Two batched queries (no N+1):
+ *   1. direct children   — `parent_id = parentId`
+ *   2. nested replies    — `parent_id IN (childIds)` (one round-trip)
+ * then ONE `post_reactions` read over every comment id for the emoji reaction
+ * rows (grouped per comment for the bar) + whether the viewer reacted. The same
+ * private-circle gate and `hidden_at IS NULL` filter apply to BOTH comment queries.
+ *
+ * Returns top-level comments (each with a `replies` array) plus the subtree
+ * `total` — the count the comment badge should show.
+ */
+export async function fetchReplies(parentId: string): Promise<CommentThread> {
+  const empty: CommentThread = { comments: [], total: 0 }
+
   const profileId = await getMyProfileId()
-  if (!profileId) return []
+  if (!profileId) return empty
 
   const admin = createAdminClient()
   // Don't expose replies inside a private circle to non-members.
@@ -231,40 +263,77 @@ export async function fetchReplies(parentId: string) {
     .select('scope_id, visibility')
     .eq('id', parentId)
     .maybeSingle()
-  if (!parent) return []
+  if (!parent) return empty
   if (parent.visibility === 'group') {
-    if (!parent.scope_id || !(await isActiveMember(admin, profileId, parent.scope_id))) return []
+    if (!parent.scope_id || !(await isActiveMember(admin, profileId, parent.scope_id))) return empty
   }
 
-  const { data } = await admin
+  // 1. Direct children of the root post.
+  const { data: topRows } = await admin
     .from('posts')
-    .select(
-      `id, body, created_at,
-       author:profiles!author_id ( id, display_name, handle, avatar_url, membership_tier )`
-    )
+    .select(COMMENT_SELECT)
     .eq('parent_id', parentId)
     .is('hidden_at', null)
     .order('created_at', { ascending: true })
-    .limit(50)
-  return (data ?? []) as unknown as Array<{
-    id: string
-    body: string | null
-    created_at: string
-    author: { id: string; display_name: string; handle: string; avatar_url: string | null; membership_tier: string | null; current_season_rank: string | null; current_streak: number; achievement_count: number }
-  }>
+    .limit(TOP_LEVEL_LIMIT)
+
+  const topLevel = (topRows ?? []) as unknown as RawComment[]
+  const topIds = topLevel.map((c) => c.id)
+
+  // 2. One batched follow-up for the nested replies (children of the children).
+  let nested: RawComment[] = []
+  if (topIds.length > 0) {
+    const { data: nestedRows } = await admin
+      .from('posts')
+      .select(COMMENT_SELECT)
+      .in('parent_id', topIds)
+      .is('hidden_at', null)
+      .order('created_at', { ascending: true })
+      .limit(NESTED_LIMIT)
+    nested = (nestedRows ?? []) as unknown as RawComment[]
+  }
+
+  // 3. One reaction read over every comment id (top-level + nested) — ALL emoji,
+  //    so each comment's emoji `ReactionBar` can group per-emoji counts AND seed
+  //    the viewer's own. `aggregateReactionState` gives the rolled-up totals;
+  //    `groupReactionRows` keeps the raw rows per comment for the bar. One batched
+  //    read mirrors how the feed loader derives a post's reaction state.
+  const allIds = [...topIds, ...nested.map((r) => r.id)]
+  let reactions = new Map<string, { reaction_count: number; viewer_reacted: boolean }>()
+  let reactionRowsById = new Map<string, Array<{ reaction_type: string; profile_id: string }>>()
+  if (allIds.length > 0) {
+    const { data: reactionRows } = await admin
+      .from('post_reactions')
+      .select('post_id, profile_id, reaction_type')
+      .in('post_id', allIds)
+    const rows = (reactionRows ?? []) as Array<{
+      post_id: string
+      profile_id: string
+      reaction_type: string
+    }>
+    reactions = aggregateReactionState(rows, profileId)
+    reactionRowsById = groupReactionRows(rows)
+  }
+
+  return assembleThread(topLevel, nested, reactions, reactionRowsById)
 }
 
-// Toggle the caller's heart / plus on a post. This is the site's highest-frequency
-// interaction, so it is deliberately lean: the client (ReactionButton) owns the
-// optimistic UI and tells us the DIRECTION it just applied (`activate`), so we do
-// exactly ONE idempotent write and NO revalidation (the client already reflects the
-// change; revalidating would refetch the whole feed and reintroduce the old lag).
+// Toggle the caller's reaction (one of the curated emoji set, lib/feed/reactions.ts)
+// on a post. This is the site's highest-frequency interaction, so it is deliberately
+// lean: the client (ReactionBar) owns the optimistic UI and tells us the DIRECTION
+// it just applied (`activate`), so we do exactly ONE idempotent write and NO
+// revalidation (the client already reflects the change; revalidating would refetch
+// the whole feed and reintroduce the old lag).
 // Returns the new {active, count} so the client can reconcile its base state.
 export async function toggleReaction(
   postId: string,
-  reactionType: 'heart' | 'plus_one',
+  reactionType: string,
   activate: boolean,
 ): Promise<ActionResult<{ active: boolean; count: number }>> {
+  // Validate against the shared allowed set — never write an emoji the picker
+  // can't offer. The same guard the client keys off, enforced server-side.
+  if (!isReactionKey(reactionType)) return fail('Unknown reaction')
+
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
 
@@ -288,7 +357,11 @@ export async function toggleReaction(
       console.error('[toggleReaction]', error.message)
       return fail('Could not save your reaction')
     }
-    // Only a first-time reaction to someone ELSE's post earns a gem.
+    // Anti-farming: a member must not earn one gem PER emoji on a single post (the
+    // emoji set would otherwise 6× the old cap). Award only the FIRST reaction —
+    // of any type — this member lands on someone ELSE's post. `inserted.length > 0`
+    // means this upsert genuinely INSERTED (a re-react can't re-trigger it); we
+    // then confirm no OTHER reaction row by this member already existed on the post.
     const isNewReaction = (inserted?.length ?? 0) > 0
     if (isNewReaction) {
       const admin = createAdminClient()
@@ -298,7 +371,17 @@ export async function toggleReaction(
         .eq('id', postId)
         .maybeSingle()
       if (post && post.author_id !== profileId) {
-        awardGems(profileId, 'reaction').catch((e) => console.error('[feed gamification]', e))
+        // Count this member's reactions on the post AFTER the insert. Exactly 1 =>
+        // this is their first reaction here, so it earns the gem; >1 => they had
+        // already reacted (a different emoji) and earned it then, so no double-pay.
+        const { count: myReactionCount } = await admin
+          .from('post_reactions')
+          .select('id', { count: 'exact', head: true })
+          .eq('post_id', postId)
+          .eq('profile_id', profileId)
+        if ((myReactionCount ?? 0) <= 1) {
+          awardGems(profileId, 'reaction').catch((e) => console.error('[feed gamification]', e))
+        }
       }
     }
   } else {

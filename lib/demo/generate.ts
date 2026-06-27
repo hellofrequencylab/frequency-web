@@ -151,7 +151,7 @@ async function seedMember(
   // Reactions on a few existing circle posts (the relative engagement).
   if (circlePostIds.length) {
     const targets = circlePostIds.slice(0, 5 + rand(5))
-    const rows = targets.map((pid) => ({ post_id: pid, profile_id: profileId, reaction_type: 'heart' }))
+    const rows = targets.map((pid) => ({ post_id: pid, profile_id: profileId, reaction_type: '❤️' }))
     if (rows.length) await d.from('post_reactions').insert(rows)
   }
 

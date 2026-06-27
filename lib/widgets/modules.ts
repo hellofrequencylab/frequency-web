@@ -326,12 +326,17 @@ const CIRCLE_DETAIL_MODULE_IDS = [
 // Every event DETAIL page (/events/<slug>) shares one layout, keyed at the '/events/*' section
 // scope — the arrangeable post-area in default render order. The fixed header + RSVP/ticket Join
 // aside + mobile action bar stay in the page; only this content is module-driven.
+//
+// NOTE: 'event-dispatch' (the host's "Post an update" composer) is NOT in this post-area set
+// anymore. The owner wants it at the TOP of the right Join aside, above the RSVP box, so the
+// page renders <EventDispatch /> directly there (host/cohost-gated by the same event context).
+// Leaving it here too would double-render the composer. Its meta + component stay defined (it's
+// still a self-gating context-reading RSC) — it's just placed in the aside, not the module flow.
 const EVENT_DETAIL_MODULE_IDS = [
   'event-description',
   'event-poster-details',
   'event-cohosts',
   'event-sales',
-  'event-dispatch',
   'event-activity',
   'event-recap',
 ] as const

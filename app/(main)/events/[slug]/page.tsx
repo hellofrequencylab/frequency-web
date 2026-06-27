@@ -40,6 +40,7 @@ import { ZAP_AMOUNTS } from '@/lib/zaps'
 // Settings → Layout, shared across every /events/<slug> via the '/events/*' scope — exactly like the
 // circle page. The fixed header + the RSVP/ticket Join aside + the mobile action bar stay in the page.
 import { PageModules } from '@/components/widgets/page-modules'
+import { EventDispatch } from '@/components/widgets/events/event-dispatch'
 import { setEventContext } from '@/lib/events/active-event'
 import { EditEventButton } from '@/components/events/edit-event-button'
 
@@ -1011,19 +1012,21 @@ export default async function EventDetailPage({
                 </span>
               </p>
             )}
+
+            {/* [A3] The calm reward line reads as HEADER content — it sits with the
+                date/location/host lines, not floating above the grid with a divider. The
+                check-in Zaps reward (+ streak / Current when real). Hidden for a cancelled
+                event. */}
+            {!event.is_cancelled && (
+              <EventRewardStrip
+                checkInZaps={ZAP_AMOUNTS.event_attend}
+                isPast={isPast}
+                circleName={scopeName}
+              />
+            )}
           </div>
         }
       >
-        {/* [A3] One calm reward line under the title — the check-in Zaps reward (+ streak
-            / Current when real). Hidden for a cancelled event. */}
-        {!event.is_cancelled && (
-          <EventRewardStrip
-            checkInZaps={ZAP_AMOUNTS.event_attend}
-            isPast={isPast}
-            circleName={scopeName}
-          />
-        )}
-
         {/* MOBILE: warm proof + the critical-info card stack ABOVE the Post area so a guest
             sees who's going and the facts before the conversation (EVENTS-DESIGN §2.6). The
             lg aside is hidden < lg; this block is hidden ≥ lg. */}
@@ -1067,9 +1070,16 @@ export default async function EventDetailPage({
             <PageModules route={`/events/${event.slug}`} />
           </div>
 
-          {/* [C] JOIN AREA — narrow right, sticky on lg+. Hidden on mobile (it
-              collapses to the bottom bar + the fact panel stacks above). */}
-          <aside className="hidden space-y-4 self-start lg:sticky lg:top-20 lg:block">
+          {/* [C] JOIN AREA — narrow right column, flowing with the content (not sticky to the
+              viewport). Hidden on mobile (it collapses to the bottom bar + the fact panel
+              stacks above). */}
+          <aside className="hidden space-y-4 self-start lg:block">
+            {/* "Post an update" sits at the TOP of the right column for a host or cohost. It
+                self-gates on the request-scoped event context (canDispatch + not cancelled),
+                so an ordinary guest sees nothing here. It renders ONLY here now — the
+                `event-dispatch` layout module was removed from the left post-area set so it
+                never double-renders. */}
+            <EventDispatch />
             {!event.is_cancelled && joinActions}
             {/* Warm proof sits with the RSVP action: "X going" / "be the first". */}
             {!event.is_cancelled && (

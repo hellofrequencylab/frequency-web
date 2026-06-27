@@ -9,7 +9,6 @@ import {
 import { validateSpotlightLayout, validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
-import { getProfileZapTotal } from '@/lib/profile-zaps'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 
 // Server data for the PUBLIC Spotlight page. Anonymous visitors get no RLS, so this
@@ -50,11 +49,11 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
   // is never returned — only the validated layout/background derived from it).
   const { data: gate } = await admin
     .from('profiles')
-    .select('id, auth_user_id, is_active, is_system, meta')
+    .select('id, auth_user_id, is_active, is_system, meta, lifetime_zaps')
     .eq('handle', handle)
     .maybeSingle()
 
-  const g = gate as { id?: string; auth_user_id?: string | null; is_active?: boolean; is_system?: boolean; meta?: unknown } | null
+  const g = gate as { id?: string; auth_user_id?: string | null; is_active?: boolean; is_system?: boolean; meta?: unknown; lifetime_zaps?: number | null } | null
   if (!g?.id || g.is_active === false || g.is_system === true) return null
   if (!readSpotlightPublished(g.meta)) return null
 
@@ -84,7 +83,11 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
     .order('starts_at', { ascending: true })
     .limit(5)
 
-  const totalZaps = await getProfileZapTotal(g.id)
+  // Lifetime Zaps from the authoritative profiles.lifetime_zaps column — the same
+  // headline number the dashboard and the profile standing show. (The old
+  // crew_completions-only subtotal read 0 for members whose Zaps come from posts,
+  // reactions, joins, etc., so the stat never appeared.)
+  const totalZaps = Number(g.lifetime_zaps ?? 0)
 
   return {
     profile: row as unknown as SpotlightRow,
