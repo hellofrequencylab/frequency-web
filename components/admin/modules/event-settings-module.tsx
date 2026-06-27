@@ -15,7 +15,9 @@ import {
   removeEventPoster,
   setEventGalleryImages,
   setEventCancelled,
+  deleteEvent,
 } from '@/app/(main)/events/admin-actions'
+import { DangerDelete } from '@/components/admin/danger-delete'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import {
   CATEGORY_OPTIONS,
@@ -423,6 +425,13 @@ export function EventSettingsModule() {
             </div>
           </div>
         </form>
+
+        <DangerDelete
+          entity="event"
+          warning="Permanently removes the event and all its RSVPs and check-ins. To take it off the calendar without losing it, use Cancel instead."
+          onDelete={() => deleteEvent(data!.id, data!.slug)}
+          redirectTo="/events"
+        />
       </section>
     </div>
   )

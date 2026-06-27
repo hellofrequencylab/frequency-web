@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { getMyProfileId } from '@/lib/auth'
+import { logAdminAction } from '@/lib/admin/audit'
 import { slugify } from '@/lib/utils'
 import { saveEventLocation, type EventAddress } from '@/lib/events/geocode'
 import {
@@ -358,4 +360,36 @@ export async function updateEventPermalink(
   revalidatePath('/events')
   revalidatePath('/feed')
   return { slug: next }
+}
+
+/**
+ * Permanently delete an event. Gated on event.editSettings (its host, a manager of
+ * the parent circle, or staff) — the same gate as editing it; the re-check is the
+ * FIRST statement. Distinct from cancelling (is_cancelled), which stays the everyday
+ * host action. FK cascades clear RSVPs + check-in engagement. Irreversible; the UI
+ * requires a confirm and warns about a recurring series.
+ */
+export async function deleteEvent(eventId: string, slug: string): Promise<{ error?: string }> {
+  const caps = await getEventCapabilities(eventId)
+  if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { data: ev } = await admin.from('events').select('title').eq('id', eventId).maybeSingle()
+
+  const { error } = await admin.from('events').delete().eq('id', eventId)
+  if (error) return { error: error.message }
+
+  const actorId = await getMyProfileId().catch(() => null)
+  await logAdminAction({
+    actorId,
+    action: 'event.delete',
+    targetType: 'event',
+    targetId: eventId,
+    detail: { slug, title: (ev as { title?: string } | null)?.title ?? null },
+  })
+
+  revalidatePath('/events')
+  revalidatePath('/admin/events')
+  revalidatePath('/feed')
+  return {}
 }

@@ -12,7 +12,9 @@ import {
   updateCirclePermalink,
   uploadCircleCover,
   removeCircleCover,
+  deleteCircle,
 } from '@/app/(main)/circles/admin-actions'
+import { DangerDelete } from '@/components/admin/danger-delete'
 
 // The Phase-2 pilot module (EMBEDDED-ADMIN.md / ADR-133): in-place "Circle
 // settings", rendered inside the page admin dock on a /circles/[slug] page. It
@@ -207,6 +209,13 @@ export function CircleSettingsModule() {
             </button>
           </div>
         </form>
+
+        <DangerDelete
+          entity="circle"
+          warning="Members lose access and memberships, invites, tasks, and awards are erased. Posts are unlinked to the public feed."
+          onDelete={() => deleteCircle(data!.id, data!.slug)}
+          redirectTo="/circles"
+        />
       </section>
     </div>
   )
