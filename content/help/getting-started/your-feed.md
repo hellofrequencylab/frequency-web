@@ -3,7 +3,7 @@ title: Your feed
 description: What you see on the home feed and where it comes from.
 category: getting-started
 order: 11
-updated: 2026-06-26
+updated: 2026-06-27
 audience: member
 featureKeys: [feed]
 status: published
@@ -19,9 +19,10 @@ Your feed is home: the running stream of what's happening in the circles you're 
 
 ## The lenses
 
-- **For you** is the default. It blends what's near you, who you resonate with, and what's fresh, so the top of your feed is the activity most worth your time, never a single loud voice. Now and then it slips in a quiet **people you'd click with** row: a few members who share your circles or your people, so you can meet on the same wavelength.
+- **Resonance** is the default. It blends what's near you, who you resonate with, and what's fresh, so the top of your feed is the activity most worth your time, never a single loud voice. Now and then it slips in a quiet **people you'd click with** row: a few members who share your circles or your people, so you can meet on the same wavelength.
+- **Most recent** is the plain newest-first stream.
+- **Most popular** sorts by what the community is reacting to and talking about most right now.
 - **Nearby** shows the closest activity. When your area is quiet, it widens the net on its own so you still see something worth showing up to. We use your approximate neighborhood to do it, never your exact address.
-- **Recent** is the plain newest-first stream.
 - **Story** is the day-by-day record of what the community actually lived: the feed as a journal, not a scroll. Your own captured moments collect in [your journal](/journal) too.
 
 ## When your corner is quiet

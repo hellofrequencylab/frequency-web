@@ -151,8 +151,9 @@ export async function FeedList({
 }: {
   circleIds?: string[]
   myProfileId: string | null
-  /** 'story' = the community's record: chronological, day-grouped (§6 Phase 3b). */
-  sort?: 'recent' | 'relevant' | 'nearby' | 'story'
+  /** 'story' = the community's record: chronological, day-grouped (§6 Phase 3b).
+   *  'relevant' = Resonance (the blended rank); 'popular' = pure engagement order. */
+  sort?: 'recent' | 'relevant' | 'nearby' | 'story' | 'popular'
   /** false on circle/channel detail pages. Show only scoped posts, not the global public feed */
   showPublicLayer?: boolean
   emptyMessage?: string
@@ -163,8 +164,11 @@ export async function FeedList({
   const admin = createAdminClient()
 
   // Story is a presentation lens over the chronological feed — fetch + rank it as
-  // 'recent', then group by day in the render.
-  const fetchSort = sort === 'story' ? 'recent' : sort
+  // 'recent', then group by day in the render. 'popular' (Most popular) fetches +
+  // ranks by raw engagement, which is exactly the RPC's 'relevant' DB ordering; the
+  // resonance BLEND below only applies to 'relevant' (Resonance), so 'popular' stays
+  // a pure popularity sort.
+  const fetchSort = sort === 'story' ? 'recent' : sort === 'popular' ? 'relevant' : sort
 
   // ── Posts ──────────────────────────────────────────────────────────────────
 
