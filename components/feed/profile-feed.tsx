@@ -3,6 +3,8 @@ import { CalendarDays, MapPin, AtSign, Megaphone, Zap, ArrowRight, MessageSquare
 import { createAdminClient } from '@/lib/supabase/admin'
 import { relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { PostCard, type FeedPost, type RawPost } from './post-card'
+import { buildPostOriginResolver, type PostOrigin } from '@/lib/feed/post-origin'
+import { PostOriginHeader, PostOriginLabel } from './post-origin'
 
 interface DispatchItem {
   id: string
@@ -32,7 +34,7 @@ const POST_SELECT = `
 `
 
 type TimelineItem =
-  | { kind: 'post'; data: FeedPost; date: number; context?: 'wall' | 'mention' }
+  | { kind: 'post'; data: FeedPost; date: number; context?: 'wall' | 'mention'; origin: PostOrigin }
   | { kind: 'dispatch'; data: DispatchItem; date: number }
   | { kind: 'event'; data: EventItem; date: number }
 
@@ -126,6 +128,13 @@ export async function ProfileFeed({
     mentionPosts = (data ?? []) as unknown as RawPost[]
   }
 
+  // ── Post origin (where each post was posted) ─────────────────────────────
+  const resolveOrigin = await buildPostOriginResolver(
+    [...ownPosts, ...wallPosts, ...mentionPosts].map(p => p.scope_id),
+    profileId,
+  )
+  const originFor = (p: RawPost): PostOrigin => resolveOrigin(p.scope_id)
+
   // ── Events ──────────────────────────────────────────────────────────────
 
   const rsvpEvents = ((rsvpEventsR.data ?? []) as unknown as { events: EventItem | null }[])
@@ -216,18 +225,21 @@ export async function ProfileFeed({
       kind: 'post' as const,
       data: toFeedPost(p),
       date: new Date(p.created_at).getTime(),
+      origin: originFor(p),
     })),
     ...wallPosts.map(p => ({
       kind: 'post' as const,
       data: toFeedPost(p),
       date: new Date(p.created_at).getTime(),
       context: 'wall' as const,
+      origin: originFor(p),
     })),
     ...mentionPosts.map(p => ({
       kind: 'post' as const,
       data: toFeedPost(p),
       date: new Date(p.created_at).getTime(),
       context: 'mention' as const,
+      origin: originFor(p),
     })),
     ...dispatches.slice(1).map(d => ({
       kind: 'dispatch' as const,
@@ -256,23 +268,25 @@ export async function ProfileFeed({
 
       {items.map(item => {
         if (item.kind === 'post') {
-          const postItem = item as TimelineItem & { kind: 'post'; context?: 'wall' | 'mention' }
+          const postItem = item as TimelineItem & { kind: 'post'; context?: 'wall' | 'mention'; origin: PostOrigin }
           return (
             <div key={item.data.id}>
-              {postItem.context === 'wall' && (
-                <p className="text-xs text-subtle mb-1.5 flex items-center gap-1.5 px-1">
+              {postItem.context === 'wall' ? (
+                <p className="text-xs text-subtle mb-1.5 flex flex-wrap items-center gap-1.5 px-1">
                   <PenLine className="w-3 h-3" />
                   <Link href={`/people/${item.data.author.handle}`} className="font-medium text-muted hover:underline">
                     {item.data.author.display_name}
                   </Link>
                   {' '}wrote on this wall
                 </p>
-              )}
-              {postItem.context === 'mention' && (
-                <p className="text-xs text-subtle mb-1.5 flex items-center gap-1.5 px-1">
+              ) : postItem.context === 'mention' ? (
+                <p className="text-xs text-subtle mb-1.5 flex flex-wrap items-center gap-1.5 px-1">
                   <AtSign className="w-3 h-3" />
                   Mentioned <span className="font-medium text-muted">@{profileHandle}</span>
+                  <PostOriginLabel origin={postItem.origin} prefix="in" />
                 </p>
+              ) : (
+                <PostOriginHeader origin={postItem.origin} />
               )}
               <PostCard post={item.data} myProfileId={myProfileId} viewerRole={viewerRole} />
             </div>
