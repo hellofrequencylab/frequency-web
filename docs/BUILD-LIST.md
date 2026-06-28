@@ -7,6 +7,70 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
+## 🧭 Practice library at scale — 2026-06-28 ([ADR-438](DECISIONS.md), economy detail [REWARDS-ECONOMY §3a](REWARDS-ECONOMY.md))
+
+Re-architect the practice library from a ~200-item staff set into an **endlessly growing,
+member-remixable library** across the four Pillars (Mind / Body / Spirit / Expression), with
+**auto-valued, farm-proof points** and a **primary + secondary Pillar split**. The backend
+taxonomy is already strong (Pillars, 21 subcategories, hybrid tags, `vector(384)` embeddings +
+`match_practices()`, status workflow, slugs, `space_id`); the gap is the **admin surface** (hard
+200 cap, no server search/filter/pagination, client-only sort, bulk capped at 500, view-only
+review queue, no archive, no dedup, no remix lineage) plus two product variables locked in ADR-438.
+Verified on prod (`azsqfeonabsbmemvddqd`): embeddings unpopulated (0/21), no lineage column, no
+`tsvector`, `practice_tiers` already dropped. **Sequence: Scale → Clean → Grow → Autopilot.**
+
+### Two locked variables (ADR-438)
+- **Primary + secondary Pillar split.** Keep `domain_id` (primary); add `secondary_domain_id`
+  (`CHECK <> domain_id`) + `primary_pct smallint default 75 CHECK (between 50 and 100)` (secondary =
+  `100 - primary_pct`; null secondary = 100%). One slider, snaps 75/25, floor 50 keeps the primary
+  dominant. The split **attributes earned Zaps across Pillars** (per-Pillar progress) and **never
+  changes the wallet total** — no inflation lever. Columns ship Phase 1; attribution ledger Phase 4.
+- **Auto-valued, creator-proof points.** `computePracticeReward(practice)` derives **intensity** from
+  structure (`timer_kind`, required `duration_min`, modality → light/standard/heavy = 8/12/15 Zaps),
+  with **cadence as the frequency-normalizer** (ADR-303 balance preserved). Writes `weight_class` /
+  `reward_zaps`; log-time chokepoint unchanged. Free-form pick + manual override become a **staff-only
+  audited break-glass**. Anti-farm: value is bound to required engaged time and the timer gate forces
+  it to be spent (no 2-minute "heavy"), so Zaps-per-real-minute stays flat. Stacks on the existing
+  one-log/practice/day, 25-distinct/day cap, partial=1, Zaps-non-spendable, validated-creation gates.
+
+### Phase 1 — Scale it (the operator workspace)
+| # | Scope | Status |
+|---|---|---|
+| 1.1 | **Search foundation.** `search_vector tsvector` (from title/summary/body/tags) + GIN; **backfill `embedding` (0/21)** + generate on every write; hybrid retrieval RPC (full-text + pgvector fused with RRF). | 📋 |
+| 1.2 | **Unbounded list.** Replace the 200-row cap (`rankedPractices`) with keyset (cursor) pagination + server-side sort. | 📋 |
+| 1.3 | **Faceted query layer.** Server facet counts: Pillar · Subcategory · Status · Weight · Public/Template/Featured · Creator · Tag · computed (no image · no body · never logged · no Pillar · possible duplicate). | 📋 |
+| 1.4 | **Lifecycle.** Add `archived` status (deprecate without delete; hidden from members, history preserved) + archive bulk action. | 📋 |
+| 1.5 | **Pillar split + lineage columns (schema).** `secondary_domain_id`, `primary_pct`; `remixed_from` + `root_practice_id` populated by `forkPractice`/`claimPractice` (no UI yet). | 📋 |
+| 1.6 | **Bulk at scale.** Bulk ops act on the whole filtered set, not the visible 500. | 📋 |
+| 1.7 | **Workspace UI.** Recompose on the Dashboard template + faceted Index body: `StatCard` row, search box, facet rail, saved views. Rail via `page-chrome.ts`. | 📋 |
+| 1.8 | **DataTable call.** Extend the shared `DataTable` (ADR-233) vs. formalize the bespoke table — decided in-build. | 📋 |
+
+### Phase 2 — Keep it clean (quality + moderation)
+| # | Scope | Status |
+|---|---|---|
+| 2.1 | **Triage review queue.** Bulk approve/reject; prioritize by submitter trust + similarity; near-duplicate flag at submission via `match_practices()`. | 📋 |
+| 2.2 | **Dedup + merge.** Pick canonical, redirect adoptions/logs, keep old slug as a redirect. | 📋 |
+| 2.3 | **Quality score** (completeness + engagement + freshness) → a real "Needs attention" panel (orphaned · imageless · never-logged · stale). | 📋 |
+| 2.4 | **Tag governance.** Promote member tag → canonical; merge synonyms. | 📋 |
+| 2.5 | **Vera pre-screen.** Auto-check voice (CONTENT-VOICE), completeness, safety before public. | 📋 |
+
+### Phase 3 — Make it grow (remix engine)
+| # | Scope | Status |
+|---|---|---|
+| 3.1 | **Surface lineage.** Remix trees, "most remixed," credit to originals (uses Phase 1 columns). | 📋 |
+| 3.2 | **Remix prompts.** "Make it yours" / "Remix it" variation list. | 📋 |
+| 3.3 | **Operator levers.** Mark remix seeds, view lineage depth, spotlight prolific remixers. | 📋 |
+| 3.4 | **Contributor recognition** surfaces in admin. | 📋 |
+
+### Phase 4 — Run it on autopilot (AI curation + analytics)
+| # | Scope | Status |
+|---|---|---|
+| 4.1 | **`computePracticeReward()`** wired as the valuation authority + **per-Pillar Zap attribution ledger** (the split's payoff). | 📋 |
+| 4.2 | **Vera curation.** Auto-suggest Pillar/subcategory from the embedding, auto-tag, auto-summary, voice-check, generate remix prompts. | 📋 |
+| 4.3 | **Library health dashboard.** Growth, **coverage gaps by Pillar/subcategory**, adoption funnel, top/bottom performers, review SLA, contributor leaderboard. | 📋 |
+
+**Cross-cutting (every phase):** naming + voice canon (no em dashes, "Make it yours") · page-framework kit (compose, don't author) · docs protocol (ADR in git, operator how-to in Notion) · audit log · RLS · `space_id` scoping · tuning via `zap_config`/`gem_config` (data, not code).
+
 ## ✨ Spotlight — remaining MySpace / Discord socials — 2026-06-27
 
 The Spotlight editor shipped rounds 1–7 (blocks, images/GIF/bg, gallery/quote/stats, themes
