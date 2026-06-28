@@ -7,7 +7,7 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
-## 🧭 Practice library at scale — 2026-06-28 ([ADR-438](DECISIONS.md), economy detail [REWARDS-ECONOMY §3a](REWARDS-ECONOMY.md))
+## 🧭 Practice library at scale — 2026-06-28 ([ADR-438](DECISIONS.md), full spec [PRACTICE-LIBRARY.md](PRACTICE-LIBRARY.md), economy detail [REWARDS-ECONOMY §3a](REWARDS-ECONOMY.md))
 
 Re-architect the practice library from a ~200-item staff set into an **endlessly growing,
 member-remixable library** across the four Pillars (Mind / Body / Spirit / Expression), with

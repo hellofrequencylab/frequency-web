@@ -72,7 +72,7 @@ export default async function AdminContentPracticesPage() {
 
       <AdminSection
         title={`Library (${library.length})`}
-        description="Sort by any stat; the header switches flip Public or Template for the whole library at once."
+        description="Search, filter, and sort by any signal. The Public switch flips every row in view. Select rows for bulk weight, visibility, and template changes."
       >
         {library.length === 0 ? (
           <EmptyState variant="first-use" icon={BookOpen} title="No practices yet" description="Practices appear here as the library fills in." />
