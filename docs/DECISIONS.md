@@ -9080,3 +9080,24 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 - Tuning stays data-driven via `zap_config` / `gem_config` (no code change to rebalance), consistent with REWARDS-ECONOMY §10.
 - **Supersedes** the REWARDS-ECONOMY §3 note "effort/length never does"; that doc is updated in the same change.
 - Naming/voice canon and the page-framework kit are honored throughout: "Make it yours" for remix, no em dashes in member copy, compose `StatCard`/`EntityCard` (never hand-roll layout), rail registered in `lib/layout/page-chrome.ts`.
+
+---
+
+## ADR-439: Hardening-first, mobile-primary execution sequence (plan-as-if-entities-live)
+
+**Status:** Accepted (2026-06-28). Owner decision after a full system assessment (vision, app, database, stack, integrations). The phased execution plan lives in [FOUNDATION-HARDENING-PLAN.md](FOUNDATION-HARDENING-PLAN.md); this ADR records the three decisions that re-sequence the build. **Re-sequences (does not replace)** the staged build in [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md) and [PLATFORM-VISION.md](PLATFORM-VISION.md), which stay canonical for the *what/why* of the verticals and the two-entity model.
+
+**Context.**
+- The platform is far more mature than "built as we go" implies: ~150 tables, 360+ migrations, a five-layer lock-resistant architecture (presentation → composition → **contract** → domain → data), the full Quest economy, AI (Vera), and a 13-vertical map. The foundation is genuinely strong.
+- The assessment surfaced a finite, specific set of hardening/scale risks rather than any need to re-architect: polymorphic `scope_id` FKs with no DB constraint (highest data-integrity risk), per-row RLS subquery cost at scale, unbounded reward/engagement ledgers, Nominatim's ~1 req/s geocoding ceiling, single-bucket media with no dedicated CDN, single-region Postgres, no cron failure alerting, and unit-only test coverage (no e2e on money/rewards/authz). Operational maturity is the real gap, not architecture.
+- The owner's stated goal is a world-class system that scales to Facebook-class volume without causing future problems, with community/in-person healing as the mission.
+
+**Decision.**
+1. **Hardening and best practice come before features.** The build runs a hardening spine first — H0 baseline & observability → H1 data integrity → H2 authz & security → H3 performance & scale → H4 reliability & ops → H5 code quality — and only then finishes the web foundation (F0) and adds growth verticals (F3). In-flight features are taken to launch quality; net-new verticals wait for the substrate.
+2. **Mobile is the primary surface, built after a complete web foundation.** The web app is hardened and feature-complete first; the Expo/RN app (M1) is the next major surface and consumes the identical contract + capability + token layers. The contract-layer mobile-readiness audit (H5-7) is the explicit gate for starting mobile.
+3. **Plan as if the legal entities are live.** The money foundation (entities, entity-tagged financial ledger, persona axis, Stripe Connect, module registry, subscription-as-bridge entitlement) is built as real infrastructure (F1), dormant-safe behind `billing_live = off`. No work in the plan is gated on the EIN; go-live switches are flagged where the entity must be legally active. Counsel decisions (which entity sells membership, inter-entity bridge mechanism, deductibility) are carried as open items, not guessed.
+
+**Consequences.**
+- Trust & safety is elevated from a backlog floor to a named phase (F2) that **gates** stranger-facing verticals (roommate finder, public-event discovery, marketplace), aligning the "safely connect people" promise with the roadmap.
+- Scale work stays metric-driven: H3/H4 items ship against measured baselines (H0), never speculatively.
+- This plan is the active execution order; MASTER-PLAN.md / BUILD-LIST.md items are absorbed into its phases. Authority order is unchanged: running code + migrations > docs > Notion.
