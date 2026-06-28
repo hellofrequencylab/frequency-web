@@ -86,8 +86,42 @@ Cadence-based per the locked model ([ADR-303](DECISIONS.md)). **No caps on Zaps.
 | **Validated creation**: your event is first used | **50** |
 | **Validated creation**: your practice is first used | **40** |
 
-Cadence sets the per-log Zap value; effort/length never does. A daily core practice pays
-10 each log; over a 28-day window that is 280 Zaps per Pillar, balanced across the four.
+Cadence is the **frequency-normalizer**: a daily core practice pays 10 each log; over a 28-day
+window that is 280 Zaps per Pillar, balanced across the four. As of [ADR-438](DECISIONS.md),
+**effort/intensity also counts** (this supersedes the earlier "effort/length never does" rule) —
+but the per-log value is **computed, never creator-set** (see §3a), and cadence still bounds the
+expected weekly yield so the balance above holds.
+
+### 3a. Auto-valuation from intensity (ADR-438) — creators never set point values
+
+Point values are computed server-side by `computePracticeReward(practice)` on every create/update.
+Creators and members **cannot set their own payout**; the free-form `weight_class` pick and the
+manual `reward_zaps` override survive only as a **staff-only, audited break-glass**.
+
+**Intensity** is derived from structural signals a creator cannot fake for free, then bucketed:
+
+| Computed intensity | Triggers | Per-log Zaps |
+| --- | --- | --: |
+| **Light** | no-timer "log-it", or timed < 5 min | **8** |
+| **Standard** | timed sit / movement 5–14 min | **12** |
+| **Heavy** | timed ≥ 15 min, or high-demand movement | **15** |
+
+The function writes `weight_class` (and `reward_zaps` for cadence-bound Quest/Journey practices); the
+log-time chokepoint (`logPractice`, `lib/practices.ts:1546–1595`) is unchanged and still freezes the
+grant onto `practice_logs.zaps_awarded`. Constants are tuned via `zap_config` (data, not code).
+
+**The anti-farm closure.** Value is bound to *required engaged time*, and the timer gate (a log counts
+only at ≥ 95% of target) forces that time to actually be spent — so a 2-minute practice can never be
+"heavy," and Zaps-per-real-minute stays roughly flat (no arbitrage). Stacks on: one-log/practice/day
+(unique constraint), the 25-distinct-practices/day cap, partial-log = 1 Zap, Zaps non-spendable (5:1
+Gem conversion at season end), and validated-creation requiring a distinct established validator.
+
+**Primary + secondary Pillar split (ADR-438).** A practice carries a primary Pillar (`domain_id`) and
+an optional `secondary_domain_id` with a `primary_pct` (default 75, range 50–100; secondary =
+`100 - primary_pct`). The split **attributes the earned Zaps across Pillars** for per-Pillar progress
+(a 12-Zap log at 75/25 credits 9 to the primary, 3 to the secondary) and **never changes the wallet
+total** — so it is not an inflation or farming lever. The per-Pillar attribution ledger is built in
+Phase 4 (see [BUILD-LIST.md](BUILD-LIST.md)).
 
 ---
 
