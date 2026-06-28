@@ -9080,3 +9080,48 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 - Tuning stays data-driven via `zap_config` / `gem_config` (no code change to rebalance), consistent with REWARDS-ECONOMY §10.
 - **Supersedes** the REWARDS-ECONOMY §3 note "effort/length never does"; that doc is updated in the same change.
 - Naming/voice canon and the page-framework kit are honored throughout: "Make it yours" for remix, no em dashes in member copy, compose `StatCard`/`EntityCard` (never hand-roll layout), rail registered in `lib/layout/page-chrome.ts`.
+
+---
+
+## ADR-439: Hardening-first, mobile-primary execution sequence (plan-as-if-entities-live)
+
+**Status:** Accepted (2026-06-28). Owner decision after a full system assessment (vision, app, database, stack, integrations). The phased execution plan lives in [FOUNDATION-HARDENING-PLAN.md](FOUNDATION-HARDENING-PLAN.md); this ADR records the three decisions that re-sequence the build. **Re-sequences (does not replace)** the staged build in [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md) and [PLATFORM-VISION.md](PLATFORM-VISION.md), which stay canonical for the *what/why* of the verticals and the two-entity model.
+
+**Context.**
+- The platform is far more mature than "built as we go" implies: ~150 tables, 360+ migrations, a five-layer lock-resistant architecture (presentation → composition → **contract** → domain → data), the full Quest economy, AI (Vera), and a 13-vertical map. The foundation is genuinely strong.
+- The assessment surfaced a finite, specific set of hardening/scale risks rather than any need to re-architect: polymorphic `scope_id` FKs with no DB constraint (highest data-integrity risk), per-row RLS subquery cost at scale, unbounded reward/engagement ledgers, Nominatim's ~1 req/s geocoding ceiling, single-bucket media with no dedicated CDN, single-region Postgres, no cron failure alerting, and unit-only test coverage (no e2e on money/rewards/authz). Operational maturity is the real gap, not architecture.
+- The owner's stated goal is a world-class system that scales to Facebook-class volume without causing future problems, with community/in-person healing as the mission.
+
+**Decision.**
+1. **Hardening and best practice come before features.** The build runs a hardening spine first — H0 baseline & observability → H1 data integrity → H2 authz & security → H3 performance & scale → H4 reliability & ops → H5 code quality — and only then finishes the web foundation (F0) and adds growth verticals (F3). In-flight features are taken to launch quality; net-new verticals wait for the substrate.
+2. **Mobile is the primary surface, built after a complete web foundation.** The web app is hardened and feature-complete first; the Expo/RN app (M1) is the next major surface and consumes the identical contract + capability + token layers. The contract-layer mobile-readiness audit (H5-7) is the explicit gate for starting mobile.
+3. **Plan as if the legal entities are live.** The money foundation (entities, entity-tagged financial ledger, persona axis, Stripe Connect, module registry, subscription-as-bridge entitlement) is built as real infrastructure (F1), dormant-safe behind `billing_live = off`. No work in the plan is gated on the EIN; go-live switches are flagged where the entity must be legally active. Counsel decisions (which entity sells membership, inter-entity bridge mechanism, deductibility) are carried as open items, not guessed.
+
+**Consequences.**
+- Trust & safety is elevated from a backlog floor to a named phase (F2) that **gates** stranger-facing verticals (roommate finder, public-event discovery, marketplace), aligning the "safely connect people" promise with the roadmap.
+- Scale work stays metric-driven: H3/H4 items ship against measured baselines (H0), never speculatively.
+- This plan is the active execution order; MASTER-PLAN.md / BUILD-LIST.md items are absorbed into its phases. Authority order is unchanged: running code + migrations > docs > Notion.
+
+---
+
+## ADR-440: The Growth OS — config-driven launch layer with admin suites three layers deep
+
+**Status:** Accepted (2026-06-28). Owner decision. The full build plan lives in [GROWTH-OS-BUILD-PLAN.md](GROWTH-OS-BUILD-PLAN.md); this ADR records the architecture decisions. Builds on [ADR-439](DECISIONS.md) (hardening-first, mobile-primary, plan-as-if-entities-live) and the embedded-admin model ([ADR-153](DECISIONS.md)/133/137/138/149). Re-sequences the launch layer; does not replace [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md) or [PLATFORM-VISION.md](PLATFORM-VISION.md).
+
+**Context.**
+- The owner wants a world-class, fully-featured launch (funnels, flywheel, splash pages, onboarding, funding, the cold-start solver) managed entirely from admin, built structurally and ahead of the rough Notion launch dates (the *Community Launch Plan*, P0 Ignition → P4 Anchor & Open).
+- A current-state audit shows most growth systems already exist: the entry-point/funnel engine (attribution, A/B, nurture), the Puck page CMS, the beta funnel + induction, the activation funnel, the CRM + card/QR capture, the comms outbox spine, pricing/entitlements (OFF by default), Spaces operator suites (P0–P3), the discover layer, and the resonance graph. The genuinely new work is the **Keystone** (hosted global layer + global→local localization), the **Funding** system, the **dual-track waitlist/application** engine, **programmatic/SEO pages**, finishing **email/automations**, and wrapping everything in cohesive **admin suites**.
+
+**Decision.**
+1. **Build the growth layer as a small set of config-driven engines, not bespoke pages.** Twelve engines (Landing/Splash, Funnel, Waitlist/Application, Onboarding Sequence, Capture/CRM/Referral, Campaign/Broadcast, Funding, Keystone, Proof/Broadcast, Operator Suites, Programmatic Pages, Growth Analytics). Every funnel/page/sequence/campaign is a configured row, not code. Compose existing systems; never re-found (splash extends Puck + `pages`; funnels extend Entry Points + attribution + A/B + nurture).
+2. **Every engine ships its admin three layers deep**, extending the existing model: L1 catalog spine (`app/(main)/admin/sections.ts`), L2 full-page domain suite (`/admin/<key>`), L3 per-page console + inline `AdminModule` registry. Two new suites are added — **Keystone** (cold-start/density/localization) and **Funding** (entity-aware, dormant) — and the existing **Growth** suite is extended with Funnels-as-object, Waitlist & Applications, Programmatic Pages, and Splash management. A system is not "done" until it is fully manageable from admin with no deploy.
+3. **The Keystone is the priority new build** (the cold-start solver): an always-on hosted global Journey layer plus the global→local shift driven by the density read-model, so nobody lands in an empty room.
+4. **Money is built dormant** behind `billing_live = off`, entity-tagged, with a one-switch flip-on runbook; go-live gated on legally-live entities.
+5. **Sequenced after the hardening spine** (G0 = FOUNDATION-HARDENING H0–H5 + the F1 money substrate), then G1 funnel core → G2 acquisition/activation/keystone → G3 operator suites → G4 funding/monetization → G5 programmatic/replication. Notion P0–P4 dates are directional; the structural gate is the trigger; mapped 1:1 in the plan §11.
+
+**Consequences.**
+- Marketing/operators move at the speed of config; the launch does not require engineering per campaign.
+- The contract layer (`lib/contract/`) is honored so the eventual mobile app reuses every engine.
+- NAMING.md + CONTENT-VOICE.md and PAGE-FRAMEWORK.md are enforced by the engines (no em dashes, locked nouns, kit composition).
+- The recruiter reward *leaderboard* stays retired (ADR-305); affiliate is a commission ledger, not a points board.
+- Authority order unchanged: running code + migrations > docs > Notion.
