@@ -295,8 +295,14 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     await resolvePageContent('/events', CONTENT_FALLBACK)
 
   const nowDate = new Date()
-  const now = nowDate.toISOString()
   const future = new Date(nowDate.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString()
+  // An event stays "upcoming" through the end of its start day even when it has no end
+  // time. Lower-bounding on the current instant makes a same-day event with a null
+  // ends_at vanish from every listing the moment its start time passes (the "Swami's
+  // Beach Gathering" case); lower-bound on the start OF today (UTC) instead.
+  const listableFrom = new Date(
+    Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), nowDate.getUTCDate()),
+  ).toISOString()
 
   const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
 
@@ -322,7 +328,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       // client bypasses RLS, so this status gate (which the migration assumes) is on us.
       .eq('status', 'published')
       .eq('is_cancelled', false)
-      .gte('starts_at', now)
+      .gte('starts_at', listableFrom)
       .lte('starts_at', future)
       .order('starts_at', { ascending: true })
     if (hideDemo) circleQuery = circleQuery.eq('is_demo', false)
@@ -344,7 +350,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     .eq('status', 'published')
     .neq('scope_type', 'circle')
     .eq('is_cancelled', false)
-    .gte('starts_at', now)
+    .gte('starts_at', listableFrom)
     .lte('starts_at', future)
     .order('starts_at', { ascending: true })
   if (hideDemo) publicQuery = publicQuery.eq('is_demo', false)
@@ -389,7 +395,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       // events index — those live on the space, not here (ADR-254 keeps the two scopes
       // distinct). Without this, every space gathering a member hosts floods /events.
       .in('scope_type', ['circle', 'public'])
-      .gte('starts_at', now)
+      .gte('starts_at', listableFrom)
       .lte('starts_at', future)
       .order('starts_at', { ascending: true })
     if (hideDemo) hostedQuery = hostedQuery.eq('is_demo', false)
