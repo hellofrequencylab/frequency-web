@@ -10,6 +10,10 @@
 > **Authority order (unchanged):** running code + `supabase/migrations/` > this doc > Notion.
 > **Decision record:** [ADR-439](DECISIONS.md).
 >
+> **What comes after:** this hardening spine (G0) gates the launch build in
+> [`GROWTH-OS-BUILD-PLAN.md`](GROWTH-OS-BUILD-PLAN.md) ([ADR-440](DECISIONS.md)) — the config-driven
+> funnel/flywheel/splash layer + admin suites. Harden first, then build the Growth OS on top.
+>
 > **Status legend:** ✅ done · ⏳ in progress · ⚠️ at risk / needs attention · 🔴 blocker / not started.
 > **Task IDs** (e.g. `H1-3`) are stable handles for issues, PRs, and the master plan.
 
