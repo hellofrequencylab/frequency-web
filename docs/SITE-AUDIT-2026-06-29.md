@@ -53,7 +53,7 @@
 | BUG-5 | `updateCircleField` (circle inline-edit) was built but never wired. Investigation: circles edit via the **Settings drawer** (`EditCircleButton`), not inline-edit like events/hubs — so this is redundant dead code, not a missing connection. | `app/(main)/circles/admin-actions.ts` | 🟡 low-med | ✅ removed (circles edit via the drawer) |
 | BUG-6 | "Draft with Vera" for offering blurbs (`draftOfferingBlurbAction`) is unwired. Investigation: no offerings-editor UI exists yet (a future step, per the action's own comment) — it's a forward-looking parked action, not a quick wire. | `app/(main)/spaces/copilot-actions.ts:62` | 🟡 low | 📋 parked (awaits the offerings editor) |
 | BUG-7 | Stripe Connect activation is stubbed (activation succeeds without the payment binding). | `lib/personas.ts`, `app/(main)/admin/personas/actions.ts` | 🟠 med | ✅ `CONNECT_WIRED` gate — `→active` blocked until Connect lands (verified already lights all surfaces) |
-| BUG-8 | Non-atomic season-capstone count (two concurrent completions can read stale `<3`); mitigated by re-read + idempotent lock. | `lib/quest/complete.ts:220` | 🟡 low | ✅ migration written (`claim_season_certificate` RPC) — **not applied/wired** per owner; apply + wire later |
+| BUG-8 | Non-atomic season-capstone count (two concurrent completions can read stale `<3`); mitigated by re-read + idempotent lock. | `lib/quest/complete.ts:220` | 🟡 low | ✅ **applied + wired** (2026-06-29) — `claim_season_certificate` SECURITY DEFINER RPC live on Frequency Community; `grantCertificate()` delegates the count+claim under one advisory lock |
 | BUG-9 | Member module pages lack a `loading.tsx` skeleton (degrade to blank sections, not skeletons). | `/lead`, `/friends`, `/journal`, `/people`, … | 🟡 low | ✅ skeletons added for the four named pages |
 | — | **Verified clean:** module registry triad consistent (`modules.test.ts` passes, 97 meta = 97 bindings); **0 dead internal links**; no FormData/object signature mismatches; no broken imports. | — | ✓ | ✓ |
 
@@ -102,7 +102,7 @@
 |---|---|---|
 | INF-1 | `pnpm lint` — 2 unused-var warnings (`lib/spaces/ai-usage.test.ts:27`). | ✅ |
 | INF-2 | Supabase advisor: enable Auth leaked-password protection (owner dashboard config). | 📋 (owner) |
-| INF-3 | Supabase advisors / migration drift / dependency currency — run the `maintenance` skill on a schedule. | 📋 (automate) |
+| INF-3 | Supabase advisors / migration drift / dependency currency — run the `maintenance` skill on a schedule. | ✅ weekly maintenance trigger scheduled (owner, 2026-06-29) |
 
 ---
 
