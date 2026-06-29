@@ -8,12 +8,10 @@
 -- transaction-scoped advisory lock, so the count is always consistent and the claim fires exactly
 -- once — the fully race-proof fix.
 --
--- WRITE-ONLY (owner decision, 2026-06-29): this migration is prepared but NOT yet applied, and the
--- app does NOT call it yet (so production, which lacks the function, keeps using the existing
--- count+claim path unchanged). FOLLOW-UP once applied: in lib/quest/complete.ts replace the
--- journeysFinishedThisSeason() + grantCertificate() count/claim with a single
--- `claim_season_certificate(profileId, season)` RPC call, and keep the achievement / cosmetic /
--- Gem side effects guarded by its boolean return (true = this call won the claim).
+-- APPLIED + WIRED (2026-06-29): applied to the Frequency Community project and called from
+-- lib/quest/complete.ts grantCertificate(), which now delegates the count+claim to this RPC and
+-- guards the achievement / cosmetic / Gem side effects on its boolean return (true = this call
+-- won the claim).
 
 create or replace function public.claim_season_certificate(
   p_profile_id uuid,

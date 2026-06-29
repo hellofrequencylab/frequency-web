@@ -51,16 +51,19 @@ async function grantCertificate(
   season: number,
 ): Promise<boolean> {
   try {
-    // Claim-then-pay: one row per (member, season) is the idempotency lock. The amount
-    // mirrors the Gem bonus written below (the ledger row carries the live grant).
-    const { error } = await admin.from('reward_grants').insert({
-      rule_key: `certificate:${season}`,
-      profile_id: profileId,
-      reward_kind: 'gems',
-      amount: 100,
-      detail: 'Certificate (season capstone)',
-    })
-    if (error) return false // already granted / lost the race
+    // Race-proof count + claim (BUG-8, migration 20260826000000): the SECURITY DEFINER RPC counts
+    // the member's finished Journeys for the season AND inserts the certificate:{season} reward_grants
+    // lock under one advisory lock, so two concurrent completions can't both observe a stale count.
+    // Returns true ONLY for the call that wins the claim (>= 3 finished and not already granted), so
+    // the one-time side effects below run exactly once. The RPC isn't in the generated types yet, so
+    // it's called through the untyped surface (repo convention, see lib/traits/refresh.ts).
+    const { data: won, error } = await (admin as unknown as {
+      rpc: (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: boolean | null; error: { message: string } | null }>
+    }).rpc('claim_season_certificate', { p_profile_id: profileId, p_season: season })
+    if (error || !won) return false // below the bar, already granted, or lost the race
 
     // The 'certificate' achievement (seeded separately — skip cleanly if absent).
     const { data: ach } = await admin
@@ -209,23 +212,12 @@ export async function tryCompleteJourney(
     // Idempotent + best-effort — granted directly here so the Trophy lands with the finish.
     await grantJourneyBadgeOnCompletion(profileId, journeyId).catch(() => false)
 
-    // The Certificate (season capstone): finishing the THIRD Journey this season = Master.
-    // Re-evaluated idempotently on EVERY completion, not only when THIS call's `count`
-    // crossed 3: two journeys finishing concurrently can both read a stale count < 3 and
-    // each compute a non-master rank, so neither would have fired the capstone. By
-    // re-reading the count fresh here and firing whenever it is >= 3, a later completion
-    // that observes the true total still triggers the capstone. grantCertificate is the
-    // claim-then-pay lock (certificate:{season}), so it fires exactly once per season.
-    //
-    // TODO (follow-up, schema): the count read is still non-atomic, so a vanishingly
-    // small window remains where two completions both read 2 and the season ends with no
-    // 4th completion to re-fire it. A fully race-proof fix is a SECURITY DEFINER RPC that
-    // counts + claims under a single advisory lock; tracked separately, no RPC invented here.
-    let certificate = false
-    const finishedCount = await journeysFinishedThisSeason(profileId)
-    if (finishedCount >= 3) {
-      certificate = await grantCertificate(admin, profileId, season)
-    }
+    // The Certificate (season capstone): finishing the THIRD Journey this season = Master. Granted
+    // race-proof by the claim_season_certificate RPC (migration 20260826000000, BUG-8): it counts the
+    // member's finished Journeys AND claims the certificate:{season} lock under one advisory lock, so
+    // two concurrent completions can never both read a stale count < 3. Called on EVERY completion;
+    // the RPC returns false below the 3-Journey bar, so no separate pre-count read is needed here.
+    const certificate = await grantCertificate(admin, profileId, season)
 
     // Social fuel (Resonance Engine Phase 5 · ADR-386): fire the milestone into the member's
     // CIRCLE feeds as peer recognition (crowd-in), not a private modal. Best-effort + swallowed:
