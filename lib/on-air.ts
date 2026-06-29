@@ -437,6 +437,9 @@ export interface RevealPayload {
   }
   stats: {
     sessionSeconds: number
+    /** The label for the session row, named after the activity done ("This walk" /
+     *  "This sit"), so the stats never describe the wrong practice (ADR-443). */
+    sessionLabel: string
     todaySeconds: number
     totalSeconds: number
     lifetimeLogs: number
@@ -510,6 +513,29 @@ export function dispatchOpener(kind: DispatchKind | null | undefined): string {
       return 'Good moving.'
     default:
       return 'Nicely done.'
+  }
+}
+
+/** The stats-card label for THIS session, named after what was actually done so a walk
+ *  reads "This walk" and a meditation "This sit" (never crossed). Movement kinds name the
+ *  activity; quieter modes fall back to the plain "session". (ADR-443 mode-accuracy.) */
+export function statSessionLabel(kind: DispatchKind | null | undefined): string {
+  switch (kind) {
+    case 'timer':
+    case 'stillness':
+    case 'ritual':
+      return 'This sit'
+    case 'walk':
+      return 'This walk'
+    case 'run':
+      return 'This run'
+    case 'yoga':
+      return 'This yoga'
+    case 'stretch':
+      return 'This stretch'
+    // breath / journal / log / strength / play read most naturally as a plain session.
+    default:
+      return 'This session'
   }
 }
 

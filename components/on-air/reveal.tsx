@@ -405,13 +405,14 @@ function StreakPanel({ payload }: { payload: RevealPayload }) {
 function StatsPanel({ payload }: { payload: RevealPayload }) {
   const { stats } = payload
   const rows: [string, string][] = [
-    ['This sit', fmtMin(stats.sessionSeconds)],
+    // Named after what was actually done (ADR-443): "This walk" / "This sit", never crossed.
+    [stats.sessionLabel, fmtMin(stats.sessionSeconds)],
     ['Airtime today', fmtMin(stats.todaySeconds)],
     ['Airtime, all time', fmtMin(stats.totalSeconds)],
     [
       payload.practiceTitle,
       stats.nextDepthMark
-        ? `${stats.lifetimeLogs} logs · ${stats.nextDepthMark - stats.lifetimeLogs} to ${stats.nextDepthMark} Deep`
+        ? `${stats.lifetimeLogs} logs · ${stats.nextDepthMark} next`
         : `${stats.lifetimeLogs} logs`,
     ],
     ['Amplitude', `Level ${stats.amplitudeLevel} · ${stats.amplitude.toLocaleString()}`],

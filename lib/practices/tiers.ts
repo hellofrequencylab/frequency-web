@@ -67,3 +67,28 @@ export function tierForZaps(value: number): PracticeTier {
   const snapped = coerceTierZaps(value)
   return TIER_ORDER.find((t) => TIER_ZAPS[t] === snapped) ?? 'standard'
 }
+
+// --- Achieved tier (ADR-443): a TIMED practice earns the tier its real engaged time reaches,
+//     not a tier the creator declared. Below the Light floor is a partial (1 Zap + streak).
+//     Standard (5) / Heavy (15) floors come from TIER_FLOOR_MIN; the Light/partial floor is the
+//     one new number here (tunable). Pure so it is unit-tested and reused by logPractice.
+
+/** The minimum engaged minutes for a session to earn the Light tier; below this is a partial. */
+export const LIGHT_FLOOR_MIN = 3
+
+/** What a session earned: a real tier, or 'partial' (under the Light floor). */
+export type AchievedOutcome = 'partial' | PracticeTier
+
+/** Resolve the achieved outcome from engaged minutes. */
+export function achievedTierFromMinutes(minutes: number): AchievedOutcome {
+  const m = Number.isFinite(minutes) ? minutes : 0
+  if (m < LIGHT_FLOOR_MIN) return 'partial'
+  if (m >= TIER_FLOOR_MIN.heavy) return 'heavy'
+  if (m >= TIER_FLOOR_MIN.standard) return 'standard'
+  return 'light'
+}
+
+/** Resolve the achieved outcome from engaged seconds (the session length). */
+export function achievedTier(engagedSeconds: number): AchievedOutcome {
+  return achievedTierFromMinutes((Number.isFinite(engagedSeconds) ? engagedSeconds : 0) / 60)
+}

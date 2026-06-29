@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { maxTierForDuration, isTierAllowed, clampTierToDuration, coerceTierZaps, tierForZaps, TIER_FLOOR_MIN, TIER_ZAPS } from './tiers'
+import { maxTierForDuration, isTierAllowed, clampTierToDuration, coerceTierZaps, tierForZaps, achievedTier, achievedTierFromMinutes, LIGHT_FLOOR_MIN, TIER_FLOOR_MIN, TIER_ZAPS } from './tiers'
 
 describe('practice tiers — time vs points (ADR-442)', () => {
   it('maps a duration to the highest tier it earns', () => {
@@ -51,5 +51,22 @@ describe('practice tiers — time vs points (ADR-442)', () => {
     expect(tierForZaps(12)).toBe('standard')
     expect(tierForZaps(15)).toBe('heavy')
     expect(tierForZaps(999)).toBe('heavy')
+  })
+
+  it('resolves the achieved tier from real engaged time (ADR-443)', () => {
+    // minutes
+    expect(achievedTierFromMinutes(0)).toBe('partial')
+    expect(achievedTierFromMinutes(LIGHT_FLOOR_MIN - 0.1)).toBe('partial') // 2 min into a 10-min sit
+    expect(achievedTierFromMinutes(LIGHT_FLOOR_MIN)).toBe('light')
+    expect(achievedTierFromMinutes(4)).toBe('light')
+    expect(achievedTierFromMinutes(5)).toBe('standard')
+    expect(achievedTierFromMinutes(14)).toBe('standard')
+    expect(achievedTierFromMinutes(15)).toBe('heavy')
+    expect(achievedTierFromMinutes(60)).toBe('heavy')
+    expect(achievedTierFromMinutes(Number.NaN)).toBe('partial')
+    // seconds
+    expect(achievedTier(120)).toBe('partial') // 2 min
+    expect(achievedTier(5 * 60)).toBe('standard')
+    expect(achievedTier(15 * 60)).toBe('heavy')
   })
 })

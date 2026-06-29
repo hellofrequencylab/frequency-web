@@ -9175,3 +9175,24 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 - Practices implemented now (`lib/practices/tiers.ts`, the builder Effort gate, the `setPractice` clamp, unit tests). Other types (crew tasks first) follow as separate PRs against this rule — tracked in the [BUILD-SEQUENCE](BUILD-SEQUENCE.md) Idea Inbox.
 - "Time vs points" is enforced at BOTH authoring (tier needs the length) and logging (must complete the length), so Zaps-per-real-minute stays roughly flat (no arbitrage), consistent with the ADR-438 anti-farm guarantee.
 - Tier amounts remain data-tunable in `zap_config`; the floors are the structural gate and live in code.
+
+---
+
+## ADR-443: Practice depth — member-achieved tiers, "go deeper" timer, mode-accurate output
+
+**Status:** Accepted (2026-06-29). Owner decision. Full build plan in [PRACTICE-DEPTH-BUILD.md](PRACTICE-DEPTH-BUILD.md). **Evolves** [ADR-442](DECISIONS.md): for TIMED practices the payout tier is now **earned by actual engaged time**, not picked by the creator; the creator's tier becomes the *recommended* default target and the quick-log fallback. Honors [NAMING.md](NAMING.md) and [CONTENT-VOICE.md](CONTENT-VOICE.md).
+
+**Context.**
+- The owner wants practices to ship with a recommended time that the member can adjust on their own page day to day, with the Zap tier earned by how long they actually practice (always one threshold from "a little deeper"), and every end-of-session message/stat reading back the exact practice and mode (a meditation must never read as a yoga session). Code maps confirmed the timer lifecycle and three mode-accuracy bugs: the reveal Stats hardcode "This sit" for movement, use the retired word "Deep", and the Vera AI fallback never receives the activity.
+
+**Decision.**
+1. **Achieved tier (timed practices):** Zaps come from engaged minutes crossing thresholds — Light/Standard/Heavy = 8/12/15 (`lib/practices/tiers.ts`, amounts tunable in `zap_config`). Standard ≥5 min, Heavy ≥15 min (ADR-442); the Light/partial floor defaults to Light ≥3 min / partial <3 min (tunable). Below the Light floor → partial (1 Zap) + the streak still ticks + top-up later. **Quick-log practices** keep the recommended tier (no time to measure).
+2. **Personal adjustable target with memory:** a per-member target (`member_practices.target_seconds`) defaults to the recommendation and is updated to the achieved length after each session; the next day pre-fills with it and nudges "match it / +2 for a best."
+3. **Auto-continue + live "go deeper":** when the target completes the timer keeps running with a chime at each threshold and a live tier ladder; the member banks the highest tier reached. No lock-in.
+4. **Mode-accurate, on-brand output:** one `ACTIVITY_LABELS` map is the single source for mode→words; the reveal stats, the dispatch opener, and the Vera AI fallback all consume it and always receive the practice title + mode + achieved tier; "This sit" becomes activity-accurate; "Deep" is retired; all copy passes `lib/ai/voice.ts`.
+5. **No new economy:** streak is unaffected by depth (showing up is showing up); Amplitude compounds from the Zaps earned; any depth-streak bonus is opt-in via `zap_config`, default none. Anti-farm (timer-proof, one-log/day, 25/day cap, non-spendable Zaps) is unchanged.
+
+**Consequences.**
+- Phased build PD0–PD7 (PD0 fixes the mode-accuracy bugs first; PD1 the detail-page header; PD2 the achieved-tier server change; PD3 target+memory; PD4 auto-continue+cues; PD5 reveal; PD6 the daily pull; PD7 tests).
+- `weight_class`/`reward_zaps` remain the recommendation + quick-log fallback + the staff break-glass; ADR-442's floors/amounts are reused, not replaced.
+- Schema: `member_practices.target_seconds` (migration); achieved tier + depth streak derived where possible.
