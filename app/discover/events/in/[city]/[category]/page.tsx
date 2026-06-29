@@ -20,7 +20,7 @@ import {
   getCategoryBySlug,
   getCityCategoryHub,
   getCityCategoryHubs,
-} from '../../_data'
+} from '../../../_data'
 
 // ── City × category event hub (EVENTS-REWORK SEO) ─────────────────────────────
 // An indexable landing page for one city + one event category, whose value is the
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // not boilerplate). Plain voice, no em dashes, one honest number.
   const title = `${cat.label} in ${hub.city}`
   const description = `${count} upcoming ${count === 1 ? cat.nounSingular : cat.noun} in ${hub.city} on ${SITE_NAME}. Public pages show the city only; the exact venue is shared with members who RSVP.`
-  const path = `/discover/events/${hub.citySlug}/${cat.slug}`
+  const path = `/discover/events/in/${hub.citySlug}/${cat.slug}`
   const ogTitle = `${title} · ${SITE_NAME}`
 
   return {
@@ -84,7 +84,7 @@ export default async function CityCategoryHubPage({ params }: Params) {
   } = await supabase.auth.getUser()
   const isAuthed = !!user
 
-  const path = `/discover/events/${hub.citySlug}/${cat.slug}`
+  const path = `/discover/events/in/${hub.citySlug}/${cat.slug}`
 
   // Sibling categories that also have events in this city — internal links that
   // give the hub real navigational value (and spread crawl across live facets).
@@ -142,7 +142,7 @@ export default async function CityCategoryHubPage({ params }: Params) {
               {siblings.map((s) => (
                 <Link
                   key={s.category.slug}
-                  href={`/discover/events/${s.citySlug}/${s.category.slug}`}
+                  href={`/discover/events/in/${s.citySlug}/${s.category.slug}`}
                   className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:border-border-strong"
                 >
                   {s.category.label} ({s.events.length})

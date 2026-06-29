@@ -206,7 +206,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     hubRoutes = hubs.map((h) => ({
-      url: `${SITE_URL}/discover/events/${h.citySlug}/${h.category.slug}`,
+      url: `${SITE_URL}/discover/events/in/${h.citySlug}/${h.category.slug}`,
       lastModified: now,
       changeFrequency: "daily" as const,
       priority: 0.6,
