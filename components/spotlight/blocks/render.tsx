@@ -1,7 +1,10 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { Flame, Gem, CalendarDays, MapPin, Zap } from 'lucide-react'
 import type { SpotlightBlock, SpotlightStatKey, BlockTint } from '@/lib/spotlight/blocks/schema'
+import type { TopFriend } from '@/lib/spotlight/top-friends'
+import { getInitials } from '@/lib/utils'
 import { buildEmbedSrc, embedHeight } from '@/lib/spotlight/embeds'
 import { GalleryLightbox } from './gallery-lightbox'
 
@@ -64,11 +67,60 @@ function StatsView({ show, stats, cardStyle }: { show: SpotlightStatKey[]; stats
   return <div className="flex flex-wrap gap-2">{pills.map((p) => <div key={p.key}>{p.node}</div>)}</div>
 }
 
+// The Top Friends grid (the "Top 8"): avatars resolved server-side from the
+// spotlight_top_friends table (lib/spotlight/top-friends.ts) — the block carries no
+// identities, so the people shown can't be faked. Each avatar links to that member's
+// own profile. Renders nothing when the member has featured nobody.
+function TopFriendsView({ title, friends, cardStyle, headingFont }: {
+  title?: string
+  friends: TopFriend[]
+  cardStyle?: CSSProperties
+  headingFont?: string
+}) {
+  if (friends.length === 0) return null
+  return (
+    <section>
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-subtle" style={{ fontFamily: headingFont }}>
+        {title || 'Top Friends'}
+      </h2>
+      <div className="grid grid-cols-4 gap-3">
+        {friends.map((f) => {
+          const name = f.displayName || `@${f.handle}`
+          return (
+            <Link
+              key={f.profileId}
+              href={`/people/${f.handle}`}
+              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
+              style={cardStyle}
+            >
+              {f.avatarUrl ? (
+                <Image
+                  src={f.avatarUrl}
+                  alt={name}
+                  width={64}
+                  height={64}
+                  className="h-14 w-14 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-bg text-sm font-bold text-primary-strong">
+                  {getInitials(name)}
+                </div>
+              )}
+              <span className="w-full truncate text-xs font-medium text-text">{name}</span>
+            </Link>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 function BlockView({
-  block, stats, cardStyle, headingFont,
+  block, stats, topFriends, cardStyle, headingFont,
 }: {
   block: SpotlightBlock
   stats: SpotlightStatsContext
+  topFriends: TopFriend[]
   cardStyle?: CSSProperties
   headingFont?: string
 }) {
@@ -146,6 +198,8 @@ function BlockView({
       )
     case 'stats':
       return <StatsView show={block.show} stats={stats} cardStyle={cardStyle} />
+    case 'topfriends':
+      return <TopFriendsView title={block.title} friends={topFriends} cardStyle={cardStyle} headingFont={headingFont} />
     case 'divider':
       return <hr className="my-2 border-border" style={{ borderColor: block.tint?.text }} />
     default:
@@ -154,17 +208,18 @@ function BlockView({
 }
 
 export function SpotlightBlocks({
-  blocks, stats, cardStyle, headingFont,
+  blocks, stats, topFriends, cardStyle, headingFont,
 }: {
   blocks: SpotlightBlock[]
   stats: SpotlightStatsContext
+  topFriends: TopFriend[]
   cardStyle?: CSSProperties
   headingFont?: string
 }) {
   return (
     <div className="mt-6 space-y-4">
       {blocks.map((block) => (
-        <BlockView key={block.id} block={block} stats={stats} cardStyle={cardStyle} headingFont={headingFont} />
+        <BlockView key={block.id} block={block} stats={stats} topFriends={topFriends} cardStyle={cardStyle} headingFont={headingFont} />
       ))}
     </div>
   )

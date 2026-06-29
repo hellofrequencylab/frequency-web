@@ -25,7 +25,7 @@ function normalizeUrl(raw: string): { href: string; label: string } {
 }
 
 export function SpotlightView({ data, contained = false }: { data: SpotlightData; contained?: boolean }) {
-  const { profile, hostedEvents, layout, background, theme, totalZaps } = data
+  const { profile, hostedEvents, layout, background, theme, totalZaps, topFriends } = data
   const skin = resolveProfileSkin(profile.profile_theme)
   // The member's custom colours/gradient/fonts/card style (validated). Empty styles when
   // they haven't customized, so the page renders exactly as the skin alone would.
@@ -134,6 +134,7 @@ export function SpotlightView({ data, contained = false }: { data: SpotlightData
           <SpotlightBlocks
             blocks={layout.blocks}
             stats={statsContext}
+            topFriends={topFriends}
             cardStyle={themeStyles.card}
             headingFont={themeStyles.headingFont}
           />
