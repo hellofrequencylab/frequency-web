@@ -84,8 +84,11 @@ as $$
   limit (select lim from bounded);
 $$;
 
-revoke all on function public.search_practices_hybrid(text, vector, int, int, boolean) from public, anon;
-grant execute on function public.search_practices_hybrid(text, vector, int, int, boolean) to authenticated, service_role;
+-- service_role ONLY: the include_hidden escape hatch would leak non-public practice ids to any
+-- authenticated caller, and Phase 1's only consumer is the admin workspace (service role). A
+-- hardened, is_public-locked variant is the move when member-facing hybrid search is wired.
+revoke all on function public.search_practices_hybrid(text, vector, int, int, boolean) from public, anon, authenticated;
+grant execute on function public.search_practices_hybrid(text, vector, int, int, boolean) to service_role;
 
 comment on function public.search_practices_hybrid is
   'Phase-1 hybrid practice retrieval (ADR-438): RRF fusion of full-text (search_vector) + vector (embedding) ranks. Either input may be null. Excludes archived + (unless include_hidden) non-public. Caller hydrates ids from practices_ranked.';

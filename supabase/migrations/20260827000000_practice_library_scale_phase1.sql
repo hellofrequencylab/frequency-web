@@ -34,7 +34,7 @@
 
 -- 1 + 2 + 3. New columns (split · lineage · full-text vector).
 alter table public.practices
-  add column if not exists secondary_domain_id uuid references public.domains(id) on delete set null,
+  add column if not exists secondary_domain_id uuid references public.pillars(id) on delete set null,
   add column if not exists primary_pct smallint not null default 75,
   add column if not exists remixed_from uuid references public.practices(id) on delete set null,
   add column if not exists root_practice_id uuid references public.practices(id) on delete set null,
@@ -45,7 +45,7 @@ alter table public.practices
     ) stored;
 
 comment on column public.practices.secondary_domain_id is
-  'Optional secondary Pillar (FK domains). Null = single-Pillar (100% primary). With primary_pct, splits a log''s earned Zaps across Pillars for per-Pillar progress; never changes the wallet total (not an inflation lever). Attribution ledger is Phase 4.';
+  'Optional secondary Pillar (FK pillars). Null = single-Pillar (100% primary). With primary_pct, splits a log''s earned Zaps across Pillars for per-Pillar progress; never changes the wallet total (not an inflation lever). Attribution ledger is Phase 4.';
 comment on column public.practices.primary_pct is
   'Primary Pillar share (50-100, default 75, snaps 75/25 in the UI). secondary_pct is DERIVED (100 - primary_pct), never stored. Floor 50 keeps the primary dominant ("one primary Pillar" holds).';
 comment on column public.practices.remixed_from is
