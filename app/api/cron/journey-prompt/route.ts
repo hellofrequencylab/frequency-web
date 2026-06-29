@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { sendPushToProfile } from '@/lib/push'
 import { getDailyJourneyPrompt, formatJourneyPrompt } from '@/lib/journey-prompt'
 import { listEnrolledMemberIds } from '@/lib/journeys/progress'
@@ -22,7 +23,7 @@ import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
+async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
@@ -72,3 +73,5 @@ export async function GET(req: NextRequest) {
   log.info('cron.journey_prompt', { candidates: memberIds.length, inapp, push })
   return NextResponse.json({ ok: true, candidates: memberIds.length, inapp, push })
 }
+
+export const GET = withCronHeartbeat('journey-prompt', handler)
