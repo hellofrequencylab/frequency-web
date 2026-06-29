@@ -59,6 +59,7 @@ import {
   type SessionMode,
 } from '@/lib/on-air'
 import { createAmbient, type AmbientHandle } from '@/lib/on-air-ambient'
+import { achievedTier, TIER_ORDER, TIER_LABELS, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
 import { BreathVisualizer } from './visualizer'
 import { Reveal } from './reveal'
 import { MindlessMasthead } from './mode-toggle'
@@ -180,6 +181,24 @@ function buzz(pulse: number | number[] = 15) {
   } catch {
     // no vibration on this device
   }
+}
+
+// The live "go deeper" cue (ADR-443): once the target is reached the clock keeps
+// counting (auto-continue), and this names the tier the time has EARNED so far plus
+// the minutes that would reach the next one. Same achievedTier the economy pays on,
+// so the in-session line never disagrees with the reveal. Voice: plain, specific, no
+// narrated feelings, no em dashes. Returns null below the Light floor (nothing yet).
+function liveDepthCue(engagedSec: number): { reached: string; toNext: string } | null {
+  const tier = achievedTier(engagedSec)
+  if (tier === 'partial') return null
+  const rank = TIER_ORDER.indexOf(tier)
+  const next = TIER_ORDER[rank + 1]
+  if (!next) {
+    return { reached: `You're at ${TIER_LABELS[tier]}.`, toNext: 'The deepest tier. Stay as long as you like.' }
+  }
+  const more = Math.max(1, Math.ceil(TIER_FLOOR_MIN[next] - engagedSec / 60))
+  const unit = more === 1 ? 'minute' : 'minutes'
+  return { reached: `You're at ${TIER_LABELS[tier]}.`, toNext: `${more} more ${unit} reaches ${TIER_LABELS[next]}.` }
 }
 
 /** The mode-button icons: the On Air kit marks for the sit modes, lucide for the rest. */
@@ -346,6 +365,10 @@ export function OnAirSession({
   const router = useRouter()
   const [startedAt, setStartedAt] = useState(0)
   const [remaining, setRemaining] = useState(0)
+  // Auto-continue (ADR-443): once the countdown hits zero the clock keeps running and
+  // this tracks the seconds banked PAST the target, so the live screen can count up and
+  // the deeper time earns its tier. 0 until the target is reached.
+  const [overtime, setOvertime] = useState(0)
   // Paused = the wall-clock moment the member tapped Pause; resuming shifts
   // startedAt forward by the pause length, so every elapsed-based read (clock,
   // cues, visualizer) continues seamlessly and pauses never count as airtime.
@@ -493,6 +516,9 @@ export function OnAirSession({
       const elapsed = (Date.now() - startedAt) / 1000
       const left = Math.max(0, total - elapsed)
       setRemaining(left)
+      // Past the target the clock keeps counting (auto-continue): bank the overtime so the
+      // live screen counts up and the deeper time earns its tier.
+      setOvertime(elapsed > total ? Math.floor(elapsed - total) : 0)
       // Cues: a phase-change ding/tap in breath mode, an interval ding on the
       // timer (Meditate). At zero the end bell rings ONCE and the screen waits —
       // the member collects with Finish in their own time (P10), no auto-advance.
@@ -780,6 +806,7 @@ export function OnAirSession({
     setStartedAt(now)
     setPausedAt(now)
     setRemaining(activeMinutes * 60)
+    setOvertime(0)
     setPreroll(5)
     setStage('live')
     void acquireQuiet()
@@ -849,7 +876,11 @@ export function OnAirSession({
     // The end bell already rang when the clock hit zero; an early Close Session
     // gets a small ack tap only. Paused time never counts as airtime.
     const elapsedMs = (pausedAt ?? Date.now()) - startedAt
-    const thisSession = early ? Math.max(0, Math.round(elapsedMs / 1000)) : minutes * 60
+    const actual = Math.max(0, Math.round(elapsedMs / 1000))
+    // Auto-continue (ADR-443): a full Finish banks the ACTUAL time, so a sit that ran past
+    // its target earns the deeper tier. Floored at the target so a finish a beat early never
+    // reads as a partial. An early Close banks exactly what was sat (may be a partial).
+    const thisSession = early ? actual : Math.max(minutes * 60, actual)
     // A resume runs the REMAINING time; report the TOTAL (banked + this session) so the server
     // tops the partial log up to its full target. A fresh sit has resumeBanked = 0.
     const seconds = resumeBanked.current + thisSession
@@ -1088,6 +1119,13 @@ export function OnAirSession({
     const paused = pausedAt !== null
     const liveMode = activeModeRef.current
     const showBreath = isBreathMode(liveMode)
+    // Auto-continue read-outs (ADR-443): the overtime clock and the live tier cue. Engaged time
+    // is the banked resume + the full target + whatever overtime has run, the same total finish()
+    // banks, so the cue's tier matches the Zaps that will pay.
+    const om = Math.floor(overtime / 60)
+    const os = overtime % 60
+    const overLabel = `+${om}:${String(os).padStart(2, '0')}`
+    const cue = ended ? liveDepthCue(resumeBanked.current + minutes * 60 + overtime) : null
     return (
       <Overlay>
         {/* The content scrolls if it has to; the controls below DOCK to the bottom and stay
@@ -1099,15 +1137,19 @@ export function OnAirSession({
 
           <div className="flex flex-col items-center gap-5">
             {showBreath ? (
-              <BreathVisualizer pattern={pattern} startedAt={startedAt} paused={paused || ended} />
+              // The visualizer keeps breathing past the target (auto-continue) so the deeper
+              // time still has its rhythm; only a real pause stops it.
+              <BreathVisualizer pattern={pattern} startedAt={startedAt} paused={paused} />
             ) : (
-              <p className="text-8xl font-semibold tabular-nums text-text/60">
-                {mm}:{String(ss).padStart(2, '0')}
+              <p
+                className={`text-8xl font-semibold tabular-nums ${ended ? 'text-primary-strong' : 'text-text/60'}`}
+              >
+                {ended ? overLabel : `${mm}:${String(ss).padStart(2, '0')}`}
               </p>
             )}
             {showBreath && (
               <p className="text-base tabular-nums text-subtle">
-                {ended ? 'Done' : `${mm}:${String(ss).padStart(2, '0')} left`}
+                {ended ? `Going deeper ${overLabel}` : `${mm}:${String(ss).padStart(2, '0')} left`}
               </p>
             )}
             {showBreath && (
@@ -1121,6 +1163,14 @@ export function OnAirSession({
                 >
                   <Info className="h-3.5 w-3.5" aria-hidden /> Details
                 </button>
+              </div>
+            )}
+            {/* The live "go deeper" cue: once past the target, name the tier earned so far and the
+                minutes to the next one. The quiet pull deeper each day (ADR-443). */}
+            {cue && (
+              <div className="flex max-w-xs flex-col items-center gap-0.5 text-center">
+                <p className="text-sm font-semibold text-primary-strong">{cue.reached}</p>
+                <p className="text-xs text-muted">{cue.toNext}</p>
               </div>
             )}
             {/* Journal: the note field lives here so the member writes while they sit. Optional. */}
