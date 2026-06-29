@@ -14,9 +14,11 @@ import {
   BLOCK_PALETTE,
   MAX_BLOCKS,
   MAX_GALLERY_IMAGES,
+  MAX_TOP_FRIENDS,
   ALT_MAX,
   QUOTE_MAX,
   CITE_MAX,
+  LABEL_MAX,
   SPOTLIGHT_STAT_KEYS,
   SPOTLIGHT_LAYOUT_VERSION,
 } from '@/lib/spotlight/blocks/schema'
@@ -27,8 +29,11 @@ import {
   saveSpotlightLayout,
   saveSpotlightBackground,
   uploadSpotlightImage,
+  setTopFriends as setTopFriendsAction,
 } from '@/app/(main)/settings/profile/spotlight-actions'
 import { parseEmbedUrl, buildEmbedSrc, embedHeight } from '@/lib/spotlight/embeds'
+import type { TopFriend } from '@/lib/spotlight/top-friends'
+import { getInitials } from '@/lib/utils'
 
 // Resolve a stored asset PATH to its public URL for previews. The path is the only thing
 // we persist (the renderer derives the URL the same way), so the editor mirrors it.
@@ -50,6 +55,7 @@ function blankBlock(type: SpotlightBlock['type']): SpotlightBlock {
     case 'gallery': return { id, type, items: [] }
     case 'quote': return { id, type, text: '' }
     case 'stats': return { id, type, show: [] }
+    case 'topfriends': return { id, type }
     case 'embed': return { id, type, provider: 'spotify', ref: '' }
     case 'divider': return { id, type }
   }
@@ -148,12 +154,20 @@ export function LayoutEditor({
   onBlocksChange,
   background,
   onBackgroundChange,
+  topFriends,
+  onTopFriendsChange,
+  friendChoices,
   handle,
 }: {
   blocks: SpotlightBlock[]
   onBlocksChange: (b: SpotlightBlock[]) => void
   background: SpotlightBackground
   onBackgroundChange: (bg: SpotlightBackground) => void
+  /** The member's current ordered Top Friends (controlled, drives the live preview). */
+  topFriends: TopFriend[]
+  onTopFriendsChange: (next: TopFriend[]) => void
+  /** Every accepted friend the member can pick from. */
+  friendChoices: TopFriend[]
   handle: string
 }) {
   const [saved, setSaved] = useState(false)
@@ -260,7 +274,13 @@ export function LayoutEditor({
               <button type="button" onClick={() => remove(block.id)} className="rounded-md p-1 text-subtle hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
           </div>
-          <BlockFields block={block} onChange={(p) => update(block.id, p)} />
+          <BlockFields
+            block={block}
+            onChange={(p) => update(block.id, p)}
+            topFriends={topFriends}
+            onTopFriendsChange={onTopFriendsChange}
+            friendChoices={friendChoices}
+          />
           {TINTABLE.has(block.type) && (
             <BlockTintRow
               tint={'tint' in block ? block.tint : undefined}
@@ -307,7 +327,19 @@ export function LayoutEditor({
   )
 }
 
-function BlockFields({ block, onChange }: { block: SpotlightBlock; onChange: (p: Partial<SpotlightBlock>) => void }) {
+function BlockFields({
+  block,
+  onChange,
+  topFriends,
+  onTopFriendsChange,
+  friendChoices,
+}: {
+  block: SpotlightBlock
+  onChange: (p: Partial<SpotlightBlock>) => void
+  topFriends: TopFriend[]
+  onTopFriendsChange: (next: TopFriend[]) => void
+  friendChoices: TopFriend[]
+}) {
   if (block.type === 'heading') {
     return (
       <div className="space-y-2">
@@ -463,6 +495,24 @@ function BlockFields({ block, onChange }: { block: SpotlightBlock; onChange: (p:
       </div>
     )
   }
+  if (block.type === 'topfriends') {
+    return (
+      <div className="space-y-3">
+        <input
+          value={block.title ?? ''}
+          onChange={(e) => onChange({ title: e.target.value })}
+          placeholder="Grid heading (optional, e.g. Top 8)"
+          className={inputCls}
+          maxLength={LABEL_MAX}
+        />
+        <TopFriendsPicker
+          selected={topFriends}
+          onChange={onTopFriendsChange}
+          choices={friendChoices}
+        />
+      </div>
+    )
+  }
   if (block.type === 'embed') {
     return <EmbedField block={block} onChange={onChange} />
   }
@@ -595,6 +645,132 @@ function GalleryMultiUpload({ remaining, onAdd }: { remaining: number; onAdd: (p
       />
       {error && <p className="mt-1 text-2xs text-danger">{error}</p>}
     </div>
+  )
+}
+
+// Top Friends picker (the "Top 8"): choose an ordered set of accepted friends to feature.
+// The selection lives in the spotlight_top_friends table (not the block JSON), so every
+// change persists immediately through setTopFriends — which re-validates each pick against
+// the friendships graph server-side. The parent owns `selected` so the live preview updates
+// as the member edits. Capped at MAX_TOP_FRIENDS.
+function TopFriendsPicker({
+  selected,
+  onChange,
+  choices,
+}: {
+  selected: TopFriend[]
+  onChange: (next: TopFriend[]) => void
+  choices: TopFriend[]
+}) {
+  const [pending, start] = useTransition()
+  const [error, setError] = useState('')
+
+  const selectedIds = new Set(selected.map((f) => f.profileId))
+  const available = choices.filter((f) => !selectedIds.has(f.profileId))
+  const full = selected.length >= MAX_TOP_FRIENDS
+
+  // Persist the ordered selection; the server filters to real friends + caps the set, so
+  // we optimistically reflect `next` and let any server drop reconcile on the next load.
+  function persist(next: TopFriend[]) {
+    onChange(next)
+    setError('')
+    start(async () => {
+      const res = await setTopFriendsAction(next.map((f) => f.profileId))
+      if (res?.error) setError(res.error)
+    })
+  }
+
+  function addFriend(f: TopFriend) {
+    if (full) return
+    persist([...selected, f])
+  }
+  function removeFriend(id: string) {
+    persist(selected.filter((f) => f.profileId !== id))
+  }
+  function move(id: string, dir: -1 | 1) {
+    const i = selected.findIndex((f) => f.profileId === id)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= selected.length) return
+    const next = [...selected]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    persist(next)
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-subtle">
+        Pick the friends to feature, in order. Up to {MAX_TOP_FRIENDS}.
+      </p>
+
+      {choices.length === 0 && (
+        <p className="rounded-lg border border-dashed border-border bg-surface/50 p-3 text-xs text-muted">
+          Add some friends first, then come back to feature them here.
+        </p>
+      )}
+
+      {/* The chosen Top Friends, ordered */}
+      {selected.length > 0 && (
+        <ul className="space-y-1.5">
+          {selected.map((f, i) => (
+            <li key={f.profileId} className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2 py-1.5">
+              <FriendAvatar friend={f} />
+              <span className="min-w-0 flex-1 truncate text-sm text-text">{f.displayName || `@${f.handle}`}</span>
+              <button type="button" onClick={() => move(f.profileId, -1)} disabled={i === 0 || pending} className="rounded-md p-1 text-subtle hover:text-text disabled:opacity-30" aria-label="Move up"><ArrowUp className="h-3.5 w-3.5" /></button>
+              <button type="button" onClick={() => move(f.profileId, 1)} disabled={i === selected.length - 1 || pending} className="rounded-md p-1 text-subtle hover:text-text disabled:opacity-30" aria-label="Move down"><ArrowDown className="h-3.5 w-3.5" /></button>
+              <button type="button" onClick={() => removeFriend(f.profileId)} disabled={pending} className="rounded-md p-1 text-subtle hover:text-danger disabled:opacity-30" aria-label="Remove"><X className="h-3.5 w-3.5" /></button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Friends still available to add */}
+      {available.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">
+            {full ? `That's your Top ${MAX_TOP_FRIENDS}. Remove one to swap.` : 'Add a friend'}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {available.map((f) => (
+              <button
+                key={f.profileId}
+                type="button"
+                onClick={() => addFriend(f)}
+                disabled={full || pending}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2 py-1 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+              >
+                <FriendAvatar friend={f} small />
+                <span className="max-w-[8rem] truncate">{f.displayName || `@${f.handle}`}</span>
+                <Plus className="h-3 w-3" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {error && <p className="text-2xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
+function FriendAvatar({ friend, small = false }: { friend: TopFriend; small?: boolean }) {
+  const size = small ? 'h-5 w-5 text-2xs' : 'h-8 w-8 text-xs'
+  const name = friend.displayName || `@${friend.handle}`
+  if (friend.avatarUrl) {
+    return (
+      <Image
+        src={friend.avatarUrl}
+        alt=""
+        width={32}
+        height={32}
+        unoptimized
+        className={`${size} shrink-0 rounded-full object-cover`}
+      />
+    )
+  }
+  return (
+    <span className={`${size} flex shrink-0 items-center justify-center rounded-full bg-primary-bg font-bold text-primary-strong`}>
+      {getInitials(name)}
+    </span>
   )
 }
 

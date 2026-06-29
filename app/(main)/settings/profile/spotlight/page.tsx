@@ -17,6 +17,7 @@ import { validateSpotlightTheme } from '@/lib/spotlight/theme'
 import type { SpotlightRow } from '@/lib/spotlight/privacy'
 import type { SpotlightHostedEvent } from '@/lib/spotlight/data'
 import { getProfileZapTotal } from '@/lib/profile-zaps'
+import { getTopFriendsForOwner, getAcceptedFriendsForPicker } from '@/lib/spotlight/top-friends'
 import { SpotlightBuilder } from '@/components/spotlight/builder'
 
 export const dynamic = 'force-dynamic'
@@ -68,6 +69,12 @@ export default async function SpotlightEditorPage() {
 
   const totalZaps = await getProfileZapTotal(row.id as string)
 
+  // Top Friends: the member's current ordered grid + every friend they can pick from.
+  const [topFriends, friendChoices] = await Promise.all([
+    getTopFriendsForOwner(row.id as string),
+    getAcceptedFriendsForPicker(row.id as string),
+  ])
+
   // The member-safe identity the preview renders (mirrors lib/spotlight/privacy.ts).
   const profile: SpotlightRow = {
     id: row.id as string,
@@ -104,6 +111,8 @@ export default async function SpotlightEditorPage() {
         initialTheme={theme}
         initialLayout={layout}
         initialBackground={background}
+        initialTopFriends={topFriends}
+        friendChoices={friendChoices}
       />
     </FocusTemplate>
   )

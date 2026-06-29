@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Eye } from 'lucide-react'
 import type { SpotlightRow } from '@/lib/spotlight/privacy'
 import type { SpotlightData, SpotlightHostedEvent } from '@/lib/spotlight/data'
+import type { TopFriend } from '@/lib/spotlight/top-friends'
 import type { SpotlightTheme } from '@/lib/spotlight/theme'
 import {
   type SpotlightBlock,
@@ -29,6 +30,8 @@ export function SpotlightBuilder({
   initialTheme,
   initialLayout,
   initialBackground,
+  initialTopFriends,
+  friendChoices,
 }: {
   handle: string
   published: boolean
@@ -38,10 +41,15 @@ export function SpotlightBuilder({
   initialTheme: SpotlightTheme
   initialLayout: SpotlightLayout
   initialBackground: SpotlightBackground
+  /** The member's current Top Friends, in order (for the preview + the picker). */
+  initialTopFriends: TopFriend[]
+  /** Every accepted friend the member can choose from (the picker's source list). */
+  friendChoices: TopFriend[]
 }) {
   const [theme, setTheme] = useState<SpotlightTheme>(initialTheme)
   const [blocks, setBlocks] = useState<SpotlightBlock[]>(initialLayout.blocks)
   const [background, setBackground] = useState<SpotlightBackground>(initialBackground)
+  const [topFriends, setTopFriends] = useState<TopFriend[]>(initialTopFriends)
   const [mobilePreview, setMobilePreview] = useState(false)
 
   const previewData: SpotlightData = {
@@ -51,6 +59,7 @@ export function SpotlightBuilder({
     background,
     theme,
     totalZaps,
+    topFriends,
   }
 
   const preview = (
@@ -84,6 +93,9 @@ export function SpotlightBuilder({
           onBlocksChange={setBlocks}
           background={background}
           onBackgroundChange={setBackground}
+          topFriends={topFriends}
+          onTopFriendsChange={setTopFriends}
+          friendChoices={friendChoices}
           handle={handle}
         />
       </div>

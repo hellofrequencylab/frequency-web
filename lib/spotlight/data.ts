@@ -9,6 +9,7 @@ import {
 import { validateSpotlightLayout, validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
+import { getTopFriendsForOwner, type TopFriend } from './top-friends'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 
 // Server data for the PUBLIC Spotlight page. Anonymous visitors get no RLS, so this
@@ -35,6 +36,9 @@ export interface SpotlightData {
   theme: SpotlightTheme
   /** Lifetime Zaps earned (one SQL aggregate) — a gamification stat the member can display. */
   totalZaps: number
+  /** The member's ordered Top Friends (the "Top 8"), resolved server-side from the
+   *  spotlight_top_friends table joined to each friend's public profile. Empty when none. */
+  topFriends: TopFriend[]
 }
 
 /**
@@ -89,6 +93,9 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
   // reactions, joins, etc., so the stat never appeared.)
   const totalZaps = Number(g.lifetime_zaps ?? 0)
 
+  // The ordered Top Friends grid (resolved to each friend's public profile fields).
+  const topFriends = await getTopFriendsForOwner(g.id)
+
   return {
     profile: row as unknown as SpotlightRow,
     hostedEvents: (events ?? []) as SpotlightHostedEvent[],
@@ -96,5 +103,6 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
     background,
     theme,
     totalZaps,
+    topFriends,
   }
 }
