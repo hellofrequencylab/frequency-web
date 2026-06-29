@@ -4,7 +4,14 @@
 // pure resolver can import it without pulling the grid components (those live in the renderer).
 // Adding a template = one entry here + a grid case in components/widgets/page-modules.tsx.
 
-export type TemplateId = 'single' | 'main-side' | 'two-col' | 'three-col' | 'header-side' | 'header-two-col'
+export type TemplateId =
+  | 'single'
+  | 'main-side'
+  | 'two-col'
+  | 'three-col'
+  | 'header-side'
+  | 'header-two-col'
+  | 'header-main-side-footer'
 
 export interface TemplateSlot {
   id: string
@@ -76,6 +83,17 @@ export const TEMPLATES: readonly TemplateMeta[] = [
       { id: 'col-2', label: 'Column 2' },
     ],
   },
+  {
+    id: 'header-main-side-footer',
+    label: 'Header / Main / Sidebar / Footer',
+    description: 'A full-width header, a wide main column beside a narrower sidebar, and a full-width footer.',
+    slots: [
+      { id: 'header', label: 'Header' },
+      { id: 'main', label: 'Main' },
+      { id: 'side', label: 'Sidebar' },
+      { id: 'footer', label: 'Footer' },
+    ],
+  },
 ] as const
 
 export const DEFAULT_TEMPLATE: TemplateId = 'single'
@@ -87,7 +105,8 @@ export function isTemplateId(v: unknown): v is TemplateId {
     v === 'two-col' ||
     v === 'three-col' ||
     v === 'header-side' ||
-    v === 'header-two-col'
+    v === 'header-two-col' ||
+    v === 'header-main-side-footer'
   )
 }
 
