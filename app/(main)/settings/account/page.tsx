@@ -7,10 +7,11 @@ import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { unblockFromSettings } from './actions'
 import { DeleteAccount } from './delete-account'
+import { DownloadData } from './download-data'
 
 export const metadata: Metadata = {
   title: 'Account & privacy',
-  description: 'Manage blocked members and delete your account.',
+  description: 'Manage blocked members, download your data, and delete your account.',
 }
 
 export default async function AccountSettingsPage() {
@@ -56,6 +57,11 @@ export default async function AccountSettingsPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mb-10">
+        <SectionHeader title="Your data" />
+        <DownloadData />
       </section>
 
       <section>
