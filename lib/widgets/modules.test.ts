@@ -27,22 +27,39 @@ describe('moduleIdsForScope', () => {
     expect(j).toEqual(['admin-journeys-stats', 'admin-journeys-review', 'admin-journeys-library'])
   })
 
-  it('the admin practices workspace resolves its five curation blocks, in order, no leakage', () => {
+  it('the admin practices workspace resolves its curation blocks, in order, no leakage', () => {
     const p = moduleIdsForScope('/admin/content/practices')
     expect(p).toBe(ROUTE_MODULE_IDS['/admin/content/practices'])
-    // Default render order: stats → review queue → needs attention → faceted library → tags.
+    // Default render order: stats → review queue → needs attention → faceted library → tags, then
+    // the Phase 3 "Grow" blocks appended AFTER the original five.
     expect(p).toEqual([
       'admin-practices-stats',
       'admin-practices-review',
       'admin-practices-attention',
       'admin-practices-library',
       'admin-practices-tags',
+      'admin-practices-remix-levers',
+      'admin-practices-contributor-recognition',
     ])
     // The faceted library IS a module here too (reads the URL from the x-search header).
     expect(p).toContain('admin-practices-library')
+    // The two Phase 3 blocks come AFTER tags (the locked append order).
+    expect(p.indexOf('admin-practices-remix-levers')).toBeGreaterThan(p.indexOf('admin-practices-tags'))
+    expect(p.indexOf('admin-practices-contributor-recognition')).toBeGreaterThan(
+      p.indexOf('admin-practices-remix-levers'),
+    )
     // A distinct exact route — it never inherits the global community blocks or the journeys set.
     expect(p).not.toContain('community-pulse')
     expect(p).not.toContain('admin-journeys-library')
+  })
+
+  it('the Phase 3 remix blocks are scoped to the admin practices workspace only (no leak)', () => {
+    // The member practice index, the member detail page, the journeys workspace, and the global
+    // default must never offer the admin remix levers or contributor recognition.
+    for (const scope of ['/practices', '/practices/some-id', '/admin/content/journeys', '*']) {
+      expect(moduleIdsForScope(scope)).not.toContain('admin-practices-remix-levers')
+      expect(moduleIdsForScope(scope)).not.toContain('admin-practices-contributor-recognition')
+    }
   })
 
   it('the practices page resolves its blocks, including the URL-driven library', () => {
@@ -106,8 +123,11 @@ describe('moduleIdsForScope', () => {
     expect(d).toBe(ROUTE_MODULE_IDS['/practices/*'])
     expect(d).toContain('practice-detail-stats')
     expect(d).toContain('practice-detail-guide')
-    // Distinct from the index's own set.
+    // Phase 3 "Grow" (ADR-438): the member remix-lineage surface joins the /practices/* detail set.
+    expect(d).toContain('practice-detail-lineage')
+    // Distinct from the index's own set; the lineage block never leaks onto the index either.
     expect(moduleIdsForScope('/practices')).not.toContain('practice-detail-stats')
+    expect(moduleIdsForScope('/practices')).not.toContain('practice-detail-lineage')
     expect(d).not.toContain('practices-library')
   })
 

@@ -24,6 +24,8 @@ import { PracticeReviewQueue } from '@/components/widgets/practices/admin/review
 import { PracticeNeedsAttention } from '@/components/widgets/practices/admin/needs-attention'
 import { PracticeAdminLibrary } from '@/components/widgets/practices/admin/library'
 import { PracticeTagGovernance } from '@/components/widgets/practices/admin/tag-governance'
+import { PracticeRemixLevers } from '@/components/widgets/practices/admin/remix-levers'
+import { PracticeContributorRecognition } from '@/components/widgets/practices/admin/contributor-recognition'
 import { AdminJourneysStats } from '@/components/widgets/admin/admin-journeys-stats'
 import { AdminJourneysReview } from '@/components/widgets/admin/admin-journeys-review'
 import { AdminJourneysLibrary } from '@/components/widgets/admin/admin-journeys-library'
@@ -50,6 +52,7 @@ import { PracticeDetailAbout } from '@/components/widgets/practice-detail/practi
 import { PracticeDetailGuide } from '@/components/widgets/practice-detail/practice-detail-guide'
 import { PracticeDetailTags } from '@/components/widgets/practice-detail/practice-detail-tags'
 import { PracticeDetailUsedIn } from '@/components/widgets/practice-detail/practice-detail-usedin'
+import { PracticeDetailLineage } from '@/components/widgets/practice-detail/practice-detail-lineage'
 import { ProgramsList } from '@/components/widgets/programs/programs-list'
 import { ChallengesSeason } from '@/components/widgets/challenges/challenges-season'
 import { EntityGettingStarted } from '@/components/widgets/entity/entity-getting-started'
@@ -138,6 +141,8 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'admin-practices-attention': PracticeNeedsAttention,
   'admin-practices-library': PracticeAdminLibrary,
   'admin-practices-tags': PracticeTagGovernance,
+  'admin-practices-remix-levers': PracticeRemixLevers,
+  'admin-practices-contributor-recognition': PracticeContributorRecognition,
   // Admin Journeys blocks (/admin/content/journeys).
   'admin-journeys-stats': AdminJourneysStats,
   'admin-journeys-review': AdminJourneysReview,
@@ -173,6 +178,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'practice-detail-guide': PracticeDetailGuide,
   'practice-detail-tags': PracticeDetailTags,
   'practice-detail-usedin': PracticeDetailUsedIn,
+  'practice-detail-lineage': PracticeDetailLineage,
   // Programs page (/programs) — the frameworks browse list.
   'programs-list': ProgramsList,
   // Season Challenges (/crew/challenges) — the season KPI band + challenges grid.
