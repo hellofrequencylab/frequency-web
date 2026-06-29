@@ -73,6 +73,13 @@ function isPersona(v: string): v is PartnerPersona {
 /** The states whose partner surfaces are live (light the access matrix). */
 export const LIVE_PERSONA_STATES: readonly PersonaState[] = ['verified', 'active'] as const
 
+/** Whether the per-persona Stripe Connect / money binding is wired (site-audit BUG-7). Until
+ *  Connect lands this is false, so ACTIVATION is blocked everywhere: the verified→active money
+ *  gate can't silently succeed without a payment binding. Flip to true when Connect ships.
+ *  Note: `verified` already lights every partner surface (LIVE_PERSONA_STATES), so blocking
+ *  `active` withholds nothing operational today — it only stops the unbacked money state. */
+export const CONNECT_WIRED = false
+
 export const PERSONA_STATE_META: Record<
   PersonaState,
   { label: string; tone: 'pending' | 'success' | 'muted'; desc: string }
@@ -92,8 +99,11 @@ const STAFF_TRANSITIONS: Record<PersonaState, readonly PersonaState[]> = {
   suspended: ['verified'], // reinstate without forcing a re-claim
 }
 
-/** Whether a staff operator may move a persona from `from` to `to`. */
+/** Whether a staff operator may move a persona from `from` to `to`. Activation is gated on the
+ *  Connect money binding (BUG-7): while it's unwired, no transition to `active` is allowed, so the
+ *  state can never be reached without the payment binding. */
 export function canStaffTransition(from: PersonaState, to: PersonaState): boolean {
+  if (to === 'active' && !CONNECT_WIRED) return false
   return STAFF_TRANSITIONS[from]?.includes(to) ?? false
 }
 
