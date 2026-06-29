@@ -54,7 +54,7 @@
 | BUG-6 | Unwired "Draft with Vera" for offering blurbs (`draftOfferingBlurbAction`), while sibling bio/tagline drafters are wired. | `app/(main)/spaces/copilot-actions.ts:62` | 🟡 low | 📋 |
 | BUG-7 | Stripe Connect activation is stubbed (activation succeeds without the payment binding). | `lib/personas.ts`, `app/(main)/admin/personas/actions.ts` | 🟠 med | ✅ `CONNECT_WIRED` gate — `→active` blocked until Connect lands (verified already lights all surfaces) |
 | BUG-8 | Non-atomic season-capstone count (two concurrent completions can read stale `<3`); mitigated by re-read + idempotent lock. | `lib/quest/complete.ts:220` | 🟡 low | ✅ migration written (`claim_season_certificate` RPC) — **not applied/wired** per owner; apply + wire later |
-| BUG-9 | Member module pages lack a `loading.tsx` skeleton (degrade to blank sections, not skeletons). | `/lead`, `/friends`, `/journal`, `/people`, … | 🟡 low | 📋 (parity polish) |
+| BUG-9 | Member module pages lack a `loading.tsx` skeleton (degrade to blank sections, not skeletons). | `/lead`, `/friends`, `/journal`, `/people`, … | 🟡 low | ✅ skeletons added for the four named pages |
 | — | **Verified clean:** module registry triad consistent (`modules.test.ts` passes, 97 meta = 97 bindings); **0 dead internal links**; no FormData/object signature mismatches; no broken imports. | — | ✓ | ✓ |
 
 > Note: `HeaderSidebarTemplate` / `TwoColumnTemplate` are documented kit shells (PAGE-FRAMEWORK §3 D/E) — intentional even if not yet consumed, so they are kept, not deleted.
