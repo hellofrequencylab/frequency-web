@@ -9,7 +9,6 @@ import { atLeastRole } from '@/lib/core/roles'
 
 type TargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event'
 type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'misinformation' | 'other'
-type ReportStatus = 'pending' | 'reviewed' | 'actioned' | 'dismissed'
 
 // Runtime allowlists (site-audit SEC-4): the TS unions are compile-time only, so a forged
 // client could pass any string. Validate before any DB write.
@@ -83,47 +82,6 @@ export async function reportContent(
   }
 
   return ok()
-}
-
-// ── Get reports (host+ only) ────────────────────────────────────────────────
-
-export type ReportRow = {
-  id: string
-  target_type: TargetType
-  target_id: string
-  reason: ReportReason
-  details: string | null
-  status: ReportStatus
-  created_at: string
-  reporter: {
-    id: string
-    display_name: string
-    handle: string
-    avatar_url: string | null
-  }
-}
-
-export async function getReports(): Promise<ReportRow[]> {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) return []
-
-  const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('reports')
-    .select(
-      `id, target_type, target_id, reason, details, status, created_at,
-       reporter:profiles!reporter_id ( id, display_name, handle, avatar_url )`
-    )
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-    .limit(100)
-
-  if (error) {
-    console.error('[getReports]', error.message)
-    return []
-  }
-
-  return (data ?? []) as unknown as ReportRow[]
 }
 
 // ── Review a report (host+ only) ───────────────────────────────────────────
@@ -370,23 +328,6 @@ export async function cancelEventFromReport(
     await logAdminAction({ actorId: caller.id, action: 'moderation.event_cancel', targetType: 'event', targetId: eventId, detail: { reportId } })
   }
   return result
-}
-
-
-// ── Member context: prior report count ─────────────────────────────────────
-
-export async function getMemberReportCount(memberProfileId: string): Promise<number> {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) return 0
-
-  const admin = createAdminClient()
-  const { count } = await admin
-    .from('reports')
-    .select('id', { count: 'exact', head: true })
-    .eq('target_type', 'member')
-    .eq('target_id', memberProfileId)
-
-  return count ?? 0
 }
 
 

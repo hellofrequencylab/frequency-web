@@ -99,13 +99,3 @@ export async function deleteDemoCircles(ids: string[]) {
   if (error) throw new Error(error.message)
   revalidatePath('/', 'layout')
 }
-
-export async function deleteDemoMembers(ids: string[]) {
-  await requireJanitor()
-  if (!ids.length) return
-  const admin = createAdminClient()
-  // profile delete cascades memberships, authored posts, reactions, rsvps, etc.
-  const { error } = await admin.from('profiles').delete().eq('is_demo', true).in('id', ids)
-  if (error) throw new Error(error.message)
-  revalidatePath('/', 'layout')
-}

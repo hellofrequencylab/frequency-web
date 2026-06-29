@@ -8,7 +8,6 @@ import { isEventCohost } from '@/lib/events/cohosts'
 import {
   setRsvp,
   approveRsvp,
-  setRsvpMuted,
   type RsvpStatus,
 } from '@/lib/events/rsvp-depth'
 import { composeEventDispatch } from '@/lib/events/dispatch'
@@ -367,16 +366,6 @@ export async function approveEventRsvp(eventId: string, slug: string, guestProfi
     return
 
   await approveRsvp(eventId, guestProfileId)
-  revalidateEvent(slug)
-}
-
-// Per-event mute: a guest silences Event Dispatch fan-out for this one event.
-// Self-authorized (only the caller's own row).
-export async function setEventRsvpMuted(eventId: string, slug: string, muted: boolean) {
-  const profileId = await getMyProfileId()
-  if (!profileId) return
-
-  await setRsvpMuted(eventId, profileId, muted)
   revalidateEvent(slug)
 }
 

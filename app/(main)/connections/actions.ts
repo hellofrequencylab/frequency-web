@@ -161,19 +161,6 @@ export async function createProfile(input: CreateProfileInput): Promise<{ id: st
   return { id }
 }
 
-/** Manually (re)trigger the one-time intro for a saved contact — from the detail
- *  page. Syncs to the shared CRM first, then sends if all gates pass. */
-export async function inviteContact(id: string): Promise<{ sent: boolean; reason?: string }> {
-  const ownerId = await requireOwner()
-  const detail = await store.getContact(ownerId, id)
-  const email = detail?.contact.email?.trim()
-  if (!detail || !email) return { sent: false, reason: 'no_email' }
-  const contactId = await syncScanToCrm({ ownerId, networkContactId: id, email, displayName: detail.contact.displayName })
-  const res = await maybeSendScanIntro({ ownerId, networkContactId: id, email, recipientName: detail.contact.displayName, contactId })
-  revalidatePath(`/connections/${id}`)
-  return res.sent ? { sent: true } : { sent: false, reason: res.reason }
-}
-
 export interface UpdateProfileInput {
   displayName?: string
   email?: string

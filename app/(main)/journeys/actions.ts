@@ -7,10 +7,8 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import {
   createPlan,
   addItem,
-  removeItem,
   updateItem,
   updatePlan,
-  reorderItems,
   publishPlan,
   setPlanVisibility,
   setPlanStatus,
@@ -19,11 +17,9 @@ import {
   adoptPlan,
   forkPlan,
   duplicatePlan,
-  completeLesson,
   addBlock,
   updateBlock,
   removeBlock,
-  getPlan,
   planAuthorId,
   planMeta,
   applyVeraReview,
@@ -61,100 +57,7 @@ async function assertOwner(planId: string): Promise<string | null> {
 const revalidateSlug = (formData: FormData) =>
   revalidatePath(`/journeys/${String(formData.get('slug') ?? '')}`)
 
-// --- Build / edit your own (free) -----------------------------------------
-
-export async function createPlanAction(formData: FormData) {
-  const profileId = await getMyProfileId()
-  if (!profileId) return
-  const title = String(formData.get('title') ?? '').trim()
-  if (!title) return
-  const summary = String(formData.get('summary') ?? '')
-  const plan = await createPlan({ authorId: profileId, title, summary })
-  if (plan) redirect(`/journeys/${plan.slug}`)
-}
-
-export async function updatePlanAction(formData: FormData) {
-  const planId = String(formData.get('planId') ?? '')
-  if (!(await assertOwner(planId))) return
-  await updatePlan(planId, {
-    title: String(formData.get('title') ?? ''),
-    summary: String(formData.get('summary') ?? ''),
-    coverImage: String(formData.get('coverImage') ?? ''),
-  })
-  revalidateSlug(formData)
-}
-
-export async function addItemAction(formData: FormData) {
-  const planId = String(formData.get('planId') ?? '')
-  if (!(await assertOwner(planId))) return
-  const practiceId = String(formData.get('practiceId') ?? '')
-  if (!practiceId) return
-  const domainId = (formData.get('domainId') as string) || null
-  await addItem({ planId, practiceId, domainId })
-  revalidateSlug(formData)
-}
-
-export async function removeItemAction(formData: FormData) {
-  const planId = String(formData.get('planId') ?? '')
-  if (!(await assertOwner(planId))) return
-  const practiceId = String(formData.get('practiceId') ?? '')
-  await removeItem(planId, practiceId)
-  revalidateSlug(formData)
-}
-
-/** Set a single item's per-journey cadence + note. */
-export async function updateItemAction(formData: FormData) {
-  const planId = String(formData.get('planId') ?? '')
-  if (!(await assertOwner(planId))) return
-  const practiceId = String(formData.get('practiceId') ?? '')
-  if (!practiceId) return
-  await updateItem(planId, practiceId, {
-    note: String(formData.get('note') ?? ''),
-    cadence: String(formData.get('cadence') ?? ''),
-  })
-  revalidateSlug(formData)
-}
-
-/** Move one practice up or down in the path (no-JS reorder). */
-export async function moveItemAction(formData: FormData) {
-  const planId = String(formData.get('planId') ?? '')
-  if (!(await assertOwner(planId))) return
-  const practiceId = String(formData.get('practiceId') ?? '')
-  const dir = String(formData.get('dir') ?? '')
-  const slug = String(formData.get('slug') ?? '')
-  const loaded = await getPlan(slug)
-  if (!loaded) return
-  const order = loaded.items.map((i) => i.practice_id)
-  const idx = order.indexOf(practiceId)
-  const swap = dir === 'up' ? idx - 1 : idx + 1
-  if (idx < 0 || swap < 0 || swap >= order.length) return
-  ;[order[idx], order[swap]] = [order[swap], order[idx]]
-  await reorderItems(planId, order)
-  revalidateSlug(formData)
-}
-
-/** Keep a journey personal (private/unlisted) — free. Public goes through publish. */
-export async function setVisibilityAction(formData: FormData) {
-  const planId = String(formData.get('planId') ?? '')
-  if (!(await assertOwner(planId))) return
-  const visibility = String(formData.get('visibility') ?? '') as PlanVisibility
-  if (visibility !== 'private' && visibility !== 'unlisted') return
-  await setPlanVisibility(planId, visibility)
-  revalidateSlug(formData)
-}
-
 // --- The library (free for everyone) --------------------------------------
-
-export async function publishPlanAction(formData: FormData) {
-  const planId = String(formData.get('planId') ?? '')
-  if (!(await assertOwner(planId))) return
-  await publishPlan(planId)
-  // Run Vera's rank gate (best-effort; never blocks the publish). The no-JS form can't show
-  // the verdict inline, but the Journey is live and the coaching is stored on vera_review for
-  // the builder to surface next visit.
-  await runVeraGate(planId)
-  revalidateSlug(formData)
-}
 
 export async function adoptPlanAction(formData: FormData) {
   const profileId = await getMyProfileId()
@@ -202,15 +105,6 @@ export async function duplicateJourney(planId: string): Promise<ActionResult<{ s
   revalidatePath('/journeys/mine')
   revalidatePath('/journeys', 'layout')
   return ok({ slug: dup.slug })
-}
-
-/** Check off a lesson/check block for the caller (ADR-244). Idempotent; member-owned
- *  via RLS. The client refreshes to pick up the new completion + course progress. */
-export async function completeLessonAction(planId: string, itemId: string): Promise<ActionResult> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return fail('Sign in to track lessons.')
-  await completeLesson(profileId, planId, itemId)
-  return ok()
 }
 
 // --- Studio (client builder) actions — JSON args, return ActionResult ---------
@@ -365,12 +259,6 @@ export async function addPracticeToJourney(
   return ok()
 }
 
-export async function removeJourneyStep(planId: string, practiceId: string): Promise<ActionResult> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await removeItem(planId, practiceId)
-  return ok()
-}
-
 // --- Lesson/section block authoring (ADR-244) — owner-only -------------------
 export async function addJourneyLesson(
   planId: string,
@@ -394,12 +282,6 @@ export async function updateJourneyLesson(
 export async function removeJourneyLesson(planId: string, itemId: string): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   await removeBlock(itemId)
-  return ok()
-}
-
-export async function reorderJourneySteps(planId: string, order: string[]): Promise<ActionResult> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await reorderItems(planId, order)
   return ok()
 }
 

@@ -167,16 +167,3 @@ export async function unfriend(otherProfileId: string): Promise<ActionResult> {
   return ok()
 }
 
-// ── areFriends ───────────────────────────────────────────────────────
-// Server-side check used by other actions to enforce DM gating.
-
-export async function areFriends(a: string, b: string): Promise<boolean> {
-  const pair = canonicalPair(a, b)
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('friendships')
-    .select('id')
-    .match({ ...pair, status: 'accepted' })
-    .maybeSingle()
-  return !!data
-}

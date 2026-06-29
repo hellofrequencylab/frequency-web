@@ -5,7 +5,7 @@ import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { setPlatformSetting } from '@/lib/platform-flags'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { CIRCLE_TEXT_KEY, CIRCLE_TEXT_MAX, circleTextOverride, getCircleTextDefault } from './circle-text'
+import { CIRCLE_TEXT_KEY, CIRCLE_TEXT_MAX, circleTextOverride } from './circle-text'
 
 // The mutating + client-callable server ACTIONS for the movable circle TEXT block, split from
 // circle-text.ts (the read helpers) so this 'use server' module exposes only async actions, as Next
@@ -46,13 +46,6 @@ export async function saveCircleTextOverride(id: string, slug: string, text: str
   if (error) return { error: error.message }
   revalidatePath(`/circles/${slug}`)
   return {}
-}
-
-/** The network-wide default text for the operator editor (janitor only), or null otherwise. */
-export async function getCircleTextDefaultForEditor(): Promise<{ text: string } | null> {
-  const janitor = await getJanitor()
-  if (!janitor) return null
-  return { text: await getCircleTextDefault() }
 }
 
 /** Save the network-wide default circle text (janitor only). Revalidates nothing here — circle pages
