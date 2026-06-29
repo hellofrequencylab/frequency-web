@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/database.types'
 
 type StoreCategory = Database['public']['Enums']['store_category']
@@ -20,6 +20,9 @@ function isStoreCategory(v: string): v is StoreCategory {
   return (STORE_CATEGORIES as string[]).includes(v)
 }
 
+// Defense-in-depth: the app re-verifies host+ here, AND the store_items RLS policies
+// (host+ insert/update/delete) enforce it at the database now that these run on the
+// caller's session client (RLS Tier-1 convergence, H2-1) instead of the admin client.
 async function authorizeHostAction() {
   const caller = await getCallerProfile()
   if (!caller || !atLeastRole(caller.community_role, 'host')) {
@@ -55,8 +58,8 @@ export async function createStoreItem(fd: FormData): Promise<void> {
   await authorizeHostAction()
   const fields = parseFormData(fd)
 
-  const admin = createAdminClient()
-  const { error } = await admin.from('store_items').insert({
+  const supabase = await createClient()
+  const { error } = await supabase.from('store_items').insert({
     slug: fields.slug,
     name: fields.name,
     description: fields.description,
@@ -76,8 +79,8 @@ export async function updateStoreItem(id: string, fd: FormData): Promise<void> {
   await authorizeHostAction()
   const fields = parseFormData(fd)
 
-  const admin = createAdminClient()
-  const { error } = await admin
+  const supabase = await createClient()
+  const { error } = await supabase
     .from('store_items')
     .update({
       slug: fields.slug,
@@ -98,8 +101,8 @@ export async function updateStoreItem(id: string, fd: FormData): Promise<void> {
 export async function deleteStoreItem(id: string): Promise<void> {
   await authorizeHostAction()
 
-  const admin = createAdminClient()
-  const { error } = await admin.from('store_items').delete().eq('id', id)
+  const supabase = await createClient()
+  const { error } = await supabase.from('store_items').delete().eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/store')
 }
@@ -107,8 +110,8 @@ export async function deleteStoreItem(id: string): Promise<void> {
 export async function toggleStoreItemActive(id: string, isActive: boolean): Promise<void> {
   await authorizeHostAction()
 
-  const admin = createAdminClient()
-  const { error } = await admin
+  const supabase = await createClient()
+  const { error } = await supabase
     .from('store_items')
     .update({ is_active: isActive })
     .eq('id', id)
