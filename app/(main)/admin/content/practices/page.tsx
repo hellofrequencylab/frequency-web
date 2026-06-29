@@ -1,5 +1,5 @@
-import { BookOpen, Inbox, Star, Globe, ExternalLink, Activity } from 'lucide-react'
-import Link from 'next/link'
+import { Suspense } from 'react'
+import { BookOpen, Inbox, Star, Globe, Activity } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
@@ -16,7 +16,6 @@ import {
 import { getPillars } from '@/lib/pillars'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
-import { PracticeReviewButtons } from '../content-controls'
 import { PracticesTable, type LibraryRow, type LibraryFilter } from './practices-table'
 import { PracticesFacets, type FacetRailData } from './practices-facets'
 import {
@@ -24,6 +23,9 @@ import {
   PracticeSortControl,
   PracticeSavedViews,
 } from './practices-controls'
+import { PracticeReviewQueue } from '@/components/widgets/practices/admin/review-queue'
+import { PracticeNeedsAttention } from '@/components/widgets/practices/admin/needs-attention'
+import { PracticeTagGovernance } from '@/components/widgets/practices/admin/tag-governance'
 
 // Library curation, Phase 1 "Scale it" (ADR-438, PRACTICE-LIBRARY §7). The whole filter / sort /
 // page state lives in the URL (searchParams), which drives the SERVER fetch (searchAdminPractices
@@ -94,14 +96,16 @@ export default async function AdminContentPracticesPage({
     includeHidden: true,
   }
 
-  const [pendingResult, libraryResult, total, facets, pillars, subcategories] = await Promise.all([
-    searchAdminPractices({ status: 'pending', sort: 'new', pageSize: PAGE_SIZE, includeHidden: true }),
+  const [libraryResult, total, facets, pillars, subcategories] = await Promise.all([
     searchAdminPractices({ ...filterOpts, sort, cursor, page, pageSize: PAGE_SIZE }),
     countAdminPractices(filterOpts),
     searchAdminFacets({ includeHidden: true }),
     getPillars(),
     listSubcategories(),
   ])
+  // The "awaiting review" count comes from the status facet (the queue itself self-fetches in its
+  // widget below). Avoids a second pending query just for a stat.
+  const pendingCount = facets.status.find((s) => s.key === 'pending')?.count ?? 0
 
   // Resolve the facet rail's option labels (the counts come back keyed by id/slug). Creator +
   // tag labels need a small extra read; everything else maps from the taxonomy we already have.
@@ -159,11 +163,13 @@ export default async function AdminContentPracticesPage({
     computed: facets.computed,
   }
 
-  const pending = pendingResult.rows
   const rows: LibraryRow[] = libraryResult.rows.map((p) => ({
     id: p.id,
     title: p.title,
-    creator: p.creator?.display_name ?? p.creator?.handle ?? 'System',
+    // A practice with no member creator (created_by null) is one of Frequency's first-party
+    // "house practices" — render the creator as "Frequency", not "System" (owner fix, ADR-438).
+    creator: p.created_by == null ? 'Frequency' : (p.creator?.display_name ?? p.creator?.handle ?? 'Unknown'),
+    isHouse: p.created_by == null,
     status: p.status ?? 'approved',
     adopters: p.adopters,
     logs_30d: p.logs_30d,
@@ -228,47 +234,25 @@ export default async function AdminContentPracticesPage({
         <>
           <StatCard label="In the library" value={facets.status.reduce((n, s) => n + s.count, 0)} icon={BookOpen} href="/practices" />
           <StatCard label="Public" value={facets.flag.public} icon={Globe} />
-          <StatCard label="Awaiting review" value={pendingResult.total} icon={Inbox} />
+          <StatCard label="Awaiting review" value={pendingCount} icon={Inbox} />
           <StatCard label="Featured" value={facets.flag.featured} icon={Star} />
           <StatCard label="Never logged" value={facets.computed.never_logged} icon={Activity} detail="a gap to fix" />
         </>
       }
     >
-      {/* Review queue — member-proposed practices waiting on a decision. */}
-      <section className="space-y-3">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-bold tracking-tight text-text">Review queue</h2>
-          <span className="text-xs font-medium tabular-nums text-subtle">{pendingResult.total}</span>
-        </div>
-        {pending.length === 0 ? (
-          <EmptyState
-            variant="cleared"
-            title="Nothing waiting"
-            description="New member proposals land here for a decision."
-          />
-        ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-            <div className="divide-y divide-border/50">
-              {pending.map((p) => (
-                <div key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/practices/${p.id}`} className="flex items-center gap-1.5 text-sm font-medium text-text hover:underline">
-                      <span className="truncate">{p.title}</span>
-                      <ExternalLink className="h-3 w-3 shrink-0 text-subtle" />
-                    </Link>
-                    <p className="mt-0.5 text-xs text-muted">
-                      by {p.creator?.display_name ?? p.creator?.handle ?? 'Unknown'} · {p.adopters} adopters · {p.logs_total} logs
-                    </p>
-                  </div>
-                  <PracticeReviewButtons id={p.id} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
+      {/* Phase 2 "Clean" sections (ADR-438). Each is a self-fetching RSC that returns null when
+          it has nothing, behind its own <Suspense> so a slow read never blocks the shell
+          (PAGE-FRAMEWORK §5). A follow-up agent registers these as layout-editor modules. */}
+      <Suspense fallback={null}>
+        <PracticeReviewQueue />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PracticeNeedsAttention />
+      </Suspense>
 
-      {/* The library — facet rail beside the server-driven table. */}
+      {/* The library — the filters now live in a full-width disclosure ABOVE the table (owner
+          fix, ADR-438), so the table gets the whole admin main column and the cells never
+          collide. Everything stays URL-driven; the table degrades to x-scroll on narrow widths. */}
       <section className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <PracticeSearchBox />
@@ -276,33 +260,37 @@ export default async function AdminContentPracticesPage({
           <PracticeSavedViews />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[15rem_1fr]">
-          <PracticesFacets data={facetRail} />
-          <div className="min-w-0">
-            {rows.length === 0 ? (
-              <EmptyState
-                variant={hasActiveFilter ? 'no-results' : 'first-use'}
-                icon={hasActiveFilter ? undefined : BookOpen}
-                title={hasActiveFilter ? 'No practices match these filters' : 'No practices yet'}
-                description={
-                  hasActiveFilter
-                    ? 'Try removing a filter, or clear them all to see the whole library.'
-                    : 'Practices appear here as the library fills in.'
-                }
-              />
-            ) : (
-              <PracticesTable
-                rows={rows}
-                filter={filter}
-                total={total}
-                showingFrom={showingFrom}
-                showingTo={showingTo}
-                pagination={pagination}
-              />
-            )}
-          </div>
+        <PracticesFacets data={facetRail} />
+
+        <div className="min-w-0">
+          {rows.length === 0 ? (
+            <EmptyState
+              variant={hasActiveFilter ? 'no-results' : 'first-use'}
+              icon={hasActiveFilter ? undefined : BookOpen}
+              title={hasActiveFilter ? 'No practices match these filters' : 'No practices yet'}
+              description={
+                hasActiveFilter
+                  ? 'Try removing a filter, or clear them all to see the whole library.'
+                  : 'Practices appear here as the library fills in.'
+              }
+            />
+          ) : (
+            <PracticesTable
+              rows={rows}
+              filter={filter}
+              total={total}
+              showingFrom={showingFrom}
+              showingTo={showingTo}
+              pagination={pagination}
+            />
+          )}
         </div>
       </section>
+
+      {/* Tag governance (Phase 2 item 2.4) — self-fetching, null when there are no tags. */}
+      <Suspense fallback={null}>
+        <PracticeTagGovernance />
+      </Suspense>
     </DashboardTemplate>
   )
 }

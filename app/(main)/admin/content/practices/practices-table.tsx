@@ -40,6 +40,8 @@ export interface LibraryRow {
   id: string
   title: string
   creator: string
+  /** No member creator (created_by null): a Frequency first-party "house practice". */
+  isHouse: boolean
   status: string
   adopters: number
   logs_30d: number
@@ -76,7 +78,14 @@ const WEIGHT_META: Record<string, { tone: StatusTone; label: string }> = {
 // Status · Public · Feature · Manage. The raw stat spread (adopters / total / added) folds into
 // one Usage cell; weight is a quiet read-only chip (it becomes auto-computed, ADR-438); template
 // lives in the bulk bar.
-const GRID = 'lg:grid-cols-[36px_1fr_128px_112px_104px_72px_56px_88px]'
+//
+// Layout (owner fix, ADR-438): the Practice column takes the flexible space and truncates; every
+// fixed column carries a sensible min-width so the cells never collide ("SystStandard"). The grid
+// also declares a min-width (GRID_MIN) and lives inside an x-scroll wrapper, so on a narrow main
+// column it scrolls horizontally instead of overlapping. With the filters moved out of the old
+// 15rem left rail (practices-facets.tsx), the table now gets the whole admin main column.
+const GRID = 'lg:grid-cols-[36px_minmax(220px,1fr)_128px_104px_104px_72px_56px_88px]'
+const GRID_MIN = 'lg:min-w-[860px]'
 
 function PlainHeader({ children, center = false }: { children: React.ReactNode; center?: boolean }) {
   return (
@@ -474,7 +483,8 @@ export function PracticesTable({
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        <div className={`hidden border-b border-border bg-surface-elevated/50 px-4 py-2 lg:grid ${GRID} lg:items-center lg:gap-2.5`}>
+       <div className="overflow-x-auto">
+        <div className={`hidden border-b border-border bg-surface-elevated/50 px-4 py-2 lg:grid ${GRID} ${GRID_MIN} lg:items-center lg:gap-2.5`}>
           <RowCheckbox
             checked={allSelected}
             indeterminate={someSelected}
@@ -500,7 +510,7 @@ export function PracticesTable({
             return (
               <div
                 key={p.id}
-                className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 ${GRID} lg:gap-2.5 ${
+                className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 ${GRID} ${GRID_MIN} lg:gap-2.5 ${
                   isChecked ? 'bg-primary/5' : ''
                 }`}
               >
@@ -526,6 +536,11 @@ export function PracticesTable({
                     >
                       <ExternalLink className="h-3 w-3" aria-hidden />
                     </Link>
+                    {p.isHouse && (
+                      <span className="hidden shrink-0 lg:inline-flex">
+                        <StatusChip tone="info" size="sm">House</StatusChip>
+                      </span>
+                    )}
                     {wt ? (
                       <span className="hidden shrink-0 lg:inline-flex">
                         <StatusChip tone={wt.tone} size="sm">{wt.label}</StatusChip>
@@ -538,7 +553,12 @@ export function PracticesTable({
                     {wt ? `${wt.label} · ` : 'No weight · '}{p.logs_30d} in 30d · {p.creator}
                   </span>
                 </div>
-                <span className="hidden truncate text-xs text-muted lg:block">{p.creator}</span>
+                <span
+                  className="hidden min-w-0 items-center gap-1 truncate text-xs text-muted lg:flex"
+                  title={p.isHouse ? 'A Frequency house practice (no member creator)' : p.creator}
+                >
+                  <span className="truncate">{p.creator}</span>
+                </span>
                 <span
                   className="hidden flex-col items-center text-center lg:flex"
                   title={`${p.adopters} adopters · ${p.logs_total} logs all-time`}
@@ -560,6 +580,7 @@ export function PracticesTable({
             )
           })}
         </div>
+       </div>
       </div>
 
       {/* Server pagination: keyset "Load more" on the default (score) sort; prev/next page on

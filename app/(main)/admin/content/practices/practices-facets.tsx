@@ -4,17 +4,21 @@ import {
   PracticeComputedFilters,
   PracticeClearFilters,
 } from './practices-controls'
+import { PracticesFilterDisclosure } from './practices-filter-bar'
 
-// The in-page facet rail for the practice library (PRACTICE-LIBRARY §5 + §7). Admin routes are
-// rail='none' in page-chrome, so this is NOT the shell rail — it's a left column inside the page
-// body, URL-param driven so the whole page stays server-rendered and a filtered view is a
-// shareable link. Every option is resolved to a real label here (the facet counts come back keyed
-// by id/slug); a facet with no options is hidden so the rail never shows a dead control.
+// The library's filters, as a collapsible HORIZONTAL bar ABOVE the table (not a left rail).
 //
-// Counts are GLOBAL over the admin-visible library by design (documented in lib/practices.ts +
-// PRACTICE-LIBRARY §5): they answer "what's in the library", and the "showing N of M" line
-// reflects the active filter. We append the count to each option label so the operator sees the
-// size of each bucket.
+// Why this changed (owner fix, ADR-438): the facets used to live in a 15rem left column beside the
+// table, inside the admin main content (which is already flanked by the left nav AND the global
+// admin info rail). Three columns squeezing one 8-column table made the cells collide
+// ("SystStandard", "DanlanFlyack"). Moving the filters into this full-width disclosure frees the
+// whole main column for the table, which then fits and degrades to x-scroll on narrow widths
+// (practices-table.tsx). Everything stays URL-driven: we only restructure the container, the
+// controls (practices-controls.tsx) and their search-param logic are unchanged. A facet with no
+// options is hidden so the bar never shows a dead control.
+//
+// Counts are GLOBAL over the admin-visible library by design (lib/practices.ts + PRACTICE-LIBRARY
+// §5): they answer "what's in the library"; the "showing N of M" line reflects the active filter.
 
 export interface FacetRailData {
   pillar: FacetOption[]
@@ -28,7 +32,7 @@ export interface FacetRailData {
 
 function FacetGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</p>
       {children}
     </div>
@@ -36,56 +40,55 @@ function FacetGroup({ label, children }: { label: string; children: React.ReactN
 }
 
 export function PracticesFacets({ data }: { data: FacetRailData }) {
+  // The count of active dropdowns drives the disclosure's summary; flags/computed/quick chips are
+  // counted client-side in the disclosure (they read the URL). The dropdowns are rendered here.
   return (
-    <aside aria-label="Library filters" className="space-y-5">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-bold tracking-tight text-text">Filters</h2>
-        <PracticeClearFilters />
+    <PracticesFilterDisclosure clear={<PracticeClearFilters />}>
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-4">
+        <FacetGroup label="Quick filters">
+          <PracticeFlagFilters />
+        </FacetGroup>
+
+        {data.pillar.length > 0 && (
+          <FacetGroup label="Pillar">
+            <FacetDropdown label="Any Pillar" paramKey="pillar" options={data.pillar} />
+          </FacetGroup>
+        )}
+
+        {data.subcategory.length > 0 && (
+          <FacetGroup label="Channel">
+            <FacetDropdown label="Any Channel" paramKey="sub" options={data.subcategory} />
+          </FacetGroup>
+        )}
+
+        {data.status.length > 0 && (
+          <FacetGroup label="Status">
+            <FacetDropdown label="Any status" paramKey="status" options={data.status} />
+          </FacetGroup>
+        )}
+
+        {data.weight.length > 0 && (
+          <FacetGroup label="Weight class">
+            <FacetDropdown label="Any weight" paramKey="weight" options={data.weight} />
+          </FacetGroup>
+        )}
+
+        {data.creator.length > 0 && (
+          <FacetGroup label="Creator">
+            <FacetDropdown label="Any creator" paramKey="creator" options={data.creator} searchable />
+          </FacetGroup>
+        )}
+
+        {data.tag.length > 0 && (
+          <FacetGroup label="Tag">
+            <FacetDropdown label="Any tag" paramKey="tag" options={data.tag} searchable />
+          </FacetGroup>
+        )}
+
+        <FacetGroup label="Gaps to fix">
+          <PracticeComputedFilters counts={data.computed} />
+        </FacetGroup>
       </div>
-
-      <FacetGroup label="Flags">
-        <PracticeFlagFilters />
-      </FacetGroup>
-
-      {data.pillar.length > 0 && (
-        <FacetGroup label="Pillar">
-          <FacetDropdown label="Any Pillar" paramKey="pillar" options={data.pillar} />
-        </FacetGroup>
-      )}
-
-      {data.subcategory.length > 0 && (
-        <FacetGroup label="Channel">
-          <FacetDropdown label="Any Channel" paramKey="sub" options={data.subcategory} />
-        </FacetGroup>
-      )}
-
-      {data.status.length > 0 && (
-        <FacetGroup label="Status">
-          <FacetDropdown label="Any status" paramKey="status" options={data.status} />
-        </FacetGroup>
-      )}
-
-      {data.weight.length > 0 && (
-        <FacetGroup label="Weight class">
-          <FacetDropdown label="Any weight" paramKey="weight" options={data.weight} />
-        </FacetGroup>
-      )}
-
-      {data.creator.length > 0 && (
-        <FacetGroup label="Creator">
-          <FacetDropdown label="Any creator" paramKey="creator" options={data.creator} searchable />
-        </FacetGroup>
-      )}
-
-      {data.tag.length > 0 && (
-        <FacetGroup label="Tag">
-          <FacetDropdown label="Any tag" paramKey="tag" options={data.tag} searchable />
-        </FacetGroup>
-      )}
-
-      <FacetGroup label="Gaps to fix">
-        <PracticeComputedFilters counts={data.computed} />
-      </FacetGroup>
-    </aside>
+    </PracticesFilterDisclosure>
   )
 }
