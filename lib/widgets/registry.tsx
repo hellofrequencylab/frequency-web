@@ -19,6 +19,11 @@ import { MenuGroupsBlock } from '@/components/widgets/menu/menu-groups-block'
 import { MenuSpeedBlock } from '@/components/widgets/menu/menu-speed-block'
 import { MenuLayoutBlock } from '@/components/widgets/menu/menu-layout-block'
 import { MenuRailCardsBlock } from '@/components/widgets/menu/menu-rail-cards-block'
+import { PracticeAdminStats } from '@/components/widgets/practices/admin/stats'
+import { PracticeReviewQueue } from '@/components/widgets/practices/admin/review-queue'
+import { PracticeNeedsAttention } from '@/components/widgets/practices/admin/needs-attention'
+import { PracticeAdminLibrary } from '@/components/widgets/practices/admin/library'
+import { PracticeTagGovernance } from '@/components/widgets/practices/admin/tag-governance'
 import { AdminJourneysStats } from '@/components/widgets/admin/admin-journeys-stats'
 import { AdminJourneysReview } from '@/components/widgets/admin/admin-journeys-review'
 import { AdminJourneysLibrary } from '@/components/widgets/admin/admin-journeys-library'
@@ -127,6 +132,12 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'menu-speed': MenuSpeedBlock,
   'menu-layout': MenuLayoutBlock,
   'menu-rail-cards': MenuRailCardsBlock,
+  // Admin Practices blocks (/admin/content/practices) — the curation workspace.
+  'admin-practices-stats': PracticeAdminStats,
+  'admin-practices-review': PracticeReviewQueue,
+  'admin-practices-attention': PracticeNeedsAttention,
+  'admin-practices-library': PracticeAdminLibrary,
+  'admin-practices-tags': PracticeTagGovernance,
   // Admin Journeys blocks (/admin/content/journeys).
   'admin-journeys-stats': AdminJourneysStats,
   'admin-journeys-review': AdminJourneysReview,

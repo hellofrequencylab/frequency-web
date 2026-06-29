@@ -60,6 +60,12 @@ export interface LibraryRow {
  *  boundary. Keys match AdminPracticeSearchOpts; the page builds it from searchParams. */
 export type LibraryFilter = Record<string, string | number | boolean | null | undefined>
 
+/** Server pagination: a keyset "Load more" href (score sort) OR prev/next page hrefs. The
+ *  default (score) sort paginates by keyset; the alternate sorts page by offset. */
+export type LibraryPagination =
+  | { kind: 'cursor'; moreHref: string | null }
+  | { kind: 'page'; prevHref: string | null; nextHref: string | null; page: number; pageCount: number }
+
 const STATUS_TONE: Record<string, { tone: StatusTone; label: string }> = {
   pending: { tone: 'info', label: 'Pending' },
   approved: { tone: 'success', label: 'Approved' },
@@ -220,9 +226,7 @@ export function PracticesTable({
   showingFrom: number
   showingTo: number
   /** Server pagination: a keyset "Load more" href (score sort) OR prev/next page hrefs. */
-  pagination:
-    | { kind: 'cursor'; moreHref: string | null }
-    | { kind: 'page'; prevHref: string | null; nextHref: string | null; page: number; pageCount: number }
+  pagination: LibraryPagination
 }) {
   const [pending, start] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())

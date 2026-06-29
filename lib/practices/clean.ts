@@ -104,8 +104,14 @@ export async function listReviewQueue(opts: { limit?: number } = {}): Promise<Re
     ]),
   )
 
-  // Near-dup flag per pending row (concurrent; bounded by `limit`). See the COST NOTE.
-  const dupCandidates = await Promise.all(pending.map((p) => nearestDuplicate(client, p.id)))
+  // Near-dup flag per pending row (concurrent). Bounded by DUP_SCAN_CAP, NOT by `limit`: each
+  // scan is two round-trips (embedding read + match_practices), so we cap the fan-out so a large
+  // backlog can't saturate the pool. Rows past the cap are shown without a dup flag (they get
+  // scored once they reach an earlier page). See the COST NOTE.
+  const DUP_SCAN_CAP = 50
+  const dupCandidates = await Promise.all(
+    pending.map((p, i) => (i < DUP_SCAN_CAP ? nearestDuplicate(client, p.id) : Promise.resolve(null))),
+  )
 
   const items: ReviewQueueItem[] = pending.map((p, i) => ({
     id: p.id,
@@ -202,13 +208,18 @@ export async function resolvePracticeSlugRedirect(oldSlug: string): Promise<stri
   if (!practiceId) return null
   const { data: canonical } = await client
     .from('practices')
-    .select('slug, id, is_public')
+    .select('slug, id, is_public, merged_into')
     .eq('id', practiceId)
     .maybeSingle()
-  const row = canonical as { slug: string | null; id: string; is_public: boolean } | null
-  // Only redirect to a practice that is actually live — never bounce a member to a hidden row.
-  if (!row || !row.is_public) return null
-  return row.slug ?? row.id
+  const row = canonical as { slug: string | null; id: string; is_public: boolean; merged_into: string | null } | null
+  // Only redirect to a LIVE, non-merged practice — never bounce a member to a hidden row, and
+  // never to a row that was itself merged again (merged_into chains aren't followed here).
+  if (!row || !row.is_public || row.merged_into != null) return null
+  const target = row.slug ?? row.id
+  // Loop guard: a stale/poisoned redirect row whose target resolves back to the requested slug
+  // would 301-loop (and the 301 is cached). Never redirect a slug to itself.
+  if (target === oldSlug) return null
+  return target
 }
 
 // --- 2.3 Needs attention -----------------------------------------------------
@@ -250,6 +261,12 @@ export async function needsAttention(opts: { limit?: number } = {}): Promise<Nee
     .from('practices_ranked')
     .select('id, title, status, is_public, domain_id, subcategory_id, header_image, body, summary, duration_min, adopters, logs_30d, logs_total')
     .eq('is_public', true)
+    // Deterministic pre-order so the `limit` window is meaningful: least-used + oldest first
+    // (the rows most likely to carry gaps). Without an ORDER BY the slice is arbitrary and the
+    // worst-quality JS sort below would only rank an arbitrary window. The JS sort then orders
+    // the surfaced gaps within this window by the blended quality score.
+    .order('logs_total', { ascending: true })
+    .order('created_at', { ascending: true })
     .limit(limit)
   const ranked =
     ((rankedRows as
@@ -386,50 +403,18 @@ export interface MergeTagsResult {
  * Merge one tag INTO another: re-point every practice_tags link from `fromTagId` to
  * `intoTagId`, dropping the link that would collide (a practice already carrying the target
  * tag — the unique(practice_id, tag_id) constraint), then delete the now-orphaned source def.
- * Mirrors the practice merge's "re-point, drop the unique-conflict duplicate, retire the
- * loser" shape, in TypeScript (there is no dedicated SQL function for tags). Returns the
- * re-pointed + dropped counts.
+ *
+ * Runs entirely inside the `merge_tags` SQL function so the whole sequence is ONE transaction.
+ * (An earlier TS version did four separate round-trips; a mid-sequence failure or a TOCTOU
+ * race — a practice gaining the target tag between the read and the re-point — could corrupt
+ * assignments or half-merge. The RPC's drop-collisions-then-repoint-then-delete-def is atomic.)
  *
  * authz-delegated: the curator gate lives at the calling action (mergeTagsAction).
  */
 export async function mergeTags(fromTagId: string, intoTagId: string): Promise<MergeTagsResult> {
   if (fromTagId === intoTagId) throw new Error('Cannot merge a tag into itself.')
-  const client = db()
-
-  // Every practice that carries each tag (the from-set we re-point, the into-set we dedup against).
-  const [{ data: fromLinks }, { data: intoLinks }] = await Promise.all([
-    client.from('practice_tags').select('practice_id').eq('tag_id', fromTagId),
-    client.from('practice_tags').select('practice_id').eq('tag_id', intoTagId),
-  ])
-  const fromPractices = ((fromLinks as { practice_id: string }[] | null) ?? []).map((r) => r.practice_id)
-  const intoPractices = new Set(((intoLinks as { practice_id: string }[] | null) ?? []).map((r) => r.practice_id))
-
-  // A practice already carrying the target tag would collide on re-point: drop the source link.
-  const collisions = fromPractices.filter((pid) => intoPractices.has(pid))
-  let dropped = 0
-  if (collisions.length > 0) {
-    const { error: delErr } = await client
-      .from('practice_tags')
-      .delete()
-      .eq('tag_id', fromTagId)
-      .in('practice_id', collisions)
-    if (delErr) throw new Error(delErr.message)
-    dropped = collisions.length
-  }
-
-  // Re-point the rest onto the canonical tag.
-  const repointed = fromPractices.length - dropped
-  if (repointed > 0) {
-    const { error: updErr } = await client
-      .from('practice_tags')
-      .update({ tag_id: intoTagId })
-      .eq('tag_id', fromTagId)
-    if (updErr) throw new Error(updErr.message)
-  }
-
-  // Retire the now-unused source def (its links are all gone).
-  const { error: defErr } = await client.from('practice_tag_defs').delete().eq('id', fromTagId)
-  if (defErr) throw new Error(defErr.message)
-
-  return { repointed, dropped }
+  const { data, error } = await db().rpc('merge_tags', { from_id: fromTagId, into_id: intoTagId })
+  if (error) throw new Error(error.message)
+  const r = (data as { repointed: number; dropped: number } | null) ?? null
+  return { repointed: r?.repointed ?? 0, dropped: r?.dropped ?? 0 }
 }

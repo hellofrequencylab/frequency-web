@@ -96,6 +96,30 @@ function rpc(name: string, args: Record<string, unknown>) {
       error: null,
     })
   }
+  if (name === 'merge_tags') {
+    // Simulate the atomic SQL merge_tags against the store: drop the source links that collide
+    // on (practice_id, tag_id), re-point the rest onto the canonical, delete the source def.
+    const from = String(args.from_id)
+    const into = String(args.into_id)
+    if (from === into) return Promise.resolve({ data: null, error: { message: 'cannot merge a tag into itself' } })
+    const intoPractices = new Set(
+      store.practice_tags.filter((l) => l.tag_id === into).map((l) => l.practice_id),
+    )
+    const before = store.practice_tags.length
+    store.practice_tags = store.practice_tags.filter(
+      (l) => !(l.tag_id === from && intoPractices.has(l.practice_id)),
+    )
+    const dropped = before - store.practice_tags.length
+    let repointed = 0
+    for (const l of store.practice_tags) {
+      if (l.tag_id === from) {
+        l.tag_id = into
+        repointed++
+      }
+    }
+    store.practice_tag_defs = store.practice_tag_defs.filter((d) => d.id !== from)
+    return Promise.resolve({ data: { repointed, dropped, into }, error: null })
+  }
   if (name === 'match_practices') {
     const exclude = String(args.exclude_id)
     return Promise.resolve({ data: nearestByExcludeId[exclude] ?? [], error: null })

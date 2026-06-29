@@ -27,6 +27,24 @@ describe('moduleIdsForScope', () => {
     expect(j).toEqual(['admin-journeys-stats', 'admin-journeys-review', 'admin-journeys-library'])
   })
 
+  it('the admin practices workspace resolves its five curation blocks, in order, no leakage', () => {
+    const p = moduleIdsForScope('/admin/content/practices')
+    expect(p).toBe(ROUTE_MODULE_IDS['/admin/content/practices'])
+    // Default render order: stats → review queue → needs attention → faceted library → tags.
+    expect(p).toEqual([
+      'admin-practices-stats',
+      'admin-practices-review',
+      'admin-practices-attention',
+      'admin-practices-library',
+      'admin-practices-tags',
+    ])
+    // The faceted library IS a module here too (reads the URL from the x-search header).
+    expect(p).toContain('admin-practices-library')
+    // A distinct exact route — it never inherits the global community blocks or the journeys set.
+    expect(p).not.toContain('community-pulse')
+    expect(p).not.toContain('admin-journeys-library')
+  })
+
   it('the practices page resolves its blocks, including the URL-driven library', () => {
     const p = moduleIdsForScope('/practices')
     expect(p).toBe(ROUTE_MODULE_IDS['/practices'])
