@@ -95,7 +95,12 @@ chat are filed here automatically (see the protocol below).
 | IDEA-001 | 2026-06-29 | *(example)* Comparison "alternative-to" pages for SEO | — | Triaged | Wave 5 · Growth `GE11-1` |
 | IDEA-002 | 2026-06-29 | Roll the Effort tier picker to crew tasks (replace the free 1-500 number) | owner | Done | per [ADR-442](DECISIONS.md) |
 | IDEA-003 | 2026-06-29 | Apply the constrained Effort tier to remaining game-value setters (challenges, events, other metrics), role-gated | owner | Triaged | Wave 3 · per [ADR-442](DECISIONS.md) |
-| IDEA-004 | 2026-06-29 | Practice depth: member-achieved tiers + "go deeper" timer + mode-accurate end output | owner | Planned | per [ADR-443](DECISIONS.md) · [PRACTICE-DEPTH-BUILD.md](PRACTICE-DEPTH-BUILD.md) |
+| IDEA-004 | 2026-06-29 | Practice depth: member-achieved tiers + "go deeper" timer + mode-accurate end output | owner | ⏳ Core shipped (PD0–PD5; [#1196](https://github.com/hellofrequencylab/frequency-web/pull/1196)/PD2); PD6 + verify open | per [ADR-443](DECISIONS.md) · [PRACTICE-DEPTH-BUILD.md §3a](PRACTICE-DEPTH-BUILD.md) |
+| IDEA-005 | 2026-06-29 | Practice depth PD6 — depth streak (consecutive days at target / Standard+), shown on the practice + reveal; derived from logs, no extra Zaps by default | claude | Triaged | per [ADR-443](DECISIONS.md) PD6 · candidate Wave 3 |
+| IDEA-006 | 2026-06-29 | Vera dispatch AI **fallback** — pass activity/mode + practice title (validate `movementMode`) so the both-reads-failed path can't name the wrong activity | claude | Triaged | per [ADR-443](DECISIONS.md) PD0-5 · Hardening (correctness) |
+| IDEA-007 | 2026-06-29 | Extend auto-continue (overtime count-up + live tier cue + bank actual time) to duration-based Movement (walk/run/stretch), past the plan cap | claude | Triaged | per [ADR-443](DECISIONS.md) PD4 |
+| IDEA-008 | 2026-06-29 | Threshold chime — a soft bell when a tier threshold is crossed in overtime (the audio half of the live "go deeper" cue) | claude | Triaged | per [ADR-443](DECISIONS.md) PD4-3 |
+| IDEA-009 | 2026-06-29 | Practice depth PD7 — per-mode live-session walkthrough in preview (meditate/breathe/walk/yoga): stats + Vera read the right activity, auto-continue + tier cue fire, partial banks 1 Zap + streak | claude | Triaged | per [PRACTICE-DEPTH-BUILD.md](PRACTICE-DEPTH-BUILD.md) PD7 |
 
 > Add new ideas as `IDEA-###` rows above this line. Keep the description to one line; detail goes in
 > the track doc once scheduled.
