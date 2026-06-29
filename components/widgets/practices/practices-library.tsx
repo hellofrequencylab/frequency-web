@@ -1,6 +1,6 @@
 import { headers } from 'next/headers'
 import Link from 'next/link'
-import { Flame, Library, Zap, Wand2, Users, ChevronLeft, ChevronRight, EyeOff, X, Clock, Timer, CircleDot } from 'lucide-react'
+import { Flame, Library, Zap, Wand2, Users, ChevronLeft, ChevronRight, EyeOff, X, Timer, CircleDot } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import {
   searchLibraryPractices,
@@ -194,6 +194,8 @@ export async function PracticesLibrary() {
                 <li key={p.id}>
                   <EntityCard
                     href={`/practices/${p.slug ?? p.id}`}
+                    coverAspect="short"
+                    metaNoWrap
                     cover={
                       p.header_image ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -223,25 +225,27 @@ export async function PracticesLibrary() {
                     context={context || undefined}
                     description={p.summary ?? p.description ?? undefined}
                     meta={
+                      // ONE flexible row (metaNoWrap): the descriptive item (timer icon + length·
+                      // cadence) truncates to absorb overflow, while the reward + the social counts
+                      // stay fixed (shrink-0), so the stats never spill to a second line. The timer/
+                      // quick icon stands in for the old "Timed/Quick log" text label.
                       <>
                         {p.reward_note && (
-                          <span className="inline-flex items-center gap-1 font-medium text-warning" title="Reward per log">
+                          <span className="inline-flex shrink-0 items-center gap-1 font-medium text-warning" title="Reward per log">
                             <Zap className="h-3 w-3 fill-warning" aria-hidden /> {p.reward_note}
                           </span>
                         )}
-                        <span className="inline-flex items-center gap-1" title={p.uses_timer ? 'Timed practice' : 'Quick log'}>
-                          {p.uses_timer ? <Timer className="h-3 w-3" aria-hidden /> : <CircleDot className="h-3 w-3" aria-hidden />}
-                          {p.uses_timer ? 'Timed' : 'Quick log'}
+                        <span
+                          className="inline-flex min-w-0 items-center gap-1"
+                          title={`${p.uses_timer ? 'Timed practice' : 'Quick log'}${lengthCadence ? ` · ${lengthCadence}` : ''}`}
+                        >
+                          {p.uses_timer ? <Timer className="h-3 w-3 shrink-0" aria-hidden /> : <CircleDot className="h-3 w-3 shrink-0" aria-hidden />}
+                          <span className="truncate">{lengthCadence || (p.uses_timer ? 'Timed' : 'Quick log')}</span>
                         </span>
-                        {lengthCadence && (
-                          <span className="inline-flex items-center gap-1" title="Typical length and cadence">
-                            <Clock className="h-3 w-3" aria-hidden /> {lengthCadence}
-                          </span>
-                        )}
-                        <span className="inline-flex items-center gap-1" title="Practitioners">
+                        <span className="inline-flex shrink-0 items-center gap-1" title="Practitioners">
                           <Users className="h-3 w-3" aria-hidden /> {p.adopters.toLocaleString()}
                         </span>
-                        <span className="inline-flex items-center gap-1" title="Times practiced">
+                        <span className="inline-flex shrink-0 items-center gap-1" title="Times practiced">
                           <Flame className="h-3 w-3" aria-hidden /> {p.logs_total.toLocaleString()}
                         </span>
                       </>

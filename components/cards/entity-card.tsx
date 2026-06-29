@@ -31,8 +31,10 @@ export function EntityCard({
   context,
   description,
   meta,
+  metaNoWrap = false,
   action,
   footer,
+  coverAspect = 'video',
   dimmed = false,
 }: {
   href: string
@@ -40,7 +42,8 @@ export function EntityCard({
   anchor?: React.ReactNode
   /** Full-bleed banner image at the TOP of the card (a 16:9 header). When given,
    *  the image leads the card and the title sits beneath it. Provide an
-   *  `<Image fill>` or a placeholder; it fills a relative, clipped 16:9 box. */
+   *  `<Image fill>` or a placeholder; it fills a relative, clipped box (its ratio
+   *  set by `coverAspect`). */
   cover?: React.ReactNode
   title: React.ReactNode
   /** Small pill shown next to the title (e.g. a Beta-demo marker). */
@@ -51,15 +54,23 @@ export function EntityCard({
   description?: React.ReactNode
   /** Footer row — pills, counts, relative time. */
   meta?: React.ReactNode
+  /** Keep the meta on ONE row: no wrap, overflow clipped, so dense stats never spill to a
+   *  second line. Children should mark fixed stats `shrink-0` and let one descriptive span
+   *  `truncate` (min-w-0) absorb the overflow. Default false (the wrapping row). */
+  metaNoWrap?: boolean
   /** Optional top-right action; its own client component (handles its click). */
   action?: React.ReactNode
   /** Optional full-width action pinned to the BOTTOM of the card, below a divider (its own client
    *  component — e.g. an Adopt toggle). Sits outside the link so it never nests a control in the
    *  anchor, while reading as part of the card. */
   footer?: React.ReactNode
+  /** Cover aspect ratio: 'video' (16:9, the default) or 'short' (16:7, a slimmer banner for
+   *  denser catalogs). Only applies when `cover` is set. */
+  coverAspect?: 'video' | 'short'
   /** Recede the card (muted + desaturated) — used for Beta demo content. */
   dimmed?: boolean
 }) {
+  const coverAspectClass = coverAspect === 'short' ? 'aspect-[16/7]' : 'aspect-[16/9]'
   return (
     <div
       className={`group press relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-[colors,transform] hover:border-primary-bg hover:shadow-md has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/50 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-canvas motion-reduce:transition-none ${
@@ -68,7 +79,7 @@ export function EntityCard({
     >
       <Link href={href} className="flex flex-1 flex-col outline-none">
         {cover && (
-          <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-surface-elevated">
+          <div className={`relative ${coverAspectClass} w-full shrink-0 overflow-hidden bg-surface-elevated`}>
             {cover}
           </div>
         )}
@@ -87,7 +98,11 @@ export function EntityCard({
             <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted">{description}</p>
           )}
           {meta && (
-            <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-3 text-xs text-subtle">
+            <div
+              className={`mt-auto flex items-center pt-3 text-xs text-subtle ${
+                metaNoWrap ? 'flex-nowrap gap-x-2.5 overflow-hidden' : 'flex-wrap gap-x-3 gap-y-1'
+              }`}
+            >
               {meta}
             </div>
           )}
