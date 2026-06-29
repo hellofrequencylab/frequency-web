@@ -166,10 +166,11 @@ export async function PracticesLibrary() {
         />
       ) : (
         <>
-          {/* Container-query sizing (the slot is an @container): the grid reflows to the COLUMN it
-              lands in, not the viewport — two-up by a medium column, three across full width, and
-              only a truly narrow rail slot drops to one. */}
-          <ul className="grid grid-cols-1 gap-4 @sm:grid-cols-2 @4xl:grid-cols-3">
+          {/* Image-led catalog (container-query sized to the COLUMN, not the viewport). Cards carry
+              a 16:9 header, so they stay a single full-width column on phones (incl. large ones),
+              step to two-up only on a tablet-width column (@xl), and three across a wide desktop
+              column (@4xl). Single column on mobile is the modern catalog default for image cards. */}
+          <ul className="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
             {result.rows.map((p) => {
               const pillarSlug = p.domain_id ? byId.get(p.domain_id)?.slug ?? null : null
               const pillarName = p.domain_id ? byId.get(p.domain_id)?.name ?? null : null
@@ -191,13 +192,14 @@ export async function PracticesLibrary() {
                 <li key={p.id}>
                   <EntityCard
                     href={`/practices/${p.slug ?? p.id}`}
-                    anchor={
+                    cover={
                       p.header_image ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.header_image} alt="" className="h-11 w-11 rounded-lg object-cover" />
+                        <img src={p.header_image} alt="" className="h-full w-full object-cover" />
                       ) : (
-                        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
-                          <PillarIcon className="h-5 w-5" />
+                        // Every card gets a header: a Pillar-tinted gradient + icon when no image.
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-bg to-surface-elevated text-primary-strong">
+                          <PillarIcon className="h-10 w-10" aria-hidden />
                         </div>
                       )
                     }
