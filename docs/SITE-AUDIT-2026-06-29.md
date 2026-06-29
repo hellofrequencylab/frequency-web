@@ -65,13 +65,13 @@
 
 | ID | Finding | File | Sev | Status |
 |---|---|---|---|---|
-| PERF-1 | N+1: per-member dupe-check query in a loop. | `lib/studio/agent.ts:82` | 🔴 high | 🔧 |
-| PERF-2 | N+1: per-candidate consent read in a serial loop (`filterByConsent`). | `lib/studio/winback.ts:46` | 🔴 high | 🔧 |
-| PERF-3 | N+1: `listCircleTasks(c.id)` per hosted circle. | `app/(main)/admin/crew-tasks/page.tsx:71`, `app/(main)/lead/crew-tasks/page.tsx:25` | 🟠 med | 🔧 |
-| PERF-4 | `spaces/[slug]/layout.tsx` chains ~5 independent reads serially before the hero paints. | `app/(main)/spaces/[slug]/layout.tsx:145` | 🟠 med | 🔧 |
-| PERF-5 | `readTagline`/`getSpaceVisibility` fetched twice (metadata + body) — wrap in `React.cache`. | `app/(main)/spaces/[slug]/layout.tsx` | 🟠 med | 🔧 |
-| PERF-6 | `hubs/[slug]/page.tsx` serial-awaits caps/access/circles with **no Suspense anywhere**. | `app/(main)/hubs/[slug]/page.tsx:50` | 🟠 med | 🔧 |
-| PERF-7 | Fold `getLocalActivity` into the feed's main `Promise.all`. | `app/(main)/feed/page.tsx:149` | 🟡 low | 🔧 |
+| PERF-1 | N+1: per-member dupe-check query in a loop. | `lib/studio/agent.ts:82` | 🔴 high | ✅ single pre-pass + Set |
+| PERF-2 | N+1: per-candidate consent read in a serial loop (`filterByConsent`). | `lib/studio/winback.ts:46` | 🔴 high | ✅ `Promise.all` |
+| PERF-3 | N+1: `listCircleTasks(c.id)` per hosted circle. | `app/(main)/admin/crew-tasks/page.tsx:71`, `app/(main)/lead/crew-tasks/page.tsx:25` | 🟠 med | 📋 (needs a batch query variant) |
+| PERF-4 | `spaces/[slug]/layout.tsx` chains ~5 independent reads serially before the hero paints. | `app/(main)/spaces/[slug]/layout.tsx:145` | 🟠 med | 📋 (member-facing layout restructure — preview first) |
+| PERF-5 | `readTagline`/`getSpaceVisibility` fetched twice (metadata + body) — wrap in `React.cache`. | `app/(main)/spaces/[slug]/layout.tsx` | 🟠 med | 📋 |
+| PERF-6 | `hubs/[slug]/page.tsx` serial-awaits caps/access/circles with **no Suspense anywhere**. | `app/(main)/hubs/[slug]/page.tsx:50` | 🟠 med | 📋 |
+| PERF-7 | Fold `getLocalActivity` into the feed's main `Promise.all`. | `app/(main)/feed/page.tsx:149` | 🟡 low | ✅ |
 | PERF-8 | N concurrent LLM `draftCardLines` per page load — cap concurrency / precompute. | `lib/ai/vera/today.ts:436` | 🟠 med | 📋 (needs care) |
 | PERF-9 | Funnel-sequences list has no limit (per-row `resolveSequence` + QR render). | `app/(main)/pages/sequences/page.tsx:49` | 🟡 low | 📋 |
 | PERF-10 | Recursive per-category inserts (admin write path). | `lib/menus/actions.ts:264` | 🟡 low | 📋 |

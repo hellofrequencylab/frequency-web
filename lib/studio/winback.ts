@@ -43,11 +43,10 @@ export async function filterByConsent(
   candidates: WinbackCandidate[],
   consents: (profileId: string) => Promise<boolean>,
 ): Promise<WinbackCandidate[]> {
-  const kept: WinbackCandidate[] = []
-  for (const c of candidates) {
-    if (await consents(c.profileId)) kept.push(c)
-  }
-  return kept
+  // Resolve every consent check in parallel rather than one-at-a-time (site-audit PERF-2): each
+  // check is its own DB read, so a serial loop was O(n) round-trips. Order + result are preserved.
+  const decisions = await Promise.all(candidates.map((c) => consents(c.profileId)))
+  return candidates.filter((_, i) => decisions[i])
 }
 
 // Task-specific contract only; the Frequency voice + no-em-dash rules come from withVoice (the
