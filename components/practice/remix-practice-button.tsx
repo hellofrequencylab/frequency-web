@@ -47,6 +47,16 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
             Make it yours: a new angle, a different setting, your own niche. Publish your version so
             the community gets a practice only you would make. The original stays exactly as it is.
           </p>
+          <div className="mt-4 rounded-xl bg-surface-elevated/60 p-4">
+            <p className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+              Ways to make it yours
+            </p>
+            <ul className="mt-2 space-y-1 text-sm text-muted">
+              <li>A different setting: try it outdoors, before bed, or on a walk.</li>
+              <li>A shorter version: trim it to five minutes for busy days.</li>
+              <li>Your own focus: point it at one thing you care about.</li>
+            </ul>
+          </div>
           <div className="mt-5 flex items-center justify-end gap-2">
             <button
               type="button"

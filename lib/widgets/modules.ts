@@ -53,6 +53,8 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'admin-practices-attention', label: 'Needs attention', description: 'Public practices with a fixable gap (no Pillar, no image, never logged, going stale), worst quality first.' },
   { id: 'admin-practices-library', label: 'Practice library', description: 'The full faceted curation table — filter by any signal, then tune what is public, a template, or featured. URL-driven, paginated.' },
   { id: 'admin-practices-tags', label: 'Tag governance', description: 'Promote a member tag to canonical, or merge synonyms into a canonical tag.' },
+  { id: 'admin-practices-remix-levers', label: 'Most remixed', description: 'The originals the community has remixed most — a ranked list with each one’s remix count and creator, the lever for what to seed more of.' },
+  { id: 'admin-practices-contributor-recognition', label: 'Contributors to celebrate', description: 'The members whose originals the community has remixed most, ranked — who to thank for growing the library.' },
 
   // ── Admin Journeys blocks (/admin/content/journeys) — the curation surface ──
   { id: 'admin-journeys-stats', label: 'Journey stats', description: 'Headline counts: library size, awaiting review, official, and active adoptions.' },
@@ -97,6 +99,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'practice-detail-guide', label: 'The guide', description: 'The full write-up: why it works, how to do it, and logging it in The Quest.' },
   { id: 'practice-detail-tags', label: 'Tags', description: 'The practice’s tags.' },
   { id: 'practice-detail-usedin', label: 'Used in', description: 'The Journeys and Circles running this practice.' },
+  { id: 'practice-detail-lineage', label: 'Remix lineage', description: 'Where this practice was remixed from, how many times it has been remixed, and the other remixes off the same original.' },
 
   // ── Programs blocks (/programs) — the Foundation's frameworks browse list ──
   { id: 'programs-list', label: 'Programs', description: 'The open browse list of frameworks and trainings for starting, running, and growing a circle, each with the viewer’s completion.' },
@@ -243,6 +246,10 @@ const ADMIN_PRACTICES_MODULE_IDS = [
   'admin-practices-attention',
   'admin-practices-library',
   'admin-practices-tags',
+  // Phase 3 "Grow" (ADR-438): the remix levers + contributor recognition, appended AFTER the
+  // existing five so the default order ends …tags → remix-levers → contributor-recognition.
+  'admin-practices-remix-levers',
+  'admin-practices-contributor-recognition',
 ] as const
 
 // The admin Journeys curation surface, in default render order.
@@ -292,6 +299,7 @@ const PRACTICE_DETAIL_MODULE_IDS = [
   'practice-detail-guide',
   'practice-detail-tags',
   'practice-detail-usedin',
+  'practice-detail-lineage',
 ] as const
 
 // The Vault (/crew/store), in default render order (the original hand-built order).

@@ -1508,12 +1508,23 @@ export async function setPracticeTags(
 
 /** Fork a practice into a PRIVATE copy owned by the caller (is_public=false), so a
  *  member can customize a library practice for their own program without altering
- *  the shared one. Copies the content fields (not the rewards). */
+ *  the shared one. Copies the content fields (not the rewards), and records remix
+ *  lineage (Phase 3 "Grow"): remixed_from = the direct parent, root_practice_id = the
+ *  parent's root (so a remix-of-a-remix still credits the ORIGINAL), or the parent
+ *  itself when the parent is a root. */
 export async function forkPractice(profileId: string, practiceId: string): Promise<Practice | null> {
   const src = await getPractice(practiceId)
   if (!src) return null
+  // PRACTICE_COLS doesn't carry the lineage columns, so read the parent's root directly.
+  const { data: lineageRow } = await db()
+    .from('practices')
+    .select('root_practice_id')
+    .eq('id', practiceId)
+    .maybeSingle()
+  const rootId = (lineageRow as { root_practice_id: string | null } | null)?.root_practice_id ?? practiceId
   const { data } = await db()
     .from('practices')
+    // Lineage columns aren't in the generated types yet (ADR-246) — cast the payload.
     .insert({
       title: src.title,
       description: src.description,
@@ -1533,7 +1544,9 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
       subcategory_id: src.subcategory_id,
       created_by: profileId,
       is_public: false,
-    })
+      remixed_from: practiceId,
+      root_practice_id: rootId,
+    } as never)
     .select(PRACTICE_COLS)
     .maybeSingle()
   return (data as Practice | null) ?? null
