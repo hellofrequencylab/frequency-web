@@ -45,10 +45,11 @@
 
 | ID | Finding | File | Sev | Status |
 |---|---|---|---|---|
-| BUG-1 | **Unreachable feature** — `event-warm-proof` is bound + has metadata + its data is computed in `active-event.ts`, but it's in no route set or default layout, so it can never render (or be added from the editor). | `lib/widgets/modules.ts` (`EVENT_DETAIL_MODULE_IDS`), `lib/page-settings/default-layouts.ts` | 🔴 high | 🔧 |
-| BUG-2 | No test asserts "every bound component is route-reachable or explicitly parked" — that's why BUG-1 slipped through. | `lib/widgets/modules.test.ts` | 🟠 med | 🔧 |
-| BUG-3 | Dead `NavItem.comingSoon` field — defined + documented but never assigned or read. | `lib/nav-areas.ts:50` | 🟡 low | 🔧 |
-| BUG-4 | **Dead exported server actions** (zero refs, verified by grep): legacy journey "plan" API (`createPlanAction`…`publishPlanAction`, `completeLessonAction`, `removeJourneyStep/Lesson`, `reorderJourneySteps`), `deleteDemoMembers`, `resetTypeFunctionDefault`, `joinChannel`/`leaveChannel` (superseded by tune-in/out), `inviteContact`, `getPersonAdminData`, `areFriends`, `getReports`, `getMemberReportCount`, `markConversationRead`, `getCircleTextDefaultForEditor`, `updateSpaceEmailTemplate`, `setEventRsvpMuted`. | various | 🟡 low | 🔧 (safe removals) |
+| BUG-1 | **Unreachable feature** — `event-warm-proof` is bound + has metadata + its data is computed in `active-event.ts`, but it's in no route set or default layout, so it can never render (or be added from the editor). | `lib/widgets/modules.ts` (`EVENT_DETAIL_MODULE_IDS`), `lib/page-settings/default-layouts.ts` | 🔴 high | ✅ added to set + side layout |
+| BUG-2 | No test asserts "every bound component is route-reachable or explicitly parked" — that's why BUG-1 slipped through. | `lib/widgets/modules.test.ts` | 🟠 med | ✅ reachability test + `COMPONENT_IDS` |
+| BUG-3 | Dead `NavItem.comingSoon` field — defined + documented but never assigned or read. | `lib/nav-areas.ts:50` | 🟡 low | ✅ removed |
+| BUG-4 | **Dead exported server actions** (zero refs, verified by grep): legacy journey "plan" API (`createPlanAction`…`publishPlanAction`, `completeLessonAction`, `removeJourneyStep/Lesson`, `reorderJourneySteps`), `deleteDemoMembers`, `resetTypeFunctionDefault`, `joinChannel`/`leaveChannel` (superseded by tune-in/out), `inviteContact`, `getPersonAdminData`, `areFriends`, `getReports`, `getMemberReportCount`, `markConversationRead`, `getCircleTextDefaultForEditor`, `updateSpaceEmailTemplate`, `setEventRsvpMuted`. | various | 🟡 low | 📋 (bulk dead-code removal — own cleanup pass; not blind-merged) |
+| INF-1 | `pnpm lint` — 2 unused-var warnings (`lib/spaces/ai-usage.test.ts:27`). | `lib/spaces/ai-usage.test.ts` | 🟡 low | ✅ |
 | BUG-5 | **Missing connection** — `updateCircleField` (circle inline-edit) is built but never wired, unlike the parallel `updateEventField`. | `app/(main)/circles/admin-actions.ts:246` | 🟡 low-med | 📋 (wire the inline editor) |
 | BUG-6 | Unwired "Draft with Vera" for offering blurbs (`draftOfferingBlurbAction`), while sibling bio/tagline drafters are wired. | `app/(main)/spaces/copilot-actions.ts:62` | 🟡 low | 📋 |
 | BUG-7 | Stripe Connect activation is stubbed (activation succeeds without the payment binding). | `app/(main)/partners/join/actions.ts:12`, `lib/personas.ts:71` | 🟠 med | 📋 (dormant until `billing_live`) |
@@ -99,7 +100,7 @@
 
 | ID | Finding | Status |
 |---|---|---|
-| INF-1 | `pnpm lint` — 2 unused-var warnings (`lib/spaces/ai-usage.test.ts:27`). | 🔧 |
+| INF-1 | `pnpm lint` — 2 unused-var warnings (`lib/spaces/ai-usage.test.ts:27`). | ✅ |
 | INF-2 | Supabase advisor: enable Auth leaked-password protection (owner dashboard config). | 📋 (owner) |
 | INF-3 | Supabase advisors / migration drift / dependency currency — run the `maintenance` skill on a schedule. | 📋 (automate) |
 

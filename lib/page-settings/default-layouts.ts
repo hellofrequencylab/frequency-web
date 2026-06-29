@@ -67,6 +67,7 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
           'event-schedule',
           'event-facts',
           'event-location',
+          'event-warm-proof',
           'event-cohosts',
           'event-sales',
         ],
