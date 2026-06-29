@@ -13,6 +13,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
 import { getCityCategoryHubs } from "@/app/discover/events/_data";
+import { listDiscoverCities } from "@/app/discover/places/_data";
 
 // Organizer profiles (/discover/events/organizer/[handle]) — one URL per host with
 // at least one upcoming public/unlisted event. Reads the redaction-safe RPC, which
@@ -90,6 +91,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/discover/topics`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/discover/partners`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/discover/practices`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    // Browse-by-place hub — the local-intent landing index (per-city pages are dynamic, below).
+    { url: `${SITE_URL}/discover/places`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     // The entity Spaces directory (the networked profile network) + the indexable pricing page.
     { url: `${SITE_URL}/spaces`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/pricing`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
@@ -150,7 +153,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let spotlightRoutes: MetadataRoute.Sitemap = [];
   let hubRoutes: MetadataRoute.Sitemap = [];
   try {
-    const [channels, circles, events, journeys, organizers, spotlights, hubs, partners, practices, spaces] = await Promise.all([
+    const [channels, circles, events, journeys, organizers, spotlights, hubs, partners, practices, spaces, cities] = await Promise.all([
       getTopicalChannels(),
       getPublicCircles(200),
       getPublicEvents(200),
@@ -166,6 +169,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // ONLY visibility='network', status='active' Spaces and excludes the root, so PRIVATE Spaces
       // are isolated OUT of the sitemap by construction (fail-safe to [] on any error).
       listNetworkedSpaces().catch(() => []),
+      // Browse-by-place city hubs — only cities with ≥1 public circle or upcoming event
+      // (empty places never get a URL, so low-value facets stay out of crawl).
+      listDiscoverCities().catch(() => []),
     ]);
     organizerRoutes = organizers;
     spotlightRoutes = spotlights;
@@ -190,6 +196,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.5,
+    }));
+
+    const placeRoutes: MetadataRoute.Sitemap = cities.map((c) => ({
+      url: `${SITE_URL}/discover/places/${c.slug}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.6,
     }));
 
     hubRoutes = hubs.map((h) => ({
@@ -242,6 +255,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...partnerRoutes,
       ...practiceRoutes,
       ...spaceRoutes,
+      ...placeRoutes,
     ];
   } catch {
     // Fall back to static routes only.
