@@ -78,6 +78,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
         heading: 'Content',
         items: [
           { label: 'Practices', href: '/admin/content/practices' },
+          { label: 'Library health', href: '/admin/content/practices/health' },
           { label: 'Journeys', href: '/admin/content/journeys' },
           { label: 'Challenges', href: '/admin/content/challenges' },
           { label: 'Seasons', href: '/admin/content/seasons' },
