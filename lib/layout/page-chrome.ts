@@ -96,6 +96,12 @@ export function isSafeRoute(pathname: string): boolean {
 // (CRM-STRATEGY P3) distinct from the Focus settings/crm notes surface. Pattern match (one slug deep).
 const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   /^\/spaces\/[^/]+\/crm$/, // a Space's CRM board (paid, owner/admin-gated)
+  // The entity OWNER CONSOLE (ADR-441 EM1-2): /{entity}/[id]/manage is a full-width
+  // <DashboardTemplate> workspace (PAGE-FRAMEWORK §3 → 'none'), the owner's cockpit for
+  // managing their entity. It composes the admin kit edge to edge and reads best without
+  // the community rail beside it. Pass 1 ships the circle console; sibling entity consoles
+  // add their own pattern here as they land.
+  /^\/circles\/[^/]+\/manage$/, // a circle's owner console
 ]
 
 // ⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️

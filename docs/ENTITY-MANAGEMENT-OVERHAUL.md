@@ -165,8 +165,8 @@ is specified three layers deep (L1 catalog · L2 owner console · L3 in-page).
 
 | ID | Task | Layers |
 |---|---|---|
-| **EM1-1** | **Entity registry** — each entity declares its manageable surfaces against the 9-category spine + capability gate per surface; one source of truth feeding L1/L2/L3. | L1 |
-| **EM1-2** | **Entity-scoped owner console** — the shared `/{entity}/[id]/manage` Dashboard-template suite, gated by `resolveCapabilities`, identical pattern for host/guide/mentor/owner. | L2 |
+| **EM1-1** | **Entity registry** — each entity declares its manageable surfaces against the 9-category spine + capability gate per surface; one source of truth feeding L1/L2/L3. **✅ shipped** (`lib/admin/entities/registry.ts` — `surfacesFor(entity, viewerCaps)`, spine-ordered; circle Basics + Danger declared). | L1 |
+| **EM1-2** | **Entity-scoped owner console** — the shared `/{entity}/[id]/manage` Dashboard-template suite, gated by `resolveCapabilities`, identical pattern for host/guide/mentor/owner. | L2 — **🟡 first slice shipped:** `/circles/[slug]/manage` (RSC, gated on `circle.editSettings`, DashboardTemplate + registry-driven sections, rail `none`). Remaining entities (hub/nexus/event/practice/space) + People role-ladder land as follow-on slices. |
 | **EM1-3** | **Harmonize Spaces** onto the framework — wrap/retire the bespoke 7-tab so spaces use the same spine + module registry; no feature loss. | L2 + L3 |
 | **EM1-4** | **Wire Hub/Nexus edit mode** into the PageAdminDock (currently unwired); bring them to circle/event parity. | L3 |
 | **EM1-5** | **Per-entity member-role ladder** — give every entity a role ladder + assignment (today circles are binary host/non-host; spaces have 4 rungs); unify the model. | L2 (People) |
