@@ -84,13 +84,13 @@
 | ID | Finding | File | Sev | Status |
 |---|---|---|---|---|
 | SEO-1 | Redirect chain `/demo → /how-it-works → /the-community` (two hops). | `app/(marketing)/demo/page.tsx` | 🟠 med | ✅ direct 308 to `/the-community` |
-| SEO-2 | No per-entity OG image on `/discover/circles/[id]` (siblings have one) + no Twitter image. | `app/discover/circles/[id]/` | 🟠 med | 📋 (new opengraph-image route) |
-| SEO-3 | No per-entity OG image on `/discover/journeys/[slug]` (primary HowTo surface). | `app/discover/journeys/[slug]/` | 🟠 med | 📋 |
+| SEO-2 | No per-entity OG image on `/discover/circles/[id]` (siblings have one) + no Twitter image. | `app/discover/circles/[id]/` | 🟠 med | ✅ per-entity `opengraph-image.tsx` added |
+| SEO-3 | No per-entity OG image on `/discover/journeys/[slug]` (primary HowTo surface). | `app/discover/journeys/[slug]/` | 🟠 med | ✅ per-entity `opengraph-image.tsx` added |
 | SEO-4 | Confirm Article + FAQPage JSON-LD on the 4 marketing pillar pages. | `app/(marketing)/{loneliness,friendship-as-an-adult,how-to-build-community,life-after-the-feed}/` | 🟠 med | ✓ already present (`articleSchema` + `faqSchema`) |
 | SEO-5 | Spotlight avatar/header `<img>` alt on an indexable person page. | `components/spotlight/spotlight-view.tsx` | 🟡 low | ✓ avatar already `alt={name}`; background/header correctly decorative |
 | SEO-6 | `organizationSchema` has no `sameAs` (social profiles) — E-E-A-T win. | `lib/jsonld.ts` | 🟡 low | 📋 (needs owner's real social URLs) |
 | SEO-7 | `/privacy` + `/terms` lack `alternates.canonical`. | `app/privacy`, `app/terms` | 🟡 low | ✓ already present (stale finding) |
-| SEO-8 | Spotlight lacks a branded OG card + Twitter block. | `app/spotlight/[handle]/` | 🟡 low | 📋 |
+| SEO-8 | Spotlight lacks a branded OG card + Twitter block. | `app/spotlight/[handle]/` | 🟡 low | ✅ per-entity `opengraph-image.tsx` added |
 | SEO-9 | Per-pillar OG cards for the 4 SEO pillars (multimodal AIO). | marketing pillars | 🟡 low | 📋 |
 | — | **Verified clean:** metadataBase, dynamic sitemap, robots (AI-bot allow rules), canonicals on detail pages, correct noindex on auth/util, rich JSON-LD library. | — | ✓ | ✓ |
 
