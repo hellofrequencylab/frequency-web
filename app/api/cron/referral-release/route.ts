@@ -8,12 +8,13 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { runReferralRelease } from '@/lib/qr/referral'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
+async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
@@ -26,3 +27,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'referral release failed' }, { status: 500 })
   }
 }
+
+export const GET = withCronHeartbeat('referral-release', handler)

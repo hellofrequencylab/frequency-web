@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { runDecay } from '@/lib/demo/decay'
 import { log } from '@/lib/log'
 
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic'
 
 // Nightly: recede + purge demo content as each area goes real (ADR-081, Phase 3).
 // Pass ?dry=1 to report without writing.
-export async function GET(request: Request) {
+async function handler(request: Request) {
   const denied = rejectUnauthorizedCron(request)
   if (denied) return denied
 
@@ -21,3 +22,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'decay failed' }, { status: 500 })
   }
 }
+
+export const GET = withCronHeartbeat('demo-decay', handler)

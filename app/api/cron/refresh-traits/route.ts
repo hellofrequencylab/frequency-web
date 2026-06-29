@@ -7,11 +7,12 @@ import { refreshResonanceEdges } from '@/lib/resonance/edges'
 import { refreshResonanceEmbeddings } from '@/lib/resonance/embeddings'
 import { refreshResonanceDensityCells } from '@/lib/resonance/density'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
+async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
@@ -43,3 +44,5 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ ok: true, ...result, resonance, resonanceEmbeddings, resonanceDensity })
 }
+
+export const GET = withCronHeartbeat('refresh-traits', handler)

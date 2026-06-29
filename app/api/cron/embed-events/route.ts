@@ -7,11 +7,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { backfillEventEmbeddings } from '@/lib/events/embeddings'
 import { aiAvailable } from '@/lib/ai/usage'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
+async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
@@ -24,3 +25,5 @@ export async function GET(req: NextRequest) {
   log.info('cron.embed_events', result)
   return NextResponse.json({ ok: true, ...result })
 }
+
+export const GET = withCronHeartbeat('embed-events', handler)
