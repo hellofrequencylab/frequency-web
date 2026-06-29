@@ -95,6 +95,7 @@ chat are filed here automatically (see the protocol below).
 | IDEA-001 | 2026-06-29 | *(example)* Comparison "alternative-to" pages for SEO | — | Triaged | Wave 5 · Growth `GE11-1` |
 | IDEA-002 | 2026-06-29 | Roll the Effort tier picker to crew tasks (replace the free 1-500 number) | owner | Done | per [ADR-442](DECISIONS.md) |
 | IDEA-003 | 2026-06-29 | Apply the constrained Effort tier to remaining game-value setters (challenges, events, other metrics), role-gated | owner | Triaged | Wave 3 · per [ADR-442](DECISIONS.md) |
+| IDEA-004 | 2026-06-29 | Practice depth: member-achieved tiers + "go deeper" timer + mode-accurate end output | owner | Planned | per [ADR-443](DECISIONS.md) · [PRACTICE-DEPTH-BUILD.md](PRACTICE-DEPTH-BUILD.md) |
 
 > Add new ideas as `IDEA-###` rows above this line. Keep the description to one line; detail goes in
 > the track doc once scheduled.
