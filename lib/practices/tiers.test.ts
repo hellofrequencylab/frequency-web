@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { maxTierForDuration, isTierAllowed, clampTierToDuration, TIER_FLOOR_MIN, TIER_ZAPS } from './tiers'
+import { maxTierForDuration, isTierAllowed, clampTierToDuration, coerceTierZaps, tierForZaps, TIER_FLOOR_MIN, TIER_ZAPS } from './tiers'
 
 describe('practice tiers — time vs points (ADR-442)', () => {
   it('maps a duration to the highest tier it earns', () => {
@@ -34,5 +34,22 @@ describe('practice tiers — time vs points (ADR-442)', () => {
   it('keeps the canon floors and default amounts', () => {
     expect(TIER_FLOOR_MIN).toEqual({ light: 0, standard: 5, heavy: 15 })
     expect(TIER_ZAPS).toEqual({ light: 8, standard: 12, heavy: 15 })
+  })
+
+  it('snaps an arbitrary value to the nearest allowed tier amount', () => {
+    expect(coerceTierZaps(8)).toBe(8)
+    expect(coerceTierZaps(12)).toBe(12)
+    expect(coerceTierZaps(15)).toBe(15)
+    expect(coerceTierZaps(500)).toBe(15) // no unlimited
+    expect(coerceTierZaps(1)).toBe(8)
+    expect(coerceTierZaps(13)).toBe(12)
+    expect(coerceTierZaps(Number.NaN)).toBe(12)
+  })
+
+  it('maps a stored value back to its tier for preselecting a picker', () => {
+    expect(tierForZaps(8)).toBe('light')
+    expect(tierForZaps(12)).toBe('standard')
+    expect(tierForZaps(15)).toBe('heavy')
+    expect(tierForZaps(999)).toBe('heavy')
   })
 })

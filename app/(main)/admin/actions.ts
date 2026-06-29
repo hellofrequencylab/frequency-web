@@ -15,6 +15,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
 import { atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
+import { coerceTierZaps } from '@/lib/practices/tiers'
 import { stampCircleSpaceId } from '@/lib/circles/store'
 import { assignTraining } from '@/lib/onboarding/training'
 import { markWalkthroughPending } from '@/lib/walkthroughs/progress'
@@ -611,7 +612,7 @@ export async function createCrewTask(fd: FormData) {
   const { error } = await admin.from('crew_tasks').insert({
     name:                  (fd.get('name') as string).trim(),
     task_type:             fd.get('task_type') as string,
-    zaps_value:            parseInt(fd.get('zaps_value') as string) || 10,
+    zaps_value:            coerceTierZaps(parseInt(fd.get('zaps_value') as string, 10)),
     is_repeatable:         fd.get('is_repeatable') === 'true',
     requires_verification: fd.get('requires_verification') === 'true',
   })
@@ -626,7 +627,7 @@ export async function updateCrewTask(id: string, fd: FormData) {
   const { error } = await admin.from('crew_tasks').update({
     name:                  (fd.get('name') as string).trim(),
     task_type:             fd.get('task_type') as string,
-    zaps_value:            parseInt(fd.get('zaps_value') as string) || 10,
+    zaps_value:            coerceTierZaps(parseInt(fd.get('zaps_value') as string, 10)),
     is_repeatable:         fd.get('is_repeatable') === 'true',
     requires_verification: fd.get('requires_verification') === 'true',
   }).eq('id', id)
