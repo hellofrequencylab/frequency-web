@@ -14,18 +14,19 @@ import {
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 
 // Owner-only: publish or unpublish your own Spotlight page (the public mini-site).
-// Self-scoped — the write is always keyed to the caller's own auth_user_id, so it can
-// never touch anyone else's row. Requires the owner's Spotlight to be ENABLED first
-// (an admin turns that on); publishing is the owner's explicit, separate act, so a
-// page never goes public by accident. Read-modify-write of the isolated spotlight
-// sub-object (withSpotlightPublished) preserves every other meta key.
+// Self-scoped — the read and the write both run under the caller's SESSION client, so
+// the `profiles: read own` + `profiles: self update` RLS policies enforce auth_user_id
+// ownership at the database (defense-in-depth: even a dropped filter can't touch another
+// row). The .eq('auth_user_id') stays as the row locator. Requires the owner's Spotlight
+// to be ENABLED first (an admin turns that on); publishing is the owner's explicit,
+// separate act, so a page never goes public by accident. Read-modify-write of the
+// isolated spotlight sub-object (withSpotlightPublished) preserves every other meta key.
 export async function setSpotlightPublished(published: boolean): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
 
-  const admin = createAdminClient()
-  const { data: me } = await admin
+  const { data: me } = await supabase
     .from('profiles')
     .select('id, handle, meta')
     .eq('auth_user_id', user.id)
@@ -38,7 +39,7 @@ export async function setSpotlightPublished(published: boolean): Promise<void> {
   }
 
   const nextMeta = withSpotlightPublished(meta, published)
-  const { error } = await admin
+  const { error } = await supabase
     .from('profiles')
     .update({ meta: nextMeta as never })
     .eq('auth_user_id', user.id)
@@ -50,8 +51,9 @@ export async function setSpotlightPublished(published: boolean): Promise<void> {
 }
 
 // Self-serve: a Crew+ member turns their OWN Spotlight on (or off) — the switch that
-// replaces the janitor-only setup gate (ADR-431). Self-scoped (always keyed to the
-// caller's own auth_user_id) AND capability-checked: `spotlight.enable` is re-resolved
+// replaces the janitor-only setup gate (ADR-431). Self-scoped via the SESSION client
+// (the `profiles: read own` + `profiles: self update` RLS policies enforce auth_user_id
+// ownership at the DB) AND capability-checked: `spotlight.enable` is re-resolved
 // server-side as the first act, so a non-Crew member can't flip it even by calling the
 // action directly. Enabling only sets up the page (the owner still publishes explicitly
 // via setSpotlightPublished); DISABLING also unpublishes so a turned-off page can't stay
@@ -61,8 +63,7 @@ export async function setMySpotlightEnabled(enabled: boolean): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
 
-  const admin = createAdminClient()
-  const { data: me } = await admin
+  const { data: me } = await supabase
     .from('profiles')
     .select('id, handle, meta')
     .eq('auth_user_id', user.id)
@@ -78,7 +79,7 @@ export async function setMySpotlightEnabled(enabled: boolean): Promise<void> {
   let nextMeta = withSpotlightEnabled(meta, enabled)
   if (!enabled) nextMeta = withSpotlightPublished(nextMeta, false)
 
-  const { error } = await admin
+  const { error } = await supabase
     .from('profiles')
     .update({ meta: nextMeta as never })
     .eq('auth_user_id', user.id)
