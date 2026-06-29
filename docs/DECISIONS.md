@@ -9198,3 +9198,20 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 - Schema: `member_practices.target_seconds` (migration); achieved tier + depth streak derived where possible.
 
 **Amendment (2026-06-29) — PD3 re-scoped, no migration.** Decision point 2 (a pre-declared per-member target column) was superseded in build by the owner's own pivot ("maybe it's just based on how much they do that day"): depth is set by **practicing longer**, not by declaring a number up front. So the personal-target *column* (`member_practices.target_seconds`) was **not** added. Instead: the recommended time seeds the timer, the member adjusts the length at the setup stepper/presets, and the actual length is persisted in the existing `profiles.meta.onAir` prefs for next time — **migration-free**. PD2/PD4/PD5 shipped: `achievedTier` powers the economy (`logPractice`), the Mindless sit auto-continues past target (a new additive `overtime` counter; `finish()` banks the actual elapsed floored at target) with a live tier cue, and the reveal Stats card shows "You reached {tier}." + the minutes to the next tier for both Mindless and Movement sits. Structured Movement plans keep their plan-bounded finish cap (the shared reveal nudge still applies); Movement `play` already counts up. Remaining: PD6 depth-streak and the Vera AI **fallback** activity pass-through (the primary dispatch opener is already mode-accurate).
+
+---
+
+## ADR-444: Interior layout — Header / Main / Sidebar / Footer + flex-to-slot card grids
+
+**Status:** Accepted (2026-06-29). Owner ask. Extends [ADR-272](DECISIONS.md) (the interior-layout/grid catalog). Detail in [PAGE-FRAMEWORK.md §4](PAGE-FRAMEWORK.md).
+
+**Context.**
+- The Practice library read sparse on web (one full-width card per row on common laptop widths) and heavy on mobile. Two gaps: the interior-layout catalog had no shape with BOTH a header and a footer wrapping a main/sidebar split, and the library's card grid used viewport-conservative container breakpoints (`@xl`/`@4xl`) that, against the real center-column width (~656–1056px), landed between steps and under-filled the row.
+
+**Decision.**
+1. **New interior layout `header-main-side-footer`** ("Header / Main / Sidebar / Footer") in `lib/widgets/templates.ts` with slots `header · main · side · footer`, and a matching grid case in `components/widgets/page-modules.tsx`: a full-width header, the same 3:2 main/side split as `header-side`, and a full-width footer beneath. The interior-layout catalog is now **seven** shapes. Additive — only active when an operator picks it in the Layout editor.
+2. **Card grids flex to their slot.** A module's card grid sizes to the `@container` slot it lands in, not the viewport, with breakpoints set BETWEEN the real slot widths: `@md` (≈448px) clears a Sidebar slot but a Main column meets it; `@3xl` (≈768px) only a full-width column meets. Result: **1 card in a Sidebar, 2 in a Main column, 3 full-width.** First applied to the Practice library (`@md:grid-cols-2 @3xl:grid-cols-3`).
+
+**Consequences.**
+- Adding an interior layout stays "one meta entry + one grid case"; no migration (the `template` id is stored in the existing `page_settings.layout` jsonb).
+- The flex-to-slot breakpoint convention (`@md`/`@3xl`) is the pattern for any future image-card module so it reads right in every slot.

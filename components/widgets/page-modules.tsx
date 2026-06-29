@@ -115,6 +115,19 @@ function TemplateGrid({ template, slot }: { template: TemplateId; slot: (id: str
           </div>
         </div>
       )
+    case 'header-main-side-footer':
+      // Full-width header, the same 3:2 main/side split as header-side, and a full-width footer
+      // under both. Each region is its own @container so a block sizes to where it lands.
+      return (
+        <div className="space-y-6">
+          <div className="@container space-y-4">{slot('header')}</div>
+          <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
+            <div className="@container space-y-4 lg:col-span-3">{slot('main')}</div>
+            <div className="@container space-y-4 lg:col-span-2">{slot('side')}</div>
+          </div>
+          <div className="@container space-y-4">{slot('footer')}</div>
+        </div>
+      )
     default:
       return <div className="@container space-y-4">{slot('main')}</div>
   }

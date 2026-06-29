@@ -141,14 +141,15 @@ widgets that show up when assigned… without rebuilding every page."*
 > WizardShell / …; see §8) are the OUTER page archetype. The module engine's
 > [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) `TEMPLATES` are a DIFFERENT, smaller
 > thing: the **interior layouts/grids** (Single · Main + side · 2 columns · 3 columns · Header +
-> sidebar · Header + 2 columns) that arrange modules WITHIN a page's body. This doc calls the latter
+> sidebar · Header + 2 columns · Header / Main / Sidebar / Footer) that arrange modules WITHIN a
+> page's body. This doc calls the latter
 > **"interior layouts/grids"** in prose to avoid the collision; the code identifiers
 > (`templates.ts` / `TemplateId` / `TEMPLATES`) are unchanged.
 >
 > | Concern | Where | Note |
 > |---|---|---|
 > | **Module catalog** (metadata only) | [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) | `LAYOUT_MODULES` / `moduleMeta` (union of every block) + **route scoping** (ADR-294): `ROUTE_MODULE_IDS` / `moduleIdsForScope` map a scope key → the ids that page offers, so a page only shows/renders ITS OWN blocks, no React, so the editor / actions / resolver never import RSCs |
-> | **Interior layouts/grids** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId`: 6 interior layouts/grids (Single · Main + side · 2 columns · 3 columns · Header + sidebar · Header + 2 columns) naming their slots; no React, like the module catalog. Distinct from the OUTER page shells in `@/components/templates` (§8). Add an interior layout = one entry here + a grid case in `page-modules.tsx` |
+> | **Interior layouts/grids** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId`: 7 interior layouts/grids (Single · Main + side · 2 columns · 3 columns · Header + sidebar · Header + 2 columns · Header / Main / Sidebar / Footer) naming their slots; no React, like the module catalog. Distinct from the OUTER page shells in `@/components/templates` (§8). Add an interior layout = one entry here + a grid case in `page-modules.tsx`. **Module card grids should flex to their slot** via container-query breakpoints (`@md`/`@3xl`), so the same grid reads 1-up in a Sidebar slot, 2-up in Main, 3-up full-width (e.g. the Practice library). |
 > | **Component binding** | [`lib/widgets/registry.tsx`](../lib/widgets/registry.tsx) | `componentFor(id)` binds each id to its self-fetching RSC ([`components/widgets/`](../components/widgets)) |
 > | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | `resolveSlots` / `moduleAssignments`: maps each module to one slot of the chosen interior layout (unplaced → default slot), back-compat reader (`parseLayout`) reads a legacy flat config as the Single layout's `main` slot |
 > | **Renderer** | [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) | `<PageModules route>`: lays out the interior layout's grid, each slot's modules each in its own `<Suspense>` (§5), `null` when empty |

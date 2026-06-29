@@ -166,11 +166,13 @@ export async function PracticesLibrary() {
         />
       ) : (
         <>
-          {/* Image-led catalog (container-query sized to the COLUMN, not the viewport). Cards carry
-              a 16:9 header, so they stay a single full-width column on phones (incl. large ones),
-              step to two-up only on a tablet-width column (@xl), and three across a wide desktop
-              column (@4xl). Single column on mobile is the modern catalog default for image cards. */}
-          <ul className="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
+          {/* Image-led catalog that FLEXES to the slot it lands in (container-query sized to the
+              COLUMN, not the viewport), so the same grid reads right in any layout area: one card
+              wide in a narrow Sidebar slot or on a phone, two across a Main column, three across a
+              full-width column. The breakpoints sit between the real slot widths — @md (≈448px)
+              clears a sidebar but a main column meets it; @3xl (≈768px) only a full-width column
+              meets. Single column on mobile is the modern catalog default for image cards. */}
+          <ul className="grid grid-cols-1 gap-4 @md:grid-cols-2 @3xl:grid-cols-3">
             {result.rows.map((p) => {
               const pillarSlug = p.domain_id ? byId.get(p.domain_id)?.slug ?? null : null
               const pillarName = p.domain_id ? byId.get(p.domain_id)?.name ?? null : null
